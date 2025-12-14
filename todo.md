@@ -92,3 +92,9 @@
 - [x] Convert Follow Up button to tab-style button attached to right side
 - [x] Create Follow Up panel that slides in from the right
 - [x] Move Follow Up page content into the right-side panel
+
+## Header Image Optimization
+- [x] Redesign header to show full CMC 2026 image (person's face + bottom border visible)
+- [x] Overlay all event details (date, location) on top of the image
+- [x] Remove separate event details section below image
+- [x] Ensure header is compact and doesn't expand too much

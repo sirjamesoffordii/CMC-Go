@@ -136,49 +136,49 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">
-          {/* CMC 2026 Hero Header */}
-          <div className="relative h-[280px] overflow-hidden">
+          {/* CMC 2026 Hero Header - Compact with overlay */}
+          <div className="relative h-[200px] overflow-hidden">
             <img 
               src="/cmc-2026-hero.png" 
               alt="CMC 2026" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover object-center"
             />
+            
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/20"></div>
+            
             {/* Header overlay with buttons */}
-            <div className="absolute top-0 right-0 p-6">
-              <div className="flex items-center gap-4">
-                <Button variant="outline" className="bg-white/90 hover:bg-white">
+            <div className="absolute top-0 right-0 p-4">
+              <div className="flex items-center gap-3">
+                <Button variant="outline" className="bg-white/90 hover:bg-white text-sm">
                   More Info
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700">
+                <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
                   Login
                 </Button>
               </div>
             </div>
-          </div>
 
-          {/* Event Details Section */}
-          <div className="bg-white border-b border-gray-200 px-8 py-6">
-            <div className="flex items-start gap-8">
-              {/* Date Badge */}
-              <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 min-w-[80px]">
-                <div className="text-4xl font-bold text-gray-900">06</div>
-                <div className="text-sm font-semibold text-gray-600 uppercase">JUL</div>
-              </div>
+            {/* Event Details Overlay - Bottom Left */}
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
+              <div className="flex items-end gap-6">
+                {/* Date Badge */}
+                <div className="flex flex-col items-center justify-center bg-white/95 rounded-lg p-3 min-w-[70px] shadow-lg">
+                  <div className="text-3xl font-bold text-gray-900">06</div>
+                  <div className="text-xs font-semibold text-gray-600 uppercase">JUL</div>
+                </div>
 
-              {/* Event Details */}
-              <div className="flex-1">
-                <h2 className="text-3xl font-bold text-gray-900 mb-3">CMC 2026</h2>
-                <div className="space-y-2 text-gray-700">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-gray-500" />
-                    <span className="text-base">Mon, Jul 6, 2026 • 12:00am - Fri, Jul 10, 2026, 11:30pm CDT</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
-                    <div>
-                      <div className="text-base font-semibold text-blue-600">Arizona Grand Resort</div>
-                      <div className="text-sm text-gray-600">8000 South Arizona Grand E,</div>
-                      <div className="text-sm text-gray-600">Phoenix, AZ 85044</div>
+                {/* Event Details */}
+                <div className="flex-1 text-white">
+                  <h2 className="text-2xl font-bold mb-2 drop-shadow-lg">CMC 2026</h2>
+                  <div className="space-y-1 text-sm drop-shadow-md">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>Mon, Jul 6, 2026 • 12:00am - Fri, Jul 10, 2026, 11:30pm CDT</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>Arizona Grand Resort • 8000 South Arizona Grand E, Phoenix, AZ 85044</span>
                     </div>
                   </div>
                 </div>
