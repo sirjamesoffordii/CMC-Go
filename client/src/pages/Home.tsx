@@ -233,7 +233,7 @@ export default function Home() {
             </div>
             
             {/* Calendar Widget - Bottom Right */}
-            <div className="absolute bottom-16 right-10 flex flex-col items-center">
+            <div className="absolute bottom-8 right-10 flex flex-col items-center">
               <div className="bg-white border-2 border-gray-300 rounded-2xl shadow-lg overflow-hidden" style={{ width: '100px', height: '100px' }}>
                 <div className="flex flex-col h-full">
                   <div className="flex-1 flex items-center justify-center bg-gray-50">

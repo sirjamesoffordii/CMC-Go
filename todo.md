@@ -180,3 +180,6 @@
 ## Calendar Widget Repositioning
 - [x] Move calendar widget to bottom right corner of map (around Florida area)
 - [x] Separate calendar widget from metrics overlay
+
+## Calendar Widget Position Adjustment
+- [x] Move calendar widget slightly lower while keeping it within viewport
