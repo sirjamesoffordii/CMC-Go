@@ -80,3 +80,5 @@
 - [x] Update CMC date to July 6, 2025
 - [x] Move countdown to right side of canvas aligned with Going metric
 - [x] Remove negative sign from countdown using Math.abs()
+- [x] Make Going the hero metric with larger text
+- [x] Move Invited underneath Going showing % and actual count (172 / 1200)
