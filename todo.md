@@ -208,3 +208,8 @@
 - [x] Center text in header (vertically and horizontally)
 - [x] Use clean text layout from first reference image
 - [x] Position starburst behind "CMC 2026" text
+
+## District Panel Positioning Adjustment
+- [x] Make district panel extend only over the header (not full height)
+- [x] Set district panel width to 40% of page width
+- [x] Ensure panel slides over header area when opened

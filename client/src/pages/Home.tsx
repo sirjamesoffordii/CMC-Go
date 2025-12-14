@@ -118,24 +118,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Main Content */}
-      <div className="flex h-screen">
-        {/* Left District Panel */}
-        <div
-          className={`transition-all duration-300 ease-in-out ${
-            selectedDistrictId ? "w-[420px]" : "w-0"
-          } overflow-hidden flex-shrink-0`}
-        >
-          <DistrictPanel
-            district={selectedDistrict}
-            campuses={selectedDistrictCampuses}
-            people={selectedDistrictPeople}
-            onClose={() => setSelectedDistrictId(null)}
-            onPersonStatusChange={handlePersonStatusChange}
-            onPersonAdd={handlePersonAdd}
-            onPersonClick={handlePersonClick}
-          />
-        </div>
-
+      <div className="flex h-screen relative">
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">
           {/* CMC 2026 Custom Header */}
@@ -266,6 +249,25 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Left District Panel - Absolute Overlay */}
+        <div
+          className={`absolute left-0 top-0 h-[120px] transition-all duration-300 ease-in-out ${
+            selectedDistrictId ? "w-[40%]" : "w-0"
+          } overflow-hidden z-20 bg-white shadow-lg`}
+        >
+          {selectedDistrictId && (
+            <DistrictPanel
+              district={selectedDistrict}
+              campuses={selectedDistrictCampuses}
+              people={selectedDistrictPeople}
+              onClose={() => setSelectedDistrictId(null)}
+              onPersonStatusChange={handlePersonStatusChange}
+              onPersonAdd={handlePersonAdd}
+              onPersonClick={handlePersonClick}
+            />
+          )}
         </div>
 
         {/* Right Follow Up Panel */}
