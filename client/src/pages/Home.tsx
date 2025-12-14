@@ -162,57 +162,14 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header - Full Width */}
-      <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#D4A24A] via-[#C89440] to-[#B88635]">
-            {/* Starburst Graphic Behind Text */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <svg className="w-[500px] h-[500px] opacity-30" viewBox="0 0 200 200">
-                <polygon 
-                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
-                  fill="#6B7C3E"
-                  transform="rotate(0 100 100)"
-                />
-                <polygon 
-                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
-                  fill="#7A8C4D"
-                  transform="rotate(36 100 100)"
-                />
-                <polygon 
-                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
-                  fill="#6B7C3E"
-                  transform="rotate(72 100 100)"
-                />
-                <polygon 
-                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
-                  fill="#7A8C4D"
-                  transform="rotate(108 100 100)"
-                />
-                <polygon 
-                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
-                  fill="#6B7C3E"
-                  transform="rotate(144 100 100)"
-                />
-              </svg>
-            </div>
+      <div className="relative h-[120px] overflow-hidden">
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: 'url(/cmc-header-banner.png)' }}
+            />
 
-            {/* Header Content */}
-            <div className="relative h-full flex items-center justify-center px-8">
-              <div className="text-center">
-                {/* Chi Alpha | CMC 2026 */}
-                <div className="flex items-center justify-center gap-4 mb-2">
-                  <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                    Chi Alpha
-                  </h1>
-                  <div className="text-white text-4xl md:text-5xl font-light">|</div>
-                  <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wider" style={{ fontFamily: 'Impact, system-ui, sans-serif', letterSpacing: '0.05em' }}>
-                    CMC 2026
-                  </h1>
-                </div>
-                {/* Subtitle */}
-                <p className="text-white/90 text-sm md:text-base font-semibold tracking-widest uppercase">
-                  Campus Missions Conference
-                </p>
-              </div>
-            </div>
+            {/* Header Content - Image contains text, so no overlay needed */}
 
             {/* Top Right Buttons */}
             <div className="absolute top-0 right-0 p-4">

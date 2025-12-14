@@ -286,3 +286,9 @@
 - [x] Stack label above number in each column
 - [x] Left-align labels and numbers within each column
 - [x] Add spacing between columns (gap-4)
+
+## Replace Header Background Image
+- [x] Copy Chi Alpha CMC 2026 banner image to public folder
+- [x] Update header to use image as background
+- [x] Remove gradient background and starburst graphic
+- [x] Remove text overlay (image contains text)
