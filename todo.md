@@ -158,3 +158,6 @@
 - [x] Add "In ### days" below calendar widget
 - [x] Position calendar widget across from "Going" in metrics section
 - [x] Move map much higher (reduce padding)
+
+## Map Padding Reduction
+- [x] Reduce map padding to almost touch the metrics numbers

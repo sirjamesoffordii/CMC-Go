@@ -208,7 +208,7 @@ export default function Home() {
           </div>
 
           {/* Metrics Section */}
-          <div className="bg-white px-8 py-2 border-b border-gray-200">
+          <div className="bg-white px-8 py-1 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -244,7 +244,7 @@ export default function Home() {
           </div>
 
           {/* Map */}
-          <div className="px-6 py-1">
+          <div className="px-6 pt-0 pb-2">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
