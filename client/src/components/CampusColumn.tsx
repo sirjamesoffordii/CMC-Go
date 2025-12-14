@@ -103,13 +103,21 @@ export function CampusColumn({
     >
       {/* Campus Header - Compact with 3-dot menu */}
       <div className="relative mb-2">
+        {/* Drag handle areas on edges */}
         <div 
-          className="flex items-center justify-between gap-1 cursor-grab active:cursor-grabbing"
+          className="absolute left-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
           {...attributes}
           {...listeners}
-        >
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-xs text-center pb-1.5 relative">
+        />
+        <div 
+          className="absolute right-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
+          {...attributes}
+          {...listeners}
+        />
+        
+        <div className="flex items-center justify-between gap-1 relative">
+          <div className="flex-1 min-w-0 px-3">
+            <h3 className="font-semibold text-gray-900 text-xs text-center pb-1.5 border-b border-gray-300">
               <EditableText
                 value={campus.name}
                 onSave={(newName) => {
@@ -118,22 +126,17 @@ export function CampusColumn({
                 className="font-semibold text-gray-900 text-xs"
                 inputClassName="font-semibold text-gray-900 text-xs w-full text-center"
               />
-              {/* Curved divider line */}
-              <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-300">
-                <div className="absolute left-0 bottom-0 w-2 h-2 border-l border-b border-gray-300 rounded-bl-sm" style={{ transform: 'translateY(50%)' }} />
-                <div className="absolute right-0 bottom-0 w-2 h-2 border-r border-b border-gray-300 rounded-br-sm" style={{ transform: 'translateY(50%)' }} />
-              </div>
             </h3>
           </div>
           
-          {/* 3-dot menu - appears on hover */}
+          {/* 3-dot menu - positioned at edge */}
           {isHovered && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 cursor-pointer hover:bg-gray-200 rounded"
+                  className="absolute right-1 top-0 h-5 w-5 cursor-pointer hover:bg-gray-200 rounded z-20"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-3 w-3" />

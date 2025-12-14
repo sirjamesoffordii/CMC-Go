@@ -18,6 +18,11 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
       inputRef.current.select();
     }
   }, [isEditing]);
+  
+  // Sync editValue when value prop changes
+  useEffect(() => {
+    setEditValue(value);
+  }, [value]);
 
   const handleSave = () => {
     if (editValue.trim() && editValue !== value) {

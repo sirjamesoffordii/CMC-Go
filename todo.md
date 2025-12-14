@@ -346,3 +346,9 @@
 - [ ] Add backend procedure to archive campus
 - [ ] Add backend procedure to update campus display order
 - [ ] Add backend procedure to move person to different campus
+
+## Campus Column Header Fixes
+- [x] Remove curved divider line extensions from campus header
+- [x] Move 3-dot menu to edge/background of column without interfering with name
+- [x] Move grab cursor area to edges of header/top of column
+- [x] Fix campus name editing not saving changes (added useEffect to sync value)
