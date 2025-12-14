@@ -112,3 +112,9 @@
 - [x] Use golden/orange background matching CMC aesthetic
 - [x] Add geometric pattern elements similar to reference image
 - [x] Include decorative bottom border design
+
+## Header Border & Color Adjustments
+- [x] Update bottom border to alternating gold/orange and dark sections pattern
+- [x] Move map up so everything fits without scrolling
+- [x] Change bright blue colors to more muted tones
+- [x] Make invited percentage text black instead of blue

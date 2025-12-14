@@ -186,32 +186,36 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Decorative Bottom Border */}
-            <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700">
-              <div className="h-full flex">
-                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
-                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
-              </div>
+            {/* Decorative Bottom Border - Alternating Gold/Orange and Dark */}
+            <div className="absolute bottom-0 left-0 right-0 h-4 flex">
+              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
+              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
             </div>
           </div>
 
           {/* Metrics Section */}
-          <div className="bg-white px-8 py-6 border-b border-gray-200">
+          <div className="bg-white px-8 py-3 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
                   Going: {metrics?.going ?? 0}
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-blue-600">
+                  <div className="text-2xl font-semibold text-gray-900">
                     {metrics?.percentInvited ?? 0}% Invited
                   </div>
                   <div className="text-lg text-gray-600">
@@ -226,7 +230,7 @@ export default function Home() {
           </div>
 
           {/* Map */}
-          <div className="px-4 py-8">
+          <div className="px-4 py-2">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
