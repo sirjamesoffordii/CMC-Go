@@ -62,3 +62,4 @@
 - [x] Fix missing React imports in Home.tsx causing component to fail
 - [x] Fix map click handlers - fixed getAttribute for inkscape:label
 - [x] Style map with regional colors (Northwest=cyan, Big Sky=tan, Great Plains North=purple, etc.)
+- [x] Refine map styling - thinner borders, more muted colors, sharper edges

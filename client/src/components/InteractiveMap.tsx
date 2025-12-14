@@ -47,20 +47,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const district = districts.find(d => d.id === pathId);
       if (!district) return;
 
-      // Regional color mapping
+      // Regional color mapping - more muted, professional tones
       const regionColors: Record<string, string> = {
-        "Northwest": "#22d3ee",           // cyan
-        "Big Sky": "#ca8a5a",             // tan/brown
-        "Great Plains North": "#9333ea", // purple
-        "Great Lakes": "#3b82f6",        // blue
-        "Great Plains South": "#fbbf24", // light orange/yellow
-        "Mid-Atlantic": "#fb923c",       // coral/orange
-        "Mid-Atlantic (Extended)": "#fb923c", // coral/orange
-        "Northeast": "#ec4899",          // pink/magenta
-        "South Central": "#ef4444",      // red
-        "Southeast": "#22c55e",          // green
-        "Texico": "#a855f7",             // magenta/purple
-        "West Coast": "#f97316",         // orange
+        "Northwest": "#5dade2",           // muted cyan/blue
+        "Big Sky": "#b8936d",             // muted tan/brown
+        "Great Plains North": "#8e44ad", // muted purple
+        "Great Lakes": "#3498db",        // muted blue
+        "Great Plains South": "#f4d03f", // muted yellow
+        "Mid-Atlantic": "#e67e22",       // muted coral/orange
+        "Mid-Atlantic (Extended)": "#e67e22", // muted coral/orange
+        "Northeast": "#e91e63",          // muted pink
+        "South Central": "#e74c3c",      // muted red
+        "Southeast": "#27ae60",          // muted green
+        "Texico": "#9b59b6",             // muted magenta/purple
+        "West Coast": "#e67e22",         // muted orange
       };
 
       const baseColor = regionColors[district.region] || "#e5e7eb";
@@ -72,21 +72,21 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       // Apply selected state
       if (selectedDistrictId === pathId) {
         path.style.fill = baseColor;
-        path.style.stroke = "#1f2937";
-        path.style.strokeWidth = "3";
-        path.style.filter = "brightness(0.85)";
+        path.style.stroke = "#2c3e50";
+        path.style.strokeWidth = "2";
+        path.style.filter = "brightness(0.9)";
       } else {
         path.style.fill = baseColor;
         path.style.stroke = "#ffffff";
-        path.style.strokeWidth = "1.5";
+        path.style.strokeWidth = "0.75";
         path.style.filter = "none";
       }
 
       // Hover effects
       path.addEventListener("mouseenter", () => {
         if (selectedDistrictId !== pathId) {
-          path.style.filter = "brightness(1.15)";
-          path.style.strokeWidth = "2";
+          path.style.filter = "brightness(1.1)";
+          path.style.strokeWidth = "1.25";
         }
       });
 
@@ -94,7 +94,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         if (selectedDistrictId !== pathId) {
           path.style.fill = baseColor;
           path.style.stroke = "#ffffff";
-          path.style.strokeWidth = "1.5";
+          path.style.strokeWidth = "0.75";
           path.style.filter = "none";
         }
       });
@@ -115,7 +115,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   }, [svgContent, districts, selectedDistrictId, onDistrictSelect]);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
+    <div className="bg-white rounded shadow-sm p-6 border border-gray-200">
       <div 
         ref={svgContainerRef} 
         className="w-full h-full min-h-[500px] flex items-center justify-center"
