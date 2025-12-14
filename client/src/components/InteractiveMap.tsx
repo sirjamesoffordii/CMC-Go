@@ -74,9 +74,11 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
       const baseColor = regionColors[district.region] || "#e5e7eb";
 
-      // Visual layer: solid colors, no borders, smooth rendering
+      // Visual layer: solid colors with white outlines
       path.style.fill = baseColor;
-      path.style.stroke = "none"; // No borders on visual layer
+      path.style.stroke = "#ffffff";
+      path.style.strokeWidth = "0.6";
+      path.style.strokeDasharray = ""; // Solid line by default
       path.style.transition = "all 0.2s ease";
       
       // Apply selected state styling
@@ -151,7 +153,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           ref={visualContainerRef}
           className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
           style={{
-            filter: 'blur(0.4px)', // Subtle blur to smooth edges and fill tiny gaps
+            filter: 'blur(0.8px)', // Stronger blur to fill gaps and smooth edges
           }}
         />
         {/* Invisible SVG click zones */}

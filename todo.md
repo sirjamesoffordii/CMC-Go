@@ -65,3 +65,7 @@
 - [x] Refine map styling - thinner borders, more muted colors, sharper edges
 - [x] Apply premium styling - ultra-thin borders (0.3px) and sophisticated color palette
 - [x] Create visual overlay layer - polished map appearance with SVG as invisible click zones
+- [x] Increase blur to fill gaps better
+- [x] Add white outlines to all districts
+- [ ] Add dotted white lines for internal state boundaries (need to identify which paths)
+- [x] Reduce white outline thickness to 0.6px
