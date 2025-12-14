@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Map Click Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #log { border: 1px solid #ccc; padding: 10px; margin-top: 20px; height: 200px; overflow-y: auto; }
+    #map-container { border: 2px solid blue; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Map Click Test</h1>
+  <div id="status">Loading...</div>
+  <div id="log"></div>
+  <div id="map-container"></div>
+
+  <script>
+    const log = (msg) => {
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML += `<div>${new Date().toLocaleTimeString()}: ${msg}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    };
+
+    log('Starting test...');
+
+    fetch('/map.svg')
+      .then(res => {
+        log(`SVG fetch status: ${res.status}`);
+        return res.text();
+      })
+      .then(svg => {
+        log(`SVG loaded, length: ${svg.length} characters`);
+        
+        const container = document.getElementById('map-container');
+        container.innerHTML = svg;
+        
+        const svgEl = container.querySelector('svg');
+        if (!svgEl) {
+          log('ERROR: No SVG element found!');
+          return;
+        }
+        
+        log('SVG element found');
+        
+        const paths = svgEl.querySelectorAll('path');
+        log(`Found ${paths.length} path elements`);
+        
+        let labelCount = 0;
+        paths.forEach((path, idx) => {
+          const label = path.getAttribute("inkscape:label") || 
+                        path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label");
+          const id = path.getAttribute("id");
+          
+          if (label) {
+            labelCount++;
+            if (labelCount <= 5) {
+              log(`Path ${idx}: label="${label}", id="${id || 'none'}"`);
+            }
+            
+            path.style.cursor = 'pointer';
+            path.style.fill = '#e5e7eb';
+            path.style.stroke = '#9ca3af';
+            
+            path.addEventListener('mouseenter', () => {
+              path.style.fill = '#d1d5db';
+              log(`Hover: ${label}`);
+            });
+            
+            path.addEventListener('mouseleave', () => {
+              path.style.fill = '#e5e7eb';
+            });
+            
+            path.addEventListener('click', (e) => {
+              e.stopPropagation();
+              log(`CLICKED: ${label}`);
+              alert(`Clicked: ${label}`);
+            });
+          }
+        });
+        
+        log(`Set up ${labelCount} clickable paths`);
+        document.getElementById('status').textContent = `Ready! Found ${labelCount} districts. Try clicking on the map.`;
+      })
+      .catch(err => {
+        log(`ERROR: ${err.message}`);
+      });
+  </script>
+</body>
+</html>

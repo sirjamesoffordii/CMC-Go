@@ -37,13 +37,33 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const paths = svg.querySelectorAll("path");
 
     paths.forEach(path => {
-      // Try inkscape:label first, then fall back to id
-      const pathId = path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || path.getAttribute("id");
+      // Try multiple ways to get the label
+      const pathId = path.getAttribute("inkscape:label") || 
+                     path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
+                     path.getAttribute("id");
       if (!pathId) return;
 
       // Check if this path corresponds to a district
       const district = districts.find(d => d.id === pathId);
       if (!district) return;
+
+      // Regional color mapping
+      const regionColors: Record<string, string> = {
+        "Northwest": "#22d3ee",           // cyan
+        "Big Sky": "#ca8a5a",             // tan/brown
+        "Great Plains North": "#9333ea", // purple
+        "Great Lakes": "#3b82f6",        // blue
+        "Great Plains South": "#fbbf24", // light orange/yellow
+        "Mid-Atlantic": "#fb923c",       // coral/orange
+        "Mid-Atlantic (Extended)": "#fb923c", // coral/orange
+        "Northeast": "#ec4899",          // pink/magenta
+        "South Central": "#ef4444",      // red
+        "Southeast": "#22c55e",          // green
+        "Texico": "#a855f7",             // magenta/purple
+        "West Coast": "#f97316",         // orange
+      };
+
+      const baseColor = regionColors[district.region] || "#e5e7eb";
 
       // Set initial styles
       path.style.cursor = "pointer";
@@ -51,29 +71,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       
       // Apply selected state
       if (selectedDistrictId === pathId) {
-        path.style.fill = "#3b82f6";
-        path.style.stroke = "#1d4ed8";
-        path.style.strokeWidth = "2";
+        path.style.fill = baseColor;
+        path.style.stroke = "#1f2937";
+        path.style.strokeWidth = "3";
+        path.style.filter = "brightness(0.85)";
       } else {
-        path.style.fill = "#e5e7eb";
-        path.style.stroke = "#9ca3af";
-        path.style.strokeWidth = "1";
+        path.style.fill = baseColor;
+        path.style.stroke = "#ffffff";
+        path.style.strokeWidth = "1.5";
+        path.style.filter = "none";
       }
 
       // Hover effects
       path.addEventListener("mouseenter", () => {
         if (selectedDistrictId !== pathId) {
-          path.style.fill = "#d1d5db";
-          path.style.stroke = "#6b7280";
-          path.style.strokeWidth = "1.5";
+          path.style.filter = "brightness(1.15)";
+          path.style.strokeWidth = "2";
         }
       });
 
       path.addEventListener("mouseleave", () => {
         if (selectedDistrictId !== pathId) {
-          path.style.fill = "#e5e7eb";
-          path.style.stroke = "#9ca3af";
-          path.style.strokeWidth = "1";
+          path.style.fill = baseColor;
+          path.style.stroke = "#ffffff";
+          path.style.strokeWidth = "1.5";
+          path.style.filter = "none";
         }
       });
 
