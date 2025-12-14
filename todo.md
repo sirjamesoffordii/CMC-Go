@@ -270,3 +270,7 @@
 - [x] Remove ml-auto that pushes numbers far right
 - [x] Reduce gap between label and number (gap-2.5 to gap-1.5)
 - [x] Keep color dot and label close together
+
+## Adjust Stats Column Spacing
+- [x] Increase gap-x from 1 to 4 to bring columns closer as groups
+- [x] All four stats should feel like one cohesive block
