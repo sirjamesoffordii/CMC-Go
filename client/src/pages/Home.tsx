@@ -155,8 +155,7 @@ export default function Home() {
             </div>
 
             {/* Header Content */}
-            <div className="relative h-full flex items-center justify-between px-8">
-              <div className="flex-1"></div>
+            <div className="relative h-full flex items-center justify-center px-8">
               <div className="text-center">
                 {/* Chi Alpha | CMC 2026 */}
                 <div className="flex items-center justify-center gap-4 mb-2">
@@ -172,11 +171,6 @@ export default function Home() {
                 <p className="text-white/90 text-sm md:text-base font-semibold tracking-widest uppercase">
                   Campus Missions Conference
                 </p>
-              </div>
-              <div className="flex-1 flex justify-end items-center">
-                <div className="text-white text-lg font-semibold">
-                  CMC begins in {daysUntilCMC} days
-                </div>
               </div>
             </div>
 
@@ -229,12 +223,28 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-
+              
+              {/* Calendar Widget */}
+              <div className="flex flex-col items-center">
+                <div className="bg-white border-2 border-gray-300 rounded-2xl shadow-sm overflow-hidden" style={{ width: '100px', height: '100px' }}>
+                  <div className="flex flex-col h-full">
+                    <div className="flex-1 flex items-center justify-center bg-gray-50">
+                      <div className="text-5xl font-bold text-gray-900">06</div>
+                    </div>
+                    <div className="bg-white py-2 border-t border-gray-300">
+                      <div className="text-center text-sm font-semibold text-gray-700 tracking-widest">JUL</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-2 text-lg font-semibold text-gray-700">
+                  In {daysUntilCMC} days
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Map */}
-          <div className="px-6 py-4">
+          <div className="px-6 py-1">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}

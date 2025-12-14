@@ -151,3 +151,10 @@
 ## Layout Adjustments
 - [x] Move "CMC begins in 161 days" closer to the header
 - [x] Restore map to larger size (700px)
+
+## Calendar Widget & Map Positioning
+- [x] Remove countdown from header
+- [x] Create calendar-style date widget with 06 JUL
+- [x] Add "In ### days" below calendar widget
+- [x] Position calendar widget across from "Going" in metrics section
+- [x] Move map much higher (reduce padding)
