@@ -183,3 +183,10 @@
 
 ## Calendar Widget Position Adjustment
 - [x] Move calendar widget slightly lower while keeping it within viewport
+
+## Tooltip Improvements
+- [x] Increase font sizes in hover tooltip
+- [x] Add more space between status labels and counts
+- [x] Change status labels to "Going", "Maybe", "Not Going", "Not Invited Yet"
+- [x] Change "No" color from slate to red
+- [x] Change "Maybe" color from amber to yellow

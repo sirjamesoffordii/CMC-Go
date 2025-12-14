@@ -307,8 +307,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     // Colors matching the document requirements
     const colors = {
       yes: "#10b981",      // green
-      maybe: "#f59e0b",    // amber
-      no: "#64748b",       // slate
+      maybe: "#eab308",    // yellow
+      no: "#ef4444",       // red
       notInvited: "#d1d5db" // light gray
     };
 
@@ -394,32 +394,32 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           )}
           
           {/* Stats */}
-          <div className="text-xs space-y-1 flex-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-                <span className="font-medium">Yes:</span>
+          <div className="text-sm space-y-1.5 flex-1">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+                <span className="font-medium">Going:</span>
               </div>
               <span className="font-semibold">{stats.yes}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#eab308]"></div>
                 <span className="font-medium">Maybe:</span>
               </div>
               <span className="font-semibold">{stats.maybe}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></div>
-                <span className="font-medium">No:</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+                <span className="font-medium">Not Going:</span>
               </div>
               <span className="font-semibold">{stats.no}</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db]"></div>
-                <span className="font-medium">Not invited:</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#d1d5db]"></div>
+                <span className="font-medium whitespace-nowrap">Not Invited Yet:</span>
               </div>
               <span className="font-semibold">{stats.notInvited}</span>
             </div>
