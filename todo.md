@@ -202,3 +202,9 @@
 - [ ] Add "CAMPUS MISSIONS CONFERENCE" subtitle below
 - [x] Ensure professional centered layout
 - [x] Position text closer to bottom border
+
+## Header Redesign with Starburst Graphic
+- [x] Add green/olive starburst explosion graphic behind text
+- [x] Center text in header (vertically and horizontally)
+- [x] Use clean text layout from first reference image
+- [x] Position starburst behind "CMC 2026" text

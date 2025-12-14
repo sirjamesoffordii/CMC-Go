@@ -140,22 +140,39 @@ export default function Home() {
         <div className="flex-1 relative overflow-auto">
           {/* CMC 2026 Custom Header */}
           <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#D4A24A] via-[#C89440] to-[#B88635]">
-            {/* Geometric Pattern Background */}
-            <div className="absolute inset-0 opacity-20">
-              <svg className="w-full h-full" viewBox="0 0 1200 160" preserveAspectRatio="none">
-                {/* Left geometric shapes */}
-                <polygon points="0,80 120,40 240,80 120,120" fill="#8B6914" />
-                <polygon points="120,40 240,0 360,40 240,80" fill="#6B5410" />
-                <polygon points="240,80 360,40 480,80 360,120" fill="#8B6914" />
-                {/* Right geometric shapes */}
-                <polygon points="960,80 1080,40 1200,80 1080,120" fill="#8B6914" />
-                <polygon points="840,40 960,0 1080,40 960,80" fill="#6B5410" />
-                <polygon points="720,80 840,40 960,80 840,120" fill="#8B6914" />
+            {/* Starburst Graphic Behind Text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg className="w-[500px] h-[500px] opacity-30" viewBox="0 0 200 200">
+                <polygon 
+                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
+                  fill="#6B7C3E"
+                  transform="rotate(0 100 100)"
+                />
+                <polygon 
+                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
+                  fill="#7A8C4D"
+                  transform="rotate(36 100 100)"
+                />
+                <polygon 
+                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
+                  fill="#6B7C3E"
+                  transform="rotate(72 100 100)"
+                />
+                <polygon 
+                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
+                  fill="#7A8C4D"
+                  transform="rotate(108 100 100)"
+                />
+                <polygon 
+                  points="100,20 110,70 160,60 120,95 150,140 100,115 50,140 80,95 40,60 90,70" 
+                  fill="#6B7C3E"
+                  transform="rotate(144 100 100)"
+                />
               </svg>
             </div>
 
             {/* Header Content */}
-            <div className="relative h-full flex items-end justify-center px-8 pb-4">
+            <div className="relative h-full flex items-center justify-center px-8">
               <div className="text-center">
                 {/* Chi Alpha | CMC 2026 */}
                 <div className="flex items-center justify-center gap-4 mb-2">
