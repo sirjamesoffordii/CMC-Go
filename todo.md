@@ -147,3 +147,7 @@
 ## Map Spacing Adjustment
 - [x] Move map up to fit everything on screen without scrolling
 - [x] Add equal white space on all sides of the map
+
+## Layout Adjustments
+- [x] Move "CMC begins in 161 days" closer to the header
+- [x] Restore map to larger size (700px)

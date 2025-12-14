@@ -155,7 +155,8 @@ export default function Home() {
             </div>
 
             {/* Header Content */}
-            <div className="relative h-full flex items-center justify-center px-8">
+            <div className="relative h-full flex items-center justify-between px-8">
+              <div className="flex-1"></div>
               <div className="text-center">
                 {/* Chi Alpha | CMC 2026 */}
                 <div className="flex items-center justify-center gap-4 mb-2">
@@ -171,6 +172,11 @@ export default function Home() {
                 <p className="text-white/90 text-sm md:text-base font-semibold tracking-widest uppercase">
                   Campus Missions Conference
                 </p>
+              </div>
+              <div className="flex-1 flex justify-end items-center">
+                <div className="text-white text-lg font-semibold">
+                  CMC begins in {daysUntilCMC} days
+                </div>
               </div>
             </div>
 
@@ -223,9 +229,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="text-2xl font-semibold text-gray-700">
-                CMC begins in {daysUntilCMC} days
-              </div>
+
             </div>
           </div>
 
