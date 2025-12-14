@@ -154,7 +154,7 @@ export default function Home() {
                 <div className="text-6xl font-bold text-gray-900 mb-2">
                   Going: {metrics?.going ?? 0}
                 </div>
-                <div className="flex items-center gap-3">
+                <div>
                   <div className="text-2xl font-semibold text-blue-600">
                     {metrics?.percentInvited ?? 0}% Invited
                   </div>
