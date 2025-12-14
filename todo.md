@@ -133,3 +133,6 @@
 ## Tooltip Optimization
 - [x] Make tooltip more compact with less white space
 - [x] Remove Total Invited line
+
+## Tooltip Layout Adjustment
+- [x] Rearrange tooltip to show pie chart on left and stats on right

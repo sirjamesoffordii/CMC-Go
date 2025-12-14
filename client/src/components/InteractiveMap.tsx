@@ -385,40 +385,43 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         <div className="font-bold text-base text-gray-900">{district.id}</div>
         <div className="text-xs text-gray-600 mb-2">{district.region}</div>
         
-        {/* Pie Chart */}
-        {pieChartSvg && (
-          <div className="flex justify-center mb-2" dangerouslySetInnerHTML={{ __html: pieChartSvg }} />
-        )}
-        
-        {/* Stats */}
-        <div className="text-xs space-y-1 border-t pt-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-              <span className="font-medium">Yes:</span>
+        {/* Pie Chart and Stats Side by Side */}
+        <div className="flex gap-3 items-center">
+          {/* Pie Chart */}
+          {pieChartSvg && (
+            <div className="flex-shrink-0" dangerouslySetInnerHTML={{ __html: pieChartSvg }} />
+          )}
+          
+          {/* Stats */}
+          <div className="text-xs space-y-1 flex-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
+                <span className="font-medium">Yes:</span>
+              </div>
+              <span className="font-semibold">{stats.yes}</span>
             </div>
-            <span className="font-semibold">{stats.yes}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
-              <span className="font-medium">Maybe:</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]"></div>
+                <span className="font-medium">Maybe:</span>
+              </div>
+              <span className="font-semibold">{stats.maybe}</span>
             </div>
-            <span className="font-semibold">{stats.maybe}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></div>
-              <span className="font-medium">No:</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></div>
+                <span className="font-medium">No:</span>
+              </div>
+              <span className="font-semibold">{stats.no}</span>
             </div>
-            <span className="font-semibold">{stats.no}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db]"></div>
-              <span className="font-medium">Not invited:</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db]"></div>
+                <span className="font-medium">Not invited:</span>
+              </div>
+              <span className="font-semibold">{stats.notInvited}</span>
             </div>
-            <span className="font-semibold">{stats.notInvited}</span>
           </div>
         </div>
       </div>
