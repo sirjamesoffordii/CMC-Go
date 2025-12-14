@@ -129,3 +129,7 @@
 ## Tooltip Enhancement
 - [x] Make hover tooltip larger
 - [x] Add visual pie chart to tooltip
+
+## Tooltip Optimization
+- [x] Make tooltip more compact with less white space
+- [x] Remove Total Invited line
