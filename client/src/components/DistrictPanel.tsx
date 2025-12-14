@@ -71,48 +71,49 @@ export function DistrictPanel({
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Header - Fuller Design */}
-      <div className="px-6 py-5 border-b border-gray-200 flex-shrink-0 bg-white">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-1">{district.name}</h2>
-            <p className="text-sm text-gray-600">{district.region}</p>
+      {/* Header - Compact with Inline Names */}
+      <div className="px-5 py-3 border-b border-gray-200 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold text-gray-900">{district.name}</h2>
+            <span className="text-gray-400 text-2xl">|</span>
+            <p className="text-lg font-semibold text-gray-600">{district.region}</p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        {/* Pie Chart and Stats - Fuller Layout */}
-        <div className="flex items-center gap-6">
-          {/* Pie Chart - Larger */}
+        {/* Pie Chart and Stats - Compact */}
+        <div className="flex items-center gap-5">
+          {/* Pie Chart - Medium */}
           <div className="flex-shrink-0">
-            <svg width="120" height="120" viewBox="0 0 80 80">
+            <svg width="90" height="90" viewBox="0 0 80 80">
               {slices.map((slice, i) => (
                 <path key={i} d={slice.path} fill={slice.color} />
               ))}
             </svg>
           </div>
           
-          {/* Stats - Larger */}
-          <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-3">
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#22c55e] flex-shrink-0"></div>
+          {/* Stats - Compact */}
+          <div className="flex-1 grid grid-cols-2 gap-x-5 gap-y-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Going:</span>
               <span className="text-lg font-bold text-gray-900 ml-auto">{goingCount}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#eab308] flex-shrink-0"></div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#eab308] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Maybe:</span>
               <span className="text-lg font-bold text-gray-900 ml-auto">{maybeCount}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#ef4444] flex-shrink-0"></div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#ef4444] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Not Going:</span>
               <span className="text-lg font-bold text-gray-900 ml-auto">{notGoingCount}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Not Invited Yet:</span>
               <span className="text-lg font-bold text-gray-900 ml-auto">{notInvitedCount}</span>
             </div>
