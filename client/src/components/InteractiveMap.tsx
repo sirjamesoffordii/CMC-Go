@@ -434,13 +434,18 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     <div className="w-full">
       <div 
         className="relative w-full h-full min-h-[700px]"
-        onClick={(e) => {
-          // Only trigger if clicking directly on the container (not on districts)
-          if (e.target === e.currentTarget && onBackgroundClick) {
-            onBackgroundClick();
-          }
-        }}
       >
+        {/* Background click layer - captures clicks on empty space */}
+        <div 
+          className="absolute inset-0 z-0"
+          onClick={(e) => {
+            // Trigger background click when clicking on empty space
+            if (onBackgroundClick) {
+              onBackgroundClick();
+            }
+          }}
+        />
+        
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div 
           ref={visualContainerRef}
@@ -485,8 +490,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         {/* Invisible SVG click zones */}
         <div 
           ref={svgContainerRef} 
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ opacity: 0 }}
+          className="absolute inset-0 flex items-center justify-center z-30"
+          style={{ opacity: 0, pointerEvents: 'auto' }}
+          onClick={(e) => {
+            // If clicking on the SVG container itself (not a path), close panels
+            if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'svg') {
+              if (onBackgroundClick) {
+                onBackgroundClick();
+              }
+            }
+          }}
         />
       </div>
       

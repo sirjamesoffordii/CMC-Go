@@ -278,7 +278,7 @@ export default function Home() {
             />
             
             {/* Metrics Overlay */}
-            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-gray-200">
+            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-gray-200 pointer-events-none">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
                   Going: {metrics?.going ?? 0}
@@ -295,7 +295,7 @@ export default function Home() {
             </div>
             
             {/* Calendar Widget - Bottom Right */}
-            <div className="absolute bottom-8 right-10 flex flex-col items-center">
+            <div className="absolute bottom-8 right-10 flex flex-col items-center pointer-events-none">
               <div className="bg-white border-2 border-gray-300 rounded-2xl shadow-lg overflow-hidden" style={{ width: '100px', height: '100px' }}>
                 <div className="flex flex-col h-full">
                   <div className="flex-1 flex items-center justify-center bg-gray-50">

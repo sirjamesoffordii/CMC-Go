@@ -394,3 +394,12 @@
 - [x] Clicks anywhere except buttons/interactive elements should close panels
 - [x] Add ESC key support to close follow-up panel
 - [x] Ensure ESC closes whichever panel is open
+
+## Universal Panel Closing (ESC + Click-Outside)
+- [x] Add click-outside detection for follow-up panel
+- [x] Clicking on map or empty space should close follow-up panel
+- [x] ESC should work for follow-up panel independently
+- [x] Ensure consistent behavior across all panels
+- [x] Add pointer-events-none to metrics overlay and calendar widget
+- [x] Fix InteractiveMap to handle clicks on SVG container/canvas
+- [x] Add dedicated background click layer at z-0 in InteractiveMap
