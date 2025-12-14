@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
@@ -15,6 +15,10 @@ export default function Home() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
+  const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
+  const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
+  const [isResizingDistrict, setIsResizingDistrict] = useState(false);
+  const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -110,6 +114,46 @@ export default function Home() {
     setPersonDialogOpen(true);
   };
 
+  // Handle district panel resize
+  const handleDistrictMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingDistrict(true);
+  };
+
+  // Handle follow up panel resize
+  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingFollowUp(true);
+  };
+
+  // Mouse move handler for resizing
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizingDistrict) {
+        const newWidth = (e.clientX / window.innerWidth) * 100;
+        setDistrictPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
+      }
+      if (isResizingFollowUp) {
+        const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
+        setFollowUpPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingDistrict(false);
+      setIsResizingFollowUp(false);
+    };
+
+    if (isResizingDistrict || isResizingFollowUp) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizingDistrict, isResizingFollowUp]);
+
   // Calculate days until CMC
   const cmcDate = new Date('2025-07-06');
   const today = new Date();
@@ -117,12 +161,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Main Content */}
-      <div className="flex h-screen relative">
-        {/* Center Map Area */}
-        <div className="flex-1 relative overflow-auto">
-          {/* CMC 2026 Custom Header */}
-          <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#D4A24A] via-[#C89440] to-[#B88635]">
+      {/* Header - Full Width */}
+      <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#D4A24A] via-[#C89440] to-[#B88635]">
             {/* Starburst Graphic Behind Text */}
             <div className="absolute inset-0 flex items-center justify-center">
               <svg className="w-[500px] h-[500px] opacity-30" viewBox="0 0 200 200">
@@ -205,8 +245,37 @@ export default function Home() {
               <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
               <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
             </div>
-          </div>
+      </div>
 
+      {/* Main Content Area Below Header */}
+      <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
+        {/* Left District Panel */}
+        <div
+          className="transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative"
+          style={{ width: selectedDistrictId ? `${districtPanelWidth}%` : '0%', overflow: 'hidden' }}
+        >
+          {selectedDistrictId && (
+            <>
+              <DistrictPanel
+                district={selectedDistrict}
+                campuses={selectedDistrictCampuses}
+                people={selectedDistrictPeople}
+                onClose={() => setSelectedDistrictId(null)}
+                onPersonStatusChange={handlePersonStatusChange}
+                onPersonAdd={handlePersonAdd}
+                onPersonClick={handlePersonClick}
+              />
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 bg-gray-300 transition-colors"
+                onMouseDown={handleDistrictMouseDown}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Center Map Area */}
+        <div className="flex-1 relative overflow-auto">
           {/* Map with Overlay Metrics */}
           <div className="relative px-6 py-4">
             <InteractiveMap
@@ -251,32 +320,23 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Left District Panel - Absolute Overlay */}
-        <div
-          className={`absolute left-0 top-[120px] bottom-0 transition-all duration-300 ease-in-out ${
-            selectedDistrictId ? "w-[40%]" : "w-0"
-          } overflow-hidden z-20 bg-white shadow-lg`}
-        >
-          {selectedDistrictId && (
-            <DistrictPanel
-              district={selectedDistrict}
-              campuses={selectedDistrictCampuses}
-              people={selectedDistrictPeople}
-              onClose={() => setSelectedDistrictId(null)}
-              onPersonStatusChange={handlePersonStatusChange}
-              onPersonAdd={handlePersonAdd}
-              onPersonClick={handlePersonClick}
-            />
-          )}
-        </div>
+
 
         {/* Right Follow Up Panel */}
         <div
-          className={`transition-all duration-300 ease-in-out ${
-            followUpPanelOpen ? "w-[600px]" : "w-0"
-          } overflow-hidden flex-shrink-0`}
+          className="transition-all duration-300 ease-in-out bg-white border-l border-gray-300 flex-shrink-0 relative"
+          style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
         >
-          {followUpPanelOpen && <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />}
+          {followUpPanelOpen && (
+            <>
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-blue-500 bg-gray-300 transition-colors z-10"
+                onMouseDown={handleFollowUpMouseDown}
+              />
+              <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />
+            </>
+          )}
         </div>
       </div>
 

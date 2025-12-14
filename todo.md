@@ -214,3 +214,16 @@
 - [x] Position panel to start below header (top-[120px])
 - [x] Panel covers map area but not header section
 - [x] Panel extends from below header to bottom of viewport
+
+## Panel Resize & Push Content Implementation
+- [x] Change district panel from overlay to push-content layout
+- [x] Increase district panel default width from 40% to 50%
+- [x] Position district panel to start below header (not cover header)
+- [x] Add resize handle to district panel for manual width adjustment
+- [x] Update Follow Up panel to push content instead of overlay
+- [x] Set Follow Up panel default width to 50%
+- [x] Position Follow Up panel to start below header (not cover header)
+- [x] Add resize handle to Follow Up panel for manual width adjustment
+- [x] Ensure both panels can be resized independently
+- [x] Store panel widths in component state
+- [x] Add visual resize cursor on hover over handles
