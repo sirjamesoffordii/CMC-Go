@@ -114,49 +114,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">CMC Go</h1>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => setLocation("/follow-up")}>
-                Follow Up
-              </Button>
-              <Button variant="outline">More Info</Button>
-              <Button>Login</Button>
-            </div>
-          </div>
-          
-          {/* Metrics */}
-          <div className="flex items-center gap-8">
-            <div>
-              <div className="text-4xl font-bold text-blue-600">
-                {metrics?.percentInvited ?? 0}%
-              </div>
-              <div className="text-sm text-gray-600">Invited</div>
-            </div>
-            <div className="h-12 w-px bg-gray-300" />
-            <div>
-              <div className="text-2xl font-semibold text-gray-900">
-                Going: {metrics?.going ?? 0}
-              </div>
-              <div className="text-sm text-gray-600">
-                Invited: {metrics?.invited ?? 0}
-              </div>
-            </div>
-            <div className="h-12 w-px bg-gray-300" />
-            <div>
-              <div className="text-xl font-semibold text-gray-900">
-                CMC begins in {daysUntilCMC} days
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="flex h-[calc(100vh-180px)]">
+      {/* Main Content with integrated header */}
+      <div className="flex h-screen">
         {/* Left Panel */}
         <div
           className={`transition-all duration-300 ease-in-out ${
@@ -174,13 +133,55 @@ export default function Home() {
           />
         </div>
 
-        {/* Map Container */}
-        <div className="flex-1 p-8 overflow-auto">
-          <InteractiveMap
-            districts={districts}
-            selectedDistrictId={selectedDistrictId}
-            onDistrictSelect={handleDistrictSelect}
-          />
+        {/* Map Container with Header Overlay */}
+        <div className="flex-1 relative overflow-auto">
+          {/* Header overlay on canvas */}
+          <div className="absolute top-0 left-0 right-0 z-20 p-8">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">CMC Go</h1>
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={() => setLocation("/follow-up")}>
+                  Follow Up
+                </Button>
+                <Button variant="outline">More Info</Button>
+                <Button>Login</Button>
+              </div>
+            </div>
+            
+            {/* Metrics on canvas */}
+            <div className="flex items-center gap-8">
+              <div>
+                <div className="text-4xl font-bold text-blue-600">
+                  {metrics?.percentInvited ?? 0}%
+                </div>
+                <div className="text-sm text-gray-600">Invited</div>
+              </div>
+              <div className="h-12 w-px bg-gray-300" />
+              <div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  Going: {metrics?.going ?? 0}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Invited: {metrics?.invited ?? 0}
+                </div>
+              </div>
+              <div className="h-12 w-px bg-gray-300" />
+              <div>
+                <div className="text-xl font-semibold text-gray-900">
+                  CMC begins in {daysUntilCMC} days
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Map */}
+          <div className="pt-48 px-8 pb-8">
+            <InteractiveMap
+              districts={districts}
+              selectedDistrictId={selectedDistrictId}
+              onDistrictSelect={handleDistrictSelect}
+            />
+          </div>
         </div>
       </div>
 
