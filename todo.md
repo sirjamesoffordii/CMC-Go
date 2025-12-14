@@ -256,3 +256,8 @@
 - [x] Increase district name font size
 - [x] Increase region name font size
 - [x] Maintain visual hierarchy and readability
+
+## Header Stats Spacing Adjustment
+- [x] Reduce horizontal gap between stat columns
+- [x] Maintain comfortable readability
+- [x] Avoid feeling too cramped
