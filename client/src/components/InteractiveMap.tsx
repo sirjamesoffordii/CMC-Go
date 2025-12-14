@@ -6,6 +6,7 @@ interface InteractiveMapProps {
   districts: District[];
   selectedDistrictId: string | null;
   onDistrictSelect: (districtId: string) => void;
+  onBackgroundClick?: () => void;
 }
 
 interface DistrictStats {
@@ -108,7 +109,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   "West Texas B": { x: 400, y: 510 },
 };
 
-export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect }: InteractiveMapProps) {
+export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick }: InteractiveMapProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -431,7 +432,15 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
   return (
     <div className="w-full">
-      <div className="relative w-full h-full min-h-[700px]">
+      <div 
+        className="relative w-full h-full min-h-[700px]"
+        onClick={(e) => {
+          // Only trigger if clicking directly on the container (not on districts)
+          if (e.target === e.currentTarget && onBackgroundClick) {
+            onBackgroundClick();
+          }
+        }}
+      >
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div 
           ref={visualContainerRef}

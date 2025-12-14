@@ -117,17 +117,19 @@ export default function Home() {
   // Keyboard shortcuts for district panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle shortcuts when district panel is open
-      if (!selectedDistrictId) return;
-      
-      // Escape to close district panel
+      // Escape to close panels
       if (e.key === 'Escape') {
-        setSelectedDistrictId(null);
+        if (selectedDistrictId) {
+          setSelectedDistrictId(null);
+        }
+        if (followUpPanelOpen) {
+          setFollowUpPanelOpen(false);
+        }
         return;
       }
       
-      // Arrow keys to navigate between geographically adjacent districts
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      // Arrow keys to navigate between geographically adjacent districts (only when district panel is open)
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && selectedDistrictId) {
         e.preventDefault();
         const currentDistrict = districts.find(d => d.id === selectedDistrictId);
         if (!currentDistrict) return;
@@ -145,7 +147,7 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, districts]);
+  }, [selectedDistrictId, followUpPanelOpen, districts]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -269,6 +271,10 @@ export default function Home() {
               districts={districts}
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
+              onBackgroundClick={() => {
+                setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
+              }}
             />
             
             {/* Metrics Overlay */}

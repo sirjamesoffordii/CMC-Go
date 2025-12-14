@@ -388,3 +388,9 @@
 - [x] Debug why click-outside handler is not working
 - [x] Ensure empty space clicks close the district panel
 - [x] Test click handler on map area (clicks on padding/empty space)
+
+## Fix Click-to-Close and ESC for Panels
+- [x] Make clicks on map canvas close panels (not just padding)
+- [x] Clicks anywhere except buttons/interactive elements should close panels
+- [x] Add ESC key support to close follow-up panel
+- [x] Ensure ESC closes whichever panel is open
