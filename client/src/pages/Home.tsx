@@ -182,26 +182,6 @@ export default function Home() {
                 </Button>
               </div>
             </div>
-
-            {/* Decorative Bottom Border - Alternating Gold/Orange and Dark */}
-            <div className="absolute bottom-0 left-0 right-0 h-4 flex">
-              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(0 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#D4A24A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#3A3A3A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#C89440]" style={{ clipPath: 'polygon(15% 0, 100% 0, 85% 100%, 0% 100%)' }}></div>
-              <div className="flex-1 bg-[#2A2A2A]" style={{ clipPath: 'polygon(15% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
-            </div>
       </div>
 
       {/* Main Content Area Below Header */}

@@ -292,3 +292,6 @@
 - [x] Update header to use image as background
 - [x] Remove gradient background and starburst graphic
 - [x] Remove text overlay (image contains text)
+
+## Remove Header Bottom Border
+- [x] Remove decorative bottom border stripes from header
