@@ -161,3 +161,8 @@
 
 ## Map Padding Reduction
 - [x] Reduce map padding to almost touch the metrics numbers
+
+## Zero Padding & Viewport Fit
+- [x] Remove all padding from map container
+- [x] Ensure entire map fits on screen without scrolling
+- [x] Reduce map height if needed to fit viewport
