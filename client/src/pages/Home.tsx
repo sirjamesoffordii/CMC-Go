@@ -207,8 +207,17 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Map */}
+          <div className="px-6 py-4">
+            <InteractiveMap
+              districts={districts}
+              selectedDistrictId={selectedDistrictId}
+              onDistrictSelect={handleDistrictSelect}
+            />
+          </div>
+
           {/* Metrics Section */}
-          <div className="bg-white px-8 py-0 border-b border-gray-200">
+          <div className="bg-white px-8 py-3 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -241,15 +250,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Map */}
-          <div className="px-4 py-0">
-            <InteractiveMap
-              districts={districts}
-              selectedDistrictId={selectedDistrictId}
-              onDistrictSelect={handleDistrictSelect}
-            />
           </div>
         </div>
 

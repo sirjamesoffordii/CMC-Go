@@ -166,3 +166,8 @@
 - [x] Remove all padding from map container
 - [x] Ensure entire map fits on screen without scrolling
 - [x] Reduce map height if needed to fit viewport
+
+## Map Repositioning
+- [x] Move map directly underneath header (before metrics section)
+- [x] Increase map size back to 700px
+- [x] Reposition metrics section below the map
