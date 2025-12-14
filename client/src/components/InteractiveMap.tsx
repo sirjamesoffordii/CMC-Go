@@ -78,7 +78,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       });
 
       // Click handler
-      path.addEventListener("click", () => {
+      path.addEventListener("click", (e) => {
+        e.stopPropagation();
         onDistrictSelect(pathId);
       });
     });
