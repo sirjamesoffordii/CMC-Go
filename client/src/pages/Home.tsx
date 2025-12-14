@@ -207,17 +207,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Map */}
-          <div className="px-6 py-4">
+          {/* Map with Overlay Metrics */}
+          <div className="relative px-6 py-4">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
             />
-          </div>
-
-          {/* Metrics Section */}
-          <div className="bg-white px-8 py-3 border-t border-gray-200">
+            
+            {/* Metrics Overlay */}
+            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -249,6 +248,7 @@ export default function Home() {
                   In {daysUntilCMC} days
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

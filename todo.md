@@ -171,3 +171,8 @@
 - [x] Move map directly underneath header (before metrics section)
 - [x] Increase map size back to 700px
 - [x] Reposition metrics section below the map
+
+## Metrics Overlay
+- [x] Position metrics section as overlay on top of map (top-left area)
+- [x] Keep map at current size and position
+- [x] Ensure metrics don't shift or shrink the map
