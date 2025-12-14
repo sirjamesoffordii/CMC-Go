@@ -1,11 +1,23 @@
-import { eq } from "drizzle-orm";
+import { eq, and, or } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, 
+  users, 
+  districts, 
+  campuses, 
+  people, 
+  needs, 
+  notes,
+  InsertDistrict,
+  InsertCampus,
+  InsertPerson,
+  InsertNeed,
+  InsertNote
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -89,4 +101,155 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Districts
+export async function getAllDistricts() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(districts);
+}
+
+export async function getDistrictById(id: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(districts).where(eq(districts.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// Campuses
+export async function getAllCampuses() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(campuses);
+}
+
+export async function getCampusesByDistrict(districtId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
+}
+
+// People
+export async function getAllPeople() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people);
+}
+
+export async function getPeopleByDistrict(districtId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.districtId, districtId));
+}
+
+export async function getPeopleByCampus(campusId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.campusId, campusId));
+}
+
+export async function createPerson(person: InsertPerson) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(people).values(person);
+  return result;
+}
+
+export async function updatePersonStatus(personId: number, status: "Not invited yet" | "Maybe" | "Going" | "Not Going") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people)
+    .set({ status, lastUpdated: new Date() })
+    .where(eq(people.id, personId));
+}
+
+export async function getPersonById(personId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(people).where(eq(people.id, personId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// Needs
+export async function getNeedsByPerson(personId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(needs).where(eq(needs.personId, personId));
+}
+
+export async function createNeed(need: InsertNeed) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(needs).values(need);
+  return result;
+}
+
+export async function toggleNeedActive(needId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(needs)
+    .set({ isActive })
+    .where(eq(needs.id, needId));
+}
+
+export async function getAllActiveNeeds() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(needs).where(eq(needs.isActive, true));
+}
+
+// Notes
+export async function getNotesByPerson(personId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(notes).where(eq(notes.personId, personId));
+}
+
+export async function createNote(note: InsertNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(notes).values(note);
+  return result;
+}
+
+// Metrics
+export async function getMetrics() {
+  const db = await getDb();
+  if (!db) return { total: 0, invited: 0, going: 0, percentInvited: 0 };
+  
+  const allPeople = await db.select().from(people);
+  const total = allPeople.length;
+  const invited = allPeople.filter(p => p.status !== "Not invited yet").length;
+  const going = allPeople.filter(p => p.status === "Going").length;
+  const percentInvited = total > 0 ? Math.round((invited / total) * 100) : 0;
+  
+  return { total, invited, going, percentInvited };
+}
+
+// Follow-up data (people with Maybe status or active needs)
+export async function getFollowUpPeople() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get all people with Maybe status
+  const maybePeople = await db.select().from(people).where(eq(people.status, "Maybe"));
+  
+  // Get all people with active needs
+  const activeNeeds = await db.select().from(needs).where(eq(needs.isActive, true));
+  const needsSet = new Set(activeNeeds.map(n => n.personId));
+  const peopleWithNeedsIds = Array.from(needsSet);
+  
+  // Combine and deduplicate
+  const allPeopleIds = new Set<number>();
+  maybePeople.forEach(p => allPeopleIds.add(p.id));
+  peopleWithNeedsIds.forEach(id => allPeopleIds.add(id));
+  
+  // Get full person records
+  if (allPeopleIds.size === 0) return [];
+  
+  const peopleIdsArray = Array.from(allPeopleIds);
+  const followUpPeople = await db.select().from(people).where(
+    or(...peopleIdsArray.map(id => eq(people.id, id)))
+  );
+  
+  return followUpPeople;
+}

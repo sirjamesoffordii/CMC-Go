@@ -1,0 +1,267 @@
+[
+  {
+    "id": "Colorado",
+    "name": "Colorado",
+    "region": "Big Sky"
+  },
+  {
+    "id": "Montana",
+    "name": "Montana",
+    "region": "Big Sky"
+  },
+  {
+    "id": "SouthIdaho",
+    "name": "South Idaho",
+    "region": "Big Sky"
+  },
+  {
+    "id": "Utah",
+    "name": "Utah",
+    "region": "Big Sky"
+  },
+  {
+    "id": "Wyoming",
+    "name": "Wyoming",
+    "region": "Big Sky"
+  },
+  {
+    "id": "Illinois",
+    "name": "Illinois",
+    "region": "Great Lakes"
+  },
+  {
+    "id": "Indiana",
+    "name": "Indiana",
+    "region": "Great Lakes"
+  },
+  {
+    "id": "Michigan",
+    "name": "Michigan",
+    "region": "Great Lakes"
+  },
+  {
+    "id": "Ohio",
+    "name": "Ohio",
+    "region": "Great Lakes"
+  },
+  {
+    "id": "Minnesota",
+    "name": "Minnesota",
+    "region": "Great Plains North"
+  },
+  {
+    "id": "NorthDakota",
+    "name": "North Dakota",
+    "region": "Great Plains North"
+  },
+  {
+    "id": "SouthDakota",
+    "name": "South Dakota",
+    "region": "Great Plains North"
+  },
+  {
+    "id": "Wisconsin",
+    "name": "Wisconsin",
+    "region": "Great Plains North"
+  },
+  {
+    "id": "Iowa",
+    "name": "Iowa",
+    "region": "Great Plains South"
+  },
+  {
+    "id": "Kansas",
+    "name": "Kansas",
+    "region": "Great Plains South"
+  },
+  {
+    "id": "Nebraska",
+    "name": "Nebraska",
+    "region": "Great Plains South"
+  },
+  {
+    "id": "NorthMissouri",
+    "name": "North Missouri",
+    "region": "Great Plains South"
+  },
+  {
+    "id": "SouthMissouri",
+    "name": "South Missouri",
+    "region": "Great Plains South"
+  },
+  {
+    "id": "NorthCarolina",
+    "name": "North Carolina",
+    "region": "Mid-Atlantic"
+  },
+  {
+    "id": "Virginia",
+    "name": "Virginia",
+    "region": "Mid-Atlantic"
+  },
+  {
+    "id": "Kentucky",
+    "name": "Kentucky",
+    "region": "Mid-Atlantic (Extended)"
+  },
+  {
+    "id": "Tennessee",
+    "name": "Tennessee",
+    "region": "Mid-Atlantic (Extended)"
+  },
+  {
+    "id": "WestVirginia",
+    "name": "West Virginia",
+    "region": "Mid-Atlantic (Extended)"
+  },
+  {
+    "id": "Connecticut",
+    "name": "Connecticut",
+    "region": "Northeast"
+  },
+  {
+    "id": "Maine",
+    "name": "Maine",
+    "region": "Northeast"
+  },
+  {
+    "id": "Massachusetts",
+    "name": "Massachusetts",
+    "region": "Northeast"
+  },
+  {
+    "id": "NewHampshire",
+    "name": "New Hampshire",
+    "region": "Northeast"
+  },
+  {
+    "id": "NewJersey",
+    "name": "New Jersey",
+    "region": "Northeast"
+  },
+  {
+    "id": "NewYork",
+    "name": "New York",
+    "region": "Northeast"
+  },
+  {
+    "id": "Pennsylvania",
+    "name": "Pennsylvania",
+    "region": "Northeast"
+  },
+  {
+    "id": "Vermont",
+    "name": "Vermont",
+    "region": "Northeast"
+  },
+  {
+    "id": "Alaska",
+    "name": "Alaska",
+    "region": "Northwest"
+  },
+  {
+    "id": "NorthIdaho",
+    "name": "North Idaho",
+    "region": "Northwest"
+  },
+  {
+    "id": "Oregon",
+    "name": "Oregon",
+    "region": "Northwest"
+  },
+  {
+    "id": "Washington",
+    "name": "Washington",
+    "region": "Northwest"
+  },
+  {
+    "id": "Arkansas",
+    "name": "Arkansas",
+    "region": "South Central"
+  },
+  {
+    "id": "Louisiana",
+    "name": "Louisiana",
+    "region": "South Central"
+  },
+  {
+    "id": "Oklahoma",
+    "name": "Oklahoma",
+    "region": "South Central"
+  },
+  {
+    "id": "Alabama",
+    "name": "Alabama",
+    "region": "Southeast"
+  },
+  {
+    "id": "Florida",
+    "name": "Florida",
+    "region": "Southeast"
+  },
+  {
+    "id": "Georgia",
+    "name": "Georgia",
+    "region": "Southeast"
+  },
+  {
+    "id": "Mississippi",
+    "name": "Mississippi",
+    "region": "Southeast"
+  },
+  {
+    "id": "SouthCarolina",
+    "name": "South Carolina",
+    "region": "Southeast"
+  },
+  {
+    "id": "WestFlorida",
+    "name": "West Florida",
+    "region": "Southeast"
+  },
+  {
+    "id": "NewMexico",
+    "name": "New Mexico",
+    "region": "Texico"
+  },
+  {
+    "id": "NorthTexas",
+    "name": "North Texas",
+    "region": "Texico"
+  },
+  {
+    "id": "SouthTexas",
+    "name": "South Texas",
+    "region": "Texico"
+  },
+  {
+    "id": "WestTexas",
+    "name": "West Texas",
+    "region": "Texico"
+  },
+  {
+    "id": "Arizona",
+    "name": "Arizona",
+    "region": "West Coast"
+  },
+  {
+    "id": "Hawaii",
+    "name": "Hawaii",
+    "region": "West Coast"
+  },
+  {
+    "id": "Nevada",
+    "name": "Nevada",
+    "region": "West Coast"
+  },
+  {
+    "id": "NorthCalifornia",
+    "name": "North California",
+    "region": "West Coast"
+  },
+  {
+    "id": "SouthCalifornia",
+    "name": "South California",
+    "region": "West Coast"
+  }
+]
