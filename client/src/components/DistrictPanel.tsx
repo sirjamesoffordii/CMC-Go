@@ -81,7 +81,7 @@ export function DistrictPanel({
             <span className="text-gray-400 text-2xl">|</span>
             <p className="text-lg font-semibold text-gray-600">{district.region}</p>
             <span className="text-gray-400 text-2xl">|</span>
-            <p className="text-lg font-bold text-blue-600">{invitedPercent}% Invited</p>
+            <p className="text-lg font-bold text-gray-900">{invitedPercent}% Invited</p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-5 w-5" />

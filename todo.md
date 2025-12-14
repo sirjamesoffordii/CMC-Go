@@ -314,3 +314,6 @@
 - [x] Calculate invited percentage (Going + Maybe + Not Going) / Total
 - [x] Display percentage prominently in district panel header
 - [x] Format as "X% Invited" with blue color for visibility
+
+## Change Invited Percentage Color
+- [x] Change invited percentage text color from blue-600 to gray-900 (black)
