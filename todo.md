@@ -98,3 +98,10 @@
 - [x] Overlay all event details (date, location) on top of the image
 - [x] Remove separate event details section below image
 - [x] Ensure header is compact and doesn't expand too much
+
+## Header Image Positioning Fix
+- [x] Adjust image positioning to show person's face (chest up)
+- [x] Ensure Chi Alpha | CMC 2026 branding text is fully visible and properly sized
+- [x] Show decorative bottom border
+- [x] Remove date and location details from header
+- [x] Create More Info page with event details (date, location, address)

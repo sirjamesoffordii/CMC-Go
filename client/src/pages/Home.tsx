@@ -7,8 +7,10 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
 import { MapPin, Calendar } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
@@ -136,52 +138,23 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">
-          {/* CMC 2026 Hero Header - Compact with overlay */}
-          <div className="relative h-[200px] overflow-hidden">
+          {/* CMC 2026 Hero Header - Clean banner */}
+          <div className="relative h-[180px] overflow-hidden border-b-4 border-gray-800">
             <img 
               src="/cmc-2026-hero.png" 
               alt="CMC 2026" 
-              className="w-full h-full object-cover object-center"
+              className="w-full h-full object-cover object-[center_45%]"
             />
-            
-            {/* Dark overlay for better text readability */}
-            <div className="absolute inset-0 bg-black/20"></div>
             
             {/* Header overlay with buttons */}
             <div className="absolute top-0 right-0 p-4">
               <div className="flex items-center gap-3">
-                <Button variant="outline" className="bg-white/90 hover:bg-white text-sm">
+                <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
                   More Info
                 </Button>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
                   Login
                 </Button>
-              </div>
-            </div>
-
-            {/* Event Details Overlay - Bottom Left */}
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
-              <div className="flex items-end gap-6">
-                {/* Date Badge */}
-                <div className="flex flex-col items-center justify-center bg-white/95 rounded-lg p-3 min-w-[70px] shadow-lg">
-                  <div className="text-3xl font-bold text-gray-900">06</div>
-                  <div className="text-xs font-semibold text-gray-600 uppercase">JUL</div>
-                </div>
-
-                {/* Event Details */}
-                <div className="flex-1 text-white">
-                  <h2 className="text-2xl font-bold mb-2 drop-shadow-lg">CMC 2026</h2>
-                  <div className="space-y-1 text-sm drop-shadow-md">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      <span>Mon, Jul 6, 2026 • 12:00am - Fri, Jul 10, 2026, 11:30pm CDT</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>Arizona Grand Resort • 8000 South Arizona Grand E, Phoenix, AZ 85044</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
