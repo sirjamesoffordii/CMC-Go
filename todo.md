@@ -377,3 +377,9 @@
 - [x] Right arrow moves to rightNeighbor district
 - [x] Handle wrapping at region boundaries (rightmost → leftmost via adjacency)
 - [x] Ensure each district appears only once per cycle (guaranteed by adjacency map)
+
+## Auto-Size District Panel
+- [x] Remove fixed width (50%) from district panel
+- [x] Use auto width based on content (width: auto)
+- [x] Set max-width to prevent panel from being too wide (80%)
+- [x] Add min-w-fit to DistrictPanel for proper content sizing

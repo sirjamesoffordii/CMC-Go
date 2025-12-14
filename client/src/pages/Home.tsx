@@ -222,7 +222,11 @@ export default function Home() {
         {/* Left District Panel */}
         <div
           className="transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative"
-          style={{ width: selectedDistrictId ? `${districtPanelWidth}%` : '0%', overflow: 'hidden' }}
+          style={{ 
+            width: selectedDistrictId ? 'auto' : '0%', 
+            maxWidth: selectedDistrictId ? '80%' : '0%',
+            overflow: 'hidden' 
+          }}
         >
           {selectedDistrictId && (
             <>

@@ -125,7 +125,7 @@ export function DistrictPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-white min-w-fit">
       {/* Header - Compact with Inline Names */}
       <div className="px-5 py-3 border-b border-gray-200 flex-shrink-0 bg-white">
         <div className="flex items-center justify-between mb-3">
