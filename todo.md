@@ -280,3 +280,9 @@
 - [x] Stack Maybe above Not Invited Yet in right column
 - [x] Bring both columns close together next to pie chart (gap-3)
 - [x] Create compact two-column vertical layout
+
+## 4-Column Horizontal Stats Layout
+- [x] Restructure to 4 horizontal columns (Going | Not Going | Maybe | Not Invited Yet)
+- [x] Stack label above number in each column
+- [x] Left-align labels and numbers within each column
+- [x] Add spacing between columns (gap-4)
