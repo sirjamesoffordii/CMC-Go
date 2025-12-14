@@ -176,3 +176,7 @@
 - [x] Position metrics section as overlay on top of map (top-left area)
 - [x] Keep map at current size and position
 - [x] Ensure metrics don't shift or shrink the map
+
+## Calendar Widget Repositioning
+- [x] Move calendar widget to bottom right corner of map (around Florida area)
+- [x] Separate calendar widget from metrics overlay
