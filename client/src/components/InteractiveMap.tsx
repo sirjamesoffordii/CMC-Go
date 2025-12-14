@@ -147,7 +147,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
   return (
     <div className="w-full">
-      <div className="relative w-full h-full min-h-[500px]">
+      <div className="relative w-full h-full min-h-[700px]">
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div 
           ref={visualContainerRef}
