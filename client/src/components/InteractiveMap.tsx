@@ -153,7 +153,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           ref={visualContainerRef}
           className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
           style={{
-            filter: 'blur(0.8px)', // Stronger blur to fill gaps and smooth edges
+            filter: 'blur(0.3px)', // Minimal blur to fill tiny gaps while preserving sharp edges
           }}
         />
         {/* Invisible SVG click zones */}
