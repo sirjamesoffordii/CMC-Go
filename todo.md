@@ -143,3 +143,7 @@
 ## North Dakota Pie Chart Fix
 - [x] Investigate why North Dakota pie chart is not showing
 - [x] Fix pie chart rendering for North Dakota
+
+## Map Spacing Adjustment
+- [x] Move map up to fit everything on screen without scrolling
+- [x] Add equal white space on all sides of the map
