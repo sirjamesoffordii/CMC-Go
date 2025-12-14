@@ -383,3 +383,8 @@
 - [x] Use auto width based on content (width: auto)
 - [x] Set max-width to prevent panel from being too wide (80%)
 - [x] Add min-w-fit to DistrictPanel for proper content sizing
+
+## Fix Click-Outside-to-Close
+- [x] Debug why click-outside handler is not working
+- [x] Ensure empty space clicks close the district panel
+- [x] Test click handler on map area (clicks on padding/empty space)

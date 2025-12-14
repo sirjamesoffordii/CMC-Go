@@ -253,19 +253,18 @@ export default function Home() {
         </div>
 
         {/* Center Map Area */}
-        <div 
-          className="flex-1 relative overflow-auto"
-          onClick={(e) => {
-            // Close panels only if clicking on the map area itself (empty space)
-            // Not if clicking on map, metrics overlay, or other interactive elements
-            if (e.target === e.currentTarget) {
-              setSelectedDistrictId(null);
-              setFollowUpPanelOpen(false);
-            }
-          }}
-        >
+        <div className="flex-1 relative overflow-auto">
           {/* Map with Overlay Metrics */}
-          <div className="relative px-6 py-4">
+          <div 
+            className="relative px-6 py-4"
+            onClick={(e) => {
+              // Close panels if clicking on padding/empty space around map
+              if (e.target === e.currentTarget) {
+                setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
+              }
+            }}
+          >
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
