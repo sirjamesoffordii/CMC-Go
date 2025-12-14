@@ -114,6 +114,39 @@ export default function Home() {
     setPersonDialogOpen(true);
   };
 
+  // Keyboard shortcuts for district panel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle shortcuts when district panel is open
+      if (!selectedDistrictId) return;
+      
+      // Escape to close district panel
+      if (e.key === 'Escape') {
+        setSelectedDistrictId(null);
+        return;
+      }
+      
+      // Arrow keys to navigate between districts
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const currentIndex = districts.findIndex(d => d.id === selectedDistrictId);
+        if (currentIndex === -1) return;
+        
+        let nextIndex: number;
+        if (e.key === 'ArrowLeft') {
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : districts.length - 1;
+        } else {
+          nextIndex = currentIndex < districts.length - 1 ? currentIndex + 1 : 0;
+        }
+        
+        setSelectedDistrictId(districts[nextIndex].id);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedDistrictId, districts]);
+
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();

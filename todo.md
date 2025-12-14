@@ -352,3 +352,12 @@
 - [x] Move 3-dot menu to edge/background of column without interfering with name
 - [x] Move grab cursor area to edges of header/top of column
 - [x] Fix campus name editing not saving changes (added useEffect to sync value)
+
+## Keyboard Shortcuts Implementation
+- [x] Add Escape key listener to close district panel
+- [x] Add arrow key listeners (Left/Right) to navigate between districts
+- [x] Find current district index in districts list
+- [x] Navigate to previous district on Left arrow (wraps to last)
+- [x] Navigate to next district on Right arrow (wraps to first)
+- [x] Handle edge cases (first/last district with wrapping)
+- [x] Only activate shortcuts when district panel is open
