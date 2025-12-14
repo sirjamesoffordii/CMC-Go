@@ -151,7 +151,7 @@ export default function Home() {
              {/* Metrics on canvas */}
             <div className="flex items-center justify-between mt-6">
               <div>
-                <div className="text-6xl font-bold text-gray-900 mb-2">
+                <div className="text-4xl font-bold text-gray-900 mb-2">
                   Going: {metrics?.going ?? 0}
                 </div>
                 <div>

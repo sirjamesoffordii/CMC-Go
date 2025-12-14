@@ -83,3 +83,4 @@
 - [x] Make Going the hero metric with larger text
 - [x] Move Invited underneath Going showing % and actual count (172 / 1200)
 - [x] Restructure invited display: percentage on first line, count on second line
+- [x] Reduce Going metric size from text-6xl to text-4xl
