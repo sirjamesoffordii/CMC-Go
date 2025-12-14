@@ -47,20 +47,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const district = districts.find(d => d.id === pathId);
       if (!district) return;
 
-      // Regional color mapping - more muted, professional tones
+      // Regional color mapping - sophisticated, premium tones
       const regionColors: Record<string, string> = {
-        "Northwest": "#5dade2",           // muted cyan/blue
-        "Big Sky": "#b8936d",             // muted tan/brown
-        "Great Plains North": "#8e44ad", // muted purple
-        "Great Lakes": "#3498db",        // muted blue
-        "Great Plains South": "#f4d03f", // muted yellow
-        "Mid-Atlantic": "#e67e22",       // muted coral/orange
-        "Mid-Atlantic (Extended)": "#e67e22", // muted coral/orange
-        "Northeast": "#e91e63",          // muted pink
-        "South Central": "#e74c3c",      // muted red
-        "Southeast": "#27ae60",          // muted green
-        "Texico": "#9b59b6",             // muted magenta/purple
-        "West Coast": "#e67e22",         // muted orange
+        "Northwest": "#6CB4E8",           // soft cyan
+        "Big Sky": "#B89968",             // refined tan
+        "Great Plains North": "#7D3C98", // deep purple
+        "Great Lakes": "#5499C7",        // refined blue
+        "Great Plains South": "#F7DC6F", // soft gold
+        "Mid-Atlantic": "#E59866",       // warm terracotta
+        "Mid-Atlantic (Extended)": "#E59866", // warm terracotta
+        "Northeast": "#EC407A",          // refined pink
+        "South Central": "#E57373",      // soft red
+        "Southeast": "#66BB6A",          // refined green
+        "Texico": "#AB47BC",             // refined purple
+        "West Coast": "#FF9800",         // warm orange
       };
 
       const baseColor = regionColors[district.region] || "#e5e7eb";
@@ -72,21 +72,21 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       // Apply selected state
       if (selectedDistrictId === pathId) {
         path.style.fill = baseColor;
-        path.style.stroke = "#2c3e50";
-        path.style.strokeWidth = "2";
-        path.style.filter = "brightness(0.9)";
+        path.style.stroke = "#37474F";
+        path.style.strokeWidth = "1.5";
+        path.style.filter = "brightness(0.92)";
       } else {
         path.style.fill = baseColor;
         path.style.stroke = "#ffffff";
-        path.style.strokeWidth = "0.75";
+        path.style.strokeWidth = "0.3";
         path.style.filter = "none";
       }
 
       // Hover effects
       path.addEventListener("mouseenter", () => {
         if (selectedDistrictId !== pathId) {
-          path.style.filter = "brightness(1.1)";
-          path.style.strokeWidth = "1.25";
+          path.style.filter = "brightness(1.08)";
+          path.style.strokeWidth = "0.5";
         }
       });
 
@@ -94,7 +94,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         if (selectedDistrictId !== pathId) {
           path.style.fill = baseColor;
           path.style.stroke = "#ffffff";
-          path.style.strokeWidth = "0.75";
+          path.style.strokeWidth = "0.3";
           path.style.filter = "none";
         }
       });
