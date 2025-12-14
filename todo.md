@@ -295,3 +295,9 @@
 
 ## Remove Header Bottom Border
 - [x] Remove decorative bottom border stripes from header
+
+## Stats Layout with Aligned Numbers
+- [x] Restructure to 2 columns (Going/Not Going | Maybe/Not Invited Yet)
+- [x] Left-align labels (color dot + text)
+- [x] Right-align numbers for uniform appearance (justify-between)
+- [x] Stack vertically within each column (gap-1.5)
