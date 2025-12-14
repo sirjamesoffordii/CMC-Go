@@ -58,4 +58,4 @@
 - [x] Create checkpoint
 
 ## Bug Fixes
-- [x] Fix district click functionality - districts not responding to clicks
+- [x] Fix district click functionality - fixed Illinois typo in seed data to match SVG
