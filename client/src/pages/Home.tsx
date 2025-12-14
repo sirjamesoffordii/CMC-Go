@@ -2,16 +2,17 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
+import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { useLocation } from "wouter";
+import { MapPin, Calendar } from "lucide-react";
 
 export default function Home() {
-  const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
+  const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -107,16 +108,16 @@ export default function Home() {
     setPersonDialogOpen(true);
   };
 
-  // Calculate days until CMC (July 6, 2025)
+  // Calculate days until CMC
   const cmcDate = new Date('2025-07-06');
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Main Content with integrated header */}
+      {/* Main Content */}
       <div className="flex h-screen">
-        {/* Left Panel */}
+        {/* Left District Panel */}
         <div
           className={`transition-all duration-300 ease-in-out ${
             selectedDistrictId ? "w-[420px]" : "w-0"
@@ -133,23 +134,61 @@ export default function Home() {
           />
         </div>
 
-        {/* Map Container with Header Overlay */}
+        {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">
-          {/* Header overlay on canvas */}
-          <div className="absolute top-0 left-0 right-0 z-20 p-8">
-            <div className="flex items-center justify-between pb-6 border-b border-gray-300">
-              <h1 className="text-3xl font-bold text-gray-900">CMC Go</h1>
+          {/* CMC 2026 Hero Header */}
+          <div className="relative h-[280px] overflow-hidden">
+            <img 
+              src="/cmc-2026-hero.png" 
+              alt="CMC 2026" 
+              className="w-full h-full object-cover"
+            />
+            {/* Header overlay with buttons */}
+            <div className="absolute top-0 right-0 p-6">
               <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={() => setLocation("/follow-up")}>
-                  Follow Up
+                <Button variant="outline" className="bg-white/90 hover:bg-white">
+                  More Info
                 </Button>
-                <Button variant="outline">More Info</Button>
-                <Button>Login</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  Login
+                </Button>
               </div>
             </div>
-            
-             {/* Metrics on canvas */}
-            <div className="flex items-center justify-between mt-6">
+          </div>
+
+          {/* Event Details Section */}
+          <div className="bg-white border-b border-gray-200 px-8 py-6">
+            <div className="flex items-start gap-8">
+              {/* Date Badge */}
+              <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg p-4 min-w-[80px]">
+                <div className="text-4xl font-bold text-gray-900">06</div>
+                <div className="text-sm font-semibold text-gray-600 uppercase">JUL</div>
+              </div>
+
+              {/* Event Details */}
+              <div className="flex-1">
+                <h2 className="text-3xl font-bold text-gray-900 mb-3">CMC 2026</h2>
+                <div className="space-y-2 text-gray-700">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    <span className="text-base">Mon, Jul 6, 2026 • 12:00am - Fri, Jul 10, 2026, 11:30pm CDT</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <div className="text-base font-semibold text-blue-600">Arizona Grand Resort</div>
+                      <div className="text-sm text-gray-600">8000 South Arizona Grand E,</div>
+                      <div className="text-sm text-gray-600">Phoenix, AZ 85044</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Section */}
+          <div className="bg-white px-8 py-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
               <div>
                 <div className="text-4xl font-bold text-gray-900 mb-2">
                   Going: {metrics?.going ?? 0}
@@ -170,7 +209,7 @@ export default function Home() {
           </div>
 
           {/* Map */}
-          <div className="pt-24 px-4 pb-4">
+          <div className="px-4 py-8">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
@@ -178,9 +217,28 @@ export default function Home() {
             />
           </div>
         </div>
+
+        {/* Right Follow Up Panel */}
+        <div
+          className={`transition-all duration-300 ease-in-out ${
+            followUpPanelOpen ? "w-[600px]" : "w-0"
+          } overflow-hidden flex-shrink-0`}
+        >
+          {followUpPanelOpen && <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />}
+        </div>
       </div>
 
-      {/* Person Details Dialog */}
+      {/* Follow Up Tab Button - Fixed to right side */}
+      {!followUpPanelOpen && (
+        <button
+          onClick={() => setFollowUpPanelOpen(true)}
+          className="fixed right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-8 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors z-30 font-semibold"
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+        >
+          Follow Up
+        </button>
+      )}
+
       <PersonDetailsDialog
         person={selectedPerson}
         open={personDialogOpen}

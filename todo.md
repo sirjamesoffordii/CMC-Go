@@ -84,3 +84,11 @@
 - [x] Move Invited underneath Going showing % and actual count (172 / 1200)
 - [x] Restructure invited display: percentage on first line, count on second line
 - [x] Reduce Going metric size from text-6xl to text-4xl
+
+## Header Redesign & Follow Up Panel
+- [x] Remove "CMC Go" title from top left
+- [x] Add CMC 2026 hero image to header section
+- [x] Add event details (dates, location, address) to header
+- [x] Convert Follow Up button to tab-style button attached to right side
+- [x] Create Follow Up panel that slides in from the right
+- [x] Move Follow Up page content into the right-side panel
