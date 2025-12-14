@@ -96,7 +96,7 @@ export function DistrictPanel({
           </div>
           
           {/* Stats - 2 Columns with Aligned Numbers */}
-          <div className="flex gap-6">
+          <div className="flex gap-10">
             {/* Left Column: Going / Not Going */}
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between min-w-[140px]">

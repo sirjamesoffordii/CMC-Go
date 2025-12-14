@@ -301,3 +301,7 @@
 - [x] Left-align labels (color dot + text)
 - [x] Right-align numbers for uniform appearance (justify-between)
 - [x] Stack vertically within each column (gap-1.5)
+
+## Increase Stats Column Spacing
+- [x] Increase gap between left and right stats columns (gap-6 to gap-10)
+- [x] Move Maybe/Not Invited Yet further from Going/Not Going numbers
