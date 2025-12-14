@@ -64,3 +64,4 @@
 - [x] Style map with regional colors (Northwest=cyan, Big Sky=tan, Great Plains North=purple, etc.)
 - [x] Refine map styling - thinner borders, more muted colors, sharper edges
 - [x] Apply premium styling - ultra-thin borders (0.3px) and sophisticated color palette
+- [x] Create visual overlay layer - polished map appearance with SVG as invisible click zones

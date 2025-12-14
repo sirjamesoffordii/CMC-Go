@@ -9,6 +9,7 @@ interface InteractiveMapProps {
 
 export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect }: InteractiveMapProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
+  const visualContainerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>("");
 
   useEffect(() => {
@@ -20,95 +21,123 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   }, []);
 
   useEffect(() => {
-    if (!svgContent || !svgContainerRef.current) return;
+    if (!svgContent || !svgContainerRef.current || !visualContainerRef.current) return;
 
-    const container = svgContainerRef.current;
-    container.innerHTML = svgContent;
+    // Setup click layer (invisible)
+    const clickContainer = svgContainerRef.current;
+    clickContainer.innerHTML = svgContent;
+    
+    // Setup visual layer (what user sees)
+    const visualContainer = visualContainerRef.current;
+    visualContainer.innerHTML = svgContent;
 
-    const svg = container.querySelector("svg");
-    if (!svg) return;
+    const clickSvg = clickContainer.querySelector("svg");
+    const visualSvg = visualContainer.querySelector("svg");
+    if (!clickSvg || !visualSvg) return;
 
-    // Make SVG responsive
-    svg.setAttribute("width", "100%");
-    svg.setAttribute("height", "100%");
-    svg.style.display = "block";
+    // Make both SVGs responsive
+    [clickSvg, visualSvg].forEach(svg => {
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
+      svg.style.display = "block";
+    });
 
-    // Get all path elements
-    const paths = svg.querySelectorAll("path");
+    // Get all path elements from both SVGs
+    const clickPaths = clickSvg.querySelectorAll("path");
+    const visualPaths = visualSvg.querySelectorAll("path");
 
-    paths.forEach(path => {
-      // Try multiple ways to get the label
+    // Regional color mapping - sophisticated, premium tones
+    const regionColors: Record<string, string> = {
+      "Northwest": "#6CB4E8",           // soft cyan
+      "Big Sky": "#B89968",             // refined tan
+      "Great Plains North": "#7D3C98", // deep purple
+      "Great Lakes": "#5499C7",        // refined blue
+      "Great Plains South": "#F7DC6F", // soft gold
+      "Mid-Atlantic": "#E59866",       // warm terracotta
+      "Mid-Atlantic (Extended)": "#E59866", // warm terracotta
+      "Northeast": "#EC407A",          // refined pink
+      "South Central": "#E57373",      // soft red
+      "Southeast": "#66BB6A",          // refined green
+      "Texico": "#AB47BC",             // refined purple
+      "West Coast": "#FF9800",         // warm orange
+    };
+
+    // Style visual paths (what user sees) - smooth, no borders
+    visualPaths.forEach(path => {
       const pathId = path.getAttribute("inkscape:label") || 
                      path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
                      path.getAttribute("id");
       if (!pathId) return;
 
-      // Check if this path corresponds to a district
       const district = districts.find(d => d.id === pathId);
       if (!district) return;
 
-      // Regional color mapping - sophisticated, premium tones
-      const regionColors: Record<string, string> = {
-        "Northwest": "#6CB4E8",           // soft cyan
-        "Big Sky": "#B89968",             // refined tan
-        "Great Plains North": "#7D3C98", // deep purple
-        "Great Lakes": "#5499C7",        // refined blue
-        "Great Plains South": "#F7DC6F", // soft gold
-        "Mid-Atlantic": "#E59866",       // warm terracotta
-        "Mid-Atlantic (Extended)": "#E59866", // warm terracotta
-        "Northeast": "#EC407A",          // refined pink
-        "South Central": "#E57373",      // soft red
-        "Southeast": "#66BB6A",          // refined green
-        "Texico": "#AB47BC",             // refined purple
-        "West Coast": "#FF9800",         // warm orange
-      };
-
       const baseColor = regionColors[district.region] || "#e5e7eb";
 
-      // Set initial styles
-      path.style.cursor = "pointer";
+      // Visual layer: solid colors, no borders, smooth rendering
+      path.style.fill = baseColor;
+      path.style.stroke = "none"; // No borders on visual layer
       path.style.transition = "all 0.2s ease";
       
-      // Apply selected state
+      // Apply selected state styling
       if (selectedDistrictId === pathId) {
-        path.style.fill = baseColor;
-        path.style.stroke = "#37474F";
-        path.style.strokeWidth = "1.5";
         path.style.filter = "brightness(0.92)";
       } else {
-        path.style.fill = baseColor;
-        path.style.stroke = "#ffffff";
-        path.style.strokeWidth = "0.3";
         path.style.filter = "none";
       }
+    });
 
-      // Hover effects
-      path.addEventListener("mouseenter", () => {
-        if (selectedDistrictId !== pathId) {
-          path.style.filter = "brightness(1.08)";
-          path.style.strokeWidth = "0.5";
-        }
-      });
+    // Setup click handlers on invisible layer
+    clickPaths.forEach(path => {
+      const pathId = path.getAttribute("inkscape:label") || 
+                     path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
+                     path.getAttribute("id");
+      if (!pathId) return;
 
-      path.addEventListener("mouseleave", () => {
-        if (selectedDistrictId !== pathId) {
-          path.style.fill = baseColor;
-          path.style.stroke = "#ffffff";
-          path.style.strokeWidth = "0.3";
-          path.style.filter = "none";
-        }
-      });
+      const district = districts.find(d => d.id === pathId);
+      if (!district) return;
 
+      path.style.cursor = "pointer";
+      
       // Click handler
       path.addEventListener("click", (e) => {
         e.stopPropagation();
         onDistrictSelect(pathId);
       });
+
+      // Hover effects - update visual layer when hovering over click layer
+      path.addEventListener("mouseenter", () => {
+        if (selectedDistrictId !== pathId) {
+          // Find corresponding visual path
+          visualPaths.forEach(vPath => {
+            const vPathId = vPath.getAttribute("inkscape:label") || 
+                           vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
+                           vPath.getAttribute("id");
+            if (vPathId === pathId) {
+              vPath.style.filter = "brightness(1.08)";
+            }
+          });
+        }
+      });
+
+      path.addEventListener("mouseleave", () => {
+        if (selectedDistrictId !== pathId) {
+          // Find corresponding visual path
+          visualPaths.forEach(vPath => {
+            const vPathId = vPath.getAttribute("inkscape:label") || 
+                           vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
+                           vPath.getAttribute("id");
+            if (vPathId === pathId) {
+              vPath.style.filter = "none";
+            }
+          });
+        }
+      });
     });
 
     // Cleanup
     return () => {
-      paths.forEach(path => {
+      clickPaths.forEach(path => {
         path.replaceWith(path.cloneNode(true));
       });
     };
@@ -116,10 +145,22 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
   return (
     <div className="bg-white rounded shadow-sm p-6 border border-gray-200">
-      <div 
-        ref={svgContainerRef} 
-        className="w-full h-full min-h-[500px] flex items-center justify-center"
-      />
+      <div className="relative w-full h-full min-h-[500px]">
+        {/* Visual layer - smooth, gap-free appearance with subtle blur */}
+        <div 
+          ref={visualContainerRef}
+          className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
+          style={{
+            filter: 'blur(0.4px)', // Subtle blur to smooth edges and fill tiny gaps
+          }}
+        />
+        {/* Invisible SVG click zones */}
+        <div 
+          ref={svgContainerRef} 
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ opacity: 0 }}
+        />
+      </div>
     </div>
   );
 }
