@@ -155,7 +155,7 @@ export default function Home() {
             </div>
 
             {/* Header Content */}
-            <div className="relative h-full flex items-center justify-center px-8">
+            <div className="relative h-full flex items-end justify-center px-8 pb-4">
               <div className="text-center">
                 {/* Chi Alpha | CMC 2026 */}
                 <div className="flex items-center justify-center gap-4 mb-2">

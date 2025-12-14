@@ -195,3 +195,10 @@
 - [x] Decrease status fonts and icon sizes in tooltip
 - [x] Increase district name font size
 - [x] Increase region font size
+
+## Header Redesign with New Layout
+- [ ] Update header to match new design with centered text
+- [ ] Use "Chi Alpha | CMC 2026" format with vertical separator
+- [ ] Add "CAMPUS MISSIONS CONFERENCE" subtitle below
+- [x] Ensure professional centered layout
+- [x] Position text closer to bottom border
