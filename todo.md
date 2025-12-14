@@ -76,3 +76,5 @@
 - [x] Increase map size to make it more prominent on canvas
 - [x] Change canvas and background from blue gradient to white
 - [x] Move map up to fit entire map on screen without scrolling
+- [x] Move CMC countdown to top right corner
+- [x] Update CMC date to July 6, 2025
