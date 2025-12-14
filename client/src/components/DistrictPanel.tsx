@@ -4,6 +4,22 @@ import { Button } from "./ui/button";
 import { CampusColumn } from "./CampusColumn";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
+import { useState, useEffect } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -26,12 +42,38 @@ export function DistrictPanel({
   onPersonClick,
   onDistrictUpdate,
 }: DistrictPanelProps) {
+  const [campusOrder, setCampusOrder] = useState<Campus[]>(campuses);
+  
   const updateDistrictName = trpc.districts.updateName.useMutation({
     onSuccess: () => onDistrictUpdate(),
   });
   const updateDistrictRegion = trpc.districts.updateRegion.useMutation({
     onSuccess: () => onDistrictUpdate(),
   });
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Update campus order when campuses prop changes
+  useEffect(() => {
+    setCampusOrder(campuses);
+  }, [campuses]);
+  
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      setCampusOrder((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
   
   if (!district) return null;
 
@@ -169,24 +211,35 @@ export function DistrictPanel({
         </div>
       </div>
 
-      {/* Campus Columns - Compact */}
+      {/* Campus Columns - Compact with Drag and Drop */}
       <div className="flex-1 overflow-x-auto overflow-y-auto px-3 py-2">
-        <div className="flex gap-3 min-w-max">
-          {campuses.map(campus => {
-            const campusPeople = people.filter(p => p.campusId === campus.id);
-            return (
-              <CampusColumn
-                key={campus.id}
-                campus={campus}
-                people={campusPeople}
-                onPersonStatusChange={onPersonStatusChange}
-                onPersonAdd={onPersonAdd}
-                onPersonClick={onPersonClick}
-                onCampusUpdate={onDistrictUpdate}
-              />
-            );
-          })}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={campusOrder.map(c => c.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            <div className="flex gap-3 min-w-max">
+              {campusOrder.map(campus => {
+                const campusPeople = people.filter(p => p.campusId === campus.id);
+                return (
+                  <CampusColumn
+                    key={campus.id}
+                    campus={campus}
+                    people={campusPeople}
+                    onPersonStatusChange={onPersonStatusChange}
+                    onPersonAdd={onPersonAdd}
+                    onPersonClick={onPersonClick}
+                    onCampusUpdate={onDistrictUpdate}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
       </div>
     </div>
   );

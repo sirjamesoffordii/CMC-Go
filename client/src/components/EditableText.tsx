@@ -60,7 +60,7 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
   return (
     <span
       onClick={() => setIsEditing(true)}
-      className={`cursor-pointer hover:bg-gray-100 rounded px-1 ${className}`}
+      className={`cursor-text hover:bg-gray-100 rounded px-1 ${className}`}
       title="Click to edit"
     >
       {value}

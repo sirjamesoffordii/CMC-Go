@@ -2,6 +2,8 @@ import { Person } from "../../../drizzle/schema";
 import { StickyNote, DollarSign } from "lucide-react";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface PersonRowProps {
   person: Person;
@@ -30,6 +32,22 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
   const updatePersonName = trpc.people.updateName.useMutation({
     onSuccess: () => onPersonUpdate(),
   });
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: person.id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const currentIndex = STATUS_CYCLE.indexOf(person.status);
@@ -40,8 +58,12 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className="flex items-center gap-1.5 bg-white rounded border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group"
       onClick={() => onClick(person)}
+      {...attributes}
+      {...listeners}
     >
       {/* Status Bar - Compact */}
       <div

@@ -330,3 +330,19 @@
 - [x] Add click-to-edit UI with input fields (EditableText component)
 - [x] Save changes on blur or Enter key
 - [x] Cancel changes on Escape key
+
+## Campus Column UX Enhancements
+- [x] Change cursor to text cursor (cursor-text) for district name hover
+- [x] Change cursor to text cursor for region name hover
+- [x] Change cursor to text cursor for campus name hover
+- [x] Add 3-dot menu button to campus column headers (appears on hover)
+- [x] Implement sort options in 3-dot menu (by name, by status, by date)
+- [x] Add Archive button in 3-dot menu (disabled if people exist)
+- [x] Add grab cursor (cursor-grab) on campus header for drag-and-drop
+- [x] Implement drag-and-drop reordering for campus columns
+- [x] Implement drag-and-drop for person cards between columns
+- [x] Update campus column corners to be more rounded (rounded-lg)
+- [x] Extend divider line below campus header with curved ends
+- [ ] Add backend procedure to archive campus
+- [ ] Add backend procedure to update campus display order
+- [ ] Add backend procedure to move person to different campus
