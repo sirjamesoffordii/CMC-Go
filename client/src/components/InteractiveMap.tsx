@@ -37,7 +37,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const paths = svg.querySelectorAll("path");
 
     paths.forEach(path => {
-      const pathId = path.getAttribute("id");
+      // Try inkscape:label first, then fall back to id
+      const pathId = path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || path.getAttribute("id");
       if (!pathId) return;
 
       // Check if this path corresponds to a district

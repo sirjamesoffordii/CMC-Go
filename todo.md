@@ -55,4 +55,7 @@
 - [x] Test data seeding
 - [x] Create README with SVG mapping explanation
 - [x] Test follow-up page filters
-- [ ] Create checkpoint
+- [x] Create checkpoint
+
+## Bug Fixes
+- [x] Fix district click functionality - districts not responding to clicks
