@@ -309,3 +309,8 @@
 ## Reduce Label-Number Spacing
 - [x] Reduce min-width on stat rows (left: 140px→110px, right: 160px→140px)
 - [x] Maintain vertical alignment of numbers
+
+## Add Invited Percentage to Header
+- [x] Calculate invited percentage (Going + Maybe + Not Going) / Total
+- [x] Display percentage prominently in district panel header
+- [x] Format as "X% Invited" with blue color for visibility

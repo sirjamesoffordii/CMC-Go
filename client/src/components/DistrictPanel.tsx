@@ -31,6 +31,8 @@ export function DistrictPanel({
   const notGoingCount = districtPeople.filter(p => p.status === "Not Going").length;
   const notInvitedCount = districtPeople.filter(p => p.status === "Not invited yet").length;
   const total = districtPeople.length;
+  const invitedCount = goingCount + maybeCount + notGoingCount;
+  const invitedPercent = total > 0 ? Math.round((invitedCount / total) * 100) : 0;
 
   // Calculate pie chart segments
   const goingPercent = total > 0 ? (goingCount / total) * 100 : 0;
@@ -78,6 +80,8 @@ export function DistrictPanel({
             <h2 className="text-3xl font-bold text-gray-900">{district.name}</h2>
             <span className="text-gray-400 text-2xl">|</span>
             <p className="text-lg font-semibold text-gray-600">{district.region}</p>
+            <span className="text-gray-400 text-2xl">|</span>
+            <p className="text-lg font-bold text-blue-600">{invitedPercent}% Invited</p>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
             <X className="h-5 w-5" />
