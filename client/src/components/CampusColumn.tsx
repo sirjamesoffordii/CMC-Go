@@ -35,14 +35,14 @@ export function CampusColumn({
   };
 
   return (
-    <div className="flex-shrink-0 w-72 bg-gray-50 rounded-lg border border-gray-200 p-4">
-      {/* Campus Header */}
-      <h3 className="font-semibold text-gray-900 mb-4 text-center border-b border-gray-300 pb-2">
+    <div className="flex-shrink-0 w-40 bg-gray-50 rounded border border-gray-200 px-2 py-2">
+      {/* Campus Header - Compact */}
+      <h3 className="font-semibold text-gray-900 text-xs mb-2 text-center border-b border-gray-300 pb-1.5">
         {campus.name}
       </h3>
 
-      {/* People List */}
-      <div className="space-y-2 mb-4">
+      {/* People List - Compact */}
+      <div className="space-y-1 mb-2">
         {sortedPeople.map(person => (
           <PersonRow
             key={person.id}
@@ -53,14 +53,14 @@ export function CampusColumn({
         ))}
       </div>
 
-      {/* Quick Add */}
-      <form onSubmit={handleAddPerson} className="mt-4">
+      {/* Quick Add - Compact */}
+      <form onSubmit={handleAddPerson} className="mt-2">
         <Input
           type="text"
           placeholder="Add name..."
           value={newPersonName}
           onChange={(e) => setNewPersonName(e.target.value)}
-          className="text-sm"
+          className="text-xs h-7 px-2"
         />
       </form>
     </div>
