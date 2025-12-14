@@ -96,7 +96,7 @@ export function DistrictPanel({
           </div>
           
           {/* Stats - Compact */}
-          <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
+          <div className="flex-1 grid grid-cols-2 gap-x-1 gap-y-1.5">
             <div className="flex items-center gap-2.5">
               <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Going:</span>

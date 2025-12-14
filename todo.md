@@ -261,3 +261,7 @@
 - [x] Reduce horizontal gap between stat columns
 - [x] Maintain comfortable readability
 - [x] Avoid feeling too cramped
+
+## Further Reduce Stats Spacing
+- [x] Reduce horizontal gap significantly (gap-x-3 to gap-x-1)
+- [x] Bring metrics much closer together
