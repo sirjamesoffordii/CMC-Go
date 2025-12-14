@@ -110,7 +110,7 @@ export default function Home() {
   // Calculate days until CMC (July 6, 2025)
   const cmcDate = new Date('2025-07-06');
   const today = new Date();
-  const daysUntilCMC = Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
     <div className="min-h-screen bg-white">
@@ -139,10 +139,7 @@ export default function Home() {
           <div className="absolute top-0 left-0 right-0 z-20 p-8">
             <div className="flex items-center justify-between pb-6 border-b border-gray-300">
               <h1 className="text-3xl font-bold text-gray-900">CMC Go</h1>
-              <div className="flex items-center gap-6">
-                <div className="text-lg font-semibold text-gray-700">
-                  CMC begins in {daysUntilCMC} days
-                </div>
+              <div className="flex items-center gap-4">
                 <Button variant="outline" onClick={() => setLocation("/follow-up")}>
                   Follow Up
                 </Button>
@@ -152,19 +149,24 @@ export default function Home() {
             </div>
             
              {/* Metrics on canvas */}
-            <div className="flex items-center gap-8 mt-6">
-              <div>
-                <div className="text-4xl font-bold text-blue-600">
-                  {metrics?.percentInvited ?? 0}%
+            <div className="flex items-center justify-between mt-6">
+              <div className="flex items-center gap-8">
+                <div>
+                  <div className="text-4xl font-bold text-blue-600">
+                    {metrics?.percentInvited ?? 0}%
+                  </div>
+                  <div className="text-sm text-gray-600">Invited</div>
                 </div>
-                <div className="text-sm text-gray-600">Invited</div>
+                <div className="h-12 w-px bg-gray-300" />
+                <div>
+                  <div className="text-4xl font-bold text-gray-900">
+                    Going: {metrics?.going ?? 0}
+                  </div>
+                  <div className="text-sm text-gray-600">Invited: {metrics?.invited ?? 0}</div>
+                </div>
               </div>
-              <div className="h-12 w-px bg-gray-300" />
-              <div>
-                <div className="text-4xl font-bold text-gray-900">
-                  Going: {metrics?.going ?? 0}
-                </div>
-                <div className="text-sm text-gray-600">Invited: {metrics?.invited ?? 0}</div>
+              <div className="text-2xl font-semibold text-gray-700">
+                CMC begins in {daysUntilCMC} days
               </div>
             </div>
           </div>

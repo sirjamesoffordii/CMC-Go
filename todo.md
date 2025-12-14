@@ -78,3 +78,5 @@
 - [x] Move map up to fit entire map on screen without scrolling
 - [x] Move CMC countdown to top right corner
 - [x] Update CMC date to July 6, 2025
+- [x] Move countdown to right side of canvas aligned with Going metric
+- [x] Remove negative sign from countdown using Math.abs()
