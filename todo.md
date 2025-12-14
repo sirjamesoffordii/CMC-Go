@@ -361,3 +361,10 @@
 - [x] Navigate to next district on Right arrow (wraps to first)
 - [x] Handle edge cases (first/last district with wrapping)
 - [x] Only activate shortcuts when district panel is open
+
+## Arrow Key Navigation & Click-Outside Fixes
+- [x] Filter districts by current region for arrow key navigation
+- [x] Only cycle through districts in same region as current district
+- [x] Add click-outside-to-close for district panel
+- [x] Add click-outside-to-close for follow-up panel
+- [x] Only close on empty space clicks (e.target === e.currentTarget check)

@@ -126,20 +126,27 @@ export default function Home() {
         return;
       }
       
-      // Arrow keys to navigate between districts
+      // Arrow keys to navigate between districts in same region
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
-        const currentIndex = districts.findIndex(d => d.id === selectedDistrictId);
+        const currentDistrict = districts.find(d => d.id === selectedDistrictId);
+        if (!currentDistrict) return;
+        
+        // Filter districts by current region
+        const regionDistricts = districts.filter(d => d.region === currentDistrict.region);
+        if (regionDistricts.length === 0) return;
+        
+        const currentIndex = regionDistricts.findIndex(d => d.id === selectedDistrictId);
         if (currentIndex === -1) return;
         
         let nextIndex: number;
         if (e.key === 'ArrowLeft') {
-          nextIndex = currentIndex > 0 ? currentIndex - 1 : districts.length - 1;
+          nextIndex = currentIndex > 0 ? currentIndex - 1 : regionDistricts.length - 1;
         } else {
-          nextIndex = currentIndex < districts.length - 1 ? currentIndex + 1 : 0;
+          nextIndex = currentIndex < regionDistricts.length - 1 ? currentIndex + 1 : 0;
         }
         
-        setSelectedDistrictId(districts[nextIndex].id);
+        setSelectedDistrictId(regionDistricts[nextIndex].id);
       }
     };
     
@@ -249,7 +256,17 @@ export default function Home() {
         </div>
 
         {/* Center Map Area */}
-        <div className="flex-1 relative overflow-auto">
+        <div 
+          className="flex-1 relative overflow-auto"
+          onClick={(e) => {
+            // Close panels only if clicking on the map area itself (empty space)
+            // Not if clicking on map, metrics overlay, or other interactive elements
+            if (e.target === e.currentTarget) {
+              setSelectedDistrictId(null);
+              setFollowUpPanelOpen(false);
+            }
+          }}
+        >
           {/* Map with Overlay Metrics */}
           <div className="relative px-6 py-4">
             <InteractiveMap
