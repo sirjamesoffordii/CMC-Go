@@ -227,3 +227,8 @@
 - [x] Ensure both panels can be resized independently
 - [x] Store panel widths in component state
 - [x] Add visual resize cursor on hover over handles
+
+## Button Color Updates
+- [x] Update Login button to use Chi Alpha red (#ED1C24)
+- [x] Update Follow Up tab button to use Chi Alpha red (#ED1C24)
+- [x] Ensure hover states use darker red shade

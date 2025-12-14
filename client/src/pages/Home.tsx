@@ -220,7 +220,7 @@ export default function Home() {
                 <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
                   More Info
                 </Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
+                <Button className="bg-[#ED1C24] hover:bg-[#C91820] text-white text-sm">
                   Login
                 </Button>
               </div>
@@ -344,7 +344,7 @@ export default function Home() {
       {!followUpPanelOpen && (
         <button
           onClick={() => setFollowUpPanelOpen(true)}
-          className="fixed right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-8 rounded-l-lg shadow-lg hover:bg-blue-700 transition-colors z-30 font-semibold"
+          className="fixed right-0 top-1/2 -translate-y-1/2 bg-[#ED1C24] text-white px-4 py-8 rounded-l-lg shadow-lg hover:bg-[#C91820] transition-colors z-30 font-semibold"
           style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
         >
           Follow Up
