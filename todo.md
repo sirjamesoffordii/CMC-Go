@@ -265,3 +265,8 @@
 ## Further Reduce Stats Spacing
 - [x] Reduce horizontal gap significantly (gap-x-3 to gap-x-1)
 - [x] Bring metrics much closer together
+
+## Reduce Label-to-Number Spacing
+- [x] Remove ml-auto that pushes numbers far right
+- [x] Reduce gap between label and number (gap-2.5 to gap-1.5)
+- [x] Keep color dot and label close together

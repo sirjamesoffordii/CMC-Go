@@ -97,25 +97,25 @@ export function DistrictPanel({
           
           {/* Stats - Compact */}
           <div className="flex-1 grid grid-cols-2 gap-x-1 gap-y-1.5">
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Going:</span>
-              <span className="text-lg font-bold text-gray-900 ml-auto">{goingCount}</span>
+              <span className="text-lg font-bold text-gray-900">{goingCount}</span>
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-[#eab308] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Maybe:</span>
-              <span className="text-lg font-bold text-gray-900 ml-auto">{maybeCount}</span>
+              <span className="text-lg font-bold text-gray-900">{maybeCount}</span>
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-[#ef4444] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Not Going:</span>
-              <span className="text-lg font-bold text-gray-900 ml-auto">{notGoingCount}</span>
+              <span className="text-lg font-bold text-gray-900">{notGoingCount}</span>
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
               <div className="w-3.5 h-3.5 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
               <span className="text-sm text-gray-700">Not Invited Yet:</span>
-              <span className="text-lg font-bold text-gray-900 ml-auto">{notInvitedCount}</span>
+              <span className="text-lg font-bold text-gray-900">{notInvitedCount}</span>
             </div>
           </div>
         </div>
