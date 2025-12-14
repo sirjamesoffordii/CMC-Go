@@ -75,3 +75,4 @@
 - [x] Add dividing line below header row (CMC Go + buttons) while keeping unified background
 - [x] Increase map size to make it more prominent on canvas
 - [x] Change canvas and background from blue gradient to white
+- [x] Move map up to fit entire map on screen without scrolling

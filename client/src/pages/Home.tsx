@@ -175,7 +175,7 @@ export default function Home() {
           </div>
 
           {/* Map */}
-          <div className="pt-48 px-8 pb-8">
+          <div className="pt-24 px-4 pb-4">
             <InteractiveMap
               districts={districts}
               selectedDistrictId={selectedDistrictId}
