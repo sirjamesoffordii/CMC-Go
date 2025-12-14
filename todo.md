@@ -274,3 +274,9 @@
 ## Adjust Stats Column Spacing
 - [x] Increase gap-x from 1 to 4 to bring columns closer as groups
 - [x] All four stats should feel like one cohesive block
+
+## Vertical Stats Stacking
+- [x] Stack Going above Not Going in left column
+- [x] Stack Maybe above Not Invited Yet in right column
+- [x] Bring both columns close together next to pie chart (gap-3)
+- [x] Create compact two-column vertical layout
