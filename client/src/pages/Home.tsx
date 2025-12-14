@@ -126,27 +126,20 @@ export default function Home() {
         return;
       }
       
-      // Arrow keys to navigate between districts in same region
+      // Arrow keys to navigate between geographically adjacent districts
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
         const currentDistrict = districts.find(d => d.id === selectedDistrictId);
         if (!currentDistrict) return;
         
-        // Filter districts by current region
-        const regionDistricts = districts.filter(d => d.region === currentDistrict.region);
-        if (regionDistricts.length === 0) return;
+        // Use geographic adjacency (leftNeighbor/rightNeighbor)
+        const nextDistrictId = e.key === 'ArrowLeft' 
+          ? currentDistrict.leftNeighbor 
+          : currentDistrict.rightNeighbor;
         
-        const currentIndex = regionDistricts.findIndex(d => d.id === selectedDistrictId);
-        if (currentIndex === -1) return;
-        
-        let nextIndex: number;
-        if (e.key === 'ArrowLeft') {
-          nextIndex = currentIndex > 0 ? currentIndex - 1 : regionDistricts.length - 1;
-        } else {
-          nextIndex = currentIndex < regionDistricts.length - 1 ? currentIndex + 1 : 0;
+        if (nextDistrictId) {
+          setSelectedDistrictId(nextDistrictId);
         }
-        
-        setSelectedDistrictId(regionDistricts[nextIndex].id);
       }
     };
     

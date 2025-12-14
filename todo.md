@@ -368,3 +368,12 @@
 - [x] Add click-outside-to-close for district panel
 - [x] Add click-outside-to-close for follow-up panel
 - [x] Only close on empty space clicks (e.target === e.currentTarget check)
+
+## Geographic Adjacency Navigation
+- [x] Add adjacency data to districts (leftNeighbor, rightNeighbor fields)
+- [x] Define adjacency relationships for each region's districts
+- [x] Update arrow key navigation to use adjacency instead of list order
+- [x] Left arrow moves to leftNeighbor district
+- [x] Right arrow moves to rightNeighbor district
+- [x] Handle wrapping at region boundaries (rightmost → leftmost via adjacency)
+- [x] Ensure each district appears only once per cycle (guaranteed by adjacency map)

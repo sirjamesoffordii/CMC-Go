@@ -26,6 +26,8 @@ export const districts = mysqlTable("districts", {
   id: varchar("id", { length: 64 }).primaryKey(), // DistrictSlug
   name: varchar("name", { length: 255 }).notNull(),
   region: varchar("region", { length: 255 }).notNull(),
+  leftNeighbor: varchar("leftNeighbor", { length: 64 }), // District ID to the left (geographically)
+  rightNeighbor: varchar("rightNeighbor", { length: 64 }), // District ID to the right (geographically)
 });
 
 export type District = typeof districts.$inferSelect;
