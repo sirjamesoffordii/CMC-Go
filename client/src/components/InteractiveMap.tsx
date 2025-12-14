@@ -146,7 +146,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   }, [svgContent, districts, selectedDistrictId, onDistrictSelect]);
 
   return (
-    <div className="bg-white rounded shadow-sm p-6 border border-gray-200">
+    <div className="w-full">
       <div className="relative w-full h-full min-h-[500px]">
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div 

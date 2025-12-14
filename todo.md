@@ -70,3 +70,4 @@
 - [ ] Add dotted white lines for internal state boundaries (need to identify which paths)
 - [x] Reduce white outline thickness to 0.6px
 - [x] Reduce blur to 0.3px to preserve sharp edges
+- [x] Remove map container white box and create unified canvas layout with header
