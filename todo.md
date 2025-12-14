@@ -118,3 +118,10 @@
 - [x] Move map up so everything fits without scrolling
 - [x] Change bright blue colors to more muted tones
 - [x] Make invited percentage text black instead of blue
+
+## Phase 1: Core Map Experience
+- [x] Add pie charts overlaid on each district showing Yes/Maybe/No/Not invited distribution
+- [x] Implement hover tooltips with district name, region, and counts
+- [x] Add region highlighting when hovering districts in the same region
+- [x] Calculate district-level status distribution for pie charts
+- [x] Position pie charts at district centroids
