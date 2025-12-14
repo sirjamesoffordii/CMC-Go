@@ -136,3 +136,6 @@
 
 ## Tooltip Layout Adjustment
 - [x] Rearrange tooltip to show pie chart on left and stats on right
+
+## Tooltip Header Formatting
+- [x] Show district name and region name on same line separated by |

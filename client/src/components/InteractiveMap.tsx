@@ -382,8 +382,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           top: tooltipPos.y + 15,
         }}
       >
-        <div className="font-bold text-base text-gray-900">{district.id}</div>
-        <div className="text-xs text-gray-600 mb-2">{district.region}</div>
+        <div className="font-bold text-base text-gray-900 mb-2">
+          {district.id} <span className="text-gray-400">|</span> <span className="text-xs font-normal text-gray-600">{district.region}</span>
+        </div>
         
         {/* Pie Chart and Stats Side by Side */}
         <div className="flex gap-3 items-center">
