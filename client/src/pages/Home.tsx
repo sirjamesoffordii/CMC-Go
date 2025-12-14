@@ -113,7 +113,7 @@ export default function Home() {
   const daysUntilCMC = Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       {/* Main Content with integrated header */}
       <div className="flex h-screen">
         {/* Left Panel */}

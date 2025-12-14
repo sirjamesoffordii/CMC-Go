@@ -74,3 +74,4 @@
 - [x] Move header metrics (% Invited, Going count, CMC countdown) onto main canvas background
 - [x] Add dividing line below header row (CMC Go + buttons) while keeping unified background
 - [x] Increase map size to make it more prominent on canvas
+- [x] Change canvas and background from blue gradient to white
