@@ -125,3 +125,7 @@
 - [x] Add region highlighting when hovering districts in the same region
 - [x] Calculate district-level status distribution for pie charts
 - [x] Position pie charts at district centroids
+
+## Tooltip Enhancement
+- [x] Make hover tooltip larger
+- [x] Add visual pie chart to tooltip

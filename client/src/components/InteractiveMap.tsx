@@ -372,29 +372,60 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     
     const stats = districtStats[hoveredDistrict];
     const invited = stats.yes + stats.maybe + stats.no;
+    const pieChartSvg = generatePieChart(stats, 80); // Larger pie chart for tooltip
     
     return (
       <div
-        className="fixed z-50 bg-white rounded-lg shadow-xl border border-gray-200 p-3 pointer-events-none"
+        className="fixed z-50 bg-white rounded-lg shadow-2xl border-2 border-gray-300 p-4 pointer-events-none"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,
+          minWidth: '240px',
         }}
       >
-        <div className="font-semibold text-gray-900 mb-1">{district.id}</div>
-        <div className="text-sm text-gray-600 mb-2">{district.region}</div>
-        <div className="text-sm space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium">Yes:</span>
-            <span>{stats.yes}</span>
+        <div className="font-bold text-lg text-gray-900 mb-1">{district.id}</div>
+        <div className="text-sm text-gray-600 mb-3">{district.region}</div>
+        
+        {/* Pie Chart */}
+        {pieChartSvg && (
+          <div className="flex justify-center mb-3" dangerouslySetInnerHTML={{ __html: pieChartSvg }} />
+        )}
+        
+        {/* Stats */}
+        <div className="text-sm space-y-2 border-t pt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+              <span className="font-medium">Yes:</span>
+            </div>
+            <span className="font-semibold">{stats.yes}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium">Invited:</span>
-            <span>{invited}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#f59e0b]"></div>
+              <span className="font-medium">Maybe:</span>
+            </div>
+            <span className="font-semibold">{stats.maybe}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="font-medium">Not invited yet:</span>
-            <span>{stats.notInvited}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#64748b]"></div>
+              <span className="font-medium">No:</span>
+            </div>
+            <span className="font-semibold">{stats.no}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#d1d5db]"></div>
+              <span className="font-medium">Not invited:</span>
+            </div>
+            <span className="font-semibold">{stats.notInvited}</span>
+          </div>
+          <div className="border-t pt-2 mt-2">
+            <div className="flex items-center justify-between font-bold">
+              <span>Total Invited:</span>
+              <span>{invited}</span>
+            </div>
           </div>
         </div>
       </div>
