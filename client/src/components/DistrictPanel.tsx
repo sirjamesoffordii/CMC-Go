@@ -99,14 +99,14 @@ export function DistrictPanel({
           <div className="flex gap-10">
             {/* Left Column: Going / Not Going */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between min-w-[140px]">
+              <div className="flex items-center justify-between min-w-[110px]">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
                   <span className="text-sm text-gray-700">Going:</span>
                 </div>
                 <span className="text-lg font-bold text-gray-900">{goingCount}</span>
               </div>
-              <div className="flex items-center justify-between min-w-[140px]">
+              <div className="flex items-center justify-between min-w-[110px]">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-3.5 rounded-full bg-[#ef4444] flex-shrink-0"></div>
                   <span className="text-sm text-gray-700">Not Going:</span>
@@ -117,14 +117,14 @@ export function DistrictPanel({
             
             {/* Right Column: Maybe / Not Invited Yet */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between min-w-[160px]">
+              <div className="flex items-center justify-between min-w-[140px]">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-3.5 rounded-full bg-[#eab308] flex-shrink-0"></div>
                   <span className="text-sm text-gray-700">Maybe:</span>
                 </div>
                 <span className="text-lg font-bold text-gray-900">{maybeCount}</span>
               </div>
-              <div className="flex items-center justify-between min-w-[160px]">
+              <div className="flex items-center justify-between min-w-[140px]">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-3.5 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
                   <span className="text-sm text-gray-700">Not Invited Yet:</span>

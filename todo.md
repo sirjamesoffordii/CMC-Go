@@ -305,3 +305,7 @@
 ## Increase Stats Column Spacing
 - [x] Increase gap between left and right stats columns (gap-6 to gap-10)
 - [x] Move Maybe/Not Invited Yet further from Going/Not Going numbers
+
+## Reduce Label-Number Spacing
+- [x] Reduce min-width on stat rows (left: 140px→110px, right: 160px→140px)
+- [x] Maintain vertical alignment of numbers
