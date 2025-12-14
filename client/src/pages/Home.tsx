@@ -253,7 +253,7 @@ export default function Home() {
 
         {/* Left District Panel - Absolute Overlay */}
         <div
-          className={`absolute left-0 top-0 h-[120px] transition-all duration-300 ease-in-out ${
+          className={`absolute left-0 top-[120px] bottom-0 transition-all duration-300 ease-in-out ${
             selectedDistrictId ? "w-[40%]" : "w-0"
           } overflow-hidden z-20 bg-white shadow-lg`}
         >

@@ -210,6 +210,7 @@
 - [x] Position starburst behind "CMC 2026" text
 
 ## District Panel Positioning Adjustment
-- [x] Make district panel extend only over the header (not full height)
 - [x] Set district panel width to 40% of page width
-- [x] Ensure panel slides over header area when opened
+- [x] Position panel to start below header (top-[120px])
+- [x] Panel covers map area but not header section
+- [x] Panel extends from below header to bottom of viewport
