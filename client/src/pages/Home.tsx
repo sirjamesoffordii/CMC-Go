@@ -137,7 +137,7 @@ export default function Home() {
         <div className="flex-1 relative overflow-auto">
           {/* Header overlay on canvas */}
           <div className="absolute top-0 left-0 right-0 z-20 p-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between pb-6 border-b border-gray-300">
               <h1 className="text-3xl font-bold text-gray-900">CMC Go</h1>
               <div className="flex items-center gap-4">
                 <Button variant="outline" onClick={() => setLocation("/follow-up")}>
@@ -149,7 +149,7 @@ export default function Home() {
             </div>
             
             {/* Metrics on canvas */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-8 mt-6">
               <div>
                 <div className="text-4xl font-bold text-blue-600">
                   {metrics?.percentInvited ?? 0}%

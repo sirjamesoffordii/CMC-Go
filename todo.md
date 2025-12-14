@@ -72,3 +72,4 @@
 - [x] Reduce blur to 0.3px to preserve sharp edges
 - [x] Remove map container white box and create unified canvas layout with header
 - [x] Move header metrics (% Invited, Going count, CMC countdown) onto main canvas background
+- [x] Add dividing line below header row (CMC Go + buttons) while keeping unified background
