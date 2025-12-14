@@ -138,15 +138,43 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">
-          {/* CMC 2026 Hero Header - Clean banner */}
-          <div className="relative h-[180px] overflow-hidden border-b-4 border-gray-800">
-            <img 
-              src="/cmc-2026-hero.png" 
-              alt="CMC 2026" 
-              className="w-full h-full object-cover object-[center_45%]"
-            />
-            
-            {/* Header overlay with buttons */}
+          {/* CMC 2026 Custom Header */}
+          <div className="relative h-[120px] overflow-hidden bg-gradient-to-br from-[#D4A24A] via-[#C89440] to-[#B88635]">
+            {/* Geometric Pattern Background */}
+            <div className="absolute inset-0 opacity-20">
+              <svg className="w-full h-full" viewBox="0 0 1200 160" preserveAspectRatio="none">
+                {/* Left geometric shapes */}
+                <polygon points="0,80 120,40 240,80 120,120" fill="#8B6914" />
+                <polygon points="120,40 240,0 360,40 240,80" fill="#6B5410" />
+                <polygon points="240,80 360,40 480,80 360,120" fill="#8B6914" />
+                {/* Right geometric shapes */}
+                <polygon points="960,80 1080,40 1200,80 1080,120" fill="#8B6914" />
+                <polygon points="840,40 960,0 1080,40 960,80" fill="#6B5410" />
+                <polygon points="720,80 840,40 960,80 840,120" fill="#8B6914" />
+              </svg>
+            </div>
+
+            {/* Header Content */}
+            <div className="relative h-full flex items-center justify-center px-8">
+              <div className="text-center">
+                {/* Chi Alpha | CMC 2026 */}
+                <div className="flex items-center justify-center gap-4 mb-2">
+                  <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    Chi Alpha
+                  </h1>
+                  <div className="text-white text-4xl md:text-5xl font-light">|</div>
+                  <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wider" style={{ fontFamily: 'Impact, system-ui, sans-serif', letterSpacing: '0.05em' }}>
+                    CMC 2026
+                  </h1>
+                </div>
+                {/* Subtitle */}
+                <p className="text-white/90 text-sm md:text-base font-semibold tracking-widest uppercase">
+                  Campus Missions Conference
+                </p>
+              </div>
+            </div>
+
+            {/* Top Right Buttons */}
             <div className="absolute top-0 right-0 p-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
@@ -155,6 +183,22 @@ export default function Home() {
                 <Button className="bg-blue-600 hover:bg-blue-700 text-sm">
                   Login
                 </Button>
+              </div>
+            </div>
+
+            {/* Decorative Bottom Border */}
+            <div className="absolute bottom-0 left-0 right-0 h-3 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-700">
+              <div className="h-full flex">
+                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(0 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-white" style={{ clipPath: 'polygon(10% 0, 100% 0, 90% 100%, 0% 100%)' }}></div>
+                <div className="flex-1 bg-gray-200" style={{ clipPath: 'polygon(10% 0, 100% 0, 100% 100%, 0% 100%)' }}></div>
               </div>
             </div>
           </div>

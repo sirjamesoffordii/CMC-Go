@@ -105,3 +105,10 @@
 - [x] Show decorative bottom border
 - [x] Remove date and location details from header
 - [x] Create More Info page with event details (date, location, address)
+
+## Custom Header Design
+- [x] Create custom header design without photo
+- [x] Recreate "Chi Alpha | CMC 2026 CAMPUS MISSIONS CONFERENCE" branding style
+- [x] Use golden/orange background matching CMC aesthetic
+- [x] Add geometric pattern elements similar to reference image
+- [x] Include decorative bottom border design
