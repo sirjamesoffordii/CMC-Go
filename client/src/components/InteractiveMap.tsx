@@ -382,8 +382,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           top: tooltipPos.y + 15,
         }}
       >
-        <div className="font-bold text-base text-gray-900 mb-2">
-          {district.id} <span className="text-gray-400">|</span> <span className="text-xs font-normal text-gray-600">{district.region}</span>
+        <div className="font-bold text-lg text-gray-900 mb-2">
+          {district.id} <span className="text-gray-400">|</span> <span className="text-sm font-normal text-gray-600">{district.region}</span>
         </div>
         
         {/* Pie Chart and Stats Side by Side */}
@@ -394,31 +394,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           )}
           
           {/* Stats */}
-          <div className="text-sm space-y-1.5 flex-1">
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#10b981]"></div>
+          <div className="text-xs space-y-1 flex-1">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
                 <span className="font-medium">Going:</span>
               </div>
               <span className="font-semibold">{stats.yes}</span>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#eab308]"></div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]"></div>
                 <span className="font-medium">Maybe:</span>
               </div>
               <span className="font-semibold">{stats.maybe}</span>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#ef4444]"></div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></div>
                 <span className="font-medium">Not Going:</span>
               </div>
               <span className="font-semibold">{stats.no}</span>
             </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#d1d5db]"></div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db]"></div>
                 <span className="font-medium whitespace-nowrap">Not Invited Yet:</span>
               </div>
               <span className="font-semibold">{stats.notInvited}</span>

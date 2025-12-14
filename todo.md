@@ -190,3 +190,8 @@
 - [x] Change status labels to "Going", "Maybe", "Not Going", "Not Invited Yet"
 - [x] Change "No" color from slate to red
 - [x] Change "Maybe" color from amber to yellow
+
+## Tooltip Font Size Adjustments
+- [x] Decrease status fonts and icon sizes in tooltip
+- [x] Increase district name font size
+- [x] Increase region font size
