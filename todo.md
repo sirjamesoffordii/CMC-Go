@@ -139,3 +139,7 @@
 
 ## Tooltip Header Formatting
 - [x] Show district name and region name on same line separated by |
+
+## North Dakota Pie Chart Fix
+- [x] Investigate why North Dakota pie chart is not showing
+- [x] Fix pie chart rendering for North Dakota

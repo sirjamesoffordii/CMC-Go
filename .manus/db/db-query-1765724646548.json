@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id FROM districts WHERE id LIKE '%Dakota%' OR id LIKE '%North%'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT id FROM districts WHERE id LIKE '%Dakota%' OR id LIKE '%North%'",
+  "rows": [
+    {
+      "id": "NorthCalifornia"
+    },
+    {
+      "id": "NorthCarolina"
+    },
+    {
+      "id": "NorthDakota"
+    },
+    {
+      "id": "NorthIdaho"
+    },
+    {
+      "id": "NorthMissouri"
+    },
+    {
+      "id": "NorthTexas"
+    },
+    {
+      "id": "SouthDakota"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\nNorthCalifornia\nNorthCarolina\nNorthDakota\nNorthIdaho\nNorthMissouri\nNorthTexas\nSouthDakota\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

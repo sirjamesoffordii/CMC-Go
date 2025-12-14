@@ -1,0 +1,226 @@
+{
+  "query": "SELECT id, region FROM districts ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT id, region FROM districts ORDER BY id",
+  "rows": [
+    {
+      "id": "Alabama",
+      "region": "Southeast"
+    },
+    {
+      "id": "Alaska",
+      "region": "Northwest"
+    },
+    {
+      "id": "Arizona",
+      "region": "West Coast"
+    },
+    {
+      "id": "Arkansas",
+      "region": "South Central"
+    },
+    {
+      "id": "Colorado",
+      "region": "Big Sky"
+    },
+    {
+      "id": "Connecticut",
+      "region": "Northeast"
+    },
+    {
+      "id": "Florida",
+      "region": "Southeast"
+    },
+    {
+      "id": "Georgia",
+      "region": "Southeast"
+    },
+    {
+      "id": "Hawaii",
+      "region": "West Coast"
+    },
+    {
+      "id": "Illinois",
+      "region": "Great Lakes"
+    },
+    {
+      "id": "Illinous",
+      "region": "Great Lakes"
+    },
+    {
+      "id": "Indiana",
+      "region": "Great Lakes"
+    },
+    {
+      "id": "Iowa",
+      "region": "Great Plains South"
+    },
+    {
+      "id": "Kansas",
+      "region": "Great Plains South"
+    },
+    {
+      "id": "Kentucky",
+      "region": "Mid-Atlantic (Extended)"
+    },
+    {
+      "id": "Louisiana",
+      "region": "South Central"
+    },
+    {
+      "id": "Maine",
+      "region": "Northeast"
+    },
+    {
+      "id": "Massachusetts",
+      "region": "Northeast"
+    },
+    {
+      "id": "Michigan",
+      "region": "Great Lakes"
+    },
+    {
+      "id": "Minnesota",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "Mississippi",
+      "region": "Southeast"
+    },
+    {
+      "id": "Montana",
+      "region": "Big Sky"
+    },
+    {
+      "id": "Nebraska",
+      "region": "Great Plains South"
+    },
+    {
+      "id": "Nevada",
+      "region": "West Coast"
+    },
+    {
+      "id": "NewHampshire",
+      "region": "Northeast"
+    },
+    {
+      "id": "NewJersey",
+      "region": "Northeast"
+    },
+    {
+      "id": "NewMexico",
+      "region": "Texico"
+    },
+    {
+      "id": "NewYork",
+      "region": "Northeast"
+    },
+    {
+      "id": "NorthCalifornia",
+      "region": "West Coast"
+    },
+    {
+      "id": "NorthCarolina",
+      "region": "Mid-Atlantic"
+    },
+    {
+      "id": "NorthDakota",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "NorthIdaho",
+      "region": "Northwest"
+    },
+    {
+      "id": "NorthMissouri",
+      "region": "Great Plains South"
+    },
+    {
+      "id": "NorthTexas",
+      "region": "Texico"
+    },
+    {
+      "id": "Ohio",
+      "region": "Great Lakes"
+    },
+    {
+      "id": "Oklahoma",
+      "region": "South Central"
+    },
+    {
+      "id": "Oregon",
+      "region": "Northwest"
+    },
+    {
+      "id": "Pennsylvania",
+      "region": "Northeast"
+    },
+    {
+      "id": "SouthCalifornia",
+      "region": "West Coast"
+    },
+    {
+      "id": "SouthCarolina",
+      "region": "Southeast"
+    },
+    {
+      "id": "SouthDakota",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "SouthIdaho",
+      "region": "Big Sky"
+    },
+    {
+      "id": "SouthMissouri",
+      "region": "Great Plains South"
+    },
+    {
+      "id": "SouthTexas",
+      "region": "Texico"
+    },
+    {
+      "id": "Tennessee",
+      "region": "Mid-Atlantic (Extended)"
+    },
+    {
+      "id": "Utah",
+      "region": "Big Sky"
+    },
+    {
+      "id": "Vermont",
+      "region": "Northeast"
+    },
+    {
+      "id": "Virginia",
+      "region": "Mid-Atlantic"
+    },
+    {
+      "id": "Washington",
+      "region": "Northwest"
+    },
+    {
+      "id": "WestFlorida",
+      "region": "Southeast"
+    },
+    {
+      "id": "WestTexas",
+      "region": "Texico"
+    },
+    {
+      "id": "WestVirginia",
+      "region": "Mid-Atlantic (Extended)"
+    },
+    {
+      "id": "Wisconsin",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "Wyoming",
+      "region": "Big Sky"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tregion\nAlabama\tSoutheast\nAlaska\tNorthwest\nArizona\tWest Coast\nArkansas\tSouth Central\nColorado\tBig Sky\nConnecticut\tNortheast\nFlorida\tSoutheast\nGeorgia\tSoutheast\nHawaii\tWest Coast\nIllinois\tGreat Lakes\nIllinous\tGreat Lakes\nIndiana\tGreat Lakes\nIowa\tGreat Plains South\nKansas\tGreat Plains South\nKentucky\tMid-Atlantic (Extended)\nLouisiana\tSouth Central\nMaine\tNortheast\nMassachusetts\tNortheast\nMichigan\tGreat Lakes\nMinnesota\tGreat Plains North\nMississippi\tSoutheast\nMontana\tBig Sky\nNebraska\tGreat Plains South\nNevada\tWest Coast\nNewHampshire\tNortheast\nNewJersey\tNortheast\nNewMexico\tTexico\nNewYork\tNortheast\nNorthCalifornia\tWest Coast\nNorthCarolina\tMid-Atlantic\nNorthDakota\tGreat Plains North\nNorthIdaho\tNorthwest\nNorthMissouri\tGreat Plains South\nNorthTexas\tTexico\nOhio\tGreat Lakes\nOklahoma\tSouth Central\nOregon\tNorthwest\nPennsylvania\tNortheast\nSouthCalifornia\tWest Coast\nSouthCarolina\tSoutheast\nSouthDakota\tGreat Plains North\nSouthIdaho\tBig Sky\nSouthMissouri\tGreat Plains South\nSouthTexas\tTexico\nTennessee\tMid-Atlantic (Extended)\nUtah\tBig Sky\nVermont\tNortheast\nVirginia\tMid-Atlantic\nWashington\tNorthwest\nWestFlorida\tSoutheast\nWestTexas\tTexico\nWestVirginia\tMid-Atlantic (Extended)\nWisconsin\tGreat Plains North\nWyoming\tBig Sky\n",
+  "stderr": "",
+  "execution_time_ms": 49
+}
