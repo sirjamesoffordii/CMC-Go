@@ -115,6 +115,22 @@ export async function getDistrictById(id: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function updateDistrictName(id: string, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(districts)
+    .set({ name })
+    .where(eq(districts.id, id));
+}
+
+export async function updateDistrictRegion(id: string, region: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(districts)
+    .set({ region })
+    .where(eq(districts.id, id));
+}
+
 // Campuses
 export async function getAllCampuses() {
   const db = await getDb();
@@ -126,6 +142,14 @@ export async function getCampusesByDistrict(districtId: string) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
+}
+
+export async function updateCampusName(id: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses)
+    .set({ name })
+    .where(eq(campuses.id, id));
 }
 
 // People
@@ -167,6 +191,14 @@ export async function getPersonById(personId: number) {
   if (!db) return undefined;
   const result = await db.select().from(people).where(eq(people.id, personId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updatePersonName(personId: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people)
+    .set({ name, lastUpdated: new Date() })
+    .where(eq(people.id, personId));
 }
 
 // Needs

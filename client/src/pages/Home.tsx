@@ -201,6 +201,10 @@ export default function Home() {
                 onPersonStatusChange={handlePersonStatusChange}
                 onPersonAdd={handlePersonAdd}
                 onPersonClick={handlePersonClick}
+                onDistrictUpdate={() => {
+                  utils.districts.list.invalidate();
+                  utils.people.list.invalidate();
+                }}
               />
               {/* Resize Handle */}
               <div

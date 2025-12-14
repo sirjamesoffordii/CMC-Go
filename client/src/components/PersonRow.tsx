@@ -1,5 +1,7 @@
 import { Person } from "../../../drizzle/schema";
 import { StickyNote, DollarSign } from "lucide-react";
+import { EditableText } from "./EditableText";
+import { trpc } from "../lib/trpc";
 
 interface PersonRowProps {
   person: Person;
@@ -7,6 +9,7 @@ interface PersonRowProps {
   onClick: (person: Person) => void;
   hasNotes?: boolean;
   hasNeeds?: boolean;
+  onPersonUpdate: () => void;
 }
 
 const STATUS_COLORS = {
@@ -23,7 +26,10 @@ const STATUS_CYCLE: Array<"Not invited yet" | "Maybe" | "Going" | "Not Going"> =
   "Not Going",
 ];
 
-export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds }: PersonRowProps) {
+export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds, onPersonUpdate }: PersonRowProps) {
+  const updatePersonName = trpc.people.updateName.useMutation({
+    onSuccess: () => onPersonUpdate(),
+  });
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const currentIndex = STATUS_CYCLE.indexOf(person.status);
@@ -48,7 +54,14 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds 
       <div className="flex-1 py-1 pr-1.5 min-w-0">
         <div className="flex items-center justify-between gap-1.5">
           <span className="text-xs font-medium text-gray-900 truncate">
-            {person.name}
+            <EditableText
+              value={person.name}
+              onSave={(newName) => {
+                updatePersonName.mutate({ personId: person.id, name: newName });
+              }}
+              className="text-xs font-medium text-gray-900"
+              inputClassName="text-xs font-medium text-gray-900 w-full"
+            />
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {hasNotes && (

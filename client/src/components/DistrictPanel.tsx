@@ -2,6 +2,8 @@ import { X } from "lucide-react";
 import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { CampusColumn } from "./CampusColumn";
+import { EditableText } from "./EditableText";
+import { trpc } from "../lib/trpc";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -11,6 +13,7 @@ interface DistrictPanelProps {
   onPersonStatusChange: (personId: number, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
+  onDistrictUpdate: () => void;
 }
 
 export function DistrictPanel({
@@ -21,7 +24,15 @@ export function DistrictPanel({
   onPersonStatusChange,
   onPersonAdd,
   onPersonClick,
+  onDistrictUpdate,
 }: DistrictPanelProps) {
+  const updateDistrictName = trpc.districts.updateName.useMutation({
+    onSuccess: () => onDistrictUpdate(),
+  });
+  const updateDistrictRegion = trpc.districts.updateRegion.useMutation({
+    onSuccess: () => onDistrictUpdate(),
+  });
+  
   if (!district) return null;
 
   // Calculate summary counts
@@ -77,9 +88,27 @@ export function DistrictPanel({
       <div className="px-5 py-3 border-b border-gray-200 flex-shrink-0 bg-white">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-gray-900">{district.name}</h2>
+            <h2 className="text-3xl font-bold text-gray-900">
+              <EditableText
+                value={district.name}
+                onSave={(newName) => {
+                  updateDistrictName.mutate({ id: district.id, name: newName });
+                }}
+                className="text-3xl font-bold text-gray-900"
+                inputClassName="text-3xl font-bold text-gray-900"
+              />
+            </h2>
             <span className="text-gray-400 text-2xl">|</span>
-            <p className="text-lg font-semibold text-gray-600">{district.region}</p>
+            <p className="text-lg font-semibold text-gray-600">
+              <EditableText
+                value={district.region}
+                onSave={(newRegion) => {
+                  updateDistrictRegion.mutate({ id: district.id, region: newRegion });
+                }}
+                className="text-lg font-semibold text-gray-600"
+                inputClassName="text-lg font-semibold text-gray-600"
+              />
+            </p>
             <span className="text-gray-400 text-2xl">|</span>
             <p className="text-lg font-bold text-gray-900">{invitedPercent}% Invited</p>
           </div>
@@ -153,6 +182,7 @@ export function DistrictPanel({
                 onPersonStatusChange={onPersonStatusChange}
                 onPersonAdd={onPersonAdd}
                 onPersonClick={onPersonClick}
+                onCampusUpdate={onDistrictUpdate}
               />
             );
           })}

@@ -27,6 +27,18 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getDistrictById(input.id);
       }),
+    updateName: publicProcedure
+      .input(z.object({ id: z.string(), name: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.updateDistrictName(input.id, input.name);
+        return { success: true };
+      }),
+    updateRegion: publicProcedure
+      .input(z.object({ id: z.string(), region: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.updateDistrictRegion(input.id, input.region);
+        return { success: true };
+      }),
   }),
 
   campuses: router({
@@ -37,6 +49,12 @@ export const appRouter = router({
       .input(z.object({ districtId: z.string() }))
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
+      }),
+    updateName: publicProcedure
+      .input(z.object({ id: z.number(), name: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.updateCampusName(input.id, input.name);
+        return { success: true };
       }),
   }),
 
@@ -79,6 +97,12 @@ export const appRouter = router({
       .input(z.object({ personId: z.number() }))
       .query(async ({ input }) => {
         return await db.getPersonById(input.personId);
+      }),
+    updateName: publicProcedure
+      .input(z.object({ personId: z.number(), name: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.updatePersonName(input.personId, input.name);
+        return { success: true };
       }),
   }),
 

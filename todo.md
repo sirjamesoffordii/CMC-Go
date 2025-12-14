@@ -317,3 +317,16 @@
 
 ## Change Invited Percentage Color
 - [x] Change invited percentage text color from blue-600 to gray-900 (black)
+
+## Inline Name Editing
+- [x] Add tRPC procedure to update district name
+- [x] Add tRPC procedure to update district region
+- [x] Add tRPC procedure to update campus name
+- [x] Add tRPC procedure to update person name
+- [x] Implement inline editing for district name in header
+- [x] Implement inline editing for region in header
+- [x] Implement inline editing for campus names in columns
+- [x] Implement inline editing for person names in rows
+- [x] Add click-to-edit UI with input fields (EditableText component)
+- [x] Save changes on blur or Enter key
+- [x] Cancel changes on Escape key
