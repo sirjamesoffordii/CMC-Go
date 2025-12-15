@@ -272,9 +272,9 @@ export default function Home() {
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
-            {/* Background Image - centered with white fallback on sides */}
+            {/* Background Image - fills the header with cover mode */}
             <div 
-              className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-white"
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-white"
               style={{ backgroundImage: `url(${headerImageUrl})` }}
             />
 

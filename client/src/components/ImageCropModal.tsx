@@ -18,7 +18,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extendEdges, setExtendEdges] = useState(true); // Enable edge extension by default
+  const [extendEdges, setExtendEdges] = useState(true);
 
   // Reset crop position and zoom when modal opens with new image
   useEffect(() => {
@@ -35,68 +35,6 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     },
     []
   );
-
-  // Function to extend edge pixels horizontally
-  const extendImageEdges = (
-    ctx: CanvasRenderingContext2D,
-    image: HTMLImageElement,
-    cropArea: Area,
-    targetWidth: number,
-    targetHeight: number
-  ) => {
-    // Calculate where the actual image content will be placed
-    const imageAspect = image.width / image.height;
-    const targetAspect = targetWidth / targetHeight;
-    
-    let drawWidth: number, drawHeight: number, drawX: number, drawY: number;
-    
-    if (imageAspect > targetAspect) {
-      // Image is wider - fit to width
-      drawWidth = targetWidth;
-      drawHeight = targetWidth / imageAspect;
-      drawX = 0;
-      drawY = (targetHeight - drawHeight) / 2;
-    } else {
-      // Image is taller - fit to height
-      drawHeight = targetHeight;
-      drawWidth = targetHeight * imageAspect;
-      drawX = (targetWidth - drawWidth) / 2;
-      drawY = 0;
-    }
-
-    // Fill with white background first
-    ctx.fillStyle = "#FFFFFF";
-    ctx.fillRect(0, 0, targetWidth, targetHeight);
-
-    // Draw the main image centered
-    ctx.drawImage(
-      image,
-      cropArea.x,
-      cropArea.y,
-      cropArea.width,
-      cropArea.height,
-      drawX,
-      drawY,
-      drawWidth,
-      drawHeight
-    );
-
-    // If there are gaps on the sides, extend the edge pixels
-    if (drawX > 0) {
-      // Get left edge pixel column and extend it
-      const leftEdgeData = ctx.getImageData(Math.ceil(drawX), 0, 1, targetHeight);
-      for (let x = 0; x < drawX; x++) {
-        ctx.putImageData(leftEdgeData, x, 0);
-      }
-
-      // Get right edge pixel column and extend it
-      const rightEdgeX = Math.floor(drawX + drawWidth) - 1;
-      const rightEdgeData = ctx.getImageData(rightEdgeX, 0, 1, targetHeight);
-      for (let x = Math.ceil(drawX + drawWidth); x < targetWidth; x++) {
-        ctx.putImageData(rightEdgeData, x, 0);
-      }
-    }
-  };
 
   const createCroppedImage = async () => {
     if (!croppedAreaPixels || !imageSrc) {
@@ -124,34 +62,86 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
         throw new Error("Could not get canvas context");
       }
 
-      // Target dimensions for the header (wide format)
-      const targetWidth = Math.max(croppedAreaPixels.width, 1920);
-      const targetHeight = croppedAreaPixels.height;
+      // The cropped area from the image
+      const cropX = croppedAreaPixels.x;
+      const cropY = croppedAreaPixels.y;
+      const cropWidth = croppedAreaPixels.width;
+      const cropHeight = croppedAreaPixels.height;
 
-      // Set canvas size
-      canvas.width = targetWidth;
-      canvas.height = targetHeight;
+      // Target width for header (full screen width)
+      const targetWidth = 1920;
+      // Keep the aspect ratio of the crop area for height
+      const targetHeight = cropHeight;
 
-      if (extendEdges) {
-        // Use edge extension to fill gaps
-        extendImageEdges(ctx, image, croppedAreaPixels, targetWidth, targetHeight);
-      } else {
-        // Simple crop without extension - fill with white
+      // Calculate how much wider the target is than the crop
+      const widthRatio = targetWidth / cropWidth;
+
+      if (extendEdges && widthRatio > 1.1) {
+        // Need to extend edges - the crop is narrower than target
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        // Fill with white first
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, targetWidth, targetHeight);
-        
-        // Center the cropped image
-        const offsetX = (targetWidth - croppedAreaPixels.width) / 2;
+
+        // Calculate where to place the cropped image (centered)
+        const drawX = (targetWidth - cropWidth) / 2;
+
+        // Draw the main cropped image centered
         ctx.drawImage(
           image,
-          croppedAreaPixels.x,
-          croppedAreaPixels.y,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height,
-          offsetX,
-          0,
-          croppedAreaPixels.width,
-          croppedAreaPixels.height
+          cropX, cropY, cropWidth, cropHeight,
+          drawX, 0, cropWidth, cropHeight
+        );
+
+        // Sample edge strips from the actual cropped image (not the canvas)
+        const edgeWidth = Math.min(20, Math.floor(cropWidth * 0.1)); // 10% of crop width or 20px max
+
+        // Create temporary canvas to extract edge colors from the SOURCE image
+        const tempCanvas = document.createElement("canvas");
+        const tempCtx = tempCanvas.getContext("2d");
+        if (tempCtx) {
+          tempCanvas.width = cropWidth;
+          tempCanvas.height = cropHeight;
+          
+          // Draw just the cropped portion to temp canvas
+          tempCtx.drawImage(
+            image,
+            cropX, cropY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+          );
+
+          // Get left edge strip from the cropped image
+          const leftEdgeData = tempCtx.getImageData(0, 0, edgeWidth, cropHeight);
+          
+          // Get right edge strip from the cropped image  
+          const rightEdgeData = tempCtx.getImageData(cropWidth - edgeWidth, 0, edgeWidth, cropHeight);
+
+          // Extend left edge - draw the edge strip repeatedly
+          for (let x = drawX - edgeWidth; x >= 0; x -= edgeWidth) {
+            ctx.putImageData(leftEdgeData, x, 0);
+          }
+          // Fill any remaining gap on the left
+          if (drawX % edgeWidth !== 0) {
+            ctx.putImageData(leftEdgeData, 0, 0);
+          }
+
+          // Extend right edge - draw the edge strip repeatedly
+          const rightStart = drawX + cropWidth;
+          for (let x = rightStart; x < targetWidth; x += edgeWidth) {
+            ctx.putImageData(rightEdgeData, x, 0);
+          }
+        }
+      } else {
+        // No extension needed - just use the crop as-is
+        canvas.width = cropWidth;
+        canvas.height = cropHeight;
+
+        ctx.drawImage(
+          image,
+          cropX, cropY, cropWidth, cropHeight,
+          0, 0, cropWidth, cropHeight
         );
       }
 
@@ -176,7 +166,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
   };
 
   // Use a more reasonable aspect ratio for the header
-  const headerAspectRatio = 1280 / 120; // ~10.67:1 based on actual header dimensions
+  const headerAspectRatio = 1280 / 120;
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
@@ -186,7 +176,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
           <p className="text-sm text-gray-500">Drag to position the image, use the slider to zoom in or out</p>
         </DialogHeader>
         
-        {/* Cropper container with fixed height - WHITE background */}
+        {/* Cropper container - WHITE background */}
         <div className="relative bg-white rounded-lg overflow-hidden border border-gray-200" style={{ height: "400px", minHeight: "300px" }}>
           {imageSrc && (
             <Cropper
@@ -243,7 +233,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               onCheckedChange={setExtendEdges}
             />
             <Label htmlFor="extend-edges" className="text-sm">
-              Extend edge colors to fill gaps (recommended)
+              Extend edge colors to fill full width (recommended for narrow images)
             </Label>
           </div>
         </div>

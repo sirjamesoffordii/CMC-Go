@@ -446,3 +446,9 @@
 - [x] Add edge extension feature to fill horizontal gaps without stretching content
 - [x] Sample edge pixels and extend them to fill remaining space
 - [x] Add toggle switch to enable/disable edge extension
+
+## Fix Image Crop Output Issues
+- [x] Fix image shrinking - keep cropped area at original size
+- [x] Fix edge sampling - sample from actual image edges using temp canvas
+- [x] Sample thicker edge strip (20px or 10% of width) for better color blending
+- [x] Ensure cropped image fills header properly with bg-cover mode
