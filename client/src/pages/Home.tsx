@@ -457,15 +457,20 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Follow Up Tab Button - Fixed to right side, subtle with hover reveal */}
+      {/* Follow Up Tab Button - Fixed to right side, slides out from edge on hover */}
       {!followUpPanelOpen && (
-        <button
-          onClick={() => setFollowUpPanelOpen(true)}
-          className="fixed top-1/2 -translate-y-1/2 bg-gray-800/30 text-white/60 px-2 py-6 rounded-l-md shadow-sm hover:bg-gray-800/80 hover:text-white hover:px-4 hover:py-8 hover:shadow-lg transition-all duration-300 ease-out z-30 font-medium text-sm hover:font-semibold group"
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', right: '-2px' }}
+        <div
+          className="fixed top-1/2 -translate-y-1/2 z-30 group"
+          style={{ right: 0 }}
         >
-          <span className="opacity-60 group-hover:opacity-100 transition-opacity duration-300">Follow Ups</span>
-        </button>
+          <button
+            onClick={() => setFollowUpPanelOpen(true)}
+            className="bg-gray-600/40 text-white/80 px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 transition-transform duration-300 ease-out"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            Follow Ups
+          </button>
+        </div>
       )}
 
       <PersonDetailsDialog
