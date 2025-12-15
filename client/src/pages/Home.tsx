@@ -274,8 +274,11 @@ export default function Home() {
       >
             {/* Background Image - fills the header with cover mode */}
             <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-white"
-              style={{ backgroundImage: `url(${headerImageUrl})` }}
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ 
+                backgroundImage: `url(${headerImageUrl})`,
+                backgroundColor: '#FFFFFF'
+              }}
             />
 
             {/* Header Content - Image contains text, so no overlay needed */}

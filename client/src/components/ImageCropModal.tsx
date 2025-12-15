@@ -3,8 +3,6 @@ import Cropper, { Area, Point } from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 interface ImageCropModalProps {
   open: boolean;
@@ -18,9 +16,8 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extendEdges, setExtendEdges] = useState(true);
 
-  // Reset crop position and zoom when modal opens with new image
+  // Reset when modal opens
   useEffect(() => {
     if (open && imageSrc) {
       setCrop({ x: 0, y: 0 });
@@ -45,7 +42,6 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     setIsProcessing(true);
 
     try {
-      // Create image element
       const image = new Image();
       image.crossOrigin = "anonymous";
       
@@ -55,97 +51,33 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
         image.src = imageSrc;
       });
 
-      // Create canvas for cropping
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) {
         throw new Error("Could not get canvas context");
       }
 
-      // The cropped area from the image
-      const cropX = croppedAreaPixels.x;
-      const cropY = croppedAreaPixels.y;
-      const cropWidth = croppedAreaPixels.width;
-      const cropHeight = croppedAreaPixels.height;
+      // Simply crop what's in the selection box - no resizing, no edge extension
+      canvas.width = croppedAreaPixels.width;
+      canvas.height = croppedAreaPixels.height;
 
-      // Target width for header (full screen width)
-      const targetWidth = 1920;
-      // Keep the aspect ratio of the crop area for height
-      const targetHeight = cropHeight;
+      // Fill with white background first (in case of any transparency)
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Calculate how much wider the target is than the crop
-      const widthRatio = targetWidth / cropWidth;
+      // Draw the cropped portion
+      ctx.drawImage(
+        image,
+        croppedAreaPixels.x,
+        croppedAreaPixels.y,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height,
+        0,
+        0,
+        croppedAreaPixels.width,
+        croppedAreaPixels.height
+      );
 
-      if (extendEdges && widthRatio > 1.1) {
-        // Need to extend edges - the crop is narrower than target
-        canvas.width = targetWidth;
-        canvas.height = targetHeight;
-
-        // Fill with white first
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fillRect(0, 0, targetWidth, targetHeight);
-
-        // Calculate where to place the cropped image (centered)
-        const drawX = (targetWidth - cropWidth) / 2;
-
-        // Draw the main cropped image centered
-        ctx.drawImage(
-          image,
-          cropX, cropY, cropWidth, cropHeight,
-          drawX, 0, cropWidth, cropHeight
-        );
-
-        // Sample edge strips from the actual cropped image (not the canvas)
-        const edgeWidth = Math.min(20, Math.floor(cropWidth * 0.1)); // 10% of crop width or 20px max
-
-        // Create temporary canvas to extract edge colors from the SOURCE image
-        const tempCanvas = document.createElement("canvas");
-        const tempCtx = tempCanvas.getContext("2d");
-        if (tempCtx) {
-          tempCanvas.width = cropWidth;
-          tempCanvas.height = cropHeight;
-          
-          // Draw just the cropped portion to temp canvas
-          tempCtx.drawImage(
-            image,
-            cropX, cropY, cropWidth, cropHeight,
-            0, 0, cropWidth, cropHeight
-          );
-
-          // Get left edge strip from the cropped image
-          const leftEdgeData = tempCtx.getImageData(0, 0, edgeWidth, cropHeight);
-          
-          // Get right edge strip from the cropped image  
-          const rightEdgeData = tempCtx.getImageData(cropWidth - edgeWidth, 0, edgeWidth, cropHeight);
-
-          // Extend left edge - draw the edge strip repeatedly
-          for (let x = drawX - edgeWidth; x >= 0; x -= edgeWidth) {
-            ctx.putImageData(leftEdgeData, x, 0);
-          }
-          // Fill any remaining gap on the left
-          if (drawX % edgeWidth !== 0) {
-            ctx.putImageData(leftEdgeData, 0, 0);
-          }
-
-          // Extend right edge - draw the edge strip repeatedly
-          const rightStart = drawX + cropWidth;
-          for (let x = rightStart; x < targetWidth; x += edgeWidth) {
-            ctx.putImageData(rightEdgeData, x, 0);
-          }
-        }
-      } else {
-        // No extension needed - just use the crop as-is
-        canvas.width = cropWidth;
-        canvas.height = cropHeight;
-
-        ctx.drawImage(
-          image,
-          cropX, cropY, cropWidth, cropHeight,
-          0, 0, cropWidth, cropHeight
-        );
-      }
-
-      // Convert canvas to blob
       canvas.toBlob(
         (blob) => {
           if (blob) {
@@ -165,7 +97,6 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     }
   };
 
-  // Use a more reasonable aspect ratio for the header
   const headerAspectRatio = 1280 / 120;
 
   return (
@@ -173,11 +104,10 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Crop Header Image</DialogTitle>
-          <p className="text-sm text-gray-500">Drag to position the image, use the slider to zoom in or out</p>
+          <p className="text-sm text-gray-500">Position the red box over the part you want to use as the header</p>
         </DialogHeader>
         
-        {/* Cropper container - WHITE background */}
-        <div className="relative bg-white rounded-lg overflow-hidden border border-gray-200" style={{ height: "400px", minHeight: "300px" }}>
+        <div className="relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200" style={{ height: "400px" }}>
           {imageSrc && (
             <Cropper
               image={imageSrc}
@@ -190,28 +120,22 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               minZoom={0.1}
               maxZoom={3}
               restrictPosition={false}
-              objectFit="horizontal-cover"
               showGrid={true}
               style={{
                 containerStyle: {
                   width: "100%",
                   height: "100%",
-                  backgroundColor: "#FFFFFF",
+                  backgroundColor: "#f3f4f6",
                 },
                 cropAreaStyle: {
-                  border: "2px solid #ED1C24",
-                },
-                mediaStyle: {
-                  backgroundColor: "#FFFFFF",
+                  border: "3px solid #ED1C24",
                 },
               }}
             />
           )}
         </div>
 
-        {/* Controls */}
-        <div className="py-4 space-y-4">
-          {/* Zoom control */}
+        <div className="py-4">
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium min-w-[60px]">Zoom</label>
             <Slider
@@ -223,18 +147,6 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               className="flex-1"
             />
             <span className="text-sm text-gray-500 min-w-[40px]">{zoom.toFixed(2)}x</span>
-          </div>
-
-          {/* Edge extension toggle */}
-          <div className="flex items-center gap-3">
-            <Switch
-              id="extend-edges"
-              checked={extendEdges}
-              onCheckedChange={setExtendEdges}
-            />
-            <Label htmlFor="extend-edges" className="text-sm">
-              Extend edge colors to fill full width (recommended for narrow images)
-            </Label>
           </div>
         </div>
 
