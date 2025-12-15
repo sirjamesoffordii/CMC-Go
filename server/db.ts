@@ -290,10 +290,15 @@ export async function getFollowUpPeople() {
 
 // Settings
 export async function getSetting(key: string) {
+  console.log('[getSetting] Fetching key:', key);
   const db = await getDb();
-  if (!db) return null;
+  if (!db) {
+    console.log('[getSetting] No database connection');
+    return null;
+  }
   
   const result = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
+  console.log('[getSetting] Result for', key, ':', result[0] || 'null');
   return result[0] || null;
 }
 

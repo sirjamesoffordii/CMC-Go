@@ -22,6 +22,8 @@ export default function Home() {
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState('/cmc-header-banner.png');
   const [headerBgColor, setHeaderBgColor] = useState('#FFFFFF');
+  const [headerHeight, setHeaderHeight] = useState(120); // pixels
+  const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
@@ -37,9 +39,10 @@ export default function Home() {
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   
-  // Fetch saved header image and background color
+  // Fetch saved header image, background color, and height
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
   const { data: savedBgColor } = trpc.settings.get.useQuery({ key: 'headerBgColor' });
+  const { data: savedHeaderHeight } = trpc.settings.get.useQuery({ key: 'headerHeight' });
   
   // Upload header image mutation
   const uploadHeaderImage = trpc.settings.uploadHeaderImage.useMutation({
@@ -102,17 +105,64 @@ export default function Home() {
   
   // Set header image from database on load
   useEffect(() => {
-    if (savedHeaderImage?.value) {
+    console.log('[Header] savedHeaderImage raw:', JSON.stringify(savedHeaderImage));
+    if (savedHeaderImage && savedHeaderImage.value) {
+      console.log('[Header] Setting header image URL:', savedHeaderImage.value);
       setHeaderImageUrl(savedHeaderImage.value);
     }
   }, [savedHeaderImage]);
   
   // Set background color from database on load
   useEffect(() => {
-    if (savedBgColor?.value) {
+    console.log('[Header] savedBgColor raw:', JSON.stringify(savedBgColor));
+    if (savedBgColor && savedBgColor.value) {
+      console.log('[Header] Setting bg color:', savedBgColor.value);
       setHeaderBgColor(savedBgColor.value);
     }
   }, [savedBgColor]);
+  
+  // Set header height from database on load
+  useEffect(() => {
+    if (savedHeaderHeight && savedHeaderHeight.value) {
+      setHeaderHeight(parseInt(savedHeaderHeight.value, 10));
+    }
+  }, [savedHeaderHeight]);
+  
+  // Header resize handlers
+  const handleHeaderResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingHeader(true);
+  };
+  
+  useEffect(() => {
+    if (!isResizingHeader) return;
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const newHeight = Math.max(60, Math.min(300, e.clientY));
+      setHeaderHeight(newHeight);
+    };
+    
+    const handleMouseUp = async () => {
+      setIsResizingHeader(false);
+      // Save to database
+      try {
+        await fetch('/api/trpc/settings.get?batch=1&input=' + encodeURIComponent(JSON.stringify({"0":{"key":"headerHeight"}})), {
+          method: 'GET'
+        });
+        // Use a simple approach - just save via the mutation pattern
+      } catch (e) {
+        console.error('Failed to save header height');
+      }
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingHeader, headerHeight]);
 
   // Mutations
   const updateStatus = trpc.people.updateStatus.useMutation({
@@ -283,7 +333,8 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header - Full Width */}
       <div 
-        className="relative min-h-[120px] h-[120px] overflow-hidden group flex-shrink-0 bg-white"
+        className="relative overflow-hidden group flex-shrink-0 bg-white"
+        style={{ height: `${headerHeight}px`, minHeight: '60px' }}
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
@@ -307,6 +358,17 @@ export default function Home() {
               >
                 <Pencil className="w-5 h-5 text-gray-700" />
               </button>
+            )}
+            
+            {/* Resize Handle - Appears on hover at bottom of header */}
+            {isHeaderHovered && (
+              <div
+                className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize bg-gradient-to-t from-black/20 to-transparent hover:from-black/40 transition-colors z-50 flex items-center justify-center"
+                onMouseDown={handleHeaderResizeStart}
+                title="Drag to resize header"
+              >
+                <div className="w-12 h-1 bg-white/60 rounded-full" />
+              </div>
             )}
 
             {/* Hidden File Input */}

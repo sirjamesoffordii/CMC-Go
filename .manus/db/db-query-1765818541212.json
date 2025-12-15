@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, `key`, `value`, updatedAt FROM settings;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT id, `key`, `value`, updatedAt FROM settings;",
+  "rows": [
+    {
+      "id": "1",
+      "key": "headerImageUrl",
+      "value": "https://d2xsxph8kpxj0f.cloudfront.net/310519663034901364/UQnsC7UkUSExcoqL3bpybA/header-images/1765818254721-ChatGPT Image Dec 14, 2025, 05_30_24 PM.png",
+      "updatedAt": "2025-12-15 17:04:15"
+    },
+    {
+      "id": "30001",
+      "key": "headerBgColor",
+      "value": "#c02020",
+      "updatedAt": "2025-12-15 17:04:14"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tkey\tvalue\tupdatedAt\n1\theaderImageUrl\thttps://d2xsxph8kpxj0f.cloudfront.net/310519663034901364/UQnsC7UkUSExcoqL3bpybA/header-images/1765818254721-ChatGPT Image Dec 14, 2025, 05_30_24 PM.png\t2025-12-15 17:04:15\n30001\theaderBgColor\t#c02020\t2025-12-15 17:04:14\n",
+  "stderr": "",
+  "execution_time_ms": 62
+}

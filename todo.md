@@ -471,3 +471,15 @@
 - [x] Tab should be barely visible by default (text-white/60, opacity-60)
 - [x] Smooth slide-out animation on hover/proximity (transition-all duration-300)
 - [x] Change text to "Follow Ups"
+
+## Header Fixes
+- [ ] Debug header background not persisting after refresh
+- [ ] Add manual header height adjustment (draggable resize)
+- [ ] Save header height to database
+
+## Header Height Adjustment
+- [x] Add header height state variable
+- [x] Add resize handle at bottom of header (appears on hover)
+- [x] Implement drag-to-resize functionality
+- [x] Load saved header height from database
+- [ ] Save header height to database on resize end
