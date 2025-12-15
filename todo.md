@@ -452,3 +452,11 @@
 - [x] Fix edge sampling - sample from actual image edges using temp canvas
 - [x] Sample thicker edge strip (20px or 10% of width) for better color blending
 - [x] Ensure cropped image fills header properly with bg-cover mode
+
+## Background Color Picker for Header
+- [x] Extract dominant colors from uploaded image edges
+- [x] Display color swatches in crop modal
+- [x] Allow user to select background color
+- [x] Store selected color with header image
+- [x] Apply selected color to header background
+- [x] Include custom color picker input

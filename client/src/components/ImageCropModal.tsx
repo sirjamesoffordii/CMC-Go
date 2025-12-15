@@ -3,12 +3,94 @@ import Cropper, { Area, Point } from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 interface ImageCropModalProps {
   open: boolean;
   imageSrc: string;
-  onCropComplete: (croppedImageBlob: Blob, croppedImageUrl: string) => void;
+  onCropComplete: (croppedImageBlob: Blob, croppedImageUrl: string, backgroundColor: string) => void;
   onCancel: () => void;
+}
+
+// Extract dominant colors from image edges
+function extractEdgeColors(image: HTMLImageElement): string[] {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return ["#FFFFFF"];
+
+  // Use smaller canvas for faster processing
+  const sampleWidth = Math.min(image.width, 200);
+  const sampleHeight = Math.min(image.height, 200);
+  canvas.width = sampleWidth;
+  canvas.height = sampleHeight;
+  
+  ctx.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+
+  const colorCounts: Record<string, number> = {};
+  const edgeWidth = Math.max(10, Math.floor(sampleWidth * 0.1)); // 10% of width or minimum 10px
+
+  // Sample left edge
+  const leftData = ctx.getImageData(0, 0, edgeWidth, sampleHeight).data;
+  for (let i = 0; i < leftData.length; i += 4) {
+    const r = Math.round(leftData[i] / 16) * 16;
+    const g = Math.round(leftData[i + 1] / 16) * 16;
+    const b = Math.round(leftData[i + 2] / 16) * 16;
+    const color = `rgb(${r},${g},${b})`;
+    colorCounts[color] = (colorCounts[color] || 0) + 1;
+  }
+
+  // Sample right edge
+  const rightData = ctx.getImageData(sampleWidth - edgeWidth, 0, edgeWidth, sampleHeight).data;
+  for (let i = 0; i < rightData.length; i += 4) {
+    const r = Math.round(rightData[i] / 16) * 16;
+    const g = Math.round(rightData[i + 1] / 16) * 16;
+    const b = Math.round(rightData[i + 2] / 16) * 16;
+    const color = `rgb(${r},${g},${b})`;
+    colorCounts[color] = (colorCounts[color] || 0) + 1;
+  }
+
+  // Sample top edge
+  const topData = ctx.getImageData(0, 0, sampleWidth, edgeWidth).data;
+  for (let i = 0; i < topData.length; i += 4) {
+    const r = Math.round(topData[i] / 16) * 16;
+    const g = Math.round(topData[i + 1] / 16) * 16;
+    const b = Math.round(topData[i + 2] / 16) * 16;
+    const color = `rgb(${r},${g},${b})`;
+    colorCounts[color] = (colorCounts[color] || 0) + 1;
+  }
+
+  // Sample bottom edge
+  const bottomData = ctx.getImageData(0, sampleHeight - edgeWidth, sampleWidth, edgeWidth).data;
+  for (let i = 0; i < bottomData.length; i += 4) {
+    const r = Math.round(bottomData[i] / 16) * 16;
+    const g = Math.round(bottomData[i + 1] / 16) * 16;
+    const b = Math.round(bottomData[i + 2] / 16) * 16;
+    const color = `rgb(${r},${g},${b})`;
+    colorCounts[color] = (colorCounts[color] || 0) + 1;
+  }
+
+  // Sort by frequency and get top colors
+  const sortedColors = Object.entries(colorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([color]) => color);
+
+  // Convert to hex for display
+  const hexColors = sortedColors.map(rgb => {
+    const match = rgb.match(/rgb\((\d+),(\d+),(\d+)\)/);
+    if (match) {
+      const r = parseInt(match[1]).toString(16).padStart(2, '0');
+      const g = parseInt(match[2]).toString(16).padStart(2, '0');
+      const b = parseInt(match[3]).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+    return "#FFFFFF";
+  });
+
+  // Add white and black as fallback options
+  const finalColors = Array.from(new Set([...hexColors, "#FFFFFF", "#000000"])).slice(0, 10);
+  
+  return finalColors;
 }
 
 export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: ImageCropModalProps) {
@@ -16,13 +98,29 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [extractedColors, setExtractedColors] = useState<string[]>(["#FFFFFF"]);
+  const [selectedColor, setSelectedColor] = useState("#FFFFFF");
 
-  // Reset when modal opens
+  // Extract colors when image loads
   useEffect(() => {
     if (open && imageSrc) {
       setCrop({ x: 0, y: 0 });
       setZoom(1);
       setCroppedAreaPixels(null);
+      setSelectedColor("#FFFFFF");
+
+      // Load image and extract colors
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const colors = extractEdgeColors(img);
+        setExtractedColors(colors);
+        // Auto-select the most common edge color
+        if (colors.length > 0) {
+          setSelectedColor(colors[0]);
+        }
+      };
+      img.src = imageSrc;
     }
   }, [open, imageSrc]);
 
@@ -57,15 +155,13 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
         throw new Error("Could not get canvas context");
       }
 
-      // Simply crop what's in the selection box - no resizing, no edge extension
       canvas.width = croppedAreaPixels.width;
       canvas.height = croppedAreaPixels.height;
 
-      // Fill with white background first (in case of any transparency)
-      ctx.fillStyle = "#FFFFFF";
+      // Fill with selected background color
+      ctx.fillStyle = selectedColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw the cropped portion
       ctx.drawImage(
         image,
         croppedAreaPixels.x,
@@ -82,7 +178,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
         (blob) => {
           if (blob) {
             const croppedImageUrl = URL.createObjectURL(blob);
-            onCropComplete(blob, croppedImageUrl);
+            onCropComplete(blob, croppedImageUrl, selectedColor);
           } else {
             console.error("Failed to create blob");
           }
@@ -107,7 +203,10 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
           <p className="text-sm text-gray-500">Position the red box over the part you want to use as the header</p>
         </DialogHeader>
         
-        <div className="relative bg-gray-100 rounded-lg overflow-hidden border border-gray-200" style={{ height: "400px" }}>
+        <div 
+          className="relative rounded-lg overflow-hidden border border-gray-200" 
+          style={{ height: "400px", backgroundColor: selectedColor }}
+        >
           {imageSrc && (
             <Cropper
               image={imageSrc}
@@ -125,7 +224,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
                 containerStyle: {
                   width: "100%",
                   height: "100%",
-                  backgroundColor: "#f3f4f6",
+                  backgroundColor: selectedColor,
                 },
                 cropAreaStyle: {
                   border: "3px solid #ED1C24",
@@ -135,7 +234,8 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
           )}
         </div>
 
-        <div className="py-4">
+        <div className="py-4 space-y-4">
+          {/* Zoom control */}
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium min-w-[60px]">Zoom</label>
             <Slider
@@ -147,6 +247,39 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               className="flex-1"
             />
             <span className="text-sm text-gray-500 min-w-[40px]">{zoom.toFixed(2)}x</span>
+          </div>
+
+          {/* Background color picker */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Background Color (for gaps)</label>
+            <p className="text-xs text-gray-500">Colors extracted from your image edges:</p>
+            <div className="flex flex-wrap gap-2">
+              {extractedColors.map((color, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedColor(color)}
+                  className={cn(
+                    "w-8 h-8 rounded border-2 transition-all",
+                    selectedColor === color 
+                      ? "border-[#ED1C24] ring-2 ring-[#ED1C24] ring-offset-1" 
+                      : "border-gray-300 hover:border-gray-400"
+                  )}
+                  style={{ backgroundColor: color }}
+                  title={color}
+                />
+              ))}
+              {/* Custom color input */}
+              <div className="relative">
+                <input
+                  type="color"
+                  value={selectedColor}
+                  onChange={(e) => setSelectedColor(e.target.value)}
+                  className="w-8 h-8 rounded border-2 border-gray-300 cursor-pointer"
+                  title="Pick custom color"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">Selected: {selectedColor}</p>
           </div>
         </div>
 

@@ -21,6 +21,7 @@ export default function Home() {
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState('/cmc-header-banner.png');
+  const [headerBgColor, setHeaderBgColor] = useState('#FFFFFF');
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
@@ -48,9 +49,10 @@ export default function Home() {
   });
   
   // Handle crop complete
-  const handleCropComplete = (croppedImageBlob: Blob, croppedImageUrl: string) => {
+  const handleCropComplete = (croppedImageBlob: Blob, croppedImageUrl: string, backgroundColor: string) => {
     // Show preview immediately
     setHeaderImageUrl(croppedImageUrl);
+    setHeaderBgColor(backgroundColor);
     setCropModalOpen(false);
     
     console.log('[handleCropComplete] Starting upload, blob size:', croppedImageBlob.size);
@@ -277,7 +279,7 @@ export default function Home() {
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ 
                 backgroundImage: `url(${headerImageUrl})`,
-                backgroundColor: '#FFFFFF'
+                backgroundColor: headerBgColor
               }}
             />
 
