@@ -415,37 +415,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         />
         
-        {/* Pie charts layer */}
-        <div 
-          ref={pieContainerRef}
-          className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center"
-        >
-          <div className="relative w-full h-full">
-            {districts.map(district => {
-              const centroid = districtCentroids[district.id];
-              if (!centroid) return null;
-              
-              const stats = districtStats[district.id];
-              if (!stats || stats.total === 0) return null;
-              
-              const pieChart = generatePieChart(stats);
-              if (!pieChart) return null;
-              
-              return (
-                <div
-                  key={district.id}
-                  className="absolute"
-                  style={{
-                    left: `${(centroid.x / 1000) * 100}%`,
-                    top: `${(centroid.y / 700) * 100}%`,
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                  dangerouslySetInnerHTML={{ __html: pieChart }}
-                />
-              );
-            })}
-          </div>
-        </div>
+        {/* Pie charts layer - removed per user request */}
         
         {/* Invisible SVG click zones */}
         <div 

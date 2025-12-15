@@ -506,3 +506,7 @@
 - [x] Update district centroids to match new SVG IDs (48 districts)
 - [x] Update database districts to match new SVG path IDs
 - [x] Verify all districts are clickable and display correctly
+
+## Remove Floating Pie Charts
+- [x] Remove pie chart overlay from InteractiveMap component
+- [x] Keep hover tooltips with pie charts (only remove floating ones on map)
