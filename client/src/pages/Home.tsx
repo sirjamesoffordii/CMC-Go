@@ -20,8 +20,8 @@ export default function Home() {
   const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
-  const [headerImageUrl, setHeaderImageUrl] = useState('/cmc-header-banner.png');
-  const [headerBgColor, setHeaderBgColor] = useState('#FFFFFF');
+  const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
+  const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
   const [headerHeight, setHeaderHeight] = useState(120); // pixels
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -342,8 +342,8 @@ export default function Home() {
             <div 
               className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ 
-                backgroundImage: `url(${headerImageUrl})`,
-                backgroundColor: headerBgColor
+                backgroundImage: `url(${headerImageUrl || savedHeaderImage?.value || '/cmc-header-banner.png'})`,
+                backgroundColor: headerBgColor || savedBgColor?.value || '#FFFFFF'
               }}
             />
 
