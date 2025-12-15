@@ -549,3 +549,17 @@
 - [x] Search across people, campuses, and districts
 - [x] Show search results dropdown
 - [x] Click result to navigate to that item
+
+## Header Styling Refinement
+- [x] Match Chi Alpha toolbar colors exactly (darker black background)
+- [x] Adjust font size and weight to match Chi Alpha
+- [x] Ensure logo size matches Chi Alpha toolbar
+
+## Share Button Feature
+- [x] Add share button to header
+- [x] Include copy link option
+- [x] Add text/SMS sharing with pre-filled message
+- [x] Add email sharing with pre-filled subject and body
+- [x] Add social media sharing (Facebook, Twitter/X)
+- [x] Add GroupMe sharing option
+- [x] Pre-filled invitation message for leaders

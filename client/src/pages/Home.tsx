@@ -6,9 +6,10 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
+import { ShareModal } from "@/components/ShareModal";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -22,12 +23,14 @@ export default function Home() {
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
-  const [headerBgColor, setHeaderBgColor] = useState<string>('#000000');
+  const [headerBgColor, setHeaderBgColor] = useState<string>('#1a1a1a');
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>('');
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -379,17 +382,17 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
-        className="relative flex items-center px-4 group flex-shrink-0"
+        className="relative flex items-center px-3 group flex-shrink-0"
         style={{ 
           height: `${headerHeight}px`, 
-          minHeight: '50px',
-          backgroundColor: headerBgColor || savedBgColor?.value || '#000000'
+          minHeight: '48px',
+          backgroundColor: headerBgColor || savedBgColor?.value || '#1a1a1a'
         }}
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
         {/* Logo - Left Side */}
-        <div className="flex-shrink-0 h-10 w-auto mr-4">
+        <div className="flex-shrink-0 h-9 w-auto mr-3">
           <img 
             src={headerLogoUrl || savedHeaderLogo?.value || '/xa-logo.png'} 
             alt="Logo" 
@@ -399,9 +402,10 @@ export default function Home() {
 
         {/* Header Text - Editable */}
         <div 
-          className="flex-grow text-white font-medium text-lg"
+          className="flex-grow text-white font-normal tracking-wide"
+          style={{ fontSize: '15px' }}
           dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || '<span style="font-size: 18px;">Chi Alpha Campus Ministries</span>' 
+            __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
           }}
         />
 
@@ -537,7 +541,16 @@ export default function Home() {
         )}
 
         {/* Right Side Buttons */}
-        <div className="flex-shrink-0 flex items-center gap-3">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={() => setShareModalOpen(true)}
+            className="text-white/80 hover:text-white hover:bg-white/10"
+          >
+            <Share2 className="w-4 h-4 mr-1.5" />
+            Share
+          </Button>
           <Button 
             variant="outline" 
             className="bg-white/90 hover:bg-white text-black text-sm border-0" 
@@ -732,6 +745,11 @@ export default function Home() {
             reader.readAsDataURL(data.logoFile);
           }
         }}
+      />
+      
+      <ShareModal
+        open={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
       />
     </div>
   );
