@@ -22,7 +22,7 @@ export default function Home() {
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(110); // pixels - slightly taller than screenshot
+  const [headerHeight, setHeaderHeight] = useState(90); // pixels - slightly shorter
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);

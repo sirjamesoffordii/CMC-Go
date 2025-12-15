@@ -193,7 +193,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     }
   };
 
-  const headerAspectRatio = 1280 / 110; // Match default header height
+  const headerAspectRatio = 1280 / 90; // Match default header height
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
