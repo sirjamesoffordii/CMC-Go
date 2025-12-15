@@ -37,14 +37,19 @@ export default function Home() {
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   
-  // Fetch saved header image
+  // Fetch saved header image and background color
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
+  const { data: savedBgColor } = trpc.settings.get.useQuery({ key: 'headerBgColor' });
   
   // Upload header image mutation
   const uploadHeaderImage = trpc.settings.uploadHeaderImage.useMutation({
     onSuccess: (data) => {
       setHeaderImageUrl(data.url);
+      if (data.backgroundColor) {
+        setHeaderBgColor(data.backgroundColor);
+      }
       utils.settings.get.invalidate({ key: 'headerImageUrl' });
+      utils.settings.get.invalidate({ key: 'headerBgColor' });
     },
   });
   
@@ -70,6 +75,7 @@ export default function Home() {
         {
           imageData: base64Data,
           fileName: fileName,
+          backgroundColor: backgroundColor,
         },
         {
           onSuccess: (data) => {
@@ -100,6 +106,13 @@ export default function Home() {
       setHeaderImageUrl(savedHeaderImage.value);
     }
   }, [savedHeaderImage]);
+  
+  // Set background color from database on load
+  useEffect(() => {
+    if (savedBgColor?.value) {
+      setHeaderBgColor(savedBgColor.value);
+    }
+  }, [savedBgColor]);
 
   // Mutations
   const updateStatus = trpc.people.updateStatus.useMutation({

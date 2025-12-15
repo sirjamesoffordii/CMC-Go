@@ -191,6 +191,7 @@ export const appRouter = router({
       .input(z.object({ 
         imageData: z.string(), // base64 encoded image
         fileName: z.string(),
+        backgroundColor: z.string().optional(), // hex color for background
       }))
       .mutation(async ({ input }) => {
         try {
@@ -213,9 +214,15 @@ export const appRouter = router({
           // Save to database
           console.log('[uploadHeaderImage] Saving URL to database');
           await db.setSetting('headerImageUrl', url);
+          
+          // Save background color if provided
+          if (input.backgroundColor) {
+            console.log('[uploadHeaderImage] Saving background color:', input.backgroundColor);
+            await db.setSetting('headerBgColor', input.backgroundColor);
+          }
           console.log('[uploadHeaderImage] Database save successful');
           
-          return { url };
+          return { url, backgroundColor: input.backgroundColor };
         } catch (error) {
           console.error('[uploadHeaderImage] Error:', error);
           throw error;

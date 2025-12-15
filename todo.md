@@ -460,3 +460,8 @@
 - [x] Store selected color with header image
 - [x] Apply selected color to header background
 - [x] Include custom color picker input
+
+## Persist Header Background Color
+- [x] Save background color to database alongside header image
+- [x] Load saved background color on page load
+- [x] Update uploadHeaderImage mutation to accept backgroundColor
