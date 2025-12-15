@@ -403,3 +403,16 @@
 - [x] Add pointer-events-none to metrics overlay and calendar widget
 - [x] Fix InteractiveMap to handle clicks on SVG container/canvas
 - [x] Add dedicated background click layer at z-0 in InteractiveMap
+
+## Header Background Editing
+- [x] Add edit pen icon that appears on hover over the header
+- [x] Implement file upload dialog when edit icon is clicked
+- [x] Upload new image to S3 storage
+- [x] Update header background with new image
+- [x] Store header image URL in database or settings
+- [x] Ensure proper image sizing and positioning
+- [x] Create settings table in database
+- [x] Add tRPC procedures for getting and setting settings
+- [x] Add uploadHeaderImage mutation to upload to S3
+- [x] Fetch saved header image on page load
+- [x] Show local preview immediately while uploading

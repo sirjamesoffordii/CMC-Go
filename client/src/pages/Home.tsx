@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
@@ -6,7 +6,7 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Pencil } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -19,6 +19,9 @@ export default function Home() {
   const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
+  const [headerImageUrl, setHeaderImageUrl] = useState('/cmc-header-banner.png');
+  const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
 
@@ -28,6 +31,24 @@ export default function Home() {
   const { data: allPeople = [] } = trpc.people.list.useQuery();
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  
+  // Fetch saved header image
+  const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
+  
+  // Upload header image mutation
+  const uploadHeaderImage = trpc.settings.uploadHeaderImage.useMutation({
+    onSuccess: (data) => {
+      setHeaderImageUrl(data.url);
+      utils.settings.get.invalidate({ key: 'headerImageUrl' });
+    },
+  });
+  
+  // Set header image from database on load
+  useEffect(() => {
+    if (savedHeaderImage?.value) {
+      setHeaderImageUrl(savedHeaderImage.value);
+    }
+  }, [savedHeaderImage]);
 
   // Mutations
   const updateStatus = trpc.people.updateStatus.useMutation({
@@ -197,14 +218,56 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header - Full Width */}
-      <div className="relative h-[120px] overflow-hidden">
+      <div 
+        className="relative h-[120px] overflow-hidden group"
+        onMouseEnter={() => setIsHeaderHovered(true)}
+        onMouseLeave={() => setIsHeaderHovered(false)}
+      >
             {/* Background Image */}
             <div 
               className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: 'url(/cmc-header-banner.png)' }}
+              style={{ backgroundImage: `url(${headerImageUrl})` }}
             />
 
             {/* Header Content - Image contains text, so no overlay needed */}
+
+            {/* Edit Button - Appears on hover */}
+            {isHeaderHovered && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute top-4 left-4 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all duration-200 z-50"
+                title="Change header background"
+              >
+                <Pencil className="w-5 h-5 text-gray-700" />
+              </button>
+            )}
+
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Create a local preview URL immediately
+                  const previewUrl = URL.createObjectURL(file);
+                  setHeaderImageUrl(previewUrl);
+                  
+                  // Convert file to base64 and upload to S3
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    const base64Data = reader.result as string;
+                    uploadHeaderImage.mutate({
+                      imageData: base64Data,
+                      fileName: file.name,
+                    });
+                  };
+                  reader.readAsDataURL(file);
+                }
+              }}
+            />
 
             {/* Top Right Buttons */}
             <div className="absolute top-0 right-0 p-4">

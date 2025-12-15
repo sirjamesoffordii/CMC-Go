@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { storagePut } from "./storage";
 
 export const appRouter = router({
   system: systemRouter,
@@ -178,6 +179,33 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return await db.getFollowUpPeople();
     }),
+  }),
+
+  settings: router({
+    get: publicProcedure
+      .input(z.object({ key: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getSetting(input.key);
+      }),
+    uploadHeaderImage: publicProcedure
+      .input(z.object({ 
+        imageData: z.string(), // base64 encoded image
+        fileName: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        // Convert base64 to buffer
+        const base64Data = input.imageData.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        // Upload to S3
+        const fileKey = `header-images/${Date.now()}-${input.fileName}`;
+        const { url } = await storagePut(fileKey, buffer, 'image/jpeg');
+        
+        // Save to database
+        await db.setSetting('headerImageUrl', url);
+        
+        return { url };
+      }),
   }),
 });
 

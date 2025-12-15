@@ -8,11 +8,13 @@ import {
   people, 
   needs, 
   notes,
+  settings,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
   InsertNeed,
-  InsertNote
+  InsertNote,
+  InsertSetting
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -284,4 +286,29 @@ export async function getFollowUpPeople() {
   );
   
   return followUpPeople;
+}
+
+// Settings
+export async function getSetting(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
+  return result[0] || null;
+}
+
+export async function setSetting(key: string, value: string) {
+  const db = await getDb();
+  if (!db) return;
+  
+  // Try to update first
+  const existing = await getSetting(key);
+  
+  if (existing) {
+    await db.update(settings)
+      .set({ value, updatedAt: new Date() })
+      .where(eq(settings.key, key));
+  } else {
+    await db.insert(settings).values({ key, value });
+  }
 }
