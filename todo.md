@@ -513,3 +513,6 @@
 
 ## Follow Up Tab Color Change
 - [x] Change Follow Up tab color from red to black
+
+## Follow Up Tab Glow Effect
+- [x] Add subtle glowing effect to Follow Up tab for better visibility

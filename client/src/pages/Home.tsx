@@ -527,7 +527,7 @@ export default function Home() {
         >
           <button
             onClick={() => setFollowUpPanelOpen(true)}
-            className="bg-black/80 text-white px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out"
+            className="bg-black/80 text-white px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)]"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
             Follow Ups
