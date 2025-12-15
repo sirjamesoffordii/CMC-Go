@@ -510,3 +510,6 @@
 ## Remove Floating Pie Charts
 - [x] Remove pie chart overlay from InteractiveMap component
 - [x] Keep hover tooltips with pie charts (only remove floating ones on map)
+
+## Follow Up Tab Color Change
+- [x] Change Follow Up tab color from red to black
