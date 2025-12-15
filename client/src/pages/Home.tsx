@@ -7,6 +7,7 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
 import { MapPin, Calendar, Pencil } from "lucide-react";
+import { ImageCropModal } from "@/components/ImageCropModal";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -21,6 +22,9 @@ export default function Home() {
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState('/cmc-header-banner.png');
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
+  const [selectedFileName, setSelectedFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -42,6 +46,31 @@ export default function Home() {
       utils.settings.get.invalidate({ key: 'headerImageUrl' });
     },
   });
+  
+  // Handle crop complete
+  const handleCropComplete = (croppedImageBlob: Blob, croppedImageUrl: string) => {
+    // Show preview immediately
+    setHeaderImageUrl(croppedImageUrl);
+    setCropModalOpen(false);
+    
+    // Convert blob to base64 and upload to S3
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result as string;
+      uploadHeaderImage.mutate({
+        imageData: base64Data,
+        fileName: selectedFileName,
+      });
+    };
+    reader.readAsDataURL(croppedImageBlob);
+  };
+  
+  // Handle crop cancel
+  const handleCropCancel = () => {
+    setCropModalOpen(false);
+    setSelectedImageSrc('');
+    setSelectedFileName('');
+  };
   
   // Set header image from database on load
   useEffect(() => {
@@ -248,23 +277,17 @@ export default function Home() {
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={async (e) => {
+              onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  // Create a local preview URL immediately
+                  // Create a preview URL and open crop modal
                   const previewUrl = URL.createObjectURL(file);
-                  setHeaderImageUrl(previewUrl);
+                  setSelectedImageSrc(previewUrl);
+                  setSelectedFileName(file.name);
+                  setCropModalOpen(true);
                   
-                  // Convert file to base64 and upload to S3
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    const base64Data = reader.result as string;
-                    uploadHeaderImage.mutate({
-                      imageData: base64Data,
-                      fileName: file.name,
-                    });
-                  };
-                  reader.readAsDataURL(file);
+                  // Reset file input so same file can be selected again
+                  e.target.value = '';
                 }
               }}
             />
@@ -411,6 +434,13 @@ export default function Home() {
         person={selectedPerson}
         open={personDialogOpen}
         onOpenChange={setPersonDialogOpen}
+      />
+      
+      <ImageCropModal
+        open={cropModalOpen}
+        imageSrc={selectedImageSrc}
+        onCropComplete={handleCropComplete}
+        onCancel={handleCropCancel}
       />
     </div>
   );

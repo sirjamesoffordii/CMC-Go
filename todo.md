@@ -416,3 +416,15 @@
 - [x] Add uploadHeaderImage mutation to upload to S3
 - [x] Fetch saved header image on page load
 - [x] Show local preview immediately while uploading
+
+## Image Cropping Tool for Header
+- [x] Install react-easy-crop library
+- [x] Create ImageCropModal component with crop area controls
+- [x] Add zoom slider for image scaling
+- [x] Implement crop area adjustment with drag and pinch
+- [x] Add Save and Cancel buttons to modal
+- [x] Process cropped image to create final blob
+- [x] Integrate modal into header image upload flow
+- [x] Show modal after file selection, before upload
+- [x] Upload cropped image instead of original
+- [x] Ensure proper aspect ratio for header (wide format)
