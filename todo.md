@@ -465,3 +465,9 @@
 - [x] Save background color to database alongside header image
 - [x] Load saved background color on page load
 - [x] Update uploadHeaderImage mutation to accept backgroundColor
+
+## Follow Up Tab Styling
+- [x] Make tab more transparent dark grey (bg-gray-800/30)
+- [x] Tab should be barely visible by default (text-white/60, opacity-60)
+- [x] Smooth slide-out animation on hover/proximity (transition-all duration-300)
+- [x] Change text to "Follow Ups"

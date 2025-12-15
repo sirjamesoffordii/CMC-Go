@@ -457,14 +457,14 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Follow Up Tab Button - Fixed to right side */}
+      {/* Follow Up Tab Button - Fixed to right side, subtle with hover reveal */}
       {!followUpPanelOpen && (
         <button
           onClick={() => setFollowUpPanelOpen(true)}
-          className="fixed right-0 top-1/2 -translate-y-1/2 bg-[#ED1C24] text-white px-4 py-8 rounded-l-lg shadow-lg hover:bg-[#C91820] transition-colors z-30 font-semibold"
-          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          className="fixed top-1/2 -translate-y-1/2 bg-gray-800/30 text-white/60 px-2 py-6 rounded-l-md shadow-sm hover:bg-gray-800/80 hover:text-white hover:px-4 hover:py-8 hover:shadow-lg transition-all duration-300 ease-out z-30 font-medium text-sm hover:font-semibold group"
+          style={{ writingMode: 'vertical-rl', textOrientation: 'mixed', right: '-2px' }}
         >
-          Follow Up
+          <span className="opacity-60 group-hover:opacity-100 transition-opacity duration-300">Follow Ups</span>
         </button>
       )}
 
