@@ -435,3 +435,8 @@
 - [x] Check database save for header image URL - added logging
 - [x] Add zoom out capability (min zoom 0.5x) for fitting images
 - [ ] Test header image persistence across page refreshes
+
+## Crop Modal Improvements
+- [x] Fix horizontal movement constraint in image cropper (set restrictPosition=false)
+- [x] Center image by default instead of far left (reset crop on open)
+- [x] Adjust aspect ratio or crop settings for better movement (minZoom=0.1, horizontal-cover)

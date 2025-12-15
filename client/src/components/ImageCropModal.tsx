@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import Cropper, { Area } from "react-easy-crop";
+import { useState, useCallback, useEffect } from "react";
+import Cropper, { Area, Point } from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -12,10 +12,19 @@ interface ImageCropModalProps {
 }
 
 export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: ImageCropModalProps) {
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(0.5); // Start zoomed out to fit image
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Reset crop position and zoom when modal opens with new image
+  useEffect(() => {
+    if (open && imageSrc) {
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    }
+  }, [open, imageSrc]);
 
   const onCropCompleteCallback = useCallback(
     (_croppedArea: Area, croppedAreaPixels: Area) => {
@@ -87,11 +96,16 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     }
   };
 
+  // Use a more reasonable aspect ratio for the header (approximately 8:1)
+  // This allows more horizontal movement while still being wide
+  const headerAspectRatio = 1280 / 120; // ~10.67:1 based on actual header dimensions
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Crop Header Image</DialogTitle>
+          <p className="text-sm text-gray-500">Drag to position the image, use the slider to zoom in or out</p>
         </DialogHeader>
         
         {/* Cropper container with fixed height */}
@@ -101,18 +115,23 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              aspect={10 / 1.2}
+              aspect={headerAspectRatio}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropCompleteCallback}
-              minZoom={0.5}
+              minZoom={0.1}
               maxZoom={3}
-              objectFit="contain"
+              restrictPosition={false}
+              objectFit="horizontal-cover"
+              showGrid={true}
               style={{
                 containerStyle: {
                   width: "100%",
                   height: "100%",
                   backgroundColor: "#1a1a1a",
+                },
+                cropAreaStyle: {
+                  border: "2px solid #ED1C24",
                 },
               }}
             />
@@ -125,13 +144,13 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
             <label className="text-sm font-medium min-w-[60px]">Zoom</label>
             <Slider
               value={[zoom]}
-              min={0.5}
+              min={0.1}
               max={3}
-              step={0.1}
+              step={0.05}
               onValueChange={(value) => setZoom(value[0])}
               className="flex-1"
             />
-            <span className="text-sm text-gray-500 min-w-[40px]">{zoom.toFixed(1)}x</span>
+            <span className="text-sm text-gray-500 min-w-[40px]">{zoom.toFixed(2)}x</span>
           </div>
         </div>
 
