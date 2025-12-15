@@ -268,13 +268,13 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header - Full Width */}
       <div 
-        className="relative min-h-[120px] h-[120px] overflow-hidden group flex-shrink-0"
+        className="relative min-h-[120px] h-[120px] overflow-hidden group flex-shrink-0 bg-white"
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
-            {/* Background Image */}
+            {/* Background Image - centered with white fallback on sides */}
             <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              className="absolute inset-0 bg-contain bg-center bg-no-repeat bg-white"
               style={{ backgroundImage: `url(${headerImageUrl})` }}
             />
 

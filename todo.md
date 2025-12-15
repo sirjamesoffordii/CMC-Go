@@ -440,3 +440,9 @@
 - [x] Fix horizontal movement constraint in image cropper (set restrictPosition=false)
 - [x] Center image by default instead of far left (reset crop on open)
 - [x] Adjust aspect ratio or crop settings for better movement (minZoom=0.1, horizontal-cover)
+
+## Header Background Improvements
+- [x] Change default/empty space background from black to white
+- [x] Add edge extension feature to fill horizontal gaps without stretching content
+- [x] Sample edge pixels and extend them to fill remaining space
+- [x] Add toggle switch to enable/disable edge extension
