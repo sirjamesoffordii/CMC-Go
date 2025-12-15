@@ -527,18 +527,14 @@ export default function Home() {
           )}
         </div>
 
-        {/* Edit Header Button - Appears on hover */}
-        {isHeaderHovered && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setHeaderEditorOpen(true)}
-            className="text-white/70 hover:text-white hover:bg-white/10 mr-2"
-          >
-            <Pencil className="w-4 h-4 mr-1" />
-            Edit Header
-          </Button>
-        )}
+        {/* Edit Header Button - Positioned absolutely in top left corner */}
+        <button
+          onClick={() => setHeaderEditorOpen(true)}
+          className={`absolute top-1 left-1 flex items-center gap-1 px-2 py-1 rounded text-xs text-white/60 hover:text-white hover:bg-white/10 transition-all duration-200 ${isHeaderHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        >
+          <Pencil className="w-3 h-3" />
+          Edit
+        </button>
 
         {/* Right Side Buttons */}
         <div className="flex-shrink-0 flex items-center gap-2">

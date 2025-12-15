@@ -568,3 +568,9 @@
 - [x] Add editable text area for invitation message in Share modal
 - [x] Allow leaders to personalize the message before sharing
 - [x] Reset to default message option
+
+## Edit Header Button Redesign
+- [x] Move Edit button to top left corner of header
+- [x] Use pen icon with "Edit" text
+- [x] Position absolutely so it doesn't shift header content
+- [x] Show on hover near the button area
