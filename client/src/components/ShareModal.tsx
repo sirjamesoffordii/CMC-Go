@@ -1,13 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Copy, 
   Mail, 
   MessageCircle, 
   Check,
-  X,
-  ExternalLink,
-  Share2
+  RotateCcw,
+  Share2,
+  ChevronDown,
+  ChevronUp,
+  Pencil
 } from 'lucide-react';
 import {
   Dialog,
@@ -21,7 +24,7 @@ interface ShareModalProps {
   onClose: () => void;
 }
 
-const INVITATION_MESSAGE = `Hey,
+const DEFAULT_INVITATION_MESSAGE = `Hey,
 
 We're exploring CMC Go as a way to coordinate toward CMC. It's a map-first web app that replaces spreadsheets with a shared visual, helping leaders at every level see who's been personally invited, surfacing who needs support, and bringing clarity to each person's decision journey.
 
@@ -32,9 +35,20 @@ const SHORT_MESSAGE = `Check out CMC Go - a map-first web app to coordinate CMC 
 export function ShareModal({ open, onClose }: ShareModalProps) {
   const [linkCopied, setLinkCopied] = useState(false);
   const [messageCopied, setMessageCopied] = useState(false);
+  const [customMessage, setCustomMessage] = useState(DEFAULT_INVITATION_MESSAGE);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showFullPreview, setShowFullPreview] = useState(false);
   
   const siteUrl = typeof window !== 'undefined' ? window.location.origin : '';
   
+  // Reset state when modal opens
+  useEffect(() => {
+    if (open) {
+      setLinkCopied(false);
+      setMessageCopied(false);
+    }
+  }, [open]);
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(siteUrl);
@@ -47,7 +61,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
 
   const handleCopyMessage = async () => {
     try {
-      await navigator.clipboard.writeText(`${INVITATION_MESSAGE}\n\n${siteUrl}`);
+      await navigator.clipboard.writeText(`${customMessage}\n\n${siteUrl}`);
       setMessageCopied(true);
       setTimeout(() => setMessageCopied(false), 2000);
     } catch (err) {
@@ -55,21 +69,24 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
     }
   };
 
+  const handleResetMessage = () => {
+    setCustomMessage(DEFAULT_INVITATION_MESSAGE);
+  };
+
   const handleEmailShare = () => {
     const subject = encodeURIComponent('Check out CMC Go - Coordinate toward CMC together');
-    const body = encodeURIComponent(`${INVITATION_MESSAGE}\n\n${siteUrl}`);
+    const body = encodeURIComponent(`${customMessage}\n\n${siteUrl}`);
     window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
   };
 
   const handleSMSShare = () => {
-    const body = encodeURIComponent(`${SHORT_MESSAGE}\n\n${siteUrl}`);
-    // Use sms: protocol - works on mobile devices
+    // For SMS, use a shorter version if the custom message is too long
+    const messageToUse = customMessage.length > 300 ? SHORT_MESSAGE : customMessage;
+    const body = encodeURIComponent(`${messageToUse}\n\n${siteUrl}`);
     window.open(`sms:?body=${body}`, '_blank');
   };
 
   const handleGroupMeShare = () => {
-    // GroupMe doesn't have a direct share URL, but we can copy the message
-    // and provide instructions
     handleCopyMessage();
   };
 
@@ -79,19 +96,22 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
   };
 
   const handleTwitterShare = () => {
+    // Twitter has character limits, use short message
     const text = encodeURIComponent(SHORT_MESSAGE);
     const url = encodeURIComponent(siteUrl);
     window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank', 'width=600,height=400');
   };
 
   const handleWhatsAppShare = () => {
-    const text = encodeURIComponent(`${SHORT_MESSAGE}\n\n${siteUrl}`);
+    const text = encodeURIComponent(`${customMessage}\n\n${siteUrl}`);
     window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
+  const isMessageModified = customMessage !== DEFAULT_INVITATION_MESSAGE;
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
@@ -133,6 +153,9 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
               <span className="flex items-center gap-2">
                 <MessageCircle className="w-4 h-4" />
                 Copy Invitation Message
+                {isMessageModified && (
+                  <span className="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded">Customized</span>
+                )}
               </span>
               {messageCopied ? (
                 <span className="flex items-center gap-1 text-green-600">
@@ -141,6 +164,51 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
                 </span>
               ) : null}
             </Button>
+          </div>
+
+          {/* Editable Message Section */}
+          <div className="border rounded-lg overflow-hidden">
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Pencil className="w-4 h-4" />
+                Personalize Your Message
+              </span>
+              {isEditing ? (
+                <ChevronUp className="w-4 h-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-500" />
+              )}
+            </button>
+            
+            {isEditing && (
+              <div className="p-3 space-y-3 border-t">
+                <Textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Write your personalized invitation message..."
+                  className="min-h-[200px] text-sm resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500">
+                    {customMessage.length} characters
+                  </p>
+                  {isMessageModified && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetMessage}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      Reset to Default
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Divider */}
@@ -230,11 +298,25 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
             </button>
           </div>
 
-          {/* Preview Message */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-            <p className="text-xs font-medium text-gray-500 mb-2">Invitation Preview:</p>
-            <p className="text-xs text-gray-600 whitespace-pre-line line-clamp-4">{INVITATION_MESSAGE.substring(0, 200)}...</p>
-          </div>
+          {/* Preview Message (collapsed by default when not editing) */}
+          {!isEditing && (
+            <div className="p-3 bg-gray-50 rounded-lg">
+              <button
+                onClick={() => setShowFullPreview(!showFullPreview)}
+                className="w-full flex items-center justify-between text-xs font-medium text-gray-500 mb-2"
+              >
+                <span>Message Preview {isMessageModified && '(Customized)'}</span>
+                {showFullPreview ? (
+                  <ChevronUp className="w-3 h-3" />
+                ) : (
+                  <ChevronDown className="w-3 h-3" />
+                )}
+              </button>
+              <p className={`text-xs text-gray-600 whitespace-pre-line ${showFullPreview ? '' : 'line-clamp-3'}`}>
+                {customMessage}
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -242,4 +324,4 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
 }
 
 // Export the invitation message for use elsewhere
-export const SHARE_INVITATION_MESSAGE = INVITATION_MESSAGE;
+export const SHARE_INVITATION_MESSAGE = DEFAULT_INVITATION_MESSAGE;

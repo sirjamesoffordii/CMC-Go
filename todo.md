@@ -563,3 +563,8 @@
 - [x] Add social media sharing (Facebook, Twitter/X)
 - [x] Add GroupMe sharing option
 - [x] Pre-filled invitation message for leaders
+
+## Editable Invitation Message
+- [x] Add editable text area for invitation message in Share modal
+- [x] Allow leaders to personalize the message before sharing
+- [x] Reset to default message option
