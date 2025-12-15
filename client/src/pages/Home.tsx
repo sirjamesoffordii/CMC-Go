@@ -6,8 +6,9 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
+import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -21,14 +22,20 @@ export default function Home() {
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
-  const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(90); // pixels - slightly shorter
+  const [headerBgColor, setHeaderBgColor] = useState<string>('#000000');
+  const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
+  const [headerText, setHeaderText] = useState<string>('');
+  const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
 
@@ -39,10 +46,12 @@ export default function Home() {
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   
-  // Fetch saved header image, background color, and height
+  // Fetch saved header image, background color, height, and logo
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
   const { data: savedBgColor } = trpc.settings.get.useQuery({ key: 'headerBgColor' });
   const { data: savedHeaderHeight } = trpc.settings.get.useQuery({ key: 'headerHeight' });
+  const { data: savedHeaderLogo } = trpc.settings.get.useQuery({ key: 'headerLogoUrl' });
+  const { data: savedHeaderText } = trpc.settings.get.useQuery({ key: 'headerText' });
   
   // Upload header image mutation
   const uploadHeaderImage = trpc.settings.uploadHeaderImage.useMutation({
@@ -101,6 +110,43 @@ export default function Home() {
     setCropModalOpen(false);
     setSelectedImageSrc('');
     setSelectedFileName('');
+  };
+  
+  // Update settings mutation for logo and bg color
+  const updateSetting = trpc.settings.set.useMutation({
+    onSuccess: () => {
+      utils.settings.get.invalidate();
+    },
+  });
+  
+  // Handle logo upload
+  const handleLogoUpload = async (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64Data = reader.result as string;
+      // Upload logo using the same pattern as header image
+      uploadHeaderImage.mutate(
+        {
+          imageData: base64Data,
+          fileName: `logo-${Date.now()}-${file.name}`,
+          backgroundColor: '',
+        },
+        {
+          onSuccess: (data) => {
+            setHeaderLogoUrl(data.url);
+            // Save logo URL to settings
+            updateSetting.mutate({ key: 'headerLogoUrl', value: data.url });
+          },
+        }
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Handle background color change
+  const handleBgColorChange = (color: string) => {
+    setHeaderBgColor(color);
+    updateSetting.mutate({ key: 'headerBgColor', value: color });
   };
   
   // Set header image from database on load
@@ -331,78 +377,178 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header - Full Width */}
+      {/* Header - Chi Alpha Toolbar Style */}
       <div 
-        className="relative overflow-hidden group flex-shrink-0 bg-white"
-        style={{ height: `${headerHeight}px`, minHeight: '60px' }}
+        className="relative flex items-center px-4 group flex-shrink-0"
+        style={{ 
+          height: `${headerHeight}px`, 
+          minHeight: '50px',
+          backgroundColor: headerBgColor || savedBgColor?.value || '#000000'
+        }}
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
-            {/* Background Image - fills the header with cover mode */}
-            <div 
-              className="absolute inset-0 bg-cover bg-top bg-no-repeat"
-              style={{ 
-                backgroundImage: headerImageUrl || savedHeaderImage?.value ? `url(${headerImageUrl || savedHeaderImage?.value})` : 'none',
-                backgroundColor: headerBgColor || savedBgColor?.value || '#FFFFFF'
-              }}
+        {/* Logo - Left Side */}
+        <div className="flex-shrink-0 h-10 w-auto mr-4">
+          <img 
+            src={headerLogoUrl || savedHeaderLogo?.value || '/xa-logo.png'} 
+            alt="Logo" 
+            className="h-full w-auto object-contain"
+          />
+        </div>
+
+        {/* Header Text - Editable */}
+        <div 
+          className="flex-grow text-white font-medium text-lg"
+          dangerouslySetInnerHTML={{ 
+            __html: headerText || savedHeaderText?.value || '<span style="font-size: 18px;">Chi Alpha Campus Ministries</span>' 
+          }}
+        />
+
+        {/* Search Bar */}
+        <div className="relative flex-shrink-0 mr-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
+              className="w-48 pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-600 rounded-md text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
             />
-
-            {/* Header Content - Image contains text, so no overlay needed */}
-
-            {/* Edit Button - Appears on hover */}
-            {isHeaderHovered && (
+            {searchQuery && (
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute top-4 left-4 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all duration-200 z-50"
-                title="Change header background"
+                onClick={() => { setSearchQuery(''); setSearchOpen(false); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
               >
-                <Pencil className="w-5 h-5 text-gray-700" />
+                <X className="w-4 h-4" />
               </button>
             )}
-            
-            {/* Resize Handle - Appears on hover at bottom of header */}
-            {isHeaderHovered && (
-              <div
-                className="absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize bg-gradient-to-t from-black/20 to-transparent hover:from-black/40 transition-colors z-50 flex items-center justify-center"
-                onMouseDown={handleHeaderResizeStart}
-                title="Drag to resize header"
-              >
-                <div className="w-12 h-1 bg-white/60 rounded-full" />
-              </div>
-            )}
-
-            {/* Hidden File Input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  // Create a preview URL and open crop modal
-                  const previewUrl = URL.createObjectURL(file);
-                  setSelectedImageSrc(previewUrl);
-                  setSelectedFileName(file.name);
-                  setCropModalOpen(true);
-                  
-                  // Reset file input so same file can be selected again
-                  e.target.value = '';
+          </div>
+          
+          {/* Search Results Dropdown */}
+          {searchOpen && searchQuery && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 max-h-80 overflow-y-auto z-50">
+              {/* Filter and display results */}
+              {(() => {
+                const query = searchQuery.toLowerCase();
+                const matchedPeople = allPeople.filter(p => 
+                  p.name.toLowerCase().includes(query) || 
+                  p.role?.toLowerCase().includes(query)
+                ).slice(0, 5);
+                const matchedCampuses = allCampuses.filter(c => 
+                  c.name.toLowerCase().includes(query)
+                ).slice(0, 3);
+                const matchedDistricts = districts.filter(d => 
+                  d.id.toLowerCase().includes(query) || 
+                  d.region?.toLowerCase().includes(query)
+                ).slice(0, 3);
+                
+                const hasResults = matchedPeople.length > 0 || matchedCampuses.length > 0 || matchedDistricts.length > 0;
+                
+                if (!hasResults) {
+                  return <div className="p-3 text-gray-500 text-sm">No results found</div>;
                 }
-              }}
-            />
-
-            {/* Top Right Buttons */}
-            <div className="absolute top-1/2 -translate-y-1/2 right-0 pr-4">
-              <div className="flex items-center gap-3">
-                <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
-                  More Info
-                </Button>
-                <Button className="bg-black hover:bg-gray-800 text-white text-sm">
-                  Login
-                </Button>
-              </div>
+                
+                return (
+                  <>
+                    {matchedPeople.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
+                        {matchedPeople.map(person => (
+                          <button
+                            key={person.id}
+                            onClick={() => {
+                              setSelectedPerson(person);
+                              setPersonDialogOpen(true);
+                              setSearchOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                          >
+                            <div className={`w-2 h-2 rounded-full ${
+                              person.status === 'Going' ? 'bg-green-500' :
+                              person.status === 'Maybe' ? 'bg-yellow-500' :
+                              person.status === 'Not Going' ? 'bg-red-500' : 'bg-gray-300'
+                            }`} />
+                            <span className="text-sm text-gray-900">{person.name}</span>
+                            {person.role && <span className="text-xs text-gray-500">{person.role}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {matchedCampuses.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Campuses</div>
+                        {matchedCampuses.map(campus => (
+                          <button
+                            key={campus.id}
+                            onClick={() => {
+                              setSelectedDistrictId(campus.districtId);
+                              setSearchOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100"
+                          >
+                            <span className="text-sm text-gray-900">{campus.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">in {campus.districtId}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {matchedDistricts.length > 0 && (
+                      <div>
+                        <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Districts</div>
+                        {matchedDistricts.map(district => (
+                          <button
+                            key={district.id}
+                            onClick={() => {
+                              setSelectedDistrictId(district.id);
+                              setSearchOpen(false);
+                              setSearchQuery('');
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100"
+                          >
+                            <span className="text-sm text-gray-900">{district.id}</span>
+                            {district.region && <span className="text-xs text-gray-500 ml-2">{district.region}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
+          )}
+        </div>
+
+        {/* Edit Header Button - Appears on hover */}
+        {isHeaderHovered && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setHeaderEditorOpen(true)}
+            className="text-white/70 hover:text-white hover:bg-white/10 mr-2"
+          >
+            <Pencil className="w-4 h-4 mr-1" />
+            Edit Header
+          </Button>
+        )}
+
+        {/* Right Side Buttons */}
+        <div className="flex-shrink-0 flex items-center gap-3">
+          <Button 
+            variant="outline" 
+            className="bg-white/90 hover:bg-white text-black text-sm border-0" 
+            onClick={() => setLocation("/more-info")}
+          >
+            More Info
+          </Button>
+          <Button className="bg-gray-700 hover:bg-gray-600 text-white text-sm">
+            Login
+          </Button>
+        </div>
       </div>
 
       {/* Main Content Area Below Header */}
@@ -546,6 +692,46 @@ export default function Home() {
         imageSrc={selectedImageSrc}
         onCropComplete={handleCropComplete}
         onCancel={handleCropCancel}
+      />
+      
+      <HeaderEditorModal
+        open={headerEditorOpen}
+        onClose={() => setHeaderEditorOpen(false)}
+        logoUrl={headerLogoUrl || savedHeaderLogo?.value || null}
+        headerText={headerText || savedHeaderText?.value || ''}
+        backgroundColor={headerBgColor || savedBgColor?.value || '#000000'}
+        onSave={async (data) => {
+          // Save header text
+          if (data.headerText) {
+            setHeaderText(data.headerText);
+            updateSetting.mutate({ key: 'headerText', value: data.headerText });
+          }
+          
+          // Save background color
+          if (data.backgroundColor) {
+            setHeaderBgColor(data.backgroundColor);
+            updateSetting.mutate({ key: 'headerBgColor', value: data.backgroundColor });
+          }
+          
+          // Upload logo if provided
+          if (data.logoFile) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = reader.result as string;
+              // Use the existing upload mutation for logo
+              uploadHeaderImage.mutate({
+                imageData: base64,
+                fileName: `logo-${data.logoFile!.name}`,
+              }, {
+                onSuccess: (result) => {
+                  setHeaderLogoUrl(result.url);
+                  updateSetting.mutate({ key: 'headerLogoUrl', value: result.url });
+                }
+              });
+            };
+            reader.readAsDataURL(data.logoFile);
+          }
+        }}
       />
     </div>
   );

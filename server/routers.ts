@@ -187,6 +187,12 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSetting(input.key);
       }),
+    set: publicProcedure
+      .input(z.object({ key: z.string(), value: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.setSetting(input.key, input.value);
+        return { success: true };
+      }),
     uploadHeaderImage: publicProcedure
       .input(z.object({ 
         imageData: z.string(), // base64 encoded image

@@ -516,3 +516,36 @@
 
 ## Follow Up Tab Glow Effect
 - [x] Add subtle glowing effect to Follow Up tab for better visibility
+
+## Chi Alpha XA Mighty Toolbar Header
+- [ ] Replace header with black toolbar style (same space)
+- [ ] Add editable XA logo on the left side
+- [ ] Add "Chi Alpha Campus Ministries" text next to logo
+- [ ] Keep More Info and Login buttons on the right
+- [ ] Background should be customizable (default black)
+- [ ] Logo should be customizable (click to change)
+
+## Chi Alpha XA Toolbar Header (Final)
+- [ ] Replace header with black toolbar style
+- [ ] Add editable XA logo on the left (click to change)
+- [ ] Add "Chi Alpha Campus Ministries" text next to logo
+- [ ] Keep More Info and Login buttons on the right
+- [ ] Background color customizable (default black, can change to any color)
+- [ ] Logo customizable (click to upload new logo)
+
+## Rich Text Header Editor
+- [x] Create editable logo on the left (click to upload new image)
+- [x] Add rich text editor in the middle of header
+- [x] Support bold, italic, underline formatting
+- [x] Support font size changes
+- [x] Support font family selection
+- [x] Keep More Info and Login buttons static on the right
+- [x] Background color customizable (default black)
+- [x] Save header content to database
+- [x] Load saved header content on page load
+
+## Search Feature
+- [x] Add search bar to header (like Chi Alpha toolbar)
+- [x] Search across people, campuses, and districts
+- [x] Show search results dropdown
+- [x] Click result to navigate to that item
