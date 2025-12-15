@@ -483,3 +483,14 @@
 - [x] Implement drag-to-resize functionality
 - [x] Load saved header height from database
 - [ ] Save header height to database on resize end
+
+## Header Default Changes
+- [x] Reduce default header height (80px instead of 120px)
+- [x] Set default header background to white (no image by default)
+
+## Header Height & Crop Aspect Ratio Fix
+- [x] Update default header height to 110px (slightly taller than screenshot)
+- [x] Fix crop aspect ratio to match actual header dimensions (1280/110)
+- [x] Ensure cropped image displays correctly without top being cut off (bg-top)
+- [x] Change background-position from center to top for header image
+- [x] Center buttons vertically in header

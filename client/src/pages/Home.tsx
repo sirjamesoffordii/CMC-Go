@@ -22,7 +22,7 @@ export default function Home() {
   const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(120); // pixels
+  const [headerHeight, setHeaderHeight] = useState(110); // pixels - slightly taller than screenshot
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -340,9 +340,9 @@ export default function Home() {
       >
             {/* Background Image - fills the header with cover mode */}
             <div 
-              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              className="absolute inset-0 bg-cover bg-top bg-no-repeat"
               style={{ 
-                backgroundImage: `url(${headerImageUrl || savedHeaderImage?.value || '/cmc-header-banner.png'})`,
+                backgroundImage: headerImageUrl || savedHeaderImage?.value ? `url(${headerImageUrl || savedHeaderImage?.value})` : 'none',
                 backgroundColor: headerBgColor || savedBgColor?.value || '#FFFFFF'
               }}
             />
@@ -393,7 +393,7 @@ export default function Home() {
             />
 
             {/* Top Right Buttons */}
-            <div className="absolute top-0 right-0 p-4">
+            <div className="absolute top-1/2 -translate-y-1/2 right-0 pr-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
                   More Info
