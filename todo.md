@@ -494,3 +494,15 @@
 - [x] Ensure cropped image displays correctly without top being cut off (bg-top)
 - [x] Change background-position from center to top for header image
 - [x] Center buttons vertically in header
+
+## Update SVG Map
+- [ ] Replace old SVG with new ChiAlphaDistrictLinesPlainSVG.svg
+- [ ] Update district IDs to match new SVG
+- [ ] Adjust any references to district paths
+- [ ] Test map interactions with new SVG
+
+## Update SVG Map
+- [x] Replace old map.svg with new ChiAlphaDistrictLinesPlainSVG.svg
+- [x] Update district centroids to match new SVG IDs (48 districts)
+- [x] Update database districts to match new SVG path IDs
+- [x] Verify all districts are clickable and display correctly
