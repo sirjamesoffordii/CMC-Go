@@ -428,3 +428,10 @@
 - [x] Show modal after file selection, before upload
 - [x] Upload cropped image instead of original
 - [x] Ensure proper aspect ratio for header (wide format)
+
+## Header Image Bug Fixes
+- [x] Fix header cut off at top in fullscreen mode
+- [x] Debug S3 upload - added error logging and handling
+- [x] Check database save for header image URL - added logging
+- [x] Add zoom out capability (min zoom 0.5x) for fitting images
+- [ ] Test header image persistence across page refreshes

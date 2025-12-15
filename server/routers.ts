@@ -193,18 +193,33 @@ export const appRouter = router({
         fileName: z.string(),
       }))
       .mutation(async ({ input }) => {
-        // Convert base64 to buffer
-        const base64Data = input.imageData.split(',')[1];
-        const buffer = Buffer.from(base64Data, 'base64');
-        
-        // Upload to S3
-        const fileKey = `header-images/${Date.now()}-${input.fileName}`;
-        const { url } = await storagePut(fileKey, buffer, 'image/jpeg');
-        
-        // Save to database
-        await db.setSetting('headerImageUrl', url);
-        
-        return { url };
+        try {
+          console.log('[uploadHeaderImage] Starting upload for:', input.fileName);
+          
+          // Convert base64 to buffer
+          const base64Data = input.imageData.split(',')[1];
+          if (!base64Data) {
+            throw new Error('Invalid base64 image data');
+          }
+          const buffer = Buffer.from(base64Data, 'base64');
+          console.log('[uploadHeaderImage] Buffer size:', buffer.length);
+          
+          // Upload to S3
+          const fileKey = `header-images/${Date.now()}-${input.fileName}`;
+          console.log('[uploadHeaderImage] Uploading to S3 with key:', fileKey);
+          const { url } = await storagePut(fileKey, buffer, 'image/jpeg');
+          console.log('[uploadHeaderImage] S3 upload successful, URL:', url);
+          
+          // Save to database
+          console.log('[uploadHeaderImage] Saving URL to database');
+          await db.setSetting('headerImageUrl', url);
+          console.log('[uploadHeaderImage] Database save successful');
+          
+          return { url };
+        } catch (error) {
+          console.error('[uploadHeaderImage] Error:', error);
+          throw error;
+        }
       }),
   }),
 });

@@ -53,14 +53,34 @@ export default function Home() {
     setHeaderImageUrl(croppedImageUrl);
     setCropModalOpen(false);
     
+    console.log('[handleCropComplete] Starting upload, blob size:', croppedImageBlob.size);
+    
     // Convert blob to base64 and upload to S3
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
-      uploadHeaderImage.mutate({
-        imageData: base64Data,
-        fileName: selectedFileName,
-      });
+      console.log('[handleCropComplete] Base64 data length:', base64Data.length);
+      
+      const fileName = selectedFileName || `header-${Date.now()}.jpg`;
+      console.log('[handleCropComplete] Uploading with fileName:', fileName);
+      
+      uploadHeaderImage.mutate(
+        {
+          imageData: base64Data,
+          fileName: fileName,
+        },
+        {
+          onSuccess: (data) => {
+            console.log('[handleCropComplete] Upload successful:', data.url);
+          },
+          onError: (error) => {
+            console.error('[handleCropComplete] Upload failed:', error);
+          },
+        }
+      );
+    };
+    reader.onerror = (error) => {
+      console.error('[handleCropComplete] FileReader error:', error);
     };
     reader.readAsDataURL(croppedImageBlob);
   };
@@ -248,13 +268,13 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header - Full Width */}
       <div 
-        className="relative h-[120px] overflow-hidden group"
+        className="relative min-h-[120px] h-[120px] overflow-hidden group flex-shrink-0"
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
             {/* Background Image */}
             <div 
-              className="absolute inset-0 bg-cover bg-center"
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
               style={{ backgroundImage: `url(${headerImageUrl})` }}
             />
 
