@@ -336,7 +336,7 @@ export default function Home() {
                 <Button variant="outline" className="bg-white/90 hover:bg-white text-sm" onClick={() => setLocation("/more-info")}>
                   More Info
                 </Button>
-                <Button className="bg-[#ED1C24] hover:bg-[#C91820] text-white text-sm">
+                <Button className="bg-black hover:bg-gray-800 text-white text-sm">
                   Login
                 </Button>
               </div>
@@ -465,7 +465,7 @@ export default function Home() {
         >
           <button
             onClick={() => setFollowUpPanelOpen(true)}
-            className="bg-gray-600/40 text-white/80 px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 transition-transform duration-300 ease-out"
+            className="bg-[#ED1C24]/80 text-white px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 group-hover:bg-[#ED1C24] transition-all duration-300 ease-out"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
             Follow Ups
