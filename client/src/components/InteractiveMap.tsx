@@ -127,27 +127,39 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
 
-    // Regional color mapping - professional, muted, earthy tones (saturation reduced ~25%)
+    // Regional color mapping – muted, "tool-grade" palette (less cartoonish)
+    // Goal: clear differentiation with lower saturation and softer luminance.
     const regionColors: Record<string, string> = {
-      "Northwest": "#8BBDD4",           // muted teal-blue
-      "Big Sky": "#B8A88A",             // muted warm taupe
-      "Great Plains North": "#8E7AAB",  // muted dusty purple
-      "Great Lakes": "#7BA3C4",         // desaturated slate blue
-      "Great Plains South": "#E2D9A2",  // muted khaki/sand
-      "Mid-Atlantic": "#CDA08A",        // muted terracotta
-      "Mid-Atlantic (Extended)": "#CDA08A", // muted terracotta
-      "Northeast": "#D4909E",           // muted dusty rose
-      "South Central": "#D49A9A",       // muted coral
-      "Southeast": "#8AB88A",           // muted sage green
-      "Texico": "#A98AB8",              // muted mauve
-      "West Coast": "#D4A86A",          // muted amber/ochre
+      "Northwest": "#8FB9CF",                 // muted coastal blue
+      "Big Sky": "#B7A785",                   // warm stone
+      "Great Plains North": "#857A9B",        // dusty purple
+      "Great Lakes": "#7EA6BE",               // steel blue
+      "Great Plains South": "#D7C98B",        // wheat
+      "Mid-Atlantic": "#C7A08D",              // clay
+      "Mid-Atlantic (Extended)": "#C7A08D",   // clay
+      "Northeast": "#C79AA7",                 // muted rose
+      "South Central": "#C79A93",             // muted brick
+      "Southeast": "#93B7A1",                 // sage
+      "Texico": "#8F86A7",                    // muted violet
+      "West Coast": "#D0B08A",                // sand
     };
 
-    // Style visual paths (what user sees) - smooth, no borders
+    // Premium map styling constants
+    const BORDER_COLOR = "rgba(255,255,255,0.92)";
+    const BORDER_WIDTH = "0.4";          // thinner borders = less "cartoon"
+    const BORDER_WIDTH_HOVER = "0.9";
+    const TRANSITION = "filter 160ms ease, opacity 160ms ease, stroke-width 160ms ease";
+    const DIM_OPACITY = "0.40";
+    const DIM_FILTER = "saturate(0.75) brightness(1.02)";
+    const FOCUS_FILTER = "saturate(1.05) brightness(1.04)";
+    const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
+
+    // Style visual paths (what user sees)
     visualPaths.forEach(path => {
-      const pathId = path.getAttribute("inkscape:label") || 
-                     path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
-                     path.getAttribute("id");
+      const pathId =
+        path.getAttribute("inkscape:label") ||
+        path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+        path.getAttribute("id");
       if (!pathId) return;
 
       const district = districts.find(d => d.id === pathId);
@@ -155,16 +167,14 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
       const baseColor = regionColors[district.region] || "#e5e7eb";
 
-      // Visual layer: solid colors with subtle white outlines
       path.style.fill = baseColor;
-      path.style.stroke = "rgba(255, 255, 255, 0.7)";
-      path.style.strokeWidth = "0.4";
-      path.style.strokeDasharray = ""; // Solid line by default
-      path.style.transition = "all 0.3s ease-out";
-      
-      // Apply selected state styling
+      path.style.stroke = BORDER_COLOR;
+      path.style.strokeWidth = BORDER_WIDTH;
+      path.style.strokeDasharray = "";
+      path.style.transition = TRANSITION;
+
       if (selectedDistrictId === pathId) {
-        path.style.filter = "brightness(0.92)";
+        path.style.filter = SELECTED_FILTER;
       } else {
         path.style.filter = "none";
       }
@@ -172,9 +182,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
     // Setup click handlers on invisible layer
     clickPaths.forEach(path => {
-      const pathId = path.getAttribute("inkscape:label") || 
-                     path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
-                     path.getAttribute("id");
+      const pathId =
+        path.getAttribute("inkscape:label") ||
+        path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+        path.getAttribute("id");
       if (!pathId) return;
 
       const district = districts.find(d => d.id === pathId);
@@ -188,36 +199,25 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         onDistrictSelect(pathId);
       });
 
-      // Hover effects - update visual layer when hovering over click layer
+      // Hover behavior: focus district, dim everything else (premium feel)
       path.addEventListener("mouseenter", (e: MouseEvent) => {
         setHoveredDistrict(pathId);
         setTooltipPos({ x: e.clientX, y: e.clientY });
-        
-        const hoveredRegion = district.region;
-        
-        // Apply region-based highlighting
+
         visualPaths.forEach(vPath => {
-          const vPathId = vPath.getAttribute("inkscape:label") || 
-                         vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
-                         vPath.getAttribute("id");
-          
-          const vDistrict = districts.find(d => d.id === vPathId);
-          if (!vDistrict) return;
-          
+          const vPathId =
+            vPath.getAttribute("inkscape:label") ||
+            vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+            vPath.getAttribute("id");
+
           if (vPathId === pathId) {
-            // Hovered district: subtle brightness increase, slightly thicker border
-            if (selectedDistrictId !== pathId) {
-              vPath.style.filter = "brightness(1.05) saturate(1.1)";
-              vPath.style.strokeWidth = "0.6";
-            }
-          } else if (vDistrict.region === hoveredRegion) {
-            // Same region: maintain normal appearance
             vPath.style.opacity = "1";
-            vPath.style.filter = "none";
+            vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : FOCUS_FILTER;
+            vPath.style.strokeWidth = BORDER_WIDTH_HOVER;
           } else {
-            // Other regions: subtle desaturation and fade
-            vPath.style.opacity = "0.7";
-            vPath.style.filter = "saturate(0.6)";
+            vPath.style.opacity = DIM_OPACITY;
+            vPath.style.filter = DIM_FILTER;
+            vPath.style.strokeWidth = BORDER_WIDTH;
           }
         });
       });
@@ -229,18 +229,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.addEventListener("mouseleave", () => {
         setHoveredDistrict(null);
         setTooltipPos(null);
-        
-        // Reset all paths to default state
+
         visualPaths.forEach(vPath => {
-          const vPathId = vPath.getAttribute("inkscape:label") || 
-                         vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") || 
-                         vPath.getAttribute("id");
-          
-          if (selectedDistrictId !== vPathId) {
+          const vPathId =
+            vPath.getAttribute("inkscape:label") ||
+            vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+            vPath.getAttribute("id");
+
+          if (selectedDistrictId === vPathId) {
+            vPath.style.filter = SELECTED_FILTER;
+          } else {
             vPath.style.filter = "none";
-            vPath.style.strokeWidth = "0.4";
-            vPath.style.opacity = "1";
           }
+          vPath.style.strokeWidth = BORDER_WIDTH;
+          vPath.style.opacity = "1";
         });
       });
     });

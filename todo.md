@@ -612,3 +612,9 @@
 - [ ] Reduce overuse of bold
 - [ ] Increase line-height
 - [ ] Alignment and padding consistency
+
+## Map Styling Update (User Provided)
+- [x] Replace regionColors with new muted "tool-grade" palette
+- [x] Add premium styling constants (BORDER_COLOR, BORDER_WIDTH, etc.)
+- [x] Update hover behavior - focus district, dim everything else
+- [x] Use faster transitions (160ms) for premium feel
