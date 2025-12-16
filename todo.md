@@ -636,3 +636,9 @@
 - [x] Reduce border width slightly for premium feel
 - [x] Reduce non-hover dimming to subtle level (0.78 opacity)
 - [x] Add premium focus filter with saturation and brightness boost
+
+## Project Cleanup
+- [x] Remove old/unused SVG files (ChiAlphaDistrictLinesPlainSVG.svg)
+- [x] Remove backup files (vite.config.ts.bak)
+- [x] Remove unused test files (test-map.html, map-visual.png, cmc-header-banner.png, xa-toolbar-header.png)
+- [x] Clear dist folder (build artifacts)
