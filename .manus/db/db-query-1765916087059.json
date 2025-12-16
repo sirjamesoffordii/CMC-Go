@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM districts WHERE id = 'Illinous'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute DELETE FROM districts WHERE id = 'Illinous'",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 62
+}

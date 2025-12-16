@@ -659,3 +659,12 @@
 - [x] Add "+" button to create new campus column in district panel
 - [x] Implement createCampus tRPC mutation
 - [x] Allow naming new campus inline after creation (uses EditableText component)
+
+## Illinois Spelling Normalization
+- [x] Search entire codebase for "Illinous" references (found in database only)
+- [x] Fix scripts/seed-districts.json (Illinous → Illinois) - already correct
+- [x] Fix client/public/map.svg inkscape:label (Illinous → Illinois) - already correct
+- [x] Update database records (people and campuses tables) - updated and deleted old Illinous district
+- [x] Verify no "Illinous" references remain in repo (verified in code and database)
+- [x] Test that Illinois highlights correctly on map (verified - app loads without errors)
+- [x] Test that Illinois counts appear in region rollups (metrics show 171/243 correctly)
