@@ -668,3 +668,15 @@
 - [x] Verify no "Illinous" references remain in repo (verified in code and database)
 - [x] Test that Illinois highlights correctly on map (verified - app loads without errors)
 - [x] Test that Illinois counts appear in region rollups (metrics show 171/243 correctly)
+
+## Fix Region Color Assignments
+- [x] Compare correct Chi Alpha map with current app colors
+- [x] Identify all districts with wrong region assignments (5 districts need changes)
+- [x] Update North Carolina: Mid-Atlantic → Southeast
+- [x] Update Tennessee: Mid-Atlantic → Southeast
+- [x] Update Arkansas: South Central → Texico
+- [x] Update Oklahoma: South Central → Texico
+- [x] Update Mississippi: Southeast → South Central
+- [x] Adjust Texico region color to be more pink-purple (#B85FA3)
+- [x] Verify map colors match the correct reference map (Texico now pink-purple, regions corrected)
+- [x] Test that all region rollups are accurate (verified via screenshot)

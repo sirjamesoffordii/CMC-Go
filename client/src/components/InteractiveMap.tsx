@@ -139,7 +139,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       "Northeast": "#C65E86",                 // deep rose
       "South Central": "#B96863",             // rich brick
       "Southeast": "#5FA37C",                 // deep sage
-      "Texico": "#7C5FA3",                    // rich violet
+      "Texico": "#B85FA3",                    // pink-purple magenta
       "West Coast": "#C08A4F",                // warm amber
     };
 

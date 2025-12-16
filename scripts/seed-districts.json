@@ -92,7 +92,7 @@
   {
     "id": "NorthCarolina",
     "name": "North Carolina",
-    "region": "Mid-Atlantic"
+    "region": "Southeast"
   },
   {
     "id": "Virginia",
@@ -107,7 +107,7 @@
   {
     "id": "Tennessee",
     "name": "Tennessee",
-    "region": "Mid-Atlantic"
+    "region": "Southeast"
   },
   {
     "id": "WestVirginia",
@@ -177,7 +177,7 @@
   {
     "id": "Arkansas",
     "name": "Arkansas",
-    "region": "South Central"
+    "region": "Texico"
   },
   {
     "id": "Louisiana",
@@ -187,7 +187,7 @@
   {
     "id": "Oklahoma",
     "name": "Oklahoma",
-    "region": "South Central"
+    "region": "Texico"
   },
   {
     "id": "Alabama",
@@ -207,7 +207,7 @@
   {
     "id": "Mississippi",
     "name": "Mississippi",
-    "region": "Southeast"
+    "region": "South Central"
   },
   {
     "id": "SouthCarolina",
