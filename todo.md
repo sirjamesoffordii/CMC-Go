@@ -574,3 +574,10 @@
 - [x] Use pen icon with "Edit" text
 - [x] Position absolutely so it doesn't shift header content
 - [x] Show on hover near the button area
+
+## Map Container Elevation Effect
+- [x] Add soft diffused drop shadow to map container as a whole
+- [x] Ensure shadow is subtle (low opacity, large blur, no hard edges)
+- [x] No border, no card/panel appearance
+- [x] Maintain tooltip visual hierarchy (tooltips float above map with shadow-2xl)
+- [x] Keep all existing map styling unchanged (colors, strokes, regions)

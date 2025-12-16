@@ -394,6 +394,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     <div className="w-full">
       <div 
         className="relative w-full h-full min-h-[700px]"
+        style={{
+          // Subtle elevation effect - soft diffused shadow for grounded presence
+          filter: 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.06)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.04))',
+        }}
       >
         {/* Background click layer - captures clicks on empty space */}
         <div 
