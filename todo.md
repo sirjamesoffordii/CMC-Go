@@ -648,3 +648,9 @@
 - [x] Document all required environment variables in README
 - [x] Provide step-by-step instructions for getting credentials from Manus
 - [x] Note: seed data not changed (database already has correct districts)
+
+## Data Consistency Fixes
+- [x] Fix Illinois typo (Illinous → Illinois) in seed-districts.json
+- [x] Verify map.svg has inkscape:label="Illinois" (confirmed)
+- [x] Consolidate Mid-Atlantic (Extended) to Mid-Atlantic in seed-districts.json
+- [x] Remove Mid-Atlantic (Extended) color key from InteractiveMap.tsx

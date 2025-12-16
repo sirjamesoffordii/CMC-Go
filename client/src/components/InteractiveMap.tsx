@@ -136,7 +136,6 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       "Great Lakes": "#5F97B8",               // rich steel blue
       "Great Plains South": "#D0B457",        // golden wheat
       "Mid-Atlantic": "#C6846A",              // terracotta clay
-      "Mid-Atlantic (Extended)": "#C6846A",   // terracotta clay
       "Northeast": "#C65E86",                 // deep rose
       "South Central": "#B96863",             // rich brick
       "Southeast": "#5FA37C",                 // deep sage

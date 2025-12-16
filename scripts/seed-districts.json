@@ -25,7 +25,7 @@
     "region": "Big Sky"
   },
   {
-    "id": "Illinous",
+    "id": "Illinois",
     "name": "Illinois",
     "region": "Great Lakes"
   },
@@ -102,17 +102,17 @@
   {
     "id": "Kentucky",
     "name": "Kentucky",
-    "region": "Mid-Atlantic (Extended)"
+    "region": "Mid-Atlantic"
   },
   {
     "id": "Tennessee",
     "name": "Tennessee",
-    "region": "Mid-Atlantic (Extended)"
+    "region": "Mid-Atlantic"
   },
   {
     "id": "WestVirginia",
     "name": "West Virginia",
-    "region": "Mid-Atlantic (Extended)"
+    "region": "Mid-Atlantic"
   },
   {
     "id": "Connecticut",
