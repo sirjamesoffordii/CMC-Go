@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO districts (id, name, region) VALUES ('North Dakota A', 'North Dakota A', 'North Central'), ('North Dakota B', 'North Dakota B', 'North Central')",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute INSERT INTO districts (id, name, region) VALUES ('North Dakota A', 'North Dakota A', 'North Central'), ('North Dakota B', 'North Dakota B', 'North Central')",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 51
-}
