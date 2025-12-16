@@ -178,19 +178,63 @@ node scripts/seed-db.mjs
 
 ## Development
 
-### Setup
+### Local Development in Cursor
+
+To run this project locally in Cursor (or any IDE), you need to set up environment variables:
+
+1. **Create a `.env` file** in the project root:
+
+```env
+# Database (get from Manus Settings → Database panel, click "Show connection info")
+DATABASE_URL=mysql://user:password@host:port/database?ssl={"rejectUnauthorized":true}
+
+# Authentication (get from Manus Settings → Secrets panel)
+JWT_SECRET=your-jwt-secret-from-manus
+VITE_APP_ID=your-app-id-from-manus
+OAUTH_SERVER_URL=https://api.manus.im
+VITE_OAUTH_PORTAL_URL=https://manus.im/oauth
+OWNER_OPEN_ID=your-owner-open-id
+OWNER_NAME=Your Name
+
+# Manus APIs (get from Manus Settings → Secrets panel)
+BUILT_IN_FORGE_API_URL=https://forge.manus.im
+BUILT_IN_FORGE_API_KEY=your-forge-api-key
+VITE_FRONTEND_FORGE_API_URL=https://forge.manus.im
+VITE_FRONTEND_FORGE_API_KEY=your-frontend-forge-api-key
+```
+
+2. **Get your credentials from Manus:**
+   - Open your project in Manus
+   - Click the **Settings** icon (gear) in the Management UI
+   - Go to **Database** panel → Click "Show connection info" → Copy the DATABASE_URL
+   - Go to **Secrets** panel → Copy each environment variable value
+
+3. **Install and run:**
 
 ```bash
 # Install dependencies
 pnpm install
 
-# Push database schema
+# Push database schema (if needed)
 pnpm db:push
 
-# Seed database
+# Seed database (if starting fresh)
 node scripts/seed-db.mjs
 
 # Start development server
+pnpm dev
+```
+
+4. **Open in browser:** Navigate to `http://localhost:3000`
+
+**Note:** The app uses the same Manus-hosted database whether running locally or in Manus, so your data stays in sync.
+
+### Quick Setup (Existing Data)
+
+If the database is already seeded (you've been using the app in Manus):
+
+```bash
+pnpm install
 pnpm dev
 ```
 

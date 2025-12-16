@@ -642,3 +642,9 @@
 - [x] Remove backup files (vite.config.ts.bak)
 - [x] Remove unused test files (test-map.html, map-visual.png, cmc-header-banner.png, xa-toolbar-header.png)
 - [x] Clear dist folder (build artifacts)
+
+## Local Development Setup
+- [x] Add README.md with local setup instructions for Cursor
+- [x] Document all required environment variables in README
+- [x] Provide step-by-step instructions for getting credentials from Manus
+- [x] Note: seed data not changed (database already has correct districts)
