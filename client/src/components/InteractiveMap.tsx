@@ -82,7 +82,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
   // Calculate stats for each district
   const districtStats = districts.reduce<Record<string, DistrictStats>>((acc, district) => {
-    const districtPeople = allPeople.filter(p => p.districtId === district.id);
+    const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
     acc[district.id] = {
       yes: districtPeople.filter(p => p.status === "Going").length,
       maybe: districtPeople.filter(p => p.status === "Maybe").length,

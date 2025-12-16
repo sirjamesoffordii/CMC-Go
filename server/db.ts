@@ -9,12 +9,14 @@ import {
   needs, 
   notes,
   settings,
+  assignments,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
   InsertNeed,
   InsertNote,
-  InsertSetting
+  InsertSetting,
+  InsertAssignment
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -163,7 +165,7 @@ export async function createCampus(campus: InsertCampus) {
   return { id: insertId, ...campus };
 }
 
-// People
+// People - now using personId (string) as the primary identifier
 export async function getAllPeople() {
   const db = await getDb();
   if (!db) return [];
@@ -173,13 +175,13 @@ export async function getAllPeople() {
 export async function getPeopleByDistrict(districtId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(eq(people.districtId, districtId));
+  return await db.select().from(people).where(eq(people.primaryDistrictId, districtId));
 }
 
 export async function getPeopleByCampus(campusId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(eq(people.campusId, campusId));
+  return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
 }
 
 export async function createPerson(person: InsertPerson) {
@@ -189,31 +191,31 @@ export async function createPerson(person: InsertPerson) {
   return result;
 }
 
-export async function updatePersonStatus(personId: number, status: "Not invited yet" | "Maybe" | "Going" | "Not Going") {
+export async function updatePersonStatus(personId: string, status: "Not invited yet" | "Maybe" | "Going" | "Not Going") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(people)
-    .set({ status, lastUpdated: new Date() })
-    .where(eq(people.id, personId));
+    .set({ status, statusLastUpdated: new Date() })
+    .where(eq(people.personId, personId));
 }
 
-export async function getPersonById(personId: number) {
+export async function getPersonById(personId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(people).where(eq(people.id, personId)).limit(1);
+  const result = await db.select().from(people).where(eq(people.personId, personId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updatePersonName(personId: number, name: string) {
+export async function updatePersonName(personId: string, name: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(people)
-    .set({ name, lastUpdated: new Date() })
-    .where(eq(people.id, personId));
+    .set({ name, statusLastUpdated: new Date() })
+    .where(eq(people.personId, personId));
 }
 
-// Needs
-export async function getNeedsByPerson(personId: number) {
+// Needs - now using personId (string)
+export async function getNeedsByPerson(personId: string) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(needs).where(eq(needs.personId, personId));
@@ -240,8 +242,8 @@ export async function getAllActiveNeeds() {
   return await db.select().from(needs).where(eq(needs.isActive, true));
 }
 
-// Notes
-export async function getNotesByPerson(personId: number) {
+// Notes - now using personId (string)
+export async function getNotesByPerson(personId: string) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(notes).where(eq(notes.personId, personId));
@@ -251,6 +253,20 @@ export async function createNote(note: InsertNote) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(notes).values(note);
+  return result;
+}
+
+// Assignments
+export async function getAssignmentsByPerson(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(assignments).where(eq(assignments.personId, personId));
+}
+
+export async function createAssignment(assignment: InsertAssignment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(assignments).values(assignment);
   return result;
 }
 
@@ -281,17 +297,17 @@ export async function getFollowUpPeople() {
   const needsSet = new Set(activeNeeds.map(n => n.personId));
   const peopleWithNeedsIds = Array.from(needsSet);
   
-  // Combine and deduplicate
-  const allPeopleIds = new Set<number>();
-  maybePeople.forEach(p => allPeopleIds.add(p.id));
-  peopleWithNeedsIds.forEach(id => allPeopleIds.add(id));
+  // Combine and deduplicate using personId (string)
+  const allPersonIds = new Set<string>();
+  maybePeople.forEach(p => allPersonIds.add(p.personId));
+  peopleWithNeedsIds.forEach(id => allPersonIds.add(id));
   
   // Get full person records
-  if (allPeopleIds.size === 0) return [];
+  if (allPersonIds.size === 0) return [];
   
-  const peopleIdsArray = Array.from(allPeopleIds);
+  const personIdsArray = Array.from(allPersonIds);
   const followUpPeople = await db.select().from(people).where(
-    or(...peopleIdsArray.map(id => eq(people.id, id)))
+    or(...personIdsArray.map(id => eq(people.personId, id)))
   );
   
   return followUpPeople;

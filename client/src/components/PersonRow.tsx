@@ -7,7 +7,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 interface PersonRowProps {
   person: Person;
-  onStatusChange: (personId: number, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
   onClick: (person: Person) => void;
   hasNotes?: boolean;
   hasNeeds?: boolean;
@@ -40,7 +40,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: person.id });
+  } = useSortable({ id: person.personId });
   
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -53,7 +53,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     const currentIndex = STATUS_CYCLE.indexOf(person.status);
     const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
     const nextStatus = STATUS_CYCLE[nextIndex];
-    onStatusChange(person.id, nextStatus);
+    onStatusChange(person.personId, nextStatus);
   };
 
   return (
@@ -79,7 +79,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
             <EditableText
               value={person.name}
               onSave={(newName) => {
-                updatePersonName.mutate({ personId: person.id, name: newName });
+                updatePersonName.mutate({ personId: person.personId, name: newName });
               }}
               className="text-xs font-medium text-gray-900"
               inputClassName="text-xs font-medium text-gray-900 w-full"
@@ -94,8 +94,8 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
             )}
           </div>
         </div>
-        {person.role && (
-          <span className="text-[10px] text-gray-500 leading-tight">{person.role}</span>
+        {person.primaryRole && (
+          <span className="text-[10px] text-gray-500 leading-tight">{person.primaryRole}</span>
         )}
       </div>
     </div>

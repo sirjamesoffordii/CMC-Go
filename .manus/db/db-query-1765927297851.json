@@ -1,0 +1,14 @@
+{
+  "query": "SELECT COUNT(*) as total, COUNT(DISTINCT personId) as unique_ids FROM people",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT COUNT(*) as total, COUNT(DISTINCT personId) as unique_ids FROM people",
+  "rows": [
+    {
+      "total": "1105",
+      "unique_ids": "1105"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\tunique_ids\n1105\t1105\n",
+  "stderr": "",
+  "execution_time_ms": 113
+}

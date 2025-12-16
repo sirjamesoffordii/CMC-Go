@@ -21,7 +21,7 @@ import { Button } from "./ui/button";
 interface CampusColumnProps {
   campus: Campus;
   people: Person[];
-  onPersonStatusChange: (personId: number, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onPersonStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onCampusUpdate: () => void;
@@ -70,7 +70,7 @@ export function CampusColumn({
       
       case "date":
         return peopleCopy.sort((a, b) => 
-          new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime()
+          (b.statusLastUpdated ? new Date(b.statusLastUpdated).getTime() : 0) - (a.statusLastUpdated ? new Date(a.statusLastUpdated).getTime() : 0)
         );
       
       default:
@@ -185,7 +185,7 @@ export function CampusColumn({
         <div className="space-y-1 mb-2">
           {sortedPeople.map(person => (
             <PersonRow
-              key={person.id}
+              key={person.personId}
               person={person}
               onStatusChange={onPersonStatusChange}
               onClick={onPersonClick}

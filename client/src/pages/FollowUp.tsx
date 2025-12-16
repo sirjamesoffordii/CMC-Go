@@ -16,7 +16,7 @@ export default function FollowUp() {
   const { data: allDistricts = [] } = trpc.districts.list.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   const { data: allNotes = [] } = trpc.notes.byPerson.useQuery(
-    { personId: selectedPerson?.id ?? 0 },
+    { personId: selectedPerson?.personId ?? '' },
     { enabled: !!selectedPerson }
   );
 
@@ -89,20 +89,20 @@ export default function FollowUp() {
                   </tr>
                 ) : (
                   followUpPeople.map((person) => {
-                    const campus = allCampuses.find(c => c.id === person.campusId);
-                    const district = allDistricts.find(d => d.id === person.districtId);
-                    const personNeeds = allNeeds.filter(n => n.personId === person.id && n.isActive);
+                    const campus = allCampuses.find(c => c.id === person.primaryCampusId);
+                    const district = allDistricts.find(d => d.id === person.primaryDistrictId);
+                    const personNeeds = allNeeds.filter(n => n.personId === person.personId && n.isActive);
 
                     return (
                       <tr
-                        key={person.id}
+                        key={person.personId}
                         className="hover:bg-gray-50 cursor-pointer transition-colors"
                         onClick={() => handlePersonClick(person)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{person.name}</div>
-                          {person.role && (
-                            <div className="text-xs text-gray-500">{person.role}</div>
+                          {person.primaryRole && (
+                            <div className="text-xs text-gray-500">{person.primaryRole}</div>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
@@ -122,7 +122,7 @@ export default function FollowUp() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                          {new Date(person.lastUpdated).toLocaleDateString()}
+                          {person.statusLastUpdated ? new Date(person.statusLastUpdated).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-700">
                           {personNeeds.length > 0 ? (

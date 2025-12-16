@@ -1,0 +1,30 @@
+{
+  "query": "SELECT id, name, region FROM districts WHERE name LIKE '%Iowa%' OR name LIKE '%Nebraska%' OR name LIKE '%Wisconsin%' ORDER BY name",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT id, name, region FROM districts WHERE name LIKE '%Iowa%' OR name LIKE '%Nebraska%' OR name LIKE '%Wisconsin%' ORDER BY name",
+  "rows": [
+    {
+      "id": "Iowa",
+      "name": "Iowa",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "Nebraska",
+      "name": "Nebraska",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "Wisconsin",
+      "name": "Wisconsin",
+      "region": "Great Plains North"
+    },
+    {
+      "id": "Wisconsin-NorthMichigan",
+      "name": "Wisconsin & North Michigan",
+      "region": "Great Lakes"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tregion\nIowa\tIowa\tGreat Plains North\nNebraska\tNebraska\tGreat Plains North\nWisconsin\tWisconsin\tGreat Plains North\nWisconsin-NorthMichigan\tWisconsin & North Michigan\tGreat Lakes\n",
+  "stderr": "",
+  "execution_time_ms": 57
+}

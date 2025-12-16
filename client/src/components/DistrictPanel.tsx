@@ -26,7 +26,7 @@ interface DistrictPanelProps {
   campuses: Campus[];
   people: Person[];
   onClose: () => void;
-  onPersonStatusChange: (personId: number, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onPersonStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onDistrictUpdate: () => void;
@@ -95,7 +95,7 @@ export function DistrictPanel({
   if (!district) return null;
 
   // Calculate summary counts
-  const districtPeople = people.filter(p => p.districtId === district.id);
+  const districtPeople = people.filter(p => p.primaryDistrictId === district.id);
   const goingCount = districtPeople.filter(p => p.status === "Going").length;
   const maybeCount = districtPeople.filter(p => p.status === "Maybe").length;
   const notGoingCount = districtPeople.filter(p => p.status === "Not Going").length;
@@ -241,7 +241,7 @@ export function DistrictPanel({
           >
             <div className="flex gap-3 min-w-max">
               {campusOrder.map(campus => {
-                const campusPeople = people.filter(p => p.campusId === campus.id);
+                const campusPeople = people.filter(p => p.primaryCampusId === campus.id);
                 return (
                   <CampusColumn
                     key={campus.id}

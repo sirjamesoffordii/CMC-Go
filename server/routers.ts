@@ -84,11 +84,12 @@ export const appRouter = router({
       }),
     create: publicProcedure
       .input(z.object({
+        personId: z.string(),
         name: z.string(),
-        campusId: z.number(),
-        districtId: z.string(),
+        primaryCampusId: z.number().optional(),
+        primaryDistrictId: z.string().optional(),
+        primaryRole: z.string().optional(),
         status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]).default("Not invited yet"),
-        role: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         await db.createPerson(input);
@@ -96,7 +97,7 @@ export const appRouter = router({
       }),
     updateStatus: publicProcedure
       .input(z.object({
-        personId: z.number(),
+        personId: z.string(),
         status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]),
       }))
       .mutation(async ({ input }) => {
@@ -104,12 +105,12 @@ export const appRouter = router({
         return { success: true };
       }),
     getById: publicProcedure
-      .input(z.object({ personId: z.number() }))
+      .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
         return await db.getPersonById(input.personId);
       }),
     updateName: publicProcedure
-      .input(z.object({ personId: z.number(), name: z.string() }))
+      .input(z.object({ personId: z.string(), name: z.string() }))
       .mutation(async ({ input }) => {
         await db.updatePersonName(input.personId, input.name);
         return { success: true };
@@ -118,13 +119,13 @@ export const appRouter = router({
 
   needs: router({
     byPerson: publicProcedure
-      .input(z.object({ personId: z.number() }))
+      .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
         return await db.getNeedsByPerson(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
-        personId: z.number(),
+        personId: z.string(),
         type: z.enum(["Financial", "Other"]),
         amount: z.number().optional(),
         notes: z.string().optional(),
@@ -157,13 +158,13 @@ export const appRouter = router({
 
   notes: router({
     byPerson: publicProcedure
-      .input(z.object({ personId: z.number() }))
+      .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
         return await db.getNotesByPerson(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
-        personId: z.number(),
+        personId: z.string(),
         text: z.string(),
         isLeaderOnly: z.boolean().default(false),
       }))

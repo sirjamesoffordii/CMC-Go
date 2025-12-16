@@ -35,19 +35,19 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
 
   // Fetch notes and needs
   const { data: notes = [] } = trpc.notes.byPerson.useQuery(
-    { personId: person?.id ?? 0 },
+    { personId: person?.personId ?? '' },
     { enabled: !!person }
   );
 
   const { data: needs = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person?.id ?? 0 },
+    { personId: person?.personId ?? '' },
     { enabled: !!person }
   );
 
   // Mutations
   const createNote = trpc.notes.create.useMutation({
     onSuccess: () => {
-      utils.notes.byPerson.invalidate({ personId: person?.id ?? 0 });
+      utils.notes.byPerson.invalidate({ personId: person?.personId ?? '' });
       utils.people.list.invalidate();
       setNoteText("");
       setNoteIsLeaderOnly(false);
@@ -56,7 +56,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
 
   const createNeed = trpc.needs.create.useMutation({
     onSuccess: () => {
-      utils.needs.byPerson.invalidate({ personId: person?.id ?? 0 });
+      utils.needs.byPerson.invalidate({ personId: person?.personId ?? '' });
       utils.people.list.invalidate();
       setNeedAmount("");
       setNeedNotes("");
@@ -65,7 +65,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
 
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
-      utils.needs.byPerson.invalidate({ personId: person?.id ?? 0 });
+      utils.needs.byPerson.invalidate({ personId: person?.personId ?? '' });
       utils.followUp.list.invalidate();
     },
   });
@@ -73,7 +73,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   const handleAddNote = () => {
     if (!person || !noteText.trim()) return;
     createNote.mutate({
-      personId: person.id,
+      personId: person.personId,
       text: noteText.trim(),
       isLeaderOnly: noteIsLeaderOnly,
     });
@@ -83,7 +83,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
     if (!person) return;
     const amount = needType === "Financial" ? parseFloat(needAmount) * 100 : undefined;
     createNeed.mutate({
-      personId: person.id,
+      personId: person.personId,
       type: needType,
       amount,
       notes: needNotes.trim() || undefined,
@@ -99,7 +99,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
           <DialogTitle>{person.name}</DialogTitle>
           <p className="text-sm text-gray-600">
             Status: <span className="font-semibold">{person.status}</span>
-            {person.role && <> • {person.role}</>}
+            {person.primaryRole && <> • {person.primaryRole}</>}
           </p>
         </DialogHeader>
 

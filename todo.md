@@ -691,3 +691,39 @@
 - [x] Update seed-districts.json with correct mappings
 - [x] Verify all district names match SVG layer names exactly
 - [x] Ensure all regions match authoritative document
+
+## Fix Iowa, Nebraska, Wisconsin District Assignments
+- [x] Verify Iowa is in Great Plains South (CORRECT ✓)
+- [x] Verify Nebraska is in Great Plains South (CORRECT ✓)
+- [x] Verify Wisconsin-NorthMichigan is in Great Plains North (CORRECT ✓)
+- [x] Database assignments are correct
+- [x] Fix map.svg visual display - Nebraska showing correct color (golden wheat for Great Plains South)
+- [x] Fix map.svg visual display - Iowa showing correct color (golden wheat for Great Plains South)
+- [x] Fix map.svg visual display - Wisconsin showing correct color (purple for Great Plains North)
+- [x] Verify all visual colors match database regions (confirmed via screenshot)
+
+## Load Authoritative Excel Seed Database
+- [x] Read Excel file structure (1105 unique people, 1108 assignments, 305 campuses)
+- [x] Modify schema to support multiple assignments per person
+- [x] Add personId field to people table
+- [x] Create assignments table for multiple roles
+- [x] Run database migration (tables created manually)
+- [x] Create ingestion script following structure rules
+- [x] Clear existing people and assignments data
+- [x] Load unique people (1105 people loaded)
+- [x] Load assignments (1108 assignments loaded)
+- [x] Handle National roles (not tied to campuses/districts/regions)
+- [x] Verify no duplicate people created (1105 total = 1105 unique)
+- [x] Confirm data integrity and completion (Going: 443, Maybe: 276, Not invited yet: 331, Not Going: 55)
+
+## Excel Data Migration Complete
+- [x] Schema updated to support multiple assignments per person
+- [x] Added personId (string) as primary key for people
+- [x] Created assignments table for multiple roles
+- [x] Loaded 1105 unique people from Excel
+- [x] Loaded 1108 assignments from Excel
+- [x] Loaded 305 campuses from Excel
+- [x] Fixed all TypeScript errors from schema changes
+- [x] Updated all components to use new field names (personId, primaryRole, primaryDistrictId, primaryCampusId, statusLastUpdated)
+- [x] Verified data integrity: Going=443, Maybe=276, Not Going=55, Not Invited Yet=331
+- [x] App running with 70% invited (774/1105)

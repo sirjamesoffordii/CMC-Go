@@ -1,0 +1,15 @@
+{
+  "query": "SELECT id, name, region FROM districts WHERE id = 'Nebraska'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute SELECT id, name, region FROM districts WHERE id = 'Nebraska'",
+  "rows": [
+    {
+      "id": "Nebraska",
+      "name": "Nebraska",
+      "region": "Great Plains North"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tregion\nNebraska\tNebraska\tGreat Plains North\n",
+  "stderr": "",
+  "execution_time_ms": 52
+}

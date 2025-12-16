@@ -222,8 +222,8 @@ export default function Home() {
       utils.people.list.setData(undefined, (old) => {
         if (!old) return old;
         return old.map(p => 
-          p.id === personId 
-            ? { ...p, status, lastUpdated: new Date() }
+          p.personId === personId 
+            ? { ...p, status, statusLastUpdated: new Date() }
             : p
         );
       });
@@ -261,7 +261,7 @@ export default function Home() {
   );
 
   const selectedDistrictPeople = useMemo(
-    () => allPeople.filter(p => p.districtId === selectedDistrictId),
+    () => allPeople.filter(p => p.primaryDistrictId === selectedDistrictId),
     [allPeople, selectedDistrictId]
   );
 
@@ -269,7 +269,7 @@ export default function Home() {
   const peopleWithIndicators = useMemo(() => {
     return allPeople.map(person => ({
       ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.id && n.isActive),
+      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive),
     }));
   }, [allPeople, allNeeds]);
 
@@ -277,7 +277,7 @@ export default function Home() {
     setSelectedDistrictId(districtId);
   };
 
-  const handlePersonStatusChange = (personId: number, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => {
+  const handlePersonStatusChange = (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => {
     updateStatus.mutate({ personId, status: newStatus });
   };
 
@@ -285,10 +285,14 @@ export default function Home() {
     const campus = allCampuses.find(c => c.id === campusId);
     if (!campus) return;
     
+    // Generate a unique personId
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     createPerson.mutate({
+      personId,
       name,
-      campusId,
-      districtId: campus.districtId,
+      primaryCampusId: campusId,
+      primaryDistrictId: campus.districtId,
       status: "Not invited yet",
     });
   };
@@ -439,7 +443,7 @@ export default function Home() {
                 const query = searchQuery.toLowerCase();
                 const matchedPeople = allPeople.filter(p => 
                   p.name.toLowerCase().includes(query) || 
-                  p.role?.toLowerCase().includes(query)
+                  p.primaryRole?.toLowerCase().includes(query)
                 ).slice(0, 5);
                 const matchedCampuses = allCampuses.filter(c => 
                   c.name.toLowerCase().includes(query)
@@ -462,7 +466,7 @@ export default function Home() {
                         <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
                         {matchedPeople.map(person => (
                           <button
-                            key={person.id}
+                            key={person.personId}
                             onClick={() => {
                               setSelectedPerson(person);
                               setPersonDialogOpen(true);
@@ -477,7 +481,7 @@ export default function Home() {
                               person.status === 'Not Going' ? 'bg-red-500' : 'bg-gray-300'
                             }`} />
                             <span className="text-sm text-gray-900">{person.name}</span>
-                            {person.role && <span className="text-xs text-gray-500">{person.role}</span>}
+                            {person.primaryRole && <span className="text-xs text-gray-500">{person.primaryRole}</span>}
                           </button>
                         ))}
                       </div>

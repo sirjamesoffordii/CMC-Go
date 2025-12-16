@@ -1,0 +1,8 @@
+{
+  "query": "DESCRIBE people",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute DESCRIBE people",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'uqnsc7ukusexcoql3bpyba.people' doesn't exist"
+  ]
+}
