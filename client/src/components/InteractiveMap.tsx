@@ -341,7 +341,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     
     return (
       <div
-        className="fixed z-50 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-4 pointer-events-none"
+        className="fixed z-50 bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,

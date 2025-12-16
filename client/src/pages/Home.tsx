@@ -379,7 +379,7 @@ export default function Home() {
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
         className="relative flex items-center px-4 group flex-shrink-0"
@@ -619,7 +619,7 @@ export default function Home() {
             />
             
             {/* Metrics Overlay */}
-            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-5 py-4 rounded-md pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
+            <div className="absolute top-8 left-10 bg-slate-50/95 backdrop-blur-sm px-5 py-4 rounded-xl pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.06)', border: '1px solid rgba(0, 0, 0, 0.04)' }}>
               <div>
                 <div className="text-3xl font-medium text-gray-800 mb-1" style={{ letterSpacing: '-0.02em' }}>
                   Going: {metrics?.going ?? 0}

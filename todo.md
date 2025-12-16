@@ -624,3 +624,9 @@
 
 ## Tooltip Polish
 - [x] Update tooltip wrapper with bg-white/95, backdrop-blur-sm, rounded-xl, shadow-xl, border-gray-200
+
+## UI Refinements Pass
+- [x] Match metrics overlay background to off-white tone
+- [x] Add subtle paper texture to canvas background
+- [x] Ensure tooltip contrast against off-white canvas
+- [x] Add fade-in animation to tooltip
