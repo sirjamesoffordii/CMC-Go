@@ -680,3 +680,14 @@
 - [x] Adjust Texico region color to be more pink-purple (#B85FA3)
 - [x] Verify map colors match the correct reference map (Texico now pink-purple, regions corrected)
 - [x] Test that all region rollups are accurate (verified via screenshot)
+
+## Verify Against Authoritative Chi Alpha Mapping
+- [x] Compare all current district-region assignments with source of truth
+- [x] Revert North Carolina: Southeast → Mid-Atlantic
+- [x] Revert Tennessee: Southeast → Mid-Atlantic
+- [x] Revert Arkansas: Texico → South Central
+- [x] Revert Oklahoma: Texico → South Central
+- [x] Revert Mississippi: South Central → Southeast
+- [x] Update seed-districts.json with correct mappings
+- [x] Verify all district names match SVG layer names exactly
+- [x] Ensure all regions match authoritative document
