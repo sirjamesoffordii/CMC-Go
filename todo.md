@@ -621,3 +621,6 @@
 
 ## Canvas Background Color
 - [x] Change page background from white to off-white (bg-slate-50)
+
+## Tooltip Polish
+- [x] Update tooltip wrapper with bg-white/95, backdrop-blur-sm, rounded-xl, shadow-xl, border-gray-200

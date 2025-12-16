@@ -341,13 +341,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     
     return (
       <div
-        className="fixed z-50 bg-white rounded-md pointer-events-none"
+        className="fixed z-50 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200 p-4 pointer-events-none"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          padding: '14px 16px',
         }}
       >
         <div className="text-gray-800 mb-3" style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.01em' }}>
