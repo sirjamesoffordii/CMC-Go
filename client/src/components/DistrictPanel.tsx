@@ -126,44 +126,44 @@ export function DistrictPanel({
 
   return (
     <div className="h-full flex flex-col bg-white min-w-fit">
-      {/* Header - Compact with Inline Names */}
-      <div className="px-5 py-3 border-b border-gray-200 flex-shrink-0 bg-white">
-        <div className="flex items-center justify-between mb-3">
+      {/* Header - Refined typography hierarchy */}
+      <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-gray-900">
+            <h2 className="text-2xl font-medium text-gray-800">
               <EditableText
                 value={district.name}
                 onSave={(newName) => {
                   updateDistrictName.mutate({ id: district.id, name: newName });
                 }}
-                className="text-3xl font-bold text-gray-900"
-                inputClassName="text-3xl font-bold text-gray-900"
+                className="text-2xl font-medium text-gray-800"
+                inputClassName="text-2xl font-medium text-gray-800"
               />
             </h2>
-            <span className="text-gray-400 text-2xl">|</span>
-            <p className="text-lg font-semibold text-gray-600">
+            <span className="text-gray-300 text-xl">|</span>
+            <p className="text-base font-normal text-gray-500">
               <EditableText
                 value={district.region}
                 onSave={(newRegion) => {
                   updateDistrictRegion.mutate({ id: district.id, region: newRegion });
                 }}
-                className="text-lg font-semibold text-gray-600"
-                inputClassName="text-lg font-semibold text-gray-600"
+                className="text-base font-normal text-gray-500"
+                inputClassName="text-base font-normal text-gray-500"
               />
             </p>
-            <span className="text-gray-400 text-2xl">|</span>
-            <p className="text-lg font-bold text-gray-900">{invitedPercent}% Invited</p>
+            <span className="text-gray-200 text-lg">|</span>
+            <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        {/* Pie Chart and Stats - Compact */}
-        <div className="flex items-center gap-5">
+        {/* Pie Chart and Stats - Refined spacing */}
+        <div className="flex items-center gap-6">
           {/* Pie Chart - Medium */}
           <div className="flex-shrink-0">
-            <svg width="90" height="90" viewBox="0 0 80 80">
+            <svg width="80" height="80" viewBox="0 0 80 80">
               {slices.map((slice, i) => (
                 <path key={i} d={slice.path} fill={slice.color} />
               ))}
@@ -171,48 +171,48 @@ export function DistrictPanel({
           </div>
           
           {/* Stats - 2 Columns with Aligned Numbers */}
-          <div className="flex gap-10">
+          <div className="flex gap-8">
             {/* Left Column: Going / Not Going */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between min-w-[110px]">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">Going:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#22c55e] flex-shrink-0"></div>
+                  <span className="text-sm text-gray-600">Going:</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">{goingCount}</span>
+                <span className="text-base font-medium text-gray-800">{goingCount}</span>
               </div>
               <div className="flex items-center justify-between min-w-[110px]">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 rounded-full bg-[#ef4444] flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">Not Going:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444] flex-shrink-0"></div>
+                  <span className="text-sm text-gray-600">Not Going:</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">{notGoingCount}</span>
+                <span className="text-base font-medium text-gray-800">{notGoingCount}</span>
               </div>
             </div>
             
             {/* Right Column: Maybe / Not Invited Yet */}
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between min-w-[140px]">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 rounded-full bg-[#eab308] flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">Maybe:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#eab308] flex-shrink-0"></div>
+                  <span className="text-sm text-gray-600">Maybe:</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">{maybeCount}</span>
+                <span className="text-base font-medium text-gray-800">{maybeCount}</span>
               </div>
               <div className="flex items-center justify-between min-w-[140px]">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3.5 h-3.5 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">Not Invited Yet:</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db] flex-shrink-0"></div>
+                  <span className="text-sm text-gray-600">Not Invited Yet:</span>
                 </div>
-                <span className="text-lg font-bold text-gray-900">{notInvitedCount}</span>
+                <span className="text-base font-medium text-gray-800">{notInvitedCount}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Campus Columns - Compact with Drag and Drop */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto px-3 py-2">
+      {/* Campus Columns - Refined spacing */}
+      <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-3">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}

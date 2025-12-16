@@ -127,20 +127,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
 
-    // Regional color mapping - sophisticated, premium tones
+    // Regional color mapping - professional, muted, earthy tones (saturation reduced ~25%)
     const regionColors: Record<string, string> = {
-      "Northwest": "#6CB4E8",           // soft cyan
-      "Big Sky": "#B89968",             // refined tan
-      "Great Plains North": "#7D3C98", // deep purple
-      "Great Lakes": "#5499C7",        // refined blue
-      "Great Plains South": "#F7DC6F", // soft gold
-      "Mid-Atlantic": "#E59866",       // warm terracotta
-      "Mid-Atlantic (Extended)": "#E59866", // warm terracotta
-      "Northeast": "#EC407A",          // refined pink
-      "South Central": "#E57373",      // soft red
-      "Southeast": "#66BB6A",          // refined green
-      "Texico": "#AB47BC",             // refined purple
-      "West Coast": "#FF9800",         // warm orange
+      "Northwest": "#8BBDD4",           // muted teal-blue
+      "Big Sky": "#B8A88A",             // muted warm taupe
+      "Great Plains North": "#8E7AAB",  // muted dusty purple
+      "Great Lakes": "#7BA3C4",         // desaturated slate blue
+      "Great Plains South": "#E2D9A2",  // muted khaki/sand
+      "Mid-Atlantic": "#CDA08A",        // muted terracotta
+      "Mid-Atlantic (Extended)": "#CDA08A", // muted terracotta
+      "Northeast": "#D4909E",           // muted dusty rose
+      "South Central": "#D49A9A",       // muted coral
+      "Southeast": "#8AB88A",           // muted sage green
+      "Texico": "#A98AB8",              // muted mauve
+      "West Coast": "#D4A86A",          // muted amber/ochre
     };
 
     // Style visual paths (what user sees) - smooth, no borders
@@ -155,12 +155,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
       const baseColor = regionColors[district.region] || "#e5e7eb";
 
-      // Visual layer: solid colors with white outlines
+      // Visual layer: solid colors with subtle white outlines
       path.style.fill = baseColor;
-      path.style.stroke = "#ffffff";
-      path.style.strokeWidth = "0.6";
+      path.style.stroke = "rgba(255, 255, 255, 0.7)";
+      path.style.strokeWidth = "0.4";
       path.style.strokeDasharray = ""; // Solid line by default
-      path.style.transition = "all 0.2s ease";
+      path.style.transition = "all 0.3s ease-out";
       
       // Apply selected state styling
       if (selectedDistrictId === pathId) {
@@ -205,17 +205,19 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           if (!vDistrict) return;
           
           if (vPathId === pathId) {
-            // Hovered district: brighten and thicken border
+            // Hovered district: subtle brightness increase, slightly thicker border
             if (selectedDistrictId !== pathId) {
-              vPath.style.filter = "brightness(1.08)";
-              vPath.style.strokeWidth = "1.2";
+              vPath.style.filter = "brightness(1.05) saturate(1.1)";
+              vPath.style.strokeWidth = "0.6";
             }
           } else if (vDistrict.region === hoveredRegion) {
-            // Same region: subtly increase opacity
+            // Same region: maintain normal appearance
             vPath.style.opacity = "1";
+            vPath.style.filter = "none";
           } else {
-            // Other regions: fade slightly
-            vPath.style.opacity = "0.6";
+            // Other regions: subtle desaturation and fade
+            vPath.style.opacity = "0.7";
+            vPath.style.filter = "saturate(0.6)";
           }
         });
       });
@@ -236,7 +238,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           
           if (selectedDistrictId !== vPathId) {
             vPath.style.filter = "none";
-            vPath.style.strokeWidth = "0.6";
+            vPath.style.strokeWidth = "0.4";
             vPath.style.opacity = "1";
           }
         });
@@ -337,52 +339,55 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     
     return (
       <div
-        className="fixed z-50 bg-white rounded-lg shadow-2xl border-2 border-gray-300 p-3 pointer-events-none"
+        className="fixed z-50 bg-white rounded-md pointer-events-none"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          padding: '14px 16px',
         }}
       >
-        <div className="font-bold text-lg text-gray-900 mb-2">
-          {district.id} <span className="text-gray-400">|</span> <span className="text-sm font-normal text-gray-600">{district.region}</span>
+        <div className="text-gray-800 mb-3" style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.01em' }}>
+          {district.id} <span className="text-gray-300 mx-1">|</span> <span className="text-gray-500" style={{ fontSize: '13px', fontWeight: 400 }}>{district.region}</span>
         </div>
         
         {/* Pie Chart and Stats Side by Side */}
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-4 items-center">
           {/* Pie Chart */}
           {pieChartSvg && (
             <div className="flex-shrink-0" dangerouslySetInnerHTML={{ __html: pieChartSvg }} />
           )}
           
           {/* Stats */}
-          <div className="text-xs space-y-1 flex-1">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#10b981]"></div>
-                <span className="font-medium">Going:</span>
+          <div className="flex-1" style={{ fontSize: '12px', lineHeight: '1.6' }}>
+            <div className="flex items-center justify-between gap-4 py-0.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#10b981]"></div>
+                <span className="text-gray-600">Going:</span>
               </div>
-              <span className="font-semibold">{stats.yes}</span>
+              <span className="text-gray-800" style={{ fontWeight: 500 }}>{stats.yes}</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#eab308]"></div>
-                <span className="font-medium">Maybe:</span>
+            <div className="flex items-center justify-between gap-4 py-0.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#eab308]"></div>
+                <span className="text-gray-600">Maybe:</span>
               </div>
-              <span className="font-semibold">{stats.maybe}</span>
+              <span className="text-gray-800" style={{ fontWeight: 500 }}>{stats.maybe}</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#ef4444]"></div>
-                <span className="font-medium">Not Going:</span>
+            <div className="flex items-center justify-between gap-4 py-0.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#ef4444]"></div>
+                <span className="text-gray-600">Not Going:</span>
               </div>
-              <span className="font-semibold">{stats.no}</span>
+              <span className="text-gray-800" style={{ fontWeight: 500 }}>{stats.no}</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#d1d5db]"></div>
-                <span className="font-medium whitespace-nowrap">Not Invited Yet:</span>
+            <div className="flex items-center justify-between gap-4 py-0.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#d1d5db]"></div>
+                <span className="text-gray-600 whitespace-nowrap">Not Invited Yet:</span>
               </div>
-              <span className="font-semibold">{stats.notInvited}</span>
+              <span className="text-gray-800" style={{ fontWeight: 500 }}>{stats.notInvited}</span>
             </div>
           </div>
         </div>

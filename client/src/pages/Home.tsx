@@ -382,17 +382,17 @@ export default function Home() {
     <div className="min-h-screen bg-white">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
-        className="relative flex items-center px-3 group flex-shrink-0"
+        className="relative flex items-center px-4 group flex-shrink-0"
         style={{ 
           height: `${headerHeight}px`, 
-          minHeight: '48px',
-          backgroundColor: headerBgColor || savedBgColor?.value || '#1a1a1a'
+          minHeight: '52px',
+          backgroundColor: headerBgColor || savedBgColor?.value || '#1f1f1f'
         }}
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
         {/* Logo - Left Side */}
-        <div className="flex-shrink-0 h-9 w-auto mr-3">
+        <div className="flex-shrink-0 h-8 w-auto mr-4">
           <img 
             src={headerLogoUrl || savedHeaderLogo?.value || '/xa-logo.png'} 
             alt="Logo" 
@@ -402,8 +402,8 @@ export default function Home() {
 
         {/* Header Text - Editable */}
         <div 
-          className="flex-grow text-white font-normal tracking-wide"
-          style={{ fontSize: '15px' }}
+          className="flex-grow text-white/95 tracking-normal"
+          style={{ fontSize: '14px', fontWeight: 400, letterSpacing: '0.01em' }}
           dangerouslySetInnerHTML={{ 
             __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
           }}
@@ -419,7 +419,7 @@ export default function Home() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setSearchOpen(true)}
-              className="w-48 pl-9 pr-8 py-1.5 bg-gray-800 border border-gray-600 rounded-md text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className="w-44 pl-9 pr-8 py-1.5 bg-gray-800/80 border border-gray-700 rounded text-white/90 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
             />
             {searchQuery && (
               <button
@@ -588,7 +588,7 @@ export default function Home() {
               />
               {/* Resize Handle */}
               <div
-                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 bg-gray-300 transition-colors"
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors"
                 onMouseDown={handleDistrictMouseDown}
               />
             </>
@@ -619,16 +619,16 @@ export default function Home() {
             />
             
             {/* Metrics Overlay */}
-            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-lg shadow-lg border border-gray-200 pointer-events-none">
+            <div className="absolute top-8 left-10 bg-white/95 backdrop-blur-sm px-5 py-4 rounded-md pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)', border: '1px solid rgba(0, 0, 0, 0.06)' }}>
               <div>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
+                <div className="text-3xl font-medium text-gray-800 mb-1" style={{ letterSpacing: '-0.02em' }}>
                   Going: {metrics?.going ?? 0}
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold text-gray-900">
+                  <div className="text-xl font-medium text-gray-700">
                     {metrics?.percentInvited ?? 0}% Invited
                   </div>
-                  <div className="text-lg text-gray-600">
+                  <div className="text-base text-gray-500">
                     {metrics?.invited ?? 0} / {metrics?.total ?? 0}
                   </div>
                 </div>
@@ -637,17 +637,17 @@ export default function Home() {
             
             {/* Calendar Widget - Bottom Right */}
             <div className="absolute bottom-8 right-10 flex flex-col items-center pointer-events-none">
-              <div className="bg-white border-2 border-gray-300 rounded-2xl shadow-lg overflow-hidden" style={{ width: '100px', height: '100px' }}>
+              <div className="bg-white rounded-xl overflow-hidden" style={{ width: '90px', height: '90px', boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)', border: '1px solid rgba(0, 0, 0, 0.08)' }}>
                 <div className="flex flex-col h-full">
-                  <div className="flex-1 flex items-center justify-center bg-gray-50">
-                    <div className="text-5xl font-bold text-gray-900">06</div>
+                  <div className="flex-1 flex items-center justify-center bg-gray-50/50">
+                    <div className="text-4xl font-medium text-gray-800">06</div>
                   </div>
-                  <div className="bg-white py-2 border-t border-gray-300">
-                    <div className="text-center text-sm font-semibold text-gray-700 tracking-widest">JUL</div>
+                  <div className="bg-white py-1.5 border-t border-gray-100">
+                    <div className="text-center text-xs font-medium text-gray-600 tracking-widest">JUL</div>
                   </div>
                 </div>
               </div>
-              <div className="mt-2 text-lg font-semibold text-gray-700">
+              <div className="mt-2 text-sm font-medium text-gray-600">
                 In {daysUntilCMC} days
               </div>
             </div>
@@ -658,14 +658,14 @@ export default function Home() {
 
         {/* Right Follow Up Panel */}
         <div
-          className="transition-all duration-300 ease-in-out bg-white border-l border-gray-300 flex-shrink-0 relative"
+          className="transition-all duration-300 ease-in-out bg-white border-l border-gray-100 flex-shrink-0 relative"
           style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
         >
           {followUpPanelOpen && (
             <>
               {/* Resize Handle */}
               <div
-                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-blue-500 bg-gray-300 transition-colors z-10"
+                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
                 onMouseDown={handleFollowUpMouseDown}
               />
               <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />

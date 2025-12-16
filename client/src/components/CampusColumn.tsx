@@ -97,12 +97,12 @@ export function CampusColumn({
     <div 
       ref={setNodeRef}
       style={style}
-      className="flex-shrink-0 w-40 bg-gray-50 rounded-lg border border-gray-200 px-2 py-2"
+      className="flex-shrink-0 w-40 bg-gray-50/80 rounded-md border border-gray-100 px-2.5 py-2.5"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Campus Header - Compact with 3-dot menu */}
-      <div className="relative mb-2">
+      {/* Campus Header - Refined spacing */}
+      <div className="relative mb-2.5">
         {/* Drag handle areas on edges */}
         <div 
           className="absolute left-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
@@ -117,14 +117,14 @@ export function CampusColumn({
         
         <div className="flex items-center justify-between gap-1 relative">
           <div className="flex-1 min-w-0 px-3">
-            <h3 className="font-semibold text-gray-900 text-xs text-center pb-1.5 border-b border-gray-300">
+            <h3 className="font-medium text-gray-700 text-xs text-center pb-1.5 border-b border-gray-200">
               <EditableText
                 value={campus.name}
                 onSave={(newName) => {
                   updateCampusName.mutate({ id: campus.id, name: newName });
                 }}
-                className="font-semibold text-gray-900 text-xs"
-                inputClassName="font-semibold text-gray-900 text-xs w-full text-center"
+                className="font-medium text-gray-700 text-xs"
+                inputClassName="font-medium text-gray-700 text-xs w-full text-center"
               />
             </h3>
           </div>

@@ -581,3 +581,34 @@
 - [x] No border, no card/panel appearance
 - [x] Maintain tooltip visual hierarchy (tooltips float above map with shadow-2xl)
 - [x] Keep all existing map styling unchanged (colors, strokes, regions)
+
+## Professional Refinement Pass
+### Map Colors
+- [ ] Reduce region saturation by 20-30%
+- [ ] Preserve hue relationships between regions
+- [ ] Use earthy, muted tones
+
+### Map Boundaries & Hover
+- [ ] Reduce boundary stroke thickness
+- [ ] Dim non-active regions on hover
+- [ ] Smooth, understated transitions
+
+### Tooltip Polish
+- [ ] Refine spacing and typography
+- [ ] Soft consistent shadow
+- [ ] Professional informative tone
+
+### Header Refinement
+- [ ] Soften pure black to near-black
+- [ ] Increase internal spacing
+- [ ] Balance vertical alignment
+
+### Slideout Panel Polish
+- [ ] Typography hierarchy refinement
+- [ ] Row spacing in tables
+- [ ] Reduce visual clutter
+
+### Typography & Micro-details
+- [ ] Reduce overuse of bold
+- [ ] Increase line-height
+- [ ] Alignment and padding consistency
