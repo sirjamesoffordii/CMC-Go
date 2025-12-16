@@ -57,6 +57,15 @@ export const appRouter = router({
         await db.updateCampusName(input.id, input.name);
         return { success: true };
       }),
+    create: publicProcedure
+      .input(z.object({
+        name: z.string(),
+        districtId: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const campus = await db.createCampus(input);
+        return campus;
+      }),
   }),
 
   people: router({

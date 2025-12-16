@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { CampusColumn } from "./CampusColumn";
@@ -44,12 +44,29 @@ export function DistrictPanel({
 }: DistrictPanelProps) {
   const [campusOrder, setCampusOrder] = useState<Campus[]>(campuses);
   
+  const utils = trpc.useUtils();
+  
   const updateDistrictName = trpc.districts.updateName.useMutation({
     onSuccess: () => onDistrictUpdate(),
   });
   const updateDistrictRegion = trpc.districts.updateRegion.useMutation({
     onSuccess: () => onDistrictUpdate(),
   });
+  
+  const createCampus = trpc.campuses.create.useMutation({
+    onSuccess: () => {
+      utils.campuses.list.invalidate();
+      onDistrictUpdate();
+    },
+  });
+  
+  const handleAddCampus = () => {
+    if (!district) return;
+    createCampus.mutate({
+      name: "New Campus",
+      districtId: district.id,
+    });
+  };
   
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -237,6 +254,18 @@ export function DistrictPanel({
                   />
                 );
               })}
+              
+              {/* Add Campus Button */}
+              <button
+                onClick={handleAddCampus}
+                disabled={createCampus.isPending}
+                className="flex-shrink-0 w-[160px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="h-8 w-8" />
+                <span className="text-sm font-medium">
+                  {createCampus.isPending ? "Adding..." : "Add Campus"}
+                </span>
+              </button>
             </div>
           </SortableContext>
         </DndContext>

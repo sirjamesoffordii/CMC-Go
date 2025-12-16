@@ -154,6 +154,15 @@ export async function updateCampusName(id: number, name: string) {
     .where(eq(campuses.id, id));
 }
 
+export async function createCampus(campus: InsertCampus) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(campuses).values(campus);
+  // Get the inserted campus ID
+  const insertId = result[0].insertId;
+  return { id: insertId, ...campus };
+}
+
 // People
 export async function getAllPeople() {
   const db = await getDb();

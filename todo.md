@@ -654,3 +654,8 @@
 - [x] Verify map.svg has inkscape:label="Illinois" (confirmed)
 - [x] Consolidate Mid-Atlantic (Extended) to Mid-Atlantic in seed-districts.json
 - [x] Remove Mid-Atlantic (Extended) color key from InteractiveMap.tsx
+
+## Add Campus Column Feature
+- [x] Add "+" button to create new campus column in district panel
+- [x] Implement createCampus tRPC mutation
+- [x] Allow naming new campus inline after creation (uses EditableText component)
