@@ -379,7 +379,7 @@ export default function Home() {
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
         className="relative flex items-center px-4 group flex-shrink-0"

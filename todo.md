@@ -618,3 +618,6 @@
 - [x] Add premium styling constants (BORDER_COLOR, BORDER_WIDTH, etc.)
 - [x] Update hover behavior - focus district, dim everything else
 - [x] Use faster transitions (160ms) for premium feel
+
+## Canvas Background Color
+- [x] Change page background from white to off-white (bg-slate-50)
