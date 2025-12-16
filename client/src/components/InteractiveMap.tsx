@@ -127,31 +127,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
 
-    // Regional color mapping – muted, "tool-grade" palette (less cartoonish)
-    // Goal: clear differentiation with lower saturation and softer luminance.
+    // Regional color mapping – richer, deeper palette (premium, not cartoon)
+    // Goal: clear differentiation with deeper saturation while staying refined.
     const regionColors: Record<string, string> = {
-      "Northwest": "#8FB9CF",                 // muted coastal blue
-      "Big Sky": "#B7A785",                   // warm stone
-      "Great Plains North": "#857A9B",        // dusty purple
-      "Great Lakes": "#7EA6BE",               // steel blue
-      "Great Plains South": "#D7C98B",        // wheat
-      "Mid-Atlantic": "#C7A08D",              // clay
-      "Mid-Atlantic (Extended)": "#C7A08D",   // clay
-      "Northeast": "#C79AA7",                 // muted rose
-      "South Central": "#C79A93",             // muted brick
-      "Southeast": "#93B7A1",                 // sage
-      "Texico": "#8F86A7",                    // muted violet
-      "West Coast": "#D0B08A",                // sand
+      "Northwest": "#6FA7C8",                 // deep coastal blue
+      "Big Sky": "#A79263",                   // rich warm stone
+      "Great Plains North": "#6E5C8B",        // deep purple
+      "Great Lakes": "#5F97B8",               // rich steel blue
+      "Great Plains South": "#D0B457",        // golden wheat
+      "Mid-Atlantic": "#C6846A",              // terracotta clay
+      "Mid-Atlantic (Extended)": "#C6846A",   // terracotta clay
+      "Northeast": "#C65E86",                 // deep rose
+      "South Central": "#B96863",             // rich brick
+      "Southeast": "#5FA37C",                 // deep sage
+      "Texico": "#7C5FA3",                    // rich violet
+      "West Coast": "#C08A4F",                // warm amber
     };
 
     // Premium map styling constants
     const BORDER_COLOR = "rgba(255,255,255,0.92)";
-    const BORDER_WIDTH = "0.4";          // thinner borders = less "cartoon"
-    const BORDER_WIDTH_HOVER = "0.9";
+    const BORDER_WIDTH = "0.35";          // slightly thinner borders = premium
+    const BORDER_WIDTH_HOVER = "0.8";
     const TRANSITION = "filter 160ms ease, opacity 160ms ease, stroke-width 160ms ease";
-    const DIM_OPACITY = "0.40";
-    const DIM_FILTER = "saturate(0.75) brightness(1.02)";
-    const FOCUS_FILTER = "saturate(1.05) brightness(1.04)";
+    const DIM_OPACITY = "0.78";            // subtle dimming, map stays readable
+    const DIM_FILTER = "saturate(0.92) brightness(1.00)";
+    const FOCUS_FILTER = "saturate(1.10) brightness(1.05) contrast(1.02)";
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
 
     // Style visual paths (what user sees)

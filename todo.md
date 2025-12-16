@@ -630,3 +630,9 @@
 - [x] Add subtle paper texture to canvas background
 - [x] Ensure tooltip contrast against off-white canvas
 - [x] Add fade-in animation to tooltip
+
+## Richer Palette + Lighter Dimming
+- [x] Update region colors to richer, deeper tones (premium, not cartoon)
+- [x] Reduce border width slightly for premium feel
+- [x] Reduce non-hover dimming to subtle level (0.78 opacity)
+- [x] Add premium focus filter with saturation and brightness boost
