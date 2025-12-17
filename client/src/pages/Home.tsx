@@ -648,48 +648,6 @@ export default function Home() {
               }}
             />
             
-            {/* Metrics Column - Left Side */}
-            <div className="absolute top-8 left-10 bg-slate-50/95 backdrop-blur-sm px-5 py-5 rounded-xl pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.06)', border: '1px solid rgba(0, 0, 0, 0.04)' }}>
-              <div className="flex flex-col gap-4">
-                {/* Going */}
-                <div>
-                  <div className="text-2xl font-semibold text-gray-800" style={{ letterSpacing: '-0.02em' }}>
-                    Going: {metrics?.going ?? 0}
-                  </div>
-                </div>
-                
-                {/* Maybe */}
-                <div>
-                  <div className="text-lg font-medium text-gray-700">
-                    Maybe: {metrics?.maybe ?? 0}
-                  </div>
-                </div>
-                
-                {/* Not Going */}
-                <div>
-                  <div className="text-lg font-medium text-gray-700">
-                    Not Going: {metrics?.notGoing ?? 0}
-                  </div>
-                </div>
-                
-                {/* Not Invited Yet */}
-                <div>
-                  <div className="text-lg font-medium text-gray-700">
-                    Not Invited Yet: {metrics?.notInvited ?? 0}
-                  </div>
-                </div>
-                
-                {/* Invited - Separated */}
-                <div className="border-t border-gray-300 pt-3 mt-1">
-                  <div className="text-lg font-semibold text-gray-700">
-                    Invited: {metrics?.invited ?? 0}
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    {metrics?.percentInvited ?? 0}% of {metrics?.total ?? 0}
-                  </div>
-                </div>
-              </div>
-            </div>
             
             {/* Calendar Widget - Bottom Right */}
             <div className="absolute bottom-8 right-10 flex flex-col items-center pointer-events-none">

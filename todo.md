@@ -862,3 +862,16 @@
 - [x] Remove CMC Go Coordinator category from National panel
 - [x] Filter out "Sir James Offord" from National panel display
 - [x] Update category priority logic to exclude CMC Go Coordinator
+
+## Map Metrics & Comparison System
+- [x] Add Invite Progress bar to top-left of map canvas (thin bar, percentage label, supporting text)
+- [x] Create Response Metrics panel in top-right (Going, Maybe, Not Going, Not Invited Yet with toggles)
+- [x] Remove old metrics sidebar from Home.tsx
+- [x] Add "Clear Metrics" action to reset all toggles
+- [x] Ensure all toggles OFF by default (clean state on load)
+- [x] Implement metric overlay system anchored to region labels (not floating inside regions)
+- [x] Support single metric mode (larger text 14px, emphasis font-weight 600)
+- [x] Support multiple metrics stacked mode (smaller text 11px, muted colors, fixed order)
+- [x] Add subtle fade-in/fade-out transitions for metric overlays (transition-opacity duration-300)
+- [x] Keep region identity colors unchanged (no color changes for metrics)
+- [x] Test toggle behavior and visual guardrails (Invite Progress and Response Metrics panels working correctly)
