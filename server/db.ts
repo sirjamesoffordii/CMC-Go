@@ -273,15 +273,18 @@ export async function createAssignment(assignment: InsertAssignment) {
 // Metrics
 export async function getMetrics() {
   const db = await getDb();
-  if (!db) return { total: 0, invited: 0, going: 0, percentInvited: 0 };
+  if (!db) return { total: 0, invited: 0, going: 0, maybe: 0, notGoing: 0, notInvited: 0, percentInvited: 0 };
   
   const allPeople = await db.select().from(people);
   const total = allPeople.length;
   const invited = allPeople.filter(p => p.status !== "Not invited yet").length;
   const going = allPeople.filter(p => p.status === "Going").length;
+  const maybe = allPeople.filter(p => p.status === "Maybe").length;
+  const notGoing = allPeople.filter(p => p.status === "Not Going").length;
+  const notInvited = allPeople.filter(p => p.status === "Not invited yet").length;
   const percentInvited = total > 0 ? Math.round((invited / total) * 100) : 0;
   
-  return { total, invited, going, percentInvited };
+  return { total, invited, going, maybe, notGoing, notInvited, percentInvited };
 }
 
 // Follow-up data (people with Maybe status or active needs)

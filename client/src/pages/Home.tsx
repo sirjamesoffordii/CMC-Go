@@ -623,17 +623,27 @@ export default function Home() {
             />
             
             {/* Metrics Overlay */}
-            <div className="absolute top-8 left-10 bg-slate-50/95 backdrop-blur-sm px-5 py-4 rounded-xl pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.06)', border: '1px solid rgba(0, 0, 0, 0.04)' }}>
-              <div>
-                <div className="text-3xl font-medium text-gray-800 mb-1" style={{ letterSpacing: '-0.02em' }}>
-                  Going: {metrics?.going ?? 0}
+            <div className="absolute top-8 left-10 bg-slate-50/95 backdrop-blur-sm px-6 py-4 rounded-xl pointer-events-none" style={{ boxShadow: '0 2px 12px rgba(0, 0, 0, 0.06)', border: '1px solid rgba(0, 0, 0, 0.04)' }}>
+              <div className="flex items-center gap-8">
+                {/* Status Counts */}
+                <div className="flex flex-col gap-2">
+                  <div className="text-3xl font-medium text-gray-800" style={{ letterSpacing: '-0.02em' }}>
+                    Going: {metrics?.going ?? 0}
+                  </div>
+                  <div className="flex gap-6 text-lg text-gray-700">
+                    <div>Maybe: {metrics?.maybe ?? 0}</div>
+                    <div>Not Going: {metrics?.notGoing ?? 0}</div>
+                    <div>Not Invited Yet: {metrics?.notInvited ?? 0}</div>
+                  </div>
                 </div>
-                <div>
+                
+                {/* Invited Metric - Right Side */}
+                <div className="border-l border-gray-300 pl-6">
                   <div className="text-xl font-medium text-gray-700">
-                    {metrics?.percentInvited ?? 0}% Invited
+                    Invited: {metrics?.invited ?? 0}
                   </div>
                   <div className="text-base text-gray-500">
-                    {metrics?.invited ?? 0} / {metrics?.total ?? 0}
+                    {metrics?.percentInvited ?? 0}% of {metrics?.total ?? 0}
                   </div>
                 </div>
               </div>

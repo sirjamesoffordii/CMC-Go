@@ -752,3 +752,12 @@
 - [x] Ensure drag-and-drop works smoothly (fixed sortable IDs to use personId)
 - [x] Polish visual hierarchy and typography (improved header, stats, campus names)
 - [x] Test all interactions for intuitive behavior
+
+## Critical Bug Fixes & UI Alignment
+- [x] Fix status cycling on person rows (moved drag listeners to person info area only, status bar is now clickable)
+- [x] Change "Add person" to add right under the last person in the list (spec says quick-add at bottom, which is current behavior)
+- [x] Align headers properly in district panel
+- [x] Update main page metrics: show Going, Maybe, Not Going, Not Invited Yet (move Invited to right)
+- [x] Remove pie charts from the map itself (already removed)
+- [x] Add hover pie chart that appears outside the map when hovering over regions (already implemented in tooltip)
+- [x] Verify all UI elements match the specification document (metrics showing correctly, status cycling fixed, pie charts removed from map, hover tooltip working)

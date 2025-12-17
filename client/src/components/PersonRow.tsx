@@ -65,21 +65,23 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
       ref={setNodeRef}
       style={style}
       className="flex items-center gap-1.5 bg-gray-50 hover:bg-white rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer group relative"
-      onClick={() => onClick(person)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      {...attributes}
-      {...listeners}
     >
-      {/* Status Bar - Compact */}
+      {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status]} hover:brightness-110 transition-all`}
+        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status]} hover:brightness-110 transition-all flex-shrink-0`}
         onClick={handleStatusClick}
         title={`Click to cycle status (current: ${person.status})`}
       />
 
-      {/* Person Info - Compact */}
-      <div className="flex-1 py-1.5 pr-2 min-w-0">
+      {/* Person Info - Compact - Draggable area */}
+      <div 
+        className="flex-1 py-1.5 pr-2 min-w-0"
+        onClick={() => onClick(person)}
+        {...attributes}
+        {...listeners}
+      >
         <div className="flex items-center justify-between gap-1.5">
           <span className="text-xs font-medium text-gray-800 truncate group-hover:text-gray-900 transition-colors">
             <EditableText
