@@ -936,3 +936,4 @@
 - [x] Add gradient to progress bar (blue-500 to blue-600)
 - [x] Add hover scale effect (1.02x)
 - [x] Add shadow-inner to progress bar track
+- [x] Reduce shadow/floating effect back to original subtle level (removed drop-shadow and hover scale)

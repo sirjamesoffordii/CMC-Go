@@ -498,12 +498,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         }}
       >
         {/* Invite Progress - Premium Floating Bar */}
-        <div 
-          className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 transition-all duration-200 hover:scale-[1.02]"
-          style={{ 
-            filter: 'drop-shadow(0 4px 16px rgba(0, 0, 0, 0.1)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))'
-          }}
-        >
+        <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5">
+        
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Invited</span>
             <div className="w-48 bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
