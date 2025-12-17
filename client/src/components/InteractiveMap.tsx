@@ -18,6 +18,34 @@ interface DistrictStats {
   total: number;
 }
 
+// Region label positions around the map edges - CLOSE to the map
+// The map roughly occupies: x: 180-880, y: 120-500 in the 960x600 viewBox
+// labelDirection: where region name appears relative to number
+const regionLabelPositions: Record<string, { 
+  labelX: number; 
+  labelY: number;
+  labelDirection: 'above' | 'below' | 'left' | 'right';
+}> = {
+  // TOP ROW - spread out evenly above the map, close to edge
+  "Northwest": { labelX: 200, labelY: 95, labelDirection: 'above' },
+  "Big Sky": { labelX: 400, labelY: 95, labelDirection: 'above' },
+  "Great Plains North": { labelX: 580, labelY: 95, labelDirection: 'above' },
+  "Great Plains South": { labelX: 720, labelY: 95, labelDirection: 'above' },
+  "Great Lakes": { labelX: 850, labelY: 95, labelDirection: 'above' },  // Moved to top row
+  
+  // RIGHT SIDE - positioned below the Responses panel area
+  "Northeast": { labelX: 920, labelY: 340, labelDirection: 'right' },
+  "Mid-Atlantic": { labelX: 920, labelY: 420, labelDirection: 'right' },
+  "Southeast": { labelX: 920, labelY: 500, labelDirection: 'right' },
+  
+  // LEFT SIDE - West Coast near Northern California, close to map
+  "West Coast": { labelX: 120, labelY: 320, labelDirection: 'left' },
+  
+  // BOTTOM ROW - spread out below the map, close to edge
+  "Texico": { labelX: 420, labelY: 530, labelDirection: 'below' },
+  "South Central": { labelX: 640, labelY: 530, labelDirection: 'below' },
+};
+
 // District centroids for pie chart positioning (based on new SVG)
 const districtCentroids: Record<string, { x: number; y: number }> = {
   "Alabama": { x: 646, y: 376 },
@@ -80,6 +108,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
+  
+  // Hovered region for metric labels (shows region name on hover)
+  const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(null);
   
   // Fetch all people to calculate district stats
   const { data: allPeople = [] } = trpc.people.list.useQuery();
@@ -436,120 +467,113 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           filter: 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.06)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.04))',
         }}
       >
-        {/* Invite Progress Bar - Top Left */}
-        <div className="absolute top-6 left-6 z-40 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm" style={{ minWidth: '200px' }}>
-          <div className="text-xs font-medium text-gray-600 mb-2">Invited · {invitedPercent}%</div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mb-1">
+        {/* Invite Progress - Floating Bar */}
+        <div className="absolute top-6 left-6 z-40 flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-500">Invited</span>
+            <span className="text-sm font-bold text-gray-700">{invitedPercent}%</span>
+          </div>
+          <div className="w-32 bg-gray-200 rounded-full h-1.5 overflow-hidden">
             <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${invitedPercent}%` }}
             />
           </div>
-          <div className="text-xs text-gray-500">{nationalTotals.invited} of {nationalTotals.total}</div>
+          <span className="text-xs text-gray-400">{nationalTotals.invited} of {nationalTotals.total}</span>
         </div>
         
-        {/* Response Metrics Panel - Top Right */}
-        <div className="absolute top-6 right-6 z-40 bg-white/90 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm" style={{ minWidth: '200px' }}>
-          <div className="text-sm font-semibold text-gray-700 mb-3">Responses</div>
-          
-          {/* Going */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Going</span>
-              <span className="text-sm font-medium text-gray-900">{nationalTotals.yes}</span>
-            </div>
-            <button
-              onClick={() => toggleMetric('yes')}
-              className={`w-5 h-5 rounded-full border-2 transition-all ${
-                activeMetrics.has('yes') 
-                  ? 'bg-blue-500 border-blue-500' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {activeMetrics.has('yes') && (
-                <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
+        {/* Floating Metric Toggles - Visual Hierarchy */}
+        {/* Going - Largest */}
+        <button
+          onClick={() => toggleMetric('yes')}
+          className="absolute top-6 right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          style={{ 
+            filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
+          }}
+        >
+          <span className="text-base font-semibold text-gray-700">Going</span>
+          <span className="text-base font-bold text-gray-900">{nationalTotals.yes}</span>
+          <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
+            activeMetrics.has('yes') 
+              ? 'bg-green-500 border-green-500' 
+              : 'border-gray-300 hover:border-green-400 bg-white'
+          }`}>
+            {activeMetrics.has('yes') && (
+              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
-          
-          {/* Maybe */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Maybe</span>
-              <span className="text-sm font-medium text-gray-900">{nationalTotals.maybe}</span>
-            </div>
-            <button
-              onClick={() => toggleMetric('maybe')}
-              className={`w-5 h-5 rounded-full border-2 transition-all ${
-                activeMetrics.has('maybe') 
-                  ? 'bg-blue-500 border-blue-500' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {activeMetrics.has('maybe') && (
-                <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
+        </button>
+        
+        {/* Maybe - Medium */}
+        <button
+          onClick={() => toggleMetric('maybe')}
+          className="absolute top-14 right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          style={{ 
+            filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.08))'
+          }}
+        >
+          <span className="text-sm font-medium text-gray-600">Maybe</span>
+          <span className="text-sm font-bold text-gray-800">{nationalTotals.maybe}</span>
+          <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+            activeMetrics.has('maybe') 
+              ? 'bg-yellow-500 border-yellow-500' 
+              : 'border-gray-300 hover:border-yellow-400 bg-white'
+          }`}>
+            {activeMetrics.has('maybe') && (
+              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
-          
-          {/* Not Going */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Not Going</span>
-              <span className="text-sm font-medium text-gray-900">{nationalTotals.no}</span>
-            </div>
-            <button
-              onClick={() => toggleMetric('no')}
-              className={`w-5 h-5 rounded-full border-2 transition-all ${
-                activeMetrics.has('no') 
-                  ? 'bg-blue-500 border-blue-500' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {activeMetrics.has('no') && (
-                <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
+        </button>
+        
+        {/* Not Going - Small */}
+        <button
+          onClick={() => toggleMetric('no')}
+          className="absolute top-[88px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          style={{ 
+            filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06))'
+          }}
+        >
+          <span className="text-xs font-medium text-gray-600">Not Going</span>
+          <span className="text-xs font-bold text-gray-800">{nationalTotals.no}</span>
+          <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+            activeMetrics.has('no') 
+              ? 'bg-red-500 border-red-500' 
+              : 'border-gray-300 hover:border-red-400 bg-white'
+          }`}>
+            {activeMetrics.has('no') && (
+              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
-          
-          {/* Not Invited Yet */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700">Not Invited Yet</span>
-              <span className="text-sm font-medium text-gray-900">{nationalTotals.notInvited}</span>
-            </div>
-            <button
-              onClick={() => toggleMetric('notInvited')}
-              className={`w-5 h-5 rounded-full border-2 transition-all ${
-                activeMetrics.has('notInvited') 
-                  ? 'bg-blue-500 border-blue-500' 
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              {activeMetrics.has('notInvited') && (
-                <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </button>
+        </button>
+        
+        {/* Not Invited - Smallest */}
+        <button
+          onClick={() => toggleMetric('notInvited')}
+          className="absolute top-[116px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          style={{ 
+            filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
+          }}
+        >
+          <span className="text-xs font-medium text-gray-500">Not Invited</span>
+          <span className="text-xs font-bold text-gray-700">{nationalTotals.notInvited}</span>
+          <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
+            activeMetrics.has('notInvited') 
+              ? 'bg-gray-400 border-gray-400' 
+              : 'border-gray-300 hover:border-gray-400 bg-white'
+          }`}>
+            {activeMetrics.has('notInvited') && (
+              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
           </div>
-          
-          {/* Clear Metrics Button */}
-          {activeMetrics.size > 0 && (
-            <button
-              onClick={clearAllMetrics}
-              className="w-full text-xs text-gray-600 hover:text-gray-800 py-1 border-t border-gray-200 mt-2 pt-2 transition-colors"
-            >
-              Clear Metrics
-            </button>
-          )}
-        </div>
+        </button>
         {/* Background click layer - captures clicks on empty space */}
         <div 
           className="absolute inset-0 z-0"
@@ -587,69 +611,155 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         />
         
-        {/* Metric Overlays - Anchored to Region Labels */}
+        {/* Metric Overlays - Anchored to Region Labels around map edges */}
         {activeMetrics.size > 0 && (
           <div className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none">
             <svg width="100%" height="100%" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet">
-              {districts.map(district => {
-                const centroid = districtCentroids[district.id];
-                if (!centroid) return null;
+              {/* Group districts by region and aggregate stats */}
+              {(() => {
+                // Aggregate stats by region
+                const regionStats: Record<string, DistrictStats> = {};
+                districts.forEach(district => {
+                  const stats = districtStats[district.id];
+                  if (!stats) return;
+                  const region = district.region || 'Unknown';
+                  if (!regionStats[region]) {
+                    regionStats[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
+                  }
+                  regionStats[region].yes += stats.yes;
+                  regionStats[region].maybe += stats.maybe;
+                  regionStats[region].no += stats.no;
+                  regionStats[region].notInvited += stats.notInvited;
+                  regionStats[region].total += stats.total;
+                });
                 
-                const stats = districtStats[district.id];
-                if (!stats || stats.total === 0) return null;
-                
-                // Collect active metrics for this district
-                const metricsToShow: Array<{ label: string; value: number }> = [];
-                if (activeMetrics.has('yes')) metricsToShow.push({ label: 'Going', value: stats.yes });
-                if (activeMetrics.has('maybe')) metricsToShow.push({ label: 'Maybe', value: stats.maybe });
-                if (activeMetrics.has('no')) metricsToShow.push({ label: 'Not Going', value: stats.no });
-                if (activeMetrics.has('notInvited')) metricsToShow.push({ label: 'Not Invited', value: stats.notInvited });
-                
-                if (metricsToShow.length === 0) return null;
-                
-                const isSingleMetric = metricsToShow.length === 1;
-                const fontSize = isSingleMetric ? '14px' : '11px';
-                const fontWeight = isSingleMetric ? '600' : '500';
-                const lineHeight = isSingleMetric ? 20 : 16;
-                
-                // Position metrics around the edge of the region
-                // Offset from centroid to push outside region boundaries
-                const offsetX = 0;
-                const offsetY = -40; // Move up from centroid to edge
-                
-                return (
-                  <g key={district.id} className="transition-opacity duration-300">
-                    {/* Region name */}
-                    <text
-                      x={centroid.x + offsetX}
-                      y={centroid.y + offsetY - (metricsToShow.length * lineHeight) / 2 - 4}
-                      textAnchor="middle"
-                      fill="#374151"
-                      fontSize="11px"
-                      fontWeight="600"
-                      className="pointer-events-none select-none"
+                return Object.entries(regionLabelPositions).map(([region, pos]) => {
+                  const stats = regionStats[region];
+                  if (!stats || stats.total === 0) return null;
+                  
+                  // Get the single active metric value
+                  let metricValue = 0;
+                  let metricLabel = '';
+                  if (activeMetrics.has('yes')) { metricValue = stats.yes; metricLabel = 'Going'; }
+                  else if (activeMetrics.has('maybe')) { metricValue = stats.maybe; metricLabel = 'Maybe'; }
+                  else if (activeMetrics.has('no')) { metricValue = stats.no; metricLabel = 'Not Going'; }
+                  else if (activeMetrics.has('notInvited')) { metricValue = stats.notInvited; metricLabel = 'Not Invited'; }
+                  
+                  // For multiple metrics, show stacked
+                  const metricsToShow: Array<{ label: string; value: number }> = [];
+                  if (activeMetrics.has('yes')) metricsToShow.push({ label: 'Going', value: stats.yes });
+                  if (activeMetrics.has('maybe')) metricsToShow.push({ label: 'Maybe', value: stats.maybe });
+                  if (activeMetrics.has('no')) metricsToShow.push({ label: 'Not Going', value: stats.no });
+                  if (activeMetrics.has('notInvited')) metricsToShow.push({ label: 'Not Invited', value: stats.notInvited });
+                  
+                  if (metricsToShow.length === 0) return null;
+                  
+                  const isSingleMetric = metricsToShow.length === 1;
+                  const lineHeight = isSingleMetric ? 22 : 18;
+                  const isHovered = hoveredRegionLabel === region;
+                  const totalHeight = metricsToShow.length * lineHeight;
+                  const direction = pos.labelDirection;
+                  
+                  // Calculate region name position based on direction
+                  let nameX = pos.labelX;
+                  let nameY = pos.labelY;
+                  let nameAnchor: 'start' | 'middle' | 'end' = 'middle';
+                  
+                  if (direction === 'above') {
+                    nameY = pos.labelY - 18;
+                  } else if (direction === 'below') {
+                    nameY = pos.labelY + totalHeight + 14;
+                  } else if (direction === 'left') {
+                    nameX = pos.labelX - 8;
+                    nameY = pos.labelY - 12;
+                    nameAnchor = 'end';
+                  } else if (direction === 'right') {
+                    nameX = pos.labelX + 8;
+                    nameY = pos.labelY - 12;
+                    nameAnchor = 'start';
+                  }
+                  
+                  return (
+                    <g 
+                      key={region} 
+                      className="metric-label-group cursor-pointer"
+                      style={{ pointerEvents: 'auto' }}
+                      onMouseEnter={() => setHoveredRegionLabel(region)}
+                      onMouseLeave={() => setHoveredRegionLabel(null)}
                     >
-                      {district.region}
-                    </text>
-                    
-                    {/* Metrics stacked vertically */}
-                    {metricsToShow.map((metric, index) => (
+                      {/* Invisible hit area for hover detection */}
+                      <rect
+                        x={pos.labelX - 40}
+                        y={pos.labelY - 25}
+                        width={80}
+                        height={totalHeight + 40}
+                        fill="transparent"
+                        rx="4"
+                      />
+                      
+                      {/* Region name - always visible */}
                       <text
-                        key={metric.label}
-                        x={centroid.x + offsetX}
-                        y={centroid.y + offsetY + (index * lineHeight) - ((metricsToShow.length - 1) * lineHeight) / 2 + 10}
-                        textAnchor="middle"
+                        x={nameX}
+                        y={nameY}
+                        textAnchor={nameAnchor}
                         fill="#6b7280"
-                        fontSize={fontSize}
-                        fontWeight={fontWeight}
-                        className="pointer-events-none select-none"
+                        fontSize={isSingleMetric ? '10px' : '9px'}
+                        fontWeight="600"
+                        letterSpacing="0.5px"
+                        className="select-none"
+                        style={{ 
+                          textTransform: 'uppercase',
+                          fontFamily: 'system-ui, -apple-system, sans-serif'
+                        }}
                       >
-                        {isSingleMetric ? `${metric.label}: ${metric.value}` : `${metric.label.substring(0, 3)}: ${metric.value}`}
+                        {region}
                       </text>
-                    ))}
-                  </g>
-                );
-              })}
+                      
+                      {/* Metric values with colored dots */}
+                      {metricsToShow.map((metric, index) => {
+                        // Color mapping for each metric type
+                        const dotColor = 
+                          metric.label === 'Going' ? '#22c55e' :      // Green
+                          metric.label === 'Maybe' ? '#eab308' :      // Yellow
+                          metric.label === 'Not Going' ? '#ef4444' :  // Red
+                          '#9ca3af';                                   // Gray for Not Invited
+                        
+                        const dotRadius = isSingleMetric ? 5 : 4;
+                        
+                        return (
+                          <g key={metric.label}>
+                            {/* Colored dot */}
+                            <circle
+                              cx={pos.labelX - (isSingleMetric ? 22 : 16)}
+                              cy={pos.labelY + (index * lineHeight) - (isSingleMetric ? 6 : 4)}
+                              r={dotRadius}
+                              fill={dotColor}
+                              className="select-none"
+                            />
+                            {/* Metric number */}
+                            <text
+                              x={pos.labelX}
+                              y={pos.labelY + (index * lineHeight)}
+                              textAnchor="middle"
+                              fill={isHovered ? '#111827' : '#374151'}
+                              fontSize={isSingleMetric ? '18px' : '13px'}
+                              fontWeight="700"
+                              letterSpacing="-0.3px"
+                              className="select-none"
+                              style={{ 
+                                transition: 'fill 0.15s ease',
+                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                              }}
+                            >
+                              {metric.value}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                });
+              })()}
             </svg>
           </div>
         )}

@@ -880,3 +880,32 @@
 - [x] Reposition metric overlays to appear around edges/borders of regions
 - [x] Adjust offset from centroids to push labels outside region boundaries (offsetY = -40)
 - [x] Test visibility and readability of edge-positioned metrics
+
+## Region Label Positioning (Chi Alpha Area Lines Style)
+- [x] Define region label positions around map edges matching reference image
+- [x] Position Northwest, Big Sky, Great Plains North labels at top
+- [x] Position West Coast label on left side
+- [x] Position Northeast, Mid-Atlantic, Southeast labels on right side
+- [x] Position Texico, South Central labels at bottom
+- [x] Add leader lines for interior regions (Great Plains South, Great Lakes)
+- [x] Display single metric number per region near each label
+- [ ] Test visibility and readability of edge-positioned labels with leader lines
+
+## Metric Overlay Repositioning
+- [ ] Reposition metric overlays to map edges (one number per region)
+- [ ] Add hover behavior to show region name above metric numbers
+- [ ] Remove leader lines (not needed - all regions touch edges)
+
+
+## Metric Overlay Improvements
+- [x] Reposition metric overlays to map edges with region names always visible
+- [x] Remove leader lines for all regions
+- [x] Move Great Lakes metrics to top row above the region
+- [x] Move numbers closer to map edges
+- [x] Redesign Invited bar as floating element without panel
+- [x] Remove Responses panel and create floating metric toggles
+- [x] Apply visual hierarchy to metric toggles (Going largest, Not Invited smallest)
+- [x] Add shadow effects to floating elements
+- [x] Remove "RESPONSES" label from panel
+- [x] Remove colored dots from toggle panel
+- [x] Remove "Clear Metrics" button
