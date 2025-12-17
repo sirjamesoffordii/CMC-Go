@@ -956,3 +956,14 @@
 - [x] Implement smooth number count-up animations when metrics change (400ms, 20 steps)
 - [x] Change hovered district effect from brightness to darkening shadow for better contrast
 - [x] Reduce fade-out opacity on non-hovered regions (0.78 → 0.88, more subtle)
+
+## UI Redesign - Multiple Elements
+- [x] Shorten Invited progress bar (w-48 → w-32)
+- [x] Move 70% to left side of Invited bar
+- [x] Remove bottom right calendar widget completely
+- [x] Shrink NXA button size (55px → 32px)
+- [x] Reposition NXA button to bottom left of South Missouri (center of map)
+- [x] Fix top right metric toggles section layout (improved spacing and alignment)
+- [x] Add animated "We're Going Together" text to header (scrolling left-to-right, 25s duration)
+- [x] Use cool font for animated text (Pacifico from Google Fonts)
+- [x] Ensure animated text doesn't cover header content (z-index layering)

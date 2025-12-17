@@ -198,3 +198,13 @@
 .tooltip-animate {
   animation: tooltip-fade-in 0.15s ease-out forwards;
 }
+
+/* Scrolling text animation - left to right */
+@keyframes scroll-left-to-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

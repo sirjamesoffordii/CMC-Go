@@ -580,25 +580,25 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5">
         
           <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Invited</span>
-            <div className="w-48 bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
+            <span className="text-base font-bold text-gray-800 min-w-[3rem]">{invitedPercent}%</span>
+            <div className="w-32 bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
               <div 
                 className="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm"
                 style={{ width: `${invitedPercent}%` }}
               />
             </div>
-            <span className="text-base font-bold text-gray-800 min-w-[3rem] text-right">{invitedPercent}%</span>
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Invited</span>
           </div>
-          <span className="text-xs text-gray-500 ml-[4.5rem]">{nationalTotals.invited} of {nationalTotals.total}</span>
+          <span className="text-xs text-gray-500 ml-[3.5rem]">{nationalTotals.invited} of {nationalTotals.total}</span>
         </div>
         
         {/* Floating Metric Toggles - Visual Hierarchy */}
-        {/* Label above metrics */}
+        {/* Label above metrics - centered */}
         <div 
           className="absolute right-6 z-40 transition-all duration-300"
           style={{ 
-            top: hoveredRegion ? '-4px' : '0px',
-            right: displayedLabel.length > 15 ? `${(displayedLabel.length - 15) * 4}px` : '24px'
+            top: '4px',
+            right: displayedLabel.length > 15 ? `${Math.max(24, 24 + (displayedLabel.length - 15) * 2)}px` : '24px'
           }}
         >
           <span className="text-sm font-bold text-gray-800 transition-opacity duration-300">
@@ -609,7 +609,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         {/* Going - Largest */}
         <button
           onClick={() => toggleMetric('yes')}
-          className="absolute top-6 right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          className="absolute top-8 right-6 z-40 flex items-center gap-2.5 transition-all duration-200 hover:scale-105"
           style={{ 
             filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
           }}
@@ -632,7 +632,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         {/* Maybe - Small */}
         <button
           onClick={() => toggleMetric('maybe')}
-          className="absolute top-14 right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          className="absolute top-[60px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           style={{ 
             filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
           }}
@@ -655,7 +655,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         {/* Not Going - Small */}
         <button
           onClick={() => toggleMetric('no')}
-          className="absolute top-[88px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          className="absolute top-[84px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           style={{ 
             filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
           }}
@@ -678,7 +678,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         {/* Not Invited - Smallest */}
         <button
           onClick={() => toggleMetric('notInvited')}
-          className="absolute top-[116px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
+          className="absolute top-[108px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           style={{ 
             filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
           }}
@@ -892,38 +892,39 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       {/* Tooltip */}
       {renderTooltip()}
       
-      {/* NXA National Circle - Bottom Left Position */}
+      {/* NXA National Circle - Bottom Left of South Missouri */}
       <button
         onClick={() => onNationalClick?.()}
         className="absolute z-40 group"
         style={{
-          left: '80px',
-          bottom: '80px',
-          width: '55px',
-          height: '55px',
+          left: '50%',
+          top: '62%',
+          transform: 'translate(-50%, -50%)',
+          width: '32px',
+          height: '32px',
         }}
       >
-        <svg width="55" height="55" viewBox="0 0 55 55">
+        <svg width="32" height="32" viewBox="0 0 32 32">
           {/* Circle with subdued color matching map */}
           <circle
-            cx="27.5"
-            cy="27.5"
-            r="26"
+            cx="16"
+            cy="16"
+            r="14"
             fill="#92400e" // Darker brown to blend with map
             stroke="#ffffff"
-            strokeWidth="1.5"
-            className="transition-all duration-200 group-hover:fill-[#a16207] group-hover:stroke-[2]"
+            strokeWidth="1"
+            className="transition-all duration-200 group-hover:fill-[#a16207] group-hover:stroke-[1.5]"
             style={{
               filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
             }}
           />
           {/* NXA Text */}
           <text
-            x="27.5"
-            y="32"
+            x="16"
+            y="19"
             textAnchor="middle"
             fill="#ffffff"
-            fontSize="12"
+            fontSize="7"
             fontWeight="600"
             fontFamily="Arial, sans-serif"
             className="pointer-events-none select-none"

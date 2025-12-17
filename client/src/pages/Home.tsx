@@ -400,7 +400,7 @@ export default function Home() {
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
         {/* Logo - Left Side */}
-        <div className="flex-shrink-0 h-8 w-auto mr-4">
+        <div className="flex-shrink-0 h-8 w-auto mr-4 relative z-10">
           <img 
             src={headerLogoUrl || savedHeaderLogo?.value || '/xa-logo.png'} 
             alt="Logo" 
@@ -409,22 +409,37 @@ export default function Home() {
         </div>
         
         {/* CMC Countdown - Next to Logo */}
-        <div className="flex-shrink-0 flex items-center gap-2 mr-6 px-3 py-1 bg-white/10 rounded-md">
+        <div className="flex-shrink-0 flex items-center gap-2 mr-6 px-3 py-1 bg-white/10 rounded-md relative z-10">
           <Calendar className="w-3.5 h-3.5 text-white/70" />
           <span className="text-xs font-medium text-white/90">CMC in {daysUntilCMC} days</span>
         </div>
 
         {/* Header Text - Editable */}
         <div 
-          className="flex-grow text-white/95 tracking-normal"
+          className="flex-grow text-white/95 tracking-normal relative z-10"
           style={{ fontSize: '14px', fontWeight: 400, letterSpacing: '0.01em' }}
           dangerouslySetInnerHTML={{ 
             __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
           }}
         />
+        
+        {/* Animated Scrolling Text - "We're Going Together" */}
+        <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
+          <div 
+            className="whitespace-nowrap text-white/15 font-bold"
+            style={{
+              fontSize: '28px',
+              fontFamily: '"Pacifico", cursive',
+              animation: 'scroll-left-to-right 25s linear infinite',
+              letterSpacing: '0.05em'
+            }}
+          >
+            We're Going Together
+          </div>
+        </div>
 
         {/* Search Bar */}
-        <div className="relative flex-shrink-0 mr-4">
+        <div className="relative flex-shrink-0 mr-4 z-10">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -653,24 +668,7 @@ export default function Home() {
                 setFollowUpPanelOpen(false);
               }}
             />
-            
-            
-            {/* Calendar Widget - Bottom Right */}
-            <div className="absolute bottom-8 right-10 flex flex-col items-center pointer-events-none">
-              <div className="bg-white rounded-xl overflow-hidden" style={{ width: '90px', height: '90px', boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)', border: '1px solid rgba(0, 0, 0, 0.08)' }}>
-                <div className="flex flex-col h-full">
-                  <div className="flex-1 flex items-center justify-center bg-gray-50/50">
-                    <div className="text-4xl font-medium text-gray-800">06</div>
-                  </div>
-                  <div className="bg-white py-1.5 border-t border-gray-100">
-                    <div className="text-center text-xs font-medium text-gray-600 tracking-widest">JUL</div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 text-sm font-medium text-gray-600">
-                In {daysUntilCMC} days
-              </div>
-            </div>
+
           </div>
         </div>
 
