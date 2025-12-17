@@ -875,3 +875,8 @@
 - [x] Add subtle fade-in/fade-out transitions for metric overlays (transition-opacity duration-300)
 - [x] Keep region identity colors unchanged (no color changes for metrics)
 - [x] Test toggle behavior and visual guardrails (Invite Progress and Response Metrics panels working correctly)
+
+## Metric Overlay Edge Positioning
+- [x] Reposition metric overlays to appear around edges/borders of regions
+- [x] Adjust offset from centroids to push labels outside region boundaries (offsetY = -40)
+- [x] Test visibility and readability of edge-positioned metrics

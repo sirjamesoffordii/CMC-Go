@@ -612,15 +612,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 const fontWeight = isSingleMetric ? '600' : '500';
                 const lineHeight = isSingleMetric ? 20 : 16;
                 
+                // Position metrics around the edge of the region
+                // Offset from centroid to push outside region boundaries
+                const offsetX = 0;
+                const offsetY = -40; // Move up from centroid to edge
+                
                 return (
                   <g key={district.id} className="transition-opacity duration-300">
                     {/* Region name */}
                     <text
-                      x={centroid.x}
-                      y={centroid.y - (metricsToShow.length * lineHeight) / 2 - 8}
+                      x={centroid.x + offsetX}
+                      y={centroid.y + offsetY - (metricsToShow.length * lineHeight) / 2 - 4}
                       textAnchor="middle"
                       fill="#374151"
-                      fontSize="12px"
+                      fontSize="11px"
                       fontWeight="600"
                       className="pointer-events-none select-none"
                     >
@@ -631,8 +636,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                     {metricsToShow.map((metric, index) => (
                       <text
                         key={metric.label}
-                        x={centroid.x}
-                        y={centroid.y + (index * lineHeight) - ((metricsToShow.length - 1) * lineHeight) / 2 + 8}
+                        x={centroid.x + offsetX}
+                        y={centroid.y + offsetY + (index * lineHeight) - ((metricsToShow.length - 1) * lineHeight) / 2 + 10}
                         textAnchor="middle"
                         fill="#6b7280"
                         fontSize={fontSize}
