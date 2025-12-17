@@ -837,3 +837,10 @@
 - [ ] Add Deposit Paid indicator in UI (💰 badge or secondary stat)
 - [x] Migrate existing data from old status values to new response values (445 Yes, 276 Maybe, 55 No, 335 Not Invited)
 - [x] Test status translation and editing workflow (all 16 tests passing)
+
+## National Panel Display Fix
+- [x] Remove role-based grouping in National panel
+- [x] Display all national team members in single sorted list
+- [x] Show Alex Rodriguez at top with "National Director" as role subtitle (PersonRow displays primaryRole)
+- [x] Show Abby Rodriguez second with "Co-Director" as role subtitle
+- [x] Show Regional Directors with their specific region titles as role subtitles

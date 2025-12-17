@@ -49,20 +49,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     return a.name.localeCompare(b.name);
   });
 
-  // Group by role for better organization
-  const groupedStaff = sortedStaff.reduce((acc, person) => {
-    const role = person.roleTitle || "No Role Assigned";
-    if (!acc[role]) {
-      acc[role] = [];
-    }
-    acc[role].push(person);
-    return acc;
-  }, {} as Record<string, typeof nationalStaff>);
-
-  // Sort role groups by priority
-  const sortedRoleGroups = Object.entries(groupedStaff).sort(([roleA], [roleB]) => {
-    return getRolePriority(roleA) - getRolePriority(roleB);
-  });
+  // No grouping - display as single sorted list
 
   // Calculate stats
   const stats = {
@@ -126,24 +113,15 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
             <p className="text-sm mt-2">Use the Import feature to add national team members.</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {sortedRoleGroups.map(([role, people]) => (
-              <div key={role} className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700 px-2 py-1 bg-gray-50 rounded">
-                  {role} ({people.length})
-                </h3>
-                <div className="space-y-1">
-                  {people.map((person) => (
-                    <PersonRow
-                      key={person.personId}
-                      person={person}
-                      onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
-                      onClick={() => onPersonClick(person)}
-                      onPersonUpdate={() => {}}
-                    />
-                  ))}
-                </div>
-              </div>
+          <div className="space-y-1.5">
+            {sortedStaff.map((person) => (
+              <PersonRow
+                key={person.personId}
+                person={person}
+                onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
+                onClick={() => onPersonClick(person)}
+                onPersonUpdate={() => {}}
+              />
             ))}
           </div>
         )}
