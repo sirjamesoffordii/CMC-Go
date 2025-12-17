@@ -49,27 +49,22 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     return a.name.localeCompare(b.name);
   });
 
-  // Separate top-level people (National Director, Co-Director) from categorized roles
-  const topLevelPeople = sortedStaff.filter(p => {
-    const role = (p.roleTitle || '').toLowerCase();
-    return role.includes('national director') || role.includes('co-director') || role.includes('co director');
-  });
-
-  const categorizedPeople = sortedStaff.filter(p => {
-    const role = (p.roleTitle || '').toLowerCase();
-    return !role.includes('national director') && !role.includes('co-director') && !role.includes('co director');
-  });
-
-  // Group categorized people
-  const groupedStaff = categorizedPeople.reduce((acc, person) => {
+  // Group all people into categories
+  const groupedStaff = sortedStaff.reduce((acc, person) => {
     const role = person.roleTitle || "No Role Assigned";
     const roleLower = role.toLowerCase();
     
-    // Group all regional directors together
     let category = role;
-    if (roleLower.includes('regional director')) {
+    
+    // National Office category for National Director, Co-Director, and other office staff
+    if (roleLower.includes('national director') || roleLower.includes('co-director') || roleLower.includes('co director')) {
+      category = "National Office";
+    }
+    // Regional Directors category
+    else if (roleLower.includes('regional director')) {
       category = "Regional Directors";
     }
+    // Keep other roles as-is (e.g., CMC Go Coordinator)
     
     if (!acc[category]) {
       acc[category] = [];
@@ -79,8 +74,15 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
   }, {} as Record<string, typeof nationalStaff>);
 
   // Sort role groups by priority
-  const sortedRoleGroups = Object.entries(groupedStaff).sort(([roleA], [roleB]) => {
-    return getRolePriority(roleA) - getRolePriority(roleB);
+  const getCategoryPriority = (category: string): number => {
+    if (category === "National Office") return 1;
+    if (category === "Regional Directors") return 2;
+    if (category.toLowerCase().includes('cmc go coordinator')) return 999;
+    return 50;
+  };
+  
+  const sortedRoleGroups = Object.entries(groupedStaff).sort(([catA], [catB]) => {
+    return getCategoryPriority(catA) - getCategoryPriority(catB);
   });
 
   // Calculate stats
@@ -146,22 +148,6 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Top-level people (no category heading) */}
-            {topLevelPeople.length > 0 && (
-              <div className="space-y-1.5">
-                {topLevelPeople.map((person) => (
-                  <PersonRow
-                    key={person.personId}
-                    person={person}
-                    onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
-                    onClick={() => onPersonClick(person)}
-                    onPersonUpdate={() => {}}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Categorized roles */}
             {sortedRoleGroups.map(([category, people]) => (
               <div key={category} className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-700 px-2 py-1 bg-gray-50 rounded">

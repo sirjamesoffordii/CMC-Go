@@ -851,3 +851,9 @@
 - [x] Create "Regional Directors" category grouping all regional directors
 - [x] Create "CMC Go Coordinator" category at bottom
 - [x] Exclude National Director and Co-Director from category headings
+
+## National Office Category Structure
+- [x] Create "National Office" category containing National Director, Co-Director, and other national office staff
+- [x] Keep "Regional Directors" category separate with all regional directors
+- [x] Keep "CMC Go Coordinator" category at bottom
+- [x] Remove top-level people without category headings
