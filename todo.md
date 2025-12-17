@@ -857,3 +857,8 @@
 - [x] Keep "Regional Directors" category separate with all regional directors
 - [x] Keep "CMC Go Coordinator" category at bottom
 - [x] Remove top-level people without category headings
+
+## Remove CMC Go Coordinator & Filter Sir James Offord
+- [x] Remove CMC Go Coordinator category from National panel
+- [x] Filter out "Sir James Offord" from National panel display
+- [x] Update category priority logic to exclude CMC Go Coordinator

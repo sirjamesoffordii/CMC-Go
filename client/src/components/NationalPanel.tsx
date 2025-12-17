@@ -9,7 +9,14 @@ interface NationalPanelProps {
 }
 
 export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: NationalPanelProps) {
-  const { data: nationalStaff = [], isLoading } = trpc.people.getNational.useQuery();
+  const { data: nationalStaffRaw = [], isLoading } = trpc.people.getNational.useQuery();
+  
+  // Filter out CMC Go Coordinator and Sir James Offord
+  const nationalStaff = nationalStaffRaw.filter(p => {
+    const nameLower = p.name.toLowerCase();
+    const roleLower = (p.roleTitle || '').toLowerCase();
+    return !nameLower.includes('sir james offord') && !roleLower.includes('cmc go coordinator');
+  });
 
   // Define role priority (lower number = higher priority)
   const getRolePriority = (role: string | null): number => {
@@ -77,7 +84,6 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
   const getCategoryPriority = (category: string): number => {
     if (category === "National Office") return 1;
     if (category === "Regional Directors") return 2;
-    if (category.toLowerCase().includes('cmc go coordinator')) return 999;
     return 50;
   };
   
