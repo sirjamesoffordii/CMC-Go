@@ -64,7 +64,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 bg-white rounded border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group relative"
+      className="flex items-center gap-1.5 bg-gray-50 hover:bg-white rounded-md border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer group relative"
       onClick={() => onClick(person)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -73,22 +73,22 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     >
       {/* Status Bar - Compact */}
       <div
-        className={`w-1 h-7 rounded-l cursor-pointer ${STATUS_COLORS[person.status]} hover:opacity-80 transition-opacity`}
+        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status]} hover:brightness-110 transition-all`}
         onClick={handleStatusClick}
         title={`Click to cycle status (current: ${person.status})`}
       />
 
       {/* Person Info - Compact */}
-      <div className="flex-1 py-1 pr-1.5 min-w-0">
+      <div className="flex-1 py-1.5 pr-2 min-w-0">
         <div className="flex items-center justify-between gap-1.5">
-          <span className="text-xs font-medium text-gray-900 truncate">
+          <span className="text-xs font-medium text-gray-800 truncate group-hover:text-gray-900 transition-colors">
             <EditableText
               value={person.name}
               onSave={(newName) => {
                 updatePersonName.mutate({ personId: person.personId, name: newName });
               }}
-              className="text-xs font-medium text-gray-900"
-              inputClassName="text-xs font-medium text-gray-900 w-full"
+              className="text-xs font-medium text-gray-800"
+              inputClassName="text-xs font-medium text-gray-800 w-full"
             />
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -104,7 +104,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
                   e.stopPropagation();
                   setIsEditingName(true);
                 }}
-                className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+                className="h-3.5 w-3.5 text-gray-400 hover:text-blue-500 transition-colors"
                 title="Edit name"
               >
                 <Pencil className="h-3 w-3" />
@@ -113,7 +113,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
           </div>
         </div>
         {person.primaryRole && (
-          <span className="text-[10px] text-gray-500 leading-tight">{person.primaryRole}</span>
+          <span className="text-[10px] text-gray-500 leading-tight truncate">{person.primaryRole}</span>
         )}
       </div>
     </div>

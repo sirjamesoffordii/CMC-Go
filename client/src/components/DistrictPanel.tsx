@@ -144,8 +144,8 @@ export function DistrictPanel({
   return (
     <div className="h-full flex flex-col bg-white min-w-fit">
       {/* Header - Refined typography hierarchy */}
-      <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
-        <div className="flex items-center justify-between mb-4">
+      <div className="px-6 py-5 border-b border-gray-200 flex-shrink-0 bg-white shadow-sm">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-medium text-gray-800">
               <EditableText
@@ -157,7 +157,7 @@ export function DistrictPanel({
                 inputClassName="text-2xl font-medium text-gray-800"
               />
             </h2>
-            <span className="text-gray-300 text-xl">|</span>
+            <span className="text-gray-300 text-xl font-light">|</span>
             <p className="text-base font-normal text-gray-500">
               <EditableText
                 value={district.region}
@@ -168,8 +168,8 @@ export function DistrictPanel({
                 inputClassName="text-base font-normal text-gray-500"
               />
             </p>
-            <span className="text-gray-200 text-lg">|</span>
-            <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
+            <span className="text-gray-300 text-lg font-light">|</span>
+            <p className="text-base font-semibold text-gray-700">{invitedPercent}% Invited</p>
             {(() => {
               const director = districtPeople.find(p => 
                 p.primaryRole?.toLowerCase().includes('district director') ||
@@ -177,8 +177,8 @@ export function DistrictPanel({
               );
               return director ? (
                 <>
-                  <span className="text-gray-200 text-lg ml-4">|</span>
-                  <p className="text-sm text-gray-500">
+                  <span className="text-gray-300 text-lg font-light ml-6">|</span>
+                  <p className="text-sm text-gray-600 font-medium">
                     District Director: {director.name}
                   </p>
                 </>
@@ -191,7 +191,7 @@ export function DistrictPanel({
         </div>
         
         {/* Pie Chart and Stats - Refined spacing */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-8">
           {/* Pie Chart - Medium */}
           <div className="flex-shrink-0">
             <svg width="80" height="80" viewBox="0 0 80 80">
@@ -223,7 +223,7 @@ export function DistrictPanel({
           </div>
           
           {/* Stats - 2 Columns with Aligned Numbers */}
-          <div className="flex gap-8">
+          <div className="flex gap-10">
             {/* Left Column: Going / Not Going */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between min-w-[110px]">
@@ -263,8 +263,8 @@ export function DistrictPanel({
         </div>
       </div>
 
-      {/* Campus Columns - Refined spacing */}
-      <div className="flex-1 overflow-x-auto overflow-y-auto px-4 py-3">
+      {/* Campus Columns - Horizontal scrolling */}
+      <div className="flex-1 overflow-x-auto overflow-y-hidden px-6 py-4 bg-gray-50/30">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -274,7 +274,7 @@ export function DistrictPanel({
             items={campusOrder.map(c => c.id)}
             strategy={horizontalListSortingStrategy}
           >
-            <div className="flex gap-3 min-w-max">
+            <div className="flex gap-4 min-w-max h-full">
               {campusOrder.map(campus => {
                 const campusPeople = people.filter(p => p.primaryCampusId === campus.id);
                 return (
@@ -294,9 +294,9 @@ export function DistrictPanel({
               <button
                 onClick={handleAddCampus}
                 disabled={createCampus.isPending}
-                className="flex-shrink-0 w-[160px] h-[200px] border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-gray-400 hover:text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-shrink-0 w-48 h-full border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/50 transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
               >
-                <Plus className="h-8 w-8" />
+                <Plus className="h-10 w-10 group-hover:scale-110 transition-transform" />
                 <span className="text-sm font-medium">
                   {createCampus.isPending ? "Adding..." : "Add Campus"}
                 </span>

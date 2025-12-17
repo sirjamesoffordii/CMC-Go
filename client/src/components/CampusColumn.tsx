@@ -97,12 +97,12 @@ export function CampusColumn({
     <div 
       ref={setNodeRef}
       style={style}
-      className="flex-shrink-0 w-40 bg-gray-50/80 rounded-md border border-gray-100 px-2.5 py-2.5"
+      className="flex-shrink-0 w-48 h-full bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow flex flex-col"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Campus Header - Refined spacing */}
-      <div className="relative mb-2.5">
+      <div className="relative mb-3 px-3 py-3 border-b border-gray-100 flex-shrink-0">
         {/* Drag handle areas on edges */}
         <div 
           className="absolute left-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
@@ -116,30 +116,30 @@ export function CampusColumn({
         />
         
         <div className="flex items-center justify-between gap-1 relative">
-          <div className="flex-1 min-w-0 px-3">
-            <h3 className="font-medium text-gray-700 text-xs text-center pb-1.5 border-b border-gray-200">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-800 text-sm text-center">
               <EditableText
                 value={campus.name}
                 onSave={(newName) => {
                   updateCampusName.mutate({ id: campus.id, name: newName });
                 }}
-                className="font-medium text-gray-700 text-xs"
-                inputClassName="font-medium text-gray-700 text-xs w-full text-center"
+                className="font-semibold text-gray-800 text-sm"
+                inputClassName="font-semibold text-gray-800 text-sm w-full text-center"
               />
             </h3>
           </div>
           
           {/* 3-dot menu - positioned at edge */}
-          {isHovered && (
+          <div className={`transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute right-1 top-0 h-5 w-5 cursor-pointer hover:bg-gray-200 rounded z-20"
+                  className="absolute -right-1 -top-1 h-6 w-6 cursor-pointer hover:bg-gray-100 rounded-md z-20"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <MoreVertical className="h-3 w-3" />
+                  <MoreVertical className="h-3.5 w-3.5 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
@@ -173,16 +173,16 @@ export function CampusColumn({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+          </div>
         </div>
       </div>
 
       {/* People List - Compact with Drag and Drop */}
       <SortableContext
-        items={sortedPeople.map(p => p.id)}
+        items={sortedPeople.map(p => p.personId)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="space-y-1 mb-2">
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
           {sortedPeople.map(person => (
             <PersonRow
               key={person.personId}
@@ -196,15 +196,17 @@ export function CampusColumn({
       </SortableContext>
 
       {/* Quick Add - Compact */}
-      <form onSubmit={handleAddPerson} className="mt-2">
-        <Input
-          type="text"
-          placeholder="Add name..."
-          value={newPersonName}
-          onChange={(e) => setNewPersonName(e.target.value)}
-          className="text-xs h-7 px-2"
-        />
-      </form>
+      <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100">
+        <form onSubmit={handleAddPerson}>
+          <Input
+            type="text"
+            placeholder="+ Add person..."
+            value={newPersonName}
+            onChange={(e) => setNewPersonName(e.target.value)}
+            className="text-xs h-8 px-2.5 border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+          />
+        </form>
+      </div>
     </div>
   );
 }
