@@ -904,8 +904,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         onClick={() => onNationalClick?.()}
         className="absolute z-40 group"
         style={{
-          left: '50%',
-          top: '62%',
+          left: '56%',
+          top: '68%',
           transform: 'translate(-50%, -50%)',
           width: '32px',
           height: '32px',

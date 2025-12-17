@@ -984,3 +984,7 @@
 - [x] Add subtle shadow for depth (2px 6px rgba 0.2)
 - [x] Keep minimal transform (scale 1.005, translateY -0.5px)
 - [x] Increase saturation slightly for contrast (1.05)
+
+## NXA Button Repositioning
+- [x] Move NXA button from West Texas to South Missouri district bottom left (left 50%→56%, top 62%→68%)
+- [x] Position around Oklahoma/Arkansas area
