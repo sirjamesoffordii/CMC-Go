@@ -951,3 +951,8 @@
 - [x] Add "Nationally" label above metrics by default
 - [x] Fade label to region name when hovering over districts in that region
 - [x] Dynamically adjust label position left for longer region names to prevent overflow
+
+## Animated Metric Transitions & Hover Improvements
+- [x] Implement smooth number count-up animations when metrics change (400ms, 20 steps)
+- [x] Change hovered district effect from brightness to darkening shadow for better contrast
+- [x] Reduce fade-out opacity on non-hovered regions (0.78 → 0.88, more subtle)

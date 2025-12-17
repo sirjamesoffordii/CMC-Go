@@ -137,6 +137,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   
+  // Animated metric values
+  const [animatedYes, setAnimatedYes] = useState(0);
+  const [animatedMaybe, setAnimatedMaybe] = useState(0);
+  const [animatedNo, setAnimatedNo] = useState(0);
+  const [animatedNotInvited, setAnimatedNotInvited] = useState(0);
+  
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
   
@@ -181,6 +187,42 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     ? regionalTotals[hoveredRegion] 
     : nationalTotals;
   const displayedLabel = hoveredRegion || "Nationally";
+  
+  // Animate metric transitions
+  useEffect(() => {
+    const duration = 400; // ms
+    const steps = 20;
+    const stepDuration = duration / steps;
+    
+    const animateValue = (start: number, end: number, setter: (val: number) => void) => {
+      const diff = end - start;
+      const increment = diff / steps;
+      let current = start;
+      let step = 0;
+      
+      const timer = setInterval(() => {
+        step++;
+        current += increment;
+        if (step >= steps) {
+          setter(end);
+          clearInterval(timer);
+        } else {
+          setter(Math.round(current));
+        }
+      }, stepDuration);
+      
+      return timer;
+    };
+    
+    const timers = [
+      animateValue(animatedYes, displayedTotals.yes, setAnimatedYes),
+      animateValue(animatedMaybe, displayedTotals.maybe, setAnimatedMaybe),
+      animateValue(animatedNo, displayedTotals.no, setAnimatedNo),
+      animateValue(animatedNotInvited, displayedTotals.notInvited, setAnimatedNotInvited),
+    ];
+    
+    return () => timers.forEach(timer => clearInterval(timer));
+  }, [displayedTotals.yes, displayedTotals.maybe, displayedTotals.no, displayedTotals.notInvited]);
   
   const toggleMetric = (metric: string) => {
     setActiveMetrics(prev => {
@@ -266,9 +308,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const BORDER_WIDTH = "0.35";          // slightly thinner borders = premium
     const BORDER_WIDTH_HOVER = "0.8";
     const TRANSITION = "filter 160ms ease, opacity 160ms ease, stroke-width 160ms ease";
-    const DIM_OPACITY = "0.78";            // subtle dimming, map stays readable
-    const DIM_FILTER = "saturate(0.92) brightness(1.00)";
-    const FOCUS_FILTER = "saturate(1.10) brightness(1.05) contrast(1.02)";
+    const DIM_OPACITY = "0.88";            // more subtle dimming
+    const DIM_FILTER = "saturate(0.95) brightness(1.00)";
+    const FOCUS_FILTER = "saturate(1.05) brightness(0.92) drop-shadow(0 2px 4px rgba(0,0,0,0.3))";
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
 
     // Style visual paths (what user sees)
@@ -332,14 +374,14 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           const isInSameRegion = vDistrict && vDistrict.region === district.region;
 
           if (vPathId === pathId) {
-            // Hovered district - brightest
+            // Hovered district - darkening shadow effect
             vPath.style.opacity = "1";
             vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : FOCUS_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH_HOVER;
           } else if (isInSameRegion) {
             // Same region - subtle highlight only
             vPath.style.opacity = "1";
-            vPath.style.filter = "saturate(1.03) brightness(1.08)";
+            vPath.style.filter = "saturate(1.02) brightness(1.05)";
             vPath.style.strokeWidth = BORDER_WIDTH;
             vPath.style.stroke = BORDER_COLOR;
           } else {
@@ -573,7 +615,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-base font-semibold text-gray-700">Going</span>
-          <span className="text-base font-bold text-gray-900">{displayedTotals.yes}</span>
+          <span className="text-base font-bold text-gray-900">{animatedYes}</span>
           <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('yes') 
               ? 'bg-green-500 border-green-500' 
@@ -596,7 +638,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-600">Maybe</span>
-          <span className="text-xs font-bold text-gray-800">{displayedTotals.maybe}</span>
+          <span className="text-xs font-bold text-gray-800">{animatedMaybe}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('maybe') 
               ? 'bg-yellow-500 border-yellow-500' 
@@ -619,7 +661,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-600">Not Going</span>
-          <span className="text-xs font-bold text-gray-800">{displayedTotals.no}</span>
+          <span className="text-xs font-bold text-gray-800">{animatedNo}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('no') 
               ? 'bg-red-500 border-red-500' 
@@ -642,7 +684,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-500">Not Invited</span>
-          <span className="text-xs font-bold text-gray-700">{displayedTotals.notInvited}</span>
+          <span className="text-xs font-bold text-gray-700">{animatedNotInvited}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('notInvited') 
               ? 'bg-gray-400 border-gray-400' 
