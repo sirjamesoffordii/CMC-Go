@@ -727,3 +727,15 @@
 - [x] Updated all components to use new field names (personId, primaryRole, primaryDistrictId, primaryCampusId, statusLastUpdated)
 - [x] Verified data integrity: Going=443, Maybe=276, Not Going=55, Not Invited Yet=331
 - [x] App running with 70% invited (774/1105)
+
+## District Panel UI/UX Improvements
+- [x] Make district panel scrollable to see more campuses (already implemented with overflow-x-auto overflow-y-auto)
+- [x] Fix campus name editing - Enter key should save changes (already working in EditableText component)
+- [x] Make status bar clickable to change person status (already implemented)
+- [x] Add edit button in top right corner for editing person names (pencil icon on hover)
+- [x] Implement drag-and-drop for campus columns reordering (already implemented)
+- [x] Implement drag-and-drop for contacts within and between campuses (already implemented)
+- [x] Add three-dot menu with "Archive campus" option (already implemented)
+- [x] Add three-dot menu with "Sort by status" option (already implemented)
+- [x] Add white dividing lines between pie chart segments (1.5px white stroke lines)
+- [x] Display district director name under district name (searches for 'district director' or 'dd' role)

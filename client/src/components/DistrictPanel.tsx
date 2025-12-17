@@ -123,22 +123,22 @@ export function DistrictPanel({
   };
 
   let currentPercent = 0;
-  const slices = [];
+  const slices: { path: string; color: string; percent: number }[] = [];
   
   if (goingPercent > 0) {
-    slices.push({ path: createPieSlice(currentPercent, currentPercent + goingPercent), color: "#22c55e" });
+    slices.push({ path: createPieSlice(currentPercent, currentPercent + goingPercent), color: "#22c55e", percent: goingPercent });
     currentPercent += goingPercent;
   }
   if (maybePercent > 0) {
-    slices.push({ path: createPieSlice(currentPercent, currentPercent + maybePercent), color: "#eab308" });
+    slices.push({ path: createPieSlice(currentPercent, currentPercent + maybePercent), color: "#eab308", percent: maybePercent });
     currentPercent += maybePercent;
   }
   if (notGoingPercent > 0) {
-    slices.push({ path: createPieSlice(currentPercent, currentPercent + notGoingPercent), color: "#ef4444" });
+    slices.push({ path: createPieSlice(currentPercent, currentPercent + notGoingPercent), color: "#ef4444", percent: notGoingPercent });
     currentPercent += notGoingPercent;
   }
   if (notInvitedPercent > 0) {
-    slices.push({ path: createPieSlice(currentPercent, currentPercent + notInvitedPercent), color: "#d1d5db" });
+    slices.push({ path: createPieSlice(currentPercent, currentPercent + notInvitedPercent), color: "#d1d5db", percent: notInvitedPercent });
   }
 
   return (
@@ -146,30 +146,43 @@ export function DistrictPanel({
       {/* Header - Refined typography hierarchy */}
       <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-medium text-gray-800">
-              <EditableText
-                value={district.name}
-                onSave={(newName) => {
-                  updateDistrictName.mutate({ id: district.id, name: newName });
-                }}
-                className="text-2xl font-medium text-gray-800"
-                inputClassName="text-2xl font-medium text-gray-800"
-              />
-            </h2>
-            <span className="text-gray-300 text-xl">|</span>
-            <p className="text-base font-normal text-gray-500">
-              <EditableText
-                value={district.region}
-                onSave={(newRegion) => {
-                  updateDistrictRegion.mutate({ id: district.id, region: newRegion });
-                }}
-                className="text-base font-normal text-gray-500"
-                inputClassName="text-base font-normal text-gray-500"
-              />
-            </p>
-            <span className="text-gray-200 text-lg">|</span>
-            <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-medium text-gray-800">
+                <EditableText
+                  value={district.name}
+                  onSave={(newName) => {
+                    updateDistrictName.mutate({ id: district.id, name: newName });
+                  }}
+                  className="text-2xl font-medium text-gray-800"
+                  inputClassName="text-2xl font-medium text-gray-800"
+                />
+              </h2>
+              <span className="text-gray-300 text-xl">|</span>
+              <p className="text-base font-normal text-gray-500">
+                <EditableText
+                  value={district.region}
+                  onSave={(newRegion) => {
+                    updateDistrictRegion.mutate({ id: district.id, region: newRegion });
+                  }}
+                  className="text-base font-normal text-gray-500"
+                  inputClassName="text-base font-normal text-gray-500"
+                />
+              </p>
+              <span className="text-gray-200 text-lg">|</span>
+              <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
+            </div>
+            {(() => {
+              const director = districtPeople.find(p => 
+                p.primaryRole?.toLowerCase().includes('district director') ||
+                p.primaryRole?.toLowerCase().includes('dd')
+              );
+              return director ? (
+                <p className="text-sm text-gray-500 ml-1">
+                  District Director: {director.name}
+                </p>
+              ) : null;
+            })()}
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -184,6 +197,27 @@ export function DistrictPanel({
               {slices.map((slice, i) => (
                 <path key={i} d={slice.path} fill={slice.color} />
               ))}
+              {/* White dividing lines between segments */}
+              {slices.map((slice, i) => {
+                let cumulativePercent = 0;
+                for (let j = 0; j < i; j++) {
+                  cumulativePercent += slices[j].percent;
+                }
+                const angle = (cumulativePercent / 100) * 2 * Math.PI - Math.PI / 2;
+                const x = 40 + 35 * Math.cos(angle);
+                const y = 40 + 35 * Math.sin(angle);
+                return (
+                  <line
+                    key={`divider-${i}`}
+                    x1="40"
+                    y1="40"
+                    x2={x}
+                    y2={y}
+                    stroke="white"
+                    strokeWidth="1.5"
+                  />
+                );
+              })}
             </svg>
           </div>
           

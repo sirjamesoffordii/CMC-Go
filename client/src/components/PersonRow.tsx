@@ -1,9 +1,10 @@
 import { Person } from "../../../drizzle/schema";
-import { StickyNote, DollarSign } from "lucide-react";
+import { StickyNote, DollarSign, Pencil } from "lucide-react";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useState } from "react";
 
 interface PersonRowProps {
   person: Person;
@@ -29,6 +30,9 @@ const STATUS_CYCLE: Array<"Not invited yet" | "Maybe" | "Going" | "Not Going"> =
 ];
 
 export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds, onPersonUpdate }: PersonRowProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  
   const updatePersonName = trpc.people.updateName.useMutation({
     onSuccess: () => onPersonUpdate(),
   });
@@ -60,8 +64,10 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 bg-white rounded border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group"
+      className="flex items-center gap-1.5 bg-white rounded border border-gray-200 hover:border-gray-300 transition-colors cursor-pointer group relative"
       onClick={() => onClick(person)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       {...attributes}
       {...listeners}
     >
@@ -91,6 +97,18 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
             )}
             {hasNeeds && (
               <DollarSign className="h-3 w-3 text-orange-500" />
+            )}
+            {isHovered && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingName(true);
+                }}
+                className="h-3 w-3 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Edit name"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
             )}
           </div>
         </div>
