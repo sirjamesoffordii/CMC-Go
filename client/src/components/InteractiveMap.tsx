@@ -18,7 +18,7 @@ interface DistrictStats {
   total: number;
 }
 
-// Region label positions around the map edges - CLOSE to the map
+// Region label positions around the map edges - aligned with geographic locations
 // The map roughly occupies: x: 180-880, y: 120-500 in the 960x600 viewBox
 // labelDirection: where region name appears relative to number
 const regionLabelPositions: Record<string, { 
@@ -26,22 +26,22 @@ const regionLabelPositions: Record<string, {
   labelY: number;
   labelDirection: 'above' | 'below' | 'left' | 'right';
 }> = {
-  // TOP ROW - spread out evenly above the map, close to edge
+  // TOP ROW - tighter spacing for crowded regions
   "Northwest": { labelX: 200, labelY: 95, labelDirection: 'above' },
-  "Big Sky": { labelX: 400, labelY: 95, labelDirection: 'above' },
-  "Great Plains North": { labelX: 580, labelY: 95, labelDirection: 'above' },
-  "Great Plains South": { labelX: 720, labelY: 95, labelDirection: 'above' },
-  "Great Lakes": { labelX: 850, labelY: 95, labelDirection: 'above' },  // Moved to top row
+  "Big Sky": { labelX: 380, labelY: 95, labelDirection: 'above' },
+  "Great Plains North": { labelX: 540, labelY: 95, labelDirection: 'above' },
+  "Great Plains South": { labelX: 680, labelY: 95, labelDirection: 'above' },
+  "Great Lakes": { labelX: 800, labelY: 95, labelDirection: 'above' },  // Tighter spacing, closer to region
   
-  // RIGHT SIDE - positioned below the Responses panel area
-  "Northeast": { labelX: 920, labelY: 340, labelDirection: 'right' },
-  "Mid-Atlantic": { labelX: 920, labelY: 420, labelDirection: 'right' },
-  "Southeast": { labelX: 920, labelY: 500, labelDirection: 'right' },
+  // RIGHT SIDE - aligned with actual geographic regions
+  "Northeast": { labelX: 920, labelY: 220, labelDirection: 'right' },  // Higher, closer to New England
+  "Mid-Atlantic": { labelX: 920, labelY: 340, labelDirection: 'right' },  // Closer to Virginia/NC area
+  "Southeast": { labelX: 920, labelY: 480, labelDirection: 'right' },  // Lower, closer to Florida/Georgia
   
-  // LEFT SIDE - West Coast near Northern California, close to map
+  // LEFT SIDE - West Coast near Northern California
   "West Coast": { labelX: 120, labelY: 320, labelDirection: 'left' },
   
-  // BOTTOM ROW - spread out below the map, close to edge
+  // BOTTOM ROW - spread out below the map
   "Texico": { labelX: 420, labelY: 530, labelDirection: 'below' },
   "South Central": { labelX: 640, labelY: 530, labelDirection: 'below' },
 };

@@ -909,3 +909,9 @@
 - [x] Remove "RESPONSES" label from panel
 - [x] Remove colored dots from toggle panel
 - [x] Remove "Clear Metrics" button
+
+## Metric Position Refinements
+- [x] Move Northeast metrics higher (closer to New England area)
+- [x] Move Mid-Atlantic metrics to better align with Virginia/NC region
+- [x] Move Great Lakes metrics closer to Michigan/Wisconsin area
+- [x] Tighten spacing between Great Plains North, Great Plains South, and Great Lakes in top row
