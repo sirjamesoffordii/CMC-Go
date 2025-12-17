@@ -995,3 +995,6 @@
 - [x] Position in South Missouri district bottom left
 - [x] Maintain click functionality with pointer-events
 - [x] Reposition NXA to bottom right yellow region (Great Plains South) - cx=560, cy=420
+
+## NXA Clear Positioning
+- [x] Move NXA button to bottom left outside map area (cx=100, cy=550)
