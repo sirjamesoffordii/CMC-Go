@@ -92,7 +92,7 @@ export const appRouter = router({
         primaryCampusId: z.number().optional(),
         primaryDistrictId: z.string().optional(),
         primaryRole: z.string().optional(),
-        status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]).default("Not invited yet"),
+        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited"),
       }))
       .mutation(async ({ input }) => {
         await db.createPerson(input);
@@ -101,7 +101,7 @@ export const appRouter = router({
     updateStatus: publicProcedure
       .input(z.object({
         personId: z.string(),
-        status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]),
+        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]),
       }))
       .mutation(async ({ input }) => {
         await db.updatePersonStatus(input.personId, input.status);
@@ -125,7 +125,7 @@ export const appRouter = router({
           campus: z.string().optional(), // Optional for National assignments
           district: z.string().optional(), // Optional for National assignments
           role: z.string().optional(),
-          status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]).optional(),
+          status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
           notes: z.string().optional(),
         }))
       }))

@@ -26,7 +26,7 @@ interface DistrictPanelProps {
   campuses: Campus[];
   people: Person[];
   onClose: () => void;
-  onPersonStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onPersonStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onDistrictUpdate: () => void;
@@ -96,10 +96,10 @@ export function DistrictPanel({
 
   // Calculate summary counts
   const districtPeople = people.filter(p => p.primaryDistrictId === district.id);
-  const goingCount = districtPeople.filter(p => p.status === "Going").length;
+  const goingCount = districtPeople.filter(p => p.status === "Yes").length;
   const maybeCount = districtPeople.filter(p => p.status === "Maybe").length;
-  const notGoingCount = districtPeople.filter(p => p.status === "Not Going").length;
-  const notInvitedCount = districtPeople.filter(p => p.status === "Not invited yet").length;
+  const notGoingCount = districtPeople.filter(p => p.status === "No").length;
+  const notInvitedCount = districtPeople.filter(p => p.status === "Not Invited").length;
   const total = districtPeople.length;
   const invitedCount = goingCount + maybeCount + notGoingCount;
   const invitedPercent = total > 0 ? Math.round((invitedCount / total) * 100) : 0;

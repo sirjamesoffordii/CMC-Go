@@ -826,3 +826,14 @@
 - [x] Move metrics from top overlay to left column
 - [x] Display metrics vertically instead of horizontally (Going, Maybe, Not Going, Not Invited Yet, Invited)
 - [x] Maintain visibility and readability in new position (larger Going text, separated Invited with border)
+
+## Language & Status Model Implementation
+- [x] Update database schema: change status enum to Yes/Maybe/No/Not Invited
+- [x] Add depositPaid boolean flag to people table
+- [x] Update backend metrics to translate responses (Yes→Going, No→Not Going, Not Invited→Not Invited Yet)
+- [x] Update national view to display Going/Maybe/Not Going/Not Invited Yet (contextual language)
+- [x] Update district panels to use Yes/Maybe/No/Not Invited for editing (universal language)
+- [x] Update PersonRow status cycling to use Yes/Maybe/No/Not Invited
+- [ ] Add Deposit Paid indicator in UI (💰 badge or secondary stat)
+- [x] Migrate existing data from old status values to new response values (445 Yes, 276 Maybe, 55 No, 335 Not Invited)
+- [x] Test status translation and editing workflow (all 16 tests passing)

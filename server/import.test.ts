@@ -9,7 +9,7 @@ describe("CSV Import", () => {
         campus: "Northern Arizona University",
         district: "Arizona",
         role: "Student Leader",
-        status: "Going" as const,
+        status: "Yes" as const,
       },
     ];
 
@@ -24,7 +24,7 @@ describe("CSV Import", () => {
       {
         name: "National Test Person",
         role: "National Director",
-        status: "Going" as const,
+        status: "Yes" as const,
       },
     ];
 

@@ -207,7 +207,7 @@ export async function createPerson(person: InsertPerson) {
   return result;
 }
 
-export async function updatePersonStatus(personId: string, status: "Not invited yet" | "Maybe" | "Going" | "Not Going") {
+export async function updatePersonStatus(personId: string, status: "Yes" | "Maybe" | "No" | "Not Invited") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(people)
@@ -293,11 +293,12 @@ export async function getMetrics() {
   
   const allPeople = await db.select().from(people);
   const total = allPeople.length;
-  const invited = allPeople.filter(p => p.status !== "Not invited yet").length;
-  const going = allPeople.filter(p => p.status === "Going").length;
-  const maybe = allPeople.filter(p => p.status === "Maybe").length;
-  const notGoing = allPeople.filter(p => p.status === "Not Going").length;
-  const notInvited = allPeople.filter(p => p.status === "Not invited yet").length;
+  // Translate universal responses to national view language
+  const invited = allPeople.filter(p => p.status !== "Not Invited").length;
+  const going = allPeople.filter(p => p.status === "Yes").length; // Yes → Going
+  const maybe = allPeople.filter(p => p.status === "Maybe").length; // Maybe → Maybe
+  const notGoing = allPeople.filter(p => p.status === "No").length; // No → Not Going
+  const notInvited = allPeople.filter(p => p.status === "Not Invited").length; // Not Invited → Not Invited Yet
   const percentInvited = total > 0 ? Math.round((invited / total) * 100) : 0;
   
   return { total, invited, going, maybe, notGoing, notInvited, percentInvited };
@@ -368,7 +369,7 @@ export async function importPeople(rows: Array<{
   campus?: string; // Optional for National assignments
   district?: string; // Optional for National assignments
   role?: string;
-  status?: "Not invited yet" | "Maybe" | "Going" | "Not Going";
+  status?: "Yes" | "Maybe" | "No" | "Not Invited";
   notes?: string;
 }>) {
   const db = await getDb();
@@ -507,7 +508,7 @@ export async function importPeople(rows: Array<{
         await db.insert(people).values({
           personId,
           name: row.name,
-          status: row.status || "Not invited yet",
+          status: row.status || "Not Invited",
           primaryRole: row.role || null,
           createdAt: new Date(),
           statusLastUpdated: new Date(),

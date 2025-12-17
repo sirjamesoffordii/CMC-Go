@@ -60,8 +60,9 @@ export const people = sqliteTable("people", {
   primaryDistrictId: text("primaryDistrictId", { length: 64 }), // nullable for National roles
   primaryRegion: text("primaryRegion", { length: 255 }), // nullable for National roles
   nationalCategory: text("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
-  // Status tracking
-  status: text("status", { enum: ["Not invited yet", "Maybe", "Going", "Not Going"] }).default("Not invited yet").notNull(),
+  // Status tracking (Universal responses)
+  status: text("status", { enum: ["Yes", "Maybe", "No", "Not Invited"] }).default("Not Invited").notNull(),
+  depositPaid: integer("depositPaid", { mode: "boolean" }).default(false).notNull(),
   statusLastUpdated: integer("statusLastUpdated", { mode: "timestamp" }),
   statusLastUpdatedBy: text("statusLastUpdatedBy", { length: 255 }),
   // Additional fields

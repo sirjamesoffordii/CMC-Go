@@ -21,7 +21,7 @@ import { Button } from "./ui/button";
 interface CampusColumnProps {
   campus: Campus;
   people: Person[];
-  onPersonStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onPersonStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onCampusUpdate: () => void;
@@ -62,7 +62,7 @@ export function CampusColumn({
     
     switch (sortBy) {
       case "status":
-        const statusOrder = { "Going": 0, "Maybe": 1, "Not Going": 2, "Not invited yet": 3 };
+        const statusOrder = { "Yes": 0, "Maybe": 1, "No": 2, "Not Invited": 3 };
         return peopleCopy.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
       
       case "name":

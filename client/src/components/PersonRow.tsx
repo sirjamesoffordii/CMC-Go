@@ -8,25 +8,26 @@ import { useState } from "react";
 
 interface PersonRowProps {
   person: Person;
-  onStatusChange: (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
   onClick: (person: Person) => void;
   hasNotes?: boolean;
   hasNeeds?: boolean;
   onPersonUpdate: () => void;
 }
 
+// Universal response language for editing
 const STATUS_COLORS = {
-  "Going": "bg-green-500",
+  "Yes": "bg-green-500",
   "Maybe": "bg-yellow-500",
-  "Not Going": "bg-red-500",
-  "Not invited yet": "bg-gray-400",
+  "No": "bg-red-500",
+  "Not Invited": "bg-gray-400",
 };
 
-const STATUS_CYCLE: Array<"Not invited yet" | "Maybe" | "Going" | "Not Going"> = [
-  "Not invited yet",
+const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
+  "Not Invited",
   "Maybe",
-  "Going",
-  "Not Going",
+  "Yes",
+  "No",
 ];
 
 export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds, onPersonUpdate }: PersonRowProps) {

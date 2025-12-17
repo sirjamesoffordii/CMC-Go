@@ -281,7 +281,7 @@ export default function Home() {
     setSelectedDistrictId(districtId);
   };
 
-  const handlePersonStatusChange = (personId: string, newStatus: "Not invited yet" | "Maybe" | "Going" | "Not Going") => {
+  const handlePersonStatusChange = (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
     updateStatus.mutate({ personId, status: newStatus });
   };
 
@@ -297,7 +297,7 @@ export default function Home() {
       name,
       primaryCampusId: campusId,
       primaryDistrictId: campus.districtId,
-      status: "Not invited yet",
+      status: "Not Invited",
     });
   };
 
@@ -480,9 +480,9 @@ export default function Home() {
                             className="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
                           >
                             <div className={`w-2 h-2 rounded-full ${
-                              person.status === 'Going' ? 'bg-green-500' :
+                              person.status === 'Yes' ? 'bg-green-500' :
                               person.status === 'Maybe' ? 'bg-yellow-500' :
-                              person.status === 'Not Going' ? 'bg-red-500' : 'bg-gray-300'
+                              person.status === 'No' ? 'bg-red-500' : 'bg-gray-300'
                             }`} />
                             <span className="text-sm text-gray-900">{person.name}</span>
                             {person.primaryRole && <span className="text-xs text-gray-500">{person.primaryRole}</span>}

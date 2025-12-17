@@ -5,7 +5,7 @@ import { PersonRow } from "./PersonRow";
 interface NationalPanelProps {
   onClose: () => void;
   onPersonClick: (person: any) => void;
-  onPersonStatusChange: (personId: string, status: "Not invited yet" | "Maybe" | "Going" | "Not Going") => void;
+  onPersonStatusChange: (personId: string, status: "Yes" | "Maybe" | "No" | "Not Invited") => void;
 }
 
 export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: NationalPanelProps) {
@@ -67,10 +67,10 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
   // Calculate stats
   const stats = {
     total: nationalStaff.length,
-    going: nationalStaff.filter(p => p.status === "Going").length,
+    going: nationalStaff.filter(p => p.status === "Yes").length,
     maybe: nationalStaff.filter(p => p.status === "Maybe").length,
-    notGoing: nationalStaff.filter(p => p.status === "Not Going").length,
-    notInvited: nationalStaff.filter(p => p.status === "Not invited yet").length,
+    notGoing: nationalStaff.filter(p => p.status === "No").length,
+    notInvited: nationalStaff.filter(p => p.status === "Not Invited").length,
   };
 
   return (
@@ -137,7 +137,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
                     <PersonRow
                       key={person.personId}
                       person={person}
-                      onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Not invited yet" | "Maybe" | "Going" | "Not Going")}
+                      onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
                       onClick={() => onPersonClick(person)}
                       onPersonUpdate={() => {}}
                     />

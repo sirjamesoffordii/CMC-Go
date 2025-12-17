@@ -15,7 +15,7 @@ interface CSVRow {
   campus?: string;
   district?: string;
   role?: string;
-  status?: "Not invited yet" | "Maybe" | "Going" | "Not Going";
+  status?: "Yes" | "Maybe" | "No" | "Not Invited";
   notes?: string;
 }
 
@@ -174,7 +174,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                             {row.district || <em>National</em>}
                           </td>
                           <td className="p-2 text-muted-foreground">{row.role || "-"}</td>
-                          <td className="p-2 text-muted-foreground">{row.status || "Not invited yet"}</td>
+                          <td className="p-2 text-muted-foreground">{row.status || "Not Invited"}</td>
                         </tr>
                       ))}
                     </tbody>

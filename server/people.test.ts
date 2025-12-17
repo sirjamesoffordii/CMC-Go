@@ -27,9 +27,10 @@ describe("people router", () => {
     if (people.length > 0) {
       const person = people[0];
       expect(person).toHaveProperty("id");
+      expect(person).toHaveProperty("personId");
       expect(person).toHaveProperty("name");
-      expect(person).toHaveProperty("campusId");
-      expect(person).toHaveProperty("districtId");
+      expect(person).toHaveProperty("primaryCampusId");
+      expect(person).toHaveProperty("primaryDistrictId");
       expect(person).toHaveProperty("status");
     }
   });
@@ -41,12 +42,13 @@ describe("people router", () => {
     const allPeople = await caller.people.list();
     if (allPeople.length === 0) return;
 
-    const testDistrictId = allPeople[0].districtId;
+    const testDistrictId = allPeople[0].primaryDistrictId;
+    if (!testDistrictId) return; // Skip if no district
     const districtPeople = await caller.people.byDistrict({ districtId: testDistrictId });
 
     expect(Array.isArray(districtPeople)).toBe(true);
     districtPeople.forEach(person => {
-      expect(person.districtId).toBe(testDistrictId);
+      expect(person.primaryDistrictId).toBe(testDistrictId);
     });
   });
 
@@ -58,17 +60,17 @@ describe("people router", () => {
     if (people.length === 0) return;
 
     const testPerson = people[0];
-    const newStatus = testPerson.status === "Going" ? "Maybe" : "Going";
+    const newStatus = testPerson.status === "Yes" ? "Maybe" : "Yes";
 
     const result = await caller.people.updateStatus({
-      personId: testPerson.id,
+      personId: testPerson.personId,
       status: newStatus,
     });
 
     expect(result.success).toBe(true);
 
     // Verify the update
-    const updatedPerson = await caller.people.getById({ personId: testPerson.id });
+    const updatedPerson = await caller.people.getById({ personId: testPerson.personId });
     expect(updatedPerson?.status).toBe(newStatus);
   });
 });
@@ -98,11 +100,11 @@ describe("metrics router", () => {
 
     // Verify invited count is correct
     const allPeople = await caller.people.list();
-    const expectedInvited = allPeople.filter(p => p.status !== "Not invited yet").length;
+    const expectedInvited = allPeople.filter(p => p.status !== "Not Invited").length;
     expect(metrics.invited).toBe(expectedInvited);
 
     // Verify going count is correct
-    const expectedGoing = allPeople.filter(p => p.status === "Going").length;
+    const expectedGoing = allPeople.filter(p => p.status === "Yes").length;
     expect(metrics.going).toBe(expectedGoing);
   });
 });

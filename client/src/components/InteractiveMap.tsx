@@ -85,10 +85,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const districtStats = districts.reduce<Record<string, DistrictStats>>((acc, district) => {
     const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
     acc[district.id] = {
-      yes: districtPeople.filter(p => p.status === "Going").length,
+      yes: districtPeople.filter(p => p.status === "Yes").length,
       maybe: districtPeople.filter(p => p.status === "Maybe").length,
-      no: districtPeople.filter(p => p.status === "Not Going").length,
-      notInvited: districtPeople.filter(p => p.status === "Not invited yet").length,
+      no: districtPeople.filter(p => p.status === "No").length,
+      notInvited: districtPeople.filter(p => p.status === "Not Invited").length,
       total: districtPeople.length,
     };
     return acc;
