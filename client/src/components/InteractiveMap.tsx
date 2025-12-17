@@ -898,8 +898,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               >
                 {/* Circle with subdued color matching map */}
                 <circle
-                  cx="537"
-                  cy="408"
+                  cx="560"
+                  cy="420"
                   r="14"
                   fill="#92400e"
                   stroke="#ffffff"
@@ -911,8 +911,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 />
                 {/* NXA Text */}
                 <text
-                  x="537"
-                  y="412"
+                  x="560"
+                  y="424"
                   textAnchor="middle"
                   fill="#ffffff"
                   fontSize="7"

@@ -994,3 +994,4 @@
 - [x] Integrate into SVG map layer (viewBox coordinates cx=537, cy=408)
 - [x] Position in South Missouri district bottom left
 - [x] Maintain click functionality with pointer-events
+- [x] Reposition NXA to bottom right yellow region (Great Plains South) - cx=560, cy=420
