@@ -310,7 +310,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const TRANSITION = "filter 200ms ease, opacity 200ms ease, stroke-width 200ms ease, transform 200ms ease";
     const DIM_OPACITY = "0.88";            // more subtle dimming
     const DIM_FILTER = "saturate(0.95) brightness(1.00)";
-    const LIFT_FILTER = "saturate(1.04) brightness(0.97) drop-shadow(0 2px 4px rgba(0,0,0,0.15)) drop-shadow(0 1px 2px rgba(0,0,0,0.1))";
+    const LIFT_FILTER = "saturate(1.05) brightness(0.85) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
 
     // Style visual paths (what user sees)
@@ -380,7 +380,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.style.opacity = "1";
             vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : LIFT_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH_HOVER;
-            vPath.style.transform = "scale(1.01) translateY(-1px)";
+            vPath.style.transform = "scale(1.005) translateY(-0.5px)";
             vPath.style.transformOrigin = "center";
           } else if (isInSameRegion) {
             // Same region - subtle highlight only

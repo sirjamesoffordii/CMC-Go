@@ -978,3 +978,9 @@
 - [x] Reduce shadow intensity (rgba 0.4/0.3 → 0.15/0.1, 6px/2px → 2px/1px)
 - [x] Reduce transform scale and translate values (1.02/-2px → 1.01/-1px)
 - [x] Make effect more elegant and less overpowering (saturation 1.08 → 1.04, brightness 0.95 → 0.97)
+
+## Ultra-Subtle Hover Effect
+- [x] Change hover to darken district instead of brighten (brightness 0.85)
+- [x] Add subtle shadow for depth (2px 6px rgba 0.2)
+- [x] Keep minimal transform (scale 1.005, translateY -0.5px)
+- [x] Increase saturation slightly for contrast (1.05)
