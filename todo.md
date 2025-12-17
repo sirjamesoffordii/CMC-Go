@@ -988,3 +988,9 @@
 ## NXA Button Repositioning
 - [x] Move NXA button from West Texas to South Missouri district bottom left (left 50%→56%, top 62%→68%)
 - [x] Position around Oklahoma/Arkansas area
+
+## NXA Button SVG Integration
+- [x] Convert NXA button from HTML to SVG elements
+- [x] Integrate into SVG map layer (viewBox coordinates cx=537, cy=408)
+- [x] Position in South Missouri district bottom left
+- [x] Maintain click functionality with pointer-events

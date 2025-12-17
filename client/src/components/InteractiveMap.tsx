@@ -742,11 +742,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         />
         
         {/* Metric Overlays - Anchored to Region Labels around map edges */}
-        {activeMetrics.size > 0 && (
-          <div className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none">
-            <svg width="100%" height="100%" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet">
-              {/* Group districts by region and aggregate stats */}
-              {(() => {
+        <div className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none">
+          <svg width="100%" height="100%" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet">
+            {activeMetrics.size > 0 && (() => {
                 // Aggregate stats by region
                 const regionStats: Record<string, DistrictStats> = {};
                 districts.forEach(district => {
@@ -891,55 +889,48 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                   );
                 });
               })()}
-            </svg>
-          </div>
-        )}
+            
+            {/* NXA National Circle - Inside South Missouri district */}
+            <g 
+                onClick={() => onNationalClick?.()}
+                className="cursor-pointer group"
+                style={{ pointerEvents: 'auto' }}
+              >
+                {/* Circle with subdued color matching map */}
+                <circle
+                  cx="537"
+                  cy="408"
+                  r="14"
+                  fill="#92400e"
+                  stroke="#ffffff"
+                  strokeWidth="1"
+                  className="transition-all duration-200 group-hover:fill-[#a16207]"
+                  style={{
+                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                  }}
+                />
+                {/* NXA Text */}
+                <text
+                  x="537"
+                  y="412"
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  fontSize="7"
+                  fontWeight="600"
+                  fontFamily="Arial, sans-serif"
+                  className="pointer-events-none select-none"
+                >
+                  NXA
+                </text>
+            </g>
+          </svg>
+        </div>
       </div>
       
       {/* Tooltip */}
       {renderTooltip()}
       
-      {/* NXA National Circle - Bottom Left of South Missouri */}
-      <button
-        onClick={() => onNationalClick?.()}
-        className="absolute z-40 group"
-        style={{
-          left: '56%',
-          top: '68%',
-          transform: 'translate(-50%, -50%)',
-          width: '32px',
-          height: '32px',
-        }}
-      >
-        <svg width="32" height="32" viewBox="0 0 32 32">
-          {/* Circle with subdued color matching map */}
-          <circle
-            cx="16"
-            cy="16"
-            r="14"
-            fill="#92400e" // Darker brown to blend with map
-            stroke="#ffffff"
-            strokeWidth="1"
-            className="transition-all duration-200 group-hover:fill-[#a16207] group-hover:stroke-[1.5]"
-            style={{
-              filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-            }}
-          />
-          {/* NXA Text */}
-          <text
-            x="16"
-            y="19"
-            textAnchor="middle"
-            fill="#ffffff"
-            fontSize="7"
-            fontWeight="600"
-            fontFamily="Arial, sans-serif"
-            className="pointer-events-none select-none"
-          >
-            NXA
-          </text>
-        </svg>
-      </button>
+
     </div>
   );
 }
