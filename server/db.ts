@@ -1,5 +1,8 @@
 import { eq, and, or } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+import { mkdirSync } from "fs";
+import { dirname } from "path";
 import { 
   InsertUser, 
   users, 
@@ -21,11 +24,22 @@ import {
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _sqlite: Database.Database | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/cmc_go.db';
+      // Ensure the directory exists
+      const dir = dirname(dbPath);
+      try {
+        mkdirSync(dir, { recursive: true });
+      } catch (e) {
+        // Directory might already exist
+      }
+      _sqlite = new Database(dbPath);
+      _sqlite.pragma('foreign_keys = ON');
+      _db = drizzle(_sqlite);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -84,7 +98,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -160,8 +175,8 @@ export async function createCampus(campus: InsertCampus) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(campuses).values(campus);
-  // Get the inserted campus ID
-  const insertId = result[0].insertId;
+  // Get the inserted campus ID from SQLite
+  const insertId = result.lastInsertRowid as number;
   return { id: insertId, ...campus };
 }
 

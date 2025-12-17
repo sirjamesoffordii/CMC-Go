@@ -1,18 +1,18 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
 
 /**
  * Core user table backing auth flow.
  */
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  openId: text("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  email: text("email", { length: 320 }),
+  loginMethod: text("loginMethod", { length: 64 }),
+  role: text("role", { enum: ["user", "admin"] }).default("user").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  lastSignedIn: integer("lastSignedIn", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type User = typeof users.$inferSelect;
@@ -22,12 +22,12 @@ export type InsertUser = typeof users.$inferInsert;
  * Districts table - represents geographic/organizational districts
  * DistrictSlug is the source of truth and must match SVG path IDs
  */
-export const districts = mysqlTable("districts", {
-  id: varchar("id", { length: 64 }).primaryKey(), // DistrictSlug
-  name: varchar("name", { length: 255 }).notNull(),
-  region: varchar("region", { length: 255 }).notNull(),
-  leftNeighbor: varchar("leftNeighbor", { length: 64 }), // District ID to the left (geographically)
-  rightNeighbor: varchar("rightNeighbor", { length: 64 }), // District ID to the right (geographically)
+export const districts = sqliteTable("districts", {
+  id: text("id", { length: 64 }).primaryKey(), // DistrictSlug
+  name: text("name", { length: 255 }).notNull(),
+  region: text("region", { length: 255 }).notNull(),
+  leftNeighbor: text("leftNeighbor", { length: 64 }), // District ID to the left (geographically)
+  rightNeighbor: text("rightNeighbor", { length: 64 }), // District ID to the right (geographically)
 });
 
 export type District = typeof districts.$inferSelect;
@@ -36,10 +36,10 @@ export type InsertDistrict = typeof districts.$inferInsert;
 /**
  * Campuses table - represents campuses within districts
  */
-export const campuses = mysqlTable("campuses", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  districtId: varchar("districtId", { length: 64 }).notNull(),
+export const campuses = sqliteTable("campuses", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name", { length: 255 }).notNull(),
+  districtId: text("districtId", { length: 64 }).notNull(),
 });
 
 export type Campus = typeof campuses.$inferSelect;
@@ -50,24 +50,24 @@ export type InsertCampus = typeof campuses.$inferInsert;
  * personId is the authoritative ID from the Excel seed data
  * A person can have multiple assignments but exists only once here
  */
-export const people = mysqlTable("people", {
-  id: int("id").autoincrement().primaryKey(),
-  personId: varchar("personId", { length: 64 }).notNull().unique(), // Excel Person ID - source of truth
-  name: varchar("name", { length: 255 }).notNull(),
+export const people = sqliteTable("people", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  personId: text("personId", { length: 64 }).notNull().unique(), // Excel Person ID - source of truth
+  name: text("name", { length: 255 }).notNull(),
   // Primary assignment info (from "People (Unique)" sheet)
-  primaryRole: varchar("primaryRole", { length: 255 }),
-  primaryCampusId: int("primaryCampusId"), // nullable for National roles
-  primaryDistrictId: varchar("primaryDistrictId", { length: 64 }), // nullable for National roles
-  primaryRegion: varchar("primaryRegion", { length: 255 }), // nullable for National roles
-  nationalCategory: varchar("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
+  primaryRole: text("primaryRole", { length: 255 }),
+  primaryCampusId: integer("primaryCampusId"), // nullable for National roles
+  primaryDistrictId: text("primaryDistrictId", { length: 64 }), // nullable for National roles
+  primaryRegion: text("primaryRegion", { length: 255 }), // nullable for National roles
+  nationalCategory: text("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
   // Status tracking
-  status: mysqlEnum("status", ["Not invited yet", "Maybe", "Going", "Not Going"]).default("Not invited yet").notNull(),
-  statusLastUpdated: timestamp("statusLastUpdated"),
-  statusLastUpdatedBy: varchar("statusLastUpdatedBy", { length: 255 }),
+  status: text("status", { enum: ["Not invited yet", "Maybe", "Going", "Not Going"] }).default("Not invited yet").notNull(),
+  statusLastUpdated: integer("statusLastUpdated", { mode: "timestamp" }),
+  statusLastUpdatedBy: text("statusLastUpdatedBy", { length: 255 }),
   // Additional fields
   needs: text("needs"),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type Person = typeof people.$inferSelect;
@@ -77,16 +77,16 @@ export type InsertPerson = typeof people.$inferInsert;
  * Assignments table - tracks all role assignments for people
  * A person may have multiple assignments (e.g., Campus Director + District role)
  */
-export const assignments = mysqlTable("assignments", {
-  id: int("id").autoincrement().primaryKey(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  assignmentType: mysqlEnum("assignmentType", ["Campus", "District", "Region", "National"]).notNull(),
-  roleTitle: varchar("roleTitle", { length: 255 }).notNull(),
-  campusId: int("campusId"), // nullable for non-Campus assignments
-  districtId: varchar("districtId", { length: 64 }), // nullable for National assignments
-  region: varchar("region", { length: 255 }), // nullable for National assignments
-  isPrimary: boolean("isPrimary").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const assignments = sqliteTable("assignments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  personId: text("personId", { length: 64 }).notNull(), // References people.personId
+  assignmentType: text("assignmentType", { enum: ["Campus", "District", "Region", "National"] }).notNull(),
+  roleTitle: text("roleTitle", { length: 255 }).notNull(),
+  campusId: integer("campusId"), // nullable for non-Campus assignments
+  districtId: text("districtId", { length: 64 }), // nullable for National assignments
+  region: text("region", { length: 255 }), // nullable for National assignments
+  isPrimary: integer("isPrimary", { mode: "boolean" }).default(false).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type Assignment = typeof assignments.$inferSelect;
@@ -96,14 +96,14 @@ export type InsertAssignment = typeof assignments.$inferInsert;
  * Needs table - tracks financial or other needs for people
  * References people by personId (varchar) for consistency
  */
-export const needs = mysqlTable("needs", {
-  id: int("id").autoincrement().primaryKey(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  type: mysqlEnum("type", ["Financial", "Other"]).notNull(),
-  amount: int("amount"), // in cents for Financial needs
+export const needs = sqliteTable("needs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  personId: text("personId", { length: 64 }).notNull(), // References people.personId
+  type: text("type", { enum: ["Financial", "Other"] }).notNull(),
+  amount: integer("amount"), // in cents for Financial needs
   notes: text("notes"),
-  isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  isActive: integer("isActive", { mode: "boolean" }).default(true).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type Need = typeof needs.$inferSelect;
@@ -113,12 +113,12 @@ export type InsertNeed = typeof needs.$inferInsert;
  * Notes table - tracks notes about people
  * References people by personId (varchar) for consistency
  */
-export const notes = mysqlTable("notes", {
-  id: int("id").autoincrement().primaryKey(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+export const notes = sqliteTable("notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  personId: text("personId", { length: 64 }).notNull(), // References people.personId
   text: text("text").notNull(),
-  isLeaderOnly: boolean("isLeaderOnly").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  isLeaderOnly: integer("isLeaderOnly", { mode: "boolean" }).default(false).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type Note = typeof notes.$inferSelect;
@@ -127,11 +127,11 @@ export type InsertNote = typeof notes.$inferInsert;
 /**
  * Settings table - stores application-wide settings
  */
-export const settings = mysqlTable("settings", {
-  id: int("id").autoincrement().primaryKey(),
-  key: varchar("key", { length: 255 }).notNull().unique(),
+export const settings = sqliteTable("settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  key: text("key", { length: 255 }).notNull().unique(),
   value: text("value").notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
 });
 
 export type Setting = typeof settings.$inferSelect;
