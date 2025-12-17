@@ -998,3 +998,6 @@
 
 ## NXA Clear Positioning
 - [x] Move NXA button to bottom left outside map area (cx=100, cy=550)
+
+## Reduce District Hover Shadow
+- [x] Reduce shadow intensity on district hover (2px 6px rgba 0.2 → 1px 3px rgba 0.1)

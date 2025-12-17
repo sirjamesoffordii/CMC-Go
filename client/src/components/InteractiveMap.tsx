@@ -310,7 +310,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const TRANSITION = "filter 200ms ease, opacity 200ms ease, stroke-width 200ms ease, transform 200ms ease";
     const DIM_OPACITY = "0.88";            // more subtle dimming
     const DIM_FILTER = "saturate(0.95) brightness(1.00)";
-    const LIFT_FILTER = "saturate(1.05) brightness(0.85) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
+    const LIFT_FILTER = "saturate(1.05) brightness(0.85) drop-shadow(0 1px 3px rgba(0,0,0,0.1))";
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
 
     // Style visual paths (what user sees)
