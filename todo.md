@@ -967,3 +967,9 @@
 - [x] Add animated "We're Going Together" text to header (scrolling left-to-right, 25s duration)
 - [x] Use cool font for animated text (Pacifico from Google Fonts)
 - [x] Ensure animated text doesn't cover header content (z-index layering)
+
+## District Hover - Breaking Apart Effect
+- [x] Add elevation effect with transform scale(1.02) and translateY(-2px)
+- [x] Enhance shadow to emphasize lift from map (dual drop-shadows: 6px and 2px)
+- [x] Coordinate all hover animations to support breaking apart illusion
+- [x] Ensure smooth transitions without competing effects (200ms ease for all properties)

@@ -307,10 +307,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const BORDER_COLOR = "rgba(255,255,255,0.92)";
     const BORDER_WIDTH = "0.35";          // slightly thinner borders = premium
     const BORDER_WIDTH_HOVER = "0.8";
-    const TRANSITION = "filter 160ms ease, opacity 160ms ease, stroke-width 160ms ease";
+    const TRANSITION = "filter 200ms ease, opacity 200ms ease, stroke-width 200ms ease, transform 200ms ease";
     const DIM_OPACITY = "0.88";            // more subtle dimming
     const DIM_FILTER = "saturate(0.95) brightness(1.00)";
-    const FOCUS_FILTER = "saturate(1.05) brightness(0.92) drop-shadow(0 2px 4px rgba(0,0,0,0.3))";
+    const LIFT_FILTER = "saturate(1.08) brightness(0.95) drop-shadow(0 6px 12px rgba(0,0,0,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.3))";
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
 
     // Style visual paths (what user sees)
@@ -331,6 +331,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.style.strokeWidth = BORDER_WIDTH;
       path.style.strokeDasharray = "";
       path.style.transition = TRANSITION;
+      path.style.transformOrigin = "center";
+      path.style.transform = "scale(1) translateY(0)";
 
       if (selectedDistrictId === pathId) {
         path.style.filter = SELECTED_FILTER;
@@ -374,21 +376,25 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           const isInSameRegion = vDistrict && vDistrict.region === district.region;
 
           if (vPathId === pathId) {
-            // Hovered district - darkening shadow effect
+            // Hovered district - breaking apart effect with elevation
             vPath.style.opacity = "1";
-            vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : FOCUS_FILTER;
+            vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : LIFT_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH_HOVER;
+            vPath.style.transform = "scale(1.02) translateY(-2px)";
+            vPath.style.transformOrigin = "center";
           } else if (isInSameRegion) {
             // Same region - subtle highlight only
             vPath.style.opacity = "1";
             vPath.style.filter = "saturate(1.02) brightness(1.05)";
             vPath.style.strokeWidth = BORDER_WIDTH;
             vPath.style.stroke = BORDER_COLOR;
+            vPath.style.transform = "scale(1) translateY(0)";
           } else {
             // Other regions - dimmed
             vPath.style.opacity = DIM_OPACITY;
             vPath.style.filter = DIM_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH;
+            vPath.style.transform = "scale(1) translateY(0)";
           }
         });
       });
@@ -416,6 +422,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           vPath.style.strokeWidth = BORDER_WIDTH;
           vPath.style.stroke = BORDER_COLOR;
           vPath.style.opacity = "1";
+          vPath.style.transform = "scale(1) translateY(0)";
         });
       });
     });
