@@ -11,8 +11,46 @@ interface NationalPanelProps {
 export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: NationalPanelProps) {
   const { data: nationalStaff = [], isLoading } = trpc.people.getNational.useQuery();
 
+  // Define role priority (lower number = higher priority)
+  const getRolePriority = (role: string | null): number => {
+    if (!role) return 999;
+    const roleLower = role.toLowerCase();
+    if (roleLower.includes('national director')) return 1;
+    if (roleLower.includes('co-director') || roleLower.includes('co director')) return 2;
+    if (roleLower.includes('regional director')) return 3;
+    if (roleLower.includes('cmc go coordinator')) return 999; // Bottom
+    return 50; // Other roles in middle
+  };
+
+  // Define person priority within same role
+  const getPersonPriority = (name: string): number => {
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('alex rodriguez')) return 1;
+    if (nameLower.includes('abby rodriguez')) return 2;
+    return 999;
+  };
+
+  // Sort people by role priority, then person priority, then name
+  const sortedStaff = [...nationalStaff].sort((a, b) => {
+    const rolePriorityA = getRolePriority(a.roleTitle);
+    const rolePriorityB = getRolePriority(b.roleTitle);
+    
+    if (rolePriorityA !== rolePriorityB) {
+      return rolePriorityA - rolePriorityB;
+    }
+    
+    const personPriorityA = getPersonPriority(a.name);
+    const personPriorityB = getPersonPriority(b.name);
+    
+    if (personPriorityA !== personPriorityB) {
+      return personPriorityA - personPriorityB;
+    }
+    
+    return a.name.localeCompare(b.name);
+  });
+
   // Group by role for better organization
-  const groupedStaff = nationalStaff.reduce((acc, person) => {
+  const groupedStaff = sortedStaff.reduce((acc, person) => {
     const role = person.roleTitle || "No Role Assigned";
     if (!acc[role]) {
       acc[role] = [];
@@ -20,6 +58,11 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     acc[role].push(person);
     return acc;
   }, {} as Record<string, typeof nationalStaff>);
+
+  // Sort role groups by priority
+  const sortedRoleGroups = Object.entries(groupedStaff).sort(([roleA], [roleB]) => {
+    return getRolePriority(roleA) - getRolePriority(roleB);
+  });
 
   // Calculate stats
   const stats = {
@@ -84,7 +127,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(groupedStaff).map(([role, people]) => (
+            {sortedRoleGroups.map(([role, people]) => (
               <div key={role} className="space-y-2">
                 <h3 className="text-sm font-semibold text-gray-700 px-2 py-1 bg-gray-50 rounded">
                   {role} ({people.length})

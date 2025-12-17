@@ -814,3 +814,10 @@
 - [x] Test XAN pin functionality (all 3 tests passing)
 - [x] Refine XAN pin: smaller size (55px), subdued color (#92400e), repositioned to not cover states
 - [x] Change text from XΑ to XAN (all 3 tests passing)
+
+## NationalPanel Custom Sorting
+- [x] Sort Alex Rodriguez to top of national team list (person priority 1)
+- [x] Display Abby Rodriguez as Co-Director second (person priority 2)
+- [x] Create separate headings for each Regional Director (role priority 3)
+- [x] Move CMC Go Coordinator to bottom of list (role priority 999)
+- [x] Implement role priority ordering system (National Director=1, Co-Director=2, Regional Director=3, others=50, CMC Go=999)
