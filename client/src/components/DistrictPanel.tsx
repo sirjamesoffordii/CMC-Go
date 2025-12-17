@@ -146,41 +146,42 @@ export function DistrictPanel({
       {/* Header - Refined typography hierarchy */}
       <div className="px-6 py-4 border-b border-gray-100 flex-shrink-0 bg-white">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-medium text-gray-800">
-                <EditableText
-                  value={district.name}
-                  onSave={(newName) => {
-                    updateDistrictName.mutate({ id: district.id, name: newName });
-                  }}
-                  className="text-2xl font-medium text-gray-800"
-                  inputClassName="text-2xl font-medium text-gray-800"
-                />
-              </h2>
-              <span className="text-gray-300 text-xl">|</span>
-              <p className="text-base font-normal text-gray-500">
-                <EditableText
-                  value={district.region}
-                  onSave={(newRegion) => {
-                    updateDistrictRegion.mutate({ id: district.id, region: newRegion });
-                  }}
-                  className="text-base font-normal text-gray-500"
-                  inputClassName="text-base font-normal text-gray-500"
-                />
-              </p>
-              <span className="text-gray-200 text-lg">|</span>
-              <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
-            </div>
+          <div className="flex items-center gap-3">
+            <h2 className="text-2xl font-medium text-gray-800">
+              <EditableText
+                value={district.name}
+                onSave={(newName) => {
+                  updateDistrictName.mutate({ id: district.id, name: newName });
+                }}
+                className="text-2xl font-medium text-gray-800"
+                inputClassName="text-2xl font-medium text-gray-800"
+              />
+            </h2>
+            <span className="text-gray-300 text-xl">|</span>
+            <p className="text-base font-normal text-gray-500">
+              <EditableText
+                value={district.region}
+                onSave={(newRegion) => {
+                  updateDistrictRegion.mutate({ id: district.id, region: newRegion });
+                }}
+                className="text-base font-normal text-gray-500"
+                inputClassName="text-base font-normal text-gray-500"
+              />
+            </p>
+            <span className="text-gray-200 text-lg">|</span>
+            <p className="text-base font-medium text-gray-700">{invitedPercent}% Invited</p>
             {(() => {
               const director = districtPeople.find(p => 
                 p.primaryRole?.toLowerCase().includes('district director') ||
                 p.primaryRole?.toLowerCase().includes('dd')
               );
               return director ? (
-                <p className="text-sm text-gray-500 ml-1">
-                  District Director: {director.name}
-                </p>
+                <>
+                  <span className="text-gray-200 text-lg ml-4">|</span>
+                  <p className="text-sm text-gray-500">
+                    District Director: {director.name}
+                  </p>
+                </>
               ) : null;
             })()}
           </div>

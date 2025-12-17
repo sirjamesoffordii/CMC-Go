@@ -739,3 +739,7 @@
 - [x] Add three-dot menu with "Sort by status" option (already implemented)
 - [x] Add white dividing lines between pie chart segments (1.5px white stroke lines)
 - [x] Display district director name under district name (searches for 'district director' or 'dd' role)
+
+## District Director Repositioning
+- [x] Move district director to the right of invited percentage on same line
+- [x] Add extra spacing between invited percentage and district director for visual separation (ml-4 on separator)
