@@ -533,7 +533,7 @@ export async function importPeople(rows: Array<{
         await db.insert(assignments).values({
           personId,
           assignmentType: "District",
-          roleTitle: row.role || "No Campus",
+          roleTitle: row.role || "No Campus Assigned",
           campusId: null,
           districtId: districtId,
           region: district?.region || null,

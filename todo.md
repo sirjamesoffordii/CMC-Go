@@ -796,9 +796,9 @@
 - [x] Show import progress and results (success/error/skipped counts)
 - [ ] Test import with sample CSV file
 
-## District-Level Assignments (No Campus)
+## District-Level Assignments (No Campus Assigned)
 - [x] Update import logic to support district-only assignments (district provided, no campus)
-- [x] Create District assignment type for people without campus (e.g., District Directors)
-- [ ] Add "No Campus" column in district panel
-- [ ] Display district-level people in the No Campus column
-- [x] Test import with district-only people (District Directors, district staff)
+- [x] Create District assignment type for people without campus
+- [ ] Add "No Campus Assigned" column in district panel
+- [ ] Display district-level people in the No Campus Assigned column
+- [x] Test import with district-only people

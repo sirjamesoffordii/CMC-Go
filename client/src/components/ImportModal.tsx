@@ -100,7 +100,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
             <br />
             • <strong>Campus + District:</strong> Campus-level assignment
             <br />
-            • <strong>District only (no campus):</strong> District-level (appears in "No Campus" column)
+            • <strong>District only (no campus):</strong> District-level (appears in "No Campus Assigned" column)
             <br />
             • <strong>No district/campus:</strong> National-level assignment
           </DialogDescription>
