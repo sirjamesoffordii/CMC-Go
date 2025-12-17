@@ -407,6 +407,12 @@ export default function Home() {
             className="h-full w-auto object-contain"
           />
         </div>
+        
+        {/* CMC Countdown - Next to Logo */}
+        <div className="flex-shrink-0 flex items-center gap-2 mr-6 px-3 py-1 bg-white/10 rounded-md">
+          <Calendar className="w-3.5 h-3.5 text-white/70" />
+          <span className="text-xs font-medium text-white/90">CMC in {daysUntilCMC} days</span>
+        </div>
 
         {/* Header Text - Editable */}
         <div 

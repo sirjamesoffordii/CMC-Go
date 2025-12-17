@@ -937,3 +937,9 @@
 - [x] Add hover scale effect (1.02x)
 - [x] Add shadow-inner to progress bar track
 - [x] Reduce shadow/floating effect back to original subtle level (removed drop-shadow and hover scale)
+
+## Countdown Relocation to Header
+- [x] Move "CMC in 164 days" countdown from map to header bar
+- [x] Position next to Chi Alpha logo
+- [x] Redesign styling to fit header aesthetically (bg-white/10, rounded-md, calendar icon)
+- [x] Ensure no impact on other header content or header size
