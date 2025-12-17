@@ -444,13 +444,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       {/* Tooltip */}
       {renderTooltip()}
       
-      {/* XAN National Circle - Positioned to not cover other states */}
+      {/* NXA National Circle - Bottom Left Position */}
       <button
         onClick={() => onNationalClick?.()}
         className="absolute z-40 group"
         style={{
           left: '80px',
-          top: '160px',
+          bottom: '80px',
           width: '55px',
           height: '55px',
         }}
@@ -469,18 +469,18 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
             }}
           />
-          {/* XAN Text */}
+          {/* NXA Text */}
           <text
             x="27.5"
             y="32"
             textAnchor="middle"
             fill="#ffffff"
-            fontSize="13"
+            fontSize="12"
             fontWeight="600"
             fontFamily="Arial, sans-serif"
             className="pointer-events-none select-none"
           >
-            XAN
+            NXA
           </text>
         </svg>
       </button>

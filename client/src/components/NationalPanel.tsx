@@ -36,11 +36,11 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
       <div className="flex-shrink-0 border-b border-gray-200 bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold shadow-md">
-              XΑ
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm shadow-md">
+              NXA
             </div>
             <div>
-              <h2 className="text-xl font-bold">Chi Alpha National</h2>
+              <h2 className="text-xl font-bold">Chi Alpha National Team</h2>
               <p className="text-sm text-white/80">{stats.total} team members</p>
             </div>
           </div>
