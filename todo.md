@@ -773,3 +773,13 @@
 - [x] Remove MySQL dependencies and code (mysql2 still in package.json but not used)
 - [x] Test pnpm db:push with SQLite (successful - all 9 tables created)
 - [x] Test app functionality after transition (server running, queries working)
+
+## Data Restoration & Map Fixes
+- [x] Roll back to previous checkpoint to access MySQL data (checkpoint dcf67ce8)
+- [x] Export all data from MySQL database (64 districts, 306 campuses, 1108 people, 1108 assignments, 3 settings)
+- [x] Return to SQLite checkpoint (checkpoint 95d01f54)
+- [x] Import data into SQLite database (all data imported successfully)
+- [x] Fix database connection to use SQLite instead of MySQL URL
+- [x] Fix map SVG colors (restored by fixing DATABASE_URL to use SQLite)
+- [x] Fix map district names display (working correctly now)
+- [x] Verify all data is restored correctly (443 Going, 276 Maybe, 55 Not Going, 334 Not Invited Yet, 774 Invited)

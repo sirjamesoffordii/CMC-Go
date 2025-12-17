@@ -29,7 +29,8 @@ let _sqlite: Database.Database | null = null;
 export async function getDb() {
   if (!_db) {
     try {
-      const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/cmc_go.db';
+      // Force SQLite - ignore MySQL DATABASE_URL
+      const dbPath = './data/cmc_go.db';
       // Ensure the directory exists
       const dir = dirname(dbPath);
       try {
