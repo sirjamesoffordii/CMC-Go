@@ -11,11 +11,13 @@ import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
+import { NationalPanel } from "@/components/NationalPanel";
 import { useLocation } from "wouter";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
+  const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
@@ -577,12 +579,12 @@ export default function Home() {
 
       {/* Main Content Area Below Header */}
       <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Left District Panel */}
+        {/* Left District/National Panel */}
         <div
           className="transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative"
           style={{ 
-            width: selectedDistrictId ? 'auto' : '0%', 
-            maxWidth: selectedDistrictId ? '80%' : '0%',
+            width: (selectedDistrictId || nationalPanelOpen) ? 'auto' : '0%', 
+            maxWidth: (selectedDistrictId || nationalPanelOpen) ? '80%' : '0%',
             overflow: 'hidden' 
           }}
         >
@@ -608,6 +610,13 @@ export default function Home() {
               />
             </>
           )}
+          {nationalPanelOpen && (
+            <NationalPanel
+              onClose={() => setNationalPanelOpen(false)}
+              onPersonClick={handlePersonClick}
+              onPersonStatusChange={handlePersonStatusChange}
+            />
+          )}
         </div>
 
         {/* Center Map Area */}
@@ -628,6 +637,12 @@ export default function Home() {
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
               onBackgroundClick={() => {
+                setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
+                setNationalPanelOpen(false);
+              }}
+              onNationalClick={() => {
+                setNationalPanelOpen(true);
                 setSelectedDistrictId(null);
                 setFollowUpPanelOpen(false);
               }}

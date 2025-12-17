@@ -1,4 +1,4 @@
-import { eq, and, or } from "drizzle-orm";
+import { eq, and, or, sql, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 import { mkdirSync } from "fs";
@@ -576,4 +576,38 @@ export async function importPeople(rows: Array<{
   }
 
   return results;
+}
+
+// Get all national staff and regional directors
+export async function getNationalStaff() {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get people with National assignments (includes regional directors)
+  const nationalAssignments = await db
+    .select()
+    .from(assignments)
+    .where(eq(assignments.assignmentType, "National"));
+
+  const nationalPersonIds = nationalAssignments.map(a => a.personId);
+  
+  if (nationalPersonIds.length === 0) return [];
+
+  // Get the people details
+  const nationalPeople = await db
+    .select()
+    .from(people)
+    .where(
+      inArray(people.personId, nationalPersonIds)
+    );
+
+  // Join with assignments to get role titles
+  return nationalPeople.map(person => {
+    const assignment = nationalAssignments.find(a => a.personId === person.personId);
+    return {
+      ...person,
+      roleTitle: assignment?.roleTitle || null,
+      assignmentType: assignment?.assignmentType || null,
+    };
+  });
 }

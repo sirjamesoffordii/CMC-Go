@@ -72,6 +72,9 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return await db.getAllPeople();
     }),
+    getNational: publicProcedure.query(async () => {
+      return await db.getNationalStaff();
+    }),
     byDistrict: publicProcedure
       .input(z.object({ districtId: z.string() }))
       .query(async ({ input }) => {

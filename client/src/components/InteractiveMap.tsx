@@ -7,6 +7,7 @@ interface InteractiveMapProps {
   selectedDistrictId: string | null;
   onDistrictSelect: (districtId: string) => void;
   onBackgroundClick?: () => void;
+  onNationalClick?: () => void;
 }
 
 interface DistrictStats {
@@ -69,7 +70,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   "Wyoming": { x: 377, y: 195 },
 };
 
-export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick }: InteractiveMapProps) {
+export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick }: InteractiveMapProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -442,6 +443,47 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       
       {/* Tooltip */}
       {renderTooltip()}
+      
+      {/* XAN National Circle - Positioned to not cover other states */}
+      <button
+        onClick={() => onNationalClick?.()}
+        className="absolute z-40 group"
+        style={{
+          left: '80px',
+          top: '160px',
+          width: '55px',
+          height: '55px',
+        }}
+      >
+        <svg width="55" height="55" viewBox="0 0 55 55">
+          {/* Circle with subdued color matching map */}
+          <circle
+            cx="27.5"
+            cy="27.5"
+            r="26"
+            fill="#92400e" // Darker brown to blend with map
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            className="transition-all duration-200 group-hover:fill-[#a16207] group-hover:stroke-[2]"
+            style={{
+              filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+            }}
+          />
+          {/* XAN Text */}
+          <text
+            x="27.5"
+            y="32"
+            textAnchor="middle"
+            fill="#ffffff"
+            fontSize="13"
+            fontWeight="600"
+            fontFamily="Arial, sans-serif"
+            className="pointer-events-none select-none"
+          >
+            XAN
+          </text>
+        </svg>
+      </button>
     </div>
   );
 }

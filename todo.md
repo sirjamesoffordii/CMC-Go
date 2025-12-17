@@ -802,3 +802,15 @@
 - [ ] Add "No Campus Assigned" column in district panel
 - [ ] Display district-level people in the No Campus Assigned column
 - [x] Test import with district-only people
+
+## XAN National Pin/Button
+- [x] Design XAN pin/button that matches map visual style (circular state with XΑ logo)
+- [x] Position XAN pin on map (left side at 120px, 240px like Alaska/Hawaii)
+- [x] Create backend endpoint to fetch national staff (getNationalStaff)
+- [x] Build National panel UI (similar to district panel with grouped roles)
+- [x] Display all national-level assignments in National panel
+- [x] Include regional directors in National panel (assignmentType = National)
+- [x] Add click handler to open National panel when XAN pin is clicked
+- [x] Test XAN pin functionality (all 3 tests passing)
+- [x] Refine XAN pin: smaller size (55px), subdued color (#92400e), repositioned to not cover states
+- [x] Change text from XΑ to XAN (all 3 tests passing)
