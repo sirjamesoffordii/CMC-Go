@@ -915,3 +915,10 @@
 - [x] Move Mid-Atlantic metrics to better align with Virginia/NC region
 - [x] Move Great Lakes metrics closer to Michigan/Wisconsin area
 - [x] Tighten spacing between Great Plains North, Great Plains South, and Great Lakes in top row
+
+## Dynamic Metric Positioning
+- [x] Implement dynamic positioning based on number of active metrics
+- [x] Move metrics closer to map when only 1 metric is active
+- [x] Shift metrics outward progressively when 2, 3, or 4 metrics are active
+- [x] Prevent metrics from overlapping onto the map at all times
+- [x] Apply dynamic positioning to West Coast, Great Lakes, Mid-Atlantic, Southeast, and all other regions

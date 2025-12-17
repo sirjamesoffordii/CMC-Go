@@ -18,32 +18,62 @@ interface DistrictStats {
   total: number;
 }
 
-// Region label positions around the map edges - aligned with geographic locations
+// Base region label positions - closest to map (for 1 metric active)
 // The map roughly occupies: x: 180-880, y: 120-500 in the 960x600 viewBox
-// labelDirection: where region name appears relative to number
-const regionLabelPositions: Record<string, { 
-  labelX: number; 
-  labelY: number;
+const baseRegionPositions: Record<string, { 
+  baseX: number; 
+  baseY: number;
   labelDirection: 'above' | 'below' | 'left' | 'right';
 }> = {
-  // TOP ROW - tighter spacing for crowded regions
-  "Northwest": { labelX: 200, labelY: 95, labelDirection: 'above' },
-  "Big Sky": { labelX: 380, labelY: 95, labelDirection: 'above' },
-  "Great Plains North": { labelX: 540, labelY: 95, labelDirection: 'above' },
-  "Great Plains South": { labelX: 680, labelY: 95, labelDirection: 'above' },
-  "Great Lakes": { labelX: 800, labelY: 95, labelDirection: 'above' },  // Tighter spacing, closer to region
+  // TOP ROW - very close to map edge
+  "Northwest": { baseX: 200, baseY: 110, labelDirection: 'above' },
+  "Big Sky": { baseX: 380, baseY: 110, labelDirection: 'above' },
+  "Great Plains North": { baseX: 540, baseY: 110, labelDirection: 'above' },
+  "Great Plains South": { baseX: 680, baseY: 110, labelDirection: 'above' },
+  "Great Lakes": { baseX: 780, baseY: 110, labelDirection: 'above' },
   
-  // RIGHT SIDE - aligned with actual geographic regions
-  "Northeast": { labelX: 920, labelY: 220, labelDirection: 'right' },  // Higher, closer to New England
-  "Mid-Atlantic": { labelX: 920, labelY: 340, labelDirection: 'right' },  // Closer to Virginia/NC area
-  "Southeast": { labelX: 920, labelY: 480, labelDirection: 'right' },  // Lower, closer to Florida/Georgia
+  // RIGHT SIDE - close to map edge
+  "Northeast": { baseX: 890, baseY: 200, labelDirection: 'right' },
+  "Mid-Atlantic": { baseX: 890, baseY: 330, labelDirection: 'right' },
+  "Southeast": { baseX: 890, baseY: 470, labelDirection: 'right' },
   
-  // LEFT SIDE - West Coast near Northern California
-  "West Coast": { labelX: 120, labelY: 320, labelDirection: 'left' },
+  // LEFT SIDE - close to map edge
+  "West Coast": { baseX: 160, baseY: 320, labelDirection: 'left' },
   
-  // BOTTOM ROW - spread out below the map
-  "Texico": { labelX: 420, labelY: 530, labelDirection: 'below' },
-  "South Central": { labelX: 640, labelY: 530, labelDirection: 'below' },
+  // BOTTOM ROW - close to map edge
+  "Texico": { baseX: 420, baseY: 515, labelDirection: 'below' },
+  "South Central": { baseX: 640, baseY: 515, labelDirection: 'below' },
+};
+
+// Dynamic positioning function - shifts metrics outward based on active count
+const getDynamicPosition = (region: string, activeMetricCount: number): { labelX: number; labelY: number; labelDirection: 'above' | 'below' | 'left' | 'right' } => {
+  const base = baseRegionPositions[region];
+  if (!base) return { labelX: 0, labelY: 0, labelDirection: 'above' };
+  
+  // Calculate offset based on number of active metrics
+  // 1 metric: 0px offset (closest), 2 metrics: 10px, 3 metrics: 18px, 4 metrics: 25px
+  const offsetMultiplier = activeMetricCount === 1 ? 0 : activeMetricCount === 2 ? 10 : activeMetricCount === 3 ? 18 : 25;
+  
+  let labelX = base.baseX;
+  let labelY = base.baseY;
+  
+  // Apply offset based on direction
+  switch (base.labelDirection) {
+    case 'above':
+      labelY -= offsetMultiplier; // Move up
+      break;
+    case 'below':
+      labelY += offsetMultiplier; // Move down
+      break;
+    case 'right':
+      labelX += offsetMultiplier; // Move right
+      break;
+    case 'left':
+      labelX -= offsetMultiplier; // Move left
+      break;
+  }
+  
+  return { labelX, labelY, labelDirection: base.labelDirection };
 };
 
 // District centroids for pie chart positioning (based on new SVG)
@@ -633,7 +663,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                   regionStats[region].total += stats.total;
                 });
                 
-                return Object.entries(regionLabelPositions).map(([region, pos]) => {
+                return Object.keys(baseRegionPositions).map((region) => {
+                  const pos = getDynamicPosition(region, activeMetrics.size);
                   const stats = regionStats[region];
                   if (!stats || stats.total === 0) return null;
                   
