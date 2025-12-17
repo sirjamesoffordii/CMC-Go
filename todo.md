@@ -783,3 +783,22 @@
 - [x] Fix map SVG colors (restored by fixing DATABASE_URL to use SQLite)
 - [x] Fix map district names display (working correctly now)
 - [x] Verify all data is restored correctly (443 Going, 276 Maybe, 55 Not Going, 334 Not Invited Yet, 774 Invited)
+
+## Contact Import Feature
+- [x] Design CSV import format (required: name; optional: campus, district, role, status, notes)
+- [x] Add CSV parsing library (papaparse v5.5.3)
+- [x] Create backend import endpoint to process CSV and create people/assignments
+- [x] Support National assignments (leave campus/district empty or set to "National")
+- [x] Add Import button to main page header
+- [x] Create ImportModal component with file upload and preview
+- [x] Handle duplicate detection during import (skip if person+campus already exists)
+- [x] Validate campus/district values during import (skip validation for National)
+- [x] Show import progress and results (success/error/skipped counts)
+- [ ] Test import with sample CSV file
+
+## District-Level Assignments (No Campus)
+- [x] Update import logic to support district-only assignments (district provided, no campus)
+- [x] Create District assignment type for people without campus (e.g., District Directors)
+- [ ] Add "No Campus" column in district panel
+- [ ] Display district-level people in the No Campus column
+- [x] Test import with district-only people (District Directors, district staff)

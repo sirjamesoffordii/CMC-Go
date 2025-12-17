@@ -361,3 +361,219 @@ export async function setSetting(key: string, value: string) {
     await db.insert(settings).values({ key, value });
   }
 }
+
+// Import people from CSV
+export async function importPeople(rows: Array<{
+  name: string;
+  campus?: string; // Optional for National assignments
+  district?: string; // Optional for National assignments
+  role?: string;
+  status?: "Not invited yet" | "Maybe" | "Going" | "Not Going";
+  notes?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results = {
+    success: 0,
+    skipped: 0,
+    errors: [] as Array<{ row: number; name: string; error: string }>,
+  };
+
+  // Get all districts and campuses for validation
+  const allDistricts = await db.select().from(districts);
+  const allCampuses = await db.select().from(campuses);
+  
+  const districtMap = new Map(allDistricts.map(d => [d.name.toLowerCase(), d.id]));
+  const campusMap = new Map(allCampuses.map(c => [c.name.toLowerCase(), c]));
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    try {
+      // Determine assignment type
+      const isNational = !row.district || row.district.toLowerCase() === 'national';
+      const isDistrict = row.district && !row.campus; // Has district but no campus
+      const isCampus = row.district && row.campus; // Has both
+
+      let districtId: string | null = null;
+      let campus: typeof allCampuses[0] | null = null;
+
+      if (!isNational) {
+        // Validate district
+        districtId = districtMap.get(row.district!.toLowerCase()) || null;
+        if (!districtId) {
+          results.errors.push({
+            row: rowNum,
+            name: row.name,
+            error: `District "${row.district}" not found`,
+          });
+          continue;
+        }
+
+        // Validate campus if provided
+        if (row.campus) {
+          campus = campusMap.get(row.campus.toLowerCase()) || null;
+          if (!campus) {
+            results.errors.push({
+              row: rowNum,
+              name: row.name,
+              error: `Campus "${row.campus}" not found`,
+            });
+            continue;
+          }
+        }
+      }
+
+      // Check if person already exists (by name)
+      const existing = await db
+        .select()
+        .from(people)
+        .where(eq(people.name, row.name))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // Check if already assigned
+        if (isCampus && campus) {
+          // Check campus assignment
+          const existingAssignment = await db
+            .select()
+            .from(assignments)
+            .where(
+              and(
+                eq(assignments.personId, existing[0].personId),
+                eq(assignments.campusId, campus.id)
+              )
+            )
+            .limit(1);
+
+          if (existingAssignment.length > 0) {
+            results.skipped++;
+            continue;
+          }
+        } else if (isDistrict && districtId) {
+          // Check district assignment
+          const existingDistrict = await db
+            .select()
+            .from(assignments)
+            .where(
+              and(
+                eq(assignments.personId, existing[0].personId),
+                eq(assignments.districtId, districtId),
+                eq(assignments.assignmentType, "District")
+              )
+            )
+            .limit(1);
+
+          if (existingDistrict.length > 0) {
+            results.skipped++;
+            continue;
+          }
+        } else if (isNational) {
+          // Check if already has National assignment
+          const existingNational = await db
+            .select()
+            .from(assignments)
+            .where(
+              and(
+                eq(assignments.personId, existing[0].personId),
+                eq(assignments.assignmentType, "National")
+              )
+            )
+            .limit(1);
+
+          if (existingNational.length > 0) {
+            results.skipped++;
+            continue;
+          }
+        }
+      }
+
+      // Create or get person
+      let personId: string;
+      if (existing.length > 0) {
+        personId = existing[0].personId;
+        // Update person status if provided
+        if (row.status) {
+          await db
+            .update(people)
+            .set({ status: row.status })
+            .where(eq(people.personId, personId));
+        }
+      } else {
+        // Create new person
+        personId = `person_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        await db.insert(people).values({
+          personId,
+          name: row.name,
+          status: row.status || "Not invited yet",
+          primaryRole: row.role || null,
+          createdAt: new Date(),
+          statusLastUpdated: new Date(),
+        });
+      }
+
+      // Create assignment using correct schema
+      if (isNational) {
+        // National assignment
+        await db.insert(assignments).values({
+          personId,
+          assignmentType: "National",
+          roleTitle: row.role || "National Team",
+          campusId: null,
+          districtId: null,
+          region: null,
+          isPrimary: true,
+          createdAt: new Date(),
+        });
+      } else if (isDistrict && districtId) {
+        // District assignment (no campus)
+        const district = allDistricts.find(d => d.id === districtId);
+        await db.insert(assignments).values({
+          personId,
+          assignmentType: "District",
+          roleTitle: row.role || "No Campus",
+          campusId: null,
+          districtId: districtId,
+          region: district?.region || null,
+          isPrimary: true,
+          createdAt: new Date(),
+        });
+      } else if (isCampus && campus && districtId) {
+        // Campus assignment
+        const district = allDistricts.find(d => d.id === districtId);
+        await db.insert(assignments).values({
+          personId,
+          assignmentType: "Campus",
+          roleTitle: row.role || "Member",
+          campusId: campus.id,
+          districtId: districtId,
+          region: district?.region || null,
+          isPrimary: true,
+          createdAt: new Date(),
+        });
+      }
+
+      // Add note if provided
+      if (row.notes) {
+        await db.insert(notes).values({
+          personId,
+          text: row.notes,
+          isLeaderOnly: false,
+          createdAt: new Date(),
+        });
+      }
+
+      results.success++;
+    } catch (error) {
+      results.errors.push({
+        row: rowNum,
+        name: row.name,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }
+
+  return results;
+}

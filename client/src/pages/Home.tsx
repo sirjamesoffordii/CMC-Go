@@ -6,10 +6,11 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
+import { ImportModal } from "@/components/ImportModal";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -37,6 +38,7 @@ export default function Home() {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -545,6 +547,15 @@ export default function Home() {
           <Button 
             variant="ghost"
             size="sm"
+            onClick={() => setImportModalOpen(true)}
+            className="text-white/80 hover:text-white hover:bg-white/10"
+          >
+            <Upload className="w-4 h-4 mr-1.5" />
+            Import
+          </Button>
+          <Button 
+            variant="ghost"
+            size="sm"
             onClick={() => setShareModalOpen(true)}
             className="text-white/80 hover:text-white hover:bg-white/10"
           >
@@ -757,9 +768,14 @@ export default function Home() {
         }}
       />
       
-      <ShareModal
+      <ShareModal 
         open={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
+      />
+
+      <ImportModal 
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
       />
     </div>
   );

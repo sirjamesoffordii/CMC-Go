@@ -115,6 +115,20 @@ export const appRouter = router({
         await db.updatePersonName(input.personId, input.name);
         return { success: true };
       }),
+    importCSV: publicProcedure
+      .input(z.object({
+        rows: z.array(z.object({
+          name: z.string(),
+          campus: z.string().optional(), // Optional for National assignments
+          district: z.string().optional(), // Optional for National assignments
+          role: z.string().optional(),
+          status: z.enum(["Not invited yet", "Maybe", "Going", "Not Going"]).optional(),
+          notes: z.string().optional(),
+        }))
+      }))
+      .mutation(async ({ input }) => {
+        return await db.importPeople(input.rows);
+      }),
   }),
 
   needs: router({
