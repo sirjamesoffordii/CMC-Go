@@ -821,3 +821,8 @@
 - [x] Create separate headings for each Regional Director (role priority 3)
 - [x] Move CMC Go Coordinator to bottom of list (role priority 999)
 - [x] Implement role priority ordering system (National Director=1, Co-Director=2, Regional Director=3, others=50, CMC Go=999)
+
+## Metrics Layout Change
+- [x] Move metrics from top overlay to left column
+- [x] Display metrics vertically instead of horizontally (Going, Maybe, Not Going, Not Invited Yet, Invited)
+- [x] Maintain visibility and readability in new position (larger Going text, separated Invited with border)
