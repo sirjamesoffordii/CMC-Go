@@ -922,3 +922,8 @@
 - [x] Shift metrics outward progressively when 2, 3, or 4 metrics are active
 - [x] Prevent metrics from overlapping onto the map at all times
 - [x] Apply dynamic positioning to West Coast, Great Lakes, Mid-Atlantic, Southeast, and all other regions
+
+## Metric Toggle Size Adjustments
+- [x] Keep Going toggle at large size
+- [x] Make Maybe, Not Going, and Not Invited toggles uniform smaller size
+- [x] Ensure clear visual hierarchy with Going as primary metric

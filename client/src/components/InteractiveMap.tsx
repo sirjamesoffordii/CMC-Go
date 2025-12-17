@@ -536,17 +536,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           </div>
         </button>
         
-        {/* Maybe - Medium */}
+        {/* Maybe - Small */}
         <button
           onClick={() => toggleMetric('maybe')}
           className="absolute top-14 right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           style={{ 
-            filter: 'drop-shadow(0 3px 10px rgba(0, 0, 0, 0.08))'
+            filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
           }}
         >
-          <span className="text-sm font-medium text-gray-600">Maybe</span>
-          <span className="text-sm font-bold text-gray-800">{nationalTotals.maybe}</span>
-          <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+          <span className="text-xs font-medium text-gray-600">Maybe</span>
+          <span className="text-xs font-bold text-gray-800">{nationalTotals.maybe}</span>
+          <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('maybe') 
               ? 'bg-yellow-500 border-yellow-500' 
               : 'border-gray-300 hover:border-yellow-400 bg-white'
@@ -564,12 +564,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           onClick={() => toggleMetric('no')}
           className="absolute top-[88px] right-6 z-40 flex items-center gap-2 transition-all duration-200 hover:scale-105"
           style={{ 
-            filter: 'drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06))'
+            filter: 'drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05))'
           }}
         >
           <span className="text-xs font-medium text-gray-600">Not Going</span>
           <span className="text-xs font-bold text-gray-800">{nationalTotals.no}</span>
-          <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+          <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('no') 
               ? 'bg-red-500 border-red-500' 
               : 'border-gray-300 hover:border-red-400 bg-white'
