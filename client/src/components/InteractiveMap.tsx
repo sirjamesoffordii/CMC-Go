@@ -497,19 +497,24 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           filter: 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.06)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.04))',
         }}
       >
-        {/* Invite Progress - Floating Bar */}
-        <div className="absolute top-6 left-6 z-40 flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-gray-500">Invited</span>
-            <span className="text-sm font-bold text-gray-700">{invitedPercent}%</span>
+        {/* Invite Progress - Premium Floating Bar */}
+        <div 
+          className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 transition-all duration-200 hover:scale-[1.02]"
+          style={{ 
+            filter: 'drop-shadow(0 4px 16px rgba(0, 0, 0, 0.1)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.06))'
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Invited</span>
+            <div className="w-48 bg-gray-200 rounded-full h-2.5 overflow-hidden shadow-inner">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2.5 rounded-full transition-all duration-500 ease-out shadow-sm"
+                style={{ width: `${invitedPercent}%` }}
+              />
+            </div>
+            <span className="text-base font-bold text-gray-800 min-w-[3rem] text-right">{invitedPercent}%</span>
           </div>
-          <div className="w-32 bg-gray-200 rounded-full h-1.5 overflow-hidden">
-            <div 
-              className="bg-blue-500 h-1.5 rounded-full transition-all duration-500 ease-out"
-              style={{ width: `${invitedPercent}%` }}
-            />
-          </div>
-          <span className="text-xs text-gray-400">{nationalTotals.invited} of {nationalTotals.total}</span>
+          <span className="text-xs text-gray-500 ml-[4.5rem]">{nationalTotals.invited} of {nationalTotals.total}</span>
         </div>
         
         {/* Floating Metric Toggles - Visual Hierarchy */}

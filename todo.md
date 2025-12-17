@@ -927,3 +927,12 @@
 - [x] Keep Going toggle at large size
 - [x] Make Maybe, Not Going, and Not Invited toggles uniform smaller size
 - [x] Ensure clear visual hierarchy with Going as primary metric
+
+## Invited Bar Redesign
+- [x] Make progress bar larger and longer (w-32→w-48, h-1.5→h-2.5)
+- [x] Position 70% to the right of the bar
+- [x] Position 777 / 1111 underneath the bar
+- [x] Add enhanced shadow and hover effects for premium feel
+- [x] Add gradient to progress bar (blue-500 to blue-600)
+- [x] Add hover scale effect (1.02x)
+- [x] Add shadow-inner to progress bar track
