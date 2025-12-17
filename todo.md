@@ -943,3 +943,11 @@
 - [x] Position next to Chi Alpha logo
 - [x] Redesign styling to fit header aesthetically (bg-white/10, rounded-md, calendar icon)
 - [x] Ensure no impact on other header content or header size
+
+## District Hover Interactions
+- [x] Highlight entire region when hovering over a district (subtle brightness increase)
+- [x] Add subtle outline effect around the region on district hover
+- [x] Fade metrics from national totals to region-specific totals on hover
+- [x] Add "Nationally" label above metrics by default
+- [x] Fade label to region name when hovering over districts in that region
+- [x] Dynamically adjust label position left for longer region names to prevent overflow

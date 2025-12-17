@@ -134,6 +134,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const pieContainerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
+  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   
   // Metric toggles state
@@ -158,6 +159,28 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const invitedPercent = nationalTotals.total > 0 
     ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
     : 0;
+  
+  // Calculate regional totals
+  const regionalTotals: Record<string, typeof nationalTotals> = {};
+  districts.forEach(district => {
+    if (!district.region) return;
+    if (!regionalTotals[district.region]) {
+      regionalTotals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+    }
+    const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
+    regionalTotals[district.region].yes += districtPeople.filter(p => p.status === "Yes").length;
+    regionalTotals[district.region].maybe += districtPeople.filter(p => p.status === "Maybe").length;
+    regionalTotals[district.region].no += districtPeople.filter(p => p.status === "No").length;
+    regionalTotals[district.region].notInvited += districtPeople.filter(p => p.status === "Not Invited").length;
+    regionalTotals[district.region].total += districtPeople.length;
+    regionalTotals[district.region].invited += districtPeople.filter(p => p.status !== "Not Invited").length;
+  });
+  
+  // Get displayed totals (regional if hovering, otherwise national)
+  const displayedTotals = hoveredRegion && regionalTotals[hoveredRegion] 
+    ? regionalTotals[hoveredRegion] 
+    : nationalTotals;
+  const displayedLabel = hoveredRegion || "Nationally";
   
   const toggleMetric = (metric: string) => {
     setActiveMetrics(prev => {
@@ -293,22 +316,34 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         onDistrictSelect(pathId);
       });
 
-      // Hover behavior: focus district, dim everything else (premium feel)
+       // Hover behavior: focus district, highlight region, dim others
       path.addEventListener("mouseenter", (e: MouseEvent) => {
         setHoveredDistrict(pathId);
+        setHoveredRegion(district.region);
         setTooltipPos({ x: e.clientX, y: e.clientY });
-
+        
         visualPaths.forEach(vPath => {
           const vPathId =
             vPath.getAttribute("inkscape:label") ||
             vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
             vPath.getAttribute("id");
+          
+          const vDistrict = districts.find(d => d.id === vPathId);
+          const isInSameRegion = vDistrict && vDistrict.region === district.region;
 
           if (vPathId === pathId) {
+            // Hovered district - brightest
             vPath.style.opacity = "1";
             vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : FOCUS_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH_HOVER;
+          } else if (isInSameRegion) {
+            // Same region - subtle highlight only
+            vPath.style.opacity = "1";
+            vPath.style.filter = "saturate(1.03) brightness(1.08)";
+            vPath.style.strokeWidth = BORDER_WIDTH;
+            vPath.style.stroke = BORDER_COLOR;
           } else {
+            // Other regions - dimmed
             vPath.style.opacity = DIM_OPACITY;
             vPath.style.filter = DIM_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH;
@@ -322,6 +357,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
       path.addEventListener("mouseleave", () => {
         setHoveredDistrict(null);
+        setHoveredRegion(null);
         setTooltipPos(null);
 
         visualPaths.forEach(vPath => {
@@ -336,6 +372,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.style.filter = "none";
           }
           vPath.style.strokeWidth = BORDER_WIDTH;
+          vPath.style.stroke = BORDER_COLOR;
           vPath.style.opacity = "1";
         });
       });
@@ -514,6 +551,19 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         </div>
         
         {/* Floating Metric Toggles - Visual Hierarchy */}
+        {/* Label above metrics */}
+        <div 
+          className="absolute right-6 z-40 transition-all duration-300"
+          style={{ 
+            top: hoveredRegion ? '-4px' : '0px',
+            right: displayedLabel.length > 15 ? `${(displayedLabel.length - 15) * 4}px` : '24px'
+          }}
+        >
+          <span className="text-sm font-bold text-gray-800 transition-opacity duration-300">
+            {displayedLabel}
+          </span>
+        </div>
+        
         {/* Going - Largest */}
         <button
           onClick={() => toggleMetric('yes')}
@@ -523,7 +573,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-base font-semibold text-gray-700">Going</span>
-          <span className="text-base font-bold text-gray-900">{nationalTotals.yes}</span>
+          <span className="text-base font-bold text-gray-900">{displayedTotals.yes}</span>
           <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('yes') 
               ? 'bg-green-500 border-green-500' 
@@ -546,7 +596,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-600">Maybe</span>
-          <span className="text-xs font-bold text-gray-800">{nationalTotals.maybe}</span>
+          <span className="text-xs font-bold text-gray-800">{displayedTotals.maybe}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('maybe') 
               ? 'bg-yellow-500 border-yellow-500' 
@@ -569,7 +619,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-600">Not Going</span>
-          <span className="text-xs font-bold text-gray-800">{nationalTotals.no}</span>
+          <span className="text-xs font-bold text-gray-800">{displayedTotals.no}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('no') 
               ? 'bg-red-500 border-red-500' 
@@ -592,7 +642,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
           <span className="text-xs font-medium text-gray-500">Not Invited</span>
-          <span className="text-xs font-bold text-gray-700">{nationalTotals.notInvited}</span>
+          <span className="text-xs font-bold text-gray-700">{displayedTotals.notInvited}</span>
           <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
             activeMetrics.has('notInvited') 
               ? 'bg-gray-400 border-gray-400' 
