@@ -49,7 +49,39 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     return a.name.localeCompare(b.name);
   });
 
-  // No grouping - display as single sorted list
+  // Separate top-level people (National Director, Co-Director) from categorized roles
+  const topLevelPeople = sortedStaff.filter(p => {
+    const role = (p.roleTitle || '').toLowerCase();
+    return role.includes('national director') || role.includes('co-director') || role.includes('co director');
+  });
+
+  const categorizedPeople = sortedStaff.filter(p => {
+    const role = (p.roleTitle || '').toLowerCase();
+    return !role.includes('national director') && !role.includes('co-director') && !role.includes('co director');
+  });
+
+  // Group categorized people
+  const groupedStaff = categorizedPeople.reduce((acc, person) => {
+    const role = person.roleTitle || "No Role Assigned";
+    const roleLower = role.toLowerCase();
+    
+    // Group all regional directors together
+    let category = role;
+    if (roleLower.includes('regional director')) {
+      category = "Regional Directors";
+    }
+    
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(person);
+    return acc;
+  }, {} as Record<string, typeof nationalStaff>);
+
+  // Sort role groups by priority
+  const sortedRoleGroups = Object.entries(groupedStaff).sort(([roleA], [roleB]) => {
+    return getRolePriority(roleA) - getRolePriority(roleB);
+  });
 
   // Calculate stats
   const stats = {
@@ -113,15 +145,40 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
             <p className="text-sm mt-2">Use the Import feature to add national team members.</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
-            {sortedStaff.map((person) => (
-              <PersonRow
-                key={person.personId}
-                person={person}
-                onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
-                onClick={() => onPersonClick(person)}
-                onPersonUpdate={() => {}}
-              />
+          <div className="space-y-4">
+            {/* Top-level people (no category heading) */}
+            {topLevelPeople.length > 0 && (
+              <div className="space-y-1.5">
+                {topLevelPeople.map((person) => (
+                  <PersonRow
+                    key={person.personId}
+                    person={person}
+                    onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
+                    onClick={() => onPersonClick(person)}
+                    onPersonUpdate={() => {}}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Categorized roles */}
+            {sortedRoleGroups.map(([category, people]) => (
+              <div key={category} className="space-y-2">
+                <h3 className="text-sm font-semibold text-gray-700 px-2 py-1 bg-gray-50 rounded">
+                  {category} ({people.length})
+                </h3>
+                <div className="space-y-1.5">
+                  {people.map((person) => (
+                    <PersonRow
+                      key={person.personId}
+                      person={person}
+                      onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
+                      onClick={() => onPersonClick(person)}
+                      onPersonUpdate={() => {}}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}

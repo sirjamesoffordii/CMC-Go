@@ -844,3 +844,10 @@
 - [x] Show Alex Rodriguez at top with "National Director" as role subtitle (PersonRow displays primaryRole)
 - [x] Show Abby Rodriguez second with "Co-Director" as role subtitle
 - [x] Show Regional Directors with their specific region titles as role subtitles
+
+## National Panel Category Refinement
+- [x] Display Alex Rodriguez at top without category heading
+- [x] Display Abby Rodriguez second without category heading
+- [x] Create "Regional Directors" category grouping all regional directors
+- [x] Create "CMC Go Coordinator" category at bottom
+- [x] Exclude National Director and Co-Director from category headings
