@@ -973,3 +973,8 @@
 - [x] Enhance shadow to emphasize lift from map (dual drop-shadows: 6px and 2px)
 - [x] Coordinate all hover animations to support breaking apart illusion
 - [x] Ensure smooth transitions without competing effects (200ms ease for all properties)
+
+## Subtle Breaking Apart Effect Adjustment
+- [x] Reduce shadow intensity (rgba 0.4/0.3 → 0.15/0.1, 6px/2px → 2px/1px)
+- [x] Reduce transform scale and translate values (1.02/-2px → 1.01/-1px)
+- [x] Make effect more elegant and less overpowering (saturation 1.08 → 1.04, brightness 0.95 → 0.97)
