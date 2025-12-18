@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE people ADD COLUMN gender TEXT NOT NULL DEFAULT 'male';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute ALTER TABLE people ADD COLUMN gender TEXT NOT NULL DEFAULT 'male';",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'gender' can't have a default value"
-  ]
-}

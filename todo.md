@@ -1001,25 +1001,3 @@
 
 ## Reduce District Hover Shadow
 - [x] Reduce shadow intensity on district hover (2px 6px rgba 0.2 → 1px 3px rgba 0.1)
-
-## Figurine Sidebar Panel
-- [ ] Create SVG figurine components (male/female icons)
-- [ ] Build sidebar panel showing selected district's campuses
-- [ ] Display figurines horizontally next to campus name
-- [ ] Use gender field to determine male/female icon
-- [ ] Implement click-to-cycle status (Green→Yellow→Red→Gray)
-- [ ] Color coding: Green=Going, Yellow=Maybe, Red=Not Going, Gray=Not Invited
-- [ ] Update person status in database on click
-
-## Figurine Sidebar Panel
-- [x] Add gender field to people schema (VARCHAR(10), default 'male')
-- [x] Create SVG figurine components for male and female icons (PersonFigurine.tsx)
-- [x] Build sidebar panel layout with campus names and horizontal figurine rows (FigurineSidebar.tsx)
-- [x] Implement click-to-cycle status functionality with color changes
-- [x] Connect to district selection and person data
-
-## Database Restoration & Figurine Preview
-- [x] Fix seed script column names (campusId→primaryCampusId, districtId→primaryDistrictId, etc.)
-- [x] Restore database data (240 people, 106 campuses, 53 districts, 31 needs, 94 notes)
-- [x] Revert Home.tsx to use original DistrictPanel (removed FigurineSidebar)
-- [x] Add male/female figurine SVG icons to DistrictPanel header for preview
