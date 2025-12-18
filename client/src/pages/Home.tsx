@@ -12,12 +12,14 @@ import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
+
 import { useLocation } from "wouter";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
+
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
@@ -639,6 +641,8 @@ export default function Home() {
             />
           )}
         </div>
+        
+
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto">

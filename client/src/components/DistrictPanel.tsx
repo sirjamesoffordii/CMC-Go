@@ -184,6 +184,20 @@ export function DistrictPanel({
                 </>
               ) : null;
             })()}
+            
+            {/* Figurine Icons Preview */}
+            <div className="flex items-center gap-2 ml-6">
+              {/* Male Figurine */}
+              <svg width="20" height="32" viewBox="0 0 20 32" className="text-blue-600">
+                <circle cx="10" cy="5" r="4" fill="currentColor" />
+                <path d="M 10 10 L 6 18 L 3 30 L 7 30 L 10 20 L 13 30 L 17 30 L 14 18 Z" fill="currentColor" />
+              </svg>
+              {/* Female Figurine */}
+              <svg width="20" height="32" viewBox="0 0 20 32" className="text-pink-500">
+                <circle cx="10" cy="5" r="4" fill="currentColor" />
+                <path d="M 10 10 L 4 18 L 4 22 L 2 30 L 6 30 L 8 22 L 12 22 L 14 30 L 18 30 L 16 22 L 16 18 Z" fill="currentColor" />
+              </svg>
+            </div>
           </div>
           <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600" onClick={onClose}>
             <X className="h-5 w-5" />

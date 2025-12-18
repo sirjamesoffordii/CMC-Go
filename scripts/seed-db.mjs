@@ -48,15 +48,15 @@ async function seed() {
   console.log(`Inserting ${people.length} people...`);
   for (const person of people) {
     await connection.execute(
-      `INSERT INTO people (id, name, campusId, districtId, status, role, lastUpdated)
+      `INSERT INTO people (personId, name, primaryCampusId, primaryDistrictId, status, primaryRole, statusLastUpdated)
        VALUES (?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE 
          name = VALUES(name),
-         campusId = VALUES(campusId),
-         districtId = VALUES(districtId),
+         primaryCampusId = VALUES(primaryCampusId),
+         primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
-         role = VALUES(role),
-         lastUpdated = VALUES(lastUpdated)`,
+         primaryRole = VALUES(primaryRole),
+         statusLastUpdated = VALUES(statusLastUpdated)`,
       [person.id, person.name, person.campusId, person.districtId, person.status, person.role, person.lastUpdated]
     );
   }

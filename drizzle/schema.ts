@@ -65,6 +65,8 @@ export const people = sqliteTable("people", {
   depositPaid: integer("depositPaid", { mode: "boolean" }).default(false).notNull(),
   statusLastUpdated: integer("statusLastUpdated", { mode: "timestamp" }),
   statusLastUpdatedBy: text("statusLastUpdatedBy", { length: 255 }),
+  // Gender for figurine display
+  gender: text("gender", { enum: ["male", "female"] }).default("male").notNull(),
   // Additional fields
   needs: text("needs"),
   notes: text("notes"),
