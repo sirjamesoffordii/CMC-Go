@@ -208,3 +208,36 @@
     transform: translateX(100%);
   }
 }
+
+/* Scrolling text animation - starts from countdown position */
+@keyframes scroll-from-countdown {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(100vw - 168px));
+    opacity: 0;
+  }
+}
+
+/* Scrolling text animation - starts from countdown, stops at search bar */
+@keyframes scroll-from-countdown-to-search {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(100vw - 116px - 144px)); /* Stop before search icon: 100vw - start position (116px = logo + margin) - right side space (144px = calendar + search + hamburger + margins) */
+    opacity: 1; /* Stay visible, don't fade out */
+  }
+}

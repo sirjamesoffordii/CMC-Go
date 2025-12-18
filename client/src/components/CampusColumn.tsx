@@ -22,7 +22,7 @@ interface CampusColumnProps {
   campus: Campus;
   people: Person[];
   onPersonStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
-  onPersonAdd: (campusId: number, name: string) => void;
+  onPersonAdd?: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onCampusUpdate: () => void;
 }
@@ -39,13 +39,19 @@ export function CampusColumn({
   const [sortBy, setSortBy] = useState<"status" | "name" | "date">("status");
   const [isHovered, setIsHovered] = useState(false);
   
+  // Disable dragging for "Not Assigned" virtual campus (id === -1)
+  const isVirtualCampus = campus.id === -1;
+  
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id: campus.id });
+  } = useSortable({ 
+    id: campus.id,
+    disabled: isVirtualCampus, // Disable dragging for virtual campus
+  });
   
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -82,7 +88,7 @@ export function CampusColumn({
 
   const handleAddPerson = (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPersonName.trim()) {
+    if (newPersonName.trim() && onPersonAdd) {
       onPersonAdd(campus.id, newPersonName.trim());
       setNewPersonName("");
     }
@@ -103,33 +109,43 @@ export function CampusColumn({
     >
       {/* Campus Header - Refined spacing */}
       <div className="relative mb-3 px-3 py-3 border-b border-gray-100 flex-shrink-0">
-        {/* Drag handle areas on edges */}
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
-          {...attributes}
-          {...listeners}
-        />
-        <div 
-          className="absolute right-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
-          {...attributes}
-          {...listeners}
-        />
+        {/* Drag handle areas on edges (only for real campuses, not "Not Assigned") */}
+        {!isVirtualCampus && (
+          <>
+            <div 
+              className="absolute left-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
+              {...attributes}
+              {...listeners}
+            />
+            <div 
+              className="absolute right-0 top-0 bottom-0 w-3 cursor-grab active:cursor-grabbing z-10"
+              {...attributes}
+              {...listeners}
+            />
+          </>
+        )}
         
         <div className="flex items-center justify-between gap-1 relative">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-gray-800 text-sm text-center">
-              <EditableText
-                value={campus.name}
-                onSave={(newName) => {
-                  updateCampusName.mutate({ id: campus.id, name: newName });
-                }}
-                className="font-semibold text-gray-800 text-sm"
-                inputClassName="font-semibold text-gray-800 text-sm w-full text-center"
-              />
+              {isVirtualCampus ? (
+                // Non-editable name for virtual "Not Assigned" campus
+                <span className="font-semibold text-gray-800 text-sm">{campus.name}</span>
+              ) : (
+                <EditableText
+                  value={campus.name}
+                  onSave={(newName) => {
+                    updateCampusName.mutate({ id: campus.id, name: newName });
+                  }}
+                  className="font-semibold text-gray-800 text-sm"
+                  inputClassName="font-semibold text-gray-800 text-sm w-full text-center"
+                />
+              )}
             </h3>
           </div>
           
-          {/* 3-dot menu - positioned at edge */}
+          {/* 3-dot menu - positioned at edge (only for real campuses) */}
+          {!isVirtualCampus && (
           <div className={`transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -174,6 +190,7 @@ export function CampusColumn({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          )}
         </div>
       </div>
 
@@ -195,18 +212,20 @@ export function CampusColumn({
         </div>
       </SortableContext>
 
-      {/* Quick Add - Compact */}
-      <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100">
-        <form onSubmit={handleAddPerson}>
-          <Input
-            type="text"
-            placeholder="+ Add person..."
-            value={newPersonName}
-            onChange={(e) => setNewPersonName(e.target.value)}
-            className="text-xs h-8 px-2.5 border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-          />
-        </form>
-      </div>
+      {/* Quick Add - Compact (only show for real campuses, not "Not Assigned") */}
+      {onPersonAdd && (
+        <div className="flex-shrink-0 px-3 py-2 border-t border-gray-100">
+          <form onSubmit={handleAddPerson}>
+            <Input
+              type="text"
+              placeholder="+ Add person..."
+              value={newPersonName}
+              onChange={(e) => setNewPersonName(e.target.value)}
+              className="text-xs h-8 px-2.5 border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            />
+          </form>
+        </div>
+      )}
     </div>
   );
 }

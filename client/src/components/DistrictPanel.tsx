@@ -79,7 +79,7 @@ export function DistrictPanel({
   useEffect(() => {
     setCampusOrder(campuses);
   }, [campuses]);
-  
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -91,11 +91,26 @@ export function DistrictPanel({
       });
     }
   };
-  
+
   if (!district) return null;
 
   // Calculate summary counts
   const districtPeople = people.filter(p => p.primaryDistrictId === district.id);
+  
+  // Find people without campus assignments
+  const peopleWithoutCampus = districtPeople.filter(p => !p.primaryCampusId);
+  
+  // Create a virtual "Not Assigned" campus object if there are people without campuses
+  const notAssignedCampus: Campus | null = peopleWithoutCampus.length > 0 ? {
+    id: -1, // Special ID for virtual campus
+    name: "Not Assigned",
+    districtId: district.id,
+  } : null;
+  
+  // Combine real campuses with virtual "Not Assigned" if needed
+  const allCampusesWithVirtual = notAssignedCampus 
+    ? [notAssignedCampus, ...campusOrder]
+    : campusOrder;
   const goingCount = districtPeople.filter(p => p.status === "Yes").length;
   const maybeCount = districtPeople.filter(p => p.status === "Maybe").length;
   const notGoingCount = districtPeople.filter(p => p.status === "No").length;
@@ -142,7 +157,7 @@ export function DistrictPanel({
   }
 
   return (
-    <div className="h-full flex flex-col bg-white min-w-fit">
+    <div className="h-full flex flex-col bg-white" style={{ minWidth: 'max-content' }}>
       {/* Header - Refined typography hierarchy */}
       <div className="px-6 py-5 border-b border-gray-200 flex-shrink-0 bg-white shadow-sm">
         <div className="flex items-center justify-between mb-5">
@@ -271,19 +286,24 @@ export function DistrictPanel({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={campusOrder.map(c => c.id)}
+            items={allCampusesWithVirtual.filter(c => c.id !== -1).map(c => c.id)}
             strategy={horizontalListSortingStrategy}
           >
             <div className="flex gap-4 min-w-max h-full">
-              {campusOrder.map(campus => {
-                const campusPeople = people.filter(p => p.primaryCampusId === campus.id);
+              {allCampusesWithVirtual.map(campus => {
+                // For "Not Assigned" virtual campus, show people without campus
+                // For real campuses, show people assigned to that campus
+                const campusPeople = campus.id === -1
+                  ? peopleWithoutCampus
+                  : people.filter(p => p.primaryCampusId === campus.id);
+                
                 return (
                   <CampusColumn
                     key={campus.id}
                     campus={campus}
                     people={campusPeople}
                     onPersonStatusChange={onPersonStatusChange}
-                    onPersonAdd={onPersonAdd}
+                    onPersonAdd={campus.id === -1 ? undefined : onPersonAdd}
                     onPersonClick={onPersonClick}
                     onCampusUpdate={onDistrictUpdate}
                   />

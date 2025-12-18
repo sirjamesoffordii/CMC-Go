@@ -162,22 +162,22 @@
   {
     "id": 33,
     "name": "North Missouri A",
-    "districtId": "NorthMissouri"
+    "districtId": "NorthernMissouri"
   },
   {
     "id": 34,
     "name": "North Missouri B",
-    "districtId": "NorthMissouri"
+    "districtId": "NorthernMissouri"
   },
   {
     "id": 35,
     "name": "South Missouri A",
-    "districtId": "SouthMissouri"
+    "districtId": "SouthernMissouri"
   },
   {
     "id": 36,
     "name": "South Missouri B",
-    "districtId": "SouthMissouri"
+    "districtId": "SouthernMissouri"
   },
   {
     "id": 37,
