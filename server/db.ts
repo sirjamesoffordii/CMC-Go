@@ -68,6 +68,22 @@ export async function updateUserLastSignedIn(openId: string) {
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.openId, openId));
 }
 
+export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getUserByOpenId(user.openId);
+  if (existing) {
+    await db.update(users)
+      .set({ ...user, updatedAt: new Date() })
+      .where(eq(users.openId, user.openId));
+    return existing.id;
+  } else {
+    const result = await db.insert(users).values(user as InsertUser);
+    return result[0].insertId;
+  }
+}
+
 // ============================================================================
 // DISTRICTS
 // ============================================================================
@@ -223,6 +239,14 @@ export async function createNeed(need: InsertNeed) {
   if (!db) throw new Error("Database not available");
   const result = await db.insert(needs).values(need);
   return result[0].insertId;
+}
+
+export async function getAllActiveNeeds() {
+  const db = await getDb();
+  if (!db) return [];
+  // Return all needs - in the old SQLite schema there was an isActive field,
+  // but in the new MySQL schema we removed it, so return all needs
+  return await db.select().from(needs);
 }
 
 // ============================================================================

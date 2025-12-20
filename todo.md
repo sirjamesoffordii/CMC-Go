@@ -1001,3 +1001,13 @@
 
 ## Reduce District Hover Shadow
 - [x] Reduce shadow intensity on district hover (2px 6px rgba 0.2 → 1px 3px rgba 0.1)
+
+## MySQL Query Errors (Dec 20, 2025)
+- [x] Fix MySQL schema column naming - queries failing because camelCase columns don't match MySQL naming
+- [x] Add missing getAllActiveNeeds function to db.ts
+- [x] Add missing upsertUser function to db.ts
+- [x] Fix settings table queries (headerHeight, headerBgColor, headerImageUrl, headerText, headerLogoUrl)
+- [x] Fix districts table query
+- [x] Fix campuses table query  
+- [x] Fix people table queries
+- [x] Verify all metrics display correctly (446 Going, 276 Maybe, 55 Not Going, 334 Not Invited)
