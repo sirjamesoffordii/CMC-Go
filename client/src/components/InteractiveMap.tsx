@@ -368,18 +368,18 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
 
-    // Regional color mapping – richer, deeper palette (premium, not cartoon)
+    // Regional color mapping – slightly lighter, richer palette
     // Goal: clear differentiation with deeper saturation while staying refined.
     const regionColors: Record<string, string> = {
-      "Northwest": "#6FA7C8",                 // deep coastal blue
-      "Big Sky": "#A79263",                   // rich warm stone
-      "Great Plains North": "#6E5C8B",        // deep purple
-      "Great Lakes": "#5F97B8",               // rich steel blue
+      "Northwest": "#6FA7C8",                 // coastal blue
+      "Big Sky": "#A79263",                   // warm stone
+      "Great Plains North": "#6E5C8B",        // purple
+      "Great Lakes": "#5F97B8",               // steel blue
       "Great Plains South": "#D0B457",        // golden wheat
       "Mid-Atlantic": "#C6846A",              // terracotta clay
-      "Northeast": "#C65E86",                 // deep rose
-      "South Central": "#B96863",             // rich brick
-      "Southeast": "#5FA37C",                 // deep sage
+      "Northeast": "#C65E86",                 // rose
+      "South Central": "#B96863",             // brick
+      "Southeast": "#5FA37C",                 // sage
       "Texico": "#B85FA3",                    // pink-purple magenta
       "West Coast": "#C08A4F",                // warm amber
     };
@@ -389,10 +389,19 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const BORDER_WIDTH = "0.25";          // thinner borders for editorial look
     const BORDER_WIDTH_HOVER = "0.6";
     const TRANSITION = "filter 200ms ease, opacity 200ms ease, stroke-width 200ms ease, transform 200ms ease";
-    const DIM_OPACITY = "0.88";            // more subtle dimming
-    const DIM_FILTER = "saturate(0.95) brightness(1.00)";
-    const LIFT_FILTER = "saturate(1.05) brightness(0.85) drop-shadow(0 1px 3px rgba(0,0,0,0.1))";
+    const DIM_OPACITY = "0.92";            // shadow overlay on hover
+    const DIM_FILTER = "brightness(0.88)"; // Slight shadow-like darkening on hover (no desaturation)
+    const LIFT_FILTER = "saturate(1.1) brightness(1.15) drop-shadow(0 1px 3px rgba(0,0,0,0.1))"; // Light effect on hover
     const SELECTED_FILTER = "saturate(0.95) brightness(0.98)";
+    const GREYED_OUT_FILTER = "saturate(0.96) brightness(0.98)"; // Extremely subtle tint for districts outside region
+    const GREYED_OUT_OPACITY = "0.98"; // Barely noticeable opacity reduction for greyed out districts
+
+    // Get selected district's region for greyed out effect
+    const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
+    const selectedRegion = selectedDistrict?.region || (selectedDistrictId ? districtRegionMap[selectedDistrictId] : undefined);
+
+    // Create district lookup map for performance
+    const districtMap = new Map(districts.map(d => [d.id, d]));
 
     // Style visual paths (what user sees)
     visualPaths.forEach(path => {
@@ -402,9 +411,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         path.getAttribute("id");
       if (!pathId) return;
 
-      const district = districts.find(d => d.id === pathId);
+      const district = districtMap.get(pathId);
       // Get region from district in database, or from mapping if not in database yet
-      const region = district?.region || (pathId ? districtRegionMap[pathId] : undefined);
+      const region = district?.region || districtRegionMap[pathId];
       const baseColor = region ? (regionColors[region] || "#e5e7eb") : "#e5e7eb";
 
       path.style.fill = baseColor;
@@ -415,10 +424,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.style.transformOrigin = "center";
       path.style.transform = "scale(1) translateY(0)";
 
-      if (selectedDistrictId === pathId) {
-        path.style.filter = SELECTED_FILTER;
+      // When a district is selected, apply shadow and lighting effects
+      if (selectedDistrictId && selectedRegion) {
+        const isInSelectedRegion = region && region === selectedRegion;
+        
+        if (pathId === selectedDistrictId) {
+          // Selected district
+          path.style.filter = SELECTED_FILTER;
+          path.style.opacity = "1";
+        } else if (isInSelectedRegion) {
+          // Same region as selected - lighting effect (brighten)
+          path.style.filter = "saturate(1.02) brightness(1.05)";
+          path.style.opacity = "1";
+        } else {
+          // Different region - shadow effect (darken)
+          path.style.filter = DIM_FILTER;
+          path.style.opacity = DIM_OPACITY;
+        }
       } else {
-        path.style.filter = "none";
+        // No district selected - normal styling
+        if (selectedDistrictId === pathId) {
+          path.style.filter = SELECTED_FILTER;
+        } else {
+          path.style.filter = "none";
+        }
+        path.style.opacity = "1";
       }
     });
 
@@ -431,23 +461,25 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       if (!pathId) return;
 
       // Allow clicking on all districts, even if not in database yet
-      const district = districts.find(d => d.id === pathId);
+      const district = districtMap.get(pathId);
 
       path.style.cursor = "pointer";
       
       // Click handler - allow clicking even if district not in database
-      path.addEventListener("click", (e) => {
+      const clickHandler = (e: MouseEvent) => {
         e.stopPropagation();
         onDistrictSelect(pathId);
-      });
+      };
+      path.addEventListener("click", clickHandler);
+
+      // Get region once for this path
+      const pathRegion = district?.region || districtRegionMap[pathId];
 
        // Hover behavior: focus district, highlight region, dim others
-      path.addEventListener("mouseenter", (e: MouseEvent) => {
+      const mouseEnterHandler = (e: MouseEvent) => {
         setHoveredDistrict(pathId);
-        // Get region from district or mapping
-        const region = district?.region || (pathId ? districtRegionMap[pathId] : undefined);
-        if (region) {
-          setHoveredRegion(region);
+        if (pathRegion) {
+          setHoveredRegion(pathRegion);
         }
         setTooltipPos({ x: e.clientX, y: e.clientY });
         
@@ -458,10 +490,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.getAttribute("id");
           if (!vPathId) return;
           
-          const vDistrict = districts.find(d => d.id === vPathId);
+          const vDistrict = districtMap.get(vPathId);
           const vRegion = vDistrict?.region || districtRegionMap[vPathId];
-          const currentRegion = district?.region || (pathId ? districtRegionMap[pathId] : undefined);
-          const isInSameRegion = vRegion && currentRegion && vRegion === currentRegion;
+          const isInSameRegion = vRegion && pathRegion && vRegion === pathRegion;
 
           if (vPathId === pathId) {
             // Hovered district - breaking apart effect with elevation
@@ -471,57 +502,119 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.style.transform = "scale(1.005) translateY(-0.5px)";
             vPath.style.transformOrigin = "center";
           } else if (isInSameRegion) {
-            // Same region - subtle highlight only
+            // Same region - lighting effect (brighten)
             vPath.style.opacity = "1";
             vPath.style.filter = "saturate(1.02) brightness(1.05)";
             vPath.style.strokeWidth = BORDER_WIDTH;
             vPath.style.stroke = BORDER_COLOR;
             vPath.style.transform = "scale(1) translateY(0)";
           } else {
-            // Other regions - dimmed
-            vPath.style.opacity = DIM_OPACITY;
-            vPath.style.filter = DIM_FILTER;
+            // Other regions - dimmed (but respect selected district greyed out effect)
+            if (selectedDistrictId && selectedRegion) {
+              const vDistrict = districtMap.get(vPathId);
+              const vRegion = vDistrict?.region || districtRegionMap[vPathId];
+              const isInSelectedRegion = vRegion && vRegion === selectedRegion;
+              
+              if (!isInSelectedRegion) {
+                // Different region from selected - shadow effect (darken)
+                vPath.style.opacity = DIM_OPACITY;
+                vPath.style.filter = DIM_FILTER;
+              } else {
+                // Same region - keep lighting effect even on hover of other region
+                vPath.style.opacity = "1";
+                vPath.style.filter = "saturate(1.02) brightness(1.05)";
+              }
+            } else {
+              // No district selected - normal dimming
+              vPath.style.opacity = DIM_OPACITY;
+              vPath.style.filter = DIM_FILTER;
+            }
             vPath.style.strokeWidth = BORDER_WIDTH;
             vPath.style.transform = "scale(1) translateY(0)";
           }
         });
-      });
+      };
+      path.addEventListener("mouseenter", mouseEnterHandler);
 
-      path.addEventListener("mousemove", (e: MouseEvent) => {
-        setTooltipPos({ x: e.clientX, y: e.clientY });
-      });
+      // Throttle mousemove to improve performance
+      let mousemoveTimeout: number | null = null;
+      const mouseMoveHandler = (e: MouseEvent) => {
+        if (mousemoveTimeout) return;
+        mousemoveTimeout = window.setTimeout(() => {
+          setTooltipPos({ x: e.clientX, y: e.clientY });
+          mousemoveTimeout = null;
+        }, 16); // ~60fps
+      };
+      path.addEventListener("mousemove", mouseMoveHandler);
 
-      path.addEventListener("mouseleave", () => {
+      const mouseLeaveHandler = () => {
         setHoveredDistrict(null);
         setHoveredRegion(null);
         setTooltipPos(null);
+        if (mousemoveTimeout) {
+          clearTimeout(mousemoveTimeout);
+          mousemoveTimeout = null;
+        }
 
         visualPaths.forEach(vPath => {
           const vPathId =
             vPath.getAttribute("inkscape:label") ||
             vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
             vPath.getAttribute("id");
+          if (!vPathId) return;
 
-          if (selectedDistrictId === vPathId) {
-            vPath.style.filter = SELECTED_FILTER;
+          const vDistrict = districtMap.get(vPathId);
+          const vRegion = vDistrict?.region || districtRegionMap[vPathId];
+          const isInSelectedRegion = selectedRegion && vRegion && vRegion === selectedRegion;
+
+          // Restore to selected state styling (with shadow and lighting effects if applicable)
+          if (selectedDistrictId && selectedRegion) {
+            if (vPathId === selectedDistrictId) {
+              vPath.style.filter = SELECTED_FILTER;
+              vPath.style.opacity = "1";
+            } else if (isInSelectedRegion) {
+              // Same region - lighting effect (brighten)
+              vPath.style.filter = "saturate(1.02) brightness(1.05)";
+              vPath.style.opacity = "1";
+            } else {
+              // Different region - shadow effect (darken)
+              vPath.style.filter = DIM_FILTER;
+              vPath.style.opacity = DIM_OPACITY;
+            }
           } else {
-            vPath.style.filter = "none";
+            if (selectedDistrictId === vPathId) {
+              vPath.style.filter = SELECTED_FILTER;
+            } else {
+              vPath.style.filter = "none";
+            }
+            vPath.style.opacity = "1";
           }
           vPath.style.strokeWidth = BORDER_WIDTH;
           vPath.style.stroke = BORDER_COLOR;
-          vPath.style.opacity = "1";
           vPath.style.transform = "scale(1) translateY(0)";
         });
-      });
+      };
+      path.addEventListener("mouseleave", mouseLeaveHandler);
     });
+
+    // NXA button will be added as a separate element in JSX that transforms with the map
 
     // Cleanup
     return () => {
+      // Remove all event listeners by cloning paths
       clickPaths.forEach(path => {
-        path.replaceWith(path.cloneNode(true));
+        const newPath = path.cloneNode(true);
+        path.replaceWith(newPath);
+      });
+      // Remove NXA buttons on cleanup
+      [visualSvg, clickSvg].forEach(svg => {
+        const nxaButton = svg.querySelector('[data-nxa-button="true"]');
+        if (nxaButton) {
+          nxaButton.remove();
+        }
       });
     };
-  }, [svgContent, districts, selectedDistrictId, onDistrictSelect]);
+  }, [svgContent, districts, selectedDistrictId, onDistrictSelect, onNationalClick]);
 
   // Generate pie chart SVG
   const generatePieChart = (stats: DistrictStats, size: number = 40) => {
@@ -864,12 +957,88 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
           style={{
             filter: 'blur(0.3px)', // Minimal blur to fill tiny gaps while preserving sharp edges
-            transform: 'scale(1.03) translateX(-50px)', // Make map just a tiny bit bigger and shift left
+            transform: selectedDistrictId 
+              ? 'scale(1.05) translateX(0px)' // Larger scale, centered when panel open
+              : 'scale(1.03) translateX(-50px)', // Make map just a tiny bit bigger and shift left
             transformOrigin: 'center',
           }}
         />
         
         {/* Pie charts layer - removed per user request */}
+        
+        {/* NXA National Button - Positioned absolutely, transforms with map */}
+        {!selectedDistrictId && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
+          style={{
+            transform: selectedDistrictId 
+              ? 'scale(1.05) translateX(0px)'
+              : 'scale(1.03) translateX(-50px)',
+            transformOrigin: 'center',
+          }}
+        >
+          <div
+            className="absolute cursor-pointer pointer-events-auto"
+            style={{
+              left: '12%', // Moved to the left a little
+              bottom: '5%', // Moved up a little
+              transform: 'translate(-50%, 50%)',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onNationalClick?.();
+            }}
+            onMouseEnter={(e) => {
+              const circle = e.currentTarget.querySelector('div');
+              if (circle) circle.style.backgroundColor = '#991b1b';
+            }}
+            onMouseLeave={(e) => {
+              const circle = e.currentTarget.querySelector('div');
+              if (circle) circle.style.backgroundColor = '#1f2937';
+            }}
+          >
+            <div
+              className="rounded-full bg-gray-800 flex items-center justify-center transition-colors duration-200"
+              style={{
+                width: '3.5vw', // Larger default size, scales with viewport
+                height: '3.5vw',
+                minWidth: '40px', // Minimum size
+                minHeight: '40px',
+              }}
+            >
+              <span className="text-white text-sm font-bold">NXA</span>
+            </div>
+          </div>
+        </div>
+        )}
+        
+        {/* Click layer for NXA button */}
+        {!selectedDistrictId && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center z-45 pointer-events-none"
+          style={{
+            transform: 'scale(1.03) translateX(-20px)',
+            transformOrigin: 'center',
+          }}
+        >
+          <div
+            className="absolute cursor-pointer pointer-events-auto"
+            style={{
+              left: '12%',
+              bottom: '5%',
+              transform: 'translate(-50%, 50%)',
+              width: '3.5vw',
+              height: '3.5vw',
+              minWidth: '40px',
+              minHeight: '40px',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onNationalClick?.();
+            }}
+          />
+        </div>
+        )}
         
         {/* Invisible SVG click zones */}
         <div 
@@ -878,7 +1047,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           style={{ 
             opacity: 0, 
             pointerEvents: 'auto',
-            transform: 'scale(1.03) translateX(-20px)', // Match visual layer scale and shift left
+            transform: selectedDistrictId
+              ? 'scale(1.05) translateX(0px)' // Match visual layer when panel open
+              : 'scale(1.03) translateX(-20px)', // Match visual layer scale and shift left
             transformOrigin: 'center',
           }}
           onClick={(e) => {
@@ -1044,39 +1215,6 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 });
               })()}
             
-            {/* NXA National Circle - Inside South Missouri district */}
-            <g 
-                onClick={() => onNationalClick?.()}
-                className="cursor-pointer group"
-                style={{ pointerEvents: 'auto' }}
-              >
-                {/* Circle with subdued color matching map */}
-                <circle
-                  cx="590"
-                  cy="335"
-                  r="10"
-                  fill="#374151"
-                  stroke="#ffffff"
-                  strokeWidth="1"
-                  className="transition-all duration-200 group-hover:fill-[#b91c1c]"
-                  style={{
-                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                  }}
-                />
-                {/* NXA Text */}
-                <text
-                  x="590"
-                  y="338"
-                  textAnchor="middle"
-                  fill="#ffffff"
-                  fontSize="6"
-                  fontWeight="600"
-                  fontFamily="Arial, sans-serif"
-                  className="pointer-events-none select-none"
-                >
-                  NXA
-                </text>
-            </g>
           </svg>
         </div>
       </div>

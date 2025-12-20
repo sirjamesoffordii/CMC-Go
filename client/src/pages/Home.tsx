@@ -750,33 +750,42 @@ export default function Home() {
       <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Left District/National Panel */}
         <div
-          className="transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto"
+          className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
           style={{ 
-            width: (selectedDistrictId || nationalPanelOpen) ? '50%' : '0%', 
+            width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
             overflowY: 'hidden'
           }}
         >
-          {selectedDistrictId && (
-            <DistrictPanel
-              district={selectedDistrict}
-              campuses={selectedDistrictCampuses}
-              people={selectedDistrictPeople}
-              onClose={() => setSelectedDistrictId(null)}
-              onPersonStatusChange={handlePersonStatusChange}
-              onPersonAdd={handlePersonAdd}
-              onPersonClick={handlePersonClick}
-              onDistrictUpdate={() => {
-                utils.districts.list.invalidate();
-                utils.people.list.invalidate();
-              }}
-            />
-          )}
-          {nationalPanelOpen && (
-            <NationalPanel
-              onClose={() => setNationalPanelOpen(false)}
-              onPersonClick={handlePersonClick}
-              onPersonStatusChange={handlePersonStatusChange}
-            />
+          {(selectedDistrictId || nationalPanelOpen) && (
+            <>
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                onMouseDown={handleDistrictMouseDown}
+              />
+              {selectedDistrictId && (
+                <DistrictPanel
+                  district={selectedDistrict}
+                  campuses={selectedDistrictCampuses}
+                  people={selectedDistrictPeople}
+                  onClose={() => setSelectedDistrictId(null)}
+                  onPersonStatusChange={handlePersonStatusChange}
+                  onPersonAdd={handlePersonAdd}
+                  onPersonClick={handlePersonClick}
+                  onDistrictUpdate={() => {
+                    utils.districts.list.invalidate();
+                    utils.people.list.invalidate();
+                  }}
+                />
+              )}
+              {nationalPanelOpen && (
+                <NationalPanel
+                  onClose={() => setNationalPanelOpen(false)}
+                  onPersonClick={handlePersonClick}
+                  onPersonStatusChange={handlePersonStatusChange}
+                />
+              )}
+            </>
           )}
         </div>
 
@@ -784,7 +793,15 @@ export default function Home() {
         <div className="flex-1 relative overflow-auto">
           {/* Map with Overlay Metrics */}
           <div 
-            className="relative px-6 py-4"
+            className="relative py-4"
+            style={{
+              paddingLeft: selectedDistrictId ? '2rem' : '1.5rem',
+              paddingRight: selectedDistrictId ? '2rem' : '1.5rem',
+              display: 'flex',
+              justifyContent: selectedDistrictId ? 'flex-end' : 'center',
+              alignItems: 'center',
+              minHeight: '100%',
+            }}
             onClick={(e) => {
               // Close panels if clicking on padding/empty space around map
               if (e.target === e.currentTarget) {
