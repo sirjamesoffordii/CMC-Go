@@ -15,6 +15,13 @@ const people = JSON.parse(readFileSync(join(__dirname, "seed-people.json"), "utf
 const needs = JSON.parse(readFileSync(join(__dirname, "seed-needs.json"), "utf-8"));
 const notes = JSON.parse(readFileSync(join(__dirname, "seed-notes.json"), "utf-8"));
 
+// Production safeguard
+if (process.env.APP_ENV === 'production') {
+  console.error('❌ Cannot run seed script in production environment!');
+  console.error('Set APP_ENV to something other than "production" to proceed.');
+  process.exit(1);
+}
+
 // Connect to database
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 const db = drizzle(connection);

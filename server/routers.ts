@@ -110,7 +110,7 @@ export const appRouter = router({
     getById: publicProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
-        return await db.getPersonById(input.personId);
+        return await db.getPersonByPersonId(input.personId);
       }),
     updateName: publicProcedure
       .input(z.object({ personId: z.string(), name: z.string() }))
@@ -138,22 +138,18 @@ export const appRouter = router({
     byPerson: publicProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
-        return await db.getNeedsByPerson(input.personId);
+        return await db.getNeedsByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
         personId: z.string(),
-        type: z.enum(["Financial", "Other"]),
+        description: z.string(),
         amount: z.number().optional(),
-        notes: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        await db.createNeed({
-          ...input,
-          isActive: true,
-        });
+        await db.createNeed(input);
         // Update person's lastUpdated
-        const person = await db.getPersonById(input.personId);
+        const person = await db.getPersonByPersonId(input.personId);
         if (person) {
           await db.updatePersonStatus(input.personId, person.status);
         }
@@ -177,18 +173,18 @@ export const appRouter = router({
     byPerson: publicProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input }) => {
-        return await db.getNotesByPerson(input.personId);
+        return await db.getNotesByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
         personId: z.string(),
-        text: z.string(),
-        isLeaderOnly: z.boolean().default(false),
+        content: z.string(),
+        createdBy: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         await db.createNote(input);
         // Update person's lastUpdated
-        const person = await db.getPersonById(input.personId);
+        const person = await db.getPersonByPersonId(input.personId);
         if (person) {
           await db.updatePersonStatus(input.personId, person.status);
         }

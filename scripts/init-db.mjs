@@ -2,6 +2,16 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "fs";
 import { dirname } from "path";
+import { config } from "dotenv";
+
+config();
+
+// Production safeguard
+if (process.env.APP_ENV === 'production') {
+  console.error('❌ Cannot run init-db script in production environment!');
+  console.error('Set APP_ENV to something other than "production" to proceed.');
+  process.exit(1);
+}
 
 const dbPath = './data/cmc_go.db';
 const dir = dirname(dbPath);
