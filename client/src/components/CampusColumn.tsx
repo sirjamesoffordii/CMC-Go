@@ -42,6 +42,17 @@ export function CampusColumn({
   // Disable dragging for "Not Assigned" virtual campus (id === -1)
   const isVirtualCampus = campus.id === -1;
   
+  const utils = trpc.useUtils();
+  const archiveCampus = trpc.campuses.archive.useMutation({
+    onSuccess: () => {
+      // Invalidate campus queries to refresh the list
+      utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
+      // Call the update callback to refresh parent component
+      onCampusUpdate();
+    },
+  });
+  
   const {
     attributes,
     listeners,
@@ -95,8 +106,13 @@ export function CampusColumn({
   };
 
   const handleArchive = () => {
-    // TODO: Implement archive functionality
-    console.log("Archive campus:", campus.id);
+    if (people.length > 0) {
+      // Should be disabled, but double-check
+      return;
+    }
+    if (confirm(`Are you sure you want to archive "${campus.name}"?`)) {
+      archiveCampus.mutate({ id: campus.id });
+    }
   };
 
   return (
@@ -221,7 +237,7 @@ export function CampusColumn({
               placeholder="+ Add person..."
               value={newPersonName}
               onChange={(e) => setNewPersonName(e.target.value)}
-              className="text-xs h-8 px-2.5 border-gray-200 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              className="text-xs h-8 px-2.5 border-slate-200 focus:border-slate-600 focus:ring-1 focus:ring-slate-600"
             />
           </form>
         </div>

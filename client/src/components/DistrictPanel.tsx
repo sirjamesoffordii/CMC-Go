@@ -6,6 +6,7 @@ import { trpc } from "../lib/trpc";
 import { useState, useEffect, useMemo } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -114,12 +115,13 @@ export function DistrictPanel({
     name: '',
     role: 'Staff',
     status: 'not-invited' as keyof typeof statusMap,
-    needType: 'Financial' as 'Financial' | 'Transportation' | 'Housing' | 'Other',
+    needType: 'None' as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other',
     needAmount: '',
     needDetails: '',
     notes: '',
     spouse: '',
     kids: '',
+    childrenAges: [] as string[],
     depositPaid: false,
     needsMet: false
   });
@@ -247,7 +249,7 @@ export function DistrictPanel({
       // This is a limitation of the current API - would need to enhance onPersonAdd callback
     }
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'Financial', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', childrenAges: [], depositPaid: false, needsMet: false });
     setIsPersonDialogOpen(false);
     setSelectedCampusId(null);
   };
@@ -267,18 +269,20 @@ export function DistrictPanel({
   const handleEditPerson = (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
     const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
+    const personNeed = allNeeds.find(n => n.personId === person.personId);
     setPersonForm({ 
       name: person.name, 
       role: person.primaryRole || 'Staff', 
       status: figmaStatus,
-      needType: 'Financial', // Would need to fetch from needs API
-      needAmount: '', // Would need to fetch from needs API
-      needDetails: '', // Would need to fetch from needs API
+      needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
+      needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
+      needDetails: personNeed?.type !== 'Financial' ? (personNeed?.notes || '') : '',
       notes: person.notes || '', 
       spouse: '', // Would need to parse from notes
       kids: '', // Would need to parse from notes
+      childrenAges: [], // Would need to parse from notes
       depositPaid: person.depositPaid || false,
-      needsMet: false // Would need to check needs table
+      needsMet: personNeed ? !personNeed.isActive : false
     });
     setIsEditPersonDialogOpen(true);
   };
@@ -297,7 +301,7 @@ export function DistrictPanel({
       notes: personForm.notes,
     });
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'Financial', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', childrenAges: [], depositPaid: false, needsMet: false });
     setIsEditPersonDialogOpen(false);
     setEditingPerson(null);
   };
@@ -415,42 +419,49 @@ export function DistrictPanel({
       }
     }
     
-    setPersonForm({ name: '', role: defaultRole, status: 'director', needType: 'Financial', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', depositPaid: false, needsMet: false });
     setIsPersonDialogOpen(true);
   };
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="h-full flex flex-col bg-gray-50 overflow-auto scroll-smooth">
-        <div className="max-w-2xl w-full mx-auto px-6 py-6">
+      <motion.div
+        key={district?.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.15, ease: "easeInOut" }}
+        className="h-full flex flex-col bg-slate-50 overflow-auto scroll-smooth"
+      >
+        <div className="w-full px-3 py-6">
           {/* Header Section */}
-          <div className="bg-white rounded-lg shadow-sm p-3 mb-3 transition-shadow hover:shadow-md">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 mb-4 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-5">
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900 leading-tight">
+                  <h1 className="text-2xl font-semibold text-slate-900 leading-tight tracking-tight">
               <EditableText
                 value={district.name}
                 onSave={(newName) => {
                   updateDistrictName.mutate({ id: district.id, name: newName });
                 }}
-                      className="text-2xl font-semibold text-gray-900"
-                      inputClassName="text-2xl font-semibold text-gray-900"
+                      className="text-2xl font-semibold text-slate-900 tracking-tight"
+                      inputClassName="text-2xl font-semibold text-slate-900 tracking-tight"
               />
                   </h1>
-                  <span className="text-gray-500 text-sm">
+                  <span className="text-slate-500 text-sm mt-1 block font-medium">
               <EditableText
                 value={district.region}
                 onSave={(newRegion) => {
                   updateDistrictRegion.mutate({ id: district.id, region: newRegion });
                 }}
-                      className="text-gray-500 text-sm"
-                      inputClassName="text-gray-500 text-sm"
+                      className="text-slate-500 text-sm"
+                      inputClassName="text-slate-500 text-sm"
                     />
                   </span>
           </div>
-                <div className="w-px h-8 bg-gray-300"></div>
+                <div className="w-px h-8 bg-slate-200"></div>
                 
                 {/* District Director */}
                 <DistrictDirectorDropZone
@@ -470,15 +481,15 @@ export function DistrictPanel({
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
               <div className="flex items-center gap-2 mr-[60px]">
-                <Hand className="w-5 h-5 text-orange-500" />
+                <Hand className="w-5 h-5 text-yellow-600" />
                 <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2">
-                    <span className="text-gray-600 text-sm">Needs:</span>
-                    <span className="font-semibold text-gray-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
+                    <span className="text-slate-600 text-sm">Needs:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
                 </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-600 text-sm">Total:</span>
-                    <span className="font-semibold text-gray-900 text-sm tabular-nums">
+                    <span className="text-slate-600 text-sm">Total:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">
                       ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
               </div>
@@ -490,7 +501,7 @@ export function DistrictPanel({
             <div className="flex items-center gap-8">
               {/* Pie Chart */}
               <svg width="90" height="90" viewBox="0 0 120 120" className="flex-shrink-0">
-                <circle cx="60" cy="60" r="55" fill="#e5e7eb" />
+                <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
                 {(() => {
                   const total = totalPeople || 1;
                   const goingAngle = (stats.going / total) * 360;
@@ -514,22 +525,22 @@ export function DistrictPanel({
                   const slices = [];
                   
                   if (stats.going > 0) {
-                    slices.push(<path key="going" d={createPieSlice(currentAngle, goingAngle, '#22c55e')} fill="#22c55e" stroke="white" strokeWidth="1" />);
+                    slices.push(<path key="going" d={createPieSlice(currentAngle, goingAngle, '#047857')} fill="#047857" stroke="white" strokeWidth="1" />);
                     currentAngle += goingAngle;
                   }
                   
                   if (stats.maybe > 0) {
-                    slices.push(<path key="maybe" d={createPieSlice(currentAngle, maybeAngle, '#eab308')} fill="#eab308" stroke="white" strokeWidth="1" />);
+                    slices.push(<path key="maybe" d={createPieSlice(currentAngle, maybeAngle, '#ca8a04')} fill="#ca8a04" stroke="white" strokeWidth="1" />);
                     currentAngle += maybeAngle;
                   }
                   
                   if (stats.notGoing > 0) {
-                    slices.push(<path key="notGoing" d={createPieSlice(currentAngle, notGoingAngle, '#ef4444')} fill="#ef4444" stroke="white" strokeWidth="1" />);
+                    slices.push(<path key="notGoing" d={createPieSlice(currentAngle, notGoingAngle, '#b91c1c')} fill="#b91c1c" stroke="white" strokeWidth="1" />);
                     currentAngle += notGoingAngle;
                   }
                   
                   if (stats.notInvited > 0) {
-                    slices.push(<path key="notInvited" d={createPieSlice(currentAngle, notInvitedAngle, '#9ca3af')} fill="#9ca3af" stroke="white" strokeWidth="1" />);
+                    slices.push(<path key="notInvited" d={createPieSlice(currentAngle, notInvitedAngle, '#64748b')} fill="#64748b" stroke="white" strokeWidth="1" />);
                   }
                   
                   return slices;
@@ -537,38 +548,38 @@ export function DistrictPanel({
               </svg>
               
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 gap-x-20 gap-y-3">
+              <div className="grid grid-cols-2 gap-x-16 gap-y-3.5">
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0"></div>
-                  <span className="text-gray-700">Going:</span>
-                  <span className="font-semibold text-gray-900 ml-auto tabular-nums">{stats.going}</span>
+                  <div className="w-3 h-3 rounded-full bg-emerald-700 flex-shrink-0 ring-1 ring-emerald-200"></div>
+                  <span className="text-slate-600 text-sm font-medium">Going:</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.going}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-yellow-500 flex-shrink-0"></div>
-                  <span className="text-gray-700">Maybe:</span>
-                  <span className="font-semibold text-gray-900 ml-auto tabular-nums">{stats.maybe}</span>
+                  <div className="w-3 h-3 rounded-full bg-yellow-600 flex-shrink-0 ring-1 ring-yellow-200"></div>
+                  <span className="text-slate-600 text-sm font-medium">Maybe:</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.maybe}</span>
               </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0"></div>
-                  <span className="text-gray-700">Not Going:</span>
-                  <span className="font-semibold text-gray-900 ml-auto tabular-nums">{stats.notGoing}</span>
+                  <div className="w-3 h-3 rounded-full bg-red-700 flex-shrink-0 ring-1 ring-red-200"></div>
+                  <span className="text-slate-600 text-sm font-medium">Not Going:</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.notGoing}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-gray-400 flex-shrink-0"></div>
-                  <span className="text-gray-700">Not Invited Yet:</span>
-                  <span className="font-semibold text-gray-900 ml-auto tabular-nums">{stats.notInvited}</span>
-            </div>
-          </div>
+                  <div className="w-3 h-3 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
+                  <span className="text-slate-600 text-sm font-medium">Not Invited Yet:</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.notInvited}</span>
+                </div>
+              </div>
         </div>
       </div>
 
           {/* Campuses Section */}
-          <div className="bg-white rounded-lg shadow-sm p-3 transition-shadow hover:shadow-md overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all hover:shadow-md hover:border-slate-200 overflow-x-auto">
             <div className="space-y-3 min-w-max">
               {campusesWithPeople.map((campus) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
                 return (
-                  <div key={campus.id} className="flex items-center gap-3 py-1 border-b last:border-b-0 group relative">
+                  <div key={campus.id} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
                     {/* Campus Name */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
                       <div className="w-60 flex-shrink-0 flex items-center gap-2">
@@ -576,9 +587,9 @@ export function DistrictPanel({
                         <div className="relative">
                           <button
                             onClick={() => setOpenMenuId(openMenuId === campus.id ? null : campus.id)}
-                            className="p-1.5 hover:bg-gray-100 rounded transition-all opacity-0 group-hover:opacity-100 hover:opacity-100"
+                            className="p-1.5 hover:bg-slate-100 rounded transition-all opacity-0 group-hover:opacity-100 hover:opacity-100"
                           >
-                            <MoreVertical className="w-4 h-4 text-gray-500 hover:text-gray-700" />
+                            <MoreVertical className="w-4 h-4 text-slate-500 hover:text-slate-700" />
                           </button>
                           
                           {/* Dropdown Menu */}
@@ -589,26 +600,26 @@ export function DistrictPanel({
                                 onClick={() => setOpenMenuId(null)}
                               ></div>
                               
-                              <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                              <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
                                 <button
                                   onClick={() => {
                                     setSelectedCampusId(campus.id);
                                     handleEditCampus(campus.id);
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
                                 >
                                   <Edit2 className="w-4 h-4" />
                                   Edit Campus Name
                                 </button>
-                                <div className="border-t border-gray-200 my-1"></div>
-                                <div className="px-4 py-1 text-xs text-gray-500 font-medium">Sort by</div>
+                                <div className="border-t border-slate-200 my-1"></div>
+                                <div className="px-4 py-1 text-xs text-slate-500 font-medium">Sort by</div>
                                 <button
                                   onClick={() => {
                                     handleCampusSortChange(campus.id, 'status');
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
                                 >
                                   <span>Status</span>
                                   {(!campusSorts[campus.id] || campusSorts[campus.id] === 'status') && <Check className="w-4 h-4" />}
@@ -618,7 +629,7 @@ export function DistrictPanel({
                                     handleCampusSortChange(campus.id, 'name');
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
                                 >
                                   <span>Name</span>
                                   {campusSorts[campus.id] === 'name' && <Check className="w-4 h-4" />}
@@ -628,12 +639,12 @@ export function DistrictPanel({
                                     handleCampusSortChange(campus.id, 'role');
                                     setOpenMenuId(null);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
                                 >
                                   <span>Role</span>
                                   {campusSorts[campus.id] === 'role' && <Check className="w-4 h-4" />}
                                 </button>
-                                <div className="border-t border-gray-200 my-1"></div>
+                                <div className="border-t border-slate-200 my-1"></div>
                                 <button
                                   onClick={() => {
                                     const campusPeople = sortedPeople;
@@ -649,8 +660,8 @@ export function DistrictPanel({
                                   }}
                                   className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
                                     sortedPeople.length > 0
-                                      ? 'text-gray-400 cursor-not-allowed'
-                                      : 'text-red-600 hover:bg-gray-100 cursor-pointer'
+                                      ? 'text-slate-400 cursor-not-allowed'
+                                      : 'text-red-700 hover:bg-slate-100 cursor-pointer'
                                   }`}
                                   disabled={sortedPeople.length > 0}
                                 >
@@ -662,7 +673,7 @@ export function DistrictPanel({
                           )}
                         </div>
                         
-                        <h3 className="font-medium text-gray-900 break-words">{campus.name}</h3>
+                        <h3 className="font-medium text-slate-900 break-words text-lg">{campus.name}</h3>
                       </div>
                     </CampusNameDropZone>
                     
@@ -691,20 +702,44 @@ export function DistrictPanel({
                       ))}
                           
                           {/* Add Person Button */}
-                          <button 
-                            onClick={() => openAddPersonDialog(campus.id)}
-                            className="flex flex-col items-center w-[50px] flex-shrink-0 group/add"
-                            title="Add person"
-                          >
-                            {/* Plus sign in name position */}
-                            <div className="relative flex items-center justify-center mb-1">
-                              <Plus className="w-3 h-3 text-gray-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={2.5} />
+                          <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                            <button 
+                              onClick={() => openAddPersonDialog(campus.id)}
+                              className="flex flex-col items-center w-[50px]"
+                            >
+                              {/* Plus sign in name position */}
+                              <div className="relative flex items-center justify-center mb-1">
+                                <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
+                              </div>
+                              {/* Icon */}
+                              <div className="relative">
+                                <User 
+                                  className="w-10 h-10 text-slate-300 transition-all group-hover/add:scale-110 active:scale-95" 
+                                  strokeWidth={1} 
+                                  fill="none"
+                                  stroke="currentColor"
+                                />
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={1} 
+                                  fill="none"
+                                  stroke="currentColor"
+                                />
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={0} 
+                                  fill="currentColor"
+                                  style={{
+                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                  }}
+                                />
+                              </div>
+                            </button>
+                            {/* Label - Absolutely positioned, shown on hover */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                              Add
                             </div>
-                            {/* Icon */}
-                            <div className="relative">
-                              <User className="w-10 h-10 text-gray-200 group-hover/add:text-gray-400 transition-all group-hover/add:scale-110 active:scale-95" strokeWidth={1.5} fill="none" stroke="currentColor" />
-                            </div>
-                          </button>
+                          </div>
                         </div>
                       </CampusDropZone>
                     </div>
@@ -712,13 +747,22 @@ export function DistrictPanel({
                 );
               })}
               
+              {/* Add Campus Button */}
+              <button
+                onClick={() => setIsCampusDialogOpen(true)}
+                className="w-60 py-4 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
+              >
+                <Plus className="w-6 h-6" strokeWidth={2} />
+                <span>Add Campus</span>
+              </button>
+              
               {/* Unassigned Row - Only show if there are unassigned people */}
               {peopleWithoutCampus.length > 0 && (
                  <div className="flex items-center gap-3 py-2 border-b last:border-b-0 group relative">
                   {/* Unassigned Label */}
                   <div className="w-60 flex-shrink-0 flex items-center gap-2">
                     <div className="w-6"></div> {/* Spacer for kebab menu alignment */}
-                    <h3 className="font-medium text-gray-500 italic">Unassigned</h3>
+                    <h3 className="font-medium text-slate-500 italic text-lg">Unassigned</h3>
                   </div>
                   
                   {/* Person Figures */}
@@ -746,172 +790,232 @@ export function DistrictPanel({
                     ))}
                         
                         {/* Add Person Button */}
-                        <button 
-                          onClick={() => openAddPersonDialog('unassigned')}
-                          className="flex flex-col items-center w-[50px] flex-shrink-0 group/add"
-                          title="Add person"
-                        >
-                          {/* Plus sign in name position */}
-                          <div className="relative flex items-center justify-center mb-1">
-                            <Plus className="w-3 h-3 text-gray-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={2.5} />
+                        <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                          <button 
+                            onClick={() => openAddPersonDialog('unassigned')}
+                            className="flex flex-col items-center w-[50px]"
+                          >
+                            {/* Plus sign in name position */}
+                            <div className="relative flex items-center justify-center mb-1">
+                              <Plus className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={2.5} />
+                            </div>
+                            {/* Icon */}
+                            <div className="relative">
+                              <User className="w-10 h-10 text-slate-200 group-hover/add:text-slate-400 transition-all group-hover/add:scale-110 active:scale-95" strokeWidth={1.5} fill="none" stroke="currentColor" />
+                            </div>
+                          </button>
+                          {/* Label - Absolutely positioned, shown on hover */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add person
                           </div>
-                          {/* Icon */}
-                          <div className="relative">
-                            <User className="w-10 h-10 text-gray-200 group-hover/add:text-gray-400 transition-all group-hover/add:scale-110 active:scale-95" strokeWidth={1.5} fill="none" stroke="currentColor" />
-                          </div>
-                        </button>
+                        </div>
                       </div>
                     </CampusDropZone>
                   </div>
                 </div>
               )}
-              
-              {/* Add Campus Button */}
-              <button 
-                onClick={() => setIsCampusDialogOpen(true)}
-                className="w-60 py-4 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center gap-2 text-gray-400 hover:border-gray-900 hover:text-gray-900 hover:shadow-md transition-all"
-              >
-                <Plus className="w-6 h-6" strokeWidth={2} />
-                <span>Add Campus</span>
-              </button>
             </div>
           </div>
         </div>
 
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={setIsPersonDialogOpen}>
-          <DialogContent aria-describedby={undefined}>
+          <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Person</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="person-name">Name</Label>
-                <Input
-                  id="person-name"
-                  value={personForm.name}
-                  onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
-                  placeholder="Enter name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="person-role">Role</Label>
-                <Input
-                  id="person-role"
-                  value={personForm.role}
-                  onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                  placeholder="e.g., Campus Director, Staff"
-                  disabled={selectedCampusId === 'district'}
-                  className={selectedCampusId === 'district' ? 'bg-gray-100 cursor-not-allowed' : ''}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="person-status">Status</Label>
-                <Select
-                  value={personForm.status}
-                  onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
-                >
-                  <SelectTrigger id="person-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="director">Going</SelectItem>
-                    <SelectItem value="staff">Maybe</SelectItem>
-                    <SelectItem value="co-director">Not Going</SelectItem>
-                    <SelectItem value="not-invited">Not Invited Yet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="person-need-type">Need Type</Label>
-                <Select
-                  value={personForm.needType}
-                  onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '' })}
-                >
-                  <SelectTrigger id="person-need-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Financial">Financial</SelectItem>
-                    <SelectItem value="Transportation">Transportation</SelectItem>
-                    <SelectItem value="Housing">Housing</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {personForm.needType === 'Financial' && (
-                <div className="space-y-2">
-                  <Label htmlFor="person-need-amount">Amount ($)</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <div className="space-y-6 py-4">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="person-name">Name *</Label>
                     <Input
-                      id="person-need-amount"
-                      type="number"
-                      value={personForm.needAmount}
-                      onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                      placeholder="0.00"
-                      className="pl-7"
+                      id="person-name"
+                      value={personForm.name}
+                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      placeholder="Enter name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="person-role">Role *</Label>
+                    <Input
+                      id="person-role"
+                      value={personForm.role}
+                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
+                      placeholder="e.g., Campus Director, Staff"
+                      disabled={selectedCampusId === 'district'}
+                      className={selectedCampusId === 'district' ? 'bg-slate-100 cursor-not-allowed' : ''}
                     />
                   </div>
                 </div>
-              )}
-              {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="person-status">Status</Label>
+                    <Select
+                      value={personForm.status}
+                      onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
+                    >
+                      <SelectTrigger id="person-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="director">Going</SelectItem>
+                        <SelectItem value="staff">Maybe</SelectItem>
+                        <SelectItem value="co-director">Not Going</SelectItem>
+                        <SelectItem value="not-invited">Not Invited Yet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="person-need">Need Request</Label>
+                    <Select
+                      value={personForm.needType}
+                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    >
+                      <SelectTrigger id="person-need">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Financial">Financial</SelectItem>
+                        <SelectItem value="Transportation">Transportation</SelectItem>
+                        <SelectItem value="Housing">Housing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {personForm.needType !== 'None' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div></div>
+                    <div className="space-y-2">
+                      {personForm.needType === 'Financial' && (
+                        <>
+                          <Label htmlFor="person-need-amount">Amount ($)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                            <Input
+                              id="person-need-amount"
+                              type="number"
+                              value={personForm.needAmount}
+                              onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                              placeholder="0.00"
+                              className="pl-7"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
+                        <>
+                          <Label htmlFor="person-need-details">Description</Label>
+                          <Input
+                            id="person-need-details"
+                            value={personForm.needDetails}
+                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
+                            placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Attending Family Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Attending Family</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="person-spouse">Spouse</Label>
+                    <Input
+                      id="person-spouse"
+                      value={personForm.spouse}
+                      onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
+                      placeholder="Enter spouse's name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="person-kids">Children</Label>
+                    <Input
+                      id="person-kids"
+                      type="number"
+                      min="0"
+                      value={personForm.kids}
+                      onChange={(e) => {
+                        const numChildren = parseInt(e.target.value) || 0;
+                        setPersonForm({ 
+                          ...personForm, 
+                          kids: e.target.value,
+                          childrenAges: Array(numChildren).fill('')
+                        });
+                      }}
+                      placeholder="Enter number of children"
+                    />
+                    {personForm.kids && parseInt(personForm.kids) > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
+                          <div key={index} className="space-y-1">
+                            <Label htmlFor={`person-child-age-${index}`} className="text-xs text-slate-600">
+                              Child {index + 1} Age Range
+                            </Label>
+                            <Select
+                              value={personForm.childrenAges[index] || ''}
+                              onValueChange={(value) => {
+                                const newAges = [...personForm.childrenAges];
+                                newAges[index] = value;
+                                setPersonForm({ ...personForm, childrenAges: newAges });
+                              }}
+                            >
+                              <SelectTrigger id={`person-child-age-${index}`}>
+                                <SelectValue placeholder="Select age range" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0-2">0-2 years</SelectItem>
+                                <SelectItem value="3-5">3-5 years</SelectItem>
+                                <SelectItem value="6-12">6-12 years</SelectItem>
+                                <SelectItem value="13+">13+ years</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Details Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Additional Details</h3>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-need-details">Details</Label>
+                  <Label htmlFor="person-notes">Notes</Label>
                   <Input
-                    id="person-need-details"
-                    value={personForm.needDetails}
-                    onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                    placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                    id="person-notes"
+                    value={personForm.notes}
+                    onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
+                    placeholder="Enter notes"
                   />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="person-notes">Notes</Label>
-                <Input
-                  id="person-notes"
-                  value={personForm.notes}
-                  onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
-                  placeholder="Enter notes"
-                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="person-spouse">Spouse</Label>
-                <Input
-                  id="person-spouse"
-                  value={personForm.spouse}
-                  onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                  placeholder="Enter spouse's name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="person-kids">Kids</Label>
-                <Input
-                  id="person-kids"
-                  value={personForm.kids}
-                  onChange={(e) => setPersonForm({ ...personForm, kids: e.target.value })}
-                  placeholder="Enter number of kids"
-                />
-              </div>
-              <div className="flex items-center gap-4 pt-2">
+
+              {/* Status Flags */}
+              <div className="flex items-center gap-6 pt-2 border-t border-slate-200">
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="person-deposit-paid"
                     checked={personForm.depositPaid}
                     onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
                   />
-                  <Label htmlFor="person-deposit-paid" className="cursor-pointer">
+                  <Label htmlFor="person-deposit-paid" className="cursor-pointer text-sm">
                     Deposit Paid
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="person-needs-met"
-                    checked={personForm.needsMet}
-                    onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                  />
-                  <Label htmlFor="person-needs-met" className="cursor-pointer">
-                    Needs Met
                   </Label>
                 </div>
               </div>
@@ -933,90 +1037,179 @@ export function DistrictPanel({
 
         {/* Edit Person Dialog */}
         <Dialog open={isEditPersonDialogOpen} onOpenChange={setIsEditPersonDialogOpen}>
-          <DialogContent aria-describedby={undefined}>
+          <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Person</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-name">Name</Label>
-                <Input
-                  id="edit-person-name"
-                  value={personForm.name}
-                  onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
-                  placeholder="Enter name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-role">Role</Label>
-                <Input
-                  id="edit-person-role"
-                  value={personForm.role}
-                  onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                  placeholder="e.g., Campus Director, Staff"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-status">Status</Label>
-                <Select
-                  value={personForm.status}
-                  onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
-                >
-                  <SelectTrigger id="edit-person-status">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="director">Going</SelectItem>
-                    <SelectItem value="staff">Maybe</SelectItem>
-                    <SelectItem value="co-director">Not Going</SelectItem>
-                    <SelectItem value="not-invited">Not Invited Yet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-need-type">Need Type</Label>
-                <Select
-                  value={personForm.needType}
-                  onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '' })}
-                >
-                  <SelectTrigger id="edit-person-need-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Financial">Financial</SelectItem>
-                    <SelectItem value="Transportation">Transportation</SelectItem>
-                    <SelectItem value="Housing">Housing</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {personForm.needType === 'Financial' && (
-                <div className="space-y-2">
-                  <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+            <div className="space-y-6 py-4">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-name">Name *</Label>
                     <Input
-                      id="edit-person-need-amount"
-                      type="number"
-                      value={personForm.needAmount}
-                      onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                      placeholder="0.00"
-                      className="pl-7"
+                      id="edit-person-name"
+                      value={personForm.name}
+                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      placeholder="Enter name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-role">Role *</Label>
+                    <Input
+                      id="edit-person-role"
+                      value={personForm.role}
+                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
+                      placeholder="e.g., Campus Director, Staff"
                     />
                   </div>
                 </div>
-              )}
-              {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-status">Status</Label>
+                    <Select
+                      value={personForm.status}
+                      onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
+                    >
+                      <SelectTrigger id="edit-person-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="director">Going</SelectItem>
+                        <SelectItem value="staff">Maybe</SelectItem>
+                        <SelectItem value="co-director">Not Going</SelectItem>
+                        <SelectItem value="not-invited">Not Invited Yet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-need">Need Request</Label>
+                    <Select
+                      value={personForm.needType}
+                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    >
+                      <SelectTrigger id="edit-person-need">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Financial">Financial</SelectItem>
+                        <SelectItem value="Transportation">Transportation</SelectItem>
+                        <SelectItem value="Housing">Housing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                {personForm.needType !== 'None' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div></div>
+                    <div className="space-y-2">
+                      {personForm.needType === 'Financial' && (
+                        <>
+                          <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                            <Input
+                              id="edit-person-need-amount"
+                              type="number"
+                              value={personForm.needAmount}
+                              onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                              placeholder="0.00"
+                              className="pl-7"
+                            />
+                          </div>
+                        </>
+                      )}
+                      {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
+                        <>
+                          <Label htmlFor="edit-person-need-details">Description</Label>
+                          <Input
+                            id="edit-person-need-details"
+                            value={personForm.needDetails}
+                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
+                            placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            {/* Attending Family Section */}
+            <div className="space-y-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Attending Family</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-need-details">Details</Label>
+                  <Label htmlFor="edit-person-spouse">Spouse</Label>
                   <Input
-                    id="edit-person-need-details"
-                    value={personForm.needDetails}
-                    onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                    placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                    id="edit-person-spouse"
+                    value={personForm.spouse}
+                    onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
+                    placeholder="Enter spouse's name"
                   />
                 </div>
-              )}
+                <div className="space-y-2">
+                  <Label htmlFor="edit-person-kids">Children</Label>
+                  <Input
+                    id="edit-person-kids"
+                    type="number"
+                    min="0"
+                    value={personForm.kids}
+                    onChange={(e) => {
+                      const numChildren = parseInt(e.target.value) || 0;
+                      setPersonForm({ 
+                        ...personForm, 
+                        kids: e.target.value,
+                        childrenAges: Array(numChildren).fill('')
+                      });
+                    }}
+                    placeholder="Enter number of children"
+                  />
+                  {personForm.kids && parseInt(personForm.kids) > 0 && (
+                    <div className="space-y-2 mt-2">
+                      {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
+                        <div key={index} className="space-y-1">
+                          <Label htmlFor={`edit-person-child-age-${index}`} className="text-xs text-slate-600">
+                            Child {index + 1} Age Range
+                          </Label>
+                          <Select
+                            value={personForm.childrenAges[index] || ''}
+                            onValueChange={(value) => {
+                              const newAges = [...personForm.childrenAges];
+                              newAges[index] = value;
+                              setPersonForm({ ...personForm, childrenAges: newAges });
+                            }}
+                          >
+                            <SelectTrigger id={`edit-person-child-age-${index}`}>
+                              <SelectValue placeholder="Select age range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0-2">0-2 years</SelectItem>
+                              <SelectItem value="3-5">3-5 years</SelectItem>
+                              <SelectItem value="6-12">6-12 years</SelectItem>
+                              <SelectItem value="13+">13+ years</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Details Section */}
+            <div className="space-y-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Additional Details</h3>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-person-notes">Notes</Label>
                 <Input
@@ -1026,55 +1219,40 @@ export function DistrictPanel({
                   placeholder="Enter notes"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-spouse">Spouse</Label>
-                <Input
-                  id="edit-person-spouse"
-                  value={personForm.spouse}
-                  onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                  placeholder="Enter spouse's name"
+            </div>
+
+            {/* Status Flags */}
+            <div className="flex items-center gap-6 pt-2 border-t border-slate-200">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-person-deposit-paid"
+                  checked={personForm.depositPaid}
+                  onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
                 />
+                <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer text-sm">
+                  Deposit Paid
+                </Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-kids">Kids</Label>
-                <Input
-                  id="edit-person-kids"
-                  value={personForm.kids}
-                  onChange={(e) => setPersonForm({ ...personForm, kids: e.target.value })}
-                  placeholder="Enter number of kids"
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="edit-person-needs-met"
+                  checked={personForm.needsMet}
+                  onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
                 />
-              </div>
-              <div className="flex items-center gap-4 pt-2">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="edit-person-deposit-paid"
-                    checked={personForm.depositPaid}
-                    onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                  />
-                  <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer">
-                    Deposit Paid
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="edit-person-needs-met"
-                    checked={personForm.needsMet}
-                    onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                  />
-                  <Label htmlFor="edit-person-needs-met" className="cursor-pointer">
-                    Needs Met
-                  </Label>
-                </div>
+                <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
+                  Needs Met
+                </Label>
               </div>
             </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
         {/* Add Campus Dialog */}
         <Dialog open={isCampusDialogOpen} onOpenChange={setIsCampusDialogOpen}>
@@ -1134,7 +1312,7 @@ export function DistrictPanel({
         
         {/* Custom Drag Layer */}
         <CustomDragLayer getPerson={getPerson} />
-      </div>
+      </motion.div>
     </DndProvider>
   );
 }

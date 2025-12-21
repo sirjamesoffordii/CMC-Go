@@ -40,6 +40,7 @@ interface HeaderEditorModalProps {
 
 const fontFamilies = [
   { name: 'Default (Inter)', value: 'Inter, sans-serif' },
+  { name: 'Brush Script MT', value: 'Brush Script MT, cursive' },
   { name: 'Serif (Georgia)', value: 'Georgia, serif' },
   { name: 'Monospace', value: 'monospace' },
   { name: 'Arial', value: 'Arial, sans-serif' },

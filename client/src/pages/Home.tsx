@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
@@ -492,7 +493,10 @@ export default function Home() {
           ) : (
             <>
               <div className="h-9 w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
-                style={{ transform: 'rotate(12deg)' }}>
+                style={{ 
+                  opacity: 0,
+                  animation: 'roll-in 4s cubic-bezier(0.4, 0, 0.3, 1) 0s forwards'
+                }}>
                 <span>CMC</span>
                 <span className="text-[10px] leading-none">Go</span>
               </div>
@@ -502,41 +506,27 @@ export default function Home() {
         
         {/* Header Text - Editable */}
         <div 
-          className="flex-grow text-white/95 tracking-normal relative z-10"
-          style={{ fontSize: '24px', fontWeight: 400, letterSpacing: '0.01em' }}
+          className="flex-grow text-white/95 relative z-10"
+          style={{ fontSize: '18px' }}
           dangerouslySetInnerHTML={{ 
             __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
           }}
         />
         
-        {/* Animated Scrolling Text - "We're Going Together" - Starts from logo, stops at search icon */}
+        {/* Banner Text - "Go Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div 
-            className="whitespace-nowrap text-white/70 font-medium"
+            className="whitespace-nowrap text-white absolute"
             style={{
-              fontSize: '14px',
-              animation: 'scroll-from-countdown-to-search 40s linear forwards',
-              letterSpacing: '0.01em',
-              left: 'calc(100px + 16px)' // Logo (~100px) + margin (16px) = right after logo
+              fontSize: '16px',
+              fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+              animation: 'fade-in-text 1.2s ease-out 1.5s forwards',
+              left: 'calc(12px + 36px + 16px + 12px)', // Position after logo
+              fontWeight: 400,
+              opacity: 0
             }}
           >
-            "We're Going Together"
-          </div>
-        </div>
-
-        {/* Calendar - June 6 - Positioned on right side, right before where banner stops */}
-        <div className="absolute top-1/2 -translate-y-1/2 z-10" style={{ right: 'calc(144px + 140px)' }}>
-          <div className="relative bg-black rounded-md border border-white shadow-sm overflow-hidden" style={{ width: '32px', height: '32px' }}>
-            {/* Calendar binding loops at top */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 flex justify-center gap-0.5 pt-0.5">
-              <div className="w-0.5 h-0.5 rounded-full bg-white"></div>
-              <div className="w-0.5 h-0.5 rounded-full bg-white"></div>
-            </div>
-            {/* Calendar content */}
-            <div className="flex flex-col items-center justify-center h-full pt-1.5">
-              <span className="text-[7px] font-semibold text-white uppercase leading-tight">June</span>
-              <span className="text-sm font-bold text-white leading-none">6</span>
-            </div>
+            Go Together
           </div>
         </div>
 
@@ -548,6 +538,14 @@ export default function Home() {
           <Pencil className="w-3 h-3" />
           Edit
         </button>
+
+        {/* Days Counter - Next to search icon */}
+        <div className="flex items-center gap-3 flex-shrink-0 z-10 mr-2">
+          {/* Days Until CMC Counter */}
+          <span className="text-white/90 text-sm font-medium whitespace-nowrap">
+            {daysUntilCMC} days until CMC
+          </span>
+        </div>
 
         {/* Search Icon */}
         <div className="relative flex-shrink-0 mr-2 z-10">
@@ -763,21 +761,24 @@ export default function Home() {
                 className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
                 onMouseDown={handleDistrictMouseDown}
               />
-              {selectedDistrictId && (
-                <DistrictPanel
-                  district={selectedDistrict}
-                  campuses={selectedDistrictCampuses}
-                  people={selectedDistrictPeople}
-                  onClose={() => setSelectedDistrictId(null)}
-                  onPersonStatusChange={handlePersonStatusChange}
-                  onPersonAdd={handlePersonAdd}
-                  onPersonClick={handlePersonClick}
-                  onDistrictUpdate={() => {
-                    utils.districts.list.invalidate();
-                    utils.people.list.invalidate();
-                  }}
-                />
-              )}
+              <AnimatePresence mode="wait">
+                {selectedDistrictId && selectedDistrict && (
+                  <DistrictPanel
+                    key={selectedDistrict.id}
+                    district={selectedDistrict}
+                    campuses={selectedDistrictCampuses}
+                    people={selectedDistrictPeople}
+                    onClose={() => setSelectedDistrictId(null)}
+                    onPersonStatusChange={handlePersonStatusChange}
+                    onPersonAdd={handlePersonAdd}
+                    onPersonClick={handlePersonClick}
+                    onDistrictUpdate={() => {
+                      utils.districts.list.invalidate();
+                      utils.people.list.invalidate();
+                    }}
+                  />
+                )}
+              </AnimatePresence>
               {nationalPanelOpen && (
                 <NationalPanel
                   onClose={() => setNationalPanelOpen(false)}
