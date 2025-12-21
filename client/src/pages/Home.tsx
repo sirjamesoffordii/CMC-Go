@@ -749,7 +749,7 @@ export default function Home() {
       <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Left District/National Panel */}
         <div
-          className={`transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto left-panel-mobile ${!(selectedDistrictId || nationalPanelOpen) ? 'closed' : ''}`}
+          className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
           style={{ 
             width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
             overflowY: 'hidden'
@@ -835,7 +835,7 @@ export default function Home() {
 
         {/* Right Follow Up Panel */}
         <div
-          className={`transition-all duration-300 ease-in-out bg-white border-l border-gray-100 flex-shrink-0 relative right-panel-mobile ${!followUpPanelOpen ? 'closed' : ''}`}
+          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingFollowUp ? 'transition-all duration-300 ease-in-out' : ''}`}
           style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
         >
           {followUpPanelOpen && (
