@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
+import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { FollowUpPanel } from "@/components/FollowUpPanel";
@@ -747,10 +748,10 @@ export default function Home() {
       </div>
 
       {/* Main Content Area Below Header */}
-      <div className="flex" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Left District/National Panel */}
         <div
-          className="transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto"
+          className={`transition-all duration-300 ease-in-out bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto left-panel-mobile ${!(selectedDistrictId || nationalPanelOpen) ? 'closed' : ''}`}
           style={{ 
             width: (selectedDistrictId || nationalPanelOpen) ? '50%' : '0%', 
             overflowY: 'hidden'
@@ -781,7 +782,7 @@ export default function Home() {
         </div>
 
         {/* Center Map Area */}
-        <div className="flex-1 relative overflow-auto">
+        <div className="flex-1 relative overflow-auto map-container-mobile">
           {/* Map with Overlay Metrics */}
           <div 
             className="relative px-6 py-4"
@@ -816,7 +817,7 @@ export default function Home() {
 
         {/* Right Follow Up Panel */}
         <div
-          className="transition-all duration-300 ease-in-out bg-white border-l border-gray-100 flex-shrink-0 relative"
+          className={`transition-all duration-300 ease-in-out bg-white border-l border-gray-100 flex-shrink-0 relative right-panel-mobile ${!followUpPanelOpen ? 'closed' : ''}`}
           style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
         >
           {followUpPanelOpen && (
@@ -835,12 +836,12 @@ export default function Home() {
       {/* Follow Up Tab Button - Fixed to right side, slides out from edge on hover */}
       {!followUpPanelOpen && (
         <div
-          className="fixed top-1/2 -translate-y-1/2 z-30 group"
+          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block follow-up-tab-mobile"
           style={{ right: 0 }}
         >
           <button
             onClick={() => setFollowUpPanelOpen(true)}
-            className="bg-black/80 text-white px-2 py-8 rounded-l-md shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)]"
+            className="bg-black/80 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
             Follow Ups
