@@ -258,16 +258,20 @@
     transform: translateX(-150px) rotate(-360deg);
     opacity: 0;
   }
-  70% {
-    transform: translateX(0) rotate(12deg); /* Reach stopping point */
+  65% {
+    transform: translateX(0) rotate(12deg); /* Approach stopping point */
     opacity: 1;
   }
-  80% {
-    transform: translateX(6px) rotate(16deg); /* Continue past stopping point */
+  75% {
+    transform: translateX(4px) rotate(14deg); /* Gentle overshoot */
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(2px) rotate(13deg); /* Begin settling */
     opacity: 1;
   }
   100% {
-    transform: translateX(0) rotate(12deg); /* Fluidly rock back into place */
+    transform: translateX(0) rotate(12deg); /* Smoothly settle into place */
     opacity: 1;
   }
 }

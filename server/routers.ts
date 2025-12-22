@@ -63,8 +63,8 @@ export const appRouter = router({
         districtId: z.string(),
       }))
       .mutation(async ({ input }) => {
-        const campus = await db.createCampus(input);
-        return campus;
+        const insertId = await db.createCampus(input);
+        return { id: insertId, name: input.name, districtId: input.districtId };
       }),
   }),
 
@@ -116,6 +116,12 @@ export const appRouter = router({
       .input(z.object({ personId: z.string(), name: z.string() }))
       .mutation(async ({ input }) => {
         await db.updatePersonName(input.personId, input.name);
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ personId: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.deletePerson(input.personId);
         return { success: true };
       }),
     importCSV: publicProcedure

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 
@@ -610,9 +610,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const BORDER_WIDTH_HOVER = "0.45";      // more prominent on hover
     const BORDER_WIDTH_SELECTED = "0.55"; // strong prominence for selected
     const TRANSITION = "all 300ms cubic-bezier(0.4, 0, 0.2, 1)"; // smooth, consistent transitions
-    const DIM_OPACITY = "0.92";            // shadow overlay on hover (original)
-    const DIM_FILTER = "brightness(0.88)"; // Slight shadow-like darkening on hover (no desaturation) (original)
-    const LIFT_FILTER = "saturate(1.25) brightness(1.2) drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))"; // Smooth, professional raised effect
+    const DIM_OPACITY = "0.95";            // shadow overlay on hover (reduced for brighter map)
+    const DIM_FILTER = "brightness(0.92)"; // Slight shadow-like darkening on hover (reduced for brighter map)
+    const LIFT_FILTER = "saturate(1.1) brightness(1.06) drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))"; // Smooth, professional raised effect - very slightly brighter
     const SELECTED_FILTER = "saturate(1.15) brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
     const GREYED_OUT_FILTER = "saturate(0.85) brightness(0.9)"; // More noticeable dimming for contrast
     const GREYED_OUT_OPACITY = "0.85"; // More visible opacity reduction
@@ -642,6 +642,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.style.strokeWidth = BORDER_WIDTH;
       path.style.strokeLinejoin = "round";
       path.style.strokeLinecap = "round";
+      path.style.filter = "brightness(1.04)"; // Slightly brighter default
       path.style.strokeDasharray = "";
       path.style.transition = TRANSITION;
       path.style.transformOrigin = "center";
@@ -674,7 +675,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       if (selectedDistrictId === pathId) {
         path.style.filter = SELECTED_FILTER;
       } else {
-        path.style.filter = "none";
+        path.style.filter = "brightness(1.04)"; // Slightly brighter default
         }
         path.style.opacity = "1";
       }
@@ -739,10 +740,20 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.style.transformOrigin = "center";
           } else if (isInSameRegion) {
             // Same region - lighting effect (brighten)
-            vPath.style.opacity = "1";
-            vPath.style.filter = "saturate(1.04) brightness(1.08)";
-            vPath.style.strokeWidth = BORDER_WIDTH;
-            vPath.style.stroke = BORDER_COLOR;
+            // BUT: if this is the selected district and we're hovering over a different district, dim it
+            if (selectedDistrictId && vPathId === selectedDistrictId && vPathId !== pathId) {
+              // Selected district being hovered over by different district - dim it
+              vPath.style.opacity = DIM_OPACITY;
+              vPath.style.filter = DIM_FILTER;
+              vPath.style.strokeWidth = BORDER_WIDTH;
+              vPath.style.stroke = BORDER_COLOR;
+            } else {
+              // Same region - lighting effect (brighten)
+              vPath.style.opacity = "1";
+              vPath.style.filter = "saturate(1.04) brightness(1.04)";
+              vPath.style.strokeWidth = BORDER_WIDTH;
+              vPath.style.stroke = BORDER_COLOR;
+            }
             // Keep Alaska moved down
             if (vPathId === "Alaska") {
               vPath.style.transform = "scale(1) translateY(5px)";
@@ -761,9 +772,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             vPath.style.opacity = DIM_OPACITY;
             vPath.style.filter = DIM_FILTER;
               } else {
-                // Same region - keep lighting effect even on hover of other region
-                vPath.style.opacity = "1";
-                vPath.style.filter = "saturate(1.02) brightness(1.05)";
+                // Same region as selected - but if this IS the selected district and we're hovering a different one, dim it
+                if (vPathId === selectedDistrictId && vPathId !== pathId) {
+                  // Selected district being hovered over by different district - dim it
+                  vPath.style.opacity = DIM_OPACITY;
+                  vPath.style.filter = DIM_FILTER;
+                } else {
+                  // Same region - keep lighting effect even on hover of other region
+                  vPath.style.opacity = "1";
+                  vPath.style.filter = "saturate(1.02) brightness(1.05)";
+                }
               }
             } else {
               // No district selected - normal dimming
@@ -831,7 +849,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           if (selectedDistrictId === vPathId) {
             vPath.style.filter = SELECTED_FILTER;
           } else {
-            vPath.style.filter = "none";
+            vPath.style.filter = "brightness(1.04)"; // Slightly brighter default
             }
             vPath.style.opacity = "1";
           }
@@ -1289,7 +1307,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             pointerEvents: 'auto',
             transform: selectedDistrictId
               ? 'scale(1.05) translateX(0px)' // Match visual layer when panel open
-              : 'scale(1.03) translateX(-20px)', // Match visual layer scale and shift left
+              : 'scale(1.03) translateX(-50px)', // Match visual layer scale and shift left - FIXED: was -20px
             transformOrigin: 'center',
           }}
           onClick={(e) => {

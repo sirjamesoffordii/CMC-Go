@@ -2,7 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import { Person } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 
 interface FollowUpPanelProps {
   onClose: () => void;
@@ -22,6 +22,53 @@ export function FollowUpPanel({ onClose }: FollowUpPanelProps) {
     setDialogOpen(true);
   };
 
+  const handleExport = () => {
+    if (followUpPeople.length === 0) return;
+
+    // Create CSV headers
+    const headers = ['Name', 'Role', 'Campus', 'District', 'Status', 'Last Updated', 'Active Needs'];
+    
+    // Create CSV rows
+    const rows = followUpPeople.map((person) => {
+      const campus = allCampuses.find(c => c.id === person.primaryCampusId);
+      const district = allDistricts.find(d => d.id === person.primaryDistrictId);
+      const personNeeds = allNeeds.filter(n => n.personId === person.personId && n.isActive);
+      const needsText = personNeeds.map(need => {
+        if (need.amount) {
+          return `${need.type} ($${(need.amount / 100).toFixed(2)})`;
+        }
+        return need.type;
+      }).join('; ');
+
+      return [
+        person.name || '',
+        person.primaryRole || '',
+        campus?.name || '',
+        district?.name || '',
+        person.status || '',
+        person.statusLastUpdated ? new Date(person.statusLastUpdated).toLocaleDateString() : 'N/A',
+        needsText || '—'
+      ];
+    });
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `follow-up-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="h-full bg-white border-l border-gray-300 flex flex-col">
       {/* Header */}
@@ -32,12 +79,22 @@ export function FollowUpPanel({ onClose }: FollowUpPanelProps) {
             People with "Maybe" status or active needs
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <X className="h-5 w-5 text-gray-500" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={followUpPeople.length === 0}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Export to CSV"
+          >
+            <Download className="h-5 w-5 text-gray-500" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5 text-gray-500" />
+          </button>
+        </div>
       </div>
 
       {/* Content */}

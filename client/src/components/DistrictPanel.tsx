@@ -1,4 +1,14 @@
-import { X, Plus, User, Edit2, MoreVertical, Check, Archive, Hand } from "lucide-react";
+import { X, Plus, User, Edit2, MoreVertical, Check, Archive, Hand, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "./ui/alert-dialog";
 import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
@@ -9,9 +19,11 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
+import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { DroppablePerson } from "./DroppablePerson";
 import { CampusDropZone } from "./CampusDropZone";
 import { CampusNameDropZone } from "./CampusNameDropZone";
@@ -66,7 +78,14 @@ export function DistrictPanel({
   const createCampus = trpc.campuses.create.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
+      setCampusForm({ name: '' });
+      setIsCampusDialogOpen(false);
       onDistrictUpdate();
+    },
+    onError: (error) => {
+      console.error('Error creating campus:', error);
+      alert(`Failed to create campus: ${error.message || 'Unknown error'}`);
     },
   });
   const updateCampusName = trpc.campuses.updateName.useMutation({
@@ -93,6 +112,14 @@ export function DistrictPanel({
       onDistrictUpdate();
     },
   });
+  const deletePerson = trpc.people.delete.useMutation({
+    onSuccess: () => {
+      utils.people.list.invalidate();
+      setIsEditPersonDialogOpen(false);
+      setEditingPerson(null);
+      onDistrictUpdate();
+    },
+  });
   const archiveCampus = trpc.campuses.archive.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
@@ -100,7 +127,6 @@ export function DistrictPanel({
       onDistrictUpdate();
     },
   });
-
   // Dialog states
   const [isPersonDialogOpen, setIsPersonDialogOpen] = useState(false);
   const [isCampusDialogOpen, setIsCampusDialogOpen] = useState(false);
@@ -109,6 +135,8 @@ export function DistrictPanel({
   const [selectedCampusId, setSelectedCampusId] = useState<number | string | null>(null);
   const [editingPerson, setEditingPerson] = useState<{ campusId: number | string; person: Person } | null>(null);
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [dontAskAgain, setDontAskAgain] = useState(false);
   
   // Form states
   const [personForm, setPersonForm] = useState({
@@ -121,6 +149,7 @@ export function DistrictPanel({
     notes: '',
     spouse: '',
     kids: '',
+    guests: '',
     childrenAges: [] as string[],
     depositPaid: false,
     needsMet: false
@@ -132,6 +161,10 @@ export function DistrictPanel({
 
   // Campus sort preferences
   const [campusSorts, setCampusSorts] = useState<Record<number, 'status' | 'name' | 'role'>>({});
+  // Preserve order when status changes (don't auto-sort)
+  const [preserveOrder, setPreserveOrder] = useState(true);
+  // Store original order of people per campus (by personId)
+  const [campusPeopleOrder, setCampusPeopleOrder] = useState<Record<number, string[]>>({});
 
   // Fetch needs to check if people have needs
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
@@ -161,6 +194,23 @@ export function DistrictPanel({
     ...campus,
     people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
   }));
+
+  // Store initial order when panel opens or data changes significantly
+  useEffect(() => {
+    // Reset preserveOrder when district changes (panel opens/closes)
+    setPreserveOrder(true);
+    
+    const newOrder: Record<number, string[]> = {};
+    campusesWithPeople.forEach(campus => {
+      newOrder[campus.id] = campus.people.map(p => p.personId);
+    });
+    // Also store order for unassigned
+    if (peopleWithoutCampus.length > 0) {
+      newOrder[-1] = peopleWithoutCampus.map(p => p.personId);
+    }
+    setCampusPeopleOrder(newOrder);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [district?.id]); // Reset order when district changes (panel opens/closes)
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -195,6 +245,29 @@ export function DistrictPanel({
 
   // Sort people based on campus preference
   const getSortedPeople = (people: Person[], campusId: number) => {
+    // If preserveOrder is true, maintain the stored order
+    if (preserveOrder && campusPeopleOrder[campusId]) {
+      const order = campusPeopleOrder[campusId];
+      const peopleMap = new Map(people.map(p => [p.personId, p]));
+      const ordered: Person[] = [];
+      const unordered: Person[] = [];
+      
+      // First, add people in the stored order
+      order.forEach(personId => {
+        const person = peopleMap.get(personId);
+        if (person) {
+          ordered.push(person);
+          peopleMap.delete(personId);
+        }
+      });
+      
+      // Then add any new people that weren't in the original order
+      peopleMap.forEach(person => unordered.push(person));
+      
+      return [...ordered, ...unordered];
+    }
+    
+    // Otherwise, sort normally
     const sortBy = campusSorts[campusId] || 'status';
     
     if (sortBy === 'name') {
@@ -249,20 +322,18 @@ export function DistrictPanel({
       // This is a limitation of the current API - would need to enhance onPersonAdd callback
     }
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', childrenAges: [], depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
     setIsPersonDialogOpen(false);
     setSelectedCampusId(null);
   };
 
   // Handle add campus
   const handleAddCampus = () => {
-    if (!campusForm.name || !district) return;
+    if (!campusForm.name.trim() || !district) return;
     createCampus.mutate({
-      name: campusForm.name,
-      districtId: district.id,
+      name: campusForm.name.trim(),
+    districtId: district.id,
     });
-    setCampusForm({ name: '' });
-    setIsCampusDialogOpen(false);
   };
 
   // Handle edit person
@@ -280,8 +351,9 @@ export function DistrictPanel({
       notes: person.notes || '', 
       spouse: '', // Would need to parse from notes
       kids: '', // Would need to parse from notes
+      guests: '', // Would need to parse from notes
       childrenAges: [], // Would need to parse from notes
-      depositPaid: person.depositPaid || false,
+      depositPaid: false,
       needsMet: personNeed ? !personNeed.isActive : false
     });
     setIsEditPersonDialogOpen(true);
@@ -301,9 +373,39 @@ export function DistrictPanel({
       notes: personForm.notes,
     });
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', childrenAges: [], depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
     setIsEditPersonDialogOpen(false);
     setEditingPerson(null);
+  };
+
+  // Handle delete person
+  const handleDeletePerson = () => {
+    if (!editingPerson) return;
+    
+    // Check if user has chosen to skip confirmation
+    const skipConfirmation = localStorage.getItem('skipDeletePersonConfirmation') === 'true';
+    
+    if (skipConfirmation) {
+      // Delete directly without confirmation
+      deletePerson.mutate({ personId: editingPerson.person.personId });
+    } else {
+      // Show confirmation dialog
+      setIsDeleteConfirmOpen(true);
+    }
+  };
+
+  // Handle confirmed delete
+  const handleConfirmDelete = () => {
+    if (!editingPerson) return;
+    
+    // Save preference if "don't ask again" is checked
+    if (dontAskAgain) {
+      localStorage.setItem('skipDeletePersonConfirmation', 'true');
+    }
+    
+    deletePerson.mutate({ personId: editingPerson.person.personId });
+    setIsDeleteConfirmOpen(false);
+    setDontAskAgain(false);
   };
 
   // Handle person click - cycle status
@@ -337,6 +439,8 @@ export function DistrictPanel({
   // Handle campus sort change
   const handleCampusSortChange = (campusId: number, sortBy: 'status' | 'name' | 'role') => {
     setCampusSorts(prev => ({ ...prev, [campusId]: sortBy }));
+    // Disable order preservation when user explicitly sorts
+    setPreserveOrder(false);
   };
 
   // Handle drag and drop - person move
@@ -371,7 +475,6 @@ export function DistrictPanel({
     }
   };
 
-  // Handle drop on campus row
   const handleCampusRowDrop = (personId: string, fromCampusId: number | string, toCampusId: number | string) => {
     if (fromCampusId === toCampusId) return;
     handlePersonMove(personId, fromCampusId, toCampusId, 0);
@@ -419,7 +522,7 @@ export function DistrictPanel({
       }
     }
     
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', depositPaid: false, needsMet: false });
     setIsPersonDialogOpen(true);
   };
 
@@ -502,7 +605,7 @@ export function DistrictPanel({
               {/* Pie Chart */}
               <svg width="90" height="90" viewBox="0 0 120 120" className="flex-shrink-0">
                 <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
-                {(() => {
+            {(() => {
                   const total = totalPeople || 1;
                   const goingAngle = (stats.going / total) * 360;
                   const maybeAngle = (stats.maybe / total) * 360;
@@ -645,36 +748,45 @@ export function DistrictPanel({
                                   {campusSorts[campus.id] === 'role' && <Check className="w-4 h-4" />}
                                 </button>
                                 <div className="border-t border-slate-200 my-1"></div>
-                                <button
-                                  onClick={() => {
-                                    const campusPeople = sortedPeople;
-                                    if (campusPeople.length > 0) {
-                                      alert(`Cannot archive campus "${campus.name}" because it has ${campusPeople.length} person(s) assigned. Please move or remove all people first.`);
-                                      setOpenMenuId(null);
-                                      return;
-                                    }
-                                    if (confirm(`Are you sure you want to archive "${campus.name}"?`)) {
-                                      archiveCampus.mutate({ id: campus.id });
-                                      setOpenMenuId(null);
-                                    }
-                                  }}
-                                  className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
-                                    sortedPeople.length > 0
-                                      ? 'text-slate-400 cursor-not-allowed'
-                                      : 'text-red-700 hover:bg-slate-100 cursor-pointer'
-                                  }`}
-                                  disabled={sortedPeople.length > 0}
-                                >
-                                  <Archive className="w-4 h-4" />
-                                  Archive
-                                </button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => {
+                                        const campusPeople = sortedPeople;
+                                        if (campusPeople.length > 0) {
+                                          alert(`Cannot delete campus "${campus.name}" because it has ${campusPeople.length} person(s) assigned. Please move or remove all people first.`);
+                                          setOpenMenuId(null);
+                                          return;
+                                        }
+                                        if (confirm(`Are you sure you want to delete "${campus.name}"?`)) {
+                                          archiveCampus.mutate({ id: campus.id });
+                                          setOpenMenuId(null);
+                                        }
+                                      }}
+                                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
+                                        sortedPeople.length > 0
+                                          ? 'text-slate-400 cursor-not-allowed'
+                                          : 'text-red-700 hover:bg-slate-100 cursor-pointer'
+                                      }`}
+                                      disabled={sortedPeople.length > 0}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Delete
+                                    </button>
+                                  </TooltipTrigger>
+                                  {sortedPeople.length > 0 && (
+                                    <TooltipContent>
+                                      <p>The campus row must be empty</p>
+                                    </TooltipContent>
+                                  )}
+                                </Tooltip>
                               </div>
                             </>
                           )}
-                        </div>
+          </div>
                         
                         <h3 className="font-medium text-slate-900 break-words text-lg">{campus.name}</h3>
-                      </div>
+        </div>
                     </CampusNameDropZone>
                     
                     {/* Person Figures */}
@@ -714,7 +826,7 @@ export function DistrictPanel({
                               {/* Icon */}
                               <div className="relative">
                                 <User 
-                                  className="w-10 h-10 text-slate-300 transition-all group-hover/add:scale-110 active:scale-95" 
+                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
                                   strokeWidth={1} 
                                   fill="none"
                                   stroke="currentColor"
@@ -736,7 +848,7 @@ export function DistrictPanel({
                               </div>
                             </button>
                             {/* Label - Absolutely positioned, shown on hover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
                               Add
                             </div>
                           </div>
@@ -763,8 +875,8 @@ export function DistrictPanel({
                   <div className="w-60 flex-shrink-0 flex items-center gap-2">
                     <div className="w-6"></div> {/* Spacer for kebab menu alignment */}
                     <h3 className="font-medium text-slate-500 italic text-lg">Unassigned</h3>
-                  </div>
-                  
+          </div>
+          
                   {/* Person Figures */}
                   <div className="flex-1 min-w-0">
                     <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop}>
@@ -797,17 +909,36 @@ export function DistrictPanel({
                           >
                             {/* Plus sign in name position */}
                             <div className="relative flex items-center justify-center mb-1">
-                              <Plus className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={2.5} />
-                            </div>
+                              <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
+                </div>
                             {/* Icon */}
                             <div className="relative">
-                              <User className="w-10 h-10 text-slate-200 group-hover/add:text-slate-400 transition-all group-hover/add:scale-110 active:scale-95" strokeWidth={1.5} fill="none" stroke="currentColor" />
-                            </div>
+                              <User 
+                                className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
+                                strokeWidth={1} 
+                                fill="none"
+                                stroke="currentColor"
+                              />
+                              <User 
+                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                strokeWidth={1} 
+                                fill="none"
+                                stroke="currentColor"
+                              />
+                              <User 
+                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                strokeWidth={0} 
+                                fill="currentColor"
+                                style={{
+                                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                }}
+                              />
+              </div>
                           </button>
                           {/* Label - Absolutely positioned, shown on hover */}
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Add person
-                          </div>
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                            Add
+                </div>
                         </div>
                       </div>
                     </CampusDropZone>
@@ -815,9 +946,9 @@ export function DistrictPanel({
                 </div>
               )}
             </div>
-          </div>
-        </div>
-
+              </div>
+            </div>
+            
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={setIsPersonDialogOpen}>
           <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -839,7 +970,7 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                       placeholder="Enter name"
                     />
-                  </div>
+              </div>
                   <div className="space-y-2">
                     <Label htmlFor="person-role">Role *</Label>
                     <Input
@@ -850,10 +981,10 @@ export function DistrictPanel({
                       disabled={selectedCampusId === 'district'}
                       className={selectedCampusId === 'district' ? 'bg-slate-100 cursor-not-allowed' : ''}
                     />
-                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+              </div>
+                <div className="grid grid-cols-3 gap-4 relative">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="person-status">Status</Label>
                     <Select
                       value={personForm.status}
@@ -869,7 +1000,7 @@ export function DistrictPanel({
                         <SelectItem value="not-invited">Not Invited Yet</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+          </div>
                   <div className="space-y-2">
                     <Label htmlFor="person-need">Need Request</Label>
                     <Select
@@ -887,61 +1018,111 @@ export function DistrictPanel({
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
+        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="person-deposit-paid">Deposit Paid</Label>
+                    <div className="flex items-center justify-start pl-1">
+                      <Checkbox
+                        id="person-deposit-paid"
+                        checked={personForm.depositPaid}
+                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
                   </div>
                 </div>
-                {personForm.needType !== 'None' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div></div>
-                    <div className="space-y-2">
-                      {personForm.needType === 'Financial' && (
-                        <>
-                          <Label htmlFor="person-need-amount">Amount ($)</Label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                            <Input
-                              id="person-need-amount"
-                              type="number"
-                              value={personForm.needAmount}
-                              onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                              placeholder="0.00"
-                              className="pl-7"
-                            />
+                <AnimatePresence>
+                  {personForm.needType !== 'None' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {personForm.needType === 'Financial' ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="person-need-details">Description</Label>
+                              <Input
+                                id="person-need-details"
+                                value={personForm.needDetails}
+                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
+                                placeholder="Description"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="person-need-amount">Amount ($)</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                <Input
+                                  id="person-need-amount"
+                                  type="number"
+                                  value={personForm.needAmount}
+                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                                  placeholder="0.00"
+                                  className="pl-7 w-28"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </>
-                      )}
-                      {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
-                        <>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Checkbox
+                              id="person-needs-met"
+                              checked={personForm.needsMet}
+                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                            />
+                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
+                              Need Met
+                            </Label>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
                           <Label htmlFor="person-need-details">Description</Label>
                           <Input
                             id="person-need-details"
                             value={personForm.needDetails}
                             onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                            placeholder={`${personForm.needType} need details`}
                           />
-                        </>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Checkbox
+                              id="person-needs-met"
+                              checked={personForm.needsMet}
+                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                            />
+                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
+                              Need Met
+                            </Label>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+      </div>
 
-              {/* Attending Family Section */}
+              {/* Accompanying Non Staff Section */}
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Attending Family</h3>
+                  <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="person-spouse">Spouse</Label>
                     <Input
                       id="person-spouse"
                       value={personForm.spouse}
                       onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                      placeholder="Enter spouse's name"
+                      placeholder="Spouse's name"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="person-kids">Children</Label>
+                    <Label htmlFor="person-kids" className="ml-1">Children</Label>
                     <Input
                       id="person-kids"
                       type="number"
@@ -955,70 +1136,83 @@ export function DistrictPanel({
                           childrenAges: Array(numChildren).fill('')
                         });
                       }}
-                      placeholder="Enter number of children"
+                      placeholder="Number of children"
+                      className="w-20"
                     />
-                    {personForm.kids && parseInt(personForm.kids) > 0 && (
-                      <div className="space-y-2 mt-2">
-                        {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                          <div key={index} className="space-y-1">
-                            <Label htmlFor={`person-child-age-${index}`} className="text-xs text-slate-600">
-                              Child {index + 1} Age Range
-                            </Label>
-                            <Select
-                              value={personForm.childrenAges[index] || ''}
-                              onValueChange={(value) => {
-                                const newAges = [...personForm.childrenAges];
-                                newAges[index] = value;
-                                setPersonForm({ ...personForm, childrenAges: newAges });
-                              }}
+                    <AnimatePresence>
+                      {personForm.kids && parseInt(personForm.kids) > 0 && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2 mt-2 overflow-hidden"
+                        >
+                          {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
+                            <motion.div
+                              key={index}
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.2, delay: index * 0.05 }}
+                              className="space-y-1"
                             >
-                              <SelectTrigger id={`person-child-age-${index}`}>
-                                <SelectValue placeholder="Select age range" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0-2">0-2 years</SelectItem>
-                                <SelectItem value="3-5">3-5 years</SelectItem>
-                                <SelectItem value="6-12">6-12 years</SelectItem>
-                                <SelectItem value="13+">13+ years</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              <Label htmlFor={`person-child-age-${index}`} className="text-xs text-slate-600">
+                                Child {index + 1} Age Range
+                              </Label>
+                              <Select
+                                value={personForm.childrenAges[index] || ''}
+                                onValueChange={(value) => {
+                                  const newAges = [...personForm.childrenAges];
+                                  newAges[index] = value;
+                                  setPersonForm({ ...personForm, childrenAges: newAges });
+                                }}
+                              >
+                                <SelectTrigger id={`person-child-age-${index}`}>
+                                  <SelectValue placeholder="Select age range" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="0-2">0-2 years</SelectItem>
+                                  <SelectItem value="3-5">3-5 years</SelectItem>
+                                  <SelectItem value="6-12">6-12 years</SelectItem>
+                                  <SelectItem value="13+">13+ years</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="person-guests">Guest</Label>
+                    <Input
+                      id="person-guests"
+                      type="number"
+                      min="0"
+                      value={personForm.guests}
+                      onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
+                      placeholder="Enter number of guests"
+                      className="w-20"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Additional Details Section */}
+              {/* Notes Section */}
               <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Additional Details</h3>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="person-notes">Notes</Label>
-                  <Input
+                  <Textarea
                     id="person-notes"
                     value={personForm.notes}
                     onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
                     placeholder="Enter notes"
+                    rows={6}
+                    className="resize-none"
                   />
                 </div>
               </div>
 
-              {/* Status Flags */}
-              <div className="flex items-center gap-6 pt-2 border-t border-slate-200">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="person-deposit-paid"
-                    checked={personForm.depositPaid}
-                    onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                  />
-                  <Label htmlFor="person-deposit-paid" className="cursor-pointer text-sm">
-                    Deposit Paid
-                  </Label>
-                </div>
-              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)}>
@@ -1046,7 +1240,7 @@ export function DistrictPanel({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
-                </div>
+            </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-name">Name *</Label>
@@ -1056,7 +1250,7 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                       placeholder="Enter name"
                     />
-                  </div>
+      </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-role">Role *</Label>
                     <Input
@@ -1065,10 +1259,10 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
                       placeholder="e.g., Campus Director, Staff"
                     />
-                  </div>
+    </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-3 gap-4 relative">
+                  <div className="space-y-2 relative">
                     <Label htmlFor="edit-person-status">Status</Label>
                     <Select
                       value={personForm.status}
@@ -1103,60 +1297,110 @@ export function DistrictPanel({
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-deposit-paid">Deposit Paid</Label>
+                    <div className="flex items-center justify-start pl-1">
+                      <Checkbox
+                        id="edit-person-deposit-paid"
+                        checked={personForm.depositPaid}
+                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                  </div>
                 </div>
-                {personForm.needType !== 'None' && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div></div>
-                    <div className="space-y-2">
-                      {personForm.needType === 'Financial' && (
-                        <>
-                          <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
-                          <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                            <Input
-                              id="edit-person-need-amount"
-                              type="number"
-                              value={personForm.needAmount}
-                              onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                              placeholder="0.00"
-                              className="pl-7"
-                            />
+                <AnimatePresence>
+                  {personForm.needType !== 'None' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      {personForm.needType === 'Financial' ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-person-need-details">Description</Label>
+                              <Input
+                                id="edit-person-need-details"
+                                value={personForm.needDetails}
+                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
+                                placeholder="Description"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
+                              <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                <Input
+                                  id="edit-person-need-amount"
+                                  type="number"
+                                  value={personForm.needAmount}
+                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                                  placeholder="0.00"
+                                  className="pl-7 w-28"
+                                />
+                              </div>
+                            </div>
                           </div>
-                        </>
-                      )}
-                      {(personForm.needType === 'Transportation' || personForm.needType === 'Housing' || personForm.needType === 'Other') && (
-                        <>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Checkbox
+                              id="edit-person-needs-met"
+                              checked={personForm.needsMet}
+                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                            />
+                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
+                              Need Met
+                            </Label>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
                           <Label htmlFor="edit-person-need-details">Description</Label>
                           <Input
                             id="edit-person-need-details"
                             value={personForm.needDetails}
                             onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`Enter ${personForm.needType.toLowerCase()} need details`}
+                            placeholder={`${personForm.needType} need details`}
                           />
-                        </>
+                          <div className="flex items-center gap-2 pt-2">
+                            <Checkbox
+                              id="edit-person-needs-met"
+                              checked={personForm.needsMet}
+                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                            />
+                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
+                              Need Met
+                            </Label>
+                          </div>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
-            {/* Attending Family Section */}
+            {/* Accompanying Non Staff Section */}
             <div className="space-y-4">
               <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Attending Family</h3>
+                <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-person-spouse">Spouse</Label>
                   <Input
                     id="edit-person-spouse"
                     value={personForm.spouse}
                     onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                    placeholder="Enter spouse's name"
+                    placeholder="Spouse's name"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-kids">Children</Label>
+                  <Label htmlFor="edit-person-kids" className="ml-1">Children</Label>
                   <Input
                     id="edit-person-kids"
                     type="number"
@@ -1170,89 +1414,157 @@ export function DistrictPanel({
                         childrenAges: Array(numChildren).fill('')
                       });
                     }}
-                    placeholder="Enter number of children"
+                    placeholder="Number of children"
+                    className="w-20"
                   />
-                  {personForm.kids && parseInt(personForm.kids) > 0 && (
-                    <div className="space-y-2 mt-2">
-                      {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                        <div key={index} className="space-y-1">
-                          <Label htmlFor={`edit-person-child-age-${index}`} className="text-xs text-slate-600">
-                            Child {index + 1} Age Range
-                          </Label>
-                          <Select
-                            value={personForm.childrenAges[index] || ''}
-                            onValueChange={(value) => {
-                              const newAges = [...personForm.childrenAges];
-                              newAges[index] = value;
-                              setPersonForm({ ...personForm, childrenAges: newAges });
-                            }}
+                  <AnimatePresence>
+                    {personForm.kids && parseInt(personForm.kids) > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2 mt-2 overflow-hidden"
+                      >
+                        {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2, delay: index * 0.05 }}
+                            className="space-y-1"
                           >
-                            <SelectTrigger id={`edit-person-child-age-${index}`}>
-                              <SelectValue placeholder="Select age range" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="0-2">0-2 years</SelectItem>
-                              <SelectItem value="3-5">3-5 years</SelectItem>
-                              <SelectItem value="6-12">6-12 years</SelectItem>
-                              <SelectItem value="13+">13+ years</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                            <Label htmlFor={`edit-person-child-age-${index}`} className="text-xs text-slate-600">
+                              Child {index + 1} Age Range
+                            </Label>
+                            <Select
+                              value={personForm.childrenAges[index] || ''}
+                              onValueChange={(value) => {
+                                const newAges = [...personForm.childrenAges];
+                                newAges[index] = value;
+                                setPersonForm({ ...personForm, childrenAges: newAges });
+                              }}
+                            >
+                              <SelectTrigger id={`edit-person-child-age-${index}`}>
+                                <SelectValue placeholder="Select age range" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="0-2">0-2 years</SelectItem>
+                                <SelectItem value="3-5">3-5 years</SelectItem>
+                                <SelectItem value="6-12">6-12 years</SelectItem>
+                                <SelectItem value="13+">13+ years</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </motion.div>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-person-guests">Guest</Label>
+                  <Input
+                    id="edit-person-guests"
+                    type="number"
+                    min="0"
+                    value={personForm.guests}
+                    onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
+                    placeholder="Enter number of guests"
+                    className="w-20"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Additional Details Section */}
+            {/* Notes Section */}
             <div className="space-y-4">
-              <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Additional Details</h3>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-person-notes">Notes</Label>
-                <Input
+                <Textarea
                   id="edit-person-notes"
                   value={personForm.notes}
                   onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
                   placeholder="Enter notes"
+                  rows={6}
+                  className="resize-none"
                 />
               </div>
             </div>
 
-            {/* Status Flags */}
-            <div className="flex items-center gap-6 pt-2 border-t border-slate-200">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-person-deposit-paid"
-                  checked={personForm.depositPaid}
-                  onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                />
-                <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer text-sm">
-                  Deposit Paid
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edit-person-needs-met"
-                  checked={personForm.needsMet}
-                  onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                />
-                <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
-                  Needs Met
-                </Label>
-              </div>
-            </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
+          <DialogFooter className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDeletePerson}
+                disabled={deletePerson.isPending}
+                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed -ml-2"
+                title="Delete person"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              {editingPerson && editingPerson.person.statusLastUpdated && (
+                <div className="text-xs text-slate-500">
+                  Last edited on{' '}
+                  {new Date(editingPerson.person.statusLastUpdated).toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+        {/* Delete Person Confirmation Dialog */}
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Person</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{editingPerson?.person.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex items-center space-x-2 py-4">
+              <Checkbox
+                id="dont-ask-again"
+                checked={dontAskAgain}
+                onCheckedChange={(checked) => setDontAskAgain(checked === true)}
+              />
+              <label
+                htmlFor="dont-ask-again"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Don't ask again
+              </label>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setIsDeleteConfirmOpen(false);
+                setDontAskAgain(false);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Add Campus Dialog */}
         <Dialog open={isCampusDialogOpen} onOpenChange={setIsCampusDialogOpen}>

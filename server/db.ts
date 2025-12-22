@@ -130,6 +130,9 @@ export async function getCampusesByDistrictId(districtId: string) {
   return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
 }
 
+// Alias for backward compatibility
+export const getCampusesByDistrict = getCampusesByDistrictId;
+
 export async function getCampusById(id: number) {
   const db = await getDb();
   if (!db) return null;
@@ -140,14 +143,34 @@ export async function getCampusById(id: number) {
 export async function createCampus(campus: InsertCampus) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(campuses).values(campus);
-  return result[0].insertId;
+  
+  // Insert campus with just name and districtId
+  // displayOrder is optional and will be null if column doesn't exist yet
+  const result = await db.insert(campuses).values({
+    name: campus.name,
+    districtId: campus.districtId,
+  });
+  
+  // Get the insertId from the result (MySQL with Drizzle returns it in result[0].insertId)
+  const insertId = result[0]?.insertId;
+  
+  if (!insertId) {
+    throw new Error(`Failed to get insert ID from database`);
+  }
+  
+  return insertId;
 }
 
 export async function updateCampus(id: number, data: Partial<InsertCampus>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(campuses).set(data).where(eq(campuses.id, id));
+}
+
+export async function updateCampusName(id: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses).set({ name }).where(eq(campuses.id, id));
 }
 
 // ============================================================================
@@ -190,6 +213,12 @@ export async function updatePerson(personId: string, data: Partial<InsertPerson>
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(people).set(data).where(eq(people.personId, personId));
+}
+
+export async function deletePerson(personId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(people).where(eq(people.personId, personId));
 }
 
 export async function updatePersonStatus(personId: string, status: "Yes" | "Maybe" | "No" | "Not Invited") {
