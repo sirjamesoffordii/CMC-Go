@@ -24,3 +24,7 @@
 
 ## UX Improvements
 - [x] Add exit/back button to admin panel to return to main app
+
+## Bug Fixes - Preview
+- [x] Fixed React hooks error in Admin page (moved useLocation to top)
+- [x] Preview is now working correctly

@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 
 export default function Admin() {
   const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
 
   const allUsers = trpc.admin.getAllUsers.useQuery();
 
@@ -60,8 +61,6 @@ export default function Admin() {
       color: "text-orange-600",
     },
   ];
-
-  const [, setLocation] = useLocation();
 
   return (
     <div className="container max-w-7xl py-8">
