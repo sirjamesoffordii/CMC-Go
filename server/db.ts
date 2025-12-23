@@ -60,6 +60,13 @@ export async function getDb() {
 }
 
 /**
+ * Get the MySQL connection pool directly (for raw queries)
+ */
+export function getPool(): mysql.Pool | null {
+  return _pool;
+}
+
+/**
  * Gracefully close database connections.
  * Should be called on application shutdown.
  */

@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { startupDbHealthCheck, checkDbHealth } from "./db-health";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -28,13 +29,46 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Perform startup database health check
+  // This will throw if critical schema issues are detected
+  try {
+    await startupDbHealthCheck();
+  } catch (error) {
+    console.error("[Startup] Database health check failed. Server will not start.");
+    console.error("[Startup] Fix the database schema issues and try again.");
+    process.exit(1);
+  }
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // Development-only debug endpoint for database health
+  if (process.env.NODE_ENV === "development") {
+    app.get("/api/debug/db-health", async (req, res) => {
+      try {
+        const health = await checkDbHealth();
+        res.json({
+          success: true,
+          timestamp: new Date().toISOString(),
+          ...health,
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+    console.log("[Debug] Database health endpoint available at /api/debug/db-health");
+  }
+  
   // tRPC API
   app.use(
     "/api/trpc",
