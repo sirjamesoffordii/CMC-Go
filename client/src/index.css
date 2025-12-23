@@ -175,3 +175,103 @@
     }
   }
 }
+
+/* Subtle paper texture for canvas background */
+.paper-texture {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-blend-mode: soft-light;
+}
+
+/* Tooltip entrance animation */
+@keyframes tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.tooltip-animate {
+  animation: tooltip-fade-in 0.15s ease-out forwards;
+}
+
+/* Scrolling text animation - left to right */
+@keyframes scroll-left-to-right {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Scrolling text animation - starts from countdown position */
+@keyframes scroll-from-countdown {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(100vw - 168px));
+    opacity: 0;
+  }
+}
+
+/* Scrolling text animation - starts from countdown, stops at search bar */
+@keyframes scroll-from-countdown-to-search {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(100vw - 116px - 144px)); /* Stop before search icon: 100vw - start position (116px = logo + margin) - right side space (144px = calendar + search + hamburger + margins) */
+    opacity: 1; /* Stay visible, don't fade out */
+  }
+}
+
+/* Fade in animation for "Go Together" text */
+@keyframes fade-in-text {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Rolling animation for CMC Go icon - overshoots and rolls back in one fluid motion */
+@keyframes roll-in {
+  0% {
+    transform: translateX(-150px) rotate(-360deg);
+    opacity: 0;
+  }
+  65% {
+    transform: translateX(0) rotate(12deg); /* Approach stopping point */
+    opacity: 1;
+  }
+  75% {
+    transform: translateX(4px) rotate(14deg); /* Gentle overshoot */
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(2px) rotate(13deg); /* Begin settling */
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) rotate(12deg); /* Smoothly settle into place */
+    opacity: 1;
+  }
+}

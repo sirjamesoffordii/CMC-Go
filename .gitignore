@@ -102,6 +102,7 @@ tmp/
 temp/
 
 # Database
-*.db
-*.sqlite
-*.sqlite3
+# Allow data/cmc_go.db for deployment
+# *.db
+# *.sqlite
+# *.sqlite3
