@@ -22,8 +22,13 @@ import {
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
-let _connection: mysql.Connection | null = null;
+let _pool: mysql.Pool | null = null;
 
+/**
+ * Get database connection using MySQL/TiDB connection pool.
+ * Connection pooling is the standard practice for MySQL/TiDB to handle
+ * concurrent requests efficiently and manage connections properly.
+ */
 export async function getDb() {
   if (!_db) {
     try {
@@ -32,16 +37,39 @@ export async function getDb() {
         throw new Error("DATABASE_URL environment variable is required");
       }
       
-      _connection = await mysql.createConnection(connectionString);
-      _db = drizzle(_connection);
+      // Create connection pool for MySQL/TiDB
+      // Pool configuration optimizes for production workloads
+      _pool = mysql.createPool({
+        uri: connectionString,
+        connectionLimit: 10, // Maximum number of connections in the pool
+        queueLimit: 0, // Unlimited queue for waiting connections
+        enableKeepAlive: true, // Keep connections alive
+        keepAliveInitialDelay: 0, // Start keep-alive immediately
+      });
       
-      console.log("[Database] Connected to MySQL/TiDB");
+      _db = drizzle(_pool);
+      
+      console.log("[Database] Connected to MySQL/TiDB with connection pool");
     } catch (error) {
       console.error("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
+}
+
+/**
+ * Gracefully close database connections.
+ * Should be called on application shutdown.
+ */
+export async function closeDb() {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _db = null;
+    console.log("[Database] Connection pool closed");
+  }
 }
 
 // ============================================================================
@@ -205,8 +233,64 @@ export async function getPeopleByCampusId(campusId: number) {
 export async function createPerson(person: InsertPerson) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(people).values(person);
-  return result[0].insertId;
+  
+  try {
+    // Build values object explicitly - only include fields that are provided
+    // This prevents Drizzle from trying to insert undefined values
+    const values: any = {
+      personId: person.personId,
+      name: person.name,
+      status: person.status || 'Not Invited',
+      depositPaid: person.depositPaid ?? false,
+    };
+    
+    // Only add optional fields if they are explicitly provided (not undefined)
+    if (person.primaryDistrictId !== undefined) {
+      values.primaryDistrictId = person.primaryDistrictId;
+    }
+    if (person.primaryRegion !== undefined && person.primaryRegion !== null) {
+      values.primaryRegion = person.primaryRegion;
+    }
+    if (person.primaryRole !== undefined && person.primaryRole !== null) {
+      values.primaryRole = person.primaryRole;
+    }
+    if (person.primaryCampusId !== undefined && person.primaryCampusId !== null) {
+      values.primaryCampusId = person.primaryCampusId;
+    }
+    if (person.nationalCategory !== undefined && person.nationalCategory !== null) {
+      values.nationalCategory = person.nationalCategory;
+    }
+    if (person.notes !== undefined) {
+      values.notes = person.notes;
+    }
+    if (person.spouse !== undefined) {
+      values.spouse = person.spouse;
+    }
+    if (person.kids !== undefined) {
+      values.kids = person.kids;
+    }
+    if (person.guests !== undefined) {
+      values.guests = person.guests;
+    }
+    if (person.childrenAges !== undefined) {
+      values.childrenAges = person.childrenAges;
+    }
+    if (person.lastEdited !== undefined) {
+      values.lastEdited = person.lastEdited;
+    }
+    if (person.lastEditedBy !== undefined) {
+      values.lastEditedBy = person.lastEditedBy;
+    }
+    
+    console.log('[db.createPerson] Inserting person:', JSON.stringify(values, null, 2));
+    const result = await db.insert(people).values(values);
+    console.log('[db.createPerson] Insert successful, result:', result);
+    return result[0].insertId;
+  } catch (error) {
+    console.error('[db.createPerson] Database error:', error);
+    console.error('[db.createPerson] Error details:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
 }
 
 export async function updatePerson(personId: string, data: Partial<InsertPerson>) {
@@ -228,6 +312,12 @@ export async function updatePersonStatus(personId: string, status: "Yes" | "Mayb
     status,
     statusLastUpdated: new Date()
   }).where(eq(people.personId, personId));
+}
+
+export async function updatePersonName(personId: string, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people).set({ name }).where(eq(people.personId, personId));
 }
 
 // ============================================================================
@@ -273,8 +363,7 @@ export async function createNeed(need: InsertNeed) {
 export async function getAllActiveNeeds() {
   const db = await getDb();
   if (!db) return [];
-  // Return all needs - in the old SQLite schema there was an isActive field,
-  // but in the new MySQL schema we removed it, so return all needs
+  // Return all needs (isActive field was removed from schema)
   return await db.select().from(needs);
 }
 

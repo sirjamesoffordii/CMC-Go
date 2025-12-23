@@ -108,8 +108,22 @@ export function DistrictPanel({
   });
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {
+      // Invalidate all people queries to ensure UI updates
       utils.people.list.invalidate();
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
+      }
+      // Also invalidate campuses to refresh people counts
+      utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
+      // Reset form and close dialog only after successful creation
+      setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+      setIsPersonDialogOpen(false);
+      setSelectedCampusId(null);
+    },
+    onError: (error) => {
+      console.error('Error creating person:', error);
+      alert(`Error creating person: ${error.message || 'Unknown error'}`);
     },
   });
   const deletePerson = trpc.people.delete.useMutation({
@@ -288,43 +302,87 @@ export function DistrictPanel({
 
   // Handle add person
   const handleAddPerson = () => {
-    if (!selectedCampusId || !personForm.name || !personForm.role) return;
+    console.log('handleAddPerson called', { selectedCampusId, name: personForm.name, role: personForm.role, district: district?.id });
     
-    if (selectedCampusId === 'district') {
-      // Add district director
-      const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      createPerson.mutate({
-        personId,
-        name: personForm.name,
-        primaryDistrictId: district.id,
-        primaryRole: 'District Director',
-        primaryCampusId: null,
-        status: statusMap[personForm.status],
-        depositPaid: personForm.depositPaid,
-        notes: personForm.notes || undefined,
-      });
-    } else if (selectedCampusId === 'unassigned') {
-      // Add to unassigned - create person without campus
-      const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      createPerson.mutate({
-        personId,
-        name: personForm.name,
-        primaryDistrictId: district.id,
-        primaryRole: personForm.role,
-        status: statusMap[personForm.status],
-        depositPaid: personForm.depositPaid,
-        notes: personForm.notes || undefined,
-      });
-    } else if (typeof selectedCampusId === 'number') {
-      // Add to specific campus - use existing onPersonAdd for compatibility
-      onPersonAdd(selectedCampusId, personForm.name);
-      // Note: Role and status will need to be updated separately after person is created
-      // This is a limitation of the current API - would need to enhance onPersonAdd callback
+    if (!selectedCampusId) {
+      console.error('No campus selected');
+      alert('Please select a campus or location first');
+      return;
     }
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
-    setIsPersonDialogOpen(false);
-    setSelectedCampusId(null);
+    if (!personForm.name?.trim()) {
+      console.error('Name is required');
+      alert('Name is required');
+      return;
+    }
+    
+    if (!personForm.role?.trim()) {
+      console.error('Role is required');
+      alert('Role is required');
+      return;
+    }
+    
+    if (!district?.id) {
+      console.error('District ID is missing');
+      alert('District information is missing');
+      return;
+    }
+    
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build mutation data - use 'any' type to allow conditional fields
+    const mutationData: any = {
+      personId,
+      name: personForm.name.trim(),
+      primaryDistrictId: district.id,
+      status: statusMap[personForm.status],
+    };
+    
+    // Set depositPaid - ensure it's a boolean
+    mutationData.depositPaid = personForm.depositPaid ?? false;
+    
+    // Set role and campus based on selection
+    if (selectedCampusId === 'district') {
+      // Add district director
+      mutationData.primaryRole = 'District Director';
+      // Don't set primaryCampusId for district director (will be null in DB)
+    } else if (selectedCampusId === 'unassigned') {
+      // Add to unassigned - create person without campus
+      mutationData.primaryRole = personForm.role.trim();
+      // Don't set primaryCampusId for unassigned (will be null in DB)
+    } else if (typeof selectedCampusId === 'number') {
+      // Add to specific campus
+      const campus = campusesWithPeople.find(c => c.id === selectedCampusId);
+      if (!campus) {
+        console.error('Campus not found:', selectedCampusId);
+        alert('Campus not found');
+        return;
+      }
+      mutationData.primaryRole = personForm.role.trim();
+      mutationData.primaryCampusId = selectedCampusId;
+    }
+    
+    // Add optional fields only if they have values
+    if (personForm.notes?.trim()) {
+      mutationData.notes = personForm.notes.trim();
+    }
+    if (personForm.spouse?.trim()) {
+      mutationData.spouse = personForm.spouse.trim();
+    }
+    if (personForm.kids?.trim()) {
+      mutationData.kids = personForm.kids.trim();
+    }
+    if (personForm.guests?.trim()) {
+      mutationData.guests = personForm.guests.trim();
+    }
+    if (personForm.childrenAges.length > 0) {
+      mutationData.childrenAges = JSON.stringify(personForm.childrenAges);
+    }
+    
+    console.log('Creating person with data:', JSON.stringify(mutationData, null, 2));
+    
+    // Call the mutation
+    createPerson.mutate(mutationData);
   };
 
   // Handle add campus
@@ -341,6 +399,18 @@ export function DistrictPanel({
     setEditingPerson({ campusId, person });
     const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
     const personNeed = allNeeds.find(n => n.personId === person.personId);
+    
+    // Parse childrenAges from JSON string if it exists
+    let childrenAges: string[] = [];
+    if (person.childrenAges) {
+      try {
+        childrenAges = JSON.parse(person.childrenAges);
+      } catch (e) {
+        // If parsing fails, treat as empty array
+        childrenAges = [];
+      }
+    }
+    
     setPersonForm({ 
       name: person.name, 
       role: person.primaryRole || 'Staff', 
@@ -349,11 +419,11 @@ export function DistrictPanel({
       needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
       needDetails: personNeed?.type !== 'Financial' ? (personNeed?.notes || '') : '',
       notes: person.notes || '', 
-      spouse: '', // Would need to parse from notes
-      kids: '', // Would need to parse from notes
-      guests: '', // Would need to parse from notes
-      childrenAges: [], // Would need to parse from notes
-      depositPaid: false,
+      spouse: person.spouse || '',
+      kids: person.kids || '',
+      guests: person.guests || '',
+      childrenAges: childrenAges,
+      depositPaid: person.depositPaid || false,
       needsMet: personNeed ? !personNeed.isActive : false
     });
     setIsEditPersonDialogOpen(true);
@@ -371,6 +441,10 @@ export function DistrictPanel({
       status: statusMap[personForm.status],
       depositPaid: personForm.depositPaid,
       notes: personForm.notes,
+      spouse: personForm.spouse || undefined,
+      kids: personForm.kids || undefined,
+      guests: personForm.guests || undefined,
+      childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
     });
     
     setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
@@ -522,7 +596,7 @@ export function DistrictPanel({
       }
     }
     
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
     setIsPersonDialogOpen(true);
   };
 
@@ -950,7 +1024,14 @@ export function DistrictPanel({
             </div>
             
         {/* Add Person Dialog */}
-        <Dialog open={isPersonDialogOpen} onOpenChange={setIsPersonDialogOpen}>
+        <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
+          setIsPersonDialogOpen(open);
+          if (!open) {
+            // Reset form when dialog is closed
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+            setSelectedCampusId(null);
+          }
+        }}>
           <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Person</DialogTitle>
@@ -961,7 +1042,7 @@ export function DistrictPanel({
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="person-name">Name *</Label>
                     <Input
@@ -970,7 +1051,7 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                       placeholder="Enter name"
                     />
-              </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="person-role">Role *</Label>
                     <Input
@@ -981,9 +1062,7 @@ export function DistrictPanel({
                       disabled={selectedCampusId === 'district'}
                       className={selectedCampusId === 'district' ? 'bg-slate-100 cursor-not-allowed' : ''}
                     />
-                </div>
-              </div>
-                <div className="grid grid-cols-3 gap-4 relative">
+                  </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="person-status">Status</Label>
                     <Select
@@ -1000,114 +1079,12 @@ export function DistrictPanel({
                         <SelectItem value="not-invited">Not Invited Yet</SelectItem>
                       </SelectContent>
                     </Select>
-          </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="person-need">Need Request</Label>
-                    <Select
-                      value={personForm.needType}
-                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
-                    >
-                      <SelectTrigger id="person-need">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="None">None</SelectItem>
-                        <SelectItem value="Financial">Financial</SelectItem>
-                        <SelectItem value="Transportation">Transportation</SelectItem>
-                        <SelectItem value="Housing">Housing</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-        </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="person-deposit-paid">Deposit Paid</Label>
-                    <div className="flex items-center justify-start pl-1">
-                      <Checkbox
-                        id="person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
                   </div>
                 </div>
-                <AnimatePresence>
-                  {personForm.needType !== 'None' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      {personForm.needType === 'Financial' ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="person-need-details">Description</Label>
-                              <Input
-                                id="person-need-details"
-                                value={personForm.needDetails}
-                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                                placeholder="Description"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="person-need-amount">Amount ($)</Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                <Input
-                                  id="person-need-amount"
-                                  type="number"
-                                  value={personForm.needAmount}
-                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="person-need-details">Description</Label>
-                          <Input
-                            id="person-need-details"
-                            value={personForm.needDetails}
-                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`${personForm.needType} need details`}
-                          />
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-      </div>
+              </div>
 
               {/* Accompanying Non Staff Section */}
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
                 </div>
@@ -1121,7 +1098,7 @@ export function DistrictPanel({
                       placeholder="Spouse's name"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 ml-4">
                     <Label htmlFor="person-kids" className="ml-1">Children</Label>
                     <Input
                       id="person-kids"
@@ -1136,8 +1113,8 @@ export function DistrictPanel({
                           childrenAges: Array(numChildren).fill('')
                         });
                       }}
-                      placeholder="Number of children"
-                      className="w-20"
+                      placeholder="Number"
+                      className="w-24"
                     />
                     <AnimatePresence>
                       {personForm.kids && parseInt(personForm.kids) > 0 && (
@@ -1183,7 +1160,7 @@ export function DistrictPanel({
                       )}
                     </AnimatePresence>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 ml-4">
                     <Label htmlFor="person-guests">Guest</Label>
                     <Input
                       id="person-guests"
@@ -1191,28 +1168,164 @@ export function DistrictPanel({
                       min="0"
                       value={personForm.guests}
                       onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                      placeholder="Enter number of guests"
-                      className="w-20"
+                      placeholder="Number"
+                      className="w-24"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Notes Section */}
-              <div className="space-y-4">
+              {/* Needs Section */}
+              <div className="space-y-4 mt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="person-need">Need Request</Label>
+                    <Select
+                      value={personForm.needType}
+                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    >
+                      <SelectTrigger id="person-need">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Financial">Financial</SelectItem>
+                        <SelectItem value="Transportation">Transportation</SelectItem>
+                        <SelectItem value="Housing">Housing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType === 'Financial' && (
+                      <motion.div
+                        key="amount"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-2"
+                        layout
+                      >
+                        <Label htmlFor="person-need-amount">Amount ($)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                          <Input
+                            id="person-need-amount"
+                            type="number"
+                            value={personForm.needAmount}
+                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                            placeholder="0.00"
+                            className="pl-7 w-28"
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div className="space-y-2">
+                    <AnimatePresence mode="popLayout">
+                      {personForm.needType !== 'None' ? (
+                        <motion.div
+                          key="need-met"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="flex items-center gap-2"
+                          layout
+                        >
+                          <Label htmlFor="person-needs-met" className="cursor-pointer">Need Met</Label>
+                          <Checkbox
+                            id="person-needs-met"
+                            checked={personForm.needsMet}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="deposit-paid"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="flex items-center gap-2"
+                          layout
+                        >
+                          <Label htmlFor="person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
+                          <Checkbox
+                            id="person-deposit-paid"
+                            checked={personForm.depositPaid}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Section - Always visible */}
+              <div className="space-y-4 mt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700 flex items-center overflow-hidden">
+                    <AnimatePresence mode="popLayout">
+                      {personForm.needType !== 'None' && (
+                        <motion.span
+                          key="needs"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="inline-block whitespace-nowrap"
+                          layout
+                        >
+                          Needs &{' '}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    <motion.span
+                      layout
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="inline-block"
+                    >
+                      Notes
+                    </motion.span>
+                  </h3>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-notes">Notes</Label>
                   <Textarea
-                    id="person-notes"
-                    value={personForm.notes}
-                    onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
-                    placeholder="Enter notes"
-                    rows={6}
+                    id="person-explanation-notes"
+                    value={`${personForm.needDetails || ''}${personForm.needDetails && personForm.notes ? '\n\n' : ''}${personForm.notes || ''}`}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Split by double newline if present, otherwise use first part for needDetails
+                      const parts = value.split('\n\n');
+                      if (parts.length > 1) {
+                        setPersonForm({ 
+                          ...personForm, 
+                          needDetails: parts[0],
+                          notes: parts.slice(1).join('\n\n')
+                        });
+                      } else {
+                        // If no double newline, put everything in needDetails if need type is set, otherwise in notes
+                        if (personForm.needType !== 'None') {
+                          setPersonForm({ ...personForm, needDetails: value });
+                        } else {
+                          setPersonForm({ ...personForm, notes: value });
+                        }
+                      }
+                    }}
+                    placeholder={personForm.needType !== 'None' ? "Enter explanation of need and any additional notes" : "Enter notes"}
+                    rows={4}
                     className="resize-none"
                   />
                 </div>
               </div>
-
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)}>
@@ -1220,10 +1333,21 @@ export function DistrictPanel({
               </Button>
               <Button 
                 type="button" 
-                onClick={handleAddPerson}
-                disabled={!personForm.name.trim() || !personForm.role.trim()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Add Person button clicked', { 
+                    name: personForm.name, 
+                    role: personForm.role, 
+                    selectedCampusId,
+                    isPending: createPerson.isPending 
+                  });
+                  handleAddPerson();
+                }}
+                disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
+                className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Person
+                {createPerson.isPending ? 'Adding...' : 'Add Person'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1240,8 +1364,8 @@ export function DistrictPanel({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
-            </div>
-                <div className="grid grid-cols-2 gap-4">
+                </div>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-name">Name *</Label>
                     <Input
@@ -1250,7 +1374,7 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
                       placeholder="Enter name"
                     />
-      </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-role">Role *</Label>
                     <Input
@@ -1259,9 +1383,7 @@ export function DistrictPanel({
                       onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
                       placeholder="e.g., Campus Director, Staff"
                     />
-    </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 relative">
+                  </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="edit-person-status">Status</Label>
                     <Select
@@ -1279,113 +1401,11 @@ export function DistrictPanel({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-need">Need Request</Label>
-                    <Select
-                      value={personForm.needType}
-                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
-                    >
-                      <SelectTrigger id="edit-person-need">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="None">None</SelectItem>
-                        <SelectItem value="Financial">Financial</SelectItem>
-                        <SelectItem value="Transportation">Transportation</SelectItem>
-                        <SelectItem value="Housing">Housing</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-deposit-paid">Deposit Paid</Label>
-                    <div className="flex items-center justify-start pl-1">
-                      <Checkbox
-                        id="edit-person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
-                  </div>
                 </div>
-                <AnimatePresence>
-                  {personForm.needType !== 'None' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      {personForm.needType === 'Financial' ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-person-need-details">Description</Label>
-                              <Input
-                                id="edit-person-need-details"
-                                value={personForm.needDetails}
-                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                                placeholder="Description"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                <Input
-                                  id="edit-person-need-amount"
-                                  type="number"
-                                  value={personForm.needAmount}
-                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="edit-person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-person-need-details">Description</Label>
-                          <Input
-                            id="edit-person-need-details"
-                            value={personForm.needDetails}
-                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`${personForm.needType} need details`}
-                          />
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="edit-person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
 
             {/* Accompanying Non Staff Section */}
-            <div className="space-y-4">
+            <div className="space-y-4 mt-4">
               <div className="border-b border-slate-200 pb-2">
                 <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
               </div>
@@ -1399,7 +1419,7 @@ export function DistrictPanel({
                     placeholder="Spouse's name"
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 ml-4">
                   <Label htmlFor="edit-person-kids" className="ml-1">Children</Label>
                   <Input
                     id="edit-person-kids"
@@ -1414,8 +1434,8 @@ export function DistrictPanel({
                         childrenAges: Array(numChildren).fill('')
                       });
                     }}
-                    placeholder="Number of children"
-                    className="w-20"
+                    placeholder="Number"
+                    className="w-24"
                   />
                   <AnimatePresence>
                     {personForm.kids && parseInt(personForm.kids) > 0 && (
@@ -1461,7 +1481,7 @@ export function DistrictPanel({
                     )}
                   </AnimatePresence>
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 ml-4">
                   <Label htmlFor="edit-person-guests">Guest</Label>
                   <Input
                     id="edit-person-guests"
@@ -1469,27 +1489,165 @@ export function DistrictPanel({
                     min="0"
                     value={personForm.guests}
                     onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                    placeholder="Enter number of guests"
-                    className="w-20"
+                    placeholder="Number"
+                    className="w-24"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Notes Section */}
-            <div className="space-y-4">
+            {/* Needs Section */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-person-need">Need Request</Label>
+                  <Select
+                    value={personForm.needType}
+                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                  >
+                    <SelectTrigger id="edit-person-need">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="None">None</SelectItem>
+                      <SelectItem value="Financial">Financial</SelectItem>
+                      <SelectItem value="Transportation">Transportation</SelectItem>
+                      <SelectItem value="Housing">Housing</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <AnimatePresence mode="popLayout">
+                  {personForm.needType === 'Financial' && (
+                    <motion.div
+                      key="amount"
+                      initial={{ opacity: 0, x: -30, width: 0 }}
+                      animate={{ opacity: 1, x: 0, width: 'auto' }}
+                      exit={{ opacity: 0, x: -30, width: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-2"
+                      layout
+                    >
+                      <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                        <Input
+                          id="edit-person-need-amount"
+                          type="number"
+                          value={personForm.needAmount}
+                          onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                          placeholder="0.00"
+                          className="pl-7 w-28"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <div className="space-y-2">
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType !== 'None' ? (
+                      <motion.div
+                        key="need-met"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex items-center gap-2"
+                        layout
+                      >
+                        <Label htmlFor="edit-person-needs-met" className="cursor-pointer">Need Met</Label>
+                        <Checkbox
+                          id="edit-person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="deposit-paid"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex items-center gap-2"
+                        layout
+                      >
+                        <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
+                        <Checkbox
+                          id="edit-person-deposit-paid"
+                          checked={personForm.depositPaid}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Section - Always visible */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center overflow-hidden">
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType !== 'None' && (
+                      <motion.span
+                        key="needs"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="inline-block whitespace-nowrap"
+                        layout
+                      >
+                        Needs &{' '}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <motion.span
+                    layout
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="inline-block"
+                  >
+                    Notes
+                  </motion.span>
+                </h3>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-person-notes">Notes</Label>
                 <Textarea
-                  id="edit-person-notes"
-                  value={personForm.notes}
-                  onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
-                  placeholder="Enter notes"
-                  rows={6}
+                  id="edit-person-explanation-notes"
+                  value={`${personForm.needDetails || ''}${personForm.needDetails && personForm.notes ? '\n\n' : ''}${personForm.notes || ''}`}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Split by double newline if present, otherwise use first part for needDetails
+                    const parts = value.split('\n\n');
+                    if (parts.length > 1) {
+                      setPersonForm({ 
+                        ...personForm, 
+                        needDetails: parts[0],
+                        notes: parts.slice(1).join('\n\n')
+                      });
+                    } else {
+                      // If no double newline, put everything in needDetails if need type is set, otherwise in notes
+                      if (personForm.needType !== 'None') {
+                        setPersonForm({ ...personForm, needDetails: value });
+                      } else {
+                        setPersonForm({ ...personForm, notes: value });
+                      }
+                    }
+                  }}
+                  placeholder={personForm.needType !== 'None' ? "Enter explanation of need and any additional notes" : "Enter notes"}
+                  rows={4}
                   className="resize-none"
                 />
               </div>
             </div>
+
 
           </div>
           <DialogFooter className="flex items-center justify-between">

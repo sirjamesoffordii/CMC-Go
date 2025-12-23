@@ -89,14 +89,79 @@ export const appRouter = router({
       .input(z.object({
         personId: z.string(),
         name: z.string(),
-        primaryCampusId: z.number().optional(),
+        primaryCampusId: z.number().nullable().optional(),
         primaryDistrictId: z.string().optional(),
+        primaryRegion: z.string().optional(),
         primaryRole: z.string().optional(),
+        nationalCategory: z.string().optional(),
         status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited"),
+        depositPaid: z.boolean().optional(),
+        notes: z.string().optional(),
+        spouse: z.string().optional(),
+        kids: z.string().optional(),
+        guests: z.string().optional(),
+        childrenAges: z.string().optional(), // JSON string array
       }))
-      .mutation(async ({ input }) => {
-        await db.createPerson(input);
-        return { success: true };
+      .mutation(async ({ input, ctx }) => {
+        try {
+          console.log('[people.create] Received input:', JSON.stringify(input, null, 2));
+          
+          // Build createData object, only including fields that have values
+          const createData: any = {
+            personId: input.personId,
+            name: input.name,
+            status: input.status || 'Not Invited',
+            depositPaid: input.depositPaid ?? false,
+          };
+          
+          // Only add optional fields if they have values
+          if (input.primaryDistrictId) {
+            createData.primaryDistrictId = input.primaryDistrictId;
+          }
+          if (input.primaryRegion) {
+            createData.primaryRegion = input.primaryRegion;
+          }
+          if (input.primaryRole) {
+            createData.primaryRole = input.primaryRole;
+          }
+          if (input.primaryCampusId !== undefined && input.primaryCampusId !== null) {
+            createData.primaryCampusId = input.primaryCampusId;
+          }
+          if (input.nationalCategory) {
+            createData.nationalCategory = input.nationalCategory;
+          }
+          if (input.notes) {
+            createData.notes = input.notes;
+          }
+          if (input.spouse) {
+            createData.spouse = input.spouse;
+          }
+          if (input.kids) {
+            createData.kids = input.kids;
+          }
+          if (input.guests) {
+            createData.guests = input.guests;
+          }
+          if (input.childrenAges) {
+            createData.childrenAges = input.childrenAges;
+          }
+          
+          // Add last edited tracking
+          createData.lastEdited = new Date();
+          if (ctx.user?.name || ctx.user?.email) {
+            createData.lastEditedBy = ctx.user.name || ctx.user.email || 'Unknown';
+          }
+          
+          console.log('[people.create] Creating person with data:', JSON.stringify(createData, null, 2));
+          
+          const result = await db.createPerson(createData);
+          console.log('[people.create] Person created successfully, insertId:', result);
+          
+          return { success: true, insertId: result };
+        } catch (error) {
+          console.error('[people.create] Error creating person:', error);
+          throw new Error(`Failed to create person: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
       }),
     updateStatus: publicProcedure
       .input(z.object({
@@ -116,6 +181,38 @@ export const appRouter = router({
       .input(z.object({ personId: z.string(), name: z.string() }))
       .mutation(async ({ input }) => {
         await db.updatePersonName(input.personId, input.name);
+        return { success: true };
+      }),
+    update: publicProcedure
+      .input(z.object({
+        personId: z.string(),
+        name: z.string().optional(),
+        primaryRole: z.string().optional(),
+        primaryCampusId: z.number().nullable().optional(),
+        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
+        depositPaid: z.boolean().optional(),
+        notes: z.string().optional(),
+        spouse: z.string().optional(),
+        kids: z.string().optional(),
+        guests: z.string().optional(),
+        childrenAges: z.string().optional(), // JSON string array
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { personId, ...data } = input;
+        const updateData: any = { ...data };
+        
+        // Convert null to undefined for optional fields (Drizzle handles undefined better)
+        if (updateData.primaryCampusId === null) {
+          updateData.primaryCampusId = undefined;
+        }
+        
+        // Add last edited tracking
+        updateData.lastEdited = new Date();
+        if (ctx.user?.name || ctx.user?.email) {
+          updateData.lastEditedBy = ctx.user.name || ctx.user.email || 'Unknown';
+        }
+        
+        await db.updatePerson(personId, updateData);
         return { success: true };
       }),
     delete: publicProcedure

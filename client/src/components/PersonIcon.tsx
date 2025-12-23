@@ -92,7 +92,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           {/* Gray spouse icon behind - shown when person has spouse */}
           {person.spouse && (
             <User
-              className="w-10 h-10 text-slate-300 absolute top-0 left-3 pointer-events-none"
+              className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
               strokeWidth={1.5}
               fill="currentColor"
             />

@@ -68,6 +68,13 @@ export const people = mysqlTable("people", {
   // Additional fields
   needs: text("needs"),
   notes: text("notes"),
+  spouse: varchar("spouse", { length: 255 }),
+  kids: varchar("kids", { length: 10 }), // Store as string to allow empty or number
+  guests: varchar("guests", { length: 10 }), // Store as string to allow empty or number
+  childrenAges: text("childrenAges"), // JSON array stored as text
+  // Last edited tracking
+  lastEdited: timestamp("lastEdited"),
+  lastEditedBy: varchar("lastEditedBy", { length: 255 }),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
