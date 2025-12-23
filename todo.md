@@ -13,3 +13,6 @@
 - [ ] Run TypeScript check
 - [ ] Test application functionality
 - [ ] Create checkpoint
+
+## Bug Fixes
+- [x] Fix admin console routing - page not found error
