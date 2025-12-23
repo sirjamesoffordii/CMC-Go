@@ -17,3 +17,7 @@
 ## Bug Fixes
 - [x] Debug admin console 404 - route added but still not working
 - [x] Fixed navigation button to point to /admin instead of /console
+
+## Access Control Changes
+- [x] Remove admin role restriction from Admin page
+- [x] Make admin console accessible to all users

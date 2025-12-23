@@ -9,9 +9,7 @@ import { toast } from "sonner";
 export default function Admin() {
   const { user, loading } = useAuth();
 
-  const allUsers = trpc.admin.getAllUsers.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
+  const allUsers = trpc.admin.getAllUsers.useQuery();
 
   if (loading) {
     return (
@@ -29,21 +27,7 @@ export default function Admin() {
     );
   }
 
-  if (user.role !== "admin") {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Shield className="h-16 w-16 text-muted-foreground" />
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight">Access Denied</h2>
-            <p className="text-muted-foreground mt-2">
-              You need administrator privileges to access this page
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Temporarily allow all users to access admin console
 
   const adminStats = [
     {
