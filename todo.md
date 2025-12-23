@@ -21,3 +21,6 @@
 ## Access Control Changes
 - [x] Remove admin role restriction from Admin page
 - [x] Make admin console accessible to all users
+
+## UX Improvements
+- [x] Add exit/back button to admin panel to return to main app

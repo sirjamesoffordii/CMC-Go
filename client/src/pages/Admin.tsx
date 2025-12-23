@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Shield, Users, Database, Settings, Loader2 } from "lucide-react";
+import { Shield, Users, Database, Settings, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 export default function Admin() {
   const { user, loading } = useAuth();
@@ -60,11 +61,22 @@ export default function Admin() {
     },
   ];
 
+  const [, setLocation] = useLocation();
+
   return (
     <div className="container max-w-7xl py-8">
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Button>
             <h1 className="text-3xl font-semibold tracking-tight">Admin Panel</h1>
             <Badge variant="default" className="h-6">
               Administrator
