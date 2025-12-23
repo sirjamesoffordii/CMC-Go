@@ -15,4 +15,5 @@
 - [ ] Create checkpoint
 
 ## Bug Fixes
-- [x] Fix admin console routing - page not found error
+- [x] Debug admin console 404 - route added but still not working
+- [x] Fixed navigation button to point to /admin instead of /console
