@@ -11,13 +11,15 @@ import {
   notes,
   settings,
   assignments,
+  households,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
   InsertNeed,
   InsertNote,
   InsertSetting,
-  InsertAssignment
+  InsertAssignment,
+  InsertHousehold
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -281,6 +283,21 @@ export async function createPerson(person: InsertPerson) {
     }
     if (person.childrenAges !== undefined) {
       values.childrenAges = person.childrenAges;
+    }
+    if (person.householdId !== undefined && person.householdId !== null) {
+      values.householdId = person.householdId;
+    }
+    if (person.householdRole !== undefined) {
+      values.householdRole = person.householdRole;
+    }
+    if (person.spouseAttending !== undefined) {
+      values.spouseAttending = person.spouseAttending;
+    }
+    if (person.childrenCount !== undefined) {
+      values.childrenCount = person.childrenCount;
+    }
+    if (person.guestsCount !== undefined) {
+      values.guestsCount = person.guestsCount;
     }
     if (person.lastEdited !== undefined) {
       values.lastEdited = person.lastEdited;
@@ -572,4 +589,114 @@ export async function getNationalStaff() {
       sql`${people.primaryRegion} IS NULL`
     )
   );
+}
+
+// ============================================================================
+// HOUSEHOLDS
+// ============================================================================
+
+export async function getAllHouseholds() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(households);
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching households (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function getHouseholdById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.select().from(households).where(eq(households.id, id)).limit(1);
+    return result[0] || null;
+  } catch (error) {
+    // If households table doesn't exist yet, return null
+    console.error('Error fetching household by id (table may not exist yet):', error);
+    return null;
+  }
+}
+
+export async function getHouseholdMembers(householdId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(people).where(eq(people.householdId, householdId));
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching household members (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function searchHouseholds(query: string) {
+  const db = await getDb();
+  if (!db) return [];
+  // Search by label or by member names
+  const allHouseholds = await db.select().from(households);
+  const matchingHouseholds = [];
+  
+  for (const household of allHouseholds) {
+    // Check label match
+    if (household.label && household.label.toLowerCase().includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+      continue;
+    }
+    
+    // Check member names
+    const members = await getHouseholdMembers(household.id);
+    const memberNames = members.map(m => m.name.toLowerCase()).join(' ');
+    if (memberNames.includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+    }
+  }
+  
+  return matchingHouseholds;
+}
+
+export async function createHousehold(data: InsertHousehold) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const cleanData: any = {
+    childrenCount: data.childrenCount ?? 0,
+    guestsCount: data.guestsCount ?? 0,
+  };
+  
+  // Ensure label is not empty - fallback to "Household" if needed
+  if (data.label !== undefined && data.label !== null && data.label.trim()) {
+    cleanData.label = data.label.trim();
+  } else {
+    // Fallback to "Household" if label is empty or not provided
+    cleanData.label = "Household";
+  }
+  
+  const result = await db.insert(households).values(cleanData);
+  return (result[0] as any).insertId;
+}
+
+export async function updateHousehold(id: number, data: Partial<InsertHousehold>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: any = {};
+  if (data.label !== undefined) updateData.label = data.label;
+  if (data.childrenCount !== undefined) updateData.childrenCount = data.childrenCount;
+  if (data.guestsCount !== undefined) updateData.guestsCount = data.guestsCount;
+  
+  await db.update(households).set(updateData).where(eq(households.id, id));
+}
+
+export async function deleteHousehold(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // First, unlink all people from this household
+  await db.update(people).set({ householdId: null, householdRole: 'primary' }).where(eq(people.householdId, id));
+  
+  // Then delete the household
+  await db.delete(households).where(eq(households.id, id));
 }

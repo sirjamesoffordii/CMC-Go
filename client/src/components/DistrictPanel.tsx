@@ -13,7 +13,7 @@ import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "framer-motion";
@@ -33,6 +33,7 @@ import { PersonDropZone } from "./PersonDropZone";
 import { DraggableCampusRow } from "./DraggableCampusRow";
 import { CampusOrderDropZone } from "./CampusOrderDropZone";
 import { calculateDistrictStats, toDistrictPanelStats } from "@/utils/districtStats";
+import { deriveHouseholdLabel } from "@/lib/householdLabel";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -100,7 +101,12 @@ export function DistrictPanel({
   const updatePerson = trpc.people.update.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
+    },
+    onError: (error) => {
+      console.error('Error updating person:', error);
+      alert(`Error updating person: ${error.message || 'Unknown error'}`);
     },
   });
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -120,7 +126,7 @@ export function DistrictPanel({
       utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
       // Reset form and close dialog only after successful creation
-      setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+      setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
       setIsPersonDialogOpen(false);
       setSelectedCampusId(null);
     },
@@ -155,7 +161,13 @@ export function DistrictPanel({
   // Fetch needs for the person being edited
   const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
     { personId: editingPerson?.person.personId || '' },
-    { enabled: !!editingPerson?.person.personId }
+    { 
+      enabled: !!editingPerson?.person.personId,
+      retry: false,
+      onError: (error) => {
+        console.error('Error fetching person needs:', error);
+      }
+    }
   );
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -164,6 +176,11 @@ export function DistrictPanel({
   // Campus role options
   const campusRoles = ['Campus Director', 'Campus Co-Director', 'Staff'] as const;
   type CampusRole = typeof campusRoles[number];
+
+  // Quick add state
+  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'district-team', 'unassigned'
+  const [quickAddName, setQuickAddName] = useState('');
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [personForm, setPersonForm] = useState({
@@ -174,13 +191,18 @@ export function DistrictPanel({
     needAmount: '',
     needDetails: '',
     notes: '',
-    spouse: '',
-    kids: '',
-    guests: '',
+    spouseAttending: false,
+    childrenCount: 0,
+    guestsCount: 0,
     childrenAges: [] as string[],
     depositPaid: false,
-    needsMet: false
+    needsMet: false,
+    householdId: null as number | null,
   });
+  
+  // Validation state
+  const [householdValidationError, setHouseholdValidationError] = useState<string | null>(null);
+  const [householdNameError, setHouseholdNameError] = useState<string | null>(null);
   
   const [campusForm, setCampusForm] = useState({
     name: ''
@@ -196,6 +218,53 @@ export function DistrictPanel({
   // Fetch active needs only - used for counting and hasNeeds indicators
   // Only active needs are counted. Inactive needs are retained for history.
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  
+  // Fetch households for dropdown
+  const { data: allHouseholds = [], error: householdsError } = trpc.households.list.useQuery(undefined, {
+    retry: false,
+    onError: (error) => {
+      console.error('Error fetching households:', error);
+    }
+  });
+  const [householdSearchQuery, setHouseholdSearchQuery] = useState('');
+  const { data: searchedHouseholds = [] } = trpc.households.search.useQuery(
+    { query: householdSearchQuery },
+    { enabled: householdSearchQuery.length > 0 }
+  );
+  
+  // Create household mutation
+  const createHousehold = trpc.households.create.useMutation({
+    onSuccess: (newHousehold) => {
+      utils.households.list.invalidate();
+      setPersonForm({ ...personForm, householdId: newHousehold.id });
+    },
+  });
+  
+  // Update household mutation
+  const updateHousehold = trpc.households.update.useMutation({
+    onSuccess: () => {
+      utils.households.list.invalidate();
+    },
+  });
+  
+  // Helper to get household members for display
+  const getHouseholdDisplayName = (householdId: number) => {
+    const household = allHouseholds.find(h => h.id === householdId);
+    if (!household) return `Household ${householdId}`;
+    if (household.label) return household.label;
+    // Try to get members to show last name
+    const members = people.filter(p => p.householdId === householdId);
+    if (members.length > 0) {
+      const lastName = members[0].name.split(' ').pop() || 'Household';
+      return `${lastName} Household`;
+    }
+    return 'Household';
+  };
+  
+  // Validation: Check if household is required
+  const isHouseholdRequired = personForm.spouseAttending || personForm.childrenCount > 0;
+  const hasHouseholdValidationError = isHouseholdRequired && !personForm.householdId;
+  
   const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
@@ -238,9 +307,23 @@ export function DistrictPanel({
     p.primaryRole?.toLowerCase().includes('dd')
   ) || null;
   
+  // District team members - district-level staff (spouses, team members) without official position
+  // These are people associated with the district but not assigned to a campus and not the district director
+  // We'll show people who have "District" in their role, or people with no role who are district-level
+  const districtTeamMembers = peopleWithNeeds.filter(p => 
+    !p.primaryCampusId && 
+    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd')) &&
+    (p.primaryRole?.toLowerCase().includes('district') || 
+     (p.primaryRole?.toLowerCase().includes('staff') && !p.primaryCampusId) ||
+     (!p.primaryRole && !p.primaryCampusId)) // Include people with no role who are district-level
+  );
+  
   const peopleWithoutCampus = peopleWithNeeds.filter(p => 
     !p.primaryCampusId && 
-    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
+    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd')) &&
+    !(p.primaryRole?.toLowerCase().includes('district') || 
+      p.primaryRole?.toLowerCase().includes('staff') ||
+      !p.primaryRole) // Exclude district team members from unassigned
   );
   
   // Campus order state - stores ordered campus IDs
@@ -249,14 +332,30 @@ export function DistrictPanel({
   // Initialize campus order when campuses change
   useEffect(() => {
     if (campuses.length > 0 && district?.id) {
-      const currentOrder = campusOrder.length > 0 ? campusOrder : campuses.map(c => c.id);
-      // Remove campuses that no longer exist
-      const validOrder = currentOrder.filter(id => campuses.some(c => c.id === id));
-      // Add any new campuses that aren't in the order
-      const newCampuses = campuses.filter(c => !validOrder.includes(c.id));
-      if (newCampuses.length > 0 || validOrder.length !== campuses.length) {
-        setCampusOrder([...validOrder, ...newCampuses.map(c => c.id)]);
+      // Try to load persisted order from localStorage
+      const savedOrderJson = localStorage.getItem(`campus-order-${district.id}`);
+      let savedOrder: number[] = [];
+      if (savedOrderJson) {
+        try {
+          savedOrder = JSON.parse(savedOrderJson);
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
       }
+      
+      // Filter saved order to only include existing campuses
+      const validSavedOrder = savedOrder.filter(id => campuses.some(c => c.id === id));
+      const missingCampuses = campuses.filter(c => !validSavedOrder.includes(c.id));
+      
+      // Use saved order if valid, otherwise use default order
+      const currentOrder = validSavedOrder.length > 0 
+        ? [...validSavedOrder, ...missingCampuses.map(c => c.id)]
+        : campuses.map(c => c.id);
+      
+      setCampusOrder(currentOrder);
+      
+      // Persist the final order
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(currentOrder));
     } else if (!district?.id) {
       // Clear order when district changes
       setCampusOrder([]);
@@ -368,6 +467,87 @@ export function DistrictPanel({
     }
   };
 
+  // Handle quick add + sign click
+  const handleQuickAddClick = (e: React.MouseEvent, targetId: string | number) => {
+    e.stopPropagation();
+    const quickAddKey = typeof targetId === 'number' ? `campus-${targetId}` : targetId;
+    setQuickAddMode(quickAddKey);
+    setQuickAddName('');
+    // Focus input after state update
+    setTimeout(() => {
+      quickAddInputRef.current?.focus();
+    }, 0);
+  };
+
+  // Handle quick add input blur/enter
+  const handleQuickAddSubmit = (targetId: string | number) => {
+    const actualTargetId = typeof targetId === 'string' && targetId.startsWith('campus-') 
+      ? parseInt(targetId.replace('campus-', ''))
+      : targetId;
+    handleQuickAddPerson(actualTargetId, quickAddName);
+  };
+
+  // Handle quick add person
+  const handleQuickAddPerson = (targetId: string | number, name: string) => {
+    if (!name?.trim()) {
+      setQuickAddMode(null);
+      setQuickAddName('');
+      return;
+    }
+
+    if (!district?.id) {
+      console.error('District ID is missing');
+      setQuickAddMode(null);
+      setQuickAddName('');
+      return;
+    }
+
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build mutation data with defaults
+    const mutationData: any = {
+      personId,
+      name: name.trim(),
+      primaryDistrictId: district.id,
+      status: 'Not Invited', // Default status
+      primaryRole: 'Staff', // Default role
+      depositPaid: false,
+    };
+
+    // Set role and campus based on target
+    if (targetId === 'district') {
+      mutationData.primaryRole = 'District Director';
+    } else if (targetId === 'district-team') {
+      mutationData.primaryRole = 'District Staff';
+    } else if (targetId === 'unassigned') {
+      mutationData.primaryRole = 'Staff';
+    } else if (typeof targetId === 'number') {
+      mutationData.primaryRole = 'Staff';
+      mutationData.primaryCampusId = targetId;
+    }
+
+    // Add primaryRegion and nationalCategory if district has them
+    if (district.regionId) {
+      mutationData.primaryRegion = district.regionId;
+    }
+
+    createPerson.mutate(mutationData, {
+      onSuccess: () => {
+        utils.people.list.invalidate();
+        utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
+        onDistrictUpdate();
+        setQuickAddMode(null);
+        setQuickAddName('');
+      },
+      onError: (error) => {
+        console.error('Error creating person:', error);
+        alert('Failed to create person: ' + error.message);
+        setQuickAddMode(null);
+        setQuickAddName('');
+      }
+    });
+  };
+
   // Handle add person
   const handleAddPerson = () => {
     console.log('handleAddPerson called', { selectedCampusId, name: personForm.name, role: personForm.role, district: district?.id });
@@ -414,6 +594,11 @@ export function DistrictPanel({
       // Add district director
       mutationData.primaryRole = 'District Director';
       // Don't set primaryCampusId for district director (will be null in DB)
+    } else if (selectedCampusId === 'district-team') {
+      // Add district team member (spouse, team member without official position)
+      // Use "District Staff" as the role to identify them as district team members
+      mutationData.primaryRole = personForm.role.trim() || 'District Staff';
+      // Don't set primaryCampusId for district team members (will be null in DB)
     } else if (selectedCampusId === 'unassigned') {
       // Add to unassigned - create person without campus
       mutationData.primaryRole = personForm.role.trim();
@@ -434,15 +619,23 @@ export function DistrictPanel({
     if (personForm.notes?.trim()) {
       mutationData.notes = personForm.notes.trim();
     }
-    if (personForm.spouse?.trim()) {
-      mutationData.spouse = personForm.spouse.trim();
+    
+    // Household and family fields
+    if (personForm.householdId) {
+      mutationData.householdId = personForm.householdId;
+      mutationData.householdRole = 'primary';
     }
-    if (personForm.kids?.trim()) {
-      mutationData.kids = personForm.kids.trim();
+    mutationData.spouseAttending = personForm.spouseAttending;
+    mutationData.childrenCount = personForm.childrenCount;
+    mutationData.guestsCount = personForm.guestsCount;
+    
+    // Validation: spouseAttending or childrenCount > 0 requires householdId
+    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
+      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
+      alert("Household is required when spouse is attending or children count is greater than 0");
+      return;
     }
-    if (personForm.guests?.trim()) {
-      mutationData.guests = personForm.guests.trim();
-    }
+    
     if (personForm.childrenAges.length > 0) {
       mutationData.childrenAges = JSON.stringify(personForm.childrenAges);
     }
@@ -515,12 +708,13 @@ export function DistrictPanel({
         needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
         needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
         notes: person.notes || '', 
-        spouse: person.spouse || '',
-        kids: person.kids || '',
-        guests: person.guests || '',
+        spouseAttending: (person.spouseAttending !== undefined && person.spouseAttending !== null) ? person.spouseAttending : false,
+        childrenCount: (person.childrenCount !== undefined && person.childrenCount !== null) ? person.childrenCount : 0,
+        guestsCount: (person.guestsCount !== undefined && person.guestsCount !== null) ? person.guestsCount : 0,
         childrenAges: childrenAges,
         depositPaid: person.depositPaid || false,
-        needsMet: personNeed ? !personNeed.isActive : false
+        needsMet: personNeed ? !personNeed.isActive : false,
+        householdId: (person.householdId !== undefined && person.householdId !== null) ? person.householdId : null,
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -534,6 +728,13 @@ export function DistrictPanel({
     // Store form values for use in callbacks
     const formData = { ...personForm };
     
+    // Validation: spouseAttending or childrenCount > 0 requires householdId
+    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
+      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
+      alert("Household is required when spouse is attending or children count is greater than 0");
+      return;
+    }
+    
     // Update person with all fields
     updatePerson.mutate({ 
       personId,
@@ -542,9 +743,11 @@ export function DistrictPanel({
       status: statusMap[personForm.status],
       depositPaid: personForm.depositPaid,
       notes: personForm.notes,
-      spouse: personForm.spouse || undefined,
-      kids: personForm.kids || undefined,
-      guests: personForm.guests || undefined,
+      spouseAttending: personForm.spouseAttending,
+      childrenCount: personForm.childrenCount,
+      guestsCount: personForm.guestsCount,
+      householdId: personForm.householdId,
+      householdRole: personForm.householdId ? 'primary' : undefined,
       childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
     }, {
       onSuccess: () => {
@@ -566,7 +769,7 @@ export function DistrictPanel({
           }, {
             onSuccess: () => {
               // Close dialog and reset form after needs are updated
-              setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+              setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
               setIsEditPersonDialogOpen(false);
               setEditingPerson(null);
             },
@@ -587,14 +790,14 @@ export function DistrictPanel({
             }, {
               onSuccess: () => {
                 // Close dialog and reset form after needs are updated
-                setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+                setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
                 setIsEditPersonDialogOpen(false);
                 setEditingPerson(null);
               },
             });
           } else {
             // No active need to update, just close dialog
-            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
             setIsEditPersonDialogOpen(false);
             setEditingPerson(null);
           }
@@ -674,9 +877,20 @@ export function DistrictPanel({
     const person = peopleWithNeeds.find(p => p.personId === draggedId);
     if (!person) return;
 
-    // Handle moving to district director (not implemented in current API)
+    // Handle moving to district director
     if (targetCampusId === 'district') {
-      console.warn('Moving to district director not yet implemented');
+      handleDistrictDirectorDrop(draggedId, draggedCampusId);
+      return;
+    }
+    
+    // Handle moving to district team
+    if (targetCampusId === 'district-team') {
+      // Update person to be district team member (keep role or set to Staff, remove campus)
+      updatePerson.mutate({
+        personId: person.personId,
+        primaryRole: person.primaryRole || 'Staff',
+        primaryCampusId: null,
+      });
       return;
     }
 
@@ -729,6 +943,16 @@ export function DistrictPanel({
     return districtPeople.find(p => p.personId === personId);
   };
 
+  // Get campus for drag layer
+  const getCampus = (campusId: number): { name: string; people: Person[] } | undefined => {
+    const campus = campusesWithPeople.find(c => c.id === campusId);
+    if (!campus) return undefined;
+    return {
+      name: campus.name,
+      people: campus.people
+    };
+  };
+
   // Handle campus reordering
   const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
     const currentIndex = campusOrder.indexOf(draggedCampusId);
@@ -745,6 +969,11 @@ export function DistrictPanel({
     // Insert at new position
     newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
     setCampusOrder(newOrder);
+    
+    // Persist to localStorage
+    if (district?.id) {
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(newOrder));
+    }
   };
 
   // Open add person dialog
@@ -759,6 +988,9 @@ export function DistrictPanel({
     } else if (campusId === 'district') {
       // District Director is handled separately, not in the dropdown
       defaultRole = 'Staff'; // This won't be used for district director
+    } else if (campusId === 'district-team') {
+      // District team member - default to Staff (can be spouse or team member without official position)
+      defaultRole = 'Staff';
     } else if (typeof campusId === 'number') {
       const campus = campusesWithPeople.find(c => c.id === campusId);
       if (campus && campus.people.length === 0) {
@@ -766,7 +998,7 @@ export function DistrictPanel({
       }
     }
     
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
     setIsPersonDialogOpen(true);
   };
 
@@ -823,7 +1055,89 @@ export function DistrictPanel({
                     onPersonStatusChange(districtDirector.personId, nextStatus);
                   }}
                   onAddClick={() => openAddPersonDialog('district')}
+                  quickAddMode={quickAddMode === 'district'}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() => handleQuickAddSubmit('district')}
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName('');
+                  }}
+                  onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
+                  quickAddInputRef={quickAddInputRef}
                 />
+                
+                {/* District Team Members */}
+                <div className="w-px h-8 bg-slate-200"></div>
+                <div className="flex items-center gap-2">
+                  {districtTeamMembers.map((person) => (
+                    <DroppablePerson
+                      key={person.personId}
+                      person={person}
+                      campusId="district-team"
+                      index={0}
+                      onEdit={handleEditPerson}
+                      onClick={handlePersonClick}
+                      onMove={handlePersonMove}
+                      hasNeeds={person.hasNeeds}
+                    />
+                  ))}
+                  {/* Add District Team Member Button */}
+                  <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                        <button
+                          onClick={() => openAddPersonDialog('district-team')}
+                          className="flex flex-col items-center w-[50px]"
+                          title="Add district team member"
+                        >
+                    {/* Plus sign in name position - clickable for quick add */}
+                    <div className="relative flex items-center justify-center mb-1">
+                      {quickAddMode === 'district-team' ? (
+                        <div className="relative">
+                          <Input
+                            ref={quickAddInputRef}
+                            value={quickAddName}
+                            onChange={(e) => setQuickAddName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleQuickAddSubmit('district-team');
+                              } else if (e.key === 'Escape') {
+                                setQuickAddMode(null);
+                                setQuickAddName('');
+                              }
+                            }}
+                            onBlur={() => {
+                              handleQuickAddSubmit('district-team');
+                            }}
+                            placeholder="Name"
+                            className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                            autoFocus
+                          />
+                          <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                            Quick Add
+                          </div>
+                        </div>
+                      ) : (
+                        <Plus 
+                          className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                          strokeWidth={1.5}
+                          onClick={(e) => handleQuickAddClick(e, 'district-team')}
+                        />
+                      )}
+                    </div>
+                    {/* Icon - light gray */}
+                    <div className="relative">
+                      <User 
+                        className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
+                        strokeWidth={1.5} 
+                        fill="currentColor"
+                      />
+                    </div>
+                    {/* Label - shown on hover */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      Add Team
+                    </div>
+                  </button>
+                </div>
           </div>
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
@@ -922,7 +1236,7 @@ export function DistrictPanel({
 
           {/* Campuses Section */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all hover:shadow-md hover:border-slate-200 overflow-x-auto">
-            <div className="space-y-3 min-w-max pl-6">
+            <div className="space-y-3 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
                 return (
@@ -1074,9 +1388,40 @@ export function DistrictPanel({
                               onClick={() => openAddPersonDialog(campus.id)}
                               className="flex flex-col items-center w-[50px]"
                             >
-                              {/* Plus sign in name position */}
+                              {/* Plus sign in name position - clickable for quick add */}
                               <div className="relative flex items-center justify-center mb-1">
-                                <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
+                                {quickAddMode === `campus-${campus.id}` ? (
+                                  <div className="relative">
+                                    <Input
+                                      ref={quickAddInputRef}
+                                      value={quickAddName}
+                                      onChange={(e) => setQuickAddName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleQuickAddSubmit(`campus-${campus.id}`);
+                                        } else if (e.key === 'Escape') {
+                                          setQuickAddMode(null);
+                                          setQuickAddName('');
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        handleQuickAddSubmit(`campus-${campus.id}`);
+                                      }}
+                                      placeholder="Name"
+                                      className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                      autoFocus
+                                    />
+                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                                      Quick Add
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Plus 
+                                    className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                    strokeWidth={1.5}
+                                    onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                  />
+                                )}
                               </div>
                               {/* Icon */}
                               <div className="relative">
@@ -1172,10 +1517,41 @@ export function DistrictPanel({
                             onClick={() => openAddPersonDialog('unassigned')}
                             className="flex flex-col items-center w-[50px]"
                           >
-                            {/* Plus sign in name position */}
+                            {/* Plus sign in name position - clickable for quick add */}
                             <div className="relative flex items-center justify-center mb-1">
-                              <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
-                </div>
+                              {quickAddMode === 'unassigned' ? (
+                                <div className="relative">
+                                  <Input
+                                    ref={quickAddInputRef}
+                                    value={quickAddName}
+                                    onChange={(e) => setQuickAddName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleQuickAddSubmit('unassigned');
+                                      } else if (e.key === 'Escape') {
+                                        setQuickAddMode(null);
+                                        setQuickAddName('');
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      handleQuickAddSubmit('unassigned');
+                                    }}
+                                    placeholder="Name"
+                                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                    autoFocus
+                                  />
+                                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                                    Quick Add
+                                  </div>
+                                </div>
+                              ) : (
+                                <Plus 
+                                  className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                  strokeWidth={1.5}
+                                  onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                />
+                              )}
+                            </div>
                             {/* Icon */}
                             <div className="relative">
                               <User 
@@ -1219,7 +1595,7 @@ export function DistrictPanel({
           setIsPersonDialogOpen(open);
           if (!open) {
             // Reset form when dialog is closed
-            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
             setSelectedCampusId(null);
           }
         }}>
@@ -1239,7 +1615,11 @@ export function DistrictPanel({
                     <Input
                       id="person-name"
                       value={personForm.name}
-                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, name: e.target.value });
+                        // Clear household name error when name changes (but don't auto-update household label)
+                        setHouseholdNameError(null);
+                      }}
                       placeholder="Enter name"
                     />
                   </div>
@@ -1290,95 +1670,146 @@ export function DistrictPanel({
                 </div>
               </div>
 
-              {/* Accompanying Non Staff Section */}
+              {/* Family & Guests (optional) */}
               <div className="space-y-4 mt-4">
                 <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
+                  <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
                 </div>
+                
+                {/* Inputs */}
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="person-spouse">Spouse</Label>
-                    <Input
-                      id="person-spouse"
-                      value={personForm.spouse}
-                      onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                      placeholder="Spouse's name"
-                    />
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="person-spouse-attending"
+                        checked={personForm.spouseAttending}
+                      onCheckedChange={(checked) => {
+                        setPersonForm({ ...personForm, spouseAttending: checked === true });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                      />
+                      <Label htmlFor="person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
+                    </div>
                   </div>
                   <div className="space-y-2 ml-4">
-                    <Label htmlFor="person-kids" className="ml-1">Children</Label>
+                    <Label htmlFor="person-children-count">Children attending (0-10)</Label>
                     <Input
-                      id="person-kids"
+                      id="person-children-count"
                       type="number"
                       min="0"
-                      value={personForm.kids}
+                      max="10"
+                      value={personForm.childrenCount}
                       onChange={(e) => {
-                        const numChildren = parseInt(e.target.value) || 0;
+                        const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
                         setPersonForm({ 
                           ...personForm, 
-                          kids: e.target.value,
-                          childrenAges: Array(numChildren).fill('')
+                          childrenCount: count,
+                          childrenAges: Array(count).fill('')
                         });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
                       }}
-                      placeholder="Number"
+                      placeholder="0"
                       className="w-24"
                     />
-                    <AnimatePresence>
-                      {personForm.kids && parseInt(personForm.kids) > 0 && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-2 mt-2 overflow-hidden"
-                        >
-                          {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                            <motion.div
-                              key={index}
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2, delay: index * 0.05 }}
-                              className="space-y-1"
-                            >
-                              <Label htmlFor={`person-child-age-${index}`} className="text-xs text-slate-600">
-                                Child {index + 1} Age Range
-                              </Label>
-                              <Select
-                                value={personForm.childrenAges[index] || ''}
-                                onValueChange={(value) => {
-                                  const newAges = [...personForm.childrenAges];
-                                  newAges[index] = value;
-                                  setPersonForm({ ...personForm, childrenAges: newAges });
-                                }}
-                              >
-                                <SelectTrigger id={`person-child-age-${index}`}>
-                                  <SelectValue placeholder="Select age range" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="0-2">0-2 years</SelectItem>
-                                  <SelectItem value="3-5">3-5 years</SelectItem>
-                                  <SelectItem value="6-12">6-12 years</SelectItem>
-                                  <SelectItem value="13+">13+ years</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </motion.div>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
                   </div>
                   <div className="space-y-2 ml-4">
-                    <Label htmlFor="person-guests">Guest</Label>
+                    <Label htmlFor="person-guests-count">Guests attending (0-10)</Label>
                     <Input
-                      id="person-guests"
+                      id="person-guests-count"
                       type="number"
                       min="0"
-                      value={personForm.guests}
-                      onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                      placeholder="Number"
+                      max="10"
+                      value={personForm.guestsCount}
+                      onChange={(e) => {
+                        const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                        setPersonForm({ ...personForm, guestsCount: count });
+                      }}
+                      placeholder="0"
                       className="w-24"
                     />
                   </div>
+                </div>
+                
+                {/* Household Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="person-household">Household (optional)</Label>
+                      <Select
+                        value={personForm.householdId?.toString() || ''}
+                        onValueChange={(value) => {
+                          const householdId = value ? parseInt(value) : null;
+                          setPersonForm({ ...personForm, householdId });
+                          setHouseholdValidationError(null);
+                        }}
+                      >
+                        <SelectTrigger id="person-household">
+                          <SelectValue placeholder="Select household" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return (
+                              <SelectItem key={household.id} value={household.id.toString()}>
+                                <div className="flex flex-col">
+                                  <span>{displayName}</span>
+                                  {members.length > 0 && (
+                                    <span className="text-xs text-slate-500">
+                                      {members.map(m => m.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          }) : null}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        // Validate name is not empty
+                        if (!personForm.name.trim()) {
+                          setHouseholdNameError("Enter a name first to create a household.");
+                          return;
+                        }
+                        
+                        // Clear any previous error
+                        setHouseholdNameError(null);
+                        
+                        // Derive household label from person's name
+                        const label = deriveHouseholdLabel(personForm.name);
+                        
+                        // Create household with derived label
+                        createHousehold.mutate({
+                          label,
+                          childrenCount: 0,
+                          guestsCount: 0,
+                        });
+                      }}
+                      className="mt-6"
+                    >
+                      Create household
+                    </Button>
+                  </div>
+                  
+                  {/* Validation Errors */}
+                  {householdNameError && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {householdNameError}
+                    </div>
+                  )}
+                  {hasHouseholdValidationError && (
+                    <div className="text-sm text-red-600 mt-1">
+                      To avoid double-counting, link or create a household for spouse/children.
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1578,7 +2009,11 @@ export function DistrictPanel({
                     <Input
                       id="edit-person-name"
                       value={personForm.name}
-                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, name: e.target.value });
+                        // Clear household name error when name changes (but don't auto-update household label)
+                        setHouseholdNameError(null);
+                      }}
                       placeholder="Enter name"
                     />
                   </div>
@@ -1629,95 +2064,146 @@ export function DistrictPanel({
                 </div>
               </div>
 
-            {/* Accompanying Non Staff Section */}
+            {/* Family & Guests (optional) */}
             <div className="space-y-4 mt-4">
               <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
+                <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
               </div>
+              
+              {/* Inputs */}
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-spouse">Spouse</Label>
-                  <Input
-                    id="edit-person-spouse"
-                    value={personForm.spouse}
-                    onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                    placeholder="Spouse's name"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-person-spouse-attending"
+                      checked={personForm.spouseAttending}
+                      onCheckedChange={(checked) => {
+                        setPersonForm({ ...personForm, spouseAttending: checked === true });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                    />
+                    <Label htmlFor="edit-person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
+                  </div>
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-kids" className="ml-1">Children</Label>
+                  <Label htmlFor="edit-person-children-count">Children attending (0-10)</Label>
                   <Input
-                    id="edit-person-kids"
+                    id="edit-person-children-count"
                     type="number"
                     min="0"
-                    value={personForm.kids}
+                    max="10"
+                    value={personForm.childrenCount}
                     onChange={(e) => {
-                      const numChildren = parseInt(e.target.value) || 0;
+                      const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
                       setPersonForm({ 
                         ...personForm, 
-                        kids: e.target.value,
-                        childrenAges: Array(numChildren).fill('')
+                        childrenCount: count,
+                        childrenAges: Array(count).fill('')
                       });
+                      setHouseholdValidationError(null);
+                      setHouseholdNameError(null);
                     }}
-                    placeholder="Number"
+                    placeholder="0"
                     className="w-24"
                   />
-                  <AnimatePresence>
-                    {personForm.kids && parseInt(personForm.kids) > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2 mt-2 overflow-hidden"
-                      >
-                        {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                            className="space-y-1"
-                          >
-                            <Label htmlFor={`edit-person-child-age-${index}`} className="text-xs text-slate-600">
-                              Child {index + 1} Age Range
-                            </Label>
-                            <Select
-                              value={personForm.childrenAges[index] || ''}
-                              onValueChange={(value) => {
-                                const newAges = [...personForm.childrenAges];
-                                newAges[index] = value;
-                                setPersonForm({ ...personForm, childrenAges: newAges });
-                              }}
-                            >
-                              <SelectTrigger id={`edit-person-child-age-${index}`}>
-                                <SelectValue placeholder="Select age range" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0-2">0-2 years</SelectItem>
-                                <SelectItem value="3-5">3-5 years</SelectItem>
-                                <SelectItem value="6-12">6-12 years</SelectItem>
-                                <SelectItem value="13+">13+ years</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </motion.div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-guests">Guest</Label>
+                  <Label htmlFor="edit-person-guests-count">Guests attending (0-10)</Label>
                   <Input
-                    id="edit-person-guests"
+                    id="edit-person-guests-count"
                     type="number"
                     min="0"
-                    value={personForm.guests}
-                    onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                    placeholder="Number"
+                    max="10"
+                    value={personForm.guestsCount}
+                    onChange={(e) => {
+                      const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                      setPersonForm({ ...personForm, guestsCount: count });
+                    }}
+                    placeholder="0"
                     className="w-24"
                   />
                 </div>
+              </div>
+              
+              {/* Household Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="edit-person-household">Household (optional)</Label>
+                    <Select
+                      value={personForm.householdId?.toString() || ''}
+                      onValueChange={(value) => {
+                        const householdId = value ? parseInt(value) : null;
+                        setPersonForm({ ...personForm, householdId });
+                        setHouseholdValidationError(null);
+                      }}
+                    >
+                      <SelectTrigger id="edit-person-household">
+                        <SelectValue placeholder="Select household" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
+                          const members = allPeople.filter(p => p.householdId === household.id);
+                          const displayName = household.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return (
+                            <SelectItem key={household.id} value={household.id.toString()}>
+                              <div className="flex flex-col">
+                                <span>{displayName}</span>
+                                {members.length > 0 && (
+                                  <span className="text-xs text-slate-500">
+                                    {members.map(m => m.name).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        }) : null}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      // Validate name is not empty
+                      if (!personForm.name.trim()) {
+                        setHouseholdNameError("Enter a name first to create a household.");
+                        return;
+                      }
+                      
+                      // Clear any previous error
+                      setHouseholdNameError(null);
+                      
+                      // Derive household label from person's name
+                      const label = deriveHouseholdLabel(personForm.name);
+                      
+                      // Create household with derived label
+                      createHousehold.mutate({
+                        label,
+                        childrenCount: 0,
+                        guestsCount: 0,
+                      });
+                    }}
+                    className="mt-6"
+                  >
+                    Create household
+                  </Button>
+                </div>
+                
+                {/* Validation Errors */}
+                {householdNameError && (
+                  <div className="text-sm text-red-600 mt-1">
+                    {householdNameError}
+                  </div>
+                )}
+                {hasHouseholdValidationError && (
+                  <div className="text-sm text-red-600 mt-1">
+                    To avoid double-counting, link or create a household for spouse/children.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1992,8 +2478,8 @@ export function DistrictPanel({
                   onChange={(e) => setCampusForm({ name: e.target.value })}
                   placeholder="Enter campus name"
                 />
-      </div>
-    </div>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)}>
                 Cancel
@@ -2005,8 +2491,9 @@ export function DistrictPanel({
           </DialogContent>
         </Dialog>
         
-        {/* Custom Drag Layer */}
-        <CustomDragLayer getPerson={getPerson} />
+          {/* Custom Drag Layer */}
+          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+        </div>
       </motion.div>
     </DndProvider>
   );

@@ -18,19 +18,67 @@ const statusColors = {
 
 interface CustomDragLayerProps {
   getPerson: (personId: string, campusId: string | number) => Person | undefined;
+  getCampus?: (campusId: number) => { name: string; people: Person[] } | undefined;
 }
 
-export function CustomDragLayer({ getPerson }: CustomDragLayerProps) {
-  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
+export function CustomDragLayer({ getPerson, getCampus }: CustomDragLayerProps) {
+  const { isDragging, item, currentOffset, itemType } = useDragLayer((monitor) => ({
     item: monitor.getItem(),
     isDragging: monitor.isDragging(),
-    currentOffset: monitor.getSourceClientOffset()
+    currentOffset: monitor.getSourceClientOffset(),
+    itemType: monitor.getItemType()
   }));
 
   if (!isDragging || !currentOffset || !item) {
     return null;
   }
 
+  // Handle campus drag
+  if (itemType === 'campus' && getCampus && item.campusId) {
+    const campus = getCampus(item.campusId);
+    if (!campus) return null;
+
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          pointerEvents: 'none',
+          zIndex: 100,
+          left: 0,
+          top: 0,
+          transform: `translate(${currentOffset.x - 20}px, ${currentOffset.y - 10}px)`,
+        }}
+      >
+        <div className="bg-white rounded-lg shadow-xl border-2 border-blue-500 p-3 opacity-95 min-w-[300px]">
+          <div className="font-semibold text-slate-900 mb-2">{campus.name}</div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {campus.people.slice(0, 8).map((person) => {
+              const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
+              return (
+                <div key={person.personId} className="flex flex-col items-center w-[50px]">
+                  <div className="text-xs text-slate-600 text-center mb-1 truncate w-full">
+                    {person.name.split(' ')[0]}
+                  </div>
+                  <User
+                    className={`w-8 h-8 ${statusColors[figmaStatus]}`}
+                    strokeWidth={1.5}
+                    fill="currentColor"
+                  />
+                </div>
+              );
+            })}
+            {campus.people.length > 8 && (
+              <div className="flex items-center justify-center w-[50px] h-[50px] text-xs text-slate-500">
+                +{campus.people.length - 8}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle person drag (existing logic)
   const person = getPerson(item.personId, item.campusId);
   if (!person) return null;
 

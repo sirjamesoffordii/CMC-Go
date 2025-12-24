@@ -52,6 +52,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
@@ -112,22 +113,22 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
+  const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
-    if (iconRef.current) {
-      const rect = iconRef.current.getBoundingClientRect();
+    if (nameRef.current) {
+      const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });
     }
   };
 
-  const handleMouseLeave = () => {
+  const handleNameMouseLeave = () => {
     setIsHovered(false);
     setTooltipPos(null);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (iconRef.current && isHovered) {
-      const rect = iconRef.current.getBoundingClientRect();
+  const handleNameMouseMove = (e: React.MouseEvent) => {
+    if (nameRef.current && isHovered) {
+      const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });
     }
   };
@@ -147,12 +148,15 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           scale: { duration: 0.2 }
         }}
         className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onMouseMove={handleMouseMove}
       >
       {/* First Name Label with Edit Button */}
-      <div className="relative flex items-center justify-center mb-1 group/name w-full min-w-0">
+      <div 
+        ref={nameRef}
+        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+        onMouseEnter={handleNameMouseEnter}
+        onMouseLeave={handleNameMouseLeave}
+        onMouseMove={handleNameMouseMove}
+      >
         <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
           {truncatedName}
         </div>

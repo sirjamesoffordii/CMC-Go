@@ -1,5 +1,6 @@
 import { Person } from "../../../drizzle/schema";
 import { Check } from "lucide-react";
+import { trpc } from "../lib/trpc";
 
 interface PersonTooltipProps {
   person: Person;
@@ -13,6 +14,17 @@ interface PersonTooltipProps {
 }
 
 export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
+  // Fetch household if person has one
+  const { data: household } = trpc.households.getById.useQuery(
+    { id: person.householdId! },
+    { 
+      enabled: !!person.householdId && person.householdId !== null,
+      retry: false,
+      onError: (error) => {
+        console.error('Error fetching household:', error);
+      }
+    }
+  );
   return (
     <div
       className="fixed z-50 bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-3 pointer-events-none tooltip-animate min-w-[200px] max-w-[300px]"
@@ -49,6 +61,66 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
             <div className={`text-xs mt-1 ${need.isActive ? 'text-gray-600' : 'text-gray-400 line-through'}`}>
               {need.description}
             </div>
+          )}
+          {!need.isActive && (
+            <div className="text-xs text-emerald-600 mt-1 flex items-center gap-1">
+              <Check className="w-3 h-3" strokeWidth={3} />
+              Need Met
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Family & Guests */}
+      {(person.householdId || person.spouseAttending || (person.childrenCount && person.childrenCount > 0) || (person.guestsCount && person.guestsCount > 0) || 
+        (person.kids && parseInt(person.kids) > 0) || (person.guests && parseInt(person.guests) > 0)) && (
+        <div className="mb-2 space-y-1">
+          <div className="text-xs font-semibold text-gray-700">Family & Guests:</div>
+          {person.householdId && household ? (
+            // Show household counts
+            <>
+              {household.childrenCount > 0 && (
+                <div className="text-xs text-gray-600">
+                  Children: <span className="font-medium">{household.childrenCount}</span>
+                </div>
+              )}
+              {household.guestsCount > 0 && (
+                <div className="text-xs text-gray-600">
+                  Guests: <span className="font-medium">{household.guestsCount}</span>
+                </div>
+              )}
+            </>
+          ) : (
+            // Fallback to person counts (for backwards compatibility)
+            <>
+              {person.spouseAttending && (
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Check className="w-3 h-3 text-gray-600" strokeWidth={3} />
+                  Spouse attending
+                </div>
+              )}
+              {(person.childrenCount && person.childrenCount > 0) && (
+                <div className="text-xs text-gray-600">
+                  Children: <span className="font-medium">{person.childrenCount}</span>
+                </div>
+              )}
+              {(person.guestsCount && person.guestsCount > 0) && (
+                <div className="text-xs text-gray-600">
+                  Guests: <span className="font-medium">{person.guestsCount}</span>
+                </div>
+              )}
+              {/* Legacy fields for backwards compatibility */}
+              {!person.childrenCount && person.kids && parseInt(person.kids) > 0 && (
+                <div className="text-xs text-gray-600">
+                  Children: <span className="font-medium">{person.kids}</span>
+                </div>
+              )}
+              {!person.guestsCount && person.guests && parseInt(person.guests) > 0 && (
+                <div className="text-xs text-gray-600">
+                  Guests: <span className="font-medium">{person.guests}</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
