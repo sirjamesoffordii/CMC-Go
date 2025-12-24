@@ -30,6 +30,8 @@ import { CampusNameDropZone } from "./CampusNameDropZone";
 import { CustomDragLayer } from "./CustomDragLayer";
 import { DistrictDirectorDropZone } from "./DistrictDirectorDropZone";
 import { PersonDropZone } from "./PersonDropZone";
+import { DraggableCampusRow } from "./DraggableCampusRow";
+import { CampusOrderDropZone } from "./CampusOrderDropZone";
 import { calculateDistrictStats, toDistrictPanelStats } from "@/utils/districtStats";
 
 interface DistrictPanelProps {
@@ -149,14 +151,24 @@ export function DistrictPanel({
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [selectedCampusId, setSelectedCampusId] = useState<number | string | null>(null);
   const [editingPerson, setEditingPerson] = useState<{ campusId: number | string; person: Person } | null>(null);
+  
+  // Fetch needs for the person being edited
+  const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: editingPerson?.person.personId || '' },
+    { enabled: !!editingPerson?.person.personId }
+  );
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
+  // Campus role options
+  const campusRoles = ['Campus Director', 'Campus Co-Director', 'Staff'] as const;
+  type CampusRole = typeof campusRoles[number];
+
   // Form states
   const [personForm, setPersonForm] = useState({
     name: '',
-    role: 'Staff',
+    role: 'Staff' as CampusRole,
     status: 'not-invited' as keyof typeof statusMap,
     needType: 'None' as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other',
     needAmount: '',
@@ -230,10 +242,38 @@ export function DistrictPanel({
     !p.primaryCampusId && 
     !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
   );
-  const campusesWithPeople = campuses.map(campus => ({
-    ...campus,
-    people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
-  }));
+  
+  // Campus order state - stores ordered campus IDs
+  const [campusOrder, setCampusOrder] = useState<number[]>([]);
+
+  // Initialize campus order when campuses change
+  useEffect(() => {
+    if (campuses.length > 0 && district?.id) {
+      const currentOrder = campusOrder.length > 0 ? campusOrder : campuses.map(c => c.id);
+      // Remove campuses that no longer exist
+      const validOrder = currentOrder.filter(id => campuses.some(c => c.id === id));
+      // Add any new campuses that aren't in the order
+      const newCampuses = campuses.filter(c => !validOrder.includes(c.id));
+      if (newCampuses.length > 0 || validOrder.length !== campuses.length) {
+        setCampusOrder([...validOrder, ...newCampuses.map(c => c.id)]);
+      }
+    } else if (!district?.id) {
+      // Clear order when district changes
+      setCampusOrder([]);
+    }
+  }, [campuses, district?.id]); // Reset when district changes
+
+  // Create ordered campuses with people
+  const campusesWithPeople = useMemo(() => {
+    const ordered = campusOrder.length > 0 
+      ? campusOrder.map(id => campuses.find(c => c.id === id)).filter(Boolean) as Campus[]
+      : campuses;
+    
+    return ordered.map(campus => ({
+      ...campus,
+      people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
+    }));
+  }, [campuses, campusOrder, peopleWithNeeds]);
 
   // Store initial order when panel opens or data changes significantly
   useEffect(() => {
@@ -444,45 +484,55 @@ export function DistrictPanel({
   // Handle edit person
   const handleEditPerson = (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
-    const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-    // Fetch all needs (including inactive) for this person to show in edit form
-    // We use byPerson query to get the most recent need (active or inactive) for display
-    const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
-    const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
-    
-    // Parse childrenAges from JSON string if it exists
-    let childrenAges: string[] = [];
-    if (person.childrenAges) {
-      try {
-        childrenAges = JSON.parse(person.childrenAges);
-      } catch (e) {
-        // If parsing fails, treat as empty array
-        childrenAges = [];
-      }
-    }
-    
-    setPersonForm({ 
-      name: person.name, 
-      role: person.primaryRole || 'Staff', 
-      status: figmaStatus,
-      needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
-      needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
-      needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
-      notes: person.notes || '', 
-      spouse: person.spouse || '',
-      kids: person.kids || '',
-      guests: person.guests || '',
-      childrenAges: childrenAges,
-      depositPaid: person.depositPaid || false,
-      needsMet: personNeed ? !personNeed.isActive : false
-    });
     setIsEditPersonDialogOpen(true);
   };
+  
+  // Update form when editing person or needs data changes
+  useEffect(() => {
+    if (editingPerson && isEditPersonDialogOpen) {
+      const person = editingPerson.person;
+      const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
+      const personNeed = editingPersonNeeds.length > 0 ? editingPersonNeeds[0] : null;
+      
+      // Parse childrenAges from JSON string if it exists
+      let childrenAges: string[] = [];
+      if (person.childrenAges) {
+        try {
+          childrenAges = JSON.parse(person.childrenAges);
+        } catch (e) {
+          // If parsing fails, treat as empty array
+          childrenAges = [];
+        }
+      }
+      
+      setPersonForm({ 
+        name: person.name, 
+        role: (person.primaryRole && campusRoles.includes(person.primaryRole as CampusRole)) 
+          ? (person.primaryRole as CampusRole) 
+          : 'Staff', 
+        status: figmaStatus,
+        needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
+        needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
+        needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
+        notes: person.notes || '', 
+        spouse: person.spouse || '',
+        kids: person.kids || '',
+        guests: person.guests || '',
+        childrenAges: childrenAges,
+        depositPaid: person.depositPaid || false,
+        needsMet: personNeed ? !personNeed.isActive : false
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingPerson, isEditPersonDialogOpen, editingPersonNeeds]);
 
   // Handle update person
   const handleUpdatePerson = () => {
     if (!editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
+    
+    // Store form values for use in callbacks
+    const formData = { ...personForm };
     
     // Update person with all fields
     updatePerson.mutate({ 
@@ -499,20 +549,27 @@ export function DistrictPanel({
     }, {
       onSuccess: () => {
         // Handle needs: create/update if needType is not "None", delete if "None"
-        if (personForm.needType !== 'None' && personForm.needType) {
+        if (formData.needType !== 'None' && formData.needType) {
           // Create or update need
-          const needDescription = personForm.needType === 'Financial' 
-            ? `Financial need: $${personForm.needAmount || '0'}`
-            : personForm.needDetails || `${personForm.needType} need`;
+          const needDescription = formData.needType === 'Financial' 
+            ? `Financial need: $${formData.needAmount || '0'}`
+            : formData.needDetails || `${formData.needType} need`;
           
           updateOrCreateNeed.mutate({
             personId,
-            type: personForm.needType,
+            type: formData.needType,
             description: needDescription,
-            amount: personForm.needType === 'Financial' && personForm.needAmount 
-              ? Math.round(parseFloat(personForm.needAmount) * 100) 
+            amount: formData.needType === 'Financial' && formData.needAmount 
+              ? Math.round(parseFloat(formData.needAmount) * 100) 
               : undefined,
-            isActive: !personForm.needsMet, // Active if needsMet is false
+            isActive: !formData.needsMet, // Active if needsMet is false
+          }, {
+            onSuccess: () => {
+              // Close dialog and reset form after needs are updated
+              setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+              setIsEditPersonDialogOpen(false);
+              setEditingPerson(null);
+            },
           });
         } else {
           // If needType is "None", mark existing need as inactive (preserve history)
@@ -527,15 +584,23 @@ export function DistrictPanel({
               description: activeNeed.description, // Keep existing description
               amount: activeNeed.amount ?? undefined,
               isActive: false, // Mark as inactive
+            }, {
+              onSuccess: () => {
+                // Close dialog and reset form after needs are updated
+                setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+                setIsEditPersonDialogOpen(false);
+                setEditingPerson(null);
+              },
             });
+          } else {
+            // No active need to update, just close dialog
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
+            setIsEditPersonDialogOpen(false);
+            setEditingPerson(null);
           }
         }
       },
     });
-    
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
-    setIsEditPersonDialogOpen(false);
-    setEditingPerson(null);
   };
 
   // Handle delete person
@@ -664,17 +729,36 @@ export function DistrictPanel({
     return districtPeople.find(p => p.personId === personId);
   };
 
+  // Handle campus reordering
+  const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
+    const currentIndex = campusOrder.indexOf(draggedCampusId);
+    if (currentIndex === -1) return;
+    
+    // If dropping at the same position, no change needed
+    if (currentIndex === targetIndex) return;
+
+    const newOrder = [...campusOrder];
+    // Remove from current position
+    newOrder.splice(currentIndex, 1);
+    // Adjust target index if we removed an item before it
+    const adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    // Insert at new position
+    newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
+    setCampusOrder(newOrder);
+  };
+
   // Open add person dialog
   const openAddPersonDialog = (campusId: number | string) => {
     setSelectedCampusId(campusId);
     
-    let defaultRole = 'Staff';
+    let defaultRole: CampusRole = 'Staff';
     if (campusId === 'unassigned') {
       if (peopleWithoutCampus.length === 0) {
         defaultRole = 'Campus Director';
       }
     } else if (campusId === 'district') {
-      defaultRole = 'District Director';
+      // District Director is handled separately, not in the dropdown
+      defaultRole = 'Staff'; // This won't be used for district director
     } else if (typeof campusId === 'number') {
       const campus = campusesWithPeople.find(c => c.id === campusId);
       if (campus && campus.people.length === 0) {
@@ -838,11 +922,22 @@ export function DistrictPanel({
 
           {/* Campuses Section */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all hover:shadow-md hover:border-slate-200 overflow-x-auto">
-            <div className="space-y-3 min-w-max">
-              {campusesWithPeople.map((campus) => {
+            <div className="space-y-3 min-w-max pl-6">
+              {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
                 return (
-                  <div key={campus.id} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
+                  <div key={campus.id}>
+                    {/* Drop zone before campus (except first) */}
+                    {index > 0 && (
+                      <CampusOrderDropZone
+                        index={index}
+                        onDrop={handleCampusReorder}
+                      />
+                    )}
+                    
+                    {/* Draggable Campus Row */}
+                    <DraggableCampusRow campusId={campus.id}>
+                      <div className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
                     {/* Campus Name */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
                       <div className="w-60 flex-shrink-0 flex items-center gap-2">
@@ -1015,6 +1110,16 @@ export function DistrictPanel({
                         </div>
                       </CampusDropZone>
                     </div>
+                      </div>
+                    </DraggableCampusRow>
+                    
+                    {/* Drop zone after campus (for last item) */}
+                    {index === campusesWithPeople.length - 1 && (
+                      <CampusOrderDropZone
+                        index={campusesWithPeople.length}
+                        onDrop={handleCampusReorder}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -1140,14 +1245,30 @@ export function DistrictPanel({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="person-role">Role *</Label>
-                    <Input
-                      id="person-role"
-                      value={personForm.role}
-                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                      placeholder="e.g., Campus Director, Staff"
-                      disabled={selectedCampusId === 'district'}
-                      className={selectedCampusId === 'district' ? 'bg-slate-100 cursor-not-allowed' : ''}
-                    />
+                    {selectedCampusId === 'district' ? (
+                      <Input
+                        id="person-role"
+                        value="District Director"
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
+                      >
+                        <SelectTrigger id="person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campusRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="person-status">Status</Label>
@@ -1463,12 +1584,30 @@ export function DistrictPanel({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-role">Role *</Label>
-                    <Input
-                      id="edit-person-role"
-                      value={personForm.role}
-                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                      placeholder="e.g., Campus Director, Staff"
-                    />
+                    {editingPerson?.campusId === 'district' ? (
+                      <Input
+                        id="edit-person-role"
+                        value="District Director"
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
+                      >
+                        <SelectTrigger id="edit-person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campusRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="edit-person-status">Status</Label>

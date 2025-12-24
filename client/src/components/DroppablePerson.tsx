@@ -1,7 +1,7 @@
 import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
 import { User, Edit2, Hand } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Person } from '../../../drizzle/schema';
 import { PersonTooltip } from './PersonTooltip';
@@ -52,6 +52,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
@@ -61,7 +62,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   
   // Convert database status to Figma status for display
   const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-  
+
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
     item: { personId: person.personId, campusId, index },
@@ -86,6 +87,26 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
       isOver: monitor.isOver()
     })
   }), [person.personId, campusId, index, onMove]);
+
+  // Set iconRef for tooltip positioning
+  const setIconRef = useCallback((node: HTMLDivElement | null) => {
+    iconRef.current = node;
+  }, []);
+  
+  // Apply drag/drop to the draggable content area (not motion.div to avoid ref conflicts)
+  const setDragDropRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      drop(drag(node));
+    }
+  }, [drop, drag]);
+
+  // Stable edit button click handler
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name });
+    onEdit(campusId, person);
+  }, [campusId, person, onEdit]);
 
   const firstName = person.name.split(' ')[0];
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
@@ -114,11 +135,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   return (
     <>
       <motion.div
-        ref={(node) => {
-          iconRef.current = node;
-          const dragDropNode = drag(drop(node));
-          return dragDropNode;
-        }}
+        ref={setIconRef}
         key={person.personId}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
@@ -129,8 +146,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 }
         }}
-        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onMouseMove={handleMouseMove}
@@ -141,19 +157,28 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           {truncatedName}
         </div>
         <button
-          onClick={(e) => {
+          ref={editButtonRef}
+          onClick={handleEditClick}
+          onMouseDown={(e) => {
             e.stopPropagation();
-            onEdit(campusId, person);
+            e.preventDefault();
           }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+          }}
+          className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
           title="Edit person"
+          type="button"
         >
-          <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+          <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
         </button>
       </div>
 
-      <div className="relative">
+      <div 
+        ref={setDragDropRef}
+        className="relative cursor-grab active:cursor-grabbing"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      >
         <button
           onClick={() => onClick(campusId, person)}
           className="relative transition-all hover:scale-110 active:scale-95"
