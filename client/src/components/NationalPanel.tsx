@@ -107,7 +107,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm shadow-md backdrop-blur-sm">
-              XAN
+              NXA
             </div>
             <div>
               <h2 className="text-xl font-semibold tracking-tight">Chi Alpha National Team</h2>

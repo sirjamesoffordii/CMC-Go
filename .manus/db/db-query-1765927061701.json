@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE people (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  personId VARCHAR(64) NOT NULL UNIQUE,\n  name VARCHAR(255) NOT NULL,\n  primaryRole VARCHAR(255),\n  primaryCampusId INT,\n  primaryDistrictId VARCHAR(64),\n  primaryRegion VARCHAR(255),\n  nationalCategory VARCHAR(255),\n  status ENUM('Not invited yet', 'Maybe', 'Going', 'Not Going') DEFAULT 'Not invited yet' NOT NULL,\n  statusLastUpdated TIMESTAMP NULL,\n  statusLastUpdatedBy VARCHAR(255),\n  needs TEXT,\n  notes TEXT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute CREATE TABLE people (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  personId VARCHAR(64) NOT NULL UNIQUE,\n  name VARCHAR(255) NOT NULL,\n  primaryRole VARCHAR(255),\n  primaryCampusId INT,\n  primaryDistrictId VARCHAR(64),\n  primaryRegion VARCHAR(255),\n  nationalCategory VARCHAR(255),\n  status ENUM('Not invited yet', 'Maybe', 'Going', 'Not Going') DEFAULT 'Not invited yet' NOT NULL,\n  statusLastUpdated TIMESTAMP NULL,\n  statusLastUpdatedBy VARCHAR(255),\n  needs TEXT,\n  notes TEXT,\n  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 180
+}

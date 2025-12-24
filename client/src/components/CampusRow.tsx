@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Campus, Person } from "../../../drizzle/schema";
+import { Campus, Person } from "../../drizzle/schema";
 import { PersonIcon } from "./PersonIcon";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";

@@ -7,7 +7,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import FollowUp from "./pages/FollowUp";
 import MoreInfo from "./pages/MoreInfo";
-import Admin from "./pages/Admin";
 
 function Router() {
   return (
@@ -15,7 +14,6 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/follow-up" component={FollowUp} />
       <Route path="/more-info" component={MoreInfo} />
-      <Route path="/admin" component={Admin} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

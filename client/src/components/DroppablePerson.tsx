@@ -109,10 +109,10 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           onClick={() => onClick(campusId, person)}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
-          {/* Gray spouse icon behind */}
-          {person.notes && person.notes.toLowerCase().includes('spouse') && (
+          {/* Gray spouse icon behind - shown when person has spouse */}
+          {person.spouse && (
             <User
-              className="w-10 h-10 text-slate-300 absolute top-0 left-3 pointer-events-none"
+              className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
               strokeWidth={1.5}
               fill="currentColor"
             />

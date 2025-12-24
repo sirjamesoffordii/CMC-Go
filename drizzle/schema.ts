@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -19,39 +19,15 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
- * Regions table - represents geographic regions (e.g., "Northeast", "Great Plains South")
- */
-export const regions = mysqlTable("regions", {
-  id: int("id").primaryKey().autoincrement(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  color: varchar("color", { length: 50 }), // Hex color code for map display
-  description: text("description"),
-  // Audit trail
-  lastEditedBy: varchar("lastEditedBy", { length: 255 }),
-  lastEditedAt: timestamp("lastEditedAt"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-});
-
-export type Region = typeof regions.$inferSelect;
-export type InsertRegion = typeof regions.$inferInsert;
-
-/**
- * Districts table - represents geographic/organizational districts within regions
- * svgPathId is the source of truth and must match SVG path inkscape:label attributes
+ * Districts table - represents geographic/organizational districts
+ * DistrictSlug is the source of truth and must match SVG path IDs
  */
 export const districts = mysqlTable("districts", {
-  id: int("id").primaryKey().autoincrement(),
+  id: varchar("id", { length: 64 }).primaryKey(), // DistrictSlug
   name: varchar("name", { length: 255 }).notNull(),
-  svgPathId: varchar("svgPathId", { length: 64 }).notNull().unique(), // Matches SVG inkscape:label
-  regionId: int("regionId").notNull(), // FK to regions.id
-  color: varchar("color", { length: 50 }), // Override color for this district
-  contactName: varchar("contactName", { length: 255 }),
-  contactEmail: varchar("contactEmail", { length: 320 }),
-  contactPhone: varchar("contactPhone", { length: 50 }),
-  // Audit trail
-  lastEditedBy: varchar("lastEditedBy", { length: 255 }),
-  lastEditedAt: timestamp("lastEditedAt"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  region: varchar("region", { length: 255 }).notNull(),
+  leftNeighbor: varchar("leftNeighbor", { length: 64 }), // District ID to the left (geographically)
+  rightNeighbor: varchar("rightNeighbor", { length: 64 }), // District ID to the right (geographically)
 });
 
 export type District = typeof districts.$inferSelect;
@@ -63,16 +39,7 @@ export type InsertDistrict = typeof districts.$inferInsert;
 export const campuses = mysqlTable("campuses", {
   id: int("id").primaryKey().autoincrement(),
   name: varchar("name", { length: 255 }).notNull(),
-  districtId: int("districtId").notNull(), // FK to districts.id
-  city: varchar("city", { length: 255 }),
-  state: varchar("state", { length: 2 }),
-  contactName: varchar("contactName", { length: 255 }),
-  contactEmail: varchar("contactEmail", { length: 320 }),
-  contactPhone: varchar("contactPhone", { length: 50 }),
-  // Audit trail
-  lastEditedBy: varchar("lastEditedBy", { length: 255 }),
-  lastEditedAt: timestamp("lastEditedAt"),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  districtId: varchar("districtId", { length: 64 }).notNull(),
 });
 
 export type Campus = typeof campuses.$inferSelect;
@@ -89,9 +56,9 @@ export const people = mysqlTable("people", {
   name: varchar("name", { length: 255 }).notNull(),
   // Primary assignment info (from "People (Unique)" sheet)
   primaryRole: varchar("primaryRole", { length: 255 }),
-  primaryCampusId: int("primaryCampusId"), // FK to campuses.id, nullable for National roles
-  primaryDistrictId: int("primaryDistrictId"), // FK to districts.id, nullable for National roles
-  primaryRegionId: int("primaryRegionId"), // FK to regions.id, nullable for National roles
+  primaryCampusId: int("primaryCampusId"), // nullable for National roles
+  primaryDistrictId: varchar("primaryDistrictId", { length: 64 }), // nullable for National roles
+  primaryRegion: varchar("primaryRegion", { length: 255 }), // nullable for National roles
   nationalCategory: varchar("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
   // Status tracking (Universal responses)
   status: mysqlEnum("status", ["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited").notNull(),
@@ -101,14 +68,13 @@ export const people = mysqlTable("people", {
   // Additional fields
   needs: text("needs"),
   notes: text("notes"),
-  // Accompanying people
   spouse: varchar("spouse", { length: 255 }),
-  kids: int("kids").default(0),
-  guests: int("guests").default(0),
-  childrenAges: text("childrenAges"), // JSON array of age ranges
-  // Audit trail
+  kids: varchar("kids", { length: 10 }), // Store as string to allow empty or number
+  guests: varchar("guests", { length: 10 }), // Store as string to allow empty or number
+  childrenAges: text("childrenAges"), // JSON array stored as text
+  // Last edited tracking
+  lastEdited: timestamp("lastEdited"),
   lastEditedBy: varchar("lastEditedBy", { length: 255 }),
-  lastEditedAt: timestamp("lastEditedAt"),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
@@ -116,51 +82,62 @@ export type Person = typeof people.$inferSelect;
 export type InsertPerson = typeof people.$inferInsert;
 
 /**
- * Assignments table - represents multiple roles a person can have
- * Example: A person might be "Campus Director" at one campus and "Regional Coordinator" for a region
+ * Assignments table - tracks all role assignments for people
+ * A person may have multiple assignments (e.g., Campus Director + District role)
  */
 export const assignments = mysqlTable("assignments", {
   id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // FK to people.personId
-  role: varchar("role", { length: 255 }).notNull(),
-  campusId: int("campusId"), // FK to campuses.id, nullable
-  districtId: int("districtId"), // FK to districts.id, nullable
-  regionId: int("regionId"), // FK to regions.id, nullable
-  isPrimary: boolean("isPrimary").default(false).notNull(), // Whether this is the person's primary assignment
+  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+  assignmentType: mysqlEnum("assignmentType", ["Campus", "District", "Region", "National"]).notNull(),
+  roleTitle: varchar("roleTitle", { length: 255 }).notNull(),
+  campusId: int("campusId"), // nullable for non-Campus assignments
+  districtId: varchar("districtId", { length: 64 }), // nullable for National assignments
+  region: varchar("region", { length: 255 }), // nullable for National assignments
+  isPrimary: boolean("isPrimary").default(false).notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 
 export type Assignment = typeof assignments.$inferSelect;
 export type InsertAssignment = typeof assignments.$inferInsert;
 
+/**
+ * Needs table - tracks financial or other needs for people
+ * References people by personId (varchar) for consistency
+ */
+export const needs = mysqlTable("needs", {
+  id: int("id").primaryKey().autoincrement(),
+  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+  description: text("description").notNull(),
+  amount: int("amount"), // in cents
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type Need = typeof needs.$inferSelect;
+export type InsertNeed = typeof needs.$inferInsert;
 
 /**
- * Settings table - stores application settings as key-value pairs
+ * Notes table - tracks notes about people
+ * References people by personId (varchar) for consistency
+ */
+export const notes = mysqlTable("notes", {
+  id: int("id").primaryKey().autoincrement(),
+  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  createdBy: varchar("createdBy", { length: 255 }),
+});
+
+export type Note = typeof notes.$inferSelect;
+export type InsertNote = typeof notes.$inferInsert;
+
+/**
+ * Settings table - key-value store for application settings
  */
 export const settings = mysqlTable("settings", {
-  id: int("id").primaryKey().autoincrement(),
-  key: varchar("key", { length: 255 }).notNull().unique(),
+  key: varchar("key", { length: 255 }).primaryKey(),
   value: text("value"),
   updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
 });
 
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = typeof settings.$inferInsert;
-
-/**
- * Needs table - tracks financial and other needs for people
- */
-export const needs = mysqlTable("needs", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // FK to people.personId
-  type: mysqlEnum("type", ["financial", "other"]).default("other").notNull(),
-  description: text("description"),
-  amount: int("amount"), // For financial needs
-  isActive: boolean("isActive").default(true).notNull(),
-  resolvedAt: timestamp("resolvedAt"),
-  resolvedBy: varchar("resolvedBy", { length: 255 }),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-});
-
-export type Need = typeof needs.$inferSelect;
-export type InsertNeed = typeof needs.$inferInsert;

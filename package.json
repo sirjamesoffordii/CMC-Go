@@ -10,11 +10,17 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node scripts/run-migrations.mjs",
     "db:push": "drizzle-kit push",
-    "db:init": "node scripts/init-db.mjs",
-    "db:seed": "node scripts/seed-dev.mjs",
-    "db:setup": "node scripts/init-db.mjs && node scripts/seed-dev.mjs",
-    "db:migrate": "node scripts/migrate-district-names.mjs"
+    "db:push:yes": "node scripts/db-push-yes.mjs",
+    "db:init": "node scripts/init-mysql-db.mjs",
+    "db:seed": "node scripts/seed-mysql-dev.mjs",
+    "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:migrate && pnpm db:seed",
+    "db:check": "node scripts/check-schema.mjs",
+    "db:verify": "node scripts/verify-write.mjs",
+    "db:reset": "node scripts/reset-db.mjs",
+    "db:reset:drop": "node scripts/reset-db.mjs --drop-db"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -132,6 +138,10 @@
     },
     "overrides": {
       "tailwindcss>nanoid": "3.3.7"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "esbuild"
+    ]
   }
 }

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, useMemo } from "react";
-import { DistrictWithRegion } from "@shared/types";
+import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 
 interface InteractiveMapProps {
-  districts: DistrictWithRegion[];
+  districts: District[];
   selectedDistrictId: string | null;
   onDistrictSelect: (districtId: string) => void;
   onBackgroundClick?: () => void;
@@ -506,18 +506,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Calculate regional totals
   const regionalTotals: Record<string, typeof nationalTotals> = {};
   districts.forEach(district => {
-    const districtRegion = (district as any).region;
-    if (!districtRegion) return;
-    if (!regionalTotals[districtRegion]) {
-      regionalTotals[districtRegion] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+    if (!district.region) return;
+    if (!regionalTotals[district.region]) {
+      regionalTotals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
     }
     const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
-    regionalTotals[districtRegion].yes += districtPeople.filter(p => p.status === "Yes").length;
-    regionalTotals[districtRegion].maybe += districtPeople.filter(p => p.status === "Maybe").length;
-    regionalTotals[districtRegion].no += districtPeople.filter(p => p.status === "No").length;
-    regionalTotals[districtRegion].notInvited += districtPeople.filter(p => p.status === "Not Invited").length;
-    regionalTotals[districtRegion].total += districtPeople.length;
-    regionalTotals[districtRegion].invited += districtPeople.filter(p => p.status !== "Not Invited").length;
+    regionalTotals[district.region].yes += districtPeople.filter(p => p.status === "Yes").length;
+    regionalTotals[district.region].maybe += districtPeople.filter(p => p.status === "Maybe").length;
+    regionalTotals[district.region].no += districtPeople.filter(p => p.status === "No").length;
+    regionalTotals[district.region].notInvited += districtPeople.filter(p => p.status === "Not Invited").length;
+    regionalTotals[district.region].total += districtPeople.length;
+    regionalTotals[district.region].invited += districtPeople.filter(p => p.status !== "Not Invited").length;
   });
   
   // Get displayed totals (regional if hovering, otherwise national)
@@ -619,7 +618,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const GREYED_OUT_OPACITY = "0.85"; // More visible opacity reduction
 
     // Get selected district's region for greyed out effect
-    const selectedDistrict = districts.find(d => d.id === (selectedDistrictId ? Number(selectedDistrictId) : null));
+    const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
     const selectedRegion = selectedDistrict?.region || (selectedDistrictId ? districtRegionMap[selectedDistrictId] : undefined);
 
     // Create district lookup map for performance
@@ -633,9 +632,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         path.getAttribute("id");
       if (!pathId) return;
 
-      const district = districts.find(d => d.svgPathId === pathId);
+      const district = districtMap.get(pathId);
       // Get region from district in database, or from mapping if not in database yet
-      const region = (district as any)?.region || districtRegionMap[pathId];
+      const region = district?.region || districtRegionMap[pathId];
       const baseColor = region ? (regionColors[region] || "#e5e7eb") : "#e5e7eb";
 
       path.style.fill = baseColor;
@@ -691,7 +690,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       if (!pathId) return;
 
       // Allow clicking on all districts, even if not in database yet
-      const district = districts.find(d => d.svgPathId === pathId);
+      const district = districtMap.get(pathId);
 
       path.style.cursor = "pointer";
       
@@ -703,7 +702,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.addEventListener("click", clickHandler);
 
       // Get region once for this path
-      const pathRegion = (district as any)?.region || districtRegionMap[pathId];
+      const pathRegion = district?.region || districtRegionMap[pathId];
 
        // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
@@ -867,7 +866,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.addEventListener("mouseleave", mouseLeaveHandler);
     });
 
-    // XAN button will be added as a separate element in JSX that transforms with the map
+    // NXA button will be added as a separate element in JSX that transforms with the map
 
     // Cleanup
     return () => {
@@ -876,11 +875,11 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         const newPath = path.cloneNode(true);
         path.replaceWith(newPath);
       });
-      // Remove XAN buttons on cleanup
+      // Remove NXA buttons on cleanup
       [visualSvg, clickSvg].forEach(svg => {
-        const xanButton = svg.querySelector('[data-xan-button="true"]');
-        if (xanButton) {
-          xanButton.remove();
+        const nxaButton = svg.querySelector('[data-nxa-button="true"]');
+        if (nxaButton) {
+          nxaButton.remove();
         }
       });
     };
@@ -1011,7 +1010,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           <div className="text-gray-800 mb-3" style={{ fontSize: '18px', fontWeight: 500, letterSpacing: '-0.01em' }}>
           {getDistrictDisplayName(hoveredDistrict)} {district?.region && (
             <>
-                <span className="text-gray-300 mx-1">|</span> <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: 400 }}>{(district as any).region}</span>
+                <span className="text-gray-300 mx-1">|</span> <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: 400 }}>{district.region}</span>
             </>
           )}
         </div>
@@ -1062,10 +1061,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   return (
     <div className="w-full">
       <div 
-        className="relative w-full h-full"
+        className="relative w-full h-full min-h-[720px]"
         style={{
-          minHeight: '600px',
-          maxHeight: 'calc(100vh - 140px)',
           // Enhanced elevation effect - stronger shadow for more depth
           filter: 'drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))',
         }}
@@ -1227,7 +1224,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         
         {/* Pie charts layer - removed per user request */}
         
-        {/* XAN National Button - Positioned absolutely, transforms with map */}
+        {/* NXA National Button - Positioned absolutely, transforms with map */}
         {!selectedDistrictId && (
         <div 
           className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
@@ -1267,13 +1264,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 minHeight: '40px',
               }}
             >
-              <span className="text-white text-sm font-semibold">XAN</span>
+              <span className="text-white text-sm font-semibold">NXA</span>
             </div>
           </div>
         </div>
         )}
         
-        {/* Click layer for XAN button */}
+        {/* Click layer for NXA button */}
         {!selectedDistrictId && (
         <div 
           className="absolute inset-0 flex items-center justify-center z-45 pointer-events-none"
@@ -1332,7 +1329,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 districts.forEach(district => {
                   const stats = districtStats[district.id];
                   if (!stats) return;
-                  const region = (district as any).region || 'Unknown';
+                  const region = district.region || 'Unknown';
                   if (!regionStats[region]) {
                     regionStats[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
                   }
@@ -1487,6 +1484,11 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           </svg>
         </div>
       </div>
+      
+      {/* Tooltip */}
+      {renderTooltip()}
+      
+
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
-// FollowUpPanel removed
+import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
@@ -19,15 +19,15 @@ import { getLoginUrl } from "@/const";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [selectedDistrictId, setSelectedDistrictId] = useState<number | null>(null);
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
-  // Follow up panel removed
+  const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
   const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
-  // Follow up panel width removed
+  const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
-  // Follow up resizing removed
+  const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string>('#1a1a1a');
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
@@ -163,25 +163,25 @@ export default function Home() {
   // Set header image from database on load
   useEffect(() => {
     console.log('[Header] savedHeaderImage raw:', JSON.stringify(savedHeaderImage));
-    if (savedHeaderImage) {
-      console.log('[Header] Setting header image URL:', savedHeaderImage);
-      setHeaderImageUrl(savedHeaderImage);
+    if (savedHeaderImage && savedHeaderImage.value) {
+      console.log('[Header] Setting header image URL:', savedHeaderImage.value);
+      setHeaderImageUrl(savedHeaderImage.value);
     }
   }, [savedHeaderImage]);
   
   // Set background color from database on load
   useEffect(() => {
     console.log('[Header] savedBgColor raw:', JSON.stringify(savedBgColor));
-    if (savedBgColor) {
-      console.log('[Header] Setting bg color:', savedBgColor);
-      setHeaderBgColor(savedBgColor);
+    if (savedBgColor && savedBgColor.value) {
+      console.log('[Header] Setting bg color:', savedBgColor.value);
+      setHeaderBgColor(savedBgColor.value);
     }
   }, [savedBgColor]);
   
   // Set header height from database on load
   useEffect(() => {
-    if (savedHeaderHeight) {
-      setHeaderHeight(parseInt(savedHeaderHeight, 10));
+    if (savedHeaderHeight && savedHeaderHeight.value) {
+      setHeaderHeight(parseInt(savedHeaderHeight.value, 10));
     }
   }, [savedHeaderHeight]);
   
@@ -246,7 +246,7 @@ export default function Home() {
     onSettled: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
-
+      utils.followUp.list.invalidate();
     },
   });
 
@@ -398,7 +398,9 @@ export default function Home() {
         if (selectedDistrictId) {
           setSelectedDistrictId(null);
         }
-
+        if (followUpPanelOpen) {
+          setFollowUpPanelOpen(false);
+        }
         return;
       }
       
@@ -421,7 +423,7 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, districts]);
+  }, [selectedDistrictId, followUpPanelOpen, districts]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -429,7 +431,11 @@ export default function Home() {
     setIsResizingDistrict(true);
   };
 
-
+  // Handle follow up panel resize
+  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizingFollowUp(true);
+  };
 
   // Mouse move handler for resizing
   useEffect(() => {
@@ -438,15 +444,18 @@ export default function Home() {
         const newWidth = (e.clientX / window.innerWidth) * 100;
         setDistrictPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
       }
-
+      if (isResizingFollowUp) {
+        const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
+        setFollowUpPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
+      }
     };
 
     const handleMouseUp = () => {
       setIsResizingDistrict(false);
-
+      setIsResizingFollowUp(false);
     };
 
-    if (isResizingDistrict) {
+    if (isResizingDistrict || isResizingFollowUp) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -454,7 +463,7 @@ export default function Home() {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizingDistrict]);
+  }, [isResizingDistrict, isResizingFollowUp]);
 
   // Calculate days until CMC
   const cmcDate = new Date('2025-07-06');
@@ -501,11 +510,11 @@ export default function Home() {
           className="flex-grow text-white/95 relative z-10"
           style={{ fontSize: '18px' }}
           dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || '' 
+            __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
           }}
         />
         
-        {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
+        {/* Banner Text - "Go Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div 
             className="whitespace-nowrap text-white absolute"
@@ -518,7 +527,7 @@ export default function Home() {
               opacity: 0
             }}
           >
-            Going Together
+            Go Together
           </div>
         </div>
 
@@ -722,18 +731,6 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => {
-                    setLocation("/admin");
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                  </svg>
-                  Admin Console
-                </button>
-                <button
-                  onClick={() => {
                     window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
@@ -749,7 +746,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area Below Header */}
-      <div className="flex flex-col md:flex-row main-content-area" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Left District/National Panel */}
         <div
           className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
@@ -811,6 +808,7 @@ export default function Home() {
               // Close panels if clicking on padding/empty space around map
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
               }
             }}
           >
@@ -820,19 +818,54 @@ export default function Home() {
               onDistrictSelect={handleDistrictSelect}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
                 setNationalPanelOpen(false);
               }}
               onNationalClick={() => {
                 setNationalPanelOpen(true);
                 setSelectedDistrictId(null);
+                setFollowUpPanelOpen(false);
               }}
             />
 
           </div>
         </div>
 
+
+
+        {/* Right Follow Up Panel */}
+        <div
+          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingFollowUp ? 'transition-all duration-300 ease-in-out' : ''}`}
+          style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
+        >
+          {followUpPanelOpen && (
+            <>
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                onMouseDown={handleFollowUpMouseDown}
+              />
+              <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Follow Up Tab Button - Fixed to right side, slides out from edge on hover */}
+      {!followUpPanelOpen && (
+        <div
+          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block follow-up-tab-mobile"
+          style={{ right: 0 }}
+        >
+          <button
+            onClick={() => setFollowUpPanelOpen(true)}
+            className="bg-black/80 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
+            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+          >
+            Follow Ups
+          </button>
+        </div>
+      )}
 
       <PersonDetailsDialog
         person={selectedPerson}
