@@ -20,7 +20,7 @@ async function checkSchema() {
     connection = await mysql.createConnection(connectionString);
     console.log("✓ Connected to database\n");
 
-    // Check critical tables
+    // Check critical tables (matches db-health.ts exactly)
     const criticalTables = ["districts", "campuses", "people", "needs", "notes", "assignments", "settings"];
     
     console.log("📋 Checking tables...\n");
@@ -52,43 +52,22 @@ async function checkSchema() {
         
         // Check for critical columns based on table
         
-        if (tableName === "people") {
-          const required = ["personid", "name", "status", "primarydistrictid", "primaryregion"];
+        // Check critical columns (matches db-health.ts exactly)
+        const criticalColumns = {
+          people: ["personid", "name", "status", "depositpaid", "primarydistrictid", "primaryregion", "primarycampusid", "primaryrole", "nationalcategory", "createdat"],
+          districts: ["id", "name", "region"],
+          campuses: ["id", "name", "districtid"],
+          needs: ["id", "personid", "description", "createdat"],
+          notes: ["id", "personid", "content", "createdat"],
+          assignments: ["id", "personid", "assignmenttype", "roletitle", "isprimary", "createdat"],
+          settings: ["key", "value", "updatedat"],
+        };
+        
+        const required = criticalColumns[tableName] || [];
+        if (required.length > 0) {
           const missing = required.filter(col => !columnNames.includes(col));
           if (missing.length > 0) {
             console.log(`   ⚠️  Missing columns: ${missing.join(", ")}`);
-          } else {
-            console.log(`   ✓ All required columns present`);
-          }
-        } else if (tableName === "needs") {
-          const issues = [];
-          if (!columnNames.includes("description")) {
-            issues.push("description");
-          }
-          if (!columnNames.includes("personid")) {
-            issues.push("personId");
-          }
-          if (issues.length > 0) {
-            console.log(`   ⚠️  Missing columns: ${issues.join(", ")}`);
-          } else {
-            console.log(`   ✓ All required columns present`);
-          }
-        } else if (tableName === "notes") {
-          const issues = [];
-          if (!columnNames.includes("content")) {
-            issues.push("content");
-          }
-          if (!columnNames.includes("personid")) {
-            issues.push("personId");
-          }
-          if (issues.length > 0) {
-            console.log(`   ⚠️  Missing columns: ${issues.join(", ")}`);
-          } else {
-            console.log(`   ✓ All required columns present`);
-          }
-        } else if (tableName === "settings") {
-          if (!columnNames.includes("key")) {
-            console.log(`   ⚠️  Missing column: key`);
           } else {
             console.log(`   ✓ All required columns present`);
           }

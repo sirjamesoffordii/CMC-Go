@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 
 /**
  * Critical tables that must exist for the app to function
+ * Source of truth: drizzle/schema.ts
  */
 const CRITICAL_TABLES = [
   "districts",
@@ -16,15 +17,63 @@ const CRITICAL_TABLES = [
 
 /**
  * Critical columns per table that must exist
+ * Column names match exactly with drizzle/schema.ts
  */
 const CRITICAL_COLUMNS: Record<string, string[]> = {
-  people: ["personId", "name", "status", "primaryDistrictId", "primaryRegion"],
-  districts: ["id", "name", "region"],
-  campuses: ["id", "name", "districtId"],
-  needs: ["id", "personId", "description"],
-  notes: ["id", "personId", "content"],
-  assignments: ["id", "personId", "assignmentType"],
-  settings: ["key", "value"],
+  // people table - matches schema.ts exactly
+  people: [
+    "personId",        // varchar(64), not null, unique
+    "name",            // varchar(255), not null
+    "status",          // enum, not null, default "Not Invited"
+    "depositPaid",     // boolean, not null, default false
+    "primaryDistrictId", // varchar(64), nullable
+    "primaryRegion",   // varchar(255), nullable
+    "primaryCampusId", // int, nullable
+    "primaryRole",     // varchar(255), nullable
+    "nationalCategory", // varchar(255), nullable
+    "createdAt",       // timestamp, not null, defaultNow
+  ],
+  // districts table - matches schema.ts exactly
+  districts: [
+    "id",              // varchar(64), primary key
+    "name",            // varchar(255), not null
+    "region",          // varchar(255), not null
+  ],
+  // campuses table - matches schema.ts exactly
+  campuses: [
+    "id",              // int, primary key, autoincrement
+    "name",            // varchar(255), not null
+    "districtId",      // varchar(64), not null
+  ],
+  // needs table - matches schema.ts exactly
+  needs: [
+    "id",              // int, primary key, autoincrement
+    "personId",        // varchar(64), not null
+    "description",     // text, not null
+    "createdAt",       // timestamp, not null, defaultNow
+  ],
+  // notes table - matches schema.ts exactly
+  notes: [
+    "id",              // int, primary key, autoincrement
+    "personId",        // varchar(64), not null
+    "content",         // text, not null
+    "createdAt",       // timestamp, not null, defaultNow
+  ],
+  // assignments table - matches schema.ts exactly
+  assignments: [
+    "id",              // int, primary key, autoincrement
+    "personId",        // varchar(64), not null
+    "assignmentType",  // enum, not null
+    "roleTitle",       // varchar(255), not null
+    "isPrimary",       // boolean, not null, default false
+    "createdAt",       // timestamp, not null, defaultNow
+  ],
+  // settings table - matches schema.ts exactly
+  settings: [
+    "key",             // varchar(255), primary key
+    "value",           // text, nullable
+    "updatedAt",       // timestamp, not null, defaultNow, onUpdateNow
+  ],
 };
 
 export interface TableInfo {
@@ -204,8 +253,8 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
   }
 
   // Check drizzle_migrations table
-  const drizzleMigrationsTableExists = await drizzleMigrationsTableExists();
-  if (!drizzleMigrationsTableExists) {
+  const hasDrizzleMigrationsTable = await drizzleMigrationsTableExists();
+  if (!hasDrizzleMigrationsTable) {
     warnings.push("drizzle_migrations table does not exist. Migrations may not have been run.");
   }
 
@@ -215,16 +264,16 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
     tables[tableName] = info;
 
     if (!info.exists) {
-      errors.push(`Critical table '${tableName}' does not exist`);
+      const errorMsg = `Critical table '${tableName}' does not exist`;
+      errors.push(errorMsg);
     } else {
       // Verify critical columns
       const requiredColumns = CRITICAL_COLUMNS[tableName] || [];
       if (requiredColumns.length > 0) {
         const missingColumns = await verifyCriticalColumns(tableName, requiredColumns);
         if (missingColumns.length > 0) {
-          errors.push(
-            `Table '${tableName}' is missing required columns: ${missingColumns.join(", ")}`
-          );
+          const errorMsg = `Table '${tableName}' is missing required columns: ${missingColumns.join(", ")}`;
+          errors.push(errorMsg);
         }
       }
 
@@ -237,7 +286,7 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
 
   return {
     connected,
-    drizzleMigrationsTableExists,
+    drizzleMigrationsTableExists: hasDrizzleMigrationsTable,
     tables,
     errors,
     warnings,
@@ -260,9 +309,18 @@ export async function startupDbHealthCheck(): Promise<void> {
 
   if (health.errors.length > 0) {
     console.error("[DB Health] ❌ CRITICAL: Schema drift detected!");
-    console.error("[DB Health] Errors:", health.errors);
+    
+    // Log first failing table/columns for quick diagnosis
+    const firstError = health.errors[0];
+    if (firstError) {
+      console.error("[DB Health] First failure:", firstError);
+    }
+    
+    console.error("[DB Health] All errors:", health.errors);
+    console.error("[DB Health] 💡 Fix: Run 'pnpm db:push' or 'pnpm db:migrate' to sync schema");
+    
     throw new Error(
-      `Schema drift detected: ${health.errors.join("; ")}. ` +
+      `Schema drift detected: ${firstError || health.errors.join("; ")}. ` +
       `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
     );
   }

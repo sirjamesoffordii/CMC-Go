@@ -46,9 +46,9 @@ async function runMigrations() {
       console.log("\nCreating drizzle_migrations table...");
       await connection.query(`
         CREATE TABLE IF NOT EXISTS drizzle_migrations (
-          id SERIAL PRIMARY KEY,
-          hash text NOT NULL,
-          created_at bigint
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          hash TEXT NOT NULL,
+          created_at BIGINT
         )
       `);
       console.log("✓ Created drizzle_migrations table");

@@ -13,9 +13,11 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/run-migrations.mjs",
     "db:push": "drizzle-kit push",
+    "db:push:yes": "node scripts/db-push-yes.mjs",
     "db:init": "node scripts/init-mysql-db.mjs",
     "db:seed": "node scripts/seed-mysql-dev.mjs",
-    "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:push && pnpm db:seed",
+    "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:migrate && pnpm db:seed",
+    "db:check": "node scripts/check-schema.mjs",
     "db:reset": "node scripts/reset-db.mjs",
     "db:reset:drop": "node scripts/reset-db.mjs --drop-db"
   },
@@ -112,7 +114,6 @@
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
-    "better-sqlite3": "^12.5.0",
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
@@ -139,7 +140,6 @@
     },
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
-      "better-sqlite3",
       "esbuild"
     ]
   }
