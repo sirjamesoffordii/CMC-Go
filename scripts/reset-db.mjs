@@ -142,20 +142,32 @@ async function dropAndRecreateDatabase() {
 }
 
 /**
- * Run migrations
+ * Run migrations (non-interactive)
  */
 async function runMigrations() {
   console.log("📦 Running migrations...");
   try {
-    execSync("pnpm db:push", {
+    // Use db:push:yes for non-interactive push, or db:migrate for migration files
+    execSync("pnpm db:push:yes", {
       cwd: projectRoot,
       stdio: "inherit",
-      env: { ...process.env },
+      env: { ...process.env, CI: "true" }, // Ensure non-interactive
     });
-    console.log("✅ Migrations completed\n");
+    console.log("✅ Schema pushed successfully\n");
   } catch (error) {
-    console.error("❌ Failed to run migrations:", error.message);
-    throw error;
+    console.error("❌ Failed to push schema:", error.message);
+    console.error("   Trying db:migrate as fallback...");
+    try {
+      execSync("pnpm db:migrate", {
+        cwd: projectRoot,
+        stdio: "inherit",
+        env: { ...process.env },
+      });
+      console.log("✅ Migrations completed\n");
+    } catch (migrateError) {
+      console.error("❌ Failed to run migrations:", migrateError.message);
+      throw migrateError;
+    }
   }
 }
 

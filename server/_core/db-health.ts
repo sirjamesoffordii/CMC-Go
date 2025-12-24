@@ -2,8 +2,34 @@ import { getDb, getPool } from "../db";
 import { sql } from "drizzle-orm";
 
 /**
+ * Helper to extract rows from mysql2 result format
+ * mysql2 returns [rows, fields] tuple, but drizzle may wrap it differently
+ */
+function asRows(result: any): any[] {
+  // If it's already an array of rows
+  if (Array.isArray(result) && result.length > 0 && !Array.isArray(result[0])) {
+    return result;
+  }
+  // If it's a tuple [rows, fields]
+  if (Array.isArray(result) && result.length === 2 && Array.isArray(result[0])) {
+    return result[0];
+  }
+  // If it's an object with rows property
+  if (result && Array.isArray(result.rows)) {
+    return result.rows;
+  }
+  // If it's wrapped in another array
+  if (Array.isArray(result) && result.length === 1 && Array.isArray(result[0])) {
+    return result[0];
+  }
+  // Default: try to return as-is if it's an array
+  return Array.isArray(result) ? result : [];
+}
+
+/**
  * Critical tables that must exist for the app to function
  * Source of truth: drizzle/schema.ts
+ * Note: users table exists but is not critical for app startup (auth is optional)
  */
 const CRITICAL_TABLES = [
   "districts",
@@ -107,7 +133,8 @@ async function tableExists(tableName: string): Promise<boolean> {
       AND table_name = ${tableName}
     `);
     
-    return Array.isArray(result) && result.length > 0 && (result[0] as any).count > 0;
+    const rows = asRows(result);
+    return rows.length > 0 && (rows[0] as any).count > 0;
   } catch (error) {
     return false;
   }
@@ -138,9 +165,8 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       ORDER BY ordinal_position
     `);
     
-    const columns = Array.isArray(columnsResult)
-      ? columnsResult.map((row: any) => row.column_name)
-      : [];
+    const columnRows = asRows(columnsResult);
+    const columns = columnRows.map((row: any) => row.column_name || row.COLUMN_NAME || "");
 
     // Get row count - use pool directly for dynamic table names
     const pool = getPool();
@@ -208,9 +234,8 @@ async function verifyCriticalColumns(tableName: string, requiredColumns: string[
       AND table_name = ${tableName}
     `);
     
-    const existingColumns = Array.isArray(columnsResult)
-      ? columnsResult.map((row: any) => row.column_name)
-      : [];
+    const columnRows = asRows(columnsResult);
+    const existingColumns = columnRows.map((row: any) => row.column_name || row.COLUMN_NAME || "");
 
     for (const col of requiredColumns) {
       if (!existingColumns.includes(col)) {
@@ -235,11 +260,28 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
 
   // Check connection
   let connected = false;
+  let databaseName: string | null = null;
   try {
     const db = await getDb();
     if (db) {
       await db.execute(sql`SELECT 1`);
       connected = true;
+      
+      // Verify DATABASE() returns a database name (ensures DATABASE_URL includes DB name)
+      const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
+      const dbRows = asRows(dbResult);
+      databaseName = dbRows.length > 0 ? (dbRows[0] as any).db_name : null;
+      
+      if (!databaseName) {
+        errors.push("DATABASE_URL must include database name (e.g., mysql://user:pass@host:port/database_name)");
+        return {
+          connected: true, // Connected but wrong DB
+          drizzleMigrationsTableExists: false,
+          tables: {},
+          errors,
+          warnings,
+        };
+      }
     }
   } catch (error) {
     errors.push(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -336,5 +378,18 @@ export async function startupDbHealthCheck(): Promise<void> {
   console.log("[DB Health] ✅ Database health check passed");
   console.log(`[DB Health] Tables checked: ${CRITICAL_TABLES.length}`);
   console.log(`[DB Health] Tables with data: ${Object.values(health.tables).filter(t => (t.rowCount || 0) > 0).length}`);
+  
+  // Log database name for debugging
+  try {
+    const db = await getDb();
+    if (db) {
+      const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
+      const dbRows = asRows(dbResult);
+      const dbName = dbRows.length > 0 ? (dbRows[0] as any).db_name : "unknown";
+      console.log(`[DB Health] Database: ${dbName}`);
+    }
+  } catch {
+    // Ignore errors in logging
+  }
 }
 

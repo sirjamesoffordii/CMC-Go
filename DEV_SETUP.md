@@ -17,30 +17,48 @@ This document explains how to get the CMC Go application running with MySQL/TiDB
 
 ## Quick Start
 
-1. **Install dependencies:**
+1. **Set DATABASE_URL in `.env` file:**
+   ```
+   DATABASE_URL=mysql://user:password@host:port/database
+   ```
+   ⚠️ **Important:** The URL must include the database name (e.g., `/cmc_go` at the end).
+
+2. **Install dependencies:**
    ```bash
    pnpm install
    ```
 
-2. **Setup database (creates schema and seeds data):**
+3. **Reset and setup database (blank database):**
+   ```bash
+   pnpm db:reset
+   ```
+   This will:
+   - Truncate all tables (or drop/recreate database if you have permissions)
+   - Push schema to create all tables
+   - Seed dev data (20 districts, ~40-60 campuses, ~100-200 people)
+
+   **Alternative (if database already has schema):**
    ```bash
    pnpm db:setup
    ```
-   This will:
-   - Verify database connection
-   - Run migrations to create all tables
-   - Seed dev data (20 districts, ~40-60 campuses, ~100-200 people)
+   This only runs migrations and seeds (doesn't reset).
 
-3. **Start the development server:**
+4. **Start the development server:**
    ```bash
    pnpm dev
    ```
    The server includes a startup health check that verifies the schema is correct.
 
-4. **Open in browser:**
+5. **Open in browser:**
    Navigate to `http://localhost:3000`
 
 The map should now display districts with visible data.
+
+6. **Verify writes work (optional):**
+   ```bash
+   pnpm db:verify
+   ```
+   This tests that create/update operations persist to the database.
 
 ## Database Setup
 
