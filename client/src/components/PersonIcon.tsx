@@ -2,7 +2,9 @@ import { Person } from "../../drizzle/schema";
 import { User, Edit2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { PersonTooltip } from "./PersonTooltip";
+import { trpc } from "@/lib/trpc";
 
 interface PersonIconProps {
   person: Person;
@@ -18,8 +20,24 @@ const STATUS_COLORS = {
   "Not Invited": "text-slate-500",
 };
 
+interface Need {
+  id: number;
+  personId: string;
+  type: string;
+  description: string;
+  amount?: number | null;
+  isActive: boolean;
+}
+
 export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIconProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
+  const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
   const {
     attributes,
@@ -40,6 +58,26 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
+  const handleNameMouseEnter = (e: React.MouseEvent) => {
+    setIsHovered(true);
+    if (nameRef.current) {
+      const rect = nameRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
+  };
+
+  const handleNameMouseLeave = () => {
+    setIsHovered(false);
+    setTooltipPos(null);
+  };
+
+  const handleNameMouseMove = (e: React.MouseEvent) => {
+    if (nameRef.current && isHovered) {
+      const rect = nameRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
+  };
+
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
@@ -55,17 +93,25 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      {...attributes}
-      {...listeners}
-    >
+    <>
+      <div
+        ref={(node) => {
+          iconRef.current = node;
+          setNodeRef(node);
+        }}
+        style={style}
+        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
       {/* First Name Label with Edit Button */}
-      <div className="relative flex items-center justify-center mb-1 group/name w-full min-w-0">
+      <div 
+        ref={nameRef}
+        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+        onMouseEnter={handleNameMouseEnter}
+        onMouseLeave={handleNameMouseLeave}
+        onMouseMove={handleNameMouseMove}
+      >
         <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
           {truncatedName}
         </div>
@@ -92,33 +138,19 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           {/* Gray spouse icon behind - shown when person has spouse */}
           {person.spouse && (
             <User
-              className="w-10 h-10 text-slate-300 absolute top-0 left-3 pointer-events-none"
+              className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
               strokeWidth={1.5}
               fill="currentColor"
             />
           )}
-          {/* Main person icon */}
-          <div className="relative">
+          {/* Main person icon - solid */}
+          <div 
+            className={`relative ${STATUS_COLORS[person.status]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+          >
             <User
-              className={`w-10 h-10 ${STATUS_COLORS[person.status]} transition-colors cursor-pointer relative z-10 ${person.depositPaid ? 'stroke-slate-700 ring-2 ring-slate-700 ring-offset-1' : ''}`}
-              strokeWidth={person.depositPaid ? 2.5 : 1.5}
-              fill={person.depositPaid ? 'none' : 'currentColor'}
-              style={{
-                filter: 'var(--person-shadow, none)',
-                transition: 'filter 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15))');
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'none');
-              }}
-            />
-            <User
-              className={`w-10 h-10 text-gray-700 absolute top-0 left-0 opacity-0 group-hover/person:opacity-100 transition-opacity pointer-events-none z-30`}
-              strokeWidth={0.25}
-              fill="none"
-              stroke="currentColor"
+              className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+              strokeWidth={1.5}
+              fill="currentColor"
             />
           </div>
         </button>
@@ -130,7 +162,21 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           </div>
         )}
       </div>
-    </div>
+      </div>
+      {/* Person Tooltip */}
+      {isHovered && tooltipPos && (personNeed || person.notes || person.depositPaid) && (
+        <PersonTooltip
+          person={person}
+          need={personNeed ? {
+            type: personNeed.type,
+            description: personNeed.description,
+            amount: personNeed.amount,
+            isActive: personNeed.isActive,
+          } : null}
+          position={tooltipPos}
+        />
+      )}
+    </>
   );
 }
 

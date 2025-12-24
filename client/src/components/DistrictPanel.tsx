@@ -13,7 +13,7 @@ import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "framer-motion";
@@ -30,6 +30,10 @@ import { CampusNameDropZone } from "./CampusNameDropZone";
 import { CustomDragLayer } from "./CustomDragLayer";
 import { DistrictDirectorDropZone } from "./DistrictDirectorDropZone";
 import { PersonDropZone } from "./PersonDropZone";
+import { DraggableCampusRow } from "./DraggableCampusRow";
+import { CampusOrderDropZone } from "./CampusOrderDropZone";
+import { calculateDistrictStats, toDistrictPanelStats } from "@/utils/districtStats";
+import { deriveHouseholdLabel } from "@/lib/householdLabel";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -97,7 +101,12 @@ export function DistrictPanel({
   const updatePerson = trpc.people.update.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
+    },
+    onError: (error) => {
+      console.error('Error updating person:', error);
+      alert(`Error updating person: ${error.message || 'Unknown error'}`);
     },
   });
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -108,8 +117,22 @@ export function DistrictPanel({
   });
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {
+      // Invalidate all people queries to ensure UI updates
       utils.people.list.invalidate();
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
+      }
+      // Also invalidate campuses to refresh people counts
+      utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
+      // Reset form and close dialog only after successful creation
+      setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+      setIsPersonDialogOpen(false);
+      setSelectedCampusId(null);
+    },
+    onError: (error) => {
+      console.error('Error creating person:', error);
+      alert(`Error creating person: ${error.message || 'Unknown error'}`);
     },
   });
   const deletePerson = trpc.people.delete.useMutation({
@@ -134,26 +157,52 @@ export function DistrictPanel({
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [selectedCampusId, setSelectedCampusId] = useState<number | string | null>(null);
   const [editingPerson, setEditingPerson] = useState<{ campusId: number | string; person: Person } | null>(null);
+  
+  // Fetch needs for the person being edited
+  const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: editingPerson?.person.personId || '' },
+    { 
+      enabled: !!editingPerson?.person.personId,
+      retry: false,
+      onError: (error) => {
+        console.error('Error fetching person needs:', error);
+      }
+    }
+  );
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
+  // Campus role options
+  const campusRoles = ['Campus Director', 'Campus Co-Director', 'Staff'] as const;
+  type CampusRole = typeof campusRoles[number];
+
+  // Quick add state
+  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
+  const [quickAddName, setQuickAddName] = useState('');
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
+
   // Form states
   const [personForm, setPersonForm] = useState({
     name: '',
-    role: 'Staff',
+    role: 'Staff' as CampusRole,
     status: 'not-invited' as keyof typeof statusMap,
     needType: 'None' as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other',
     needAmount: '',
     needDetails: '',
     notes: '',
-    spouse: '',
-    kids: '',
-    guests: '',
+    spouseAttending: false,
+    childrenCount: 0,
+    guestsCount: 0,
     childrenAges: [] as string[],
     depositPaid: false,
-    needsMet: false
+    needsMet: false,
+    householdId: null as number | null,
   });
+  
+  // Validation state
+  const [householdValidationError, setHouseholdValidationError] = useState<string | null>(null);
+  const [householdNameError, setHouseholdNameError] = useState<string | null>(null);
   
   const [campusForm, setCampusForm] = useState({
     name: ''
@@ -166,21 +215,93 @@ export function DistrictPanel({
   // Store original order of people per campus (by personId)
   const [campusPeopleOrder, setCampusPeopleOrder] = useState<Record<number, string[]>>({});
 
-  // Fetch needs to check if people have needs
+  // Fetch active needs only - used for counting and hasNeeds indicators
+  // Only active needs are counted. Inactive needs are retained for history.
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  
+  // Fetch households for dropdown
+  const { data: allHouseholds = [], error: householdsError } = trpc.households.list.useQuery(undefined, {
+    retry: false,
+    onError: (error) => {
+      console.error('Error fetching households:', error);
+    }
+  });
+  const [householdSearchQuery, setHouseholdSearchQuery] = useState('');
+  const { data: searchedHouseholds = [] } = trpc.households.search.useQuery(
+    { query: householdSearchQuery },
+    { enabled: householdSearchQuery.length > 0 }
+  );
+  
+  // Create household mutation
+  const createHousehold = trpc.households.create.useMutation({
+    onSuccess: (newHousehold) => {
+      utils.households.list.invalidate();
+      setPersonForm({ ...personForm, householdId: newHousehold.id });
+    },
+  });
+  
+  // Update household mutation
+  const updateHousehold = trpc.households.update.useMutation({
+    onSuccess: () => {
+      utils.households.list.invalidate();
+    },
+  });
+  
+  // Helper to get household members for display
+  const getHouseholdDisplayName = (householdId: number) => {
+    const household = allHouseholds.find(h => h.id === householdId);
+    if (!household) return `Household ${householdId}`;
+    if (household.label) return household.label;
+    // Try to get members to show last name
+    const members = people.filter(p => p.householdId === householdId);
+    if (members.length > 0) {
+      const lastName = members[0].name.split(' ').pop() || 'Household';
+      return `${lastName} Household`;
+    }
+    return 'Household';
+  };
+  
+  // Validation: Check if household is required
+  const isHouseholdRequired = personForm.spouseAttending || personForm.childrenCount > 0;
+  const hasHouseholdValidationError = isHouseholdRequired && !personForm.householdId;
+  
+  const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
+    onSuccess: () => {
+      utils.needs.listActive.invalidate();
+      onDistrictUpdate();
+    },
+  });
+  const deleteNeed = trpc.needs.delete.useMutation({
+    onSuccess: () => {
+      utils.needs.listActive.invalidate();
+      onDistrictUpdate();
+    },
+  });
+  
+  // Fetch all people directly to ensure stats match InteractiveMap exactly
+  // This ensures we use the same data source as the map/tooltip for consistency
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
 
   if (!district) return null;
 
-  // Calculate district people and stats
-  const districtPeople = people.filter(p => p.primaryDistrictId === district.id);
+  // Calculate district people and stats using shared utility
+  // Use 'people' prop for display (already filtered by Home.tsx for performance)
+  // But use 'allPeople' for stats calculation to match InteractiveMap exactly
+  const districtPeople = useMemo(() => {
+    if (!district?.id) return [];
+    return people.filter(p => p.primaryDistrictId === district.id);
+  }, [people, district?.id]);
   
-  // Map people with needs indicator
+  // Map people with needs indicator - DERIVED from active needs only
+  // hasNeeds is true if person has any active needs, false otherwise
+  // Only active needs are counted. Inactive needs are retained for history.
   const peopleWithNeeds = useMemo(() => {
     return districtPeople.map(person => ({
       ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId),
+      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
     })) as (Person & { hasNeeds: boolean })[];
   }, [districtPeople, allNeeds]);
+  
   const districtDirector = peopleWithNeeds.find(p => 
     p.primaryRole?.toLowerCase().includes('district director') ||
     p.primaryRole?.toLowerCase().includes('dd')
@@ -190,10 +311,54 @@ export function DistrictPanel({
     !p.primaryCampusId && 
     !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
   );
-  const campusesWithPeople = campuses.map(campus => ({
-    ...campus,
-    people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
-  }));
+  
+  // Campus order state - stores ordered campus IDs
+  const [campusOrder, setCampusOrder] = useState<number[]>([]);
+
+  // Initialize campus order when campuses change
+  useEffect(() => {
+    if (campuses.length > 0 && district?.id) {
+      // Try to load persisted order from localStorage
+      const savedOrderJson = localStorage.getItem(`campus-order-${district.id}`);
+      let savedOrder: number[] = [];
+      if (savedOrderJson) {
+        try {
+          savedOrder = JSON.parse(savedOrderJson);
+        } catch (e) {
+          // Invalid JSON, ignore
+        }
+      }
+      
+      // Filter saved order to only include existing campuses
+      const validSavedOrder = savedOrder.filter(id => campuses.some(c => c.id === id));
+      const missingCampuses = campuses.filter(c => !validSavedOrder.includes(c.id));
+      
+      // Use saved order if valid, otherwise use default order
+      const currentOrder = validSavedOrder.length > 0 
+        ? [...validSavedOrder, ...missingCampuses.map(c => c.id)]
+        : campuses.map(c => c.id);
+      
+      setCampusOrder(currentOrder);
+      
+      // Persist the final order
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(currentOrder));
+    } else if (!district?.id) {
+      // Clear order when district changes
+      setCampusOrder([]);
+    }
+  }, [campuses, district?.id]); // Reset when district changes
+
+  // Create ordered campuses with people
+  const campusesWithPeople = useMemo(() => {
+    const ordered = campusOrder.length > 0 
+      ? campusOrder.map(id => campuses.find(c => c.id === id)).filter(Boolean) as Campus[]
+      : campuses;
+    
+    return ordered.map(campus => ({
+      ...campus,
+      people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
+    }));
+  }, [campuses, campusOrder, peopleWithNeeds]);
 
   // Store initial order when panel opens or data changes significantly
   useEffect(() => {
@@ -212,21 +377,23 @@ export function DistrictPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [district?.id]); // Reset order when district changes (panel opens/closes)
 
-  // Calculate stats
+  // Calculate stats using shared utility with allPeople to ensure consistency with tooltip and map
+  // This ensures the stats match exactly what's shown in the tooltip and map metrics
   const stats = useMemo(() => {
-    return peopleWithNeeds.reduce((acc, person) => {
-      if (person.status === 'Yes') acc.going++;
-      else if (person.status === 'Maybe') acc.maybe++;
-      else if (person.status === 'No') acc.notGoing++;
-      else if (person.status === 'Not Invited') acc.notInvited++;
-      return acc;
-    }, { going: 0, maybe: 0, notGoing: 0, notInvited: 0 });
-  }, [peopleWithNeeds]);
+    if (!district?.id) {
+      return { going: 0, maybe: 0, notGoing: 0, notInvited: 0 };
+    }
+    // Use allPeople (same source as InteractiveMap) for stats calculation
+    const districtStats = calculateDistrictStats(allPeople, district.id);
+    return toDistrictPanelStats(districtStats);
+  }, [allPeople, district?.id]);
 
-  // Calculate needs summary for district
+  // Calculate needs summary for district - ONLY active needs are counted
+  // Only active needs are counted. Inactive needs are retained for history.
   const needsSummary = useMemo(() => {
     const districtPersonIds = new Set(peopleWithNeeds.map(p => p.personId));
-    const districtNeeds = allNeeds.filter(n => districtPersonIds.has(n.personId));
+    // allNeeds already contains only active needs (from listActive query)
+    const districtNeeds = allNeeds.filter(n => districtPersonIds.has(n.personId) && n.isActive);
     const totalNeeds = districtNeeds.length;
     const totalFinancial = districtNeeds
       .filter(n => n.amount !== null && n.amount !== undefined)
@@ -286,45 +453,195 @@ export function DistrictPanel({
     }
   };
 
+  // Handle quick add + sign click
+  const handleQuickAddClick = (e: React.MouseEvent, targetId: string | number) => {
+    e.stopPropagation();
+    const quickAddKey = typeof targetId === 'number' ? `campus-${targetId}` : targetId;
+    setQuickAddMode(quickAddKey);
+    setQuickAddName('');
+    // Focus input after state update
+    setTimeout(() => {
+      quickAddInputRef.current?.focus();
+    }, 0);
+  };
+
+  // Handle quick add input blur/enter
+  const handleQuickAddSubmit = (targetId: string | number) => {
+    const actualTargetId = typeof targetId === 'string' && targetId.startsWith('campus-') 
+      ? parseInt(targetId.replace('campus-', ''))
+      : targetId;
+    handleQuickAddPerson(actualTargetId, quickAddName);
+  };
+
+  // Handle quick add person
+  const handleQuickAddPerson = (targetId: string | number, name: string) => {
+    if (!name?.trim()) {
+      setQuickAddMode(null);
+      setQuickAddName('');
+      return;
+    }
+
+    if (!district?.id) {
+      console.error('District ID is missing');
+      setQuickAddMode(null);
+      setQuickAddName('');
+      return;
+    }
+
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build mutation data with defaults
+    const mutationData: any = {
+      personId,
+      name: name.trim(),
+      primaryDistrictId: district.id,
+      status: 'Not Invited', // Default status
+      primaryRole: 'Staff', // Default role
+      depositPaid: false,
+    };
+
+    // Set role and campus based on target
+    if (targetId === 'district') {
+      mutationData.primaryRole = 'District Director';
+    } else if (targetId === 'unassigned') {
+      mutationData.primaryRole = 'Staff';
+    } else if (typeof targetId === 'number') {
+      mutationData.primaryRole = 'Staff';
+      mutationData.primaryCampusId = targetId;
+    }
+
+    // Add primaryRegion and nationalCategory if district has them
+    if (district.regionId) {
+      mutationData.primaryRegion = district.regionId;
+    }
+
+    createPerson.mutate(mutationData, {
+      onSuccess: () => {
+        utils.people.list.invalidate();
+        utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
+        onDistrictUpdate();
+        setQuickAddMode(null);
+        setQuickAddName('');
+      },
+      onError: (error) => {
+        console.error('Error creating person:', error);
+        alert('Failed to create person: ' + error.message);
+        setQuickAddMode(null);
+        setQuickAddName('');
+      }
+    });
+  };
+
   // Handle add person
   const handleAddPerson = () => {
-    if (!selectedCampusId || !personForm.name || !personForm.role) return;
+    console.log('handleAddPerson called', { selectedCampusId, name: personForm.name, role: personForm.role, district: district?.id });
     
-    if (selectedCampusId === 'district') {
-      // Add district director
-      const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      createPerson.mutate({
-        personId,
-        name: personForm.name,
-        primaryDistrictId: district.id,
-        primaryRole: 'District Director',
-        primaryCampusId: null,
-        status: statusMap[personForm.status],
-        depositPaid: personForm.depositPaid,
-        notes: personForm.notes || undefined,
-      });
-    } else if (selectedCampusId === 'unassigned') {
-      // Add to unassigned - create person without campus
-      const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      createPerson.mutate({
-        personId,
-        name: personForm.name,
-        primaryDistrictId: district.id,
-        primaryRole: personForm.role,
-        status: statusMap[personForm.status],
-        depositPaid: personForm.depositPaid,
-        notes: personForm.notes || undefined,
-      });
-    } else if (typeof selectedCampusId === 'number') {
-      // Add to specific campus - use existing onPersonAdd for compatibility
-      onPersonAdd(selectedCampusId, personForm.name);
-      // Note: Role and status will need to be updated separately after person is created
-      // This is a limitation of the current API - would need to enhance onPersonAdd callback
+    if (!selectedCampusId) {
+      console.error('No campus selected');
+      alert('Please select a campus or location first');
+      return;
     }
     
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
-    setIsPersonDialogOpen(false);
-    setSelectedCampusId(null);
+    if (!personForm.name?.trim()) {
+      console.error('Name is required');
+      alert('Name is required');
+      return;
+    }
+    
+    if (!personForm.role?.trim()) {
+      console.error('Role is required');
+      alert('Role is required');
+      return;
+    }
+    
+    if (!district?.id) {
+      console.error('District ID is missing');
+      alert('District information is missing');
+      return;
+    }
+    
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Build mutation data - use 'any' type to allow conditional fields
+    const mutationData: any = {
+      personId,
+      name: personForm.name.trim(),
+      primaryDistrictId: district.id,
+      status: statusMap[personForm.status],
+    };
+    
+    // Set depositPaid - ensure it's a boolean
+    mutationData.depositPaid = personForm.depositPaid ?? false;
+    
+    // Set role and campus based on selection
+    if (selectedCampusId === 'district') {
+      // Add district director
+      mutationData.primaryRole = 'District Director';
+      // Don't set primaryCampusId for district director (will be null in DB)
+    } else if (selectedCampusId === 'unassigned') {
+      // Add to unassigned - create person without campus
+      mutationData.primaryRole = personForm.role.trim();
+      // Don't set primaryCampusId for unassigned (will be null in DB)
+    } else if (typeof selectedCampusId === 'number') {
+      // Add to specific campus
+      const campus = campusesWithPeople.find(c => c.id === selectedCampusId);
+      if (!campus) {
+        console.error('Campus not found:', selectedCampusId);
+        alert('Campus not found');
+        return;
+      }
+      mutationData.primaryRole = personForm.role.trim();
+      mutationData.primaryCampusId = selectedCampusId;
+    }
+    
+    // Add optional fields only if they have values
+    if (personForm.notes?.trim()) {
+      mutationData.notes = personForm.notes.trim();
+    }
+    
+    // Household and family fields
+    if (personForm.householdId) {
+      mutationData.householdId = personForm.householdId;
+      mutationData.householdRole = 'primary';
+    }
+    mutationData.spouseAttending = personForm.spouseAttending;
+    mutationData.childrenCount = personForm.childrenCount;
+    mutationData.guestsCount = personForm.guestsCount;
+    
+    // Validation: spouseAttending or childrenCount > 0 requires householdId
+    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
+      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
+      alert("Household is required when spouse is attending or children count is greater than 0");
+      return;
+    }
+    
+    if (personForm.childrenAges.length > 0) {
+      mutationData.childrenAges = JSON.stringify(personForm.childrenAges);
+    }
+    
+    console.log('Creating person with data:', JSON.stringify(mutationData, null, 2));
+    
+    // Call the mutation
+    createPerson.mutate(mutationData, {
+      onSuccess: () => {
+        // Create need only if needType is not "None"
+        if (personForm.needType !== 'None' && personForm.needType) {
+          const needDescription = personForm.needType === 'Financial' 
+            ? `Financial need: $${personForm.needAmount || '0'}`
+            : personForm.needDetails || `${personForm.needType} need`;
+          
+          updateOrCreateNeed.mutate({
+            personId,
+            type: personForm.needType,
+            description: needDescription,
+            amount: personForm.needType === 'Financial' && personForm.needAmount 
+              ? Math.round(parseFloat(personForm.needAmount) * 100) 
+              : undefined,
+            isActive: !personForm.needsMet, // Active if needsMet is false
+          });
+        }
+      },
+    });
   };
 
   // Handle add campus
@@ -339,43 +656,133 @@ export function DistrictPanel({
   // Handle edit person
   const handleEditPerson = (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
-    const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-    const personNeed = allNeeds.find(n => n.personId === person.personId);
-    setPersonForm({ 
-      name: person.name, 
-      role: person.primaryRole || 'Staff', 
-      status: figmaStatus,
-      needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
-      needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
-      needDetails: personNeed?.type !== 'Financial' ? (personNeed?.notes || '') : '',
-      notes: person.notes || '', 
-      spouse: '', // Would need to parse from notes
-      kids: '', // Would need to parse from notes
-      guests: '', // Would need to parse from notes
-      childrenAges: [], // Would need to parse from notes
-      depositPaid: false,
-      needsMet: personNeed ? !personNeed.isActive : false
-    });
     setIsEditPersonDialogOpen(true);
   };
+  
+  // Update form when editing person or needs data changes
+  useEffect(() => {
+    if (editingPerson && isEditPersonDialogOpen) {
+      const person = editingPerson.person;
+      const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
+      const personNeed = editingPersonNeeds.length > 0 ? editingPersonNeeds[0] : null;
+      
+      // Parse childrenAges from JSON string if it exists
+      let childrenAges: string[] = [];
+      if (person.childrenAges) {
+        try {
+          childrenAges = JSON.parse(person.childrenAges);
+        } catch (e) {
+          // If parsing fails, treat as empty array
+          childrenAges = [];
+        }
+      }
+      
+      setPersonForm({ 
+        name: person.name, 
+        role: (person.primaryRole && campusRoles.includes(person.primaryRole as CampusRole)) 
+          ? (person.primaryRole as CampusRole) 
+          : 'Staff', 
+        status: figmaStatus,
+        needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
+        needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
+        needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
+        notes: person.notes || '', 
+        spouseAttending: (person.spouseAttending !== undefined && person.spouseAttending !== null) ? person.spouseAttending : false,
+        childrenCount: (person.childrenCount !== undefined && person.childrenCount !== null) ? person.childrenCount : 0,
+        guestsCount: (person.guestsCount !== undefined && person.guestsCount !== null) ? person.guestsCount : 0,
+        childrenAges: childrenAges,
+        depositPaid: person.depositPaid || false,
+        needsMet: personNeed ? !personNeed.isActive : false,
+        householdId: (person.householdId !== undefined && person.householdId !== null) ? person.householdId : null,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingPerson, isEditPersonDialogOpen, editingPersonNeeds]);
 
   // Handle update person
   const handleUpdatePerson = () => {
     if (!editingPerson || !personForm.name || !personForm.role) return;
+    const personId = editingPerson.person.personId;
+    
+    // Store form values for use in callbacks
+    const formData = { ...personForm };
+    
+    // Validation: spouseAttending or childrenCount > 0 requires householdId
+    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
+      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
+      alert("Household is required when spouse is attending or children count is greater than 0");
+      return;
+    }
     
     // Update person with all fields
     updatePerson.mutate({ 
-      personId: editingPerson.person.personId,
+      personId,
       name: personForm.name,
       primaryRole: personForm.role,
       status: statusMap[personForm.status],
       depositPaid: personForm.depositPaid,
       notes: personForm.notes,
+      spouseAttending: personForm.spouseAttending,
+      childrenCount: personForm.childrenCount,
+      guestsCount: personForm.guestsCount,
+      householdId: personForm.householdId,
+      householdRole: personForm.householdId ? 'primary' : undefined,
+      childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
+    }, {
+      onSuccess: () => {
+        // Handle needs: create/update if needType is not "None", delete if "None"
+        if (formData.needType !== 'None' && formData.needType) {
+          // Create or update need
+          const needDescription = formData.needType === 'Financial' 
+            ? `Financial need: $${formData.needAmount || '0'}`
+            : formData.needDetails || `${formData.needType} need`;
+          
+          updateOrCreateNeed.mutate({
+            personId,
+            type: formData.needType,
+            description: needDescription,
+            amount: formData.needType === 'Financial' && formData.needAmount 
+              ? Math.round(parseFloat(formData.needAmount) * 100) 
+              : undefined,
+            isActive: !formData.needsMet, // Active if needsMet is false
+          }, {
+            onSuccess: () => {
+              // Close dialog and reset form after needs are updated
+              setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+              setIsEditPersonDialogOpen(false);
+              setEditingPerson(null);
+            },
+          });
+        } else {
+          // If needType is "None", mark existing need as inactive (preserve history)
+          // Only active needs are counted. Inactive needs are retained for history.
+          // Check if person has an active need to mark as inactive
+          const activeNeed = allNeeds.find(n => n.personId === personId && n.isActive);
+          if (activeNeed) {
+            // Mark as inactive instead of deleting
+            updateOrCreateNeed.mutate({
+              personId,
+              type: activeNeed.type, // Keep existing type
+              description: activeNeed.description, // Keep existing description
+              amount: activeNeed.amount ?? undefined,
+              isActive: false, // Mark as inactive
+            }, {
+              onSuccess: () => {
+                // Close dialog and reset form after needs are updated
+                setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+                setIsEditPersonDialogOpen(false);
+                setEditingPerson(null);
+              },
+            });
+          } else {
+            // No active need to update, just close dialog
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+            setIsEditPersonDialogOpen(false);
+            setEditingPerson(null);
+          }
+        }
+      },
     });
-    
-    setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });
-    setIsEditPersonDialogOpen(false);
-    setEditingPerson(null);
   };
 
   // Handle delete person
@@ -449,11 +856,13 @@ export function DistrictPanel({
     const person = peopleWithNeeds.find(p => p.personId === draggedId);
     if (!person) return;
 
-    // Handle moving to district director (not implemented in current API)
+    // Handle moving to district director
     if (targetCampusId === 'district') {
-      console.warn('Moving to district director not yet implemented');
+      handleDistrictDirectorDrop(draggedId, draggedCampusId);
       return;
     }
+    
+    // Handle moving to district team
 
     // Handle moving to unassigned
     if (targetCampusId === 'unassigned') {
@@ -504,17 +913,51 @@ export function DistrictPanel({
     return districtPeople.find(p => p.personId === personId);
   };
 
+  // Get campus for drag layer
+  const getCampus = (campusId: number): { name: string; people: Person[] } | undefined => {
+    const campus = campusesWithPeople.find(c => c.id === campusId);
+    if (!campus) return undefined;
+    return {
+      name: campus.name,
+      people: campus.people
+    };
+  };
+
+  // Handle campus reordering
+  const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
+    const currentIndex = campusOrder.indexOf(draggedCampusId);
+    if (currentIndex === -1) return;
+    
+    // If dropping at the same position, no change needed
+    if (currentIndex === targetIndex) return;
+
+    const newOrder = [...campusOrder];
+    // Remove from current position
+    newOrder.splice(currentIndex, 1);
+    // Adjust target index if we removed an item before it
+    const adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    // Insert at new position
+    newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
+    setCampusOrder(newOrder);
+    
+    // Persist to localStorage
+    if (district?.id) {
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(newOrder));
+    }
+  };
+
   // Open add person dialog
   const openAddPersonDialog = (campusId: number | string) => {
     setSelectedCampusId(campusId);
     
-    let defaultRole = 'Staff';
+    let defaultRole: CampusRole = 'Staff';
     if (campusId === 'unassigned') {
       if (peopleWithoutCampus.length === 0) {
         defaultRole = 'Campus Director';
       }
     } else if (campusId === 'district') {
-      defaultRole = 'District Director';
+      // District Director is handled separately, not in the dropdown
+      defaultRole = 'Staff'; // This won't be used for district director
     } else if (typeof campusId === 'number') {
       const campus = campusesWithPeople.find(c => c.id === campusId);
       if (campus && campus.people.length === 0) {
@@ -522,7 +965,7 @@ export function DistrictPanel({
       }
     }
     
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', depositPaid: false, needsMet: false });
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
     setIsPersonDialogOpen(true);
   };
 
@@ -579,8 +1022,18 @@ export function DistrictPanel({
                     onPersonStatusChange(districtDirector.personId, nextStatus);
                   }}
                   onAddClick={() => openAddPersonDialog('district')}
+                  quickAddMode={quickAddMode === 'district'}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() => handleQuickAddSubmit('district')}
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName('');
+                  }}
+                  onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
+                  quickAddInputRef={quickAddInputRef}
                 />
-          </div>
+              </div>
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
               <div className="flex items-center gap-2 mr-[60px]">
@@ -595,7 +1048,7 @@ export function DistrictPanel({
                     <span className="font-semibold text-slate-900 text-sm tabular-nums">
                       ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
-              </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -679,10 +1132,21 @@ export function DistrictPanel({
           {/* Campuses Section */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all hover:shadow-md hover:border-slate-200 overflow-x-auto">
             <div className="space-y-3 min-w-max">
-              {campusesWithPeople.map((campus) => {
+              {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
                 return (
-                  <div key={campus.id} className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
+                  <div key={campus.id}>
+                    {/* Drop zone before campus (except first) */}
+                    {index > 0 && (
+                      <CampusOrderDropZone
+                        index={index}
+                        onDrop={handleCampusReorder}
+                      />
+                    )}
+                    
+                    {/* Draggable Campus Row */}
+                    <DraggableCampusRow campusId={campus.id}>
+                      <div className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
                     {/* Campus Name */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
                       <div className="w-60 flex-shrink-0 flex items-center gap-2">
@@ -819,9 +1283,40 @@ export function DistrictPanel({
                               onClick={() => openAddPersonDialog(campus.id)}
                               className="flex flex-col items-center w-[50px]"
                             >
-                              {/* Plus sign in name position */}
+                              {/* Plus sign in name position - clickable for quick add */}
                               <div className="relative flex items-center justify-center mb-1">
-                                <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
+                                {quickAddMode === `campus-${campus.id}` ? (
+                                  <div className="relative">
+                                    <Input
+                                      ref={quickAddInputRef}
+                                      value={quickAddName}
+                                      onChange={(e) => setQuickAddName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleQuickAddSubmit(`campus-${campus.id}`);
+                                        } else if (e.key === 'Escape') {
+                                          setQuickAddMode(null);
+                                          setQuickAddName('');
+                                        }
+                                      }}
+                                      onBlur={() => {
+                                        handleQuickAddSubmit(`campus-${campus.id}`);
+                                      }}
+                                      placeholder="Name"
+                                      className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                      autoFocus
+                                    />
+                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                                      Quick Add
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Plus 
+                                    className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                    strokeWidth={1.5}
+                                    onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                  />
+                                )}
                               </div>
                               {/* Icon */}
                               <div className="relative">
@@ -855,6 +1350,16 @@ export function DistrictPanel({
                         </div>
                       </CampusDropZone>
                     </div>
+                      </div>
+                    </DraggableCampusRow>
+                    
+                    {/* Drop zone after campus (for last item) */}
+                    {index === campusesWithPeople.length - 1 && (
+                      <CampusOrderDropZone
+                        index={campusesWithPeople.length}
+                        onDrop={handleCampusReorder}
+                      />
+                    )}
                   </div>
                 );
               })}
@@ -907,10 +1412,41 @@ export function DistrictPanel({
                             onClick={() => openAddPersonDialog('unassigned')}
                             className="flex flex-col items-center w-[50px]"
                           >
-                            {/* Plus sign in name position */}
+                            {/* Plus sign in name position - clickable for quick add */}
                             <div className="relative flex items-center justify-center mb-1">
-                              <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
-                </div>
+                              {quickAddMode === 'unassigned' ? (
+                                <div className="relative">
+                                  <Input
+                                    ref={quickAddInputRef}
+                                    value={quickAddName}
+                                    onChange={(e) => setQuickAddName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleQuickAddSubmit('unassigned');
+                                      } else if (e.key === 'Escape') {
+                                        setQuickAddMode(null);
+                                        setQuickAddName('');
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      handleQuickAddSubmit('unassigned');
+                                    }}
+                                    placeholder="Name"
+                                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                    autoFocus
+                                  />
+                                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                                    Quick Add
+                                  </div>
+                                </div>
+                              ) : (
+                                <Plus 
+                                  className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                  strokeWidth={1.5}
+                                  onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                />
+                              )}
+                            </div>
                             {/* Icon */}
                             <div className="relative">
                               <User 
@@ -950,7 +1486,14 @@ export function DistrictPanel({
             </div>
             
         {/* Add Person Dialog */}
-        <Dialog open={isPersonDialogOpen} onOpenChange={setIsPersonDialogOpen}>
+        <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
+          setIsPersonDialogOpen(open);
+          if (!open) {
+            // Reset form when dialog is closed
+            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+            setSelectedCampusId(null);
+          }
+        }}>
           <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Person</DialogTitle>
@@ -961,29 +1504,47 @@ export function DistrictPanel({
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="person-name">Name *</Label>
                     <Input
                       id="person-name"
                       value={personForm.name}
-                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, name: e.target.value });
+                        // Clear household name error when name changes (but don't auto-update household label)
+                        setHouseholdNameError(null);
+                      }}
                       placeholder="Enter name"
                     />
-              </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="person-role">Role *</Label>
-                    <Input
-                      id="person-role"
-                      value={personForm.role}
-                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                      placeholder="e.g., Campus Director, Staff"
-                      disabled={selectedCampusId === 'district'}
-                      className={selectedCampusId === 'district' ? 'bg-slate-100 cursor-not-allowed' : ''}
-                    />
-                </div>
-              </div>
-                <div className="grid grid-cols-3 gap-4 relative">
+                    {selectedCampusId === 'district' ? (
+                      <Input
+                        id="person-role"
+                        value="District Director"
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
+                      >
+                        <SelectTrigger id="person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campusRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="person-status">Status</Label>
                     <Select
@@ -1000,7 +1561,159 @@ export function DistrictPanel({
                         <SelectItem value="not-invited">Not Invited Yet</SelectItem>
                       </SelectContent>
                     </Select>
-          </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Family & Guests (optional) */}
+              <div className="space-y-4 mt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
+                </div>
+                
+                {/* Inputs */}
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="person-spouse-attending"
+                        checked={personForm.spouseAttending}
+                      onCheckedChange={(checked) => {
+                        setPersonForm({ ...personForm, spouseAttending: checked === true });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                      />
+                      <Label htmlFor="person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
+                    </div>
+                  </div>
+                  <div className="space-y-2 ml-4">
+                    <Label htmlFor="person-children-count">Children attending (0-10)</Label>
+                    <Input
+                      id="person-children-count"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={personForm.childrenCount}
+                      onChange={(e) => {
+                        const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                        setPersonForm({ 
+                          ...personForm, 
+                          childrenCount: count,
+                          childrenAges: Array(count).fill('')
+                        });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                      placeholder="0"
+                      className="w-24"
+                    />
+                  </div>
+                  <div className="space-y-2 ml-4">
+                    <Label htmlFor="person-guests-count">Guests attending (0-10)</Label>
+                    <Input
+                      id="person-guests-count"
+                      type="number"
+                      min="0"
+                      max="10"
+                      value={personForm.guestsCount}
+                      onChange={(e) => {
+                        const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                        setPersonForm({ ...personForm, guestsCount: count });
+                      }}
+                      placeholder="0"
+                      className="w-24"
+                    />
+                  </div>
+                </div>
+                
+                {/* Household Selector */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor="person-household">Household (optional)</Label>
+                      <Select
+                        value={personForm.householdId?.toString() || ''}
+                        onValueChange={(value) => {
+                          const householdId = value ? parseInt(value) : null;
+                          setPersonForm({ ...personForm, householdId });
+                          setHouseholdValidationError(null);
+                        }}
+                      >
+                        <SelectTrigger id="person-household">
+                          <SelectValue placeholder="Select household" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return (
+                              <SelectItem key={household.id} value={household.id.toString()}>
+                                <div className="flex flex-col">
+                                  <span>{displayName}</span>
+                                  {members.length > 0 && (
+                                    <span className="text-xs text-slate-500">
+                                      {members.map(m => m.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            );
+                          }) : null}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        // Validate name is not empty
+                        if (!personForm.name.trim()) {
+                          setHouseholdNameError("Enter a name first to create a household.");
+                          return;
+                        }
+                        
+                        // Clear any previous error
+                        setHouseholdNameError(null);
+                        
+                        // Derive household label from person's name
+                        const label = deriveHouseholdLabel(personForm.name);
+                        
+                        // Create household with derived label
+                        createHousehold.mutate({
+                          label,
+                          childrenCount: 0,
+                          guestsCount: 0,
+                        });
+                      }}
+                      className="mt-6"
+                    >
+                      Create household
+                    </Button>
+                  </div>
+                  
+                  {/* Validation Errors */}
+                  {householdNameError && (
+                    <div className="text-sm text-red-600 mt-1">
+                      {householdNameError}
+                    </div>
+                  )}
+                  {hasHouseholdValidationError && (
+                    <div className="text-sm text-red-600 mt-1">
+                      To avoid double-counting, link or create a household for spouse/children.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Needs Section */}
+              <div className="space-y-4 mt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="person-need">Need Request</Label>
                     <Select
@@ -1018,201 +1731,134 @@ export function DistrictPanel({
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
-        </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="person-deposit-paid">Deposit Paid</Label>
-                    <div className="flex items-center justify-start pl-1">
-                      <Checkbox
-                        id="person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
                   </div>
-                </div>
-                <AnimatePresence>
-                  {personForm.needType !== 'None' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      {personForm.needType === 'Financial' ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="person-need-details">Description</Label>
-                              <Input
-                                id="person-need-details"
-                                value={personForm.needDetails}
-                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                                placeholder="Description"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="person-need-amount">Amount ($)</Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                <Input
-                                  id="person-need-amount"
-                                  type="number"
-                                  value={personForm.needAmount}
-                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="person-need-details">Description</Label>
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType === 'Financial' && (
+                      <motion.div
+                        key="amount"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden space-y-2"
+                        layout
+                      >
+                        <Label htmlFor="person-need-amount">Amount ($)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                           <Input
-                            id="person-need-details"
-                            value={personForm.needDetails}
-                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`${personForm.needType} need details`}
+                            id="person-need-amount"
+                            type="number"
+                            value={personForm.needAmount}
+                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                            placeholder="0.00"
+                            className="pl-7 w-28"
                           />
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
                         </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-      </div>
-
-              {/* Accompanying Non Staff Section */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                   <div className="space-y-2">
-                    <Label htmlFor="person-spouse">Spouse</Label>
-                    <Input
-                      id="person-spouse"
-                      value={personForm.spouse}
-                      onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                      placeholder="Spouse's name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="person-kids" className="ml-1">Children</Label>
-                    <Input
-                      id="person-kids"
-                      type="number"
-                      min="0"
-                      value={personForm.kids}
-                      onChange={(e) => {
-                        const numChildren = parseInt(e.target.value) || 0;
-                        setPersonForm({ 
-                          ...personForm, 
-                          kids: e.target.value,
-                          childrenAges: Array(numChildren).fill('')
-                        });
-                      }}
-                      placeholder="Number of children"
-                      className="w-20"
-                    />
-                    <AnimatePresence>
-                      {personForm.kids && parseInt(personForm.kids) > 0 && (
+                    <AnimatePresence mode="popLayout">
+                      {personForm.needType !== 'None' ? (
                         <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="space-y-2 mt-2 overflow-hidden"
+                          key="need-met"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="flex items-center gap-2"
+                          layout
                         >
-                          {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                            <motion.div
-                              key={index}
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2, delay: index * 0.05 }}
-                              className="space-y-1"
-                            >
-                              <Label htmlFor={`person-child-age-${index}`} className="text-xs text-slate-600">
-                                Child {index + 1} Age Range
-                              </Label>
-                              <Select
-                                value={personForm.childrenAges[index] || ''}
-                                onValueChange={(value) => {
-                                  const newAges = [...personForm.childrenAges];
-                                  newAges[index] = value;
-                                  setPersonForm({ ...personForm, childrenAges: newAges });
-                                }}
-                              >
-                                <SelectTrigger id={`person-child-age-${index}`}>
-                                  <SelectValue placeholder="Select age range" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="0-2">0-2 years</SelectItem>
-                                  <SelectItem value="3-5">3-5 years</SelectItem>
-                                  <SelectItem value="6-12">6-12 years</SelectItem>
-                                  <SelectItem value="13+">13+ years</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </motion.div>
-                          ))}
+                          <Label htmlFor="person-needs-met" className="cursor-pointer">Need Met</Label>
+                          <Checkbox
+                            id="person-needs-met"
+                            checked={personForm.needsMet}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="deposit-paid"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="flex items-center gap-2"
+                          layout
+                        >
+                          <Label htmlFor="person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
+                          <Checkbox
+                            id="person-deposit-paid"
+                            checked={personForm.depositPaid}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="person-guests">Guest</Label>
-                    <Input
-                      id="person-guests"
-                      type="number"
-                      min="0"
-                      value={personForm.guests}
-                      onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                      placeholder="Enter number of guests"
-                      className="w-20"
-                    />
-                  </div>
                 </div>
               </div>
 
-              {/* Notes Section */}
-              <div className="space-y-4">
+              {/* Notes Section - Always visible */}
+              <div className="space-y-4 mt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700 flex items-center overflow-hidden">
+                    <AnimatePresence mode="popLayout">
+                      {personForm.needType !== 'None' && (
+                        <motion.span
+                          key="needs"
+                          initial={{ opacity: 0, x: -30, width: 0 }}
+                          animate={{ opacity: 1, x: 0, width: 'auto' }}
+                          exit={{ opacity: 0, x: -30, width: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="inline-block whitespace-nowrap"
+                          layout
+                        >
+                          Needs &{' '}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    <motion.span
+                      layout
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="inline-block"
+                    >
+                      Notes
+                    </motion.span>
+                  </h3>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-notes">Notes</Label>
                   <Textarea
-                    id="person-notes"
-                    value={personForm.notes}
-                    onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
-                    placeholder="Enter notes"
-                    rows={6}
+                    id="person-explanation-notes"
+                    value={`${personForm.needDetails || ''}${personForm.needDetails && personForm.notes ? '\n\n' : ''}${personForm.notes || ''}`}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Split by double newline if present, otherwise use first part for needDetails
+                      const parts = value.split('\n\n');
+                      if (parts.length > 1) {
+                        setPersonForm({ 
+                          ...personForm, 
+                          needDetails: parts[0],
+                          notes: parts.slice(1).join('\n\n')
+                        });
+                      } else {
+                        // If no double newline, put everything in needDetails if need type is set, otherwise in notes
+                        if (personForm.needType !== 'None') {
+                          setPersonForm({ ...personForm, needDetails: value });
+                        } else {
+                          setPersonForm({ ...personForm, notes: value });
+                        }
+                      }
+                    }}
+                    placeholder={personForm.needType !== 'None' ? "Enter explanation of need and any additional notes" : "Enter notes"}
+                    rows={4}
                     className="resize-none"
                   />
                 </div>
               </div>
-
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)}>
@@ -1220,10 +1866,21 @@ export function DistrictPanel({
               </Button>
               <Button 
                 type="button" 
-                onClick={handleAddPerson}
-                disabled={!personForm.name.trim() || !personForm.role.trim()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Add Person button clicked', { 
+                    name: personForm.name, 
+                    role: personForm.role, 
+                    selectedCampusId,
+                    isPending: createPerson.isPending 
+                  });
+                  handleAddPerson();
+                }}
+                disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
+                className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add Person
+                {createPerson.isPending ? 'Adding...' : 'Add Person'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1240,28 +1897,48 @@ export function DistrictPanel({
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
                   <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
-            </div>
-                <div className="grid grid-cols-2 gap-4">
+                </div>
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-name">Name *</Label>
                     <Input
                       id="edit-person-name"
                       value={personForm.name}
-                      onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, name: e.target.value });
+                        // Clear household name error when name changes (but don't auto-update household label)
+                        setHouseholdNameError(null);
+                      }}
                       placeholder="Enter name"
                     />
-      </div>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-role">Role *</Label>
-                    <Input
-                      id="edit-person-role"
-                      value={personForm.role}
-                      onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
-                      placeholder="e.g., Campus Director, Staff"
-                    />
-    </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4 relative">
+                    {editingPerson?.campusId === 'district' ? (
+                      <Input
+                        id="edit-person-role"
+                        value="District Director"
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
+                      >
+                        <SelectTrigger id="edit-person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campusRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                   <div className="space-y-2 relative">
                     <Label htmlFor="edit-person-status">Status</Label>
                     <Select
@@ -1279,217 +1956,304 @@ export function DistrictPanel({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-need">Need Request</Label>
+                </div>
+              </div>
+
+            {/* Family & Guests (optional) */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
+              </div>
+              
+              {/* Inputs */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-person-spouse-attending"
+                      checked={personForm.spouseAttending}
+                      onCheckedChange={(checked) => {
+                        setPersonForm({ ...personForm, spouseAttending: checked === true });
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                    />
+                    <Label htmlFor="edit-person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
+                  </div>
+                </div>
+                <div className="space-y-2 ml-4">
+                  <Label htmlFor="edit-person-children-count">Children attending (0-10)</Label>
+                  <Input
+                    id="edit-person-children-count"
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={personForm.childrenCount}
+                    onChange={(e) => {
+                      const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                      setPersonForm({ 
+                        ...personForm, 
+                        childrenCount: count,
+                        childrenAges: Array(count).fill('')
+                      });
+                      setHouseholdValidationError(null);
+                      setHouseholdNameError(null);
+                    }}
+                    placeholder="0"
+                    className="w-24"
+                  />
+                </div>
+                <div className="space-y-2 ml-4">
+                  <Label htmlFor="edit-person-guests-count">Guests attending (0-10)</Label>
+                  <Input
+                    id="edit-person-guests-count"
+                    type="number"
+                    min="0"
+                    max="10"
+                    value={personForm.guestsCount}
+                    onChange={(e) => {
+                      const count = Math.max(0, Math.min(10, parseInt(e.target.value) || 0));
+                      setPersonForm({ ...personForm, guestsCount: count });
+                    }}
+                    placeholder="0"
+                    className="w-24"
+                  />
+                </div>
+              </div>
+              
+              {/* Household Selector */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="edit-person-household">Household (optional)</Label>
                     <Select
-                      value={personForm.needType}
-                      onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                      value={personForm.householdId?.toString() || ''}
+                      onValueChange={(value) => {
+                        const householdId = value ? parseInt(value) : null;
+                        setPersonForm({ ...personForm, householdId });
+                        setHouseholdValidationError(null);
+                      }}
                     >
-                      <SelectTrigger id="edit-person-need">
-                        <SelectValue />
+                      <SelectTrigger id="edit-person-household">
+                        <SelectValue placeholder="Select household" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="None">None</SelectItem>
-                        <SelectItem value="Financial">Financial</SelectItem>
-                        <SelectItem value="Transportation">Transportation</SelectItem>
-                        <SelectItem value="Housing">Housing</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
+                        <SelectItem value="">None</SelectItem>
+                        {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
+                          const members = allPeople.filter(p => p.householdId === household.id);
+                          const displayName = household.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return (
+                            <SelectItem key={household.id} value={household.id.toString()}>
+                              <div className="flex flex-col">
+                                <span>{displayName}</span>
+                                {members.length > 0 && (
+                                  <span className="text-xs text-slate-500">
+                                    {members.map(m => m.name).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </SelectItem>
+                          );
+                        }) : null}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-deposit-paid">Deposit Paid</Label>
-                    <div className="flex items-center justify-start pl-1">
-                      <Checkbox
-                        id="edit-person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
-                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      // Validate name is not empty
+                      if (!personForm.name.trim()) {
+                        setHouseholdNameError("Enter a name first to create a household.");
+                        return;
+                      }
+                      
+                      // Clear any previous error
+                      setHouseholdNameError(null);
+                      
+                      // Derive household label from person's name
+                      const label = deriveHouseholdLabel(personForm.name);
+                      
+                      // Create household with derived label
+                      createHousehold.mutate({
+                        label,
+                        childrenCount: 0,
+                        guestsCount: 0,
+                      });
+                    }}
+                    className="mt-6"
+                  >
+                    Create household
+                  </Button>
                 </div>
-                <AnimatePresence>
-                  {personForm.needType !== 'None' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      {personForm.needType === 'Financial' ? (
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-person-need-details">Description</Label>
-                              <Input
-                                id="edit-person-need-details"
-                                value={personForm.needDetails}
-                                onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                                placeholder="Description"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                <Input
-                                  id="edit-person-need-amount"
-                                  type="number"
-                                  value={personForm.needAmount}
-                                  onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="edit-person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label htmlFor="edit-person-need-details">Description</Label>
-                          <Input
-                            id="edit-person-need-details"
-                            value={personForm.needDetails}
-                            onChange={(e) => setPersonForm({ ...personForm, needDetails: e.target.value })}
-                            placeholder={`${personForm.needType} need details`}
-                          />
-                          <div className="flex items-center gap-2 pt-2">
-                            <Checkbox
-                              id="edit-person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                            <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm">
-                              Need Met
-                            </Label>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                
+                {/* Validation Errors */}
+                {householdNameError && (
+                  <div className="text-sm text-red-600 mt-1">
+                    {householdNameError}
+                  </div>
+                )}
+                {hasHouseholdValidationError && (
+                  <div className="text-sm text-red-600 mt-1">
+                    To avoid double-counting, link or create a household for spouse/children.
+                  </div>
+                )}
               </div>
+            </div>
 
-            {/* Accompanying Non Staff Section */}
-            <div className="space-y-4">
+            {/* Needs Section */}
+            <div className="space-y-4 mt-4">
               <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Accompanying Non Staff</h3>
+                <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-spouse">Spouse</Label>
-                  <Input
-                    id="edit-person-spouse"
-                    value={personForm.spouse}
-                    onChange={(e) => setPersonForm({ ...personForm, spouse: e.target.value })}
-                    placeholder="Spouse's name"
-                  />
+                  <Label htmlFor="edit-person-need">Need Request</Label>
+                  <Select
+                    value={personForm.needType}
+                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                  >
+                    <SelectTrigger id="edit-person-need">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="None">None</SelectItem>
+                      <SelectItem value="Financial">Financial</SelectItem>
+                      <SelectItem value="Transportation">Transportation</SelectItem>
+                      <SelectItem value="Housing">Housing</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+                <AnimatePresence mode="popLayout">
+                  {personForm.needType === 'Financial' && (
+                    <motion.div
+                      key="amount"
+                      initial={{ opacity: 0, x: -30, width: 0 }}
+                      animate={{ opacity: 1, x: 0, width: 'auto' }}
+                      exit={{ opacity: 0, x: -30, width: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-2"
+                      layout
+                    >
+                      <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                        <Input
+                          id="edit-person-need-amount"
+                          type="number"
+                          value={personForm.needAmount}
+                          onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                          placeholder="0.00"
+                          className="pl-7 w-28"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-kids" className="ml-1">Children</Label>
-                  <Input
-                    id="edit-person-kids"
-                    type="number"
-                    min="0"
-                    value={personForm.kids}
-                    onChange={(e) => {
-                      const numChildren = parseInt(e.target.value) || 0;
-                      setPersonForm({ 
-                        ...personForm, 
-                        kids: e.target.value,
-                        childrenAges: Array(numChildren).fill('')
-                      });
-                    }}
-                    placeholder="Number of children"
-                    className="w-20"
-                  />
-                  <AnimatePresence>
-                    {personForm.kids && parseInt(personForm.kids) > 0 && (
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType !== 'None' ? (
                       <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2 mt-2 overflow-hidden"
+                        key="need-met"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex items-center gap-2"
+                        layout
                       >
-                        {Array.from({ length: parseInt(personForm.kids) || 0 }).map((_, index) => (
-                          <motion.div
-                            key={index}
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: index * 0.05 }}
-                            className="space-y-1"
-                          >
-                            <Label htmlFor={`edit-person-child-age-${index}`} className="text-xs text-slate-600">
-                              Child {index + 1} Age Range
-                            </Label>
-                            <Select
-                              value={personForm.childrenAges[index] || ''}
-                              onValueChange={(value) => {
-                                const newAges = [...personForm.childrenAges];
-                                newAges[index] = value;
-                                setPersonForm({ ...personForm, childrenAges: newAges });
-                              }}
-                            >
-                              <SelectTrigger id={`edit-person-child-age-${index}`}>
-                                <SelectValue placeholder="Select age range" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0-2">0-2 years</SelectItem>
-                                <SelectItem value="3-5">3-5 years</SelectItem>
-                                <SelectItem value="6-12">6-12 years</SelectItem>
-                                <SelectItem value="13+">13+ years</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </motion.div>
-                        ))}
+                        <Label htmlFor="edit-person-needs-met" className="cursor-pointer">Need Met</Label>
+                        <Checkbox
+                          id="edit-person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="deposit-paid"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex items-center gap-2"
+                        layout
+                      >
+                        <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
+                        <Checkbox
+                          id="edit-person-deposit-paid"
+                          checked={personForm.depositPaid}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-person-guests">Guest</Label>
-                  <Input
-                    id="edit-person-guests"
-                    type="number"
-                    min="0"
-                    value={personForm.guests}
-                    onChange={(e) => setPersonForm({ ...personForm, guests: e.target.value })}
-                    placeholder="Enter number of guests"
-                    className="w-20"
-                  />
-                </div>
               </div>
             </div>
 
-            {/* Notes Section */}
-            <div className="space-y-4">
+            {/* Notes Section - Always visible */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center overflow-hidden">
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType !== 'None' && (
+                      <motion.span
+                        key="needs"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="inline-block whitespace-nowrap"
+                        layout
+                      >
+                        Needs &{' '}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <motion.span
+                    layout
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                    className="inline-block"
+                  >
+                    Notes
+                  </motion.span>
+                </h3>
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-person-notes">Notes</Label>
                 <Textarea
-                  id="edit-person-notes"
-                  value={personForm.notes}
-                  onChange={(e) => setPersonForm({ ...personForm, notes: e.target.value })}
-                  placeholder="Enter notes"
-                  rows={6}
+                  id="edit-person-explanation-notes"
+                  value={`${personForm.needDetails || ''}${personForm.needDetails && personForm.notes ? '\n\n' : ''}${personForm.notes || ''}`}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Split by double newline if present, otherwise use first part for needDetails
+                    const parts = value.split('\n\n');
+                    if (parts.length > 1) {
+                      setPersonForm({ 
+                        ...personForm, 
+                        needDetails: parts[0],
+                        notes: parts.slice(1).join('\n\n')
+                      });
+                    } else {
+                      // If no double newline, put everything in needDetails if need type is set, otherwise in notes
+                      if (personForm.needType !== 'None') {
+                        setPersonForm({ ...personForm, needDetails: value });
+                      } else {
+                        setPersonForm({ ...personForm, notes: value });
+                      }
+                    }
+                  }}
+                  placeholder={personForm.needType !== 'None' ? "Enter explanation of need and any additional notes" : "Enter notes"}
+                  rows={4}
                   className="resize-none"
                 />
               </div>
             </div>
+
 
           </div>
           <DialogFooter className="flex items-center justify-between">
@@ -1609,8 +2373,8 @@ export function DistrictPanel({
                   onChange={(e) => setCampusForm({ name: e.target.value })}
                   placeholder="Enter campus name"
                 />
-      </div>
-    </div>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)}>
                 Cancel
@@ -1623,7 +2387,7 @@ export function DistrictPanel({
         </Dialog>
         
         {/* Custom Drag Layer */}
-        <CustomDragLayer getPerson={getPerson} />
+        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
       </motion.div>
     </DndProvider>
   );

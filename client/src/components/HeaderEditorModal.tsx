@@ -174,12 +174,23 @@ export function HeaderEditorModal({
                       src={logoPreview} 
                       alt="Logo" 
                       className="h-full w-full object-contain"
+                      onError={(e) => {
+                        console.error('Error loading logo preview:', logoPreview);
+                        (e.target as HTMLImageElement).src = '/xa-logo.png';
+                      }}
+                      onLoad={() => {
+                        console.log('Logo preview loaded successfully');
+                      }}
                     />
                   ) : (
                     <img 
                       src="/xa-logo.png" 
                       alt="Chi Alpha Logo" 
                       className="h-full w-full object-contain"
+                      onError={(e) => {
+                        console.error('Error loading default logo');
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
                     />
                   )}
                 </div>
