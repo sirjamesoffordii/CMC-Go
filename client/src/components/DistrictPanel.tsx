@@ -1016,33 +1016,33 @@ export function DistrictPanel({
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 mb-4 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-5">
-                <div>
-                  <h1 className="text-2xl font-semibold text-slate-900 leading-tight tracking-tight">
-              <EditableText
-                value={district.name}
-                onSave={(newName) => {
-                  updateDistrictName.mutate({ id: district.id, name: newName });
-                }}
-                      className="text-2xl font-semibold text-slate-900 tracking-tight"
-                      inputClassName="text-2xl font-semibold text-slate-900 tracking-tight"
-              />
-                  </h1>
-                  <span className="text-slate-500 text-sm mt-1 block font-medium">
-              <EditableText
-                value={district.region}
-                onSave={(newRegion) => {
-                  updateDistrictRegion.mutate({ id: district.id, region: newRegion });
-                }}
-                      className="text-slate-500 text-sm"
-                      inputClassName="text-slate-500 text-sm"
-                    />
-                  </span>
-          </div>
-                <div className="w-px h-8 bg-slate-200"></div>
-                
-                {/* District Director */}
+            <div className="flex items-center gap-5 mb-4">
+              <div>
+                <h1 className="text-2xl font-semibold text-slate-900 leading-tight tracking-tight">
+                  <EditableText
+                    value={district.name}
+                    onSave={(newName) => {
+                      updateDistrictName.mutate({ id: district.id, name: newName });
+                    }}
+                    className="text-2xl font-semibold text-slate-900 tracking-tight"
+                    inputClassName="text-2xl font-semibold text-slate-900 tracking-tight"
+                  />
+                </h1>
+                <span className="text-slate-500 text-sm mt-1 block font-medium">
+                  <EditableText
+                    value={district.region}
+                    onSave={(newRegion) => {
+                      updateDistrictRegion.mutate({ id: district.id, region: newRegion });
+                    }}
+                    className="text-slate-500 text-sm"
+                    inputClassName="text-slate-500 text-sm"
+                  />
+                </span>
+              </div>
+              <div className="w-px h-8 bg-slate-200"></div>
+              
+              {/* District Director with Add Person directly next to it */}
+              <div className="flex items-center gap-2">
                 <DistrictDirectorDropZone
                   person={districtDirector}
                   onDrop={handleDistrictDirectorDrop}
@@ -1066,96 +1066,142 @@ export function DistrictPanel({
                   onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
                   quickAddInputRef={quickAddInputRef}
                 />
-                
-                {/* District Team Members */}
-                <div className="w-px h-8 bg-slate-200"></div>
-                <div className="flex items-center gap-2">
-                  {districtTeamMembers.map((person) => (
-                    <DroppablePerson
-                      key={person.personId}
-                      person={person}
-                      campusId="district-team"
-                      index={0}
-                      onEdit={handleEditPerson}
-                      onClick={handlePersonClick}
-                      onMove={handlePersonMove}
-                      hasNeeds={person.hasNeeds}
-                    />
-                  ))}
-                  {/* Add District Team Member Button */}
+                {/* Add Person Button - always visible next to district director */}
+                {districtDirector && (
                   <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
-                        <button
-                          onClick={() => openAddPersonDialog('district-team')}
-                          className="flex flex-col items-center w-[50px]"
-                          title="Add district team member"
-                        >
-                    {/* Plus sign in name position - clickable for quick add */}
-                    <div className="relative flex items-center justify-center mb-1">
-                      {quickAddMode === 'district-team' ? (
-                        <div className="relative">
-                          <Input
-                            ref={quickAddInputRef}
-                            value={quickAddName}
-                            onChange={(e) => setQuickAddName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                handleQuickAddSubmit('district-team');
-                              } else if (e.key === 'Escape') {
-                                setQuickAddMode(null);
-                                setQuickAddName('');
-                              }
-                            }}
-                            onBlur={() => {
-                              handleQuickAddSubmit('district-team');
-                            }}
-                            placeholder="Name"
-                            className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                            autoFocus
-                          />
-                          <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                            Quick Add
+                    <button
+                      onClick={() => openAddPersonDialog('district')}
+                      className="flex flex-col items-center w-[50px]"
+                      title="Add person"
+                    >
+                      {/* Plus sign in name position - clickable for quick add */}
+                      <div className="relative flex items-center justify-center mb-1">
+                        {quickAddMode === 'district' ? (
+                          <div className="relative">
+                            <Input
+                              ref={quickAddInputRef}
+                              value={quickAddName}
+                              onChange={(e) => setQuickAddName(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  handleQuickAddSubmit('district');
+                                } else if (e.key === 'Escape') {
+                                  setQuickAddMode(null);
+                                  setQuickAddName('');
+                                }
+                              }}
+                              onBlur={() => {
+                                handleQuickAddSubmit('district');
+                              }}
+                              placeholder="Name"
+                              className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                              autoFocus
+                            />
+                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                              Quick Add
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <Plus 
-                          className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
-                          strokeWidth={1.5}
-                          onClick={(e) => handleQuickAddClick(e, 'district-team')}
+                        ) : (
+                          <Plus 
+                            className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                            strokeWidth={1.5}
+                            onClick={(e) => handleQuickAddClick(e, 'district')}
+                          />
+                        )}
+                      </div>
+                      {/* Icon - light gray */}
+                      <div className="relative">
+                        <User 
+                          className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
+                          strokeWidth={1.5} 
+                          fill="currentColor"
                         />
-                      )}
-                    </div>
-                    {/* Icon - light gray */}
-                    <div className="relative">
-                      <User 
-                        className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
-                        strokeWidth={1.5} 
-                        fill="currentColor"
-                      />
-                    </div>
-                    {/* Label - shown on hover */}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                      Add Team
-                    </div>
-                  </button>
-                </div>
-          </div>
-          
-              {/* Right side: Needs Summary - aligned above Maybe metric */}
-              <div className="flex items-center gap-2 mr-[60px]">
-                <Hand className="w-5 h-5 text-yellow-600" />
-                <div className="flex items-center gap-2">
-                <div className="flex items-center gap-2">
-                    <span className="text-slate-600 text-sm">Needs:</span>
-                    <span className="font-semibold text-slate-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
-                </div>
+                      </div>
+                      {/* Label - shown on hover */}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        Add
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              {/* District Team Members */}
+              {districtTeamMembers.length > 0 && (
+                <>
+                  <div className="w-px h-8 bg-slate-200"></div>
                   <div className="flex items-center gap-2">
-                    <span className="text-slate-600 text-sm">Total:</span>
-                    <span className="font-semibold text-slate-900 text-sm tabular-nums">
-                      ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-              </div>
-                </div>
-              </div>
+                    {districtTeamMembers.map((person) => (
+                      <DroppablePerson
+                        key={person.personId}
+                        person={person}
+                        campusId="district-team"
+                        index={0}
+                        onEdit={handleEditPerson}
+                        onClick={handlePersonClick}
+                        onMove={handlePersonMove}
+                        hasNeeds={person.hasNeeds}
+                      />
+                    ))}
+                    {/* Add District Team Member Button */}
+                    <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                      <button
+                        onClick={() => openAddPersonDialog('district-team')}
+                        className="flex flex-col items-center w-[50px]"
+                        title="Add district team member"
+                      >
+                        {/* Plus sign in name position - clickable for quick add */}
+                        <div className="relative flex items-center justify-center mb-1">
+                          {quickAddMode === 'district-team' ? (
+                            <div className="relative">
+                              <Input
+                                ref={quickAddInputRef}
+                                value={quickAddName}
+                                onChange={(e) => setQuickAddName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handleQuickAddSubmit('district-team');
+                                  } else if (e.key === 'Escape') {
+                                    setQuickAddMode(null);
+                                    setQuickAddName('');
+                                  }
+                                }}
+                                onBlur={() => {
+                                  handleQuickAddSubmit('district-team');
+                                }}
+                                placeholder="Name"
+                                className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                autoFocus
+                              />
+                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                                Quick Add
+                              </div>
+                            </div>
+                          ) : (
+                            <Plus 
+                              className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                              strokeWidth={1.5}
+                              onClick={(e) => handleQuickAddClick(e, 'district-team')}
+                            />
+                          )}
+                        </div>
+                        {/* Icon - light gray */}
+                        <div className="relative">
+                          <User 
+                            className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
+                            strokeWidth={1.5} 
+                            fill="currentColor"
+                          />
+                        </div>
+                        {/* Label - shown on hover */}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                          Add Team
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             
             {/* Stats Section */}
@@ -1229,6 +1275,23 @@ export function DistrictPanel({
                   <div className="w-3 h-3 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
                   <span className="text-slate-600 text-sm font-medium">Not Invited Yet:</span>
                   <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.notInvited}</span>
+                </div>
+              </div>
+              
+              {/* Needs Summary */}
+              <div className="flex items-center gap-4 ml-8 pl-8 border-l border-slate-200">
+                <Hand className="w-5 h-5 text-yellow-600" />
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600 text-sm">Needs:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600 text-sm">Total:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">
+                      ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
               </div>
         </div>

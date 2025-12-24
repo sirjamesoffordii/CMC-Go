@@ -477,6 +477,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Fetch all people to calculate district stats
   const { data: allPeople = [] } = trpc.people.list.useQuery();
   
+  // Fetch all campuses to count campuses per district
+  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
+  
   // Calculate national totals
   const nationalTotals = {
     yes: allPeople.filter(p => p.status === "Yes").length,
@@ -991,7 +994,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         }}
       >
           <div className="text-gray-800 mb-3" style={{ fontSize: '18px', fontWeight: 500, letterSpacing: '-0.01em' }}>
-          {getDistrictDisplayName(hoveredDistrict)} {district?.region && (
+          {getDistrictDisplayName(hoveredDistrict)}
+          {(() => {
+            const campusCount = allCampuses.filter(c => c.districtId === hoveredDistrict).length;
+            return campusCount > 0 ? (
+              <span className="text-gray-400 ml-2" style={{ fontSize: '16px', fontWeight: 400 }}>
+                ({campusCount} {campusCount === 1 ? 'campus' : 'campuses'})
+              </span>
+            ) : null;
+          })()}
+          {district?.region && (
             <>
                 <span className="text-gray-300 mx-1">|</span> <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: 400 }}>{district.region}</span>
             </>
