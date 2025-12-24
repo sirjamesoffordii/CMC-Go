@@ -16,7 +16,6 @@
     "db:push:yes": "node scripts/db-push-yes.mjs",
     "db:init": "node scripts/init-mysql-db.mjs",
     "db:seed": "node scripts/seed-mysql-dev.mjs",
-    "db:seed:households": "node scripts/seed-test-households.mjs",
     "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:migrate && pnpm db:seed",
     "db:check": "node scripts/check-schema.mjs",
     "db:verify": "node scripts/verify-write.mjs",

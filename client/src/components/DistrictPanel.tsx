@@ -178,7 +178,7 @@ export function DistrictPanel({
   type CampusRole = typeof campusRoles[number];
 
   // Quick add state
-  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'district-team', 'unassigned'
+  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
   const [quickAddName, setQuickAddName] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
 
@@ -307,23 +307,9 @@ export function DistrictPanel({
     p.primaryRole?.toLowerCase().includes('dd')
   ) || null;
   
-  // District team members - district-level staff (spouses, team members) without official position
-  // These are people associated with the district but not assigned to a campus and not the district director
-  // We'll show people who have "District" in their role, or people with no role who are district-level
-  const districtTeamMembers = peopleWithNeeds.filter(p => 
-    !p.primaryCampusId && 
-    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd')) &&
-    (p.primaryRole?.toLowerCase().includes('district') || 
-     (p.primaryRole?.toLowerCase().includes('staff') && !p.primaryCampusId) ||
-     (!p.primaryRole && !p.primaryCampusId)) // Include people with no role who are district-level
-  );
-  
   const peopleWithoutCampus = peopleWithNeeds.filter(p => 
     !p.primaryCampusId && 
-    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd')) &&
-    !(p.primaryRole?.toLowerCase().includes('district') || 
-      p.primaryRole?.toLowerCase().includes('staff') ||
-      !p.primaryRole) // Exclude district team members from unassigned
+    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
   );
   
   // Campus order state - stores ordered campus IDs
@@ -517,8 +503,6 @@ export function DistrictPanel({
     // Set role and campus based on target
     if (targetId === 'district') {
       mutationData.primaryRole = 'District Director';
-    } else if (targetId === 'district-team') {
-      mutationData.primaryRole = 'District Staff';
     } else if (targetId === 'unassigned') {
       mutationData.primaryRole = 'Staff';
     } else if (typeof targetId === 'number') {
@@ -594,11 +578,6 @@ export function DistrictPanel({
       // Add district director
       mutationData.primaryRole = 'District Director';
       // Don't set primaryCampusId for district director (will be null in DB)
-    } else if (selectedCampusId === 'district-team') {
-      // Add district team member (spouse, team member without official position)
-      // Use "District Staff" as the role to identify them as district team members
-      mutationData.primaryRole = personForm.role.trim() || 'District Staff';
-      // Don't set primaryCampusId for district team members (will be null in DB)
     } else if (selectedCampusId === 'unassigned') {
       // Add to unassigned - create person without campus
       mutationData.primaryRole = personForm.role.trim();
@@ -884,15 +863,6 @@ export function DistrictPanel({
     }
     
     // Handle moving to district team
-    if (targetCampusId === 'district-team') {
-      // Update person to be district team member (keep role or set to Staff, remove campus)
-      updatePerson.mutate({
-        personId: person.personId,
-        primaryRole: person.primaryRole || 'Staff',
-        primaryCampusId: null,
-      });
-      return;
-    }
 
     // Handle moving to unassigned
     if (targetCampusId === 'unassigned') {
@@ -988,9 +958,6 @@ export function DistrictPanel({
     } else if (campusId === 'district') {
       // District Director is handled separately, not in the dropdown
       defaultRole = 'Staff'; // This won't be used for district director
-    } else if (campusId === 'district-team') {
-      // District team member - default to Staff (can be spouse or team member without official position)
-      defaultRole = 'Staff';
     } else if (typeof campusId === 'number') {
       const campus = campusesWithPeople.find(c => c.id === campusId);
       if (campus && campus.people.length === 0) {
@@ -1016,33 +983,33 @@ export function DistrictPanel({
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 mb-4 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
-            <div className="flex items-center gap-5 mb-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-slate-900 leading-tight tracking-tight">
-                  <EditableText
-                    value={district.name}
-                    onSave={(newName) => {
-                      updateDistrictName.mutate({ id: district.id, name: newName });
-                    }}
-                    className="text-2xl font-semibold text-slate-900 tracking-tight"
-                    inputClassName="text-2xl font-semibold text-slate-900 tracking-tight"
-                  />
-                </h1>
-                <span className="text-slate-500 text-sm mt-1 block font-medium">
-                  <EditableText
-                    value={district.region}
-                    onSave={(newRegion) => {
-                      updateDistrictRegion.mutate({ id: district.id, region: newRegion });
-                    }}
-                    className="text-slate-500 text-sm"
-                    inputClassName="text-slate-500 text-sm"
-                  />
-                </span>
-              </div>
-              <div className="w-px h-8 bg-slate-200"></div>
-              
-              {/* District Director with Add Person directly next to it */}
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-5">
+                <div>
+                  <h1 className="text-2xl font-semibold text-slate-900 leading-tight tracking-tight">
+              <EditableText
+                value={district.name}
+                onSave={(newName) => {
+                  updateDistrictName.mutate({ id: district.id, name: newName });
+                }}
+                      className="text-2xl font-semibold text-slate-900 tracking-tight"
+                      inputClassName="text-2xl font-semibold text-slate-900 tracking-tight"
+              />
+                  </h1>
+                  <span className="text-slate-500 text-sm mt-1 block font-medium">
+              <EditableText
+                value={district.region}
+                onSave={(newRegion) => {
+                  updateDistrictRegion.mutate({ id: district.id, region: newRegion });
+                }}
+                      className="text-slate-500 text-sm"
+                      inputClassName="text-slate-500 text-sm"
+                    />
+                  </span>
+          </div>
+                <div className="w-px h-8 bg-slate-200"></div>
+                
+                {/* District Director */}
                 <DistrictDirectorDropZone
                   person={districtDirector}
                   onDrop={handleDistrictDirectorDrop}
@@ -1066,142 +1033,24 @@ export function DistrictPanel({
                   onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
                   quickAddInputRef={quickAddInputRef}
                 />
-                {/* Add Person Button - always visible next to district director */}
-                {districtDirector && (
-                  <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
-                    <button
-                      onClick={() => openAddPersonDialog('district')}
-                      className="flex flex-col items-center w-[50px]"
-                      title="Add person"
-                    >
-                      {/* Plus sign in name position - clickable for quick add */}
-                      <div className="relative flex items-center justify-center mb-1">
-                        {quickAddMode === 'district' ? (
-                          <div className="relative">
-                            <Input
-                              ref={quickAddInputRef}
-                              value={quickAddName}
-                              onChange={(e) => setQuickAddName(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  handleQuickAddSubmit('district');
-                                } else if (e.key === 'Escape') {
-                                  setQuickAddMode(null);
-                                  setQuickAddName('');
-                                }
-                              }}
-                              onBlur={() => {
-                                handleQuickAddSubmit('district');
-                              }}
-                              placeholder="Name"
-                              className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                              autoFocus
-                            />
-                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                              Quick Add
-                            </div>
-                          </div>
-                        ) : (
-                          <Plus 
-                            className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
-                            strokeWidth={1.5}
-                            onClick={(e) => handleQuickAddClick(e, 'district')}
-                          />
-                        )}
-                      </div>
-                      {/* Icon - light gray */}
-                      <div className="relative">
-                        <User 
-                          className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
-                          strokeWidth={1.5} 
-                          fill="currentColor"
-                        />
-                      </div>
-                      {/* Label - shown on hover */}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                        Add
-                      </div>
-                    </button>
-                  </div>
-                )}
               </div>
-              
-              {/* District Team Members */}
-              {districtTeamMembers.length > 0 && (
-                <>
-                  <div className="w-px h-8 bg-slate-200"></div>
+          
+              {/* Right side: Needs Summary - aligned above Maybe metric */}
+              <div className="flex items-center gap-2 mr-[60px]">
+                <Hand className="w-5 h-5 text-yellow-600" />
+                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-slate-600 text-sm">Needs:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
+                </div>
                   <div className="flex items-center gap-2">
-                    {districtTeamMembers.map((person) => (
-                      <DroppablePerson
-                        key={person.personId}
-                        person={person}
-                        campusId="district-team"
-                        index={0}
-                        onEdit={handleEditPerson}
-                        onClick={handlePersonClick}
-                        onMove={handlePersonMove}
-                        hasNeeds={person.hasNeeds}
-                      />
-                    ))}
-                    {/* Add District Team Member Button */}
-                    <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
-                      <button
-                        onClick={() => openAddPersonDialog('district-team')}
-                        className="flex flex-col items-center w-[50px]"
-                        title="Add district team member"
-                      >
-                        {/* Plus sign in name position - clickable for quick add */}
-                        <div className="relative flex items-center justify-center mb-1">
-                          {quickAddMode === 'district-team' ? (
-                            <div className="relative">
-                              <Input
-                                ref={quickAddInputRef}
-                                value={quickAddName}
-                                onChange={(e) => setQuickAddName(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    handleQuickAddSubmit('district-team');
-                                  } else if (e.key === 'Escape') {
-                                    setQuickAddMode(null);
-                                    setQuickAddName('');
-                                  }
-                                }}
-                                onBlur={() => {
-                                  handleQuickAddSubmit('district-team');
-                                }}
-                                placeholder="Name"
-                                className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                autoFocus
-                              />
-                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                                Quick Add
-                              </div>
-                            </div>
-                          ) : (
-                            <Plus 
-                              className="w-3 h-3 text-slate-400 opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
-                              strokeWidth={1.5}
-                              onClick={(e) => handleQuickAddClick(e, 'district-team')}
-                            />
-                          )}
-                        </div>
-                        {/* Icon - light gray */}
-                        <div className="relative">
-                          <User 
-                            className="w-10 h-10 text-slate-200 transition-all group-hover/add:scale-110 active:scale-95" 
-                            strokeWidth={1.5} 
-                            fill="currentColor"
-                          />
-                        </div>
-                        {/* Label - shown on hover */}
-                        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                          Add Team
-                        </div>
-                      </button>
-                    </div>
+                    <span className="text-slate-600 text-sm">Total:</span>
+                    <span className="font-semibold text-slate-900 text-sm tabular-nums">
+                      ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
                   </div>
-                </>
-              )}
+                </div>
+              </div>
             </div>
             
             {/* Stats Section */}
@@ -1275,23 +1124,6 @@ export function DistrictPanel({
                   <div className="w-3 h-3 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
                   <span className="text-slate-600 text-sm font-medium">Not Invited Yet:</span>
                   <span className="font-semibold text-slate-900 ml-auto tabular-nums text-sm">{stats.notInvited}</span>
-                </div>
-              </div>
-              
-              {/* Needs Summary */}
-              <div className="flex items-center gap-4 ml-8 pl-8 border-l border-slate-200">
-                <Hand className="w-5 h-5 text-yellow-600" />
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600 text-sm">Needs:</span>
-                    <span className="font-semibold text-slate-900 text-sm tabular-nums">{needsSummary.totalNeeds}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600 text-sm">Total:</span>
-                    <span className="font-semibold text-slate-900 text-sm tabular-nums">
-                      ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
                 </div>
               </div>
         </div>
@@ -2554,9 +2386,8 @@ export function DistrictPanel({
           </DialogContent>
         </Dialog>
         
-          {/* Custom Drag Layer */}
-          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-        </div>
+        {/* Custom Drag Layer */}
+        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
       </motion.div>
     </DndProvider>
   );
