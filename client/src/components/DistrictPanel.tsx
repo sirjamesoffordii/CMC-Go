@@ -30,6 +30,7 @@ import { CampusNameDropZone } from "./CampusNameDropZone";
 import { CustomDragLayer } from "./CustomDragLayer";
 import { DistrictDirectorDropZone } from "./DistrictDirectorDropZone";
 import { PersonDropZone } from "./PersonDropZone";
+import { calculateDistrictStats, toDistrictPanelStats } from "@/utils/districtStats";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -180,21 +181,46 @@ export function DistrictPanel({
   // Store original order of people per campus (by personId)
   const [campusPeopleOrder, setCampusPeopleOrder] = useState<Record<number, string[]>>({});
 
-  // Fetch needs to check if people have needs
+  // Fetch active needs only - used for counting and hasNeeds indicators
+  // Only active needs are counted. Inactive needs are retained for history.
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
+    onSuccess: () => {
+      utils.needs.listActive.invalidate();
+      onDistrictUpdate();
+    },
+  });
+  const deleteNeed = trpc.needs.delete.useMutation({
+    onSuccess: () => {
+      utils.needs.listActive.invalidate();
+      onDistrictUpdate();
+    },
+  });
+  
+  // Fetch all people directly to ensure stats match InteractiveMap exactly
+  // This ensures we use the same data source as the map/tooltip for consistency
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
 
   if (!district) return null;
 
-  // Calculate district people and stats
-  const districtPeople = people.filter(p => p.primaryDistrictId === district.id);
+  // Calculate district people and stats using shared utility
+  // Use 'people' prop for display (already filtered by Home.tsx for performance)
+  // But use 'allPeople' for stats calculation to match InteractiveMap exactly
+  const districtPeople = useMemo(() => {
+    if (!district?.id) return [];
+    return people.filter(p => p.primaryDistrictId === district.id);
+  }, [people, district?.id]);
   
-  // Map people with needs indicator
+  // Map people with needs indicator - DERIVED from active needs only
+  // hasNeeds is true if person has any active needs, false otherwise
+  // Only active needs are counted. Inactive needs are retained for history.
   const peopleWithNeeds = useMemo(() => {
     return districtPeople.map(person => ({
       ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId),
+      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
     })) as (Person & { hasNeeds: boolean })[];
   }, [districtPeople, allNeeds]);
+  
   const districtDirector = peopleWithNeeds.find(p => 
     p.primaryRole?.toLowerCase().includes('district director') ||
     p.primaryRole?.toLowerCase().includes('dd')
@@ -226,21 +252,23 @@ export function DistrictPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [district?.id]); // Reset order when district changes (panel opens/closes)
 
-  // Calculate stats
+  // Calculate stats using shared utility with allPeople to ensure consistency with tooltip and map
+  // This ensures the stats match exactly what's shown in the tooltip and map metrics
   const stats = useMemo(() => {
-    return peopleWithNeeds.reduce((acc, person) => {
-      if (person.status === 'Yes') acc.going++;
-      else if (person.status === 'Maybe') acc.maybe++;
-      else if (person.status === 'No') acc.notGoing++;
-      else if (person.status === 'Not Invited') acc.notInvited++;
-      return acc;
-    }, { going: 0, maybe: 0, notGoing: 0, notInvited: 0 });
-  }, [peopleWithNeeds]);
+    if (!district?.id) {
+      return { going: 0, maybe: 0, notGoing: 0, notInvited: 0 };
+    }
+    // Use allPeople (same source as InteractiveMap) for stats calculation
+    const districtStats = calculateDistrictStats(allPeople, district.id);
+    return toDistrictPanelStats(districtStats);
+  }, [allPeople, district?.id]);
 
-  // Calculate needs summary for district
+  // Calculate needs summary for district - ONLY active needs are counted
+  // Only active needs are counted. Inactive needs are retained for history.
   const needsSummary = useMemo(() => {
     const districtPersonIds = new Set(peopleWithNeeds.map(p => p.personId));
-    const districtNeeds = allNeeds.filter(n => districtPersonIds.has(n.personId));
+    // allNeeds already contains only active needs (from listActive query)
+    const districtNeeds = allNeeds.filter(n => districtPersonIds.has(n.personId) && n.isActive);
     const totalNeeds = districtNeeds.length;
     const totalFinancial = districtNeeds
       .filter(n => n.amount !== null && n.amount !== undefined)
@@ -382,7 +410,26 @@ export function DistrictPanel({
     console.log('Creating person with data:', JSON.stringify(mutationData, null, 2));
     
     // Call the mutation
-    createPerson.mutate(mutationData);
+    createPerson.mutate(mutationData, {
+      onSuccess: () => {
+        // Create need only if needType is not "None"
+        if (personForm.needType !== 'None' && personForm.needType) {
+          const needDescription = personForm.needType === 'Financial' 
+            ? `Financial need: $${personForm.needAmount || '0'}`
+            : personForm.needDetails || `${personForm.needType} need`;
+          
+          updateOrCreateNeed.mutate({
+            personId,
+            type: personForm.needType,
+            description: needDescription,
+            amount: personForm.needType === 'Financial' && personForm.needAmount 
+              ? Math.round(parseFloat(personForm.needAmount) * 100) 
+              : undefined,
+            isActive: !personForm.needsMet, // Active if needsMet is false
+          });
+        }
+      },
+    });
   };
 
   // Handle add campus
@@ -398,7 +445,10 @@ export function DistrictPanel({
   const handleEditPerson = (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
     const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-    const personNeed = allNeeds.find(n => n.personId === person.personId);
+    // Fetch all needs (including inactive) for this person to show in edit form
+    // We use byPerson query to get the most recent need (active or inactive) for display
+    const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
+    const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
     
     // Parse childrenAges from JSON string if it exists
     let childrenAges: string[] = [];
@@ -417,7 +467,7 @@ export function DistrictPanel({
       status: figmaStatus,
       needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
       needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
-      needDetails: personNeed?.type !== 'Financial' ? (personNeed?.notes || '') : '',
+      needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
       notes: person.notes || '', 
       spouse: person.spouse || '',
       kids: person.kids || '',
@@ -432,10 +482,11 @@ export function DistrictPanel({
   // Handle update person
   const handleUpdatePerson = () => {
     if (!editingPerson || !personForm.name || !personForm.role) return;
+    const personId = editingPerson.person.personId;
     
     // Update person with all fields
     updatePerson.mutate({ 
-      personId: editingPerson.person.personId,
+      personId,
       name: personForm.name,
       primaryRole: personForm.role,
       status: statusMap[personForm.status],
@@ -445,6 +496,41 @@ export function DistrictPanel({
       kids: personForm.kids || undefined,
       guests: personForm.guests || undefined,
       childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
+    }, {
+      onSuccess: () => {
+        // Handle needs: create/update if needType is not "None", delete if "None"
+        if (personForm.needType !== 'None' && personForm.needType) {
+          // Create or update need
+          const needDescription = personForm.needType === 'Financial' 
+            ? `Financial need: $${personForm.needAmount || '0'}`
+            : personForm.needDetails || `${personForm.needType} need`;
+          
+          updateOrCreateNeed.mutate({
+            personId,
+            type: personForm.needType,
+            description: needDescription,
+            amount: personForm.needType === 'Financial' && personForm.needAmount 
+              ? Math.round(parseFloat(personForm.needAmount) * 100) 
+              : undefined,
+            isActive: !personForm.needsMet, // Active if needsMet is false
+          });
+        } else {
+          // If needType is "None", mark existing need as inactive (preserve history)
+          // Only active needs are counted. Inactive needs are retained for history.
+          // Check if person has an active need to mark as inactive
+          const activeNeed = allNeeds.find(n => n.personId === personId && n.isActive);
+          if (activeNeed) {
+            // Mark as inactive instead of deleting
+            updateOrCreateNeed.mutate({
+              personId,
+              type: activeNeed.type, // Keep existing type
+              description: activeNeed.description, // Keep existing description
+              amount: activeNeed.amount ?? undefined,
+              isActive: false, // Mark as inactive
+            });
+          }
+        }
+      },
     });
     
     setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouse: '', kids: '', guests: '', childrenAges: [], depositPaid: false, needsMet: false });

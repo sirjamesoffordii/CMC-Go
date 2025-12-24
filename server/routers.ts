@@ -246,8 +246,10 @@ export const appRouter = router({
     create: publicProcedure
       .input(z.object({
         personId: z.string(),
+        type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
         description: z.string(),
         amount: z.number().optional(),
+        isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
         await db.createNeed(input);
@@ -256,6 +258,38 @@ export const appRouter = router({
         if (person) {
           await db.updatePersonStatus(input.personId, person.status);
         }
+        return { success: true };
+      }),
+    updateOrCreate: publicProcedure
+      .input(z.object({
+        personId: z.string(),
+        type: z.enum(["Financial", "Transportation", "Housing", "Other"]).optional(),
+        description: z.string().optional(),
+        amount: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { personId, ...needData } = input;
+        if (input.type && input.description !== undefined) {
+          await db.updateOrCreateNeed(personId, {
+            type: input.type,
+            description: input.description,
+            amount: input.amount,
+            isActive: input.isActive ?? true,
+          });
+        } else if (input.isActive !== undefined) {
+          // Just update isActive
+          const existing = await db.getNeedByPersonId(personId);
+          if (existing) {
+            await db.toggleNeedActive(existing.id, input.isActive);
+          }
+        }
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ personId: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.deleteNeedByPersonId(input.personId);
         return { success: true };
       }),
     toggleActive: publicProcedure

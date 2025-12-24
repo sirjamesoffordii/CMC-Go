@@ -353,11 +353,13 @@ export default function Home() {
     [allPeople, selectedDistrictId]
   );
 
-  // Add notes/needs indicators to people
+  // Add notes/needs indicators to people - DERIVED from active needs only
+  // hasNeeds is true if person has any active needs, false otherwise
+  // Only active needs are counted. Inactive needs are retained for history.
   const peopleWithIndicators = useMemo(() => {
     return allPeople.map(person => ({
       ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive),
+      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
     }));
   }, [allPeople, allNeeds]);
 

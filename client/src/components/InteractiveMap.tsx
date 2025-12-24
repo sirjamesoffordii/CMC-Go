@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
+import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 
 interface InteractiveMapProps {
   districts: District[];
@@ -8,14 +9,6 @@ interface InteractiveMapProps {
   onDistrictSelect: (districtId: string) => void;
   onBackgroundClick?: () => void;
   onNationalClick?: () => void;
-}
-
-interface DistrictStats {
-  yes: number;
-  maybe: number;
-  no: number;
-  notInvited: number;
-  total: number;
 }
 
 // Base region label positions - closest to map (for 1 metric active)
@@ -541,18 +534,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     setActiveMetrics(new Set());
   };
 
-  // Calculate stats for each district
-  const districtStats = districts.reduce<Record<string, DistrictStats>>((acc, district) => {
-    const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
-    acc[district.id] = {
-      yes: districtPeople.filter(p => p.status === "Yes").length,
-      maybe: districtPeople.filter(p => p.status === "Maybe").length,
-      no: districtPeople.filter(p => p.status === "No").length,
-      notInvited: districtPeople.filter(p => p.status === "Not Invited").length,
-      total: districtPeople.length,
-    };
-    return acc;
-  }, {});
+  // Calculate stats for each district using shared utility
+  const districtStats = useMemo(() => {
+    return districts.reduce<Record<string, DistrictStats>>((acc, district) => {
+      acc[district.id] = calculateDistrictStats(allPeople, district.id);
+      return acc;
+    }, {});
+  }, [districts, allPeople]);
 
   useEffect(() => {
     // Load SVG content
@@ -988,14 +976,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     if (!hoveredDistrict || !tooltipPos) return null;
     
     const district = districts.find(d => d.id === hoveredDistrict);
-    // Provide default stats if district not found or has no stats
-    const stats = districtStats[hoveredDistrict] || {
-      yes: 0,
-      maybe: 0,
-      no: 0,
-      notInvited: 0,
-      total: 0,
-    };
+    // Calculate stats using shared utility to ensure consistency with DistrictPanel
+    // This handles both districts in the database and districts created on-the-fly
+    const stats = districtStats[hoveredDistrict] || calculateDistrictStats(allPeople, hoveredDistrict);
     const invited = stats.yes + stats.maybe + stats.no;
     const pieChartSvg = generatePieChart(stats, 80); // Larger pie chart for tooltip
     
@@ -1092,9 +1075,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 )}
               </div>
             </button>
-            <span className="text-4xl text-slate-800">
-              <span className="font-semibold">{nationalTotals.notInvited}</span> <span className="font-medium">Not Invited Yet</span>
-            </span>
+            <div className="flex flex-col items-start">
+              <span className="text-4xl text-slate-800">
+                <span className="font-semibold">{displayedTotals.notInvited}</span> <span className="font-medium">Not Invited Yet</span>
+              </span>
+              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">/{displayedTotals.total}</span>
+            </div>
           </div>
         </div>
         

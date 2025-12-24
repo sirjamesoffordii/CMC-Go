@@ -354,10 +354,15 @@ export async function createAssignment(assignment: InsertAssignment) {
 // NEEDS
 // ============================================================================
 
+/**
+ * Get all needs for a person (active and inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() and filter by personId.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
 export async function getNeedsByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(needs).where(eq(needs.personId, personId));
+  return await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`);
 }
 
 export async function createNeed(need: InsertNeed) {
@@ -370,8 +375,95 @@ export async function createNeed(need: InsertNeed) {
 export async function getAllActiveNeeds() {
   const db = await getDb();
   if (!db) return [];
-  // Return all needs (isActive field was removed from schema)
-  return await db.select().from(needs);
+  // Return only active needs (isActive = true)
+  return await db.select().from(needs).where(eq(needs.isActive, true));
+}
+
+/**
+ * Toggle need active status. When marking as met (isActive = false), set metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function toggleNeedActive(needId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: { isActive: boolean; metAt?: Date | null } = { isActive };
+  if (!isActive) {
+    // When marking as met, set metAt timestamp
+    updateData.metAt = new Date();
+  } else {
+    // When reactivating, clear metAt
+    updateData.metAt = null;
+  }
+  await db.update(needs).set(updateData).where(eq(needs.id, needId));
+}
+
+/**
+ * Get need by personId. Returns most recent need (active or inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() instead.
+ */
+export async function getNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  // Get most recent need (for display in tooltips/forms)
+  const result = await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`).limit(1);
+  return result[0] || null;
+}
+
+/**
+ * Update or create need. Only creates if type is provided (not "None").
+ * When marking as met (isActive = false), sets metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if need exists for this person
+  const existing = await getNeedByPersonId(personId);
+  
+  const updateData: {
+    type: string;
+    description: string;
+    amount?: number | null;
+    isActive: boolean;
+    metAt?: Date | null;
+  } = {
+    type: needData.type,
+    description: needData.description,
+    amount: needData.amount ?? null,
+    isActive: needData.isActive,
+  };
+  
+  // Set metAt when marking as met, clear when reactivating
+  if (!needData.isActive) {
+    updateData.metAt = new Date();
+  } else if (existing && !existing.isActive) {
+    // Reactivating a previously met need
+    updateData.metAt = null;
+  }
+  
+  if (existing) {
+    // Update existing need
+    await db.update(needs).set(updateData).where(eq(needs.id, existing.id));
+    return existing.id;
+  } else {
+    // Create new need (only if type is not "None" - this should be validated by caller)
+    const result = await db.insert(needs).values({
+      personId,
+      type: needData.type,
+      description: needData.description,
+      amount: needData.amount ?? null,
+      isActive: needData.isActive,
+      metAt: needData.isActive ? null : new Date(),
+    });
+    return result[0].insertId;
+  }
+}
+
+export async function deleteNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(needs).where(eq(needs.personId, personId));
 }
 
 // ============================================================================

@@ -104,11 +104,19 @@ export type InsertAssignment = typeof assignments.$inferInsert;
  * Needs table - tracks financial or other needs for people
  * References people by personId (varchar) for consistency
  */
+/**
+ * Needs table - tracks financial or other needs for people
+ * Only active needs (isActive = true) are counted in metrics and summaries.
+ * Inactive needs are retained for history.
+ */
 export const needs = mysqlTable("needs", {
   id: int("id").primaryKey().autoincrement(),
   personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+  type: mysqlEnum("type", ["Financial", "Transportation", "Housing", "Other"]).notNull(),
   description: text("description").notNull(),
-  amount: int("amount"), // in cents
+  amount: int("amount"), // in cents (only for Financial type)
+  isActive: boolean("isActive").default(true).notNull(), // false when need is met
+  metAt: timestamp("metAt"), // timestamp when need was marked as met (nullable)
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 

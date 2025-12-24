@@ -1,9 +1,11 @@
 import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
 import { User, Edit2, Hand } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Person } from '../../../drizzle/schema';
+import { PersonTooltip } from './PersonTooltip';
+import { trpc } from '../lib/trpc';
 
 // Map Figma status to database status
 const statusMap = {
@@ -37,7 +39,26 @@ interface DroppablePersonProps {
   hasNeeds?: boolean;
 }
 
+interface Need {
+  id: number;
+  personId: string;
+  type: string;
+  description: string;
+  amount?: number | null;
+  isActive: boolean;
+}
+
 export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false }: DroppablePersonProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch all needs (including inactive) to show met needs with checkmark
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  // Also fetch needs by person to get inactive needs
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
+  const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
+  
   // Convert database status to Figma status for display
   const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
   
@@ -70,22 +91,50 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    setIsHovered(true);
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setTooltipPos(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (iconRef.current && isHovered) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
+  };
+
   return (
-    <motion.div
-      ref={(node) => drag(drop(node))}
-      key={person.personId}
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      transition={{
-        layout: { type: "spring", stiffness: 300, damping: 30 },
-        opacity: { duration: 0.15 },
-        scale: { duration: 0.2 }
-      }}
-      className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
-      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-    >
+    <>
+      <motion.div
+        ref={(node) => {
+          iconRef.current = node;
+          const dragDropNode = drag(drop(node));
+          return dragDropNode;
+        }}
+        key={person.personId}
+        layout
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        transition={{
+          layout: { type: "spring", stiffness: 300, damping: 30 },
+          opacity: { duration: 0.15 },
+          scale: { duration: 0.2 }
+        }}
+        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
+        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}
+      >
       {/* First Name Label with Edit Button */}
       <div className="relative flex items-center justify-center mb-1 group/name w-full min-w-0">
         <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
@@ -117,28 +166,14 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
               fill="currentColor"
             />
           )}
-          {/* Main person icon */}
-          <div className="relative">
+          {/* Main person icon - solid */}
+          <div 
+            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+          >
             <User
-              className={`w-10 h-10 ${statusColors[figmaStatus]} transition-colors cursor-pointer relative z-10 ${person.depositPaid ? 'stroke-slate-700 ring-2 ring-slate-700 ring-offset-1' : ''}`}
-              strokeWidth={person.depositPaid ? 2.5 : 1.5}
-              fill={person.depositPaid ? 'none' : 'currentColor'}
-              style={{
-                filter: 'var(--person-shadow, none)',
-                transition: 'filter 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15))');
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'none');
-              }}
-            />
-            <User
-              className={`w-10 h-10 text-gray-700 absolute top-0 left-0 opacity-0 group-hover/person:opacity-100 transition-opacity pointer-events-none z-30`}
-              strokeWidth={1}
-              fill="none"
-              stroke="currentColor"
+              className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+              strokeWidth={1.5}
+              fill="currentColor"
             />
           </div>
           {/* Raising hand indicator when person has needs */}
@@ -157,7 +192,21 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           {person.primaryRole || 'Staff'}
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+      {/* Person Tooltip */}
+      {isHovered && tooltipPos && (personNeed || person.notes || person.depositPaid) && (
+        <PersonTooltip
+          person={person}
+          need={personNeed ? {
+            type: personNeed.type,
+            description: personNeed.description,
+            amount: personNeed.amount,
+            isActive: personNeed.isActive,
+          } : null}
+          position={tooltipPos}
+        />
+      )}
+    </>
   );
 }
 
