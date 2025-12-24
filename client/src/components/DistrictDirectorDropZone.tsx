@@ -162,7 +162,7 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
             />
             <User
               className="w-10 h-10 text-gray-700 absolute top-0 left-0 opacity-0 group-hover/person:opacity-100 transition-opacity pointer-events-none z-30"
-              strokeWidth={0.25}
+              strokeWidth={1}
               fill="none"
               stroke="currentColor"
             />
