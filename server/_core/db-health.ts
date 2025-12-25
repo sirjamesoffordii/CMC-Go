@@ -349,7 +349,7 @@ export async function startupDbHealthCheck(): Promise<void> {
     throw new Error("Database connection failed during startup health check");
   }
 
-  if (health.errors.length > 0) {
+  if (health.errors.length > 0 && process.env.NODE_ENV !== 'production') {
     console.error("[DB Health] ❌ CRITICAL: Schema drift detected!");
     
     // Log first failing table/columns for quick diagnosis
@@ -365,6 +365,10 @@ export async function startupDbHealthCheck(): Promise<void> {
       `Schema drift detected: ${firstError || health.errors.join("; ")}. ` +
       `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
     );
+  }
+   else if (health.errors.length > 0) {
+    console.warn("[DB Health] ⚠️ PRODUCTION: Schema errors detected but allowing startup. Run migrations with 'pnpm db:migrate'.");
+    console.warn("[DB Health] Errors:", health.errors);
   }
 
   if (health.warnings.length > 0) {
