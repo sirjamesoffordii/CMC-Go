@@ -46,6 +46,22 @@ export type Campus = typeof campuses.$inferSelect;
 export type InsertCampus = typeof campuses.$inferInsert;
 
 /**
+ * Households table - represents shared households for families
+ * Prevents double-counting of children and guests for married staff
+ */
+export const households = mysqlTable("households", {
+  id: int("id").primaryKey().autoincrement(),
+  label: varchar("label", { length: 255 }), // Optional label e.g. "Offord Household"
+  childrenCount: int("childrenCount").default(0).notNull(),
+  guestsCount: int("guestsCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+});
+
+export type Household = typeof households.$inferSelect;
+export type InsertHousehold = typeof households.$inferInsert;
+
+/**
  * People table - represents unique individuals
  * personId is the authoritative ID from the Excel seed data
  * A person can have multiple assignments but exists only once here
@@ -65,12 +81,19 @@ export const people = mysqlTable("people", {
   depositPaid: boolean("depositPaid").default(false).notNull(),
   statusLastUpdated: timestamp("statusLastUpdated"),
   statusLastUpdatedBy: varchar("statusLastUpdatedBy", { length: 255 }),
+  // Household linking
+  householdId: int("householdId"), // nullable FK to households.id
+  householdRole: mysqlEnum("householdRole", ["primary", "member"]).default("primary"), // "primary" when first linked
   // Additional fields
   needs: text("needs"),
   notes: text("notes"),
-  spouse: varchar("spouse", { length: 255 }),
-  kids: varchar("kids", { length: 10 }), // Store as string to allow empty or number
-  guests: varchar("guests", { length: 10 }), // Store as string to allow empty or number
+  spouse: varchar("spouse", { length: 255 }), // Deprecated - use spouseAttending + householdId
+  kids: varchar("kids", { length: 10 }), // Deprecated - use childrenCount + householdId
+  guests: varchar("guests", { length: 10 }), // Deprecated - use guestsCount
+  // Household and family fields
+  spouseAttending: boolean("spouseAttending").default(false).notNull(),
+  childrenCount: int("childrenCount").default(0).notNull(), // 0-10, requires householdId if > 0
+  guestsCount: int("guestsCount").default(0).notNull(), // 0-10, stored on person always
   childrenAges: text("childrenAges"), // JSON array stored as text
   // Last edited tracking
   lastEdited: timestamp("lastEdited"),
@@ -104,11 +127,19 @@ export type InsertAssignment = typeof assignments.$inferInsert;
  * Needs table - tracks financial or other needs for people
  * References people by personId (varchar) for consistency
  */
+/**
+ * Needs table - tracks financial or other needs for people
+ * Only active needs (isActive = true) are counted in metrics and summaries.
+ * Inactive needs are retained for history.
+ */
 export const needs = mysqlTable("needs", {
   id: int("id").primaryKey().autoincrement(),
   personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+  type: mysqlEnum("type", ["Financial", "Transportation", "Housing", "Other"]).notNull(),
   description: text("description").notNull(),
-  amount: int("amount"), // in cents
+  amount: int("amount"), // in cents (only for Financial type)
+  isActive: boolean("isActive").default(true).notNull(), // false when need is met
+  metAt: timestamp("metAt"), // timestamp when need was marked as met (nullable)
   createdAt: timestamp("createdAt").notNull().defaultNow(),
 });
 

@@ -11,13 +11,15 @@ import {
   notes,
   settings,
   assignments,
+  households,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
   InsertNeed,
   InsertNote,
   InsertSetting,
-  InsertAssignment
+  InsertAssignment,
+  InsertHousehold
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -282,6 +284,21 @@ export async function createPerson(person: InsertPerson) {
     if (person.childrenAges !== undefined) {
       values.childrenAges = person.childrenAges;
     }
+    if (person.householdId !== undefined && person.householdId !== null) {
+      values.householdId = person.householdId;
+    }
+    if (person.householdRole !== undefined) {
+      values.householdRole = person.householdRole;
+    }
+    if (person.spouseAttending !== undefined) {
+      values.spouseAttending = person.spouseAttending;
+    }
+    if (person.childrenCount !== undefined) {
+      values.childrenCount = person.childrenCount;
+    }
+    if (person.guestsCount !== undefined) {
+      values.guestsCount = person.guestsCount;
+    }
     if (person.lastEdited !== undefined) {
       values.lastEdited = person.lastEdited;
     }
@@ -354,10 +371,15 @@ export async function createAssignment(assignment: InsertAssignment) {
 // NEEDS
 // ============================================================================
 
+/**
+ * Get all needs for a person (active and inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() and filter by personId.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
 export async function getNeedsByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(needs).where(eq(needs.personId, personId));
+  return await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`);
 }
 
 export async function createNeed(need: InsertNeed) {
@@ -370,8 +392,95 @@ export async function createNeed(need: InsertNeed) {
 export async function getAllActiveNeeds() {
   const db = await getDb();
   if (!db) return [];
-  // Return all needs (isActive field was removed from schema)
-  return await db.select().from(needs);
+  // Return only active needs (isActive = true)
+  return await db.select().from(needs).where(eq(needs.isActive, true));
+}
+
+/**
+ * Toggle need active status. When marking as met (isActive = false), set metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function toggleNeedActive(needId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: { isActive: boolean; metAt?: Date | null } = { isActive };
+  if (!isActive) {
+    // When marking as met, set metAt timestamp
+    updateData.metAt = new Date();
+  } else {
+    // When reactivating, clear metAt
+    updateData.metAt = null;
+  }
+  await db.update(needs).set(updateData).where(eq(needs.id, needId));
+}
+
+/**
+ * Get need by personId. Returns most recent need (active or inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() instead.
+ */
+export async function getNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  // Get most recent need (for display in tooltips/forms)
+  const result = await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`).limit(1);
+  return result[0] || null;
+}
+
+/**
+ * Update or create need. Only creates if type is provided (not "None").
+ * When marking as met (isActive = false), sets metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if need exists for this person
+  const existing = await getNeedByPersonId(personId);
+  
+  const updateData: {
+    type: string;
+    description: string;
+    amount?: number | null;
+    isActive: boolean;
+    metAt?: Date | null;
+  } = {
+    type: needData.type,
+    description: needData.description,
+    amount: needData.amount ?? null,
+    isActive: needData.isActive,
+  };
+  
+  // Set metAt when marking as met, clear when reactivating
+  if (!needData.isActive) {
+    updateData.metAt = new Date();
+  } else if (existing && !existing.isActive) {
+    // Reactivating a previously met need
+    updateData.metAt = null;
+  }
+  
+  if (existing) {
+    // Update existing need
+    await db.update(needs).set(updateData).where(eq(needs.id, existing.id));
+    return existing.id;
+  } else {
+    // Create new need (only if type is not "None" - this should be validated by caller)
+    const result = await db.insert(needs).values({
+      personId,
+      type: needData.type,
+      description: needData.description,
+      amount: needData.amount ?? null,
+      isActive: needData.isActive,
+      metAt: needData.isActive ? null : new Date(),
+    });
+    return result[0].insertId;
+  }
+}
+
+export async function deleteNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(needs).where(eq(needs.personId, personId));
 }
 
 // ============================================================================
@@ -480,4 +589,114 @@ export async function getNationalStaff() {
       sql`${people.primaryRegion} IS NULL`
     )
   );
+}
+
+// ============================================================================
+// HOUSEHOLDS
+// ============================================================================
+
+export async function getAllHouseholds() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(households);
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching households (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function getHouseholdById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.select().from(households).where(eq(households.id, id)).limit(1);
+    return result[0] || null;
+  } catch (error) {
+    // If households table doesn't exist yet, return null
+    console.error('Error fetching household by id (table may not exist yet):', error);
+    return null;
+  }
+}
+
+export async function getHouseholdMembers(householdId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(people).where(eq(people.householdId, householdId));
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching household members (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function searchHouseholds(query: string) {
+  const db = await getDb();
+  if (!db) return [];
+  // Search by label or by member names
+  const allHouseholds = await db.select().from(households);
+  const matchingHouseholds = [];
+  
+  for (const household of allHouseholds) {
+    // Check label match
+    if (household.label && household.label.toLowerCase().includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+      continue;
+    }
+    
+    // Check member names
+    const members = await getHouseholdMembers(household.id);
+    const memberNames = members.map(m => m.name.toLowerCase()).join(' ');
+    if (memberNames.includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+    }
+  }
+  
+  return matchingHouseholds;
+}
+
+export async function createHousehold(data: InsertHousehold) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const cleanData: any = {
+    childrenCount: data.childrenCount ?? 0,
+    guestsCount: data.guestsCount ?? 0,
+  };
+  
+  // Ensure label is not empty - fallback to "Household" if needed
+  if (data.label !== undefined && data.label !== null && data.label.trim()) {
+    cleanData.label = data.label.trim();
+  } else {
+    // Fallback to "Household" if label is empty or not provided
+    cleanData.label = "Household";
+  }
+  
+  const result = await db.insert(households).values(cleanData);
+  return (result[0] as any).insertId;
+}
+
+export async function updateHousehold(id: number, data: Partial<InsertHousehold>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: any = {};
+  if (data.label !== undefined) updateData.label = data.label;
+  if (data.childrenCount !== undefined) updateData.childrenCount = data.childrenCount;
+  if (data.guestsCount !== undefined) updateData.guestsCount = data.guestsCount;
+  
+  await db.update(households).set(updateData).where(eq(households.id, id));
+}
+
+export async function deleteHousehold(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // First, unlink all people from this household
+  await db.update(people).set({ householdId: null, householdRole: 'primary' }).where(eq(people.householdId, id));
+  
+  // Then delete the household
+  await db.delete(households).where(eq(households.id, id));
 }

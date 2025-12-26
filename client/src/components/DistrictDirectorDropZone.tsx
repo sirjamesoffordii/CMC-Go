@@ -1,6 +1,10 @@
 import { useDrop, useDrag } from 'react-dnd';
 import { User, Plus, Edit2 } from 'lucide-react';
 import { Person } from '../../../drizzle/schema';
+import { useState, useRef } from 'react';
+import { PersonTooltip } from './PersonTooltip';
+import { trpc } from '../lib/trpc';
+import { Input } from './ui/input';
 
 const reverseStatusMap = {
   'Yes': 'director' as const,
@@ -22,9 +26,47 @@ interface DistrictDirectorDropZoneProps {
   onEdit: (campusId: string | number, person: Person) => void;
   onClick: () => void;
   onAddClick: () => void;
+  quickAddMode?: boolean;
+  quickAddName?: string;
+  onQuickAddNameChange?: (name: string) => void;
+  onQuickAddSubmit?: () => void;
+  onQuickAddCancel?: () => void;
+  onQuickAddClick?: (e: React.MouseEvent) => void;
+  quickAddInputRef?: React.RefObject<HTMLInputElement>;
 }
 
-export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAddClick }: DistrictDirectorDropZoneProps) {
+interface Need {
+  id: number;
+  personId: string;
+  type: string;
+  description: string;
+  amount?: number | null;
+  isActive: boolean;
+}
+
+export function DistrictDirectorDropZone({ 
+  person, 
+  onDrop, 
+  onEdit, 
+  onClick, 
+  onAddClick,
+  quickAddMode = false,
+  quickAddName = '',
+  onQuickAddNameChange,
+  onQuickAddSubmit,
+  onQuickAddCancel,
+  onQuickAddClick,
+  quickAddInputRef
+}: DistrictDirectorDropZoneProps) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
+  const nameRef = useRef<HTMLDivElement>(null);
+  
+  // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person?.personId || '' }, { enabled: !!person });
+  const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
+  
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'person',
     drop: (item: { personId: string; campusId: string | number }) => {
@@ -49,6 +91,28 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
     })
   }), [person]);
 
+  const handleNameMouseEnter = (e: React.MouseEvent) => {
+    if (person) {
+      setIsHovered(true);
+      if (nameRef.current) {
+        const rect = nameRef.current.getBoundingClientRect();
+        setTooltipPos({ x: rect.left, y: rect.top });
+      }
+    }
+  };
+
+  const handleNameMouseLeave = () => {
+    setIsHovered(false);
+    setTooltipPos(null);
+  };
+
+  const handleNameMouseMove = (e: React.MouseEvent) => {
+    if (nameRef.current && isHovered && person) {
+      const rect = nameRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
+  };
+
   if (!person) {
     // Show add button when no district director
     return (
@@ -61,31 +125,49 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
           onClick={onAddClick}
           className="flex flex-col items-center w-[50px]"
         >
-          {/* Plus sign in name position */}
+          {/* Plus sign in name position - clickable for quick add */}
           <div className="relative flex items-center justify-center mb-1">
-            <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110" strokeWidth={1.5} />
+            {quickAddMode ? (
+              <div className="relative">
+                <Input
+                  ref={quickAddInputRef}
+                  value={quickAddName}
+                  onChange={(e) => onQuickAddNameChange?.(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onQuickAddSubmit?.();
+                    } else if (e.key === 'Escape') {
+                      onQuickAddCancel?.();
+                    }
+                  }}
+                  onBlur={() => {
+                    onQuickAddSubmit?.();
+                  }}
+                  placeholder="Name"
+                  className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                  autoFocus
+                />
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                  Quick Add
+                </div>
+              </div>
+            ) : (
+              <Plus 
+                className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                strokeWidth={1.5}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // This will be handled by parent
+                }}
+              />
+            )}
           </div>
-          {/* Icon */}
+          {/* Icon - solid */}
           <div className="relative">
             <User 
               className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-              strokeWidth={1} 
-              fill="none"
-              stroke="currentColor"
-            />
-            <User 
-              className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-              strokeWidth={1} 
-              fill="none"
-              stroke="currentColor"
-            />
-            <User 
-              className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-              strokeWidth={0} 
+              strokeWidth={1.5} 
               fill="currentColor"
-              style={{
-                filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-              }}
             />
           </div>
         </button>
@@ -104,12 +186,19 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
   return (
-    <div
-      ref={drop}
-      className="flex flex-col items-center group/person w-[50px] transition-transform"
-    >
+    <>
+      <div
+        ref={drop}
+        className="flex flex-col items-center group/person w-[50px] transition-transform"
+      >
       {/* Name Label with Edit Button */}
-          <div className="relative flex items-center justify-center mb-1 group/name w-full min-w-0">
+          <div 
+            ref={nameRef}
+            className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+            onMouseEnter={handleNameMouseEnter}
+            onMouseLeave={handleNameMouseLeave}
+            onMouseMove={handleNameMouseMove}
+          >
         <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
           {truncatedName}
         </div>
@@ -127,7 +216,10 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
       </div>
       
       <div
-        ref={drag}
+        ref={(node) => {
+          iconRef.current = node;
+          drag(node);
+        }}
         className="relative"
         style={{ opacity: isDragging ? 0.5 : 1 }}
       >
@@ -143,28 +235,14 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
               fill="currentColor"
             />
           )}
-          {/* Main person icon */}
-          <div className="relative">
+          {/* Main person icon - solid */}
+          <div 
+            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+          >
             <User 
-              className={`w-10 h-10 ${statusColors[figmaStatus]} transition-colors cursor-pointer relative z-10`}
+              className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
               strokeWidth={1.5}
               fill="currentColor"
-              style={{
-                filter: 'var(--person-shadow, none)',
-                transition: 'filter 200ms ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15))');
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.setProperty('--person-shadow', 'none');
-              }}
-            />
-            <User
-              className="w-10 h-10 text-gray-700 absolute top-0 left-0 opacity-0 group-hover/person:opacity-100 transition-opacity pointer-events-none z-30"
-              strokeWidth={1}
-              fill="none"
-              stroke="currentColor"
             />
           </div>
         </button>
@@ -174,7 +252,21 @@ export function DistrictDirectorDropZone({ person, onDrop, onEdit, onClick, onAd
           {person.primaryRole || 'District Director'}
         </div>
       </div>
-    </div>
+      </div>
+      {/* Person Tooltip */}
+      {isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
+        <PersonTooltip
+          person={person}
+          need={personNeed ? {
+            type: personNeed.type,
+            description: personNeed.description,
+            amount: personNeed.amount,
+            isActive: personNeed.isActive,
+          } : null}
+          position={tooltipPos}
+        />
+      )}
+    </>
   );
 }
 

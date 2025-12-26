@@ -101,6 +101,11 @@ export const appRouter = router({
         kids: z.string().optional(),
         guests: z.string().optional(),
         childrenAges: z.string().optional(), // JSON string array
+        householdId: z.number().nullable().optional(),
+        householdRole: z.enum(["primary", "member"]).optional(),
+        spouseAttending: z.boolean().optional(),
+        childrenCount: z.number().min(0).max(10).optional(),
+        guestsCount: z.number().min(0).max(10).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         try {
@@ -196,6 +201,11 @@ export const appRouter = router({
         kids: z.string().optional(),
         guests: z.string().optional(),
         childrenAges: z.string().optional(), // JSON string array
+        householdId: z.number().nullable().optional(),
+        householdRole: z.enum(["primary", "member"]).optional(),
+        spouseAttending: z.boolean().optional(),
+        childrenCount: z.number().min(0).max(10).optional(),
+        guestsCount: z.number().min(0).max(10).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const { personId, ...data } = input;
@@ -204,6 +214,28 @@ export const appRouter = router({
         // Convert null to undefined for optional fields (Drizzle handles undefined better)
         if (updateData.primaryCampusId === null) {
           updateData.primaryCampusId = undefined;
+        }
+        if (updateData.householdId === null) {
+          updateData.householdId = undefined;
+        }
+        
+        // Validation: spouseAttending or childrenCount > 0 requires householdId
+        // Get current person data to check existing values if not all provided
+        try {
+          const currentPerson = await db.getPersonByPersonId(personId);
+          const finalSpouseAttending = updateData.spouseAttending !== undefined ? updateData.spouseAttending : (currentPerson?.spouseAttending ?? false);
+          const finalChildrenCount = updateData.childrenCount !== undefined ? updateData.childrenCount : (currentPerson?.childrenCount ?? 0);
+          const finalHouseholdId = updateData.householdId !== undefined ? updateData.householdId : (currentPerson?.householdId ?? null);
+          
+          if ((finalSpouseAttending || finalChildrenCount > 0) && !finalHouseholdId) {
+            // Instead of throwing, reset spouseAttending and childrenCount to defaults
+            console.warn('Household required but not linked. Resetting spouseAttending and childrenCount.');
+            updateData.spouseAttending = false;
+            updateData.childrenCount = 0;
+          }
+        } catch (error) {
+          // If person doesn't exist or query fails, just log and continue
+          console.error('Error checking person data for validation:', error);
         }
         
         // Add last edited tracking
@@ -246,8 +278,10 @@ export const appRouter = router({
     create: publicProcedure
       .input(z.object({
         personId: z.string(),
+        type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
         description: z.string(),
         amount: z.number().optional(),
+        isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input }) => {
         await db.createNeed(input);
@@ -256,6 +290,38 @@ export const appRouter = router({
         if (person) {
           await db.updatePersonStatus(input.personId, person.status);
         }
+        return { success: true };
+      }),
+    updateOrCreate: publicProcedure
+      .input(z.object({
+        personId: z.string(),
+        type: z.enum(["Financial", "Transportation", "Housing", "Other"]).optional(),
+        description: z.string().optional(),
+        amount: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { personId, ...needData } = input;
+        if (input.type && input.description !== undefined) {
+          await db.updateOrCreateNeed(personId, {
+            type: input.type,
+            description: input.description,
+            amount: input.amount,
+            isActive: input.isActive ?? true,
+          });
+        } else if (input.isActive !== undefined) {
+          // Just update isActive
+          const existing = await db.getNeedByPersonId(personId);
+          if (existing) {
+            await db.toggleNeedActive(existing.id, input.isActive);
+          }
+        }
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ personId: z.string() }))
+      .mutation(async ({ input }) => {
+        await db.deleteNeedByPersonId(input.personId);
         return { success: true };
       }),
     toggleActive: publicProcedure
@@ -359,6 +425,55 @@ export const appRouter = router({
           console.error('[uploadHeaderImage] Error:', error);
           throw error;
         }
+      }),
+  }),
+
+  households: router({
+    list: publicProcedure.query(async () => {
+      return await db.getAllHouseholds();
+    }),
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getHouseholdById(input.id);
+      }),
+    getMembers: publicProcedure
+      .input(z.object({ householdId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getHouseholdMembers(input.householdId);
+      }),
+    search: publicProcedure
+      .input(z.object({ query: z.string() }))
+      .query(async ({ input }) => {
+        return await db.searchHouseholds(input.query);
+      }),
+    create: publicProcedure
+      .input(z.object({
+        label: z.string().optional(),
+        childrenCount: z.number().default(0),
+        guestsCount: z.number().default(0),
+      }))
+      .mutation(async ({ input }) => {
+        const insertId = await db.createHousehold(input);
+        return { id: insertId, ...input };
+      }),
+    update: publicProcedure
+      .input(z.object({
+        id: z.number(),
+        label: z.string().optional(),
+        childrenCount: z.number().optional(),
+        guestsCount: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateHousehold(id, data);
+        return { success: true };
+      }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deleteHousehold(input.id);
+        return { success: true };
       }),
   }),
 });

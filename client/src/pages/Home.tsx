@@ -8,7 +8,7 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
@@ -353,11 +353,13 @@ export default function Home() {
     [allPeople, selectedDistrictId]
   );
 
-  // Add notes/needs indicators to people
+  // Add notes/needs indicators to people - DERIVED from active needs only
+  // hasNeeds is true if person has any active needs, false otherwise
+  // Only active needs are counted. Inactive needs are retained for history.
   const peopleWithIndicators = useMemo(() => {
     return allPeople.map(person => ({
       ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive),
+      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
     }));
   }, [allPeople, allNeeds]);
 
@@ -728,6 +730,17 @@ export default function Home() {
                 >
                   <MapPin className="w-4 h-4" />
                   More Info
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLocation("/admin");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin Console
                 </button>
                 <button
                   onClick={() => {
