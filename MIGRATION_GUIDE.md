@@ -198,3 +198,6 @@ Expected tables:
 - Check MySQL user permissions
 - User needs CREATE, ALTER, DROP, INSERT, SELECT permissions
 
+
+
+

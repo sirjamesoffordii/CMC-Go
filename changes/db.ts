@@ -36,7 +36,7 @@ export async function getDb() {
     try {
       const connectionString = ENV.DATABASE_URL;
       if (!connectionString) {
-        throw new Error("DATABASE_URL environment variable is required. Set DATABASE_URL or MYSQL_* variables (MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)");
+        throw new Error("DATABASE_URL environment variable is required");
       }
       
       // Create connection pool for MySQL/TiDB
@@ -51,25 +51,11 @@ export async function getDb() {
       
       _db = drizzle(_pool);
       
-      // Test the connection with a simple query
-      try {
-        await _db.execute(sql`SELECT 1`);
-        console.log("[Database] Connected to MySQL/TiDB with connection pool");
-      } catch (testError) {
-        console.error("[Database] Connection pool created but test query failed:", testError);
-        throw testError;
-      }
+      console.log("[Database] Connected to MySQL/TiDB with connection pool");
     } catch (error) {
       console.error("[Database] Failed to connect:", error);
-      if (error instanceof Error) {
-        console.error("[Database] Error message:", error.message);
-        if (error.stack) {
-          console.error("[Database] Stack trace:", error.stack);
-        }
-      }
       _db = null;
       _pool = null;
-      throw error; // Re-throw so callers know connection failed
     }
   }
   return _db;

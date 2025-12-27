@@ -122,7 +122,12 @@ export function DistrictDirectorDropZone({
       >
         <div className="relative flex flex-col items-center w-[50px] group/add">
         <button 
-          onClick={onAddClick}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAddClick();
+          }}
           className="flex flex-col items-center w-[50px]"
         >
           {/* Plus sign in name position - clickable for quick add */}

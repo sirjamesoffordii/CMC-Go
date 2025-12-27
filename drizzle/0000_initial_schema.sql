@@ -92,3 +92,6 @@ CREATE TABLE `settings` (
 	CONSTRAINT `settings_key` PRIMARY KEY(`key`)
 );
 
+
+
+

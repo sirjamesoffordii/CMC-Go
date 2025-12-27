@@ -263,11 +263,35 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
   let databaseName: string | null = null;
   try {
     const db = await getDb();
-    if (db) {
+    if (!db) {
+      errors.push("Database connection failed: getDb() returned null");
+      return {
+        connected: false,
+        drizzleMigrationsTableExists: false,
+        tables: {},
+        errors,
+        warnings,
+      };
+    }
+    
+    // Try a simple query to verify connection works
+    try {
       await db.execute(sql`SELECT 1`);
       connected = true;
-      
-      // Verify DATABASE() returns a database name (ensures DATABASE_URL includes DB name)
+    } catch (queryError) {
+      const errorMsg = queryError instanceof Error ? queryError.message : String(queryError);
+      errors.push(`Database connection failed: Failed query: SELECT 1\nparams: ${errorMsg}`);
+      return {
+        connected: false,
+        drizzleMigrationsTableExists: false,
+        tables: {},
+        errors,
+        warnings,
+      };
+    }
+    
+    // Verify DATABASE() returns a database name (ensures DATABASE_URL includes DB name)
+    try {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
       databaseName = dbRows.length > 0 ? (dbRows[0] as any).db_name : null;
@@ -282,9 +306,14 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
           warnings,
         };
       }
+    } catch (dbNameError) {
+      // If we can't get database name, log warning but don't fail
+      warnings.push(`Could not verify database name: ${dbNameError instanceof Error ? dbNameError.message : String(dbNameError)}`);
     }
   } catch (error) {
-    errors.push(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    errors.push(`Database connection failed: ${errorMsg}${errorStack ? `\nStack: ${errorStack}` : ''}`);
     return {
       connected: false,
       drizzleMigrationsTableExists: false,
@@ -337,34 +366,58 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
 
 /**
  * Startup health check - throws if critical issues found
+ * In production, allows missing tables (for first deploy) but requires connection
  */
 export async function startupDbHealthCheck(): Promise<void> {
   console.log("[DB Health] Performing startup database health check...");
   
   const health = await checkDbHealth();
+  const isProduction = process.env.NODE_ENV === "production";
 
   if (!health.connected) {
     console.error("[DB Health] ❌ CRITICAL: Database connection failed!");
     console.error("[DB Health] Errors:", health.errors);
+    
+    // Log more details about connection failure
+    if (health.errors.length > 0) {
+      const connectionError = health.errors.find(e => e.includes("connection") || e.includes("SELECT 1"));
+      if (connectionError) {
+        console.error("[DB Health] Connection error details:", connectionError);
+      }
+    }
+    
     throw new Error("Database connection failed during startup health check");
   }
 
+  // In production, allow missing tables (they can be created via migrations)
+  // But still log warnings for visibility
   if (health.errors.length > 0) {
-    console.error("[DB Health] ❌ CRITICAL: Schema drift detected!");
+    const missingTableErrors = health.errors.filter(e => e.includes("does not exist"));
+    const schemaErrors = health.errors.filter(e => !e.includes("does not exist"));
     
-    // Log first failing table/columns for quick diagnosis
-    const firstError = health.errors[0];
-    if (firstError) {
-      console.error("[DB Health] First failure:", firstError);
+    if (isProduction && missingTableErrors.length > 0 && schemaErrors.length === 0) {
+      // Production: Only missing tables, allow startup (migrations will create them)
+      console.warn("[DB Health] ⚠️  Missing tables detected (expected on first deploy):");
+      missingTableErrors.forEach(err => console.warn(`  - ${err}`));
+      console.warn("[DB Health] 💡 Run migrations to create tables: pnpm db:migrate");
+    } else {
+      // Development or schema errors: fail startup
+      console.error("[DB Health] ❌ CRITICAL: Schema drift detected!");
+      
+      // Log first failing table/columns for quick diagnosis
+      const firstError = health.errors[0];
+      if (firstError) {
+        console.error("[DB Health] First failure:", firstError);
+      }
+      
+      console.error("[DB Health] All errors:", health.errors);
+      console.error("[DB Health] 💡 Fix: Run 'pnpm db:push' or 'pnpm db:migrate' to sync schema");
+      
+      throw new Error(
+        `Schema drift detected: ${firstError || health.errors.join("; ")}. ` +
+        `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
+      );
     }
-    
-    console.error("[DB Health] All errors:", health.errors);
-    console.error("[DB Health] 💡 Fix: Run 'pnpm db:push' or 'pnpm db:migrate' to sync schema");
-    
-    throw new Error(
-      `Schema drift detected: ${firstError || health.errors.join("; ")}. ` +
-      `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
-    );
   }
 
   if (health.warnings.length > 0) {

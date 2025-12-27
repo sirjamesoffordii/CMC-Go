@@ -1,10 +1,12 @@
 import { Person } from "../../../drizzle/schema";
-import { StickyNote, DollarSign, Pencil } from "lucide-react";
+import { StickyNote, DollarSign, Pencil, Check } from "lucide-react";
+import { Checkbox } from "./ui/checkbox";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 interface PersonRowProps {
   person: Person;
@@ -13,6 +15,9 @@ interface PersonRowProps {
   hasNotes?: boolean;
   hasNeeds?: boolean;
   onPersonUpdate: () => void;
+  // PR 5: Bulk selection
+  isSelected?: boolean;
+  onToggleSelect?: (personId: string) => void;
 }
 
 // Universal response language for editing
@@ -31,6 +36,7 @@ const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
 ];
 
 export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds, onPersonUpdate }: PersonRowProps) {
+  const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   
@@ -55,25 +61,50 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
   
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const currentIndex = STATUS_CYCLE.indexOf(person.status);
+    const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
     const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
     const nextStatus = STATUS_CYCLE[nextIndex];
     onStatusChange(person.personId, nextStatus);
   };
+  
+  // Public mode: render neutral placeholder row
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center gap-1.5 bg-slate-50 rounded-lg border border-slate-200 pointer-events-none">
+        <div className="w-1.5 h-8 rounded-l bg-slate-400 opacity-30 flex-shrink-0" />
+        <div className="flex-1 py-1.5 pr-2 min-w-0">
+          <div className="w-16 h-3 bg-slate-300 opacity-30 rounded" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
+      className={`flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border transition-all duration-200 cursor-pointer group relative ${
+        isSelected ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* PR 5: Bulk Selection Checkbox */}
+      {onToggleSelect && (
+        <div className="px-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(person.personId)}
+            className="touch-target"
+          />
+        </div>
+      )}
+      
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status]} hover:brightness-110 transition-all flex-shrink-0`}
+        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
         onClick={handleStatusClick}
-        title={`Click to cycle status (current: ${person.status})`}
+        title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
       />
 
       {/* Person Info - Compact - Draggable area */}
@@ -85,14 +116,18 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
       >
         <div className="flex items-center justify-between gap-1.5">
           <span className="text-xs font-medium text-slate-800 truncate group-hover:text-slate-900 transition-colors">
-            <EditableText
-              value={person.name}
-              onSave={(newName) => {
-                updatePersonName.mutate({ personId: person.personId, name: newName });
-              }}
-              className="text-xs font-medium text-slate-800"
-              inputClassName="text-xs font-medium text-slate-800 w-full"
-            />
+            {person.name ? (
+              <EditableText
+                value={person.name}
+                onSave={(newName) => {
+                  updatePersonName.mutate({ personId: person.personId, name: newName });
+                }}
+                className="text-xs font-medium text-slate-800"
+                inputClassName="text-xs font-medium text-slate-800 w-full"
+              />
+            ) : (
+              <span className="text-xs font-medium text-slate-400">—</span>
+            )}
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {hasNotes && (

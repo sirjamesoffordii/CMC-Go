@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useState, useRef } from "react";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "@/lib/trpc";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 interface PersonIconProps {
   person: Person;
@@ -30,14 +31,28 @@ interface Need {
 }
 
 export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIconProps) {
+  const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
-  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
+  // Only fetch in authenticated mode
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: person.personId },
+    { enabled: isAuthenticated }
+  );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
+  
+  // Public mode: render neutral placeholder dot
+  if (!isAuthenticated) {
+    return (
+      <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 pointer-events-none">
+        <div className="w-3 h-3 rounded-full bg-slate-400 opacity-50" />
+      </div>
+    );
+  }
   
   const {
     attributes,

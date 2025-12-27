@@ -1,11 +1,13 @@
 import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
-import { User, Edit2, Hand } from 'lucide-react';
+import { User, Edit2, Hand, Check } from 'lucide-react';
+import { Checkbox } from './ui/checkbox';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Person } from '../../../drizzle/schema';
 import { PersonTooltip } from './PersonTooltip';
 import { trpc } from '../lib/trpc';
+import { usePublicAuth } from '@/_core/hooks/usePublicAuth';
 
 // Map Figma status to database status
 const statusMap = {
@@ -48,7 +50,8 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, isSelected, onToggleSelect }: DroppablePersonProps) {
+  const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -56,13 +59,32 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  // Only fetch in authenticated mode
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, { enabled: isAuthenticated });
   // Also fetch needs by person to get inactive needs
-  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person.personId });
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: person.personId },
+    { enabled: isAuthenticated }
+  );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
   // Convert database status to Figma status for display
-  const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
+  const figmaStatus = person.status ? reverseStatusMap[person.status] || 'not-invited' : 'not-invited';
+  
+  // Public mode: render neutral placeholder dot
+  if (!isAuthenticated) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
+        className="relative flex flex-col items-center w-[50px] flex-shrink-0 pointer-events-none"
+      >
+        <div className="w-3 h-3 rounded-full bg-slate-400 opacity-50" />
+      </motion.div>
+    );
+  }
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
@@ -147,8 +169,19 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 }
         }}
-        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0"
+        className={`relative group/person flex flex-col items-center w-[50px] flex-shrink-0 ${isSelected ? 'ring-2 ring-blue-500 rounded-lg p-1' : ''}`}
       >
+      {/* PR 5: Bulk Selection Checkbox */}
+      {onToggleSelect && (
+        <div className="absolute -left-2 top-0 z-50" onClick={(e) => e.stopPropagation()}>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => onToggleSelect(person.personId)}
+            className="touch-target h-4 w-4"
+          />
+        </div>
+      )}
+      
       {/* First Name Label with Edit Button */}
       <div 
         ref={nameRef}

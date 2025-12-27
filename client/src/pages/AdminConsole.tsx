@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertCircle, Users, MapPin, Building2, Heart, Activity, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { getApiBaseUrl } from "@/lib/apiConfig";
 
 // Get version from package.json (will be injected at build time or read from env)
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -77,7 +78,7 @@ export default function AdminConsole() {
         
         // Only available in development
         if (NODE_ENV === "development") {
-          const response = await fetch("/api/debug/db-health");
+          const response = await fetch(`${getApiBaseUrl()}/debug/db-health`);
           if (response.ok) {
             const data = await response.json();
             setDbHealth({

@@ -8,6 +8,9 @@ import Home from "./pages/Home";
 import FollowUp from "./pages/FollowUp";
 import MoreInfo from "./pages/MoreInfo";
 import AdminConsole from "./pages/AdminConsole";
+import Approvals from "./pages/Approvals";
+import Import from "./pages/Import";
+import Needs from "./pages/Needs";
 
 function Router() {
   return (
@@ -16,6 +19,9 @@ function Router() {
       <Route path="/follow-up" component={FollowUp} />
       <Route path="/more-info" component={MoreInfo} />
       <Route path="/admin" component={AdminConsole} />
+      <Route path="/approvals" component={Approvals} />
+      <Route path="/import" component={Import} />
+      <Route path="/needs" component={Needs} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

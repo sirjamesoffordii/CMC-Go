@@ -63,23 +63,11 @@ async function startServer() {
   // Use a reasonable rate limiter to mitigate brute‑force attacks and limit
   // accidental abuse. This limiter restricts each IP to 100 requests per 15
   // minute window. Adjust these numbers based on expected traffic patterns.
-  // In development, use a much higher limit to avoid blocking Vite HMR and
-  // asset requests.
-  const isDevelopment = process.env.NODE_ENV === "development";
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: isDevelopment ? 10000 : 100, // Much higher limit in dev for Vite HMR
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for Vite dev server routes in development
-    skip: (req) => {
-      if (isDevelopment) {
-        // Skip rate limiting for Vite middleware routes (HMR, assets, etc.)
-        const viteRoutes = ['/@vite', '/@fs', '/node_modules', '/src', '/assets'];
-        return viteRoutes.some(route => req.path?.startsWith(route));
-      }
-      return false;
-    },
   });
   app.use(limiter);
 
