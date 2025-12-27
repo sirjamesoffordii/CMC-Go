@@ -129,6 +129,11 @@ async function runMigrations() {
               console.warn(`⚠️  Table already exists, skipping: ${error.message}`);
               continue;
             }
+            // If column already exists error (for ALTER TABLE ADD COLUMN), that's okay - continue
+            if (error.code === "ER_DUP_FIELDNAME" || error.message.includes("Duplicate column name") || error.message.includes("already exists")) {
+              console.warn(`⚠️  Column already exists, skipping: ${error.message}`);
+              continue;
+            }
             console.error(`❌ Error executing statement in ${file}:`);
             console.error(statement.substring(0, 200));
             console.error(`Error: ${error.message}`);

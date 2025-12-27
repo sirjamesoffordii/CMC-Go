@@ -85,7 +85,23 @@ async function startServer() {
 
   // Add Helmet to set a collection of sensible HTTP headers that improve
   // security such as Content‑Security‑Policy, X‑Frame‑Options and others.
-  app.use(helmet());
+  // In development, disable CSP to allow Vite's React preamble to work properly.
+  // CSP is re-enabled in production for security.
+  app.use(helmet({
+    contentSecurityPolicy: isDevelopment ? false : {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Vite HMR in dev
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+  }));
 
   // Configure CORS. When CORS_ORIGIN is set in the environment, only those
   // origins (comma separated) will be allowed. If empty, all origins are

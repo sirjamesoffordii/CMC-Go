@@ -370,6 +370,7 @@ const districtRegionMap: Record<string, string> = {
   "NorthDakota": "Great Plains North",
   "NorthernCal-Nevada": "West Coast",
   "NorthernNewEnglend": "Northeast",
+  "NorthernNewEngland": "Northeast",
   "NorthIdaho": "Northwest",
   "NorthernMissouri": "Great Plains South",
   "NorthTexas": "Texico",
@@ -435,6 +436,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   "NorthDakota": { x: 478, y: 126 },
   "NorthernCal-Nevada": { x: 199, y: 246 },
   "NorthernNewEnglend": { x: 818, y: 122 },
+  "NorthernNewEngland": { x: 818, y: 122 },
   "NorthernMissouri": { x: 557, y: 262 },
   "NorthTexas": { x: 501, y: 367 },
   "Ohio": { x: 686, y: 235 },
@@ -994,20 +996,19 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         }}
       >
           <div className="text-gray-800 mb-3" style={{ fontSize: '18px', fontWeight: 500, letterSpacing: '-0.01em' }}>
-          {getDistrictDisplayName(hoveredDistrict)}
           {(() => {
             const campusCount = allCampuses.filter(c => c.districtId === hoveredDistrict).length;
-            return campusCount > 0 ? (
-              <span className="text-gray-400 ml-2" style={{ fontSize: '16px', fontWeight: 400 }}>
-                ({campusCount} {campusCount === 1 ? 'campus' : 'campuses'})
-              </span>
-            ) : null;
+            return (
+              <>
+                {getDistrictDisplayName(hoveredDistrict)}
+                {campusCount > 0 && (
+                  <span className="text-gray-600 ml-1" style={{ fontSize: '18px', fontWeight: 400 }}>
+                    ({campusCount} {campusCount === 1 ? 'campus' : 'campuses'})
+                  </span>
+                )}
+              </>
+            );
           })()}
-          {district?.region && (
-            <>
-                <span className="text-gray-300 mx-1">|</span> <span className="text-gray-500" style={{ fontSize: '16px', fontWeight: 400 }}>{district.region}</span>
-            </>
-          )}
         </div>
         
         {/* Pie Chart and Stats Side by Side */}

@@ -258,16 +258,32 @@
     transform: translateX(-150px) rotate(-360deg);
     opacity: 0;
   }
-  65% {
+  58% {
     transform: translateX(0) rotate(12deg); /* Approach stopping point */
     opacity: 1;
   }
-  75% {
-    transform: translateX(4px) rotate(14deg); /* Gentle overshoot */
+  68% {
+    transform: translateX(2.5px) rotate(13deg); /* Gentle overshoot */
+    opacity: 1;
+  }
+  78% {
+    transform: translateX(0.8px) rotate(12.3deg); /* Begin settling */
     opacity: 1;
   }
   85% {
-    transform: translateX(2px) rotate(13deg); /* Begin settling */
+    transform: translateX(0.4px) rotate(12.15deg); /* Continue settling */
+    opacity: 1;
+  }
+  90% {
+    transform: translateX(0.2px) rotate(12.1deg); /* Continue settling */
+    opacity: 1;
+  }
+  94% {
+    transform: translateX(0.1px) rotate(12.05deg); /* Almost there */
+    opacity: 1;
+  }
+  97% {
+    transform: translateX(0.03px) rotate(12.02deg); /* Final approach */
     opacity: 1;
   }
   100% {

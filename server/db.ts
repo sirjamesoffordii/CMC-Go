@@ -106,6 +106,20 @@ export async function getUserByOpenId(openId: string) {
   return result[0] || null;
 }
 
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0] || null;
+}
+
 export async function createUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -231,7 +245,19 @@ export async function updateCampusName(id: number, name: string) {
 export async function getAllPeople() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people);
+  try {
+    return await db.select().from(people);
+  } catch (error) {
+    console.error("[getAllPeople] Database error:", error);
+    if (error instanceof Error) {
+      console.error("[getAllPeople] Full error message:", error.message);
+      // Check for common schema mismatch issues
+      if (error.message.includes('notes') || error.message.includes('note')) {
+        console.error("[getAllPeople] Possible schema mismatch with 'notes' field");
+      }
+    }
+    throw error;
+  }
 }
 
 export async function getPersonByPersonId(personId: string) {
@@ -251,6 +277,34 @@ export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+}
+
+/**
+ * Sanitize person data for public viewing - removes private fields
+ * Public view only includes: personId, status, primaryDistrictId, primaryCampusId, primaryRole, primaryRegion
+ * Removes: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy, and other PII
+ * Note: name is excluded for privacy, but personId can be used as an identifier
+ */
+export function sanitizePersonForPublic(person: typeof people.$inferSelect) {
+  return {
+    id: person.id,
+    personId: person.personId,
+    status: person.status,
+    depositPaid: person.depositPaid,
+    statusLastUpdated: person.statusLastUpdated,
+    primaryDistrictId: person.primaryDistrictId,
+    primaryCampusId: person.primaryCampusId,
+    primaryRole: person.primaryRole,
+    primaryRegion: person.primaryRegion,
+    nationalCategory: person.nationalCategory,
+    householdId: person.householdId,
+    householdRole: person.householdRole,
+    spouseAttending: person.spouseAttending,
+    childrenCount: person.childrenCount,
+    guestsCount: person.guestsCount,
+    createdAt: person.createdAt,
+    // Explicitly exclude private fields: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy
+  };
 }
 
 export async function createPerson(person: InsertPerson) {
@@ -406,8 +460,22 @@ export async function createNeed(need: InsertNeed) {
 export async function getAllActiveNeeds() {
   const db = await getDb();
   if (!db) return [];
-  // Return only active needs (isActive = true)
-  return await db.select().from(needs).where(eq(needs.isActive, true));
+  try {
+    // Return only active needs (isActive = true)
+    return await db.select().from(needs).where(eq(needs.isActive, true));
+  } catch (error) {
+    console.error("[getAllActiveNeeds] Database error:", error);
+    // Check if it's a column name issue
+    if (error instanceof Error) {
+      if (error.message.includes('createdById') || error.message.includes('createdByUserId')) {
+        console.error("[getAllActiveNeeds] Schema mismatch: Check if database column name matches schema definition");
+        console.error("[getAllActiveNeeds] Schema expects: createdById");
+      }
+      // Log the full error for debugging
+      console.error("[getAllActiveNeeds] Full error:", error.message);
+    }
+    throw error;
+  }
 }
 
 /**

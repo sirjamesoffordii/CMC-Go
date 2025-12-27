@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
-import { FollowUpPanel } from "@/components/FollowUpPanel";
+import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
@@ -24,16 +24,17 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 export default function Home() {
   // PR 2: Real authentication
   const { isAuthenticated, user, login } = usePublicAuth();
+  const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
-  const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
+  const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
   const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
-  const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
+  const [peoplePanelWidth, setPeoplePanelWidth] = useState(50); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
-  const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
+  const [isResizingPeople, setIsResizingPeople] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string>('#1a1a1a');
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
@@ -57,10 +58,15 @@ export default function Home() {
 
   const utils = trpc.useUtils();
 
-  // Fetch data
-  const { data: districts = [] } = trpc.districts.list.useQuery();
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
+  // Fetch data - store queries for error checking
+  const districtsQuery = trpc.districts.list.useQuery();
+  const campusesQuery = trpc.campuses.list.useQuery();
+  const peopleQuery = trpc.people.list.useQuery();
+  
+  const districts = districtsQuery.data || [];
+  const allCampuses = campusesQuery.data || [];
+  const allPeople = peopleQuery.data || [];
+  
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   
@@ -294,6 +300,7 @@ export default function Home() {
     "NorthDakota": "Great Plains North",
     "NorthernCal-Nevada": "West Coast",
     "NorthernNewEnglend": "Northeast",
+    "NorthernNewEngland": "Northeast",
     "NorthIdaho": "Northwest",
     "NorthernMissouri": "Great Plains South",
     "NorthTexas": "Texico",
@@ -409,8 +416,8 @@ export default function Home() {
         if (selectedDistrictId) {
           setSelectedDistrictId(null);
         }
-        if (followUpPanelOpen) {
-          setFollowUpPanelOpen(false);
+        if (peoplePanelOpen) {
+          setPeoplePanelOpen(false);
         }
         return;
       }
@@ -434,7 +441,7 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, followUpPanelOpen, districts]);
+  }, [selectedDistrictId, peoplePanelOpen, districts]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -442,10 +449,10 @@ export default function Home() {
     setIsResizingDistrict(true);
   };
 
-  // Handle follow up panel resize
-  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+  // Handle people panel resize
+  const handlePeopleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsResizingFollowUp(true);
+    setIsResizingPeople(true);
   };
 
   // Mouse move handler for resizing
@@ -455,18 +462,18 @@ export default function Home() {
         const newWidth = (e.clientX / window.innerWidth) * 100;
         setDistrictPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
       }
-      if (isResizingFollowUp) {
+      if (isResizingPeople) {
         const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
-        setFollowUpPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
+        setPeoplePanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
       }
     };
 
     const handleMouseUp = () => {
       setIsResizingDistrict(false);
-      setIsResizingFollowUp(false);
+      setIsResizingPeople(false);
     };
 
-    if (isResizingDistrict || isResizingFollowUp) {
+    if (isResizingDistrict || isResizingPeople) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -474,15 +481,43 @@ export default function Home() {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizingDistrict, isResizingFollowUp]);
+  }, [isResizingDistrict, isResizingPeople]);
 
   // Calculate days until CMC
   const cmcDate = new Date('2025-07-06');
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
 
+  // Diagnostic: Log if queries are failing
+  if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
+    console.error("[Home] Query errors:", {
+      districts: districtsQuery.error,
+      campuses: campusesQuery.error,
+      people: peopleQuery.error,
+    });
+  }
+
+  // Safety check: ensure component always returns something
+  if (!districtsQuery && !campusesQuery && !peopleQuery) {
+    console.warn('[Home] Queries not initialized yet');
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
+      {/* Diagnostic banner - only show in development or if there are errors */}
+      {(import.meta.env.DEV || districtsQuery.isError) && (
+        <div className="bg-yellow-100 border-b border-yellow-300 px-4 py-2 text-xs">
+          <strong>Debug:</strong> Districts: {districtsQuery.isLoading ? 'Loading...' : districtsQuery.isError ? 'Error' : `${districts?.length || 0} loaded`} | 
+          Campuses: {campusesQuery.isLoading ? 'Loading...' : campusesQuery.isError ? 'Error' : `${allCampuses?.length || 0} loaded`} | 
+          People: {peopleQuery.isLoading ? 'Loading...' : peopleQuery.isError ? 'Error' : `${allPeople?.length || 0} loaded`}
+          {districtsQuery.isError && (
+            <div className="mt-1 text-red-600">
+              Error: {districtsQuery.error?.message || 'Unknown error'}
+            </div>
+          )}
+        </div>
+      )}
+      
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
         className="relative flex items-center px-4 group flex-shrink-0"
@@ -498,7 +533,7 @@ export default function Home() {
         <div className="flex-shrink-0 h-12 w-auto mr-4 relative z-10 flex items-center gap-2" style={{ marginLeft: '12px' }}>
           {headerLogoUrl || savedHeaderLogo?.value ? (
             <img 
-              src={headerLogoUrl || savedHeaderLogo?.value} 
+              src={headerLogoUrl || savedHeaderLogo?.value || undefined} 
               alt="Logo" 
               className="h-full w-auto object-contain"
             />
@@ -507,7 +542,7 @@ export default function Home() {
               <div className="h-9 w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
                 style={{ 
                   opacity: 0,
-                  animation: 'roll-in 4s cubic-bezier(0.4, 0, 0.3, 1) 0s forwards'
+                  animation: 'roll-in 4.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s forwards'
                 }}>
                 <span>CMC</span>
                 <span className="text-[10px] leading-none">Go</span>
@@ -519,9 +554,14 @@ export default function Home() {
         {/* Header Text - Editable */}
         <div 
           className="flex-grow text-white/95 relative z-10"
-          style={{ fontSize: '18px' }}
+          style={{ 
+            fontSize: '18px',
+            fontFamily: "'Righteous', 'Bebas Neue', 'Oswald', sans-serif",
+            fontWeight: 400,
+            letterSpacing: '0.5px'
+          }}
           dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
+            __html: headerText || savedHeaderText?.value || '' 
           }}
         />
         
@@ -814,10 +854,11 @@ export default function Home() {
         {/* Left District/National Panel - Desktop only */}
         {!isMobile && (
           <div
-            className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
+            className={`bg-white border-r border-gray-300 flex-shrink-0 relative ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
             style={{ 
               width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
-              overflowY: 'hidden'
+              height: '100%',
+              overflow: (selectedDistrictId || nationalPanelOpen) ? 'auto' : 'hidden',
             }}
           >
             {(selectedDistrictId || nationalPanelOpen) && (
@@ -883,15 +924,15 @@ export default function Home() {
         )}
 
         {/* Center Map Area */}
-        <div className="flex-1 relative overflow-auto map-container-mobile">
+        <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
             style={{
-              paddingLeft: selectedDistrictId ? '2rem' : '1.5rem',
-              paddingRight: selectedDistrictId ? '2rem' : '1.5rem',
+              paddingLeft: '1.5rem',
+              paddingRight: '1.5rem',
               display: 'flex',
-              justifyContent: selectedDistrictId ? 'flex-end' : 'center',
+              justifyContent: 'center',
               alignItems: 'center',
               minHeight: '100%',
             }}
@@ -899,7 +940,7 @@ export default function Home() {
               // Close panels if clicking on padding/empty space around map
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                setPeoplePanelOpen(false);
               }
             }}
           >
@@ -909,13 +950,13 @@ export default function Home() {
               onDistrictSelect={handleDistrictSelect}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
               }}
               onNationalClick={() => {
                 setNationalPanelOpen(true);
                 setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                setPeoplePanelOpen(false);
               }}
             />
 
@@ -924,36 +965,36 @@ export default function Home() {
 
 
 
-        {/* Right Follow Up Panel */}
+        {/* Right People Panel */}
         <div
-          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingFollowUp ? 'transition-all duration-300 ease-in-out' : ''}`}
-          style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
+          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingPeople ? 'transition-all duration-300 ease-in-out' : ''}`}
+          style={{ width: peoplePanelOpen ? `${peoplePanelWidth}%` : '0%', overflow: 'hidden' }}
         >
-          {followUpPanelOpen && (
+          {peoplePanelOpen && (
             <>
               {/* Resize Handle */}
               <div
                 className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                onMouseDown={handleFollowUpMouseDown}
+                onMouseDown={handlePeopleMouseDown}
               />
-              <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />
+              <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
             </>
           )}
         </div>
       </div>
 
-      {/* Follow Up Tab Button - Fixed to right side, slides out from edge on hover */}
-      {!followUpPanelOpen && (
+      {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
+      {!peoplePanelOpen && (
         <div
-          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block follow-up-tab-mobile"
+          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
           style={{ right: 0 }}
         >
           <button
-            onClick={() => setFollowUpPanelOpen(true)}
+            onClick={() => setPeoplePanelOpen(true)}
             className="bg-black/80 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
-            Follow Ups
+            People
           </button>
         </div>
       )}

@@ -35,7 +35,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
     >
       {/* Person Name */}
       <div className="text-sm font-semibold text-gray-800 mb-2">
-        {person.name}
+        {person.name || person.personId || 'Person'}
       </div>
       
       {/* Need Information */}

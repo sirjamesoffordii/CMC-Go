@@ -186,7 +186,7 @@ export function DistrictDirectorDropZone({
   }
 
   const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-  const firstName = person.name.split(' ')[0];
+  const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 

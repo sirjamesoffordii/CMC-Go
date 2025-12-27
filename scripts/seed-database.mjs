@@ -1,4 +1,13 @@
 #!/usr/bin/env node
+/**
+ * Comprehensive database seeding script for CMC Go
+ * Seeds: districts, campuses, people, needs, notes, assignments, settings
+ * 
+ * Usage:
+ *   pnpm db:seed
+ *   node scripts/seed-database.mjs
+ */
+
 import { drizzle } from "drizzle-orm/mysql2";
 import { eq, and } from "drizzle-orm";
 import mysql from "mysql2/promise";
@@ -31,14 +40,43 @@ if (process.env.APP_ENV === 'production') {
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   console.error('❌ DATABASE_URL environment variable is required');
+  console.error('Please set DATABASE_URL in your .env file');
+  console.error('Format: DATABASE_URL=mysql://user:password@host:port/database');
   process.exit(1);
 }
 
-const connection = await mysql.createConnection(connectionString);
-const db = drizzle(connection);
+// Test database connection first
+let connection;
+let db;
 
-// Load all districts from seed file
-const allDistricts = JSON.parse(readFileSync(join(__dirname, "seed-districts.json"), "utf-8"));
+async function testConnection() {
+  try {
+    console.log('🔌 Testing database connection...');
+    connection = await mysql.createConnection(connectionString);
+    await connection.query('SELECT 1');
+    db = drizzle(connection);
+    console.log('✅ Database connection successful\n');
+    return true;
+  } catch (error) {
+    console.error('❌ Database connection failed:', error.message);
+    console.error('\nPlease check:');
+    console.error('  1. DATABASE_URL is correct');
+    console.error('  2. Database server is running');
+    console.error('  3. Database exists');
+    console.error('  4. User has proper permissions');
+    return false;
+  }
+}
+
+// Load seed data
+let allDistricts;
+try {
+  allDistricts = JSON.parse(readFileSync(join(__dirname, "seed-districts.json"), "utf-8"));
+  console.log(`📂 Loaded ${allDistricts.length} districts from seed file\n`);
+} catch (error) {
+  console.error('❌ Failed to load seed-districts.json:', error.message);
+  process.exit(1);
+}
 
 // Generate sample names for variety
 const firstNames = ["Alex", "Jordan", "Taylor", "Morgan", "Casey", "Riley", "Avery", "Quinn", "Sage", "River", "Dakota", "Phoenix", "Blake", "Cameron", "Drew", "Emery", "Finley", "Harper", "Hayden", "Jamie"];
@@ -53,29 +91,31 @@ async function seed() {
   console.log("🌱 Seeding MySQL database with dev data...\n");
   
   try {
-    // 1. Insert districts (first 20 for quick setup)
+    // 1. Insert districts (first 20 for quick setup, or all if you want)
     const districtsToSeed = allDistricts.slice(0, 20);
     console.log(`📋 Inserting ${districtsToSeed.length} districts...`);
     
+    let districtsInserted = 0;
     for (const district of districtsToSeed) {
       try {
         await db.insert(districts).values({
           id: district.id,
           name: district.name,
           region: district.region,
-          leftNeighbor: null, // Can be set later if needed
-          rightNeighbor: null, // Can be set later if needed
+          leftNeighbor: null,
+          rightNeighbor: null,
         }).onDuplicateKeyUpdate({
           set: {
             name: district.name,
             region: district.region,
           },
         });
+        districtsInserted++;
       } catch (error) {
         console.warn(`⚠️  Failed to insert district ${district.id}:`, error.message);
       }
     }
-    console.log(`✅ Inserted ${districtsToSeed.length} districts\n`);
+    console.log(`✅ Inserted/updated ${districtsInserted} districts\n`);
 
     // 2. Generate and insert campuses (2-3 per district)
     console.log("🏫 Generating campuses...");
@@ -93,6 +133,7 @@ async function seed() {
 
     console.log(`📋 Inserting ${allCampuses.length} campuses...`);
     const campusIdMap = new Map();
+    let campusesInserted = 0;
     
     for (const campus of allCampuses) {
       try {
@@ -116,12 +157,13 @@ async function seed() {
         if (inserted.length > 0) {
           campus.id = inserted[0].id;
           campusIdMap.set(`${campus.districtId}_${campus.name}`, inserted[0].id);
+          campusesInserted++;
         }
       } catch (error) {
         console.warn(`⚠️  Failed to insert campus ${campus.name}:`, error.message);
       }
     }
-    console.log(`✅ Inserted ${allCampuses.length} campuses\n`);
+    console.log(`✅ Inserted/updated ${campusesInserted} campuses\n`);
 
     // 3. Generate and insert people (exactly 200 people distributed across all districts)
     console.log("👥 Generating 200 people...");
@@ -224,7 +266,7 @@ async function seed() {
     if (peopleErrorCount > 0) {
       console.warn(`⚠️  Warning: ${peopleErrorCount} people failed to insert`);
     }
-    console.log(`✅ Inserted ${peopleSuccessCount} people\n`);
+    console.log(`✅ Inserted/updated ${peopleSuccessCount} people\n`);
 
     // 4. Insert needs (for some people)
     console.log("💰 Generating needs...");
@@ -265,7 +307,7 @@ async function seed() {
         personId: person.personId,
         type: needType,
         description: description,
-        amount: needType === "Financial" ? Math.floor(Math.random() * 50000) + 1000 : null, // $10-$500 in cents, only for Financial
+        amount: needType === "Financial" ? Math.floor(Math.random() * 50000) + 1000 : null, // $10-$500 in cents
         visibility: "LEADERSHIP_ONLY",
         isActive: true,
         createdAt: new Date(),
@@ -290,7 +332,7 @@ async function seed() {
         console.warn(`⚠️  Failed to insert need for ${need.personId}:`, error.message);
       }
     }
-    console.log(`✅ Inserted ${needsSuccessCount} needs\n`);
+    console.log(`✅ Inserted/updated ${needsSuccessCount} needs\n`);
 
     // 5. Insert notes (for some people)
     console.log("📝 Generating notes...");
@@ -309,7 +351,7 @@ async function seed() {
       const person = allPeople[Math.floor(Math.random() * allPeople.length)];
       allNotes.push({
         personId: person.personId,
-        category: "INTERNAL", // Use INTERNAL category for seed data
+        category: "INTERNAL",
         content: noteTemplates[Math.floor(Math.random() * noteTemplates.length)],
         createdAt: new Date(),
         createdBy: "system",
@@ -383,6 +425,7 @@ async function seed() {
       { key: "last_updated", value: new Date().toISOString() },
     ];
 
+    let settingsInserted = 0;
     for (const setting of defaultSettings) {
       try {
         await db.insert(settings).values(setting).onDuplicateKeyUpdate({
@@ -390,15 +433,16 @@ async function seed() {
             value: setting.value,
           },
         });
+        settingsInserted++;
       } catch (error) {
         console.warn(`⚠️  Failed to insert setting ${setting.key}:`, error.message);
       }
     }
-    console.log(`✅ Inserted ${defaultSettings.length} settings\n`);
+    console.log(`✅ Inserted/updated ${settingsInserted} settings\n`);
 
     // Print summary
     console.log("📊 Database Summary:");
-    console.log("=" .repeat(50));
+    console.log("=".repeat(50));
     
     const districtCount = await db.select().from(districts);
     const campusCount = await db.select().from(campuses);
@@ -427,7 +471,7 @@ async function seed() {
     console.log(`    - Maybe: ${statusCounts["Maybe"]}`);
     console.log(`    - Not Going (No): ${statusCounts["No"]}`);
     console.log(`    - Not Invited: ${statusCounts["Not Invited"]}`);
-    console.log("=" .repeat(50));
+    console.log("=".repeat(50));
     console.log("\n✅ Seed completed successfully!\n");
 
   } catch (error) {
@@ -436,13 +480,30 @@ async function seed() {
   }
 }
 
-seed()
+// Main execution
+async function main() {
+  const connected = await testConnection();
+  if (!connected) {
+    process.exit(1);
+  }
+
+  try {
+    await seed();
+  } catch (error) {
+    console.error("❌ Seed failed:", error);
+    process.exit(1);
+  } finally {
+    if (connection) {
+      await connection.end();
+    }
+  }
+}
+
+main()
   .then(() => {
-    connection.end();
     process.exit(0);
   })
   .catch((error) => {
-    console.error("❌ Seed failed:", error);
-    connection.end();
+    console.error("❌ Fatal error:", error);
     process.exit(1);
   });

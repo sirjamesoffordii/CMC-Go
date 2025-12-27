@@ -95,7 +95,7 @@ export function HeaderEditorModal({
       FontFamily,
       Color,
     ],
-    content: initialHeaderText || '<p style="color: white; font-size: 18px;">Chi Alpha Campus Ministries</p>',
+    content: initialHeaderText || '',
     editorProps: {
       attributes: {
         class: 'outline-none min-h-[40px] px-2 py-1',
@@ -110,7 +110,7 @@ export function HeaderEditorModal({
       setLogoFile(null);
       setBgColor(initialBgColor || '#000000');
       if (editor) {
-        editor.commands.setContent(initialHeaderText || '<p style="color: white; font-size: 18px;">Chi Alpha Campus Ministries</p>');
+        editor.commands.setContent(initialHeaderText || '');
       }
     }
   }, [open, initialLogoUrl, initialHeaderText, initialBgColor, editor]);
@@ -199,7 +199,7 @@ export function HeaderEditorModal({
                 <div 
                   className="flex-grow"
                   style={{ color: textColor }}
-                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || 'Chi Alpha Campus Ministries' }}
+                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
                 />
 
                 {/* Buttons Preview */}

@@ -1,4 +1,4 @@
-import { X, Plus, User, Edit2, MoreVertical, Check, Archive, Hand, Trash2, Download, Search, Filter } from "lucide-react";
+import { X, Plus, User, Edit2, Check, Archive, Hand, Trash2, Download } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,6 +82,9 @@ export function DistrictPanel({
   const [searchQuery, setSearchQuery] = useState("");
   const [myCampusOnly, setMyCampusOnly] = useState(false);
   const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
+  
+  // List view state - expanded campuses
+  const [expandedCampuses, setExpandedCampuses] = useState<Set<number>>(new Set());
   
   const updateDistrictName = trpc.districts.updateName.useMutation({
     onSuccess: () => onDistrictUpdate(),
@@ -179,7 +182,6 @@ export function DistrictPanel({
       }
     }
   );
-  const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
@@ -1005,8 +1007,9 @@ export function DistrictPanel({
     setIsPersonDialogOpen(true);
   };
 
+
   const content = (
-    <div className="w-full px-3 py-6">
+    <div className="w-full px-3 py-6 min-h-full">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 mb-4 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
@@ -1098,120 +1101,6 @@ export function DistrictPanel({
               </div>
             </div>
             
-            {/* PR 5: Filters Section */}
-            <div className="space-y-3 mt-4">
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search people by name or role..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              {/* Status Filter Chips */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600 font-medium">Status:</span>
-                {(["Yes", "Maybe", "No", "Not Invited"] as const).map((status) => {
-                  const count = filteredPeople.filter(p => p.status === status).length;
-                  const isActive = statusFilter.has(status);
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        const newFilter = new Set(statusFilter);
-                        if (isActive) {
-                          newFilter.delete(status);
-                        } else {
-                          newFilter.add(status);
-                        }
-                        setStatusFilter(newFilter);
-                      }}
-                      className={`
-                        px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                        ${isActive 
-                          ? status === "Yes" ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-300" :
-                            status === "Maybe" ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-300" :
-                            status === "No" ? "bg-red-100 text-red-700 border-2 border-red-300" :
-                            "bg-slate-100 text-slate-700 border-2 border-slate-300"
-                          : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                        }
-                      `}
-                    >
-                      {status} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-              
-              {/* My Campus Filter */}
-              {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setMyCampusOnly(!myCampusOnly)}
-                    className={`
-                      px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                      ${myCampusOnly 
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300" 
-                        : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                      }
-                    `}
-                  >
-                    <Filter className="w-4 h-4 inline mr-1" />
-                    My Campus Only
-                  </button>
-                </div>
-              )}
-              
-              {/* Bulk Actions */}
-              {selectedPeople.size > 0 && isAuthenticated && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <span className="text-sm font-medium text-blue-900">
-                    {selectedPeople.size} selected
-                  </span>
-                  <div className="flex gap-2 ml-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        selectedPeople.forEach(personId => {
-                          onPersonStatusChange(personId, "Yes");
-                        });
-                        setSelectedPeople(new Set());
-                      }}
-                      className="touch-target"
-                    >
-                      Set Yes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        selectedPeople.forEach(personId => {
-                          onPersonStatusChange(personId, "Maybe");
-                        });
-                        setSelectedPeople(new Set());
-                      }}
-                      className="touch-target"
-                    >
-                      Set Maybe
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedPeople(new Set())}
-                      className="touch-target"
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-            
             {/* Stats Section */}
             <div className="flex items-center gap-8">
               {/* Pie Chart */}
@@ -1288,7 +1177,7 @@ export function DistrictPanel({
         </div>
       </div>
 
-          {/* Campuses Section */}
+      {/* Campuses Section */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all md:hover:shadow-md md:hover:border-slate-200 overflow-x-auto">
             <div className="space-y-3 min-w-max">
               {campusesWithPeople.map((campus, index) => {
@@ -1309,105 +1198,6 @@ export function DistrictPanel({
                     {/* Campus Name */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
                       <div className="w-60 flex-shrink-0 flex items-center gap-2">
-                        {/* Kebab Menu */}
-                        <div className="relative">
-                          <button
-                            onClick={() => setOpenMenuId(openMenuId === campus.id ? null : campus.id)}
-                            className="p-1.5 hover:bg-slate-100 active:bg-slate-200 rounded transition-all opacity-0 group-hover:opacity-100 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-target"
-                          >
-                            <MoreVertical className="w-4 h-4 text-slate-500 hover:text-slate-700" />
-                          </button>
-                          
-                          {/* Dropdown Menu */}
-                          {openMenuId === campus.id && (
-                            <>
-                              <div 
-                                className="fixed inset-0 z-[5]" 
-                                onClick={() => setOpenMenuId(null)}
-                              ></div>
-                              
-                              <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
-                                <button
-                                  onClick={() => {
-                                    setSelectedCampusId(campus.id);
-                                    handleEditCampus(campus.id);
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center gap-2"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                  Edit Campus Name
-                                </button>
-                                <div className="border-t border-slate-200 my-1"></div>
-                                <div className="px-4 py-1 text-xs text-slate-500 font-medium">Sort by</div>
-                                <button
-                                  onClick={() => {
-                                    handleCampusSortChange(campus.id, 'status');
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                >
-                                  <span>Status</span>
-                                  {(!campusSorts[campus.id] || campusSorts[campus.id] === 'status') && <Check className="w-4 h-4" />}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    handleCampusSortChange(campus.id, 'name');
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                >
-                                  <span>Name</span>
-                                  {campusSorts[campus.id] === 'name' && <Check className="w-4 h-4" />}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    handleCampusSortChange(campus.id, 'role');
-                                    setOpenMenuId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 flex items-center justify-between"
-                                >
-                                  <span>Role</span>
-                                  {campusSorts[campus.id] === 'role' && <Check className="w-4 h-4" />}
-                                </button>
-                                <div className="border-t border-slate-200 my-1"></div>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <button
-                                      onClick={() => {
-                                        const campusPeople = sortedPeople;
-                                        if (campusPeople.length > 0) {
-                                          alert(`Cannot delete campus "${campus.name}" because it has ${campusPeople.length} person(s) assigned. Please move or remove all people first.`);
-                                          setOpenMenuId(null);
-                                          return;
-                                        }
-                                        if (confirm(`Are you sure you want to delete "${campus.name}"?`)) {
-                                          archiveCampus.mutate({ id: campus.id });
-                                          setOpenMenuId(null);
-                                        }
-                                      }}
-                                      className={`w-full px-4 py-2 text-left text-sm flex items-center gap-2 ${
-                                        sortedPeople.length > 0
-                                          ? 'text-slate-400 cursor-not-allowed'
-                                          : 'text-red-700 hover:bg-slate-100 cursor-pointer'
-                                      }`}
-                                      disabled={sortedPeople.length > 0}
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </button>
-                                  </TooltipTrigger>
-                                  {sortedPeople.length > 0 && (
-                                    <TooltipContent>
-                                      <p>The campus row must be empty</p>
-                                    </TooltipContent>
-                                  )}
-                                </Tooltip>
-                              </div>
-                            </>
-                          )}
-          </div>
-                        
                         <h3 className="font-medium text-slate-900 break-words text-lg">{campus.name}</h3>
         </div>
                     </CampusNameDropZone>
@@ -1447,7 +1237,7 @@ export function DistrictPanel({
                       ))}
                           
                           {/* Add Person Button */}
-                          <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                          <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
                             <button 
                               type="button"
                               onClick={(e) => {
@@ -1557,7 +1347,6 @@ export function DistrictPanel({
                  <div className="flex items-center gap-3 py-2 border-b last:border-b-0 group relative">
                   {/* Unassigned Label */}
                   <div className="w-60 flex-shrink-0 flex items-center gap-2">
-                    <div className="w-6"></div> {/* Spacer for kebab menu alignment */}
                     <h3 className="font-medium text-slate-500 italic text-lg">Unassigned</h3>
           </div>
           
@@ -1596,7 +1385,7 @@ export function DistrictPanel({
                     ))}
                         
                         {/* Add Person Button */}
-                        <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
+                        <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
                           <button 
                             type="button"
                             onClick={(e) => {
@@ -1687,6 +1476,7 @@ export function DistrictPanel({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
+        className="h-full flex flex-col"
       >
         {content}
         
@@ -1703,6 +1493,21 @@ export function DistrictPanel({
             <DialogHeader>
               <DialogTitle>Add New Person</DialogTitle>
             </DialogHeader>
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending) {
+                  return;
+                }
+                handleAddPerson();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+            >
             <div className="space-y-6 py-4">
               {/* Basic Information Section */}
               <div className="space-y-4">
@@ -2070,7 +1875,7 @@ export function DistrictPanel({
                 Cancel
               </Button>
               <Button 
-                type="button" 
+                type="submit" 
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -2080,6 +1885,9 @@ export function DistrictPanel({
                     selectedCampusId,
                     isPending: createPerson.isPending 
                   });
+                  if (!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending) {
+                    return;
+                  }
                   handleAddPerson();
                 }}
                 disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
@@ -2088,6 +1896,7 @@ export function DistrictPanel({
                 {createPerson.isPending ? 'Adding...' : 'Add Person'}
               </Button>
             </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
 

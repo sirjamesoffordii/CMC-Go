@@ -201,7 +201,7 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      // Don't log missing session cookie - it's normal for public/unauthenticated requests
       return null;
     }
 
@@ -217,7 +217,10 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         !isNonEmptyString(name)
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        // Only log if we actually had a cookie (indicates a problem)
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Auth] Session payload missing required fields");
+        }
         return null;
       }
 
@@ -227,7 +230,10 @@ class SDKServer {
         name,
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      // Only log verification failures in development (indicates a problem with a provided cookie)
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[Auth] Session verification failed", String(error));
+      }
       return null;
     }
   }

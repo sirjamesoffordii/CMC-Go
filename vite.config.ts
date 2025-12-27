@@ -7,7 +7,17 @@ import { defineConfig } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
+// Configure React plugin - disable fastRefresh in development if CSP causes issues
+// This helps with CSP nonce compatibility
+const plugins = [
+  react({
+    // Disable fast refresh if CSP nonce issues occur
+    // fastRefresh: false, // Uncomment if CSP still causes preamble detection issues
+  }), 
+  tailwindcss(), 
+  jsxLocPlugin(), 
+  vitePluginManusRuntime()
+];
 
 export default defineConfig({
   plugins,

@@ -156,7 +156,7 @@ export const needs = mysqlTable("needs", {
   description: text("description").notNull(),
   amount: int("amount"), // in cents (only for Financial type)
   visibility: mysqlEnum("visibility", ["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]).default("LEADERSHIP_ONLY").notNull(), // PR 2: Updated visibility enum
-  createdByUserId: int("createdByUserId"), // PR 2: Track creator
+  createdById: int("createdById"), // Track creator (matches database column name)
   isActive: boolean("isActive").default(true).notNull(), // false when need is met
   resolvedAt: timestamp("resolvedAt"), // PR 2: Renamed from metAt for clarity
   createdAt: timestamp("createdAt").notNull().defaultNow(),

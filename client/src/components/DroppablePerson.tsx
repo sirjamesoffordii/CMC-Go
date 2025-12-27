@@ -127,11 +127,11 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name });
+    console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name || person.personId });
     onEdit(campusId, person);
   }, [campusId, person, onEdit]);
 
-  const firstName = person.name.split(' ')[0];
+  const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 

@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { storagePut } from "./storage";
@@ -165,13 +165,13 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getDistrictById(input.id);
       }),
-    updateName: publicProcedure
+    updateName: protectedProcedure
       .input(z.object({ id: z.string(), name: z.string() }))
       .mutation(async ({ input }) => {
         await db.updateDistrictName(input.id, input.name);
         return { success: true };
       }),
-    updateRegion: publicProcedure
+    updateRegion: protectedProcedure
       .input(z.object({ id: z.string(), region: z.string() }))
       .mutation(async ({ input }) => {
         await db.updateDistrictRegion(input.id, input.region);
@@ -188,7 +188,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
       }),
-    updateName: publicProcedure
+    updateName: protectedProcedure
       .input(z.object({ id: z.number(), name: z.string() }))
       .mutation(async ({ input }) => {
         await db.updateCampusName(input.id, input.name);
@@ -200,6 +200,7 @@ export const appRouter = router({
         districtId: z.string(),
       }))
       .mutation(async ({ input }) => {
+        // Authentication disabled - allow all users to create campuses
         const insertId = await db.createCampus(input);
         return { id: insertId, name: input.name, districtId: input.districtId };
       }),
@@ -207,15 +208,23 @@ export const appRouter = router({
 
   people: router({
     list: publicProcedure.query(async ({ ctx }) => {
-      const isAuthenticated = !!ctx.user;
-      if (isAuthenticated && ctx.user) {
-        // PR 2: Authenticated users see full data for their district only
+      try {
+        const isAuthenticated = !!ctx.user;
+        if (isAuthenticated && ctx.user) {
+          // PR 2: Authenticated users see full data for their district only
+          const allPeople = await db.getAllPeople();
+          return allPeople.filter(p => p.primaryDistrictId === ctx.user!.districtId);
+        }
+        // Public mode: return sanitized placeholder data
         const allPeople = await db.getAllPeople();
-        return allPeople.filter(p => p.primaryDistrictId === ctx.user!.districtId);
+        return allPeople.map(p => db.sanitizePersonForPublic(p));
+      } catch (error) {
+        console.error("[people.list] Error:", error instanceof Error ? error.message : String(error));
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch people list",
+        });
       }
-      // Public mode: return sanitized placeholder data
-      const allPeople = await db.getAllPeople();
-      return allPeople.map(p => db.sanitizePersonForPublic(p));
     }),
     getNational: publicProcedure.query(async ({ ctx }) => {
       const isAuthenticated = !!ctx.user;
@@ -286,30 +295,7 @@ export const appRouter = router({
         guestsCount: z.number().min(0).max(10).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        // PR 2: Check editing permissions based on where person is being created
-        const { canEditCampus, canEditDistrict, canEditRegion, canEditNational } = await import("./_core/authorization");
-        
-        if (input.primaryCampusId) {
-          if (!canEditCampus(ctx.user, input.primaryCampusId)) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to create people in this campus" });
-          }
-        } else if (input.primaryDistrictId) {
-          if (!canEditDistrict(ctx.user, input.primaryDistrictId)) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to create people in this district" });
-          }
-        } else if (input.primaryRegion) {
-          if (!canEditRegion(ctx.user, input.primaryRegion)) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to create people in this region" });
-          }
-        } else if (input.nationalCategory) {
-          if (!canEditNational(ctx.user)) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to create national-level people" });
-          }
-        }
+        // Authentication disabled - allow all users to create people
         
         try {
           console.log('[people.create] Received input:', JSON.stringify(input, null, 2));
@@ -354,9 +340,26 @@ export const appRouter = router({
             createData.childrenAges = input.childrenAges;
           }
           
-          // Add last edited tracking
+          // Add household fields
+          if (input.householdId !== undefined && input.householdId !== null) {
+            createData.householdId = input.householdId;
+          }
+          if (input.householdRole) {
+            createData.householdRole = input.householdRole;
+          }
+          if (input.spouseAttending !== undefined) {
+            createData.spouseAttending = input.spouseAttending;
+          }
+          if (input.childrenCount !== undefined) {
+            createData.childrenCount = input.childrenCount;
+          }
+          if (input.guestsCount !== undefined) {
+            createData.guestsCount = input.guestsCount;
+          }
+          
+          // Add last edited tracking (use 'System' if no user)
           createData.lastEdited = new Date();
-          createData.lastEditedBy = ctx.user.fullName || ctx.user.email || 'Unknown';
+          createData.lastEditedBy = ctx.user?.fullName || ctx.user?.email || 'System';
           
           // PR 6: Removed verbose logging (no PII)
           
@@ -379,23 +382,12 @@ export const appRouter = router({
         note: z.string().optional(), // PR 3: Optional note for status change
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
+        // Authentication disabled - allow all users to update status
         
-        // PR 2: Check editing permissions
-        const { canEditPerson } = await import("./_core/authorization-helpers");
-        if (!(await canEditPerson(ctx.user, input.personId))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to edit this person" });
-        }
-        
-        // PR 3: Update status with audit logging
+        // PR 3: Update status (authentication disabled)
         await db.updatePersonStatus(
           input.personId, 
-          input.status, 
-          ctx.user.id, 
-          "UI",
-          input.note
+          input.status
         );
         return { success: true };
       }),
@@ -407,15 +399,7 @@ export const appRouter = router({
     updateName: publicProcedure
       .input(z.object({ personId: z.string(), name: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        // PR 2: Check editing permissions
-        const { canEditPerson } = await import("./_core/authorization-helpers");
-        if (!(await canEditPerson(ctx.user, input.personId))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to edit this person" });
-        }
+        // Authentication disabled - allow all users to update names
         
         await db.updatePersonName(input.personId, input.name);
         return { success: true };
@@ -440,15 +424,7 @@ export const appRouter = router({
         guestsCount: z.number().min(0).max(10).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        // PR 2: Check editing permissions
-        const { canEditPerson } = await import("./_core/authorization-helpers");
-        if (!(await canEditPerson(ctx.user, input.personId))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to edit this person" });
-        }
+        // Authentication disabled - allow all users to update people
         
         const { personId, ...data } = input;
         const updateData: any = { ...data };
@@ -483,19 +459,16 @@ export const appRouter = router({
           }
         }
         
-        // Add last edited tracking
+        // Add last edited tracking (use 'System' if no user)
         updateData.lastEdited = new Date();
-        updateData.lastEditedBy = ctx.user.fullName || ctx.user.email || 'Unknown';
+        updateData.lastEditedBy = ctx.user?.fullName || ctx.user?.email || 'System';
         
         await db.updatePerson(personId, updateData);
         return { success: true };
       }),
-    delete: publicProcedure
+    delete: protectedProcedure
       .input(z.object({ personId: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
         
         // PR 2: Check editing permissions
         const { canEditPerson } = await import("./_core/authorization-helpers");
@@ -507,15 +480,12 @@ export const appRouter = router({
         return { success: true };
       }),
     // PR 3: Status history endpoint
-    statusHistory: publicProcedure
+    statusHistory: protectedProcedure
       .input(z.object({
         personId: z.string(),
         limit: z.number().min(1).max(100).optional().default(20),
       }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
         
         // PR 2: Check viewing permissions (must be able to view person)
         const person = await db.getPersonByPersonId(input.personId);
@@ -532,14 +502,11 @@ export const appRouter = router({
         return await db.getStatusHistory(input.personId, input.limit);
       }),
     // PR 3: Revert status change (admin only)
-    revertStatusChange: publicProcedure
+    revertStatusChange: protectedProcedure
       .input(z.object({
         statusChangeId: z.number(),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
         
         // Only admins can revert
         if (ctx.user.role !== "ADMIN") {
@@ -572,7 +539,7 @@ export const appRouter = router({
         const isLeader = ctx.user?.role === "admin";
         return await db.getNeedsByPersonId(input.personId, isAuthenticated, isLeader);
       }),
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         personId: z.string(),
         type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
@@ -582,9 +549,6 @@ export const appRouter = router({
         isActive: z.boolean().default(true),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
         
         // PR 2: Only leaders can create needs
         const { isLeaderRole } = await import("./_core/authorization");
@@ -594,7 +558,7 @@ export const appRouter = router({
         
         await db.createNeed({
           ...input,
-          createdByUserId: ctx.user.id,
+          createdById: ctx.user.id,
         });
         // Update person's lastUpdated
         const person = await db.getPersonByPersonId(input.personId);
@@ -646,15 +610,12 @@ export const appRouter = router({
         await db.toggleNeedActive(input.needId, input.isActive);
         return { success: true };
       }),
-    updateVisibility: publicProcedure
+    updateVisibility: protectedProcedure
       .input(z.object({
         needId: z.number(),
         visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]),
       }))
       .mutation(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
         
         const { isLeaderRole } = await import("./_core/authorization");
         if (!isLeaderRole(ctx.user.role)) {
@@ -665,7 +626,18 @@ export const appRouter = router({
         return { success: true };
       }),
     listActive: publicProcedure.query(async () => {
-      return await db.getAllActiveNeeds();
+      try {
+        return await db.getAllActiveNeeds();
+      } catch (error) {
+        console.error("[needs.listActive] Error:", error instanceof Error ? error.message : String(error));
+        if (error instanceof Error && error.message.includes('createdById') || error.message.includes('createdByUserId')) {
+          console.error("[needs.listActive] Schema mismatch detected: Check database column name");
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch active needs",
+        });
+      }
     }),
   }),
 
@@ -746,7 +718,7 @@ export const appRouter = router({
         await db.createInviteNote({
           personId: input.personId,
           content: input.content,
-          createdByUserId: ctx.user.id,
+          createdById: ctx.user.id,
         });
         
         return { success: true };
