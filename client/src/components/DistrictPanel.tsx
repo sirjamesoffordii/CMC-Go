@@ -1,4 +1,4 @@
-import { X, Plus, User, Edit2, Check, Archive, Hand, Trash2, Download } from "lucide-react";
+import { X, Plus, User, Edit2, Check, Archive, Hand, Trash2, Download, MoreVertical } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +29,7 @@ import { CampusDropZone } from "./CampusDropZone";
 import { CampusNameDropZone } from "./CampusNameDropZone";
 import { CustomDragLayer } from "./CustomDragLayer";
 import { DistrictDirectorDropZone } from "./DistrictDirectorDropZone";
+import { DistrictStaffDropZone } from "./DistrictStaffDropZone";
 import { PersonDropZone } from "./PersonDropZone";
 import { DraggableCampusRow } from "./DraggableCampusRow";
 import { CampusOrderDropZone } from "./CampusOrderDropZone";
@@ -163,6 +164,13 @@ export function DistrictPanel({
       onDistrictUpdate();
     },
   });
+  const deleteCampus = trpc.campuses.delete.useMutation({
+    onSuccess: () => {
+      utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: district.id });
+      onDistrictUpdate();
+    },
+  });
   // Dialog states
   const [isPersonDialogOpen, setIsPersonDialogOpen] = useState(false);
   const [isCampusDialogOpen, setIsCampusDialogOpen] = useState(false);
@@ -170,6 +178,7 @@ export function DistrictPanel({
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [selectedCampusId, setSelectedCampusId] = useState<number | string | null>(null);
   const [editingPerson, setEditingPerson] = useState<{ campusId: number | string; person: Person } | null>(null);
+  const [openCampusMenuId, setOpenCampusMenuId] = useState<number | null>(null);
   
   // Fetch needs for the person being edited
   const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
@@ -177,9 +186,6 @@ export function DistrictPanel({
     { 
       enabled: !!editingPerson?.person.personId,
       retry: false,
-      onError: (error) => {
-        console.error('Error fetching person needs:', error);
-      }
     }
   );
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -234,9 +240,6 @@ export function DistrictPanel({
   // Fetch households for dropdown
   const { data: allHouseholds = [], error: householdsError } = trpc.households.list.useQuery(undefined, {
     retry: false,
-    onError: (error) => {
-      console.error('Error fetching households:', error);
-    }
   });
   const [householdSearchQuery, setHouseholdSearchQuery] = useState('');
   const { data: searchedHouseholds = [] } = trpc.households.search.useQuery(
@@ -317,6 +320,12 @@ export function DistrictPanel({
   const districtDirector = peopleWithNeeds.find(p => 
     p.primaryRole?.toLowerCase().includes('district director') ||
     p.primaryRole?.toLowerCase().includes('dd')
+  ) || null;
+
+  const districtStaff = peopleWithNeeds.find(p =>
+    p.primaryRole?.toLowerCase().includes('district staff') &&
+    // Keep the staff slot separate from campus placements
+    p.primaryCampusId == null
   ) || null;
   
   // PR 5: Filter people based on status, search, and campus
@@ -616,6 +625,10 @@ export function DistrictPanel({
       // Add district director
       mutationData.primaryRole = 'District Director';
       // Don't set primaryCampusId for district director (will be null in DB)
+    } else if (selectedCampusId === 'district-staff') {
+      // Add district staff
+      mutationData.primaryRole = 'District Staff';
+      // Don't set primaryCampusId for district staff (will be null in DB)
     } else if (selectedCampusId === 'unassigned') {
       // Add to unassigned - create person without campus
       mutationData.primaryRole = personForm.role.trim();
@@ -946,6 +959,18 @@ export function DistrictPanel({
     });
   };
 
+  // Handle drop on district staff slot (next to district director)
+  const handleDistrictStaffDrop = (personId: string, fromCampusId: number | string) => {
+    const person = districtPeople.find(p => p.personId === personId);
+    if (!person) return;
+
+    updatePerson.mutate({
+      personId: person.personId,
+      primaryRole: 'District Staff',
+      primaryCampusId: null,
+    });
+  };
+
   // Get person for drag layer
   const getPerson = (personId: string, campusId: number | string): Person | undefined => {
     return districtPeople.find(p => p.personId === personId);
@@ -996,6 +1021,8 @@ export function DistrictPanel({
     } else if (campusId === 'district') {
       // District Director is handled separately, not in the dropdown
       defaultRole = 'Staff'; // This won't be used for district director
+    } else if (campusId === 'district-staff') {
+      defaultRole = 'District Staff';
     } else if (typeof campusId === 'number') {
       const campus = campusesWithPeople.find(c => c.id === campusId);
       if (campus && campus.people.length === 0) {
@@ -1063,6 +1090,33 @@ export function DistrictPanel({
                     setQuickAddName('');
                   }}
                   onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
+                  quickAddInputRef={quickAddInputRef}
+                />
+                
+                {/* District Staff slot (optional) */}
+                <DistrictStaffDropZone
+                  person={districtStaff}
+                  onDrop={handleDistrictStaffDrop}
+                  onEdit={handleEditPerson}
+                  onClick={() => {
+                    if (!districtStaff) return;
+                    const statusCycle: Person['status'][] = ['Not Invited', 'Yes', 'Maybe', 'No'];
+                    const currentIndex = statusCycle.indexOf(districtStaff.status);
+                    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+                    onPersonStatusChange(districtStaff.personId, nextStatus);
+                  }}
+                  onAddClick={() => {
+                    openAddPersonDialog('district-staff');
+                  }}
+                  quickAddMode={quickAddMode === 'district-staff'}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() => handleQuickAddSubmit('district-staff')}
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName('');
+                  }}
+                  onQuickAddClick={(e) => handleQuickAddClick(e, 'district-staff')}
                   quickAddInputRef={quickAddInputRef}
                 />
               </div>
@@ -1195,9 +1249,58 @@ export function DistrictPanel({
                     {/* Draggable Campus Row */}
                     <DraggableCampusRow campusId={campus.id}>
                       <div className="flex items-center gap-3 py-2 border-b border-slate-100 last:border-b-0 group relative">
-                    {/* Campus Name */}
+                    {/* Campus Name with Kebab Menu */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
                       <div className="w-60 flex-shrink-0 flex items-center gap-2">
+                        {/* Kebab Menu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenCampusMenuId(openCampusMenuId === campus.id ? null : campus.id);
+                            }}
+                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <MoreVertical className="w-4 h-4 text-gray-300 hover:text-gray-500" />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          {openCampusMenuId === campus.id && (
+                            <>
+                              {/* Invisible backdrop to catch clicks outside */}
+                              <div
+                                className="fixed inset-0 z-[5]"
+                                onClick={() => setOpenCampusMenuId(null)}
+                              ></div>
+
+                              <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                                <button
+                                  onClick={() => {
+                                    handleEditCampus(campus.id);
+                                    setOpenCampusMenuId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                  Edit Campus Name
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will be unassigned.`);
+                                    if (ok) {
+                                      deleteCampus.mutate({ id: campus.id });
+                                    }
+                                    setOpenCampusMenuId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete Campus
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
                         <h3 className="font-medium text-slate-900 break-words text-lg">{campus.name}</h3>
         </div>
                     </CampusNameDropZone>
@@ -1221,7 +1324,7 @@ export function DistrictPanel({
                             onEdit={handleEditPerson}
                             onClick={handlePersonClick}
                             onMove={handlePersonMove}
-                            hasNeeds={person.hasNeeds}
+                            hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                             onPersonStatusChange={onPersonStatusChange}
                             isSelected={selectedPeople.has(person.personId)}
                             onToggleSelect={(personId) => {
@@ -1370,7 +1473,7 @@ export function DistrictPanel({
                           onEdit={handleEditPerson}
                           onClick={handlePersonClick}
                           onMove={handlePersonMove}
-                          hasNeeds={person.hasNeeds}
+                          hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                           isSelected={selectedPeople.has(person.personId)}
                           onToggleSelect={(personId) => {
                             const newSet = new Set(selectedPeople);

@@ -565,7 +565,7 @@ export default function Home() {
           }}
         />
         
-        {/* Banner Text - "Go Together" - Fades in towards end of CMC Go animation */}
+        {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div 
             className="whitespace-nowrap text-white absolute"
@@ -578,7 +578,7 @@ export default function Home() {
               opacity: 0
             }}
           >
-            Go Together
+            Going Together
           </div>
         </div>
 
@@ -764,6 +764,15 @@ export default function Home() {
                 onClick={() => setMenuOpen(false)}
               />
               <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+                {/* Days Until CMC - Header */}
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                    Countdown
+                  </div>
+                  <div className="text-sm font-bold text-gray-900">
+                    {daysUntilCMC} days until CMC
+                  </div>
+                </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

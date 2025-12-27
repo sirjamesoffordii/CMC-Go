@@ -238,6 +238,16 @@ export async function updateCampusName(id: number, name: string) {
   await db.update(campuses).set({ name }).where(eq(campuses.id, id));
 }
 
+export async function deleteCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Detach people from this campus (retain their person record)
+  await db.update(people).set({ primaryCampusId: null }).where(eq(people.primaryCampusId, id));
+  // Remove the campus row
+  await db.delete(campuses).where(eq(campuses.id, id));
+}
+
 // ============================================================================
 // PEOPLE
 // ============================================================================

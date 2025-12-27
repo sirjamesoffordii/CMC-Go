@@ -1,6 +1,7 @@
 import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
-import { User, Edit2, Hand, Check } from 'lucide-react';
+import { User, Edit2, Check } from 'lucide-react';
+import { NeedIndicator } from './NeedIndicator';
 import { Checkbox } from './ui/checkbox';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
@@ -167,14 +168,15 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         key={person.personId}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
+        // Keep the icon in-place while dragging; only slightly fade/highlight.
+        animate={{ opacity: isDragging ? 0.85 : 1, scale: isDragging ? 0.98 : 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{
           layout: { type: "spring", stiffness: 300, damping: 30 },
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 }
         }}
-        className={`relative group/person flex flex-col items-center w-[50px] flex-shrink-0 ${isSelected ? 'ring-2 ring-blue-500 rounded-lg p-1' : ''}`}
+        className={`relative group/person flex flex-col items-center w-[50px] flex-shrink-0 ${isSelected ? 'ring-2 ring-blue-500 rounded-lg p-1' : ''} ${isDragging ? 'brightness-110' : ''}`}
       >
       {/* PR 5: Bulk Selection Checkbox */}
       {onToggleSelect && (
@@ -254,19 +256,14 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
               fill="currentColor"
             />
           </div>
-          {/* Raising hand indicator when person has needs */}
+          {/* Need indicator (arm + icon) */}
           {hasNeeds && (
-            <Hand
-              className="w-5 h-5 text-yellow-600 absolute -top-1 -right-1 z-20 pointer-events-none"
-              strokeWidth={2.5}
-              fill="currentColor"
-              style={{ transform: 'rotate(-20deg)' }}
-            />
+            <NeedIndicator type={personNeed?.type} />
           )}
         </button>
 
-        {/* Role Label - Always visible below icon */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none">
+        {/* Role Label - hidden until hover */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
           {person.primaryRole || 'Staff'}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, useRef } from "react";
 import { PersonTooltip } from "./PersonTooltip";
+import { NeedIndicator } from "./NeedIndicator";
 import { trpc } from "@/lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
@@ -56,7 +57,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.85 : 1, // Subtle fade when dragging, not drastic
   };
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
@@ -172,12 +173,16 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
               strokeWidth={1.5}
               fill="currentColor"
             />
+            {/* Need indicator (arm + icon) */}
+            {personNeed?.isActive && (
+              <NeedIndicator type={personNeed.type} />
+            )}
           </div>
         </button>
 
-        {/* Role Label - Always visible below icon */}
+        {/* Role Label - Hidden until hover */}
         {person.primaryRole && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
             {person.primaryRole}
           </div>
         )}

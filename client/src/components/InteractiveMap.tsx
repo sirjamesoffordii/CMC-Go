@@ -486,10 +486,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
   
   // Calculate national totals - ensure all people are counted accurately
+  // Total should be the sum of all statuses (each person belongs to exactly one status)
   const nationalTotals = useMemo(() => {
-    // Always use allPeople.length for total to ensure we count ALL people
-    const totalPeople = allPeople.length;
-    
     // Count each person exactly once in the appropriate status bucket
     let yes = 0;
     let maybe = 0;
@@ -517,28 +515,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     });
     
     const invited = yes + maybe + no;
+    // Total is the sum of all statuses - each person belongs to exactly one status
+    const total = yes + maybe + no + notInvited;
     
-    // Verify totals match (yes + maybe + no + notInvited should equal totalPeople)
-    const calculatedTotal = yes + maybe + no + notInvited;
-    if (calculatedTotal !== totalPeople) {
-      console.warn(`[Metrics] Total mismatch: calculated ${calculatedTotal}, actual ${totalPeople}. Adjusting notInvited.`);
-      // Adjust notInvited to ensure totals match
-      notInvited = totalPeople - invited;
+    // Verify totals match allPeople.length (should always be true)
+    if (total !== allPeople.length) {
+      console.warn(`[Metrics] Total mismatch: sum of statuses ${total}, actual people count ${allPeople.length}.`);
     }
     
     // Use server metrics if available and totals match
-    if (serverMetrics && serverMetrics.total === totalPeople) {
-      // Verify server metrics match our calculation
-      const serverInvited = (serverMetrics.going || 0) + (serverMetrics.maybe || 0) + (serverMetrics.notGoing || 0);
+    if (serverMetrics) {
+      const serverYes = serverMetrics.going || 0;
+      const serverMaybe = serverMetrics.maybe || 0;
+      const serverNo = serverMetrics.notGoing || 0;
       const serverNotInvited = serverMetrics.notInvited || 0;
+      const serverTotal = serverYes + serverMaybe + serverNo + serverNotInvited;
+      const serverInvited = serverYes + serverMaybe + serverNo;
       
-      if (serverInvited + serverNotInvited === totalPeople) {
+      // Use server metrics if they sum correctly
+      if (serverTotal === total || serverTotal === allPeople.length) {
         return {
-          yes: serverMetrics.going || 0,
-          maybe: serverMetrics.maybe || 0,
-          no: serverMetrics.notGoing || 0,
+          yes: serverYes,
+          maybe: serverMaybe,
+          no: serverNo,
           notInvited: serverNotInvited,
-          total: totalPeople,
+          total: serverTotal, // Use sum of statuses from server
           invited: serverInvited,
         };
       }
@@ -549,7 +550,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       maybe,
       no,
       notInvited,
-      total: totalPeople,
+      total, // Sum of all statuses
       invited,
     };
   }, [allPeople, serverMetrics]);
@@ -613,6 +614,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           break;
       }
       totals[region].total++;
+    });
+    
+    // Recalculate totals as sum of statuses for each region to ensure accuracy
+    Object.keys(totals).forEach(region => {
+      const regionTotals = totals[region];
+      regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
+      regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
     });
     
     // Verify regional totals sum to national totals

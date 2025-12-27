@@ -21,14 +21,14 @@ export function CampusOrderDropZone({ index, onDrop, children }: CampusOrderDrop
   return (
     <div
       ref={drop}
-      className={`transition-all my-2 ${
-        isOver 
-          ? 'h-8 bg-blue-200 border-t-2 border-b-2 border-blue-500 rounded shadow-md' 
-          : 'h-4 hover:h-6 hover:bg-slate-100'
+      // Keep drop zones easy to hit without creating visible "gaps" between campus rows.
+      className={`transition-all -my-1 mx-2 rounded ${
+        isOver
+          ? 'h-8 bg-blue-100 border border-blue-300 shadow-sm'
+          : 'h-2 hover:h-6 hover:bg-slate-50'
       }`}
     >
       {children}
     </div>
   );
 }
-

@@ -207,6 +207,13 @@ export const appRouter = router({
         const insertId = await db.createCampus(input);
         return { id: insertId, name: input.name, districtId: input.districtId };
       }),
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        // Authentication disabled - allow all users to delete campuses
+        await db.deleteCampus(input.id);
+        return { success: true };
+      }),
   }),
 
   people: router({
