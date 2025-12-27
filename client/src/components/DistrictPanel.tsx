@@ -1222,6 +1222,7 @@ export function DistrictPanel({
                             onClick={handlePersonClick}
                             onMove={handlePersonMove}
                             hasNeeds={person.hasNeeds}
+                            onPersonStatusChange={onPersonStatusChange}
                             isSelected={selectedPeople.has(person.personId)}
                             onToggleSelect={(personId) => {
                               const newSet = new Set(selectedPeople);

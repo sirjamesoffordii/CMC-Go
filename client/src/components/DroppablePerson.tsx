@@ -39,6 +39,9 @@ interface DroppablePersonProps {
   onClick: (campusId: string | number, person: Person) => void;
   onMove: (draggedId: string, draggedCampusId: string | number, targetCampusId: string | number, targetIndex: number) => void;
   hasNeeds?: boolean;
+  onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
+  isSelected?: boolean;
+  onToggleSelect?: (personId: string) => void;
 }
 
 interface Need {
@@ -50,7 +53,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, isSelected, onToggleSelect }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, isSelected, onToggleSelect }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -59,32 +62,34 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
-  // Only fetch in authenticated mode
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, { enabled: isAuthenticated });
+  // Authentication disabled - always fetch needs
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   // Also fetch needs by person to get inactive needs
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person.personId },
-    { enabled: isAuthenticated }
+    { personId: person.personId }
   );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
   // Convert database status to Figma status for display
   const figmaStatus = person.status ? reverseStatusMap[person.status] || 'not-invited' : 'not-invited';
   
-  // Public mode: render neutral placeholder dot
-  if (!isAuthenticated) {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        className="relative flex flex-col items-center w-[50px] flex-shrink-0 pointer-events-none"
-      >
-        <div className="w-3 h-3 rounded-full bg-slate-400 opacity-50" />
-      </motion.div>
-    );
-  }
+  // Handle status click to cycle through statuses
+  const handleStatusClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
+      "Not Invited",
+      "Yes",
+      "Maybe",
+      "No",
+    ];
+    const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
+    const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
+    const nextStatus = STATUS_CYCLE[nextIndex];
+    // Call the status change handler if available
+    if (onPersonStatusChange) {
+      onPersonStatusChange(person.personId, nextStatus);
+    }
+  }, [person.status, person.personId, onPersonStatusChange]);
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
@@ -185,7 +190,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
       {/* First Name Label with Edit Button */}
       <div 
         ref={nameRef}
-        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0"
         onMouseEnter={handleNameMouseEnter}
         onMouseLeave={handleNameMouseLeave}
         onMouseMove={handleNameMouseMove}
@@ -195,17 +200,28 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         </div>
         <button
           ref={editButtonRef}
-          onClick={handleEditClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('Edit button clicked directly', { campusId, personId: person.personId });
+            onEdit(campusId, person);
+          }}
           onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
           }}
           onPointerDown={(e) => {
             e.stopPropagation();
+            e.preventDefault();
+          }}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
           }}
           className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
           title="Edit person"
           type="button"
+          draggable={false}
         >
           <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
         </button>
@@ -217,7 +233,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <button
-          onClick={() => onClick(campusId, person)}
+          onClick={handleStatusClick}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
@@ -249,8 +265,8 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           )}
         </button>
 
-        {/* Role Label - Absolutely positioned, shown on hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/person:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+        {/* Role Label - Always visible below icon */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none">
           {person.primaryRole || 'Staff'}
         </div>
       </div>

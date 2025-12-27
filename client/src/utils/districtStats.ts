@@ -35,7 +35,9 @@ export function calculateDistrictStats(
   };
 
   districtPeople.forEach(person => {
-    switch (person.status) {
+    // Handle null/undefined status as "Not Invited"
+    const status = person.status || "Not Invited";
+    switch (status) {
       case "Yes":
         stats.yes++;
         break;
@@ -46,6 +48,10 @@ export function calculateDistrictStats(
         stats.no++;
         break;
       case "Not Invited":
+        stats.notInvited++;
+        break;
+      default:
+        // Unknown status values are counted as "Not Invited" to ensure total matches
         stats.notInvited++;
         break;
     }

@@ -17,7 +17,7 @@ export default function Needs() {
 
   // Fetch DISTRICT_VISIBLE needs
   const { data: allNeeds = [], isLoading: needsLoading } = trpc.needs.listActive.useQuery();
-  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, { enabled: isAuthenticated });
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
 
   // Filter to DISTRICT_VISIBLE needs only
@@ -56,7 +56,8 @@ export default function Needs() {
     );
   }
 
-  if (!isAuthenticated) {
+  // Authentication disabled - allow all users to view needs
+  if (false) {
     return (
       <div className="container max-w-4xl py-8">
         <Card>

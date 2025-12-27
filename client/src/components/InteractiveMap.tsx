@@ -482,15 +482,42 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Fetch all campuses to count campuses per district
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
   
-  // Calculate national totals
-  const nationalTotals = {
-    yes: allPeople.filter(p => p.status === "Yes").length,
-    maybe: allPeople.filter(p => p.status === "Maybe").length,
-    no: allPeople.filter(p => p.status === "No").length,
-    notInvited: allPeople.filter(p => p.status === "Not Invited").length,
-    total: allPeople.length,
-    invited: allPeople.filter(p => p.status !== "Not Invited").length,
-  };
+  // Fetch metrics from server for accurate totals
+  const { data: serverMetrics } = trpc.metrics.get.useQuery();
+  
+  // Calculate national totals - use server metrics for accuracy, ensure all people are counted
+  const nationalTotals = useMemo(() => {
+    // Always use allPeople.length for total to ensure we count ALL people
+    const totalPeople = allPeople.length;
+    
+    // Use server metrics for status breakdown if available (more accurate)
+    if (serverMetrics && serverMetrics.total === totalPeople) {
+      return {
+        yes: serverMetrics.going || 0,
+        maybe: serverMetrics.maybe || 0,
+        no: serverMetrics.notGoing || 0,
+        notInvited: serverMetrics.notInvited || 0,
+        total: totalPeople, // Always use actual count from allPeople
+        invited: (serverMetrics.going || 0) + (serverMetrics.maybe || 0) + (serverMetrics.notGoing || 0),
+      };
+    }
+    
+    // Fallback to client-side calculation - count all people including those with null/unexpected status
+    const yes = allPeople.filter(p => p.status === "Yes").length;
+    const maybe = allPeople.filter(p => p.status === "Maybe").length;
+    const no = allPeople.filter(p => p.status === "No").length;
+    const notInvited = allPeople.filter(p => p.status === "Not Invited" || !p.status || p.status === null).length;
+    const invited = yes + maybe + no;
+    
+    return {
+      yes,
+      maybe,
+      no,
+      notInvited,
+      total: totalPeople, // Always use actual count from allPeople
+      invited,
+    };
+  }, [allPeople, serverMetrics]);
   
   const invitedPercent = nationalTotals.total > 0 
     ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
@@ -501,7 +528,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Calculate regional totals
+  // Calculate regional totals - ensure all people are counted
   const regionalTotals: Record<string, typeof nationalTotals> = {};
   districts.forEach(district => {
     if (!district.region) return;
@@ -509,12 +536,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       regionalTotals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
     }
     const districtPeople = allPeople.filter(p => p.primaryDistrictId === district.id);
+    // Count all people in district, including those with null/unexpected status
     regionalTotals[district.region].yes += districtPeople.filter(p => p.status === "Yes").length;
     regionalTotals[district.region].maybe += districtPeople.filter(p => p.status === "Maybe").length;
     regionalTotals[district.region].no += districtPeople.filter(p => p.status === "No").length;
-    regionalTotals[district.region].notInvited += districtPeople.filter(p => p.status === "Not Invited").length;
-    regionalTotals[district.region].total += districtPeople.length;
-    regionalTotals[district.region].invited += districtPeople.filter(p => p.status !== "Not Invited").length;
+    regionalTotals[district.region].notInvited += districtPeople.filter(p => p.status === "Not Invited" || !p.status || p.status === null).length;
+    regionalTotals[district.region].total += districtPeople.length; // Always count all people
+    regionalTotals[district.region].invited += districtPeople.filter(p => p.status && p.status !== "Not Invited").length;
   });
   
   // Get displayed totals (regional if hovering, otherwise national)

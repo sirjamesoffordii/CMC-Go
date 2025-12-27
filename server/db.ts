@@ -619,13 +619,20 @@ export async function getMetrics() {
     .from(people)
     .groupBy(people.status);
 
+  // Get total count separately to ensure we count ALL people, including those with null status
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people);
+  const total = Number(totalResult[0]?.count) || 0;
+
   // Initialize counters with zero values
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -640,16 +647,30 @@ export async function getMetrics() {
         counts.notInvited = count;
         break;
       default:
-        // Unknown status values are ignored
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
         break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 
 export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in district
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryDistrictId, districtId));
+  const total = Number(totalResult[0]?.count) || 0;
 
   // Aggregate counts per status for a specific district in a single query.
   const statusCounts = await db
@@ -659,11 +680,12 @@ export async function getDistrictMetrics(districtId: string) {
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -677,14 +699,31 @@ export async function getDistrictMetrics(districtId: string) {
       case 'Not Invited':
         counts.notInvited = count;
         break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 
 export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in region
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryRegion, region));
+  const total = Number(totalResult[0]?.count) || 0;
 
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
@@ -693,11 +732,12 @@ export async function getRegionMetrics(region: string) {
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -711,8 +751,18 @@ export async function getRegionMetrics(region: string) {
       case 'Not Invited':
         counts.notInvited = count;
         break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 

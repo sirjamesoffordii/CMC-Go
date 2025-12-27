@@ -41,18 +41,8 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   // Only fetch in authenticated mode
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
     { personId: person.personId },
-    { enabled: isAuthenticated }
   );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
-  
-  // Public mode: render neutral placeholder dot
-  if (!isAuthenticated) {
-    return (
-      <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 pointer-events-none">
-        <div className="w-3 h-3 rounded-full bg-slate-400 opacity-50" />
-      </div>
-    );
-  }
   
   const {
     attributes,
@@ -122,7 +112,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
       {/* First Name Label with Edit Button */}
       <div 
         ref={nameRef}
-        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0"
         onMouseEnter={handleNameMouseEnter}
         onMouseLeave={handleNameMouseLeave}
         onMouseMove={handleNameMouseMove}
@@ -134,13 +124,28 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           <button
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
+              console.log('Edit button clicked in PersonIcon', { personId: person.personId });
               onEdit(person);
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
             title="Edit person"
+            type="button"
+            draggable={false}
           >
-            <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+            <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
           </button>
         )}
       </div>
@@ -170,9 +175,9 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           </div>
         </button>
 
-        {/* Role Label - Absolutely positioned, shown on hover */}
+        {/* Role Label - Always visible below icon */}
         {person.primaryRole && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/person:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none">
             {person.primaryRole}
           </div>
         )}

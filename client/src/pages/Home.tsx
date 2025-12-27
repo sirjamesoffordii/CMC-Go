@@ -637,11 +637,11 @@ export default function Home() {
                   {/* Filter and display results */}
                   {(() => {
                     const query = searchQuery.toLowerCase();
-                    // In public mode, don't search or show people
-                    const matchedPeople = isAuthenticated ? allPeople.filter(p => 
+                    // Authentication disabled - always show people in search
+                    const matchedPeople = allPeople.filter(p => 
                       p.name?.toLowerCase().includes(query) || 
                       p.primaryRole?.toLowerCase().includes(query)
-                    ).slice(0, 5) : [];
+                    ).slice(0, 5);
                     const matchedCampuses = allCampuses.filter(c => 
                       c.name.toLowerCase().includes(query)
                     ).slice(0, 3);
@@ -658,7 +658,7 @@ export default function Home() {
                     
                     return (
                       <>
-                        {matchedPeople.length > 0 && isAuthenticated && (
+                        {matchedPeople.length > 0 && (
                           <div>
                             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
                             {matchedPeople.map(person => (
@@ -730,23 +730,10 @@ export default function Home() {
           )}
         </div>
 
-        {/* Login Button - PR 2 */}
-        {!isAuthenticated && (
-          <div className="flex-shrink-0 mr-2 z-10">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLoginModalOpen(true)}
-              className="text-white/80 hover:text-white hover:bg-white/10"
-            >
-              <LogIn className="w-5 h-5 mr-1" />
-              Login
-            </Button>
-          </div>
-        )}
+        {/* Authentication disabled - login button removed */}
         
-        {/* User info when authenticated */}
-        {isAuthenticated && user && (
+        {/* User info (authentication disabled) */}
+        {user && (
           <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
             <span>{user.fullName || user.email}</span>
             {/* PR 4: Editing badge - mobile only */}
@@ -798,19 +785,17 @@ export default function Home() {
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setLocation("/needs");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <Hand className="w-4 h-4" />
-                    District Needs
-                  </button>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setLocation("/needs");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <Hand className="w-4 h-4" />
+                  District Needs
+                </button>
                 <button
                   onClick={(e) => {
                     e.preventDefault();

@@ -42,7 +42,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   // PR 2: Fetch invite notes (leaders-only endpoint)
   const { data: inviteNotes = [] } = trpc.inviteNotes.byPerson.useQuery(
     { personId: person?.personId ?? '' },
-    { enabled: !!person && isAuthenticated && !!isLeader }
+    { enabled: !!person }
   );
 
   const { data: needs = [] } = trpc.needs.byPerson.useQuery(

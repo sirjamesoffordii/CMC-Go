@@ -67,8 +67,8 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     onStatusChange(person.personId, nextStatus);
   };
   
-  // Public mode: render neutral placeholder row
-  if (!isAuthenticated) {
+  // Authentication disabled - always show full person row
+  if (false) {
     return (
       <div className="flex items-center gap-1.5 bg-slate-50 rounded-lg border border-slate-200 pointer-events-none">
         <div className="w-1.5 h-8 rounded-l bg-slate-400 opacity-30 flex-shrink-0" />
