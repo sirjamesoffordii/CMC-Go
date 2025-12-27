@@ -6,74 +6,68 @@ const NEED_ICON = {
   Financial: DollarSign,
   Housing: Home,
   Transportation: Car,
-  Other: HelpCircle,
+  Other: null, // Use custom "O" instead of icon
 } as const;
 
 /**
- * Visual replacement for the old yellow "Hand" icon.
+ * Visual indicator for person needs.
  *
  * Design intent:
- * - A small "cylinder arm" extending up and slightly outward from the person icon.
- * - A tiny icon at the end representing the need type.
+ * - A small icon in a white circle representing the need type.
+ * - Icons are positioned upright on the right side of the head.
  */
 export function NeedIndicator({ type }: { type?: NeedType | null }) {
-  const Icon = (type && (NEED_ICON as any)[type]) ? (NEED_ICON as any)[type] : HelpCircle;
+  const Icon = (type && (NEED_ICON as any)[type] && (NEED_ICON as any)[type] !== null) 
+    ? (NEED_ICON as any)[type] 
+    : (type === "Other" ? null : HelpCircle);
+  const isOther = type === "Other";
 
   return (
     <div
-      className="absolute -top-1 -right-1 z-20 pointer-events-none"
-      style={{ transform: "rotate(-18deg)" }}
+      className="absolute top-1 -right-1 z-20 pointer-events-none m-0 p-0"
+      style={{ margin: 0, padding: 0 }}
       aria-hidden="true"
       title={type || "Need"}
     >
-      {/* Arm */}
+      {/* Need type icon */}
       <div
-        className="relative"
-        style={{ width: 18, height: 18 }}
+        className="flex items-center justify-center m-0 p-0"
+        style={{
+          width: 13,
+          height: 13,
+          borderRadius: 9999,
+          background: "rgba(255,255,255,0.95)",
+          border: "1px solid rgba(0,0,0,0.06)",
+          margin: 0,
+          padding: 0,
+        }}
       >
-        {/* Upper arm (cylinder-like) */}
-        <div
-          className="absolute"
-          style={{
-            left: 7,
-            top: 1,
-            width: 6,
-            height: 12,
-            borderRadius: 9999,
-            background: "#d97706", // amber-600
-            boxShadow: "0 1px 0 rgba(0,0,0,0.08)",
-          }}
-        />
-
-        {/* Small elbow nub */}
-        <div
-          className="absolute"
-          style={{
-            left: 6,
-            top: 9,
-            width: 8,
-            height: 6,
-            borderRadius: 9999,
-            background: "#d97706",
-            opacity: 0.9,
-          }}
-        />
-
-        {/* Tip icon */}
-        <div
-          className="absolute flex items-center justify-center"
-          style={{
-            left: 9,
-            top: -2,
-            width: 14,
-            height: 14,
-            borderRadius: 9999,
-            background: "rgba(255,255,255,0.95)",
-            border: "1px solid rgba(0,0,0,0.06)",
-          }}
-        >
-          <Icon className="w-3 h-3" strokeWidth={2.2} color="#b45309" />
-        </div>
+        {isOther ? (
+          <span 
+            style={{ 
+              fontSize: '8px', 
+              fontWeight: 'bold', 
+              color: '#b45309',
+              lineHeight: 1,
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            O
+          </span>
+        ) : Icon ? (
+          <Icon 
+            className="w-3.5 h-3.5" 
+            style={{ margin: 0, padding: 0, strokeWidth: 2 }} 
+            color="#b45309" 
+          />
+        ) : (
+          <HelpCircle 
+            className="w-3.5 h-3.5" 
+            style={{ margin: 0, padding: 0, strokeWidth: 2 }} 
+            color="#b45309" 
+          />
+        )}
       </div>
     </div>
   );

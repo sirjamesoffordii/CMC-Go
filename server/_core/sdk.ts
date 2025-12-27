@@ -219,7 +219,7 @@ class SDKServer {
       ) {
         // Only log if we actually had a cookie (indicates a problem)
         if (process.env.NODE_ENV === "development") {
-          console.warn("[Auth] Session payload missing required fields");
+        console.warn("[Auth] Session payload missing required fields");
         }
         return null;
       }
@@ -232,7 +232,7 @@ class SDKServer {
     } catch (error) {
       // Only log verification failures in development (indicates a problem with a provided cookie)
       if (process.env.NODE_ENV === "development") {
-        console.warn("[Auth] Session verification failed", String(error));
+      console.warn("[Auth] Session verification failed", String(error));
       }
       return null;
     }

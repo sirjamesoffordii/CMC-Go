@@ -1,6 +1,7 @@
 import { Person } from "../../../drizzle/schema";
 import { Check } from "lucide-react";
 import { trpc } from "../lib/trpc";
+import { createPortal } from "react-dom";
 
 interface PersonTooltipProps {
   person: Person;
@@ -25,9 +26,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
       }
     }
   );
-  return (
+  const tooltipContent = (
     <div
-      className="fixed z-50 bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-3 pointer-events-none tooltip-animate min-w-[200px] max-w-[300px]"
+      className="fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-3 pointer-events-none tooltip-animate min-w-[200px] max-w-[300px]"
       style={{
         left: position.x + 15,
         top: position.y + 15,
@@ -142,5 +143,12 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
       )}
     </div>
   );
+
+  // Use portal to render tooltip at document body level to avoid z-index stacking context issues
+  if (typeof document !== 'undefined') {
+    return createPortal(tooltipContent, document.body);
+  }
+  
+  return tooltipContent;
 }
 

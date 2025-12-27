@@ -2,7 +2,6 @@ import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
 import { User, Edit2, Check } from 'lucide-react';
 import { NeedIndicator } from './NeedIndicator';
-import { Checkbox } from './ui/checkbox';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Person } from '../../../drizzle/schema';
@@ -41,8 +40,6 @@ interface DroppablePersonProps {
   onMove: (draggedId: string, draggedCampusId: string | number, targetCampusId: string | number, targetIndex: number) => void;
   hasNeeds?: boolean;
   onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
-  isSelected?: boolean;
-  onToggleSelect?: (personId: string) => void;
 }
 
 interface Need {
@@ -54,7 +51,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, isSelected, onToggleSelect }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -139,7 +136,6 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-  const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
@@ -168,27 +164,16 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         key={person.personId}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
-        // Keep the icon in-place while dragging; only slightly fade/highlight.
-        animate={{ opacity: isDragging ? 0.85 : 1, scale: isDragging ? 0.98 : 1 }}
+        // Keep the icon same size while dragging; only add subtle lighting effect
+        animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{
           layout: { type: "spring", stiffness: 300, damping: 30 },
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 }
         }}
-        className={`relative group/person flex flex-col items-center w-[50px] flex-shrink-0 ${isSelected ? 'ring-2 ring-blue-500 rounded-lg p-1' : ''} ${isDragging ? 'brightness-110' : ''}`}
+        className={`relative group/person flex flex-col items-center w-[60px] flex-shrink-0 ${isDragging ? 'drop-shadow-lg' : ''}`}
       >
-      {/* PR 5: Bulk Selection Checkbox */}
-      {onToggleSelect && (
-        <div className="absolute -left-2 top-0 z-50" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(person.personId)}
-            className="touch-target h-4 w-4"
-          />
-        </div>
-      )}
-      
       {/* First Name Label with Edit Button */}
       <div 
         ref={nameRef}
@@ -197,8 +182,8 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         onMouseLeave={handleNameMouseLeave}
         onMouseMove={handleNameMouseMove}
       >
-        <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-          {truncatedName}
+        <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+          {capitalizedFirstName}
         </div>
         <button
           ref={editButtonRef}
@@ -263,7 +248,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         </button>
 
         {/* Role Label - hidden until hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
           {person.primaryRole || 'Staff'}
         </div>
       </div>

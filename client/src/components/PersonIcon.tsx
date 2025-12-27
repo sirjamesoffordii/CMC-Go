@@ -62,7 +62,6 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-  const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
@@ -106,7 +105,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
           setNodeRef(node);
         }}
         style={style}
-        className="relative group/person flex flex-col items-center w-[50px] flex-shrink-0 cursor-grab active:cursor-grabbing"
+        className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 cursor-grab active:cursor-grabbing"
         {...attributes}
         {...listeners}
       >
@@ -118,8 +117,8 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
         onMouseLeave={handleNameMouseLeave}
         onMouseMove={handleNameMouseMove}
       >
-        <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-          {truncatedName}
+        <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+          {capitalizedFirstName}
         </div>
         {onEdit && (
           <button
@@ -182,7 +181,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
 
         {/* Role Label - Hidden until hover */}
         {person.primaryRole && (
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
             {person.primaryRole}
           </div>
         )}

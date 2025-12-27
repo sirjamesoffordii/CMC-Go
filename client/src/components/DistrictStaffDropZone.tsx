@@ -16,6 +16,13 @@ const reverseStatusMap = {
   'Not Invited': 'not-invited' as const,
 };
 
+const statusColors = {
+  director: 'text-emerald-700',
+  staff: 'text-yellow-600',
+  'co-director': 'text-red-700',
+  'not-invited': 'text-slate-500'
+};
+
 interface DistrictStaffDropZoneProps {
   person: Person | null;
   onDrop: (personId: string, fromCampusId: string | number) => void;
@@ -29,6 +36,15 @@ interface DistrictStaffDropZoneProps {
   onQuickAddCancel?: () => void;
   onQuickAddClick?: (e: React.MouseEvent) => void;
   quickAddInputRef?: React.RefObject<HTMLInputElement>;
+}
+
+interface Need {
+  id: number;
+  personId: string;
+  type: string;
+  description: string;
+  amount?: number | null;
+  isActive: boolean;
 }
 
 export function DistrictStaffDropZone({
@@ -47,8 +63,10 @@ export function DistrictStaffDropZone({
 }: DistrictStaffDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const iconRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
-
+  
+  // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person?.personId || '' }, { enabled: !!person });
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
@@ -73,67 +91,97 @@ export function DistrictStaffDropZone({
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   }), [person]);
 
-  const handleNameMouseEnter = () => {
-    if (!person) return;
-    setIsHovered(true);
-    if (nameRef.current) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+  const handleNameMouseEnter = (e: React.MouseEvent) => {
+    if (person) {
+      setIsHovered(true);
+      if (nameRef.current) {
+        const rect = nameRef.current.getBoundingClientRect();
+        setTooltipPos({ x: rect.left, y: rect.top });
+      }
     }
   };
+
   const handleNameMouseLeave = () => {
     setIsHovered(false);
     setTooltipPos(null);
   };
-  const handleNameMouseMove = () => {
-    if (!nameRef.current || !isHovered || !person) return;
-    const rect = nameRef.current.getBoundingClientRect();
-    setTooltipPos({ x: rect.left, y: rect.top });
+
+  const handleNameMouseMove = (e: React.MouseEvent) => {
+    if (nameRef.current && isHovered && person) {
+      const rect = nameRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.left, y: rect.top });
+    }
   };
 
   if (!person) {
+    // Show add button when no district staff
     return (
-      <div ref={drop} className="flex flex-col items-center group/person w-[50px] transition-transform">
-        <div className="relative flex flex-col items-center w-[50px] group/add">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onAddClick();
-            }}
-            className="flex flex-col items-center w-[50px]"
-          >
-            <div className="relative flex items-center justify-center mb-1">
-              {quickAddMode ? (
-                <div className="relative">
-                  <Input
-                    ref={quickAddInputRef}
-                    value={quickAddName}
-                    onChange={(e) => onQuickAddNameChange?.(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') onQuickAddSubmit?.();
-                      if (e.key === 'Escape') onQuickAddCancel?.();
-                    }}
-                    onBlur={() => onQuickAddSubmit?.()}
-                    placeholder="Name"
-                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                    autoFocus
-                  />
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                    Quick Add
-                  </div>
+      <div
+        ref={drop}
+        className="flex flex-col items-center group/person w-[60px] transition-transform"
+      >
+        <div className="relative flex flex-col items-center w-[60px] group/add">
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAddClick();
+          }}
+          className="flex flex-col items-center w-[60px]"
+        >
+          {/* Plus sign in name position - clickable for quick add */}
+          <div className="relative flex items-center justify-center mb-1">
+            {quickAddMode ? (
+              <div className="relative">
+                <Input
+                  ref={quickAddInputRef}
+                  list="quick-add-name-suggestions"
+                  value={quickAddName}
+                  onChange={(e) => onQuickAddNameChange?.(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onQuickAddSubmit?.();
+                    } else if (e.key === 'Escape') {
+                      onQuickAddCancel?.();
+                    }
+                  }}
+                  onBlur={() => {
+                    onQuickAddSubmit?.();
+                  }}
+                  placeholder="Name"
+                  className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                  autoFocus
+                  spellCheck={true}
+                  autoComplete="name"
+                />
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                  Quick Add
                 </div>
-              ) : (
-                <Plus className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" strokeWidth={1.5} />
-              )}
-            </div>
-            <div className="relative">
-              <User className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" strokeWidth={1.5} fill="currentColor" />
-            </div>
-          </button>
+              </div>
+            ) : (
+              <Plus 
+                className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                strokeWidth={1.5}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // This will be handled by parent
+                }}
+              />
+            )}
+          </div>
+          {/* Icon - solid */}
+          <div className="relative">
+            <User 
+              className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
+              strokeWidth={1.5} 
+              fill="currentColor"
+            />
+          </div>
+        </button>
+          {/* Label - Absolutely positioned, shown on hover */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Staff
+            Add
           </div>
         </div>
       </div>
@@ -149,50 +197,76 @@ export function DistrictStaffDropZone({
     <>
       <div
         ref={drop}
-        className={`flex flex-col items-center group/person w-[50px] transition-transform ${
-          isOver && canDrop ? 'scale-105' : ''
-        }`}
+        className="flex flex-col items-center group/person w-[60px] transition-transform"
       >
-        <div
-          ref={nameRef}
-          className="relative flex items-center gap-1 mb-1"
-          onMouseEnter={handleNameMouseEnter}
-          onMouseLeave={handleNameMouseLeave}
-          onMouseMove={handleNameMouseMove}
-        >
-          <span className="text-xs text-slate-600 text-center leading-tight cursor-pointer select-none">
-            {truncatedName}
-          </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit('district-staff', person);
-            }}
-            className="opacity-0 group-hover/person:opacity-100 transition-opacity"
+      {/* Name Label with Edit Button */}
+          <div 
+            ref={nameRef}
+            className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+            onMouseEnter={handleNameMouseEnter}
+            onMouseLeave={handleNameMouseLeave}
+            onMouseMove={handleNameMouseMove}
           >
-            <Edit2 className="w-3 h-3 text-slate-400 hover:text-slate-600" />
-          </button>
+        <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+          {truncatedName}
         </div>
-
-        <div
-          ref={drag}
-          className={`relative cursor-grab active:cursor-grabbing ${isDragging ? 'opacity-60' : ''}`}
-          onClick={onClick}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit('district-staff', person);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+          title="Edit person"
         >
-          <User className="w-10 h-10 text-slate-200" strokeWidth={1.5} fill="currentColor" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-8 rounded-full bg-white/60" />
-          </div>
-          {personNeed?.isActive && (
-            <div className="absolute -right-1 -top-1 w-5 h-5">
-              <NeedIndicator type={personNeed.type} />
-            </div>
+          <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+        </button>
+      </div>
+      
+      <div
+        ref={(node) => {
+          iconRef.current = node;
+          drag(node);
+        }}
+        className="relative"
+        style={{ opacity: isDragging ? 0.5 : 1 }}
+      >
+        <button
+          onClick={onClick}
+          className="relative transition-all hover:scale-110 active:scale-95"
+        >
+          {/* Gray spouse icon behind - shown when person has a spouse */}
+          {person.spouse && (
+            <User 
+              className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
+              strokeWidth={1.5}
+              fill="currentColor"
+            />
           )}
+          {/* Main person icon - solid */}
+          <div 
+            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+          >
+            <User 
+              className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+              strokeWidth={1.5}
+              fill="currentColor"
+            />
+            {/* Need indicator (arm + icon) */}
+            {personNeed?.isActive && (
+              <NeedIndicator type={personNeed.type} />
+            )}
+          </div>
+        </button>
+        
+        {/* Role Label - Absolutely positioned, shown on hover */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+          {person.primaryRole || 'District Staff'}
         </div>
       </div>
-
-      {isHovered && tooltipPos && person && (
+      </div>
+      {/* Person Tooltip */}
+      {isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

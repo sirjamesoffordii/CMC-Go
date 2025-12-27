@@ -32,7 +32,7 @@ export default function Home() {
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
   const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
-  const [peoplePanelWidth, setPeoplePanelWidth] = useState(50); // percentage
+  const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingPeople, setIsResizingPeople] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
@@ -504,20 +504,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
-      {/* Diagnostic banner - only show in development or if there are errors */}
-      {(import.meta.env.DEV || districtsQuery.isError) && (
-        <div className="bg-yellow-100 border-b border-yellow-300 px-4 py-2 text-xs">
-          <strong>Debug:</strong> Districts: {districtsQuery.isLoading ? 'Loading...' : districtsQuery.isError ? 'Error' : `${districts?.length || 0} loaded`} | 
-          Campuses: {campusesQuery.isLoading ? 'Loading...' : campusesQuery.isError ? 'Error' : `${allCampuses?.length || 0} loaded`} | 
-          People: {peopleQuery.isLoading ? 'Loading...' : peopleQuery.isError ? 'Error' : `${allPeople?.length || 0} loaded`}
-          {districtsQuery.isError && (
-            <div className="mt-1 text-red-600">
-              Error: {districtsQuery.error?.message || 'Unknown error'}
-            </div>
-          )}
-        </div>
-      )}
-      
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
         className="relative flex items-center px-4 group flex-shrink-0"
@@ -551,6 +537,7 @@ export default function Home() {
           )}
         </div>
         
+        
         {/* Header Text - Editable */}
         <div 
           className="flex-grow text-white/95 relative z-10"
@@ -572,7 +559,7 @@ export default function Home() {
             style={{
               fontSize: '16px',
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-              animation: 'fade-in-text 1.2s ease-out 1.5s forwards',
+              animation: 'fade-in-text 1.2s ease-out 4.2s forwards',
               left: 'calc(12px + 36px + 16px + 12px)', // Position after logo
               fontWeight: 400,
               opacity: 0
@@ -591,26 +578,33 @@ export default function Home() {
           Edit
         </button>
 
-        {/* Days Counter - Next to search icon */}
-        <div className="flex items-center gap-3 flex-shrink-0 z-10 mr-2">
-          {/* Days Until CMC Counter */}
-          <span className="text-white/90 text-sm font-medium whitespace-nowrap">
-            {daysUntilCMC} days until CMC
-          </span>
-        </div>
+        {/* User info (authentication disabled) */}
+        {user && (
+          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
+            <span>{user.fullName || user.email}</span>
+            {/* PR 4: Editing badge - mobile only */}
+            {isMobile && (
+              <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
+                Editing as: {user.districtName || user.campusName || user.role}
+              </span>
+            )}
+          </div>
+        )}
 
-        {/* Search Icon */}
-        <div className="relative flex-shrink-0 mr-2 z-10">
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded transition-colors"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          
-          {/* Search Input and Results Dropdown */}
-          {searchOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
+        {/* Right Side: Search Icon, Hamburger Menu, and Login Button */}
+        <div className="flex items-center gap-2 flex-shrink-0 z-10">
+          {/* Search Icon */}
+          <div className="relative">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="text-white/80 hover:text-white hover:bg-red-700 p-2 rounded transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+            
+            {/* Search Input and Results Dropdown */}
+            {searchOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
               <div className="relative mb-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
@@ -728,42 +722,27 @@ export default function Home() {
               )}
             </div>
           )}
-        </div>
-
-        {/* Authentication disabled - login button removed */}
-        
-        {/* User info (authentication disabled) */}
-        {user && (
-          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
-            <span>{user.fullName || user.email}</span>
-            {/* PR 4: Editing badge - mobile only */}
-            {isMobile && (
-              <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
-                Editing as: {user.districtName || user.campusName || user.role}
-              </span>
-            )}
           </div>
-        )}
 
-        {/* Right Side Hamburger Menu */}
-        <div className="flex-shrink-0 relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-white/80 hover:text-white hover:bg-white/10"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
-          
-          {/* Dropdown Menu */}
-          {menuOpen && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setMenuOpen(false)}
-              />
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+          {/* Hamburger Menu */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-white/80 hover:text-white hover:bg-red-700"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
                 {/* Days Until CMC - Header */}
                 <div className="px-4 py-2 border-b border-gray-200">
                   <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
@@ -827,19 +806,20 @@ export default function Home() {
                   <Shield className="w-4 h-4" />
                   Admin Console
                 </button>
-                <button
-                  onClick={() => {
-                    window.location.href = getLoginUrl();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </button>
               </div>
             </>
           )}
+          </div>
+
+          {/* Login Button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => window.location.href = getLoginUrl()}
+            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
+          >
+            Login
+          </Button>
         </div>
       </div>
 

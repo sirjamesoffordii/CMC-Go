@@ -99,11 +99,11 @@ export function CampusRow({
               <>
                 {/* Invisible backdrop to catch clicks outside */}
                 <div
-                  className="fixed inset-0 z-[5]"
+                  className="fixed inset-0 z-[100]"
                   onClick={() => setOpenMenuId(null)}
                 ></div>
 
-                <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[101]">
                   {onCampusEdit && (
                     <>
                       <button

@@ -118,9 +118,9 @@ export function DistrictDirectorDropZone({
     return (
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[50px] transition-transform"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
       >
-        <div className="relative flex flex-col items-center w-[50px] group/add">
+        <div className="relative flex flex-col items-center w-[60px] group/add">
         <button 
           type="button"
           onClick={(e) => {
@@ -128,7 +128,7 @@ export function DistrictDirectorDropZone({
             e.stopPropagation();
             onAddClick();
           }}
-          className="flex flex-col items-center w-[50px]"
+          className="flex flex-col items-center w-[60px]"
         >
           {/* Plus sign in name position - clickable for quick add */}
           <div className="relative flex items-center justify-center mb-1">
@@ -136,6 +136,7 @@ export function DistrictDirectorDropZone({
               <div className="relative">
                 <Input
                   ref={quickAddInputRef}
+                  list="quick-add-name-suggestions"
                   value={quickAddName}
                   onChange={(e) => onQuickAddNameChange?.(e.target.value)}
                   onKeyDown={(e) => {
@@ -151,6 +152,8 @@ export function DistrictDirectorDropZone({
                   placeholder="Name"
                   className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
                   autoFocus
+                  spellCheck={true}
+                  autoComplete="name"
                 />
                 <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
                   Quick Add
@@ -194,7 +197,7 @@ export function DistrictDirectorDropZone({
     <>
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[50px] transition-transform"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
       >
       {/* Name Label with Edit Button */}
           <div 
@@ -204,7 +207,7 @@ export function DistrictDirectorDropZone({
             onMouseLeave={handleNameMouseLeave}
             onMouseMove={handleNameMouseMove}
           >
-        <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
+        <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
           {truncatedName}
         </div>
         <button
@@ -253,7 +256,7 @@ export function DistrictDirectorDropZone({
         </button>
         
         {/* Role Label - Absolutely positioned, shown on hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/person:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
           {person.primaryRole || 'District Director'}
         </div>
       </div>

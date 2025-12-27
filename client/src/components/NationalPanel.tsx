@@ -16,6 +16,7 @@ interface NationalPanelProps {
 
 export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: NationalPanelProps) {
   const { data: nationalStaffRaw = [], isLoading } = trpc.people.getNational.useQuery();
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
   const utils = trpc.useUtils();
   const [isAddPersonDialogOpen, setIsAddPersonDialogOpen] = useState(false);
   const [personForm, setPersonForm] = useState({
@@ -24,6 +25,39 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     nationalCategory: '',
     status: 'Not Invited' as "Yes" | "Maybe" | "No" | "Not Invited",
   });
+
+  // Generate name suggestions from existing people and common names
+  const nameSuggestions = useMemo(() => {
+    const existingNames = new Set<string>();
+    allPeople.forEach(p => {
+      if (p.name) {
+        // Add full name
+        existingNames.add(p.name.trim());
+        // Add first name
+        const firstName = p.name.split(' ')[0]?.trim();
+        if (firstName) existingNames.add(firstName);
+        // Add last name if exists
+        const parts = p.name.trim().split(' ');
+        if (parts.length > 1) {
+          const lastName = parts[parts.length - 1]?.trim();
+          if (lastName) existingNames.add(lastName);
+        }
+      }
+    });
+    
+    // Common first names
+    const commonNames = [
+      'Jacob', 'Jake', 'Jacky', 'Jack', 'James', 'John', 'Michael', 'David', 'Daniel', 'Matthew',
+      'Sarah', 'Emily', 'Jessica', 'Ashley', 'Amanda', 'Jennifer', 'Michelle', 'Nicole', 'Stephanie',
+      'Robert', 'William', 'Richard', 'Joseph', 'Thomas', 'Christopher', 'Charles', 'Mark', 'Donald',
+      'Elizabeth', 'Mary', 'Patricia', 'Linda', 'Barbara', 'Susan', 'Karen', 'Nancy', 'Lisa',
+      'Joshua', 'Andrew', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason',
+      'Betty', 'Helen', 'Sandra', 'Donna', 'Carol', 'Ruth', 'Sharon', 'Michelle', 'Laura'
+    ];
+    
+    commonNames.forEach(name => existingNames.add(name));
+    return Array.from(existingNames).sort();
+  }, [allPeople]);
 
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {

@@ -569,18 +569,32 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const regionalTotals = useMemo(() => {
     const totals: Record<string, typeof nationalTotals> = {};
     
-    // Initialize all regions from districts
+    // Initialize all regions from districts in database
     districts.forEach(district => {
       if (district.region && !totals[district.region]) {
         totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
       }
     });
     
+    // Also initialize regions from the constant districtRegionMap (for districts not yet in database)
+    Object.values(districtRegionMap).forEach(region => {
+      if (!totals[region]) {
+        totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+      }
+    });
+    
     // Group people by region using district lookup
-    const districtRegionMap = new Map<string, string>();
+    // Use both database districts and the constant mapping
+    const districtRegionMapLocal = new Map<string, string>();
     districts.forEach(district => {
       if (district.region) {
-        districtRegionMap.set(district.id, district.region);
+        districtRegionMapLocal.set(district.id, district.region);
+      }
+    });
+    // Add districts from constant mapping (for districts not yet in database)
+    Object.entries(districtRegionMap).forEach(([districtId, region]) => {
+      if (!districtRegionMapLocal.has(districtId)) {
+        districtRegionMapLocal.set(districtId, region);
       }
     });
     
@@ -589,7 +603,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const districtId = person.primaryDistrictId;
       if (!districtId) return; // Skip people without a district
       
-      const region = districtRegionMap.get(districtId);
+      const region = districtRegionMapLocal.get(districtId);
       if (!region || !totals[region]) return; // Skip if no region or region not initialized
       
       // Count this person in the appropriate status bucket
@@ -1237,7 +1251,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         </div>
         
           {/* Metrics section - moved down with more spacing */}
-          <div className="flex flex-col items-end gap-2" style={{ marginTop: '1.5rem' }}>
+          <div className="flex flex-col items-end gap-3" style={{ marginTop: '1.75rem' }}>
         {/* Going */}
         <button
           onClick={() => toggleMetric('yes')}

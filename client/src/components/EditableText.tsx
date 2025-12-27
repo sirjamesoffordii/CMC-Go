@@ -58,6 +58,8 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
         className={`border border-blue-500 rounded px-1 outline-none ${inputClassName}`}
+        spellCheck={true}
+        autoComplete="off"
       />
     );
   }
