@@ -1,4 +1,4 @@
-import { X, Plus, User, Edit2, MoreVertical, Check, Archive, Hand, Trash2, Download, Search, Filter } from "lucide-react";
+import { X, Plus, User, Edit2, MoreVertical, Check, Archive, Hand, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +34,6 @@ import { DraggableCampusRow } from "./DraggableCampusRow";
 import { CampusOrderDropZone } from "./CampusOrderDropZone";
 import { calculateDistrictStats, toDistrictPanelStats } from "@/utils/districtStats";
 import { deriveHouseholdLabel } from "@/lib/householdLabel";
-import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
-import { useAuth } from "@/_core/hooks/useAuth";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -73,15 +71,7 @@ export function DistrictPanel({
   onPersonClick,
   onDistrictUpdate,
 }: DistrictPanelProps) {
-  const { isAuthenticated } = usePublicAuth();
-  const { user } = useAuth();
   const utils = trpc.useUtils();
-  
-  // PR 5: Filter state
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [myCampusOnly, setMyCampusOnly] = useState(false);
-  const [selectedPeople, setSelectedPeople] = useState<Set<string>>(new Set());
   
   const updateDistrictName = trpc.districts.updateName.useMutation({
     onSuccess: () => onDistrictUpdate(),
@@ -317,33 +307,7 @@ export function DistrictPanel({
     p.primaryRole?.toLowerCase().includes('dd')
   ) || null;
   
-  // PR 5: Filter people based on status, search, and campus
-  const filteredPeople = useMemo(() => {
-    let filtered = peopleWithNeeds;
-    
-    // Status filter
-    if (statusFilter.size > 0) {
-      filtered = filtered.filter(p => statusFilter.has(p.status));
-    }
-    
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.name?.toLowerCase().includes(query) ||
-        p.primaryRole?.toLowerCase().includes(query)
-      );
-    }
-    
-    // My campus filter
-    if (myCampusOnly && user?.campusId) {
-      filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
-    }
-    
-    return filtered;
-  }, [peopleWithNeeds, statusFilter, searchQuery, myCampusOnly, user?.campusId]);
-
-  const peopleWithoutCampus = filteredPeople.filter(p => 
+  const peopleWithoutCampus = peopleWithNeeds.filter(p => 
     !p.primaryCampusId && 
     !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
   );
@@ -384,7 +348,7 @@ export function DistrictPanel({
     }
   }, [campuses, district?.id]); // Reset when district changes
 
-  // Create ordered campuses with people (using filtered list)
+  // Create ordered campuses with people
   const campusesWithPeople = useMemo(() => {
     const ordered = campusOrder.length > 0 
       ? campusOrder.map(id => campuses.find(c => c.id === id)).filter(Boolean) as Campus[]
@@ -392,9 +356,9 @@ export function DistrictPanel({
     
     return ordered.map(campus => ({
       ...campus,
-      people: filteredPeople.filter(p => p.primaryCampusId === campus.id)
+      people: peopleWithNeeds.filter(p => p.primaryCampusId === campus.id)
     }));
-  }, [campuses, campusOrder, filteredPeople]);
+  }, [campuses, campusOrder, peopleWithNeeds]);
 
   // Store initial order when panel opens or data changes significantly
   useEffect(() => {
@@ -1005,8 +969,17 @@ export function DistrictPanel({
     setIsPersonDialogOpen(true);
   };
 
-  const content = (
-    <div className="w-full px-3 py-6">
+  return (
+    <DndProvider backend={HTML5Backend}>
+      <motion.div
+        key={district?.id}
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.15, ease: "easeInOut" }}
+        className="h-full flex flex-col bg-slate-50 overflow-auto scroll-smooth"
+      >
+        <div className="w-full px-3 py-6">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-5 mb-4 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
@@ -1048,9 +1021,7 @@ export function DistrictPanel({
                     const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
                     onPersonStatusChange(districtDirector.personId, nextStatus);
                   }}
-                  onAddClick={() => {
-                    openAddPersonDialog('district');
-                  }}
+                  onAddClick={() => openAddPersonDialog('district')}
                   quickAddMode={quickAddMode === 'district'}
                   quickAddName={quickAddName}
                   onQuickAddNameChange={setQuickAddName}
@@ -1063,22 +1034,6 @@ export function DistrictPanel({
                   quickAddInputRef={quickAddInputRef}
                 />
               </div>
-              
-              {/* PR 3: Export Button */}
-              {isAuthenticated && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const url = `/api/export/people.csv?districtId=${district.id}`;
-                    window.open(url, '_blank');
-                  }}
-                  className="ml-auto"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-              )}
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
               <div className="flex items-center gap-2 mr-[60px]">
@@ -1096,120 +1051,6 @@ export function DistrictPanel({
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* PR 5: Filters Section */}
-            <div className="space-y-3 mt-4">
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search people by name or role..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              {/* Status Filter Chips */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-gray-600 font-medium">Status:</span>
-                {(["Yes", "Maybe", "No", "Not Invited"] as const).map((status) => {
-                  const count = filteredPeople.filter(p => p.status === status).length;
-                  const isActive = statusFilter.has(status);
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => {
-                        const newFilter = new Set(statusFilter);
-                        if (isActive) {
-                          newFilter.delete(status);
-                        } else {
-                          newFilter.add(status);
-                        }
-                        setStatusFilter(newFilter);
-                      }}
-                      className={`
-                        px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                        ${isActive 
-                          ? status === "Yes" ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-300" :
-                            status === "Maybe" ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-300" :
-                            status === "No" ? "bg-red-100 text-red-700 border-2 border-red-300" :
-                            "bg-slate-100 text-slate-700 border-2 border-slate-300"
-                          : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                        }
-                      `}
-                    >
-                      {status} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-              
-              {/* My Campus Filter */}
-              {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setMyCampusOnly(!myCampusOnly)}
-                    className={`
-                      px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                      ${myCampusOnly 
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300" 
-                        : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                      }
-                    `}
-                  >
-                    <Filter className="w-4 h-4 inline mr-1" />
-                    My Campus Only
-                  </button>
-                </div>
-              )}
-              
-              {/* Bulk Actions */}
-              {selectedPeople.size > 0 && isAuthenticated && (
-                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <span className="text-sm font-medium text-blue-900">
-                    {selectedPeople.size} selected
-                  </span>
-                  <div className="flex gap-2 ml-auto">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        selectedPeople.forEach(personId => {
-                          onPersonStatusChange(personId, "Yes");
-                        });
-                        setSelectedPeople(new Set());
-                      }}
-                      className="touch-target"
-                    >
-                      Set Yes
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        selectedPeople.forEach(personId => {
-                          onPersonStatusChange(personId, "Maybe");
-                        });
-                        setSelectedPeople(new Set());
-                      }}
-                      className="touch-target"
-                    >
-                      Set Maybe
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSelectedPeople(new Set())}
-                      className="touch-target"
-                    >
-                      Clear
-                    </Button>
-                  </div>
-                </div>
-              )}
             </div>
             
             {/* Stats Section */}
@@ -1289,7 +1130,7 @@ export function DistrictPanel({
       </div>
 
           {/* Campuses Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all md:hover:shadow-md md:hover:border-slate-200 overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 transition-all hover:shadow-md hover:border-slate-200 overflow-x-auto">
             <div className="space-y-3 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -1313,7 +1154,7 @@ export function DistrictPanel({
                         <div className="relative">
                           <button
                             onClick={() => setOpenMenuId(openMenuId === campus.id ? null : campus.id)}
-                            className="p-1.5 hover:bg-slate-100 active:bg-slate-200 rounded transition-all opacity-0 group-hover:opacity-100 hover:opacity-100 md:opacity-0 md:group-hover:opacity-100 touch-target"
+                            className="p-1.5 hover:bg-slate-100 rounded transition-all opacity-0 group-hover:opacity-100 hover:opacity-100"
                           >
                             <MoreVertical className="w-4 h-4 text-slate-500 hover:text-slate-700" />
                           </button>
@@ -1432,16 +1273,6 @@ export function DistrictPanel({
                             onClick={handlePersonClick}
                             onMove={handlePersonMove}
                             hasNeeds={person.hasNeeds}
-                            isSelected={selectedPeople.has(person.personId)}
-                            onToggleSelect={(personId) => {
-                              const newSet = new Set(selectedPeople);
-                              if (newSet.has(personId)) {
-                                newSet.delete(personId);
-                              } else {
-                                newSet.add(personId);
-                              }
-                              setSelectedPeople(newSet);
-                            }}
                           />
                         </PersonDropZone>
                       ))}
@@ -1449,12 +1280,7 @@ export function DistrictPanel({
                           {/* Add Person Button */}
                           <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
                             <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openAddPersonDialog(campus.id);
-                              }}
+                              onClick={() => openAddPersonDialog(campus.id)}
                               className="flex flex-col items-center w-[50px]"
                             >
                               {/* Plus sign in name position - clickable for quick add */}
@@ -1540,12 +1366,7 @@ export function DistrictPanel({
               
               {/* Add Campus Button */}
               <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsCampusDialogOpen(true);
-                }}
+                onClick={() => setIsCampusDialogOpen(true)}
                 className="w-60 py-4 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
               >
                 <Plus className="w-6 h-6" strokeWidth={2} />
@@ -1581,16 +1402,6 @@ export function DistrictPanel({
                           onClick={handlePersonClick}
                           onMove={handlePersonMove}
                           hasNeeds={person.hasNeeds}
-                          isSelected={selectedPeople.has(person.personId)}
-                          onToggleSelect={(personId) => {
-                            const newSet = new Set(selectedPeople);
-                            if (newSet.has(personId)) {
-                              newSet.delete(personId);
-                            } else {
-                              newSet.add(personId);
-                            }
-                            setSelectedPeople(newSet);
-                          }}
                         />
                       </PersonDropZone>
                     ))}
@@ -1598,12 +1409,7 @@ export function DistrictPanel({
                         {/* Add Person Button */}
                         <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add">
                           <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openAddPersonDialog('unassigned');
-                            }}
+                            onClick={() => openAddPersonDialog('unassigned')}
                             className="flex flex-col items-center w-[50px]"
                           >
                             {/* Plus sign in name position - clickable for quick add */}
@@ -1676,20 +1482,9 @@ export function DistrictPanel({
                 </div>
               )}
             </div>
-          </div>
-    </div>
-  );
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-      >
-        {content}
-        
+              </div>
+            </div>
+            
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
           setIsPersonDialogOpen(open);
@@ -1838,9 +1633,9 @@ export function DistrictPanel({
                     <div className="flex-1">
                       <Label htmlFor="person-household">Household (optional)</Label>
                       <Select
-                        value={personForm.householdId?.toString() || '__none__'}
+                        value={personForm.householdId?.toString() || ''}
                         onValueChange={(value) => {
-                          const householdId = value === '__none__' ? null : (value ? parseInt(value) : null);
+                          const householdId = value ? parseInt(value) : null;
                           setPersonForm({ ...personForm, householdId });
                           setHouseholdValidationError(null);
                         }}
@@ -1849,7 +1644,7 @@ export function DistrictPanel({
                           <SelectValue placeholder="Select household" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__none__">None</SelectItem>
+                          <SelectItem value="">None</SelectItem>
                           {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
                             const members = allPeople.filter(p => p.householdId === household.id);
                             const displayName = household.label || 
@@ -2232,9 +2027,9 @@ export function DistrictPanel({
                   <div className="flex-1">
                     <Label htmlFor="edit-person-household">Household (optional)</Label>
                     <Select
-                      value={personForm.householdId?.toString() || '__none__'}
+                      value={personForm.householdId?.toString() || ''}
                       onValueChange={(value) => {
-                        const householdId = value === '__none__' ? null : (value ? parseInt(value) : null);
+                        const householdId = value ? parseInt(value) : null;
                         setPersonForm({ ...personForm, householdId });
                         setHouseholdValidationError(null);
                       }}
@@ -2243,7 +2038,7 @@ export function DistrictPanel({
                         <SelectValue placeholder="Select household" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">None</SelectItem>
+                        <SelectItem value="">None</SelectItem>
                         {allHouseholds && allHouseholds.length > 0 ? allHouseholds.map((household) => {
                           const members = allPeople.filter(p => p.householdId === household.id);
                           const displayName = household.label || 
@@ -2593,7 +2388,7 @@ export function DistrictPanel({
         
         {/* Custom Drag Layer */}
         <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-    </motion.div>
+      </motion.div>
     </DndProvider>
   );
 }

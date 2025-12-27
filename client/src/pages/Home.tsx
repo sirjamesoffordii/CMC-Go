@@ -8,22 +8,16 @@ import { FollowUpPanel } from "@/components/FollowUpPanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield, Hand } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
-import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
-import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 export default function Home() {
-  // PR 2: Real authentication
-  const { isAuthenticated, user, login } = usePublicAuth();
   const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
@@ -51,7 +45,6 @@ export default function Home() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -210,8 +203,6 @@ export default function Home() {
       setIsResizingHeader(false);
       // Save to database
       try {
-        // Note: This is a placeholder fetch - actual saving is done via tRPC mutations
-        // Keeping this for reference but it doesn't need to use configurable URL
         await fetch('/api/trpc/settings.get?batch=1&input=' + encodeURIComponent(JSON.stringify({"0":{"key":"headerHeight"}})), {
           method: 'GET'
         });
@@ -597,11 +588,10 @@ export default function Home() {
                   {/* Filter and display results */}
                   {(() => {
                     const query = searchQuery.toLowerCase();
-                    // In public mode, don't search or show people
-                    const matchedPeople = isAuthenticated ? allPeople.filter(p => 
-                      p.name?.toLowerCase().includes(query) || 
+                    const matchedPeople = allPeople.filter(p => 
+                      p.name.toLowerCase().includes(query) || 
                       p.primaryRole?.toLowerCase().includes(query)
-                    ).slice(0, 5) : [];
+                    ).slice(0, 5);
                     const matchedCampuses = allCampuses.filter(c => 
                       c.name.toLowerCase().includes(query)
                     ).slice(0, 3);
@@ -618,7 +608,7 @@ export default function Home() {
                     
                     return (
                       <>
-                        {matchedPeople.length > 0 && isAuthenticated && (
+                        {matchedPeople.length > 0 && (
                           <div>
                             <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
                             {matchedPeople.map(person => (
@@ -690,34 +680,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* Login Button - PR 2 */}
-        {!isAuthenticated && (
-          <div className="flex-shrink-0 mr-2 z-10">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLoginModalOpen(true)}
-              className="text-white/80 hover:text-white hover:bg-white/10"
-            >
-              <LogIn className="w-5 h-5 mr-1" />
-              Login
-            </Button>
-          </div>
-        )}
-        
-        {/* User info when authenticated */}
-        {isAuthenticated && user && (
-          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
-            <span>{user.fullName || user.email}</span>
-            {/* PR 4: Editing badge - mobile only */}
-            {isMobile && (
-              <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
-                Editing as: {user.districtName || user.campusName || user.role}
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Right Side Hamburger Menu */}
         <div className="flex-shrink-0 relative">
           <Button
@@ -758,19 +720,6 @@ export default function Home() {
                   <Share2 className="w-4 h-4" />
                   Share
                 </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setLocation("/needs");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <Hand className="w-4 h-4" />
-                    District Needs
-                  </button>
-                )}
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -811,76 +760,49 @@ export default function Home() {
 
       {/* Main Content Area Below Header */}
       <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Left District/National Panel - Desktop only */}
-        {!isMobile && (
-          <div
-            className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
-            style={{ 
-              width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
-              overflowY: 'hidden'
-            }}
-          >
-            {(selectedDistrictId || nationalPanelOpen) && (
-              <>
-                {/* Resize Handle */}
-                <div
-                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                  onMouseDown={handleDistrictMouseDown}
-                />
-                <AnimatePresence mode="wait">
-                  {selectedDistrictId && selectedDistrict && (
-                    <DistrictPanel
-                      key={selectedDistrict.id}
-                      district={selectedDistrict}
-                      campuses={selectedDistrictCampuses}
-                      people={selectedDistrictPeople}
-                      onClose={() => setSelectedDistrictId(null)}
-                      onPersonStatusChange={handlePersonStatusChange}
-                      onPersonAdd={handlePersonAdd}
-                      onPersonClick={handlePersonClick}
-                      onDistrictUpdate={() => {
-                        utils.districts.list.invalidate();
-                        utils.people.list.invalidate();
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-                {nationalPanelOpen && (
-                  <NationalPanel
-                    onClose={() => setNationalPanelOpen(false)}
-                    onPersonClick={handlePersonClick}
+        {/* Left District/National Panel */}
+        <div
+          className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
+          style={{ 
+            width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
+            overflowY: 'hidden'
+          }}
+        >
+          {(selectedDistrictId || nationalPanelOpen) && (
+            <>
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                onMouseDown={handleDistrictMouseDown}
+              />
+              <AnimatePresence mode="wait">
+                {selectedDistrictId && selectedDistrict && (
+                  <DistrictPanel
+                    key={selectedDistrict.id}
+                    district={selectedDistrict}
+                    campuses={selectedDistrictCampuses}
+                    people={selectedDistrictPeople}
+                    onClose={() => setSelectedDistrictId(null)}
                     onPersonStatusChange={handlePersonStatusChange}
+                    onPersonAdd={handlePersonAdd}
+                    onPersonClick={handlePersonClick}
+                    onDistrictUpdate={() => {
+                      utils.districts.list.invalidate();
+                      utils.people.list.invalidate();
+                    }}
                   />
                 )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Mobile: District Panel as Bottom Sheet */}
-        {isMobile && selectedDistrictId && selectedDistrict && (
-          <BottomSheet
-            open={!!selectedDistrictId}
-            onOpenChange={(open) => !open && setSelectedDistrictId(null)}
-            title={selectedDistrict.name}
-            defaultSnap={1}
-            snapPoints={[25, 60, 90]}
-          >
-            <DistrictPanel
-              district={selectedDistrict}
-              campuses={selectedDistrictCampuses}
-              people={selectedDistrictPeople}
-              onClose={() => setSelectedDistrictId(null)}
-              onPersonStatusChange={handlePersonStatusChange}
-              onPersonAdd={handlePersonAdd}
-              onPersonClick={handlePersonClick}
-              onDistrictUpdate={() => {
-                utils.districts.list.invalidate();
-                utils.people.list.invalidate();
-              }}
-            />
-          </BottomSheet>
-        )}
+              </AnimatePresence>
+              {nationalPanelOpen && (
+                <NationalPanel
+                  onClose={() => setNationalPanelOpen(false)}
+                  onPersonClick={handlePersonClick}
+                  onPersonStatusChange={handlePersonStatusChange}
+                />
+              )}
+            </>
+          )}
+        </div>
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile">
@@ -1019,11 +941,6 @@ export default function Home() {
       <ImportModal 
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
-      />
-      
-      <LoginModal
-        open={loginModalOpen}
-        onOpenChange={setLoginModalOpen}
       />
     </div>
   );
