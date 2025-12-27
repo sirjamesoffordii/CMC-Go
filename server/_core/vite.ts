@@ -48,20 +48,38 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath =
-    process.env.NODE_ENV === "development"
-      ? path.resolve(import.meta.dirname, "../..", "dist", "public")
-      : path.resolve(import.meta.dirname, "public");
+  // In production, static files are in dist/public (built by Vite)
+  // In development, this function shouldn't be called (setupVite is used instead)
+  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  
   if (!fs.existsSync(distPath)) {
     console.error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
+      `[Static] Could not find the build directory: ${distPath}, make sure to build the client first`
     );
+    console.error(
+      `[Static] Run 'pnpm build' to build the client before deploying to production`
+    );
+  } else {
+    console.log(`[Static] Serving static files from: ${distPath}`);
   }
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
+  // fall through to index.html if the file doesn't exist (SPA routing)
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    const indexPath = path.resolve(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(500).send(`
+        <html>
+          <body>
+            <h1>Build Error</h1>
+            <p>Could not find index.html at ${indexPath}</p>
+            <p>Make sure to run 'pnpm build' before deploying to production.</p>
+          </body>
+        </html>
+      `);
+    }
   });
 }

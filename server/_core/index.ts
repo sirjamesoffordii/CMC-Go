@@ -174,4 +174,14 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+startServer().catch((error) => {
+  console.error("[Startup] Fatal error during server startup:");
+  console.error("[Startup] Error:", error);
+  if (error instanceof Error) {
+    console.error("[Startup] Message:", error.message);
+    if (error.stack) {
+      console.error("[Startup] Stack:", error.stack);
+    }
+  }
+  process.exit(1);
+});
