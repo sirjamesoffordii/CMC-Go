@@ -19,7 +19,6 @@ import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 export default function Home() {
   // PR 2: Real authentication
@@ -681,77 +680,61 @@ export default function Home() {
 
       {/* Main Content Area Below Header */}
       <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
-        {/* Left District/National Panel - Desktop only */}
-        {!isMobile && (
-          <div
-            className={`bg-white border-r border-gray-300 flex-shrink-0 relative ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
-            style={{ 
-              width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
-              height: '100%',
-              overflow: (selectedDistrictId || nationalPanelOpen) ? 'auto' : 'hidden',
-            }}
-          >
-            {(selectedDistrictId || nationalPanelOpen) && (
-              <>
-                {/* Resize Handle */}
+        {/* Left District/National Panel */}
+        <div
+          className={[
+            "bg-white border-r border-gray-300 flex-shrink-0 relative",
+            !isResizingDistrict ? "transition-all duration-300 ease-in-out" : "",
+            isMobile ? "left-panel-mobile" : "",
+            isMobile && !(selectedDistrictId || nationalPanelOpen) ? "closed" : "",
+          ].filter(Boolean).join(" ")}
+          style={isMobile ? {
+            width: "100%",
+            height: (selectedDistrictId || nationalPanelOpen) ? "45vh" : "0",
+            overflow: (selectedDistrictId || nationalPanelOpen) ? "auto" : "hidden",
+          } : {
+            width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : "0%",
+            height: "100%",
+            overflow: (selectedDistrictId || nationalPanelOpen) ? "auto" : "hidden",
+          }}
+        >
+          {(selectedDistrictId || nationalPanelOpen) && (
+            <>
+              {/* Resize Handle (desktop only) */}
+              {!isMobile && (
                 <div
                   className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
                   onMouseDown={handleDistrictMouseDown}
                 />
-                <AnimatePresence mode="wait">
-                  {selectedDistrictId && selectedDistrict && (
-                    <DistrictPanel
-                      key={selectedDistrict.id}
-                      district={selectedDistrict}
-                      campuses={selectedDistrictCampuses}
-                      people={selectedDistrictPeople}
-                      onClose={() => setSelectedDistrictId(null)}
-                      onPersonStatusChange={handlePersonStatusChange}
-                      onPersonAdd={handlePersonAdd}
-                      onPersonClick={handlePersonClick}
-                      onDistrictUpdate={() => {
-                        utils.districts.list.invalidate();
-                        utils.people.list.invalidate();
-                      }}
-                    />
-                  )}
-                </AnimatePresence>
-                {nationalPanelOpen && (
-                  <NationalPanel
-                    onClose={() => setNationalPanelOpen(false)}
-                    onPersonClick={handlePersonClick}
+              )}
+              <AnimatePresence mode="wait">
+                {selectedDistrictId && selectedDistrict && (
+                  <DistrictPanel
+                    key={selectedDistrict.id}
+                    district={selectedDistrict}
+                    campuses={selectedDistrictCampuses}
+                    people={selectedDistrictPeople}
+                    onClose={() => setSelectedDistrictId(null)}
                     onPersonStatusChange={handlePersonStatusChange}
+                    onPersonAdd={handlePersonAdd}
+                    onPersonClick={handlePersonClick}
+                    onDistrictUpdate={() => {
+                      utils.districts.list.invalidate();
+                      utils.people.list.invalidate();
+                    }}
                   />
                 )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Mobile: District Panel as Bottom Sheet */}
-        {isMobile && selectedDistrictId && selectedDistrict && (
-          <BottomSheet
-            open={!!selectedDistrictId}
-            onOpenChange={(open) => !open && setSelectedDistrictId(null)}
-            title={selectedDistrict.name}
-            defaultSnap={1}
-            snapPoints={[25, 60, 90]}
-          >
-            <DistrictPanel
-              district={selectedDistrict}
-              campuses={selectedDistrictCampuses}
-              people={selectedDistrictPeople}
-              onClose={() => setSelectedDistrictId(null)}
-              onPersonStatusChange={handlePersonStatusChange}
-              onPersonAdd={handlePersonAdd}
-              onPersonClick={handlePersonClick}
-              onDistrictUpdate={() => {
-                utils.districts.list.invalidate();
-                utils.people.list.invalidate();
-              }}
-            />
-          </BottomSheet>
-        )}
+              </AnimatePresence>
+              {nationalPanelOpen && (
+                <NationalPanel
+                  onClose={() => setNationalPanelOpen(false)}
+                  onPersonClick={handlePersonClick}
+                  onPersonStatusChange={handlePersonStatusChange}
+                />
+              )}
+            </>
+          )}
+        </div>
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
@@ -797,16 +780,30 @@ export default function Home() {
 
         {/* Right People Panel */}
         <div
-          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingPeople ? 'transition-all duration-300 ease-in-out' : ''}`}
-          style={{ width: peoplePanelOpen ? `${peoplePanelWidth}%` : '0%', overflow: 'hidden' }}
+          className={[
+            "bg-white border-l border-gray-100 flex-shrink-0 relative",
+            !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
+            isMobile ? "right-panel-mobile" : "",
+            isMobile && !peoplePanelOpen ? "closed" : "",
+          ].filter(Boolean).join(" ")}
+          style={isMobile ? {
+            width: "100%",
+            height: peoplePanelOpen ? "50vh" : "0",
+            overflow: "hidden",
+          } : {
+            width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+            overflow: "hidden",
+          }}
         >
           {peoplePanelOpen && (
             <>
               {/* Resize Handle */}
-              <div
-                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                onMouseDown={handlePeopleMouseDown}
-              />
+              {!isMobile && (
+                <div
+                  className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                  onMouseDown={handlePeopleMouseDown}
+                />
+              )}
               <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
             </>
           )}
@@ -821,8 +818,8 @@ export default function Home() {
         >
           <button
             onClick={() => setPeoplePanelOpen(true)}
-            className="bg-red-700/90 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
+            style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }}
           >
             People
           </button>
