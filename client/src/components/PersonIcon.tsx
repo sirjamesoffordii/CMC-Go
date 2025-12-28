@@ -57,7 +57,9 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.85 : 1, // Subtle fade when dragging, not drastic
+    opacity: 1,
+    filter: isDragging ? 'brightness(1.06)' : undefined,
+    boxShadow: isDragging ? '0 10px 30px rgba(0,0,0,0.12)' : undefined,
   };
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
@@ -153,7 +155,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
       <div className="relative">
         <button
           onClick={handleStatusClick}
-          className="relative transition-all hover:scale-110 active:scale-95"
+          className={`relative transition-all ${isDragging ? 'ring-2 ring-slate-200/70 rounded-full' : 'hover:scale-110 active:scale-95'}`}
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
           {person.spouse && (

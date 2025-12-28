@@ -26,6 +26,7 @@ export default function People() {
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [myCampusOnly, setMyCampusOnly] = useState(false);
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -42,6 +43,17 @@ export default function People() {
   const { data: allCampuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery();
   const { data: allDistricts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+
+  const needsByPersonId = useMemo(() => {
+    const map = new Map<string, typeof allNeeds>();
+    for (const n of allNeeds) {
+      if (!n.isActive) continue;
+      const arr = map.get(n.personId) ?? [];
+      arr.push(n);
+      map.set(n.personId, arr);
+    }
+    return map;
+  }, [allNeeds]);
   
   // Mutations
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -71,20 +83,33 @@ export default function People() {
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(p => 
-        p.name?.toLowerCase().includes(query) ||
-        p.primaryRole?.toLowerCase().includes(query) ||
-        p.personId?.toLowerCase().includes(query)
-      );
+      filtered = filtered.filter(p => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
+        return (
+          p.name?.toLowerCase().includes(query) ||
+          p.primaryRole?.toLowerCase().includes(query) ||
+          p.personId?.toLowerCase().includes(query) ||
+          needsText.includes(query)
+        );
+      });
     }
-    
+
+    // Need type filter
+    if (needTypeFilter !== 'All') {
+      filtered = filtered.filter(p => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        return needs.some(n => n.type === needTypeFilter);
+      });
+    }
+
     // My campus filter
     if (myCampusOnly && user?.campusId) {
       filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
     }
     
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId]);
+  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, needsByPersonId]);
   
   // Group people by district and campus
   const districtsWithData = useMemo(() => {
@@ -273,6 +298,22 @@ export default function People() {
                   </button>
                 );
               })}
+            </div>
+            
+            {/* Need Type Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-600 font-medium">Need Type:</span>
+              <select
+                value={needTypeFilter}
+                onChange={(e) => setNeedTypeFilter(e.target.value as any)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+              >
+                <option value="All">All</option>
+                <option value="Financial">Financial</option>
+                <option value="Housing">Housing</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
             
             {/* My Campus Filter */}

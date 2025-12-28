@@ -159,14 +159,18 @@ export function DistrictPanel({
   const archiveCampus = trpc.campuses.archive.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
-      utils.campuses.byDistrict.invalidate({ districtId: district.id });
+      if (district?.id) {
+        utils.campuses.byDistrict.invalidate({ districtId: district.id });
+      }
       onDistrictUpdate();
     },
   });
   const deleteCampus = trpc.campuses.delete.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
-      utils.campuses.byDistrict.invalidate({ districtId: district.id });
+      if (district?.id) {
+        utils.campuses.byDistrict.invalidate({ districtId: district.id });
+      }
       onDistrictUpdate();
     },
   });
@@ -199,13 +203,23 @@ export function DistrictPanel({
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
   // Campus role options
-  const campusRoles = ['Campus Director', 'Campus Co-Director', 'Staff'] as const;
+  const campusRoles = [
+    'Campus Director',
+    'Campus Co-Director',
+    'Staff',
+    'District Director',
+    'District Staff',
+    'Regional Director',
+    'National Director',
+    'Field Director',
+    'National Staff',
+  ] as const;
   type CampusRole = typeof campusRoles[number];
 
   // Quick add state
   const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
   const [quickAddName, setQuickAddName] = useState('');
-  const quickAddInputRef = useRef<HTMLInputElement>(null);
+  const quickAddInputRef = useRef<HTMLInputElement | null>(null);
 
   // Form states
   const [personForm, setPersonForm] = useState({
@@ -791,9 +805,9 @@ export function DistrictPanel({
       mutationData.primaryCampusId = targetId;
     }
 
-    // Add primaryRegion and nationalCategory if district has them
-    if (district.regionId) {
-      mutationData.primaryRegion = district.regionId;
+    // Add primaryRegion if district has it
+    if (district.region) {
+      mutationData.primaryRegion = district.region;
     }
 
     createPerson.mutate(mutationData, {
@@ -1548,12 +1562,12 @@ export function DistrictPanel({
                             <>
                               {/* Invisible backdrop to catch clicks outside */}
                               <div
-                                className="fixed inset-0 z-[100]"
+                                className="fixed inset-0 z-[9998]"
                                 onClick={() => setOpenCampusMenuId(null)}
                               ></div>
 
                               <div 
-                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[101]"
+                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[9999]"
                                 style={{
                                   left: `${campusMenuPosition.x}px`,
                                   top: `${campusMenuPosition.y + 4}px`,
@@ -1746,19 +1760,56 @@ export function DistrictPanel({
                 );
               })}
               
-              {/* Add Campus Button */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsCampusDialogOpen(true);
-                }}
-                className="w-72 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-3 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
-              >
-                <Plus className="w-7 h-7" strokeWidth={2} />
-                <span className="text-base">Add Campus</span>
-              </button>
+              {/* Add Campus (Inline) */}
+              {quickAddMode === 'add-campus' ? (
+                <div className="w-72">
+                  <Input
+                    ref={quickAddInputRef}
+                    value={quickAddName}
+                    onChange={(e) => setQuickAddName(e.target.value)}
+                    placeholder="New campus name…"
+                    className="h-12 text-base"
+                    spellCheck={true}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const name = quickAddName.trim();
+                        if (!name) return;
+                        createCampus.mutate({ name, districtId: district.id });
+                        setQuickAddName('');
+                        setQuickAddMode(null);
+                      } else if (e.key === 'Escape') {
+                        setQuickAddName('');
+                        setQuickAddMode(null);
+                      }
+                    }}
+                    onBlur={() => {
+                      // Keep tidy; only cancel if empty
+                      if (!quickAddName.trim()) {
+                        setQuickAddMode(null);
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setQuickAddMode('add-campus');
+                    setQuickAddName('');
+                    setTimeout(() => quickAddInputRef.current?.focus(), 0);
+                  }}
+                  className="w-72 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-3 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
+                >
+                  <Plus className="w-7 h-7" strokeWidth={2} />
+                  <span className="text-base">Add Campus</span
+                  >
+                </button>
+              )}
               
               {/* Unassigned Row - Only show if there are unassigned people */}
               {peopleWithoutCampus.length > 0 && (

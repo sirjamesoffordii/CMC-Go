@@ -20,9 +20,7 @@ export function CampusOrderDropZone({ index, onDrop, position = 'before' }: Camp
   return (
     <div
       ref={drop}
-      className={`absolute left-0 right-0 z-0 ${
-        isOver ? 'pointer-events-auto' : 'pointer-events-none'
-      } ${
+      className={`absolute left-0 right-0 z-0 pointer-events-auto ${
         position === 'before' 
           ? 'top-0' 
           : 'bottom-0'

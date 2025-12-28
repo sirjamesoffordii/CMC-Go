@@ -35,7 +35,7 @@ interface DistrictStaffDropZoneProps {
   onQuickAddSubmit?: () => void;
   onQuickAddCancel?: () => void;
   onQuickAddClick?: (e: React.MouseEvent) => void;
-  quickAddInputRef?: React.RefObject<HTMLInputElement>;
+  quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 interface Need {

@@ -207,6 +207,13 @@ export const appRouter = router({
         const insertId = await db.createCampus(input);
         return { id: insertId, name: input.name, districtId: input.districtId };
       }),
+    archive: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        // NOTE: There is no "archived" flag in the schema yet; for now archive == delete.
+        await db.deleteCampus(input.id);
+        return { success: true };
+      }),
     delete: publicProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {

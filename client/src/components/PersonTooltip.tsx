@@ -126,11 +126,22 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
         </div>
       )}
       
-      {/* Notes */}
-      {person.notes && (
+      {/* Notes (Need Notes + General Notes) */}
+      {(need?.description || person.notes) && (
         <div className="mb-2">
           <div className="text-xs text-gray-600 mb-1">Notes:</div>
-          <div className="text-xs text-gray-800 line-clamp-3">{person.notes}</div>
+          <div className="text-xs text-gray-800 space-y-1">
+            {need?.description && (
+              <div className={need.isActive ? '' : 'line-through text-gray-500'}>
+                <span className="text-gray-500">Need: </span>{need.description}
+              </div>
+            )}
+            {person.notes && (
+              <div>
+                <span className="text-gray-500">General: </span>{person.notes}
+              </div>
+            )}
+          </div>
         </div>
       )}
       
