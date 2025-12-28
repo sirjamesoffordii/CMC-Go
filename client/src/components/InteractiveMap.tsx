@@ -1229,7 +1229,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                 )}
               </div>
             </button>
-            <div className="flex flex-col items-start">
+            <div className="flex flex-col items-start transition-transform duration-200 hover:scale-105 origin-left">
               <span className="text-4xl text-slate-800">
                 <span className="font-semibold">{displayedTotals.notInvited}</span> <span className="font-medium">Not Invited Yet</span>
               </span>
