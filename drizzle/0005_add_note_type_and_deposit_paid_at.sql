@@ -1,5 +1,5 @@
 -- Migration: Add note_type to notes table and deposit_paid_at to people table
--- Task 4: PR for adding deposit_paid_at timestamp and note_type varchar columns
+-- Task 4: PR for adding deposit_paid_at DATETIME and note_type ENUM columns
 -- Date: 2025-12-28
 
 -- Add note_type column to notes table
