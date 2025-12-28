@@ -208,7 +208,7 @@ export function HeaderEditorModal({
                     INFO
                   </div>
                   <div className="px-3 py-1.5 rounded text-sm bg-gray-800 text-white">
-                    Login
+                    LOGIN
                   </div>
                 </div>
               </div>

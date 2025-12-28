@@ -612,7 +612,7 @@ export default function Home() {
             onClick={() => window.location.href = getLoginUrl()}
             className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
           >
-            Login
+            LOGIN
           </Button>
 
           {/* Hamburger Menu */}
