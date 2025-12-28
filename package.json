@@ -12,7 +12,7 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/run-migrations.mjs",
-    "db:push": "drizzle-kit push",
+    "db:push:dev": "drizzle-kit push",
     "db:push:yes": "node scripts/db-push-yes.mjs",
     "db:init": "node scripts/init-mysql-db.mjs",
     "db:seed": "node scripts/seed-database.mjs",
