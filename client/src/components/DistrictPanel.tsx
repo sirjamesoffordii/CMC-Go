@@ -159,18 +159,14 @@ export function DistrictPanel({
   const archiveCampus = trpc.campuses.archive.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
-      if (district?.id) {
-        utils.campuses.byDistrict.invalidate({ districtId: district.id });
-      }
+       utils.campuses.byDistrict.invalidate({ districtId: district!.id });
       onDistrictUpdate();
     },
   });
   const deleteCampus = trpc.campuses.delete.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
-      if (district?.id) {
-        utils.campuses.byDistrict.invalidate({ districtId: district.id });
-      }
+       utils.campuses.byDistrict.invalidate({ districtId: district!.id });
       onDistrictUpdate();
     },
   });
@@ -219,7 +215,7 @@ export function DistrictPanel({
   // Quick add state
   const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
   const [quickAddName, setQuickAddName] = useState('');
-  const quickAddInputRef = useRef<HTMLInputElement | null>(null);
+  const quickAddInputRef = useRef<HTMLInputElement>(null);
 
   // Form states
   const [personForm, setPersonForm] = useState({
@@ -805,9 +801,9 @@ export function DistrictPanel({
       mutationData.primaryCampusId = targetId;
     }
 
-    // Add primaryRegion if district has it
-    if (district.region) {
-      mutationData.primaryRegion = district.region;
+     // Add primaryRegion if district has it
+     if (district.region) {
+       mutationData.primaryRegion = district.region;
     }
 
     createPerson.mutate(mutationData, {
