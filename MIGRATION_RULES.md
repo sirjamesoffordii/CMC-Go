@@ -40,46 +40,33 @@ This document establishes the canonical rules for managing database schema migra
 
 ## Migration Workflow
 
-1. **Update Schema**: Modify the schema definition in `server/db/schema/`
+1. **Update Schema**: Modify the schema definition in `drizzle/schema.ts`. Schema source of truth is defined in `drizzle.config.ts`.
 2. **Generate Migration**: Run `pnpm db:generate` to create a new migration file
 3. **Review Migration**: Inspect the generated SQL in `drizzle/` before applying
 4. **Test Locally**: Run `pnpm db:migrate` on your local database first
 5. **Commit**: Commit both the schema changes and migration file together
-6. **Deploy**: The migration will run automatically on staging/production deployment
+6. **NO MERGE WITHOUT**: CloudSQL connection test or Railway Staging Health Check test, both must be green
+7. **Deploy**: Apply migrations to staging first (if prod, `pnpm db:migrate`)
 
 ## Canonical Migration Chain
 
-The following migration files in `drizzle/` represent the canonical schema history:
+The official migration chain is established in `drizzle/` as follows (do not recreate these):
 
-1. `0000_initial_schema.sql` - Initial database schema
-2. `0001_dashing_dark_phoenix.sql` - First schema evolution
-3. `0002_lying_ink.sql` - Second schema evolution
-4. `0003_flowery_master_mold.sql` - Third schema evolution
-5. `0004_add_people_household_fields.sql` - Added people and household fields
+- `0000_initial_schema.sql` - Foundation tables (users, districts, campuses, people, assignments, needs, notes, auth_tokens, settings)
+- `0001_dashing_dark_phoenix.sql` - Schema improvements (needs.type enum expansion, notes restructure)
+- `0002_lying_ink.sql` - Settings table adjustments
+- `0003_flowery_master_mold.sql` - Settings table schema updates
+- `0004_add_people_household_fields.sql` - Household tracking fields (householdId, householdRole, spouseAttending, childrenCount)
 
-All other 0000 and 0001 variants have been archived to `drizzle/_archive/` as they were duplicates.
+**Duplicate migrations have been archived to `drizzle/_archive/`** to prevent schema confusion.
 
 ## Troubleshooting
 
-### Schema Drift Detected
+### "Schema drift detected"
 
-If Drizzle detects schema drift (local schema doesn't match migrations):
+Your local Drizzle schema doesn't match production. This means:
 
-1. **Don't panic**: This is recoverable
-2. **Don't regenerate**: Don't create duplicate 0000/0001 files
-3. **Create additive migration**: Generate a new migration that adds the missing changes
-4. **Verify**: Ensure the new migration is additive and safe
+1. Someone pushed schema changes without creating a migration, **OR**
+2. You created a migration locally but it wasn't applied to production yet
 
-### Migration Conflicts
-
-If you encounter migration conflicts:
-
-1. Pull latest changes from the repository
-2. Ensure your local database matches production
-3. Generate new migrations with the next sequence number
-4. Coordinate with the team to avoid parallel schema changes
-
----
-
-**Last Updated**: 2025-12-28
-**Established By**: Migration system cleanup and standardization
+**Solution**: Create a new sequential migration (0005, 0006, etc.) to resolve the drift.
