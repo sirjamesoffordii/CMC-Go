@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum, index } from "drizzle-orm/mysql-core";
+import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum, index, datetime } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -90,6 +90,7 @@ export const people = mysqlTable("people", {
   // Status tracking (Universal responses)
   status: mysqlEnum("status", ["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited").notNull(),
   depositPaid: boolean("depositPaid").default(false).notNull(),
+    deposit_paid_at: datetime("deposit_paid_at"),
   statusLastUpdated: timestamp("statusLastUpdated"),
   statusLastUpdatedBy: varchar("statusLastUpdatedBy", { length: 255 }),
   // Household linking
@@ -179,10 +180,11 @@ export const notes = mysqlTable("notes", {
   id: int("id").primaryKey().autoincrement(),
   personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
   category: mysqlEnum("category", ["INVITE", "INTERNAL"]).default("INTERNAL").notNull(), // INVITE for invite notes, INTERNAL for other notes
+  
   content: text("content").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   createdBy: varchar("createdBy", { length: 255 }),
-}, (table) => ({
+  noteType: mysqlEnum("note_type", ["GENERAL", "NEED"]).notNull().default("GENERAL"),
   // PR 6: Add index for personId lookups
   personIdIdx: index("notes_personId_idx").on(table.personId),
 }));
