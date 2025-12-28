@@ -8,7 +8,7 @@ import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
+import { MapPin, Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
@@ -40,8 +40,7 @@ export default function Home() {
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>('');
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+  
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
@@ -591,139 +590,8 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Search Icon, Hamburger Menu, and Login Button */}
+        {/* Right Side: Info, Login Button, and Hamburger Menu */}
         <div className="flex items-center gap-2 flex-shrink-0 z-10">
-          {/* Search Icon */}
-          <div className="relative">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="text-white/80 hover:text-white hover:bg-red-700 p-2 rounded transition-colors"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-            
-            {/* Search Input and Results Dropdown */}
-            {searchOpen && (
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-300 rounded text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(''); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              
-              {/* Search Results */}
-              {searchQuery && (
-                <div className="max-h-80 overflow-y-auto">
-                  {/* Filter and display results */}
-                  {(() => {
-                    const query = searchQuery.toLowerCase();
-                    // Authentication disabled - always show people in search
-                    const matchedPeople = allPeople.filter(p => 
-                      p.name?.toLowerCase().includes(query) || 
-                      p.primaryRole?.toLowerCase().includes(query)
-                    ).slice(0, 5);
-                    const matchedCampuses = allCampuses.filter(c => 
-                      c.name.toLowerCase().includes(query)
-                    ).slice(0, 3);
-                    const matchedDistricts = districts.filter(d => 
-                      d.id.toLowerCase().includes(query) || 
-                      d.region?.toLowerCase().includes(query)
-                    ).slice(0, 3);
-                    
-                    const hasResults = matchedPeople.length > 0 || matchedCampuses.length > 0 || matchedDistricts.length > 0;
-                    
-                    if (!hasResults) {
-                      return <div className="p-3 text-gray-500 text-sm">No results found</div>;
-                    }
-                    
-                    return (
-                      <>
-                        {matchedPeople.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
-                            {matchedPeople.map(person => (
-                              <button
-                                key={person.personId}
-                                onClick={() => {
-                                  setSelectedPerson(person);
-                                  setPersonDialogOpen(true);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <div className={`w-2 h-2 rounded-full ${
-                                  person.status === 'Yes' ? 'bg-green-500' :
-                                  person.status === 'Maybe' ? 'bg-yellow-500' :
-                                  person.status === 'No' ? 'bg-red-500' : 'bg-gray-300'
-                                }`} />
-                                <span className="text-sm text-gray-900">{person.name}</span>
-                                {person.primaryRole && <span className="text-xs text-gray-500">{person.primaryRole}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {matchedCampuses.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Campuses</div>
-                            {matchedCampuses.map(campus => (
-                              <button
-                                key={campus.id}
-                                onClick={() => {
-                                  setSelectedDistrictId(campus.districtId);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100"
-                              >
-                                <span className="text-sm text-gray-900">{campus.name}</span>
-                                <span className="text-xs text-gray-500 ml-2">in {campus.districtId}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {matchedDistricts.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Districts</div>
-                            {matchedDistricts.map(district => (
-                              <button
-                                key={district.id}
-                                onClick={() => {
-                                  setSelectedDistrictId(district.id);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100"
-                              >
-                                <span className="text-sm text-gray-900">{district.name}</span>
-                                {district.region && <span className="text-xs text-gray-500 ml-2">{district.region}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          )}
-          </div>
-
           {/* Info (moved from menu) */}
           <Button
             variant="ghost"
@@ -736,6 +604,16 @@ export default function Home() {
           >
             <MapPin className="w-5 h-5" />
             <span className="ml-2 hidden sm:inline">Info</span>
+          </Button>
+
+          {/* Login Button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => window.location.href = getLoginUrl()}
+            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
+          >
+            Login
           </Button>
 
           {/* Hamburger Menu */}
@@ -757,15 +635,6 @@ export default function Home() {
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
-                {/* Days Until CMC - Header */}
-                <div className="px-4 py-2 border-b border-gray-200">
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                    Countdown
-                  </div>
-                  <div className="text-sm font-bold text-gray-900">
-                    {daysUntilCMC} days until CMC
-                  </div>
-                </div>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -798,20 +667,16 @@ export default function Home() {
                   <Shield className="w-4 h-4" />
                   Admin Console
                 </button>
+                {/* Days Until CMC - Footer */}
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="text-sm font-bold text-gray-900">
+                    {daysUntilCMC} days until CMC
+                  </div>
+                </div>
               </div>
             </>
           )}
           </div>
-
-          {/* Login Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => window.location.href = getLoginUrl()}
-            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
-          >
-            Login
-          </Button>
         </div>
       </div>
 

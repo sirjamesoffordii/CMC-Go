@@ -1,10 +1,10 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search, Filter, MoreVertical, ChevronDown, ChevronRight, Edit2, Check } from "lucide-react";
+import { ArrowLeft, Search, Filter, MoreVertical, ChevronDown, ChevronRight, Edit2, Check, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -25,6 +25,8 @@ export default function People() {
   // Filter state
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [myCampusOnly, setMyCampusOnly] = useState(false);
   const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
   
@@ -220,6 +222,11 @@ export default function People() {
     // TODO: Implement campus sorting
     console.log(`Sort campus ${campusId} by ${sortBy}`);
   };
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    setTimeout(() => searchInputRef.current?.focus(), 0);
+  }, [searchOpen]);
   
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
@@ -244,27 +251,67 @@ export default function People() {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Map
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">People</h1>
-          <p className="text-gray-600 mt-2">
-            Hierarchical list view of all districts, campuses, and people
-          </p>
+
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">People</h1>
+              <p className="text-gray-600 mt-2">
+                Hierarchical list view of all districts, campuses, and people
+              </p>
+            </div>
+
+            {/* Search (moved from Home header) */}
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchOpen(!searchOpen)}
+                className="bg-white"
+              >
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
+
+              {searchOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setSearchOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <Input
+                        ref={searchInputRef}
+                        type="text"
+                        placeholder="Search people by name, role, ID, or needs..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-9"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          type="button"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Type to filter the list below
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
         
         {/* Filters Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="space-y-3">
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                type="text"
-                placeholder="Search people by name or role..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            
             {/* Status Filter Chips */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Status:</span>
