@@ -8,7 +8,7 @@ import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield, Hand } from "lucide-react";
+import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
@@ -724,6 +724,20 @@ export default function Home() {
           )}
           </div>
 
+          {/* Info (moved from menu) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.preventDefault();
+              setLocation("/more-info");
+            }}
+            className="text-white/80 hover:text-white hover:bg-red-700"
+          >
+            <MapPin className="w-5 h-5" />
+            <span className="ml-2 hidden sm:inline">Info</span>
+          </Button>
+
           {/* Hamburger Menu */}
           <div className="relative">
             <Button
@@ -772,28 +786,6 @@ export default function Home() {
                 >
                   <Share2 className="w-4 h-4" />
                   Share
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setLocation("/needs");
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <Hand className="w-4 h-4" />
-                  District Needs
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setLocation("/more-info");
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <MapPin className="w-4 h-4" />
-                  More Info
                 </button>
                 <button
                   onClick={(e) => {
