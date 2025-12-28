@@ -794,8 +794,13 @@ export function DistrictPanel({
     // Set role and campus based on target
     if (targetId === 'district') {
       mutationData.primaryRole = 'District Director';
+      mutationData.primaryCampusId = null;
+    } else if (targetId === 'district-staff') {
+      mutationData.primaryRole = 'District Staff';
+      mutationData.primaryCampusId = null;
     } else if (targetId === 'unassigned') {
       mutationData.primaryRole = 'Staff';
+      mutationData.primaryCampusId = null;
     } else if (typeof targetId === 'number') {
       mutationData.primaryRole = 'Staff';
       mutationData.primaryCampusId = targetId;
@@ -2944,11 +2949,6 @@ export function DistrictPanel({
         </datalist>
         <datalist id="quick-add-name-suggestions">
           {nameSuggestions.map((name, idx) => (
-            <option key={idx} value={name} />
-          ))}
-        </datalist>
-        <datalist id="edit-campus-name-suggestions">
-          {campusSuggestions.map((name, idx) => (
             <option key={idx} value={name} />
           ))}
         </datalist>
