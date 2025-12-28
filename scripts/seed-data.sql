@@ -1,6 +1,6 @@
 -- Simple SQL script to seed the database with sample data
--- This can be run using sqlite3 command line tool if available
--- Or you can use a SQLite browser tool
+-- This can be run using  command line tool if available
+-- Or you can use a  browser tool
 
 -- Insert sample districts (first 20)
 INSERT OR IGNORE INTO districts (id, name, region) VALUES
