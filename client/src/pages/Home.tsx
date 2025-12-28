@@ -8,7 +8,7 @@ import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
+import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
@@ -602,8 +602,7 @@ export default function Home() {
             }}
             className="text-white/80 hover:text-white hover:bg-red-700"
           >
-            <MapPin className="w-5 h-5" />
-            <span className="ml-2 hidden sm:inline">Info</span>
+            <span className="text-sm font-semibold tracking-wide">INFO</span>
           </Button>
 
           {/* Login Button */}
@@ -822,7 +821,7 @@ export default function Home() {
         >
           <button
             onClick={() => setPeoplePanelOpen(true)}
-            className="bg-black/80 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
+            className="bg-red-700/90 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
             style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
           >
             People

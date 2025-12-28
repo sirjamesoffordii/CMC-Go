@@ -205,7 +205,7 @@ export function HeaderEditorModal({
                 {/* Buttons Preview */}
                 <div className="flex-shrink-0 flex items-center gap-3 ml-4">
                   <div className={`px-3 py-1.5 rounded text-sm ${isLightBackground ? 'bg-gray-100 text-black' : 'bg-white/90 text-black'}`}>
-                    Info
+                    INFO
                   </div>
                   <div className="px-3 py-1.5 rounded text-sm bg-gray-800 text-white">
                     Login
