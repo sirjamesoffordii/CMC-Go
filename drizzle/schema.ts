@@ -172,20 +172,14 @@ export type InsertNeed = typeof needs.$inferInsert;
 
 /**
  * Notes table - tracks notes about people
- * References people by personId (varchar) for consistency
- * Category: INVITE for invite-related notes, INTERNAL for other notes
  */
 export const notes = mysqlTable("notes", {
   id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  category: mysqlEnum("category", ["INVITE", "INTERNAL"]).default("INTERNAL").notNull(), // INVITE for invite notes, INTERNAL for other notes
+  userId: int("userId").notNull(),
+  invitationId: int("invitationId").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-  createdBy: varchar("createdBy", { length: 255 }),
-}, (table) => ({
-  // PR 6: Add index for personId lookups
-  personIdIdx: index("notes_personId_idx").on(table.personId),
-}));
+});
 
 /**
  * Invite Notes table - PR 2: Leaders-only invite notes
