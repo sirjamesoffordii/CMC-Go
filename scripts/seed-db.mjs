@@ -54,6 +54,7 @@ async function seed() {
   // Insert people
   console.log(`Inserting ${people.length} people...`);
   for (const person of people) {
+    const primaryRole = person.primaryRole ?? person.role; // map legacy "role" field to schema column
     await connection.execute(
       `INSERT INTO people (id, name, campusId, districtId, status, primaryRole, lastUpdated)
        VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -64,7 +65,7 @@ async function seed() {
          status = VALUES(status),
          primaryRole = VALUES(primaryRole),
          lastUpdated = VALUES(lastUpdated)`,
-      [person.id, person.name, person.campusId, person.districtId, person.status, person.role, person.lastUpdated]
+      [person.id, person.name, person.campusId, person.districtId, person.status, primaryRole, person.lastUpdated]
     );
   }
 
