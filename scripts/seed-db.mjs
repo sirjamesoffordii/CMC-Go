@@ -26,6 +26,16 @@ if (process.env.APP_ENV === 'production') {
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 const db = drizzle(connection);
 
+// Normalize status values to match ENUM
+function normalizeStatus(status) {
+  const statusMap = {
+    'Going': 'Yes',
+    'Not Going': 'No',
+    'Not invited yet': 'Not Invited'
+  };
+  return statusMap[status] || status;
+}
+
 async function seed() {
   console.log("Starting database seed...");
 
@@ -57,13 +67,13 @@ async function seed() {
     await connection.execute(
       `INSERT INTO people (id, name, primaryCampusId, primaryDistrictId, status, primaryRole, lastUpdated)
        VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+       ON DUPLICATE KEY UPDATE
          name = VALUES(name),
          primaryCampusId = VALUES(primaryCampusId),
          primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
          primaryRole = VALUES(primaryRole)`,
-      [person.id, person.name, person.campusId, person.districtId, person.status, person.role]
+      [person.id, person.name, person.campusId, person.districtId, normalizeStatus(person.status), person.role]
     );
   }
 
