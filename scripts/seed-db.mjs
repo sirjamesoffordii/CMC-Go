@@ -63,7 +63,7 @@ async function seed() {
          primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
          primaryRole = VALUES(primaryRole)`,
-            [String(person.id), person.name, person.campusId, person.districtId, person.status, person.primaryRole ?? person.role]person.id, person.name, person.campusId, person.districtId, person.status, person.primaryRole ?? person.role]
+            [String(person.id), person.name, person.campusId, person.districtId, person.status, person.primaryRole ?? person.role]
     );
   }
 
