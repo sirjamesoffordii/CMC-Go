@@ -117,6 +117,22 @@ async function seed() {
     }
     console.log(`✅ Inserted/updated ${districtsInserted} districts\n`);
 
+    // 1b. Ensure Chi Alpha National (XAN) exists as a first-class district
+    console.log("🏛️  Ensuring XAN (Chi Alpha National) district exists...");
+    await db
+      .insert(districts)
+      .values({
+        id: "XAN",
+        name: "Chi Alpha National",
+        region: "NATIONAL",
+        leftNeighbor: null,
+        rightNeighbor: null,
+      })
+      .onDuplicateKeyUpdate({
+        set: { name: "Chi Alpha National", region: "NATIONAL" },
+      });
+    console.log("✅ XAN district ready\n");
+
     // 2. Generate and insert campuses (2-3 per district)
     console.log("🏫 Generating campuses...");
     const allCampuses = [];
@@ -131,20 +147,32 @@ async function seed() {
       }
     }
 
+    // Deliverable 2: Add national campuses inside XAN
+    allCampuses.push(
+      { name: "National Office", districtId: "XAN" },
+      { name: "Regional Directors", districtId: "XAN" },
+    );
+
     console.log(`📋 Inserting ${allCampuses.length} campuses...`);
     const campusIdMap = new Map();
     let campusesInserted = 0;
     
     for (const campus of allCampuses) {
       try {
-        await db.insert(campuses).values({
-          name: campus.name,
-          districtId: campus.districtId,
-        }).onDuplicateKeyUpdate({
-          set: {
+        // Campuses table does not have a composite unique key on (districtId, name),
+        // so guard against duplicates manually.
+        const existing = await db
+          .select()
+          .from(campuses)
+          .where(and(eq(campuses.name, campus.name), eq(campuses.districtId, campus.districtId)))
+          .limit(1);
+
+        if (existing.length === 0) {
+          await db.insert(campuses).values({
             name: campus.name,
-          },
-        });
+            districtId: campus.districtId,
+          });
+        }
         
         // Get the inserted ID
         const inserted = await db.select().from(campuses)
@@ -165,11 +193,113 @@ async function seed() {
     }
     console.log(`✅ Inserted/updated ${campusesInserted} campuses\n`);
 
+    // Capture XAN campus ids for later seeding
+    const xanNationalOfficeCampusId = campusIdMap.get("XAN_National Office") || null;
+    const xanRegionalDirectorsCampusId = campusIdMap.get("XAN_Regional Directors") || null;
+    if (!xanNationalOfficeCampusId || !xanRegionalDirectorsCampusId) {
+      console.warn("⚠️  Could not resolve XAN campus ids; XAN people seeding may be incomplete.");
+    }
+
     // 3. Generate and insert people (exactly 200 people distributed across all districts)
+    // plus XAN leadership + regional directors
     console.log("👥 Generating 200 people...");
     const allPeople = [];
     let personCounter = 1;
     const targetTotal = 200;
+
+    // 3a. Seed XAN leadership (fixed ids so you can safely edit later)
+    const xanPeople = [];
+
+    // Alex Rodriguez = National Director (shown in the header slot like a district director)
+    xanPeople.push({
+      personId: "xan_alex_rodriguez",
+      name: "Alex Rodriguez",
+      primaryRole: "National Director",
+      primaryDistrictId: "XAN",
+      primaryCampusId: null,
+      primaryRegion: "NATIONAL",
+      status: "Not Invited",
+      depositPaid: false,
+      createdAt: new Date(),
+      statusLastUpdated: new Date(),
+      spouseAttending: false,
+      childrenCount: 0,
+      guestsCount: 0,
+      childrenAges: null,
+      spouse: null,
+      kids: null,
+      guests: null,
+    });
+
+    // Dan Gauthier = Field Director (first person in the Regional Directors campus row)
+    if (xanRegionalDirectorsCampusId) {
+      xanPeople.push({
+        personId: "xan_dan_gauthier",
+        name: "Dan Gauthier",
+        primaryRole: "Field Director",
+        primaryDistrictId: "XAN",
+        primaryCampusId: xanRegionalDirectorsCampusId,
+        primaryRegion: "NATIONAL",
+        status: "Not Invited",
+        depositPaid: false,
+        createdAt: new Date(),
+        statusLastUpdated: new Date(),
+        spouseAttending: false,
+        childrenCount: 0,
+        guestsCount: 0,
+        childrenAges: null,
+        spouse: null,
+        kids: null,
+        guests: null,
+      });
+    }
+
+    // Regional Director for each Chi Alpha region (placeholders clearly labeled)
+    const regionsForDirectors = [
+      "Northwest",
+      "West Coast",
+      "Big Sky",
+      "Great Plains North",
+      "Great Plains South",
+      "Great Lakes",
+      "Northeast",
+      "Mid-Atlantic",
+      "Southeast",
+      "Texico",
+      "South Central",
+    ];
+
+    const regionalDirectorNameByRegion = {
+      Texico: "Matt Hoogendoorn",
+    };
+
+    for (const region of regionsForDirectors) {
+      const name = regionalDirectorNameByRegion[region] || `Regional Director — ${region}`;
+      const slug = region.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+      if (!xanRegionalDirectorsCampusId) continue;
+      xanPeople.push({
+        personId: `xan_rd_${slug}`,
+        name,
+        primaryRole: "Regional Director",
+        primaryDistrictId: "XAN",
+        primaryCampusId: xanRegionalDirectorsCampusId,
+        primaryRegion: region,
+        status: "Not Invited",
+        depositPaid: false,
+        createdAt: new Date(),
+        statusLastUpdated: new Date(),
+        spouseAttending: false,
+        childrenCount: 0,
+        guestsCount: 0,
+        childrenAges: null,
+        spouse: null,
+        kids: null,
+        guests: null,
+      });
+    }
+
+    // Put XAN people first so UI defaults keep leadership at the top.
+    allPeople.push(...xanPeople);
     
     // Calculate how many people per district (distribute evenly)
     const peoplePerDistrict = Math.floor(targetTotal / districtsToSeed.length);
