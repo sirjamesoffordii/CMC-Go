@@ -185,9 +185,12 @@ export const notes = mysqlTable("notes", {
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   createdBy: varchar("createdBy", { length: 255 }),
   noteType: mysqlEnum("note_type", ["GENERAL", "NEED"]).notNull().default("GENERAL"),
-  }, (table) => ({
-    personIdIdx: index("notes_personId_idx").on(table.personId),
-  })
+  depositPaidAt: timestamp("depositPaidAt"),
+}, (table) => ({
+  // PR 6: Add index for personId lookups
+  personIdIdx: index("notes_personId_idx").on(table.personId),
+}));
+
 /**
  * Invite Notes table - PR 2: Leaders-only invite notes
  * Separate table for clarity and to enforce leaders-only access
