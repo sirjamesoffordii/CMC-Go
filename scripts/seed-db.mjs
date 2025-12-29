@@ -26,6 +26,16 @@ if (process.env.APP_ENV === 'production') {
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 const db = drizzle(connection);
 
+// Normalize status values to match ENUM
+function normalizeStatus(status) {
+  const statusMap = {
+    'Going': 'Yes',
+    'Not Going': 'No',
+    'Not invited yet': 'Not Invited'
+  };
+  return statusMap[status] || status;
+}
+
 async function seed() {
   console.log("Starting database seed...");
 
@@ -57,13 +67,13 @@ async function seed() {
     await connection.execute(
       `INSERT INTO people (personId, name, primaryCampusId, primaryDistrictId, status, primaryRole)
        VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+       ON DUPLICATE KEY UPDATE
          name = VALUES(name),
          primaryCampusId = VALUES(primaryCampusId),
          primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
          primaryRole = VALUES(primaryRole)`,
-            [String(person.id), person.name, person.campusId, person.districtId, person.status, person.primaryRole ?? person.role]
+      [String(person.id), person.name, person.campusId, person.districtId, normalizeStatus(person.status), person.primaryRole ?? person.role]
     );
   }
 
@@ -87,13 +97,12 @@ async function seed() {
   console.log(`Inserting ${notes.length} notes...`);
   for (const note of notes) {
     await connection.execute(
-      `INSERT INTO notes (id, personId, text, isLeaderOnly)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+      `INSERT INTO notes (id, personId, content)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE
          personId = VALUES(personId),
-         text = VALUES(text),
-         isLeaderOnly = VALUES(isLeaderOnly)`,
-      [note.id, note.personId, note.text, note.isLeaderOnly]
+         content = VALUES(content)`,
+      [note.id, note.personId, note.text]
     );
   }
 
