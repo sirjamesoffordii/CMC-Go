@@ -1375,7 +1375,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             transformOrigin: 'center',
           }}
         >
-          <div
+          <button
+            type="button"
+            aria-label="Open XAN (Chi Alpha National)"
             className="absolute cursor-pointer pointer-events-auto"
             style={{
               left: '12%', // Moved to the left a little
@@ -1406,35 +1408,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             >
               <span className="text-white text-sm font-semibold">XAN</span>
             </div>
-          </div>
-        </div>
-        )}
-        
-        {/* Click layer for XAN button */}
-        {!selectedDistrictId && (
-        <div 
-          className="absolute inset-0 flex items-center justify-center z-45 pointer-events-none"
-          style={{
-            transform: 'scale(1.03) translateX(-20px)',
-            transformOrigin: 'center',
-          }}
-        >
-          <div
-            className="absolute cursor-pointer pointer-events-auto"
-            style={{
-              left: '12%',
-              bottom: '5%',
-              transform: 'translate(-50%, 50%)',
-              width: '3.5vw',
-              height: '3.5vw',
-              minWidth: '40px',
-              minHeight: '40px',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onNationalClick?.();
-            }}
-          />
+          </button>
         </div>
         )}
         

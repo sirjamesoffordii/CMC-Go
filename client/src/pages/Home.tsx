@@ -342,6 +342,16 @@ export default function Home() {
     if (!selectedDistrictId) return null;
     const found = districts.find(d => d.id === selectedDistrictId);
     if (found) return found;
+    // Deliverable 2: XAN (Chi Alpha National) behaves as a first-class district
+    if (selectedDistrictId === "XAN") {
+      return {
+        id: "XAN",
+        name: "Chi Alpha National",
+        region: "NATIONAL",
+        leftNeighbor: null,
+        rightNeighbor: null,
+      };
+    }
     // District not in database yet - create a minimal district object
     // Extract name from ID (e.g., "NorthCarolina" -> "North Carolina")
     const name = selectedDistrictId
@@ -767,8 +777,9 @@ export default function Home() {
                 setNationalPanelOpen(false);
               }}
               onNationalClick={() => {
-                setNationalPanelOpen(true);
-                setSelectedDistrictId(null);
+                // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
+                setSelectedDistrictId("XAN");
+                setNationalPanelOpen(false);
                 setPeoplePanelOpen(false);
               }}
             />
@@ -818,10 +829,11 @@ export default function Home() {
         >
           <button
             onClick={() => setPeoplePanelOpen(true)}
-            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
-            style={{ writingMode: 'vertical-lr', textOrientation: 'mixed' }}
+            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
           >
-            People
+            <span className="inline-block md:-rotate-90 whitespace-nowrap select-none">
+              People
+            </span>
           </button>
         </div>
       )}

@@ -21,7 +21,7 @@ async function checkSchema() {
     console.log("✓ Connected to database\n");
 
     // Check critical tables (matches db-health.ts exactly)
-    const criticalTables = ["districts", "campuses", "people", "needs", "notes", "assignments", "settings"];
+    const criticalTables = ["districts", "campuses", "people", "needs", "notes", "assignments", "settings", "households", "invite_notes", "auth_tokens", "status_changes", "import_runs"];
     
     console.log("📋 Checking tables...\n");
     
@@ -53,15 +53,20 @@ async function checkSchema() {
         // Check for critical columns based on table
         
         // Check critical columns (matches db-health.ts exactly)
-        const criticalColumns = {
-          people: ["personid", "name", "status", "depositpaid", "primarydistrictid", "primaryregion", "primarycampusid", "primaryrole", "nationalcategory", "createdat"],
-          districts: ["id", "name", "region"],
-          campuses: ["id", "name", "districtid"],
-          needs: ["id", "personid", "description", "createdat"],
-          notes: ["id", "personid", "content", "createdat"],
-          assignments: ["id", "personid", "assignmenttype", "roletitle", "isprimary", "createdat"],
-          settings: ["key", "value", "updatedat"],
-        };
+                const criticalColumns = {
+  people: ["personid", "name", "status", "depositpaid", "primarydistrictid", "primaryregion", "primarycampusid", "primaryrole", "nationalcategory", "createdat"],
+  districts: ["id", "name", "region"],
+  campuses: ["id", "name", "districtid"],
+  needs: ["id", "personid", "type", "description", "amount", "visibility", "createdbyid", "isactive", "resolvedat", "createdat"],
+  notes: ["id", "personid", "category", "content", "createdat", "createdby"],
+  assignments: ["id", "personid", "assignmenttype", "roletitle", "campusid", "districtid", "region", "isprimary", "createdat"],
+  settings: ["key", "value", "updatedat"],
+  households: ["id", "label", "childrencount", "guestscount", "createdat", "updatedat"],
+  invite_notes: ["id", "personid", "content", "createdbyuserid", "createdat"],
+  auth_tokens: ["id", "token", "email", "expiresat", "consumedat", "createdat"],
+  status_changes: ["id", "personid", "fromstatus", "tostatus", "changedbyuserid", "changedat", "source", "note", "districtid", "regionid", "campusid"],
+  import_runs: ["id", "filename", "importedbyuserid", "importedat", "createdcount", "updatedcount", "skippedcount", "errorcount", "summaryjson"],
+};
         
         const required = criticalColumns[tableName] || [];
         if (required.length > 0) {
