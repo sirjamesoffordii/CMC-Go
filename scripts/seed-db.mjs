@@ -67,7 +67,7 @@ async function seed() {
     await connection.execute(
       `INSERT INTO people (personId, name, primaryCampusId, primaryDistrictId, status, primaryRole)
        VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+       ON DUPLICATE KEY UPDATE
          name = VALUES(name),
          primaryCampusId = VALUES(primaryCampusId),
          primaryDistrictId = VALUES(primaryDistrictId),
