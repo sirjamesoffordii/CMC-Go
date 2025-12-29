@@ -11,6 +11,7 @@ import AdminConsole from "./pages/AdminConsole";
 import Approvals from "./pages/Approvals";
 import Import from "./pages/Import";
 import Needs from "./pages/Needs";
+import FollowUpView from "./pages/FollowUpView";
 import { useEffect } from "react";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
         }}
       </Route>
       <Route path="/people" component={People} />
+      <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
