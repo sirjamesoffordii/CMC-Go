@@ -33,12 +33,18 @@ function asRows(result: any): any[] {
  */
 const CRITICAL_TABLES = [
   "districts",
-  "campuses", 
+  "campuses",
   "people",
   "needs",
   "notes",
   "assignments",
   "settings",
+  // PR 2/3 tables (included in schema.ts and used by app flows)
+  "households",
+  "invite_notes",
+  "auth_tokens",
+  "status_changes",
+  "import_runs",
 ] as const;
 
 /**
@@ -46,59 +52,128 @@ const CRITICAL_TABLES = [
  * Column names match exactly with drizzle/schema.ts
  */
 const CRITICAL_COLUMNS: Record<string, string[]> = {
-  // people table - matches schema.ts exactly
   people: [
-    "personId",        // varchar(64), not null, unique
-    "name",            // varchar(255), not null
-    "status",          // enum, not null, default "Not Invited"
-    "depositPaid",     // boolean, not null, default false
-    "primaryDistrictId", // varchar(64), nullable
-    "primaryRegion",   // varchar(255), nullable
-    "primaryCampusId", // int, nullable
-    "primaryRole",     // varchar(255), nullable
-    "nationalCategory", // varchar(255), nullable
-    "createdAt",       // timestamp, not null, defaultNow
+    "id",
+    "personId",
+    "name",
+    "primaryRole",
+    "primaryCampusId",
+    "primaryDistrictId",
+    "primaryRegion",
+    "nationalCategory",
+    "status",
+    "depositPaid",
+    "statusLastUpdated",
+    "statusLastUpdatedBy",
+    "householdId",
+    "householdRole",
+    "needs",
+    "notes",
+    "spouse",
+    "kids",
+    "guests",
+    "spouseAttending",
+    "childrenCount",
+    "guestsCount",
+    "childrenAges",
+    "lastEdited",
+    "lastEditedBy",
+    "createdAt",
   ],
-  // districts table - matches schema.ts exactly
   districts: [
-    "id",              // varchar(64), primary key
-    "name",            // varchar(255), not null
-    "region",          // varchar(255), not null
+    "id",
+    "name",
+    "region",
+    "leftNeighbor",
+    "rightNeighbor",
   ],
-  // campuses table - matches schema.ts exactly
   campuses: [
-    "id",              // int, primary key, autoincrement
-    "name",            // varchar(255), not null
-    "districtId",      // varchar(64), not null
+    "id",
+    "name",
+    "districtId",
   ],
-  // needs table - matches schema.ts exactly
+  households: [
+    "id",
+    "label",
+    "childrenCount",
+    "guestsCount",
+    "createdAt",
+    "updatedAt",
+  ],
   needs: [
-    "id",              // int, primary key, autoincrement
-    "personId",        // varchar(64), not null
-    "description",     // text, not null
-    "createdAt",       // timestamp, not null, defaultNow
+    "id",
+    "personId",
+    "type",
+    "description",
+    "amount",
+    "visibility",
+    "createdById",
+    "isActive",
+    "resolvedAt",
+    "createdAt",
   ],
-  // notes table - matches schema.ts exactly
   notes: [
-    "id",              // int, primary key, autoincrement
-    "personId",        // varchar(64), not null
-    "content",         // text, not null
-    "createdAt",       // timestamp, not null, defaultNow
+    "id",
+    "personId",
+    "category",
+    "content",
+    "createdAt",
+    "createdBy",
   ],
-  // assignments table - matches schema.ts exactly
+  invite_notes: [
+    "id",
+    "personId",
+    "content",
+    "createdByUserId",
+    "createdAt",
+  ],
   assignments: [
-    "id",              // int, primary key, autoincrement
-    "personId",        // varchar(64), not null
-    "assignmentType",  // enum, not null
-    "roleTitle",       // varchar(255), not null
-    "isPrimary",       // boolean, not null, default false
-    "createdAt",       // timestamp, not null, defaultNow
+    "id",
+    "personId",
+    "assignmentType",
+    "roleTitle",
+    "campusId",
+    "districtId",
+    "region",
+    "isPrimary",
+    "createdAt",
   ],
-  // settings table - matches schema.ts exactly
   settings: [
-    "key",             // varchar(255), primary key
-    "value",           // text, nullable
-    "updatedAt",       // timestamp, not null, defaultNow, onUpdateNow
+    "key",
+    "value",
+    "updatedAt",
+  ],
+  auth_tokens: [
+    "id",
+    "token",
+    "email",
+    "expiresAt",
+    "consumedAt",
+    "createdAt",
+  ],
+  status_changes: [
+    "id",
+    "personId",
+    "fromStatus",
+    "toStatus",
+    "changedByUserId",
+    "changedAt",
+    "source",
+    "note",
+    "districtId",
+    "regionId",
+    "campusId",
+  ],
+  import_runs: [
+    "id",
+    "fileName",
+    "importedByUserId",
+    "importedAt",
+    "createdCount",
+    "updatedCount",
+    "skippedCount",
+    "errorCount",
+    "summaryJson",
   ],
 };
 
