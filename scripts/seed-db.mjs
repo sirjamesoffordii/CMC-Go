@@ -62,9 +62,8 @@ async function seed() {
          primaryCampusId = VALUES(primaryCampusId),
          primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
-         role = VALUES(role),
-         lastUpdated = VALUES(lastUpdated)`,
-      [person.id, person.name, person.campusId, person.districtId, person.status, person.role, person.lastUpdated]
+         primaryRole = VALUES(primaryRole)`,
+      [person.id, person.name, person.campusId, person.districtId, person.status, person.role]
     );
   }
 
