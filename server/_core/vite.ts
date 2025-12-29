@@ -3,8 +3,12 @@ import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
+import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -50,7 +54,7 @@ export async function setupVite(app: Express, server: Server) {
 export function serveStatic(app: Express) {
   // In production, static files are in dist/public (built by Vite)
   // In development, this function shouldn't be called (setupVite is used instead)
-  const distPath = path.resolve(import.meta.dirname, "../..", "dist", "public");
+  const distPath = path.resolve(__dirname, "../..", "dist", "public");
   
   if (!fs.existsSync(distPath)) {
     console.error(

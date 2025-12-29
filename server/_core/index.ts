@@ -71,6 +71,14 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
+
+  const isDevelopment = process.env.NODE_ENV === "development";
+
+  // Trust proxy for Railway deployment (required for rate limiter to work correctly)
+  if (!isDevelopment) {
+    app.set("trust proxy", 1);
+  }
+
   // -------------------------------------------------------------------------
   // Security & middleware configuration
   //
