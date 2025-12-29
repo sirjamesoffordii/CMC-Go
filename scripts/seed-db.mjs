@@ -80,7 +80,7 @@ async function seed() {
          amount = VALUES(amount),
          description = VALUES(description),
          isActive = VALUES(isActive)`,
-      [need.id, need.personId, need.type, need.amount ?? null, need.description ?? null, need.isActive]
+      [need.id, need.personId, need.type, need.amount ?? null, (need.notes ?? need.description ?? ""), need.isActive]
     );
   }
 
