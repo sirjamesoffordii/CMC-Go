@@ -72,15 +72,15 @@ async function seed() {
   console.log(`Inserting ${needs.length} needs...`);
   for (const need of needs) {
     await connection.execute(
-      `INSERT INTO needs (id, personId, type, amount, notes, isActive)
+      `INSERT INTO needs (id, personId, type, amount, description, isActive)
        VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+       ON DUPLICATE KEY UPDATE
          personId = VALUES(personId),
          type = VALUES(type),
          amount = VALUES(amount),
-         notes = VALUES(notes),
+         description = VALUES(description),
          isActive = VALUES(isActive)`,
-      [need.id, need.personId, need.type, need.amount ?? null, need.notes ?? null, need.isActive]
+      [need.id, need.personId, need.type, need.amount ?? null, need.description ?? null, need.isActive]
     );
   }
 
