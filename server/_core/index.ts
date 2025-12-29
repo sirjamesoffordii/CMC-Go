@@ -57,6 +57,14 @@ async function startServer() {
 
   const app = express();
   const server = createServer(app);
+
+  const isDevelopment = process.env.NODE_ENV === "development";
+
+  // Trust proxy for Railway deployment (required for rate limiter to work correctly)
+  if (!isDevelopment) {
+    app.set("trust proxy", 1);
+  }
+
   // -------------------------------------------------------------------------
   // Security & middleware configuration
   //
@@ -65,7 +73,6 @@ async function startServer() {
   // minute window. Adjust these numbers based on expected traffic patterns.
   // In development, use a much higher limit to avoid blocking Vite HMR and
   // asset requests.
-  const isDevelopment = process.env.NODE_ENV === "development";
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: isDevelopment ? 10000 : 100, // Much higher limit in dev for Vite HMR
