@@ -75,6 +75,10 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   corsOrigin: process.env.CORS_ORIGIN ?? "",
+  // Dev-only: bypass auth requirements in local development when set
+  devBypassAuth:
+    (process.env.VITE_DEV_BYPASS_AUTH ?? process.env.DEV_BYPASS_AUTH ?? "").toLowerCase() === "true" &&
+    process.env.NODE_ENV === "development",
 };
 
 /**
@@ -82,14 +86,14 @@ export const ENV = {
  * Throws an error if any required variables are missing.
  */
 export function validateEnv() {
-  const required = [
-    { key: 'DATABASE_URL', value: ENV.DATABASE_URL },
-  ];
-  
-  const missing = required.filter(({ value }) => !value);
-  
-  if (missing.length > 0) {
-    const missingKeys = missing.map(({ key }) => key).join(', ');
-    throw new Error(`Missing required environment variables: ${missingKeys}`);
+  // In production we require DB connectivity at startup.
+  // In development, we allow starting without DB/auth so UI work isn't blocked.
+  const requiredInProd = [{ key: "DATABASE_URL", value: ENV.DATABASE_URL }];
+  if (ENV.isProduction) {
+    const missing = requiredInProd.filter(({ value }) => !value);
+    if (missing.length > 0) {
+      const missingKeys = missing.map(({ key }) => key).join(", ");
+      throw new Error(`Missing required environment variables: ${missingKeys}`);
+    }
   }
 }

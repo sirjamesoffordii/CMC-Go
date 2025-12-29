@@ -1,4 +1,4 @@
--- Script to populate SQLite database with districts, campuses, and people
+-- Script to populate  database with districts, campuses, and people
 -- This script clears existing data and repopulates from seed files
 
 BEGIN TRANSACTION;
