@@ -97,13 +97,12 @@ async function seed() {
   console.log(`Inserting ${notes.length} notes...`);
   for (const note of notes) {
     await connection.execute(
-      `INSERT INTO notes (id, personId, text, isLeaderOnly)
-       VALUES (?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
+      `INSERT INTO notes (id, personId, content)
+       VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE
          personId = VALUES(personId),
-         text = VALUES(text),
-         isLeaderOnly = VALUES(isLeaderOnly)`,
-      [note.id, note.personId, note.text, note.isLeaderOnly]
+         content = VALUES(content)`,
+      [note.id, note.personId, note.text]
     );
   }
 
