@@ -4,7 +4,7 @@
     "name": "Jordan Garcia",
     "campusId": 94,
     "districtId": "SouthTexas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -40,7 +40,7 @@
     "name": "Jesse Wilson",
     "campusId": 61,
     "districtId": "Vermont",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -94,7 +94,7 @@
     "name": "Jesse Brown",
     "campusId": 67,
     "districtId": "Oregon",
-    "status": "Going",
+    "status": "Yes",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -103,7 +103,7 @@
     "name": "Alex Gonzalez",
     "campusId": 27,
     "districtId": "Iowa",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -112,7 +112,7 @@
     "name": "Skyler Martin",
     "campusId": 75,
     "districtId": "Oklahoma",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -121,7 +121,7 @@
     "name": "Rowan Taylor",
     "campusId": 100,
     "districtId": "Hawaii",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -130,7 +130,7 @@
     "name": "Kai Gonzalez",
     "campusId": 8,
     "districtId": "Utah",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -139,7 +139,7 @@
     "name": "Jesse Thomas",
     "campusId": 81,
     "districtId": "Georgia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -175,7 +175,7 @@
     "name": "Hayden Moore",
     "campusId": 64,
     "districtId": "Alaska",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -184,7 +184,7 @@
     "name": "Blake Rodriguez",
     "campusId": 85,
     "districtId": "SouthCarolina",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -193,7 +193,7 @@
     "name": "Morgan Gonzalez",
     "campusId": 104,
     "districtId": "NorthCalifornia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -202,7 +202,7 @@
     "name": "Rowan Gonzalez",
     "campusId": 105,
     "districtId": "SouthCalifornia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -220,7 +220,7 @@
     "name": "Avery Martin",
     "campusId": 45,
     "districtId": "WestVirginia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -229,7 +229,7 @@
     "name": "Logan Garcia",
     "campusId": 45,
     "districtId": "WestVirginia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -238,7 +238,7 @@
     "name": "Rowan Jones",
     "campusId": 20,
     "districtId": "Minnesota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -247,7 +247,7 @@
     "name": "Riley Hernandez",
     "campusId": 83,
     "districtId": "Mississippi",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -256,7 +256,7 @@
     "name": "Rowan Rodriguez",
     "campusId": 47,
     "districtId": "Connecticut",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -274,7 +274,7 @@
     "name": "Casey Smith",
     "campusId": 79,
     "districtId": "Florida",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -283,7 +283,7 @@
     "name": "Skyler Moore",
     "campusId": 61,
     "districtId": "Vermont",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -319,7 +319,7 @@
     "name": "Avery Wilson",
     "campusId": 35,
     "districtId": "SouthernMissouri",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -328,7 +328,7 @@
     "name": "Avery Martinez",
     "campusId": 27,
     "districtId": "Iowa",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -337,7 +337,7 @@
     "name": "Avery Martinez",
     "campusId": 35,
     "districtId": "SouthernMissouri",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -355,7 +355,7 @@
     "name": "Casey Johnson",
     "campusId": 43,
     "districtId": "Tennessee",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -382,7 +382,7 @@
     "name": "Sam Hernandez",
     "campusId": 14,
     "districtId": "Indiana",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -391,7 +391,7 @@
     "name": "Blake Jackson",
     "campusId": 102,
     "districtId": "Nevada",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -409,7 +409,7 @@
     "name": "Alex Garcia",
     "campusId": 53,
     "districtId": "NewHampshire",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -418,7 +418,7 @@
     "name": "Casey Jones",
     "campusId": 70,
     "districtId": "Washington",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -436,7 +436,7 @@
     "name": "Avery Martinez",
     "campusId": 32,
     "districtId": "Nebraska",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -472,7 +472,7 @@
     "name": "Kai Lopez",
     "campusId": 17,
     "districtId": "Ohio",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -481,7 +481,7 @@
     "name": "Drew Lopez",
     "campusId": 5,
     "districtId": "SouthIdaho",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -499,7 +499,7 @@
     "name": "Logan Wilson",
     "campusId": 73,
     "districtId": "Louisiana",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -508,7 +508,7 @@
     "name": "Blake Wilson",
     "campusId": 2,
     "districtId": "Colorado",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -517,7 +517,7 @@
     "name": "Taylor Brown",
     "campusId": 88,
     "districtId": "WestFlorida",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -526,7 +526,7 @@
     "name": "Taylor Wilson",
     "campusId": 3,
     "districtId": "Montana",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -535,7 +535,7 @@
     "name": "Logan Martinez",
     "campusId": 23,
     "districtId": "SouthDakota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -544,7 +544,7 @@
     "name": "Rowan Moore",
     "campusId": 98,
     "districtId": "Arizona",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -562,7 +562,7 @@
     "name": "Drew Rodriguez",
     "campusId": 5,
     "districtId": "SouthIdaho",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -571,7 +571,7 @@
     "name": "Alex Moore",
     "campusId": 3,
     "districtId": "Montana",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -589,7 +589,7 @@
     "name": "Cameron Jones",
     "campusId": 5,
     "districtId": "SouthIdaho",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -607,7 +607,7 @@
     "name": "Avery Hernandez",
     "campusId": 20,
     "districtId": "Minnesota",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -616,7 +616,7 @@
     "name": "Skyler Miller",
     "campusId": 33,
     "districtId": "NorthernMissouri",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -643,7 +643,7 @@
     "name": "Riley Wilson",
     "campusId": 27,
     "districtId": "Iowa",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -652,7 +652,7 @@
     "name": "Drew Jones",
     "campusId": 92,
     "districtId": "NorthTexas",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -670,7 +670,7 @@
     "name": "Cameron Jackson",
     "campusId": 75,
     "districtId": "Oklahoma",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -697,7 +697,7 @@
     "name": "Taylor Taylor",
     "campusId": 58,
     "districtId": "NewYork",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -706,7 +706,7 @@
     "name": "Drew Johnson",
     "campusId": 69,
     "districtId": "Washington",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -733,7 +733,7 @@
     "name": "Rowan Miller",
     "campusId": 106,
     "districtId": "SouthCalifornia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -742,7 +742,7 @@
     "name": "Blake Jones",
     "campusId": 31,
     "districtId": "Nebraska",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -751,7 +751,7 @@
     "name": "Cameron Anderson",
     "campusId": 72,
     "districtId": "Arkansas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -760,7 +760,7 @@
     "name": "Rowan Jackson",
     "campusId": 63,
     "districtId": "Alaska",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -769,7 +769,7 @@
     "name": "Morgan Brown",
     "campusId": 40,
     "districtId": "Virginia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -778,7 +778,7 @@
     "name": "Parker Jones",
     "campusId": 78,
     "districtId": "Alabama",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -787,7 +787,7 @@
     "name": "Cameron Williams",
     "campusId": 64,
     "districtId": "Alaska",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -805,7 +805,7 @@
     "name": "Jordan Martin",
     "campusId": 102,
     "districtId": "Nevada",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -814,7 +814,7 @@
     "name": "Skyler Miller",
     "campusId": 85,
     "districtId": "SouthCarolina",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -832,7 +832,7 @@
     "name": "Skyler Rodriguez",
     "campusId": 105,
     "districtId": "SouthCalifornia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -841,7 +841,7 @@
     "name": "Hayden Anderson",
     "campusId": 38,
     "districtId": "NorthCarolina",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -850,7 +850,7 @@
     "name": "Taylor Johnson",
     "campusId": 14,
     "districtId": "Indiana",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -868,7 +868,7 @@
     "name": "Riley Anderson",
     "campusId": 87,
     "districtId": "WestFlorida",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -877,7 +877,7 @@
     "name": "Sam Anderson",
     "campusId": 38,
     "districtId": "NorthCarolina",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -886,7 +886,7 @@
     "name": "Parker Johnson",
     "campusId": 27,
     "districtId": "Iowa",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -913,7 +913,7 @@
     "name": "Riley Taylor",
     "campusId": 35,
     "districtId": "SouthernMissouri",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -922,7 +922,7 @@
     "name": "Rowan Brown",
     "campusId": 75,
     "districtId": "Oklahoma",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -940,7 +940,7 @@
     "name": "Drew Lopez",
     "campusId": 85,
     "districtId": "SouthCarolina",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -949,7 +949,7 @@
     "name": "Reese Williams",
     "campusId": 101,
     "districtId": "Nevada",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -967,7 +967,7 @@
     "name": "Alex Rodriguez",
     "campusId": 19,
     "districtId": "Minnesota",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -985,7 +985,7 @@
     "name": "Cameron Taylor",
     "campusId": 75,
     "districtId": "Oklahoma",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -994,7 +994,7 @@
     "name": "Riley Williams",
     "campusId": 27,
     "districtId": "Iowa",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1003,7 +1003,7 @@
     "name": "Jordan Johnson",
     "campusId": 11,
     "districtId": "Illinois",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1012,7 +1012,7 @@
     "name": "Skyler Miller",
     "campusId": 79,
     "districtId": "Florida",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1021,7 +1021,7 @@
     "name": "Cameron Thomas",
     "campusId": 20,
     "districtId": "Minnesota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1030,7 +1030,7 @@
     "name": "Parker Taylor",
     "campusId": 38,
     "districtId": "NorthCarolina",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1048,7 +1048,7 @@
     "name": "Cameron Thomas",
     "campusId": 45,
     "districtId": "WestVirginia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1075,7 +1075,7 @@
     "name": "Casey Miller",
     "campusId": 66,
     "districtId": "NorthIdaho",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1102,7 +1102,7 @@
     "name": "Logan Smith",
     "campusId": 98,
     "districtId": "Arizona",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1120,7 +1120,7 @@
     "name": "Casey Williams",
     "campusId": 70,
     "districtId": "Washington",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1129,7 +1129,7 @@
     "name": "Taylor Johnson",
     "campusId": 46,
     "districtId": "WestVirginia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1147,7 +1147,7 @@
     "name": "Logan Johnson",
     "campusId": 75,
     "districtId": "Oklahoma",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1156,7 +1156,7 @@
     "name": "Parker Davis",
     "campusId": 34,
     "districtId": "NorthernMissouri",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1183,7 +1183,7 @@
     "name": "Sam Martin",
     "campusId": 83,
     "districtId": "Mississippi",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1201,7 +1201,7 @@
     "name": "Jordan Anderson",
     "campusId": 55,
     "districtId": "NewJersey",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1210,7 +1210,7 @@
     "name": "Morgan Thomas",
     "campusId": 60,
     "districtId": "Pennsylvania",
-    "status": "Going",
+    "status": "Yes",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1219,7 +1219,7 @@
     "name": "Sam Gonzalez",
     "campusId": 23,
     "districtId": "SouthDakota",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1228,7 +1228,7 @@
     "name": "Taylor Moore",
     "campusId": 65,
     "districtId": "NorthIdaho",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1237,7 +1237,7 @@
     "name": "Reese Johnson",
     "campusId": 105,
     "districtId": "SouthCalifornia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1246,7 +1246,7 @@
     "name": "Blake Hernandez",
     "campusId": 50,
     "districtId": "Maine",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1255,7 +1255,7 @@
     "name": "Sam Thomas",
     "campusId": 100,
     "districtId": "Hawaii",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1264,7 +1264,7 @@
     "name": "Skyler Rodriguez",
     "campusId": 12,
     "districtId": "Illinois",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1273,7 +1273,7 @@
     "name": "Alex Wilson",
     "campusId": 28,
     "districtId": "Iowa",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1282,7 +1282,7 @@
     "name": "Casey Anderson",
     "campusId": 8,
     "districtId": "Utah",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1291,7 +1291,7 @@
     "name": "Rowan Miller",
     "campusId": 72,
     "districtId": "Arkansas",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1300,7 +1300,7 @@
     "name": "Hayden Garcia",
     "campusId": 49,
     "districtId": "Maine",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1309,7 +1309,7 @@
     "name": "Blake Thomas",
     "campusId": 43,
     "districtId": "Tennessee",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1318,7 +1318,7 @@
     "name": "Rowan Miller",
     "campusId": 24,
     "districtId": "SouthDakota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1327,7 +1327,7 @@
     "name": "Kai Hernandez",
     "campusId": 105,
     "districtId": "SouthCalifornia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1336,7 +1336,7 @@
     "name": "Avery Moore",
     "campusId": 76,
     "districtId": "Oklahoma",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1345,7 +1345,7 @@
     "name": "Alex Jackson",
     "campusId": 12,
     "districtId": "Illinois",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1354,7 +1354,7 @@
     "name": "Riley Taylor",
     "campusId": 49,
     "districtId": "Maine",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1372,7 +1372,7 @@
     "name": "Cameron Martinez",
     "campusId": 18,
     "districtId": "Ohio",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1381,7 +1381,7 @@
     "name": "Riley Taylor",
     "campusId": 11,
     "districtId": "Illinois",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1408,7 +1408,7 @@
     "name": "Rowan Williams",
     "campusId": 78,
     "districtId": "Alabama",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1417,7 +1417,7 @@
     "name": "Drew Gonzalez",
     "campusId": 91,
     "districtId": "NorthTexas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1426,7 +1426,7 @@
     "name": "Taylor Moore",
     "campusId": 104,
     "districtId": "NorthCalifornia",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1435,7 +1435,7 @@
     "name": "Casey Williams",
     "campusId": 37,
     "districtId": "NorthCarolina",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1453,7 +1453,7 @@
     "name": "Hayden Moore",
     "campusId": 20,
     "districtId": "Minnesota",
-    "status": "Not Going",
+    "status": "No",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1462,7 +1462,7 @@
     "name": "Rowan Brown",
     "campusId": 65,
     "districtId": "NorthIdaho",
-    "status": "Going",
+    "status": "Yes",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1471,7 +1471,7 @@
     "name": "Riley Thomas",
     "campusId": 86,
     "districtId": "SouthCarolina",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1489,7 +1489,7 @@
     "name": "Blake Wilson",
     "campusId": 38,
     "districtId": "NorthCarolina",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1498,7 +1498,7 @@
     "name": "Casey Garcia",
     "campusId": 36,
     "districtId": "SouthernMissouri",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1516,7 +1516,7 @@
     "name": "Alex Garcia",
     "campusId": 29,
     "districtId": "Kansas",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1525,7 +1525,7 @@
     "name": "Hayden Jones",
     "campusId": 13,
     "districtId": "Indiana",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1543,7 +1543,7 @@
     "name": "Drew Davis",
     "campusId": 102,
     "districtId": "Nevada",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1552,7 +1552,7 @@
     "name": "Kai Lopez",
     "campusId": 62,
     "districtId": "Vermont",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1561,7 +1561,7 @@
     "name": "Casey Martinez",
     "campusId": 29,
     "districtId": "Kansas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1570,7 +1570,7 @@
     "name": "Morgan Garcia",
     "campusId": 84,
     "districtId": "Mississippi",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1579,7 +1579,7 @@
     "name": "Morgan Davis",
     "campusId": 32,
     "districtId": "Nebraska",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1588,7 +1588,7 @@
     "name": "Logan Thomas",
     "campusId": 10,
     "districtId": "Wyoming",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1606,7 +1606,7 @@
     "name": "Riley Gonzalez",
     "campusId": 56,
     "districtId": "NewJersey",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1615,7 +1615,7 @@
     "name": "Rowan Smith",
     "campusId": 35,
     "districtId": "SouthernMissouri",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1624,7 +1624,7 @@
     "name": "Morgan Jones",
     "campusId": 20,
     "districtId": "Minnesota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1633,7 +1633,7 @@
     "name": "Reese Hernandez",
     "campusId": 15,
     "districtId": "Michigan",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1642,7 +1642,7 @@
     "name": "Taylor Gonzalez",
     "campusId": 58,
     "districtId": "NewYork",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1660,7 +1660,7 @@
     "name": "Riley Wilson",
     "campusId": 91,
     "districtId": "NorthTexas",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1678,7 +1678,7 @@
     "name": "Parker Smith",
     "campusId": 29,
     "districtId": "Kansas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1687,7 +1687,7 @@
     "name": "Sam Martin",
     "campusId": 9,
     "districtId": "Wyoming",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1696,7 +1696,7 @@
     "name": "Jesse Brown",
     "campusId": 57,
     "districtId": "NewYork",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1705,7 +1705,7 @@
     "name": "Skyler Williams",
     "campusId": 52,
     "districtId": "Massachusetts",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1732,7 +1732,7 @@
     "name": "Jordan Lopez",
     "campusId": 55,
     "districtId": "NewJersey",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1750,7 +1750,7 @@
     "name": "Logan Miller",
     "campusId": 54,
     "districtId": "NewHampshire",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1786,7 +1786,7 @@
     "name": "Blake Lopez",
     "campusId": 31,
     "districtId": "Nebraska",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1795,7 +1795,7 @@
     "name": "Cameron Moore",
     "campusId": 85,
     "districtId": "SouthCarolina",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1804,7 +1804,7 @@
     "name": "Morgan Anderson",
     "campusId": 72,
     "districtId": "Arkansas",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1813,7 +1813,7 @@
     "name": "Reese Martinez",
     "campusId": 96,
     "districtId": "WestTexas",
-    "status": "Not Going",
+    "status": "No",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1831,7 +1831,7 @@
     "name": "Morgan Martin",
     "campusId": 60,
     "districtId": "Pennsylvania",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1867,7 +1867,7 @@
     "name": "Quinn Anderson",
     "campusId": 36,
     "districtId": "SouthernMissouri",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1876,7 +1876,7 @@
     "name": "Sam Lopez",
     "campusId": 28,
     "districtId": "Iowa",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1885,7 +1885,7 @@
     "name": "Skyler Taylor",
     "campusId": 26,
     "districtId": "Wisconsin",
-    "status": "Not Going",
+    "status": "No",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1894,7 +1894,7 @@
     "name": "Casey Davis",
     "campusId": 2,
     "districtId": "Colorado",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1930,7 +1930,7 @@
     "name": "Morgan Martinez",
     "campusId": 40,
     "districtId": "Virginia",
-    "status": "Not Going",
+    "status": "No",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1939,7 +1939,7 @@
     "name": "Rowan Martin",
     "campusId": 2,
     "districtId": "Colorado",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1948,7 +1948,7 @@
     "name": "Parker Moore",
     "campusId": 79,
     "districtId": "Florida",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1957,7 +1957,7 @@
     "name": "Jesse Taylor",
     "campusId": 45,
     "districtId": "WestVirginia",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1966,7 +1966,7 @@
     "name": "Quinn Hernandez",
     "campusId": 28,
     "districtId": "Iowa",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -1993,7 +1993,7 @@
     "name": "Sam Gonzalez",
     "campusId": 54,
     "districtId": "NewHampshire",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2020,7 +2020,7 @@
     "name": "Avery Garcia",
     "campusId": 99,
     "districtId": "Hawaii",
-    "status": "Going",
+    "status": "Yes",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2029,7 +2029,7 @@
     "name": "Blake Rodriguez",
     "campusId": 26,
     "districtId": "Wisconsin",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2038,7 +2038,7 @@
     "name": "Parker Hernandez",
     "campusId": 91,
     "districtId": "NorthTexas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2065,7 +2065,7 @@
     "name": "Sam Johnson",
     "campusId": 64,
     "districtId": "Alaska",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2074,7 +2074,7 @@
     "name": "Skyler Rodriguez",
     "campusId": 101,
     "districtId": "Nevada",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2083,7 +2083,7 @@
     "name": "Hayden Johnson",
     "campusId": 1,
     "districtId": "Colorado",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2101,7 +2101,7 @@
     "name": "Parker Wilson",
     "campusId": 61,
     "districtId": "Vermont",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2110,7 +2110,7 @@
     "name": "Taylor Hernandez",
     "campusId": 76,
     "districtId": "Oklahoma",
-    "status": "Not invited yet",
+    "status": "Not Invited",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2119,7 +2119,7 @@
     "name": "Skyler Davis",
     "campusId": 19,
     "districtId": "Minnesota",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2128,7 +2128,7 @@
     "name": "Skyler Brown",
     "campusId": 93,
     "districtId": "SouthTexas",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2137,7 +2137,7 @@
     "name": "Parker Johnson",
     "campusId": 101,
     "districtId": "Nevada",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   },
@@ -2155,7 +2155,7 @@
     "name": "Sam Jackson",
     "campusId": 1,
     "districtId": "Colorado",
-    "status": "Going",
+    "status": "Yes",
     "role": "Student",
     "lastUpdated": "2025-12-13 23:18:11"
   }
