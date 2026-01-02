@@ -32,7 +32,6 @@ export default function Needs() {
       person,
       campus,
     };
-  }).filter(item => item.person); // Only show needs for people we can see
 
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
@@ -100,6 +99,10 @@ export default function Needs() {
       ) : (
         <div className="grid gap-4">
           {enrichedNeeds.map((item) => (
+                          // Warn if person data is missing (helps diagnose sync issues)
+                          if (!item.person) {
+                                              console.warn(`Need ${item.need.id} has missing person data for personId: ${item.need.personId}`);
+                          }
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
@@ -108,8 +111,7 @@ export default function Needs() {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
-                        <span className="font-semibold text-lg">{item.person?.name}</span>
-                      </div>
+                            <span className="font-semibold text-lg">{item.person?.name || `Unknown person (ID: ${item.need.personId})`}</span>                      </div>
                       {item.campus && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
                           <MapPin className="h-3 w-3" />
