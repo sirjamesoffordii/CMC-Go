@@ -98,11 +98,12 @@ export default function Needs() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {enrichedNeeds.map((item) => (
-                          // Warn if person data is missing (helps diagnose sync issues)
+          {enrichedNeeds.map((item) => {                          // Warn if person data is missing (helps diagnose sync issues)
                           if (!item.person) {
                                               console.warn(`Need ${item.need.id} has missing person data for personId: ${item.need.personId}`);
                           }
+                      
+            return (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
@@ -178,7 +179,8 @@ export default function Needs() {
           ))}
         </div>
       )}
-    </div>
-  );
+            </Card>
+            );
+          })}  );
 }
 
