@@ -18,7 +18,7 @@ const requireUser = t.middleware(async opts => {
   // This guardrail is enforced in env.ts and cannot be overridden in production
   
   // Dev-only bypass injection: provide minimal user to prevent ctx.user dereference crashes
-  if (!ctx.user && ENV.devBypassAuth});
+  if (!ctx.user && ENV.devBypassAuth) {
     ctx.user = { id: "dev", role: "ADMIN" } as any;
   }
 
