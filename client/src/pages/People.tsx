@@ -18,17 +18,38 @@ export default function People() {
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  
+
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
+
+  // Initialize filter state from URL query parameters
+  const getInitialFiltersFromURL = () => {
+    const params = new URLSearchParams(window.location.search);
+    const statusParam = params.get('status');
+    const searchParam = params.get('search');
+    const myCampusParam = params.get('myCampus');
+    const needTypeParam = params.get('needType');
+    const hasNeedsParam = params.get('hasNeeds');
+
+    return {
+      statusFilter: statusParam ? new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">) : new Set<"Yes" | "Maybe" | "No" | "Not Invited">(),
+      searchQuery: searchParam || "",
+      myCampusOnly: myCampusParam === 'true',
+      needTypeFilter: (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All',
+      hasActiveNeeds: hasNeedsParam === 'true',
+    };
+  };
+
+  const initialFilters = getInitialFiltersFromURL();
+
   // Filter state
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(initialFilters.statusFilter);
+  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [myCampusOnly, setMyCampusOnly] = useState(false);
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
+  const [myCampusOnly, setMyCampusOnly] = useState(initialFilters.myCampusOnly);
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>>(initialFilters.needTypeFilter);
+  const [hasActiveNeeds, setHasActiveNeeds] = useState(initialFilters.hasActiveNeeds);
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -222,6 +243,41 @@ export default function People() {
     // TODO: Implement campus sorting
     console.log(`Sort campus ${campusId} by ${sortBy}`);
   };
+
+  // Sync filter state to URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    // Add status filter if not empty
+    if (statusFilter.size > 0) {
+      params.set('status', Array.from(statusFilter).join(','));
+    }
+
+    // Add search query if not empty
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery);
+    }
+
+    // Add myCampusOnly if true
+    if (myCampusOnly) {
+      params.set('myCampus', 'true');
+    }
+
+    // Add needTypeFilter if not 'All'
+    if (needTypeFilter !== 'All') {
+      params.set('needType', needTypeFilter);
+    }
+
+    // Add hasActiveNeeds if true
+    if (hasActiveNeeds) {
+      params.set('hasNeeds', 'true');
+    }
+
+    // Update URL without triggering navigation
+    const newSearch = params.toString();
+    const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }, [statusFilter, searchQuery, myCampusOnly, needTypeFilter, hasActiveNeeds]);
 
   useEffect(() => {
     if (!searchOpen) return;
