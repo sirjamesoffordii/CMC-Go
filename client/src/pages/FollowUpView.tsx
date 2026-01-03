@@ -20,6 +20,9 @@ export default function FollowUpView() {
   const { data: allDistricts = [] } = trpc.districts.list.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
 
+  // Active Need Definition:
+  // - A need with isActive === true (unresolved/unmet)
+  // - Resolved needs (isActive === false) are excluded from counts
   // Map needs by personId
   const needsByPersonId = useMemo(() => {
     const map = new Map<string, number>();
