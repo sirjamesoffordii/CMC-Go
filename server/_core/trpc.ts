@@ -16,7 +16,13 @@ const requireUser = t.middleware(async opts => {
 
   // Dev-only bypass: ENV.devBypassAuth is only true when NODE_ENV === 'development'
   // This guardrail is enforced in env.ts and cannot be overridden in production
-  if (!ctx.user && !ENV.devBypassAuth) {
+  
+  // Dev-only bypass injection: provide minimal user to prevent ctx.user dereference crashes
+  if (!ctx.user && ENV.devBypassAuth});
+    ctx.user = { id: "dev", role: "ADMIN" } as any;
+  }
+
+  if (!ctx.user) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
