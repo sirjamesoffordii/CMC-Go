@@ -29,6 +29,7 @@ export default function People() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [myCampusOnly, setMyCampusOnly] = useState(false);
   const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
+  const [hasActiveNeeds, setHasActiveNeeds] = useState(false);
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -105,13 +106,21 @@ export default function People() {
       });
     }
 
+    // Has active needs filter
+    if (hasActiveNeeds) {
+      filtered = filtered.filter(p => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        return needs.length > 0;
+      });
+    }
+
     // My campus filter
     if (myCampusOnly && user?.campusId) {
       filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
     }
-    
+
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, needsByPersonId]);
+  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
   
   // Group people by district and campus
   const districtsWithData = useMemo(() => {
@@ -347,6 +356,23 @@ export default function People() {
               })}
             </div>
             
+            {/* Needs Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-600 font-medium">Needs:</span>
+              <button
+                onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
+                className={`
+                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                  ${hasActiveNeeds
+                    ? "bg-orange-100 text-orange-700 border-2 border-orange-300"
+                    : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                  }
+                `}
+              >
+                Has active needs
+              </button>
+            </div>
+
             {/* Need Type Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Need Type:</span>
@@ -362,7 +388,7 @@ export default function People() {
                 <option value="Other">Other</option>
               </select>
             </div>
-            
+
             {/* My Campus Filter */}
             {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
               <div className="flex items-center gap-2">
