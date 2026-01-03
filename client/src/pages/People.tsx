@@ -113,8 +113,8 @@ export default function People() {
     return filtered;
   }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, needsByPersonId]);
   
-  // Group people by district and campus
-  const districtsWithData = useMemo(() => {
+  // Group people by district and campus, then group districts by region
+  const regionsWithDistricts = useMemo(() => {
     const districtMap = new Map<string, {
       district: District;
       campuses: Map<number, {
@@ -123,7 +123,7 @@ export default function People() {
       }>;
       unassigned: Person[];
     }>();
-    
+
     // Initialize districts
     allDistricts.forEach(district => {
       districtMap.set(district.id, {
@@ -132,15 +132,15 @@ export default function People() {
         unassigned: [],
       });
     });
-    
+
     // Group people
     filteredPeople.forEach(person => {
       const districtId = person.primaryDistrictId;
       if (!districtId) return;
-      
+
       const districtData = districtMap.get(districtId);
       if (!districtData) return;
-      
+
       const campusId = person.primaryCampusId;
       if (campusId) {
         const campus = allCampuses.find(c => c.id === campusId);
@@ -156,10 +156,10 @@ export default function People() {
         districtData.unassigned.push(person);
       }
     });
-    
+
     // Sort campuses within each district
     districtMap.forEach((data, districtId) => {
-      const sortedCampuses = Array.from(data.campuses.values()).sort((a, b) => 
+      const sortedCampuses = Array.from(data.campuses.values()).sort((a, b) =>
         a.campus.name.localeCompare(b.campus.name)
       );
       const newMap = new Map<number, { campus: Campus; people: Person[] }>();
@@ -168,10 +168,26 @@ export default function People() {
       });
       data.campuses = newMap;
     });
-    
-    return Array.from(districtMap.values()).sort((a, b) => 
-      a.district.name.localeCompare(b.district.name)
-    );
+
+    // Group districts by region
+    const regionMap = new Map<string, typeof districtMap.values extends () => infer T ? T[] : never>();
+    Array.from(districtMap.values()).forEach(districtData => {
+      const region = districtData.district.region;
+      if (!regionMap.has(region)) {
+        regionMap.set(region, []);
+      }
+      regionMap.get(region)!.push(districtData);
+    });
+
+    // Sort districts within each region and sort regions
+    const sortedRegions = Array.from(regionMap.entries())
+      .map(([region, districts]) => ({
+        region,
+        districts: districts.sort((a, b) => a.district.name.localeCompare(b.district.name))
+      }))
+      .sort((a, b) => a.region.localeCompare(b.region));
+
+    return sortedRegions;
   }, [filteredPeople, allDistricts, allCampuses]);
   
   const handlePersonClick = (person: Person) => {
@@ -387,12 +403,20 @@ export default function People() {
         {/* Hierarchical List */}
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
-            {districtsWithData.length === 0 ? (
+            {regionsWithDistricts.length === 0 ? (
               <div className="px-6 py-8 text-center text-gray-500">
                 No districts found
               </div>
             ) : (
-              districtsWithData.map(({ district, campuses, unassigned }) => {
+              regionsWithDistricts.map(({ region, districts }) => (
+                <div key={region}>
+                  {/* Region Header */}
+                  <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
+                    <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wide">{region}</h2>
+                  </div>
+
+                  {/* Districts in Region */}
+                  {districts.map(({ district, campuses, unassigned }) => {
                 const isDistrictExpanded = expandedDistricts.has(district.id);
                 const totalPeople = Array.from(campuses.values()).reduce((sum, c) => sum + c.people.length, 0) + unassigned.length;
                 
@@ -615,7 +639,9 @@ export default function People() {
                     )}
                   </div>
                 );
-              })
+              })}
+                </div>
+              ))
             )}
           </div>
         </div>
