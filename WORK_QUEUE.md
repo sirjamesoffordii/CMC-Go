@@ -15,3 +15,14 @@
 - **Define + Enforce "Active Needs" Semantics** - PR #30 (https://github.com/sirjamesoffordii/CMC-Go/pull/30)
   - Added explicit Active Need definition to Follow-Up filter
   - Commit: bff9ad3
+
+
+- **Fix URL filter parameter initialization crash** - PR #38 (staging), PR #39 (main)
+  - Fixed TypeError: number 0 is not iterable when visiting /people without query params
+  - Replaced eager getInitialFiltersFromURL() with lazy useState initialization
+  - URL parameters now parsed only once on mount
+  - Staging PR: https://github.com/sirjamesoffordii/CMC-Go/pull/38
+  - Staging Commit: 1d6c11a
+  - Main PR: https://github.com/sirjamesoffordii/CMC-Go/pull/39
+  - Main Commit: d600c31
+  - Verified on staging (clean URL + params URL)
