@@ -97,6 +97,16 @@ export default function People() {
       setCampusForm({ name: '' });
     },
   });
+
+    // Sentry test trigger (staging only)
+  useEffect(() => {
+    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
+    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
+      // Clean up URL first
+      window.history.replaceState({}, document.title, window.location.pathname);
+      throw new Error('Sentry test: staging');
+    }
+  }, []);
   
   
   // Filter people
