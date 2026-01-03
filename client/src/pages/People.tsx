@@ -22,34 +22,39 @@ export default function People() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Initialize filter state from URL query parameters
-  const getInitialFiltersFromURL = () => {
+  // Filter state - initialize from URL query parameters using lazy initialization
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(() => {
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get('status');
-    const searchParam = params.get('search');
-    const myCampusParam = params.get('myCampus');
-    const needTypeParam = params.get('needType');
-    const hasNeedsParam = params.get('hasNeeds');
+    if (statusParam) {
+      return new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">);
+    }
+    return new Set();
+  });
 
-    return {
-      statusFilter: statusParam ? new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">) : new Set<"Yes" | "Maybe" | "No" | "Not Invited">(),
-      searchQuery: searchParam || "",
-      myCampusOnly: myCampusParam === 'true',
-      needTypeFilter: (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All',
-      hasActiveNeeds: hasNeedsParam === 'true',
-    };
-  };
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('search') || "";
+  });
 
-  const initialFilters = getInitialFiltersFromURL();
-
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(initialFilters.statusFilter);
-  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [myCampusOnly, setMyCampusOnly] = useState(initialFilters.myCampusOnly);
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>>(initialFilters.needTypeFilter);
-  const [hasActiveNeeds, setHasActiveNeeds] = useState(initialFilters.hasActiveNeeds);
+
+  const [myCampusOnly, setMyCampusOnly] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('myCampus') === 'true';
+  });
+
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const needTypeParam = params.get('needType');
+    return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
+  });
+
+  const [hasActiveNeeds, setHasActiveNeeds] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hasNeeds') === 'true';
+  });
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
