@@ -109,12 +109,25 @@ export default function People() {
   }, []);
   
   
-  // Filter people
+  95
+  
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
     
     // Status filter
     if (statusFilter.size > 0) {
+      
+  // Sentry test trigger (staging only)
+  useEffect(() => {
+    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
+    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
+      // Clean up URL first
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Throw error to trigger Sentry
+      throw new Error('Sentry test: staging');
+    }
+  }, []);
+
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
     
