@@ -18,17 +18,43 @@ export default function People() {
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  
+
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter state - initialize from URL query parameters using lazy initialization
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const statusParam = params.get('status');
+    if (statusParam) {
+      return new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">);
+    }
+    return new Set();
+  });
+
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('search') || "";
+  });
+
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [myCampusOnly, setMyCampusOnly] = useState(false);
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
+
+  const [myCampusOnly, setMyCampusOnly] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('myCampus') === 'true';
+  });
+
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const needTypeParam = params.get('needType');
+    return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
+  });
+
+  const [hasActiveNeeds, setHasActiveNeeds] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hasNeeds') === 'true';
+  });
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -73,12 +99,25 @@ export default function People() {
   });
   
   
-  // Filter people
+  95
+  
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
     
     // Status filter
     if (statusFilter.size > 0) {
+      
+  // Sentry test trigger (staging only)
+  useEffect(() => {
+    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
+    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
+      // Clean up URL first
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Throw error to trigger Sentry
+      throw new Error('Sentry test: staging');
+    }
+  }, []);
+
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
     
@@ -222,6 +261,41 @@ export default function People() {
     // TODO: Implement campus sorting
     console.log(`Sort campus ${campusId} by ${sortBy}`);
   };
+
+  // Sync filter state to URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    // Add status filter if not empty
+    if (statusFilter.size > 0) {
+      params.set('status', Array.from(statusFilter).join(','));
+    }
+
+    // Add search query if not empty
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery);
+    }
+
+    // Add myCampusOnly if true
+    if (myCampusOnly) {
+      params.set('myCampus', 'true');
+    }
+
+    // Add needTypeFilter if not 'All'
+    if (needTypeFilter !== 'All') {
+      params.set('needType', needTypeFilter);
+    }
+
+    // Add hasActiveNeeds if true
+    if (hasActiveNeeds) {
+      params.set('hasNeeds', 'true');
+    }
+
+    // Update URL without triggering navigation
+    const newSearch = params.toString();
+    const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }, [statusFilter, searchQuery, myCampusOnly, needTypeFilter, hasActiveNeeds]);
 
   useEffect(() => {
     if (!searchOpen) return;
