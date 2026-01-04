@@ -31,11 +31,9 @@ export default function FollowUpView() {
     return map;
   }, [allNeeds]);
 
-  const activeNeedPersonIds = useMemo(() => new Set(allNeeds.map(n => n.personId).filter(Boolean)), [allNeeds]);
-
   // Filter people with status === "Maybe" and optionally with needs
   const filteredPeople = useMemo(() => {
-    let filtered = allPeople.filter(p => p.status === "Maybe" || activeNeedPersonIds.has(p.id));
+    let filtered = allPeople.filter(p => p.status === "Maybe");
 
     if (showOnlyWithNeeds) {
       filtered = filtered.filter(p => {
