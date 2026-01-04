@@ -1,0 +1,4 @@
+# Trigger file for Railway redeploy
+# Created: 2026-01-04
+# Purpose: Force Railway to rebuild staging with VITE_SENTRY_* environment variables baked in
+# Context: Environment variables were added after initial deployment, Vite requires rebuild to embed them
