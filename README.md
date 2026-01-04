@@ -2,6 +2,11 @@
 
 A map-first coordination app that helps leaders see who has been invited, where people are in their decision journey, who is going, and where support is needed — in order to build shared momentum toward going to CMC.
 
+## Documentation
+
+- [CMC Go Overview](/docs/CMC_GO_OVERVIEW.md) - Project identity and mental model
+- [CMC Go Project Tracker](/docs/CMC_GO_PROJECT_TRACKER.md) - Development progress and milestones
+
 ## Overview
 
 CMC Go provides an interactive SVG-based district map interface for tracking event invitations and attendee status across multiple districts, campuses, and individuals. The application features real-time status updates, notes and needs tracking, and comprehensive follow-up tools.
