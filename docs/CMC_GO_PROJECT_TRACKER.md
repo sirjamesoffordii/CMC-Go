@@ -12,8 +12,7 @@
 > - **URL filter state persistence** — Verified ✅ ([#36](https://github.com/sirjamesoffordii/CMC-Go/pull/36), commit 1089909)
 > - - **Lazy initialization for URL filter params** — Verified ✅ ([#39](https://github.com/sirjamesoffordii/CMC-Go/pull/39), commit d600c31)
 >   - - **URL parsing optimization** — Verified ✅ (commit 7342ada)
->     - - **Show people with active needs in follow-up view** — In Progress 🔄 ([#21](https://github.com/sirjamesoffordii/CMC-Go/pull/21), opened 5 days ago)
->       - - **Add 'Needs' filter to People tab** — Planned 📋 ([#31](https://github.com/sirjamesoffordii/CMC-Go/pull/31), opened 2 days ago)
+> - - **Show people with active needs in follow-up view** — Verified ✅ ([#21](https://github.com/sirjamesoffordii/CMC-Go/pull/21) merged, commit b3ecd c6)>       - - **Add 'Needs' filter to People tab** — Planned 📋 ([#31](https://github.com/sirjamesoffordii/CMC-Go/pull/31), opened 2 days ago)
 >         - - **Add explicit Active Need definition** — Planned 📋 ([#30](https://github.com/sirjamesoffordii/CMC-Go/pull/30), opened 2 days ago)
 >           - - **Group districts by region in People tab filter** — Planned 📋 ([#33](https://github.com/sirjamesoffordii/CMC-Go/pull/33), 5 tasks remaining)
 >            
