@@ -18,17 +18,43 @@ export default function People() {
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  
+
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter state - initialize from URL query parameters using lazy initialization
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const statusParam = params.get('status');
+    if (statusParam) {
+      return new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">);
+    }
+    return new Set();
+  });
+
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('search') || "";
+  });
+
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [myCampusOnly, setMyCampusOnly] = useState(false);
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
+
+  const [myCampusOnly, setMyCampusOnly] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('myCampus') === 'true';
+  });
+
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const needTypeParam = params.get('needType');
+    return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
+  });
+
+  const [hasActiveNeeds, setHasActiveNeeds] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('hasNeeds') === 'true';
+  });
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -71,14 +97,37 @@ export default function People() {
       setCampusForm({ name: '' });
     },
   });
+
+    // Sentry test trigger (staging only)
+  useEffect(() => {
+    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
+    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
+      // Clean up URL first
+      window.history.replaceState({}, document.title, window.location.pathname);
+      throw new Error('Sentry test: staging');
+    }
+  }, []);
   
   
-  // Filter people
+  95
+  
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
     
     // Status filter
     if (statusFilter.size > 0) {
+      
+  // Sentry test trigger (staging only)
+  useEffect(() => {
+    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
+    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
+      // Clean up URL first
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Throw error to trigger Sentry
+      throw new Error('Sentry test: staging');
+    }
+  }, []);
+
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
     
@@ -105,16 +154,24 @@ export default function People() {
       });
     }
 
+    // Has active needs filter
+    if (hasActiveNeeds) {
+      filtered = filtered.filter(p => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        return needs.length > 0;
+      });
+    }
+
     // My campus filter
     if (myCampusOnly && user?.campusId) {
       filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
     }
-    
+
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, needsByPersonId]);
+  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
   
-  // Group people by district and campus
-  const districtsWithData = useMemo(() => {
+  // Group people by district and campus, then group districts by region
+  const regionsWithDistricts = useMemo(() => {
     const districtMap = new Map<string, {
       district: District;
       campuses: Map<number, {
@@ -123,7 +180,7 @@ export default function People() {
       }>;
       unassigned: Person[];
     }>();
-    
+
     // Initialize districts
     allDistricts.forEach(district => {
       districtMap.set(district.id, {
@@ -132,15 +189,15 @@ export default function People() {
         unassigned: [],
       });
     });
-    
+
     // Group people
     filteredPeople.forEach(person => {
       const districtId = person.primaryDistrictId;
       if (!districtId) return;
-      
+
       const districtData = districtMap.get(districtId);
       if (!districtData) return;
-      
+
       const campusId = person.primaryCampusId;
       if (campusId) {
         const campus = allCampuses.find(c => c.id === campusId);
@@ -156,10 +213,10 @@ export default function People() {
         districtData.unassigned.push(person);
       }
     });
-    
+
     // Sort campuses within each district
     districtMap.forEach((data, districtId) => {
-      const sortedCampuses = Array.from(data.campuses.values()).sort((a, b) => 
+      const sortedCampuses = Array.from(data.campuses.values()).sort((a, b) =>
         a.campus.name.localeCompare(b.campus.name)
       );
       const newMap = new Map<number, { campus: Campus; people: Person[] }>();
@@ -168,10 +225,26 @@ export default function People() {
       });
       data.campuses = newMap;
     });
-    
-    return Array.from(districtMap.values()).sort((a, b) => 
-      a.district.name.localeCompare(b.district.name)
-    );
+
+    // Group districts by region
+    const regionMap = new Map<string, typeof districtMap.values extends () => infer T ? T[] : never>();
+    Array.from(districtMap.values()).forEach(districtData => {
+      const region = districtData.district.region;
+      if (!regionMap.has(region)) {
+        regionMap.set(region, []);
+      }
+      regionMap.get(region)!.push(districtData);
+    });
+
+    // Sort districts within each region and sort regions
+    const sortedRegions = Array.from(regionMap.entries())
+      .map(([region, districts]) => ({
+        region,
+        districts: districts.sort((a, b) => a.district.name.localeCompare(b.district.name))
+      }))
+      .sort((a, b) => a.region.localeCompare(b.region));
+
+    return sortedRegions;
   }, [filteredPeople, allDistricts, allCampuses]);
   
   const handlePersonClick = (person: Person) => {
@@ -222,6 +295,41 @@ export default function People() {
     // TODO: Implement campus sorting
     console.log(`Sort campus ${campusId} by ${sortBy}`);
   };
+
+  // Sync filter state to URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams();
+
+    // Add status filter if not empty
+    if (statusFilter.size > 0) {
+      params.set('status', Array.from(statusFilter).join(','));
+    }
+
+    // Add search query if not empty
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery);
+    }
+
+    // Add myCampusOnly if true
+    if (myCampusOnly) {
+      params.set('myCampus', 'true');
+    }
+
+    // Add needTypeFilter if not 'All'
+    if (needTypeFilter !== 'All') {
+      params.set('needType', needTypeFilter);
+    }
+
+    // Add hasActiveNeeds if true
+    if (hasActiveNeeds) {
+      params.set('hasNeeds', 'true');
+    }
+
+    // Update URL without triggering navigation
+    const newSearch = params.toString();
+    const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
+    window.history.replaceState({}, '', newUrl);
+  }, [statusFilter, searchQuery, myCampusOnly, needTypeFilter, hasActiveNeeds]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -347,6 +455,23 @@ export default function People() {
               })}
             </div>
             
+            {/* Needs Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-gray-600 font-medium">Needs:</span>
+              <button
+                onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
+                className={`
+                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                  ${hasActiveNeeds
+                    ? "bg-orange-100 text-orange-700 border-2 border-orange-300"
+                    : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                  }
+                `}
+              >
+                Has active needs
+              </button>
+            </div>
+
             {/* Need Type Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Need Type:</span>
@@ -362,7 +487,7 @@ export default function People() {
                 <option value="Other">Other</option>
               </select>
             </div>
-            
+
             {/* My Campus Filter */}
             {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
               <div className="flex items-center gap-2">
@@ -387,12 +512,20 @@ export default function People() {
         {/* Hierarchical List */}
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
-            {districtsWithData.length === 0 ? (
+            {regionsWithDistricts.length === 0 ? (
               <div className="px-6 py-8 text-center text-gray-500">
                 No districts found
               </div>
             ) : (
-              districtsWithData.map(({ district, campuses, unassigned }) => {
+              regionsWithDistricts.map(({ region, districts }) => (
+                <div key={region}>
+                  {/* Region Header */}
+                  <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
+                    <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wide">{region}</h2>
+                  </div>
+
+                  {/* Districts in Region */}
+                  {districts.map(({ district, campuses, unassigned }) => {
                 const isDistrictExpanded = expandedDistricts.has(district.id);
                 const totalPeople = Array.from(campuses.values()).reduce((sum, c) => sum + c.people.length, 0) + unassigned.length;
                 
@@ -615,7 +748,9 @@ export default function People() {
                     )}
                   </div>
                 );
-              })
+              })}
+                </div>
+              ))
             )}
           </div>
         </div>
