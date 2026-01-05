@@ -1,198 +1,169 @@
 # CMC Go — Overview
 
-CMC Go — Overview
-What is CMC Go?
+## What is CMC Go?
 
-CMC Go is a map-first coordination and visibility platform built to help Chi Alpha leaders see, track, and mobilize people toward the Campus Missions Conference (CMC).
+**CMC Go** is a map-first coordination and visibility platform built to help Chi Alpha leaders **see, track, and mobilize people toward the Campus Missions Conference (CMC)**.
 
 At its core, CMC Go answers three questions for leaders at every level (national, regional, district, campus):
 
-Who is invited?
+- Who is invited?
+- Who is going?
+- What still needs follow-up?
 
-Who is going?
+CMC Go replaces fragmented spreadsheets, text threads, and guesswork with a **shared, real-time system of record** that is simple, visual, and reliable.
 
-What still needs follow-up?
+---
 
-CMC Go replaces fragmented spreadsheets, text threads, and guesswork with a shared, real-time system of record that is simple, visual, and reliable.
-
-Core Principles
+## Core Principles
 
 CMC Go is intentionally built around the following principles:
 
-1. Map-First Clarity
+### 1. Map-First Clarity
 
 The map is the primary interface.
 
 Leaders understand momentum geographically. CMC Go makes progress visible by:
+- Region
+- District
+- Campus
 
-Region
+This allows leaders to immediately identify:
+- Areas of strength
+- Areas needing follow-up
+- Gaps in invitation or engagement
 
-District
+---
 
-Campus
+### 2. Status Before Features
 
-This allows leaders to immediately spot:
-
-Areas of strength
-
-Areas needing follow-up
-
-Gaps in invitation or engagement
-
-2. Status Before Features
-
-CMC Go prioritizes correctness and clarity over polish.
+CMC Go prioritizes **correctness and clarity over polish**.
 
 Before adding animations, mobile optimizations, or advanced UX, the system ensures:
-
-Data is accurate
-
-State is consistent
-
-Behavior is predictable
+- Data is accurate
+- State is consistent
+- Behavior is predictable
 
 A system that looks good but lies is worse than a system that is plain but trustworthy.
 
-3. Single Source of Truth
+---
 
-CMC Go is designed to be the authoritative record for CMC readiness.
+### 3. Single Source of Truth
+
+CMC Go is designed to be the **authoritative record** for CMC readiness.
 
 That means:
-
-One person = one record
-
-One status per person (Going / Maybe / Not Going / Not Invited)
-
-Notes and needs are attached directly to people
-
-Filters and views never mutate underlying data
+- One person equals one record
+- One status per person (Going / Maybe / Not Going / Not Invited)
+- Notes and needs are attached directly to people
+- Filters and views never mutate underlying data
 
 If it’s not in CMC Go, it’s not considered real.
 
-4. Leader-Friendly by Design
+---
 
-CMC Go is not built for engineers or admins—it’s built for busy leaders.
+### 4. Leader-Friendly by Design
+
+CMC Go is not built for engineers or administrators — it is built for **busy leaders**.
 
 Design decisions prioritize:
+- Fast scanning
+- Obvious next actions
+- Minimal clicks
+- Clear defaults
 
-Fast scanning
+Every view should answer the question: *“What do I need to do next?”*
 
-Obvious next actions
+---
 
-Minimal clicks
+## What CMC Go Is (and Is Not)
 
-Clear defaults
+### CMC Go **IS**
+- A coordination and visibility tool
+- A follow-up and accountability aid
+- A real-time snapshot of readiness
+- A shared system across leadership layers
 
-Every view should answer: “What do I need to do next?”
+### CMC Go **IS NOT**
+- A CRM replacement
+- A registration system
+- A messaging platform
+- A vanity reporting dashboard
 
-What CMC Go Is (and Is Not)
-CMC Go IS
+CMC Go complements existing systems rather than replacing them.
 
-A coordination and visibility tool
+---
 
-A follow-up and accountability aid
+## How CMC Go Is Being Built
 
-A real-time snapshot of readiness
+CMC Go is developed using a **phased, integrity-first delivery model**.
 
-A shared system across leadership layers
-
-CMC Go IS NOT
-
-A CRM replacement
-
-A registration system
-
-A messaging platform
-
-A reporting vanity dashboard
-
-CMC Go complements existing systems instead of replacing them.
-
-How CMC Go Is Being Built
-
-CMC Go is developed using a phased, integrity-first delivery model.
-
-Phase-Driven Development
+### Phase-Driven Development
 
 Work is organized into explicit phases, each with clear exit criteria:
 
-Core System Integrity
+1. **Core System Integrity**
+   - Data model correctness
+   - Stable state management
+   - Reliable persistence
+   - Observability and error visibility
 
-Data model correctness
+2. **Desktop UX & Navigation**
+   - Panel behavior
+   - Filters and scope clarity
+   - Leader workflows
 
-Stable state management
+3. **Authentication & Authorization**
+   - Role-based access
+   - Scoped visibility
+   - Security hardening
 
-Reliable persistence
+4. **Mobile Optimization**
+   - Responsive layout
+   - Touch interactions
+   - Mobile-friendly flows
 
-Observability (Sentry)
+Each phase must be **verified and signed off** before advancing.
 
-Desktop UX & Navigation
+---
 
-Panel behavior
+### Observability-First Debugging
 
-Filters and scope
+CMC Go treats observability as **core infrastructure**, not an afterthought.
 
-Leader workflows
+- Errors are captured via Sentry
+- Staging is used to validate behavior before production
+- Debugging without visibility is explicitly avoided
 
-Authentication & Authorization
+If a bug cannot be observed, the system — not the developer — is assumed to be at fault.
 
-Role-based access
+---
 
-Scoped visibility
-
-Security hardening
-
-Mobile Optimization
-
-Responsive layout
-
-Touch interactions
-
-Mobile-friendly flows
-
-Each phase must be verified and signed off before advancing.
-
-Observability-First Debugging
-
-CMC Go treats observability as core infrastructure, not an afterthought.
-
-Errors are captured via Sentry
-
-Staging is used to validate behavior before production
-
-Debugging without visibility is explicitly avoided
-
-If a bug cannot be observed, the system—not the developer—is assumed to be at fault.
-
-Intentional Constraints
+### Intentional Constraints
 
 CMC Go deliberately avoids:
-
-Premature optimization
-
-Feature creep
-
-Parallel unfinished work
-
-“Just ship it” shortcuts
+- Premature optimization
+- Feature creep
+- Parallel unfinished work
+- “Just ship it” shortcuts
 
 Every constraint exists to protect long-term clarity and trust in the system.
 
-Current Focus
+---
+
+## Current Focus
 
 CMC Go is currently focused on:
-
-Cross-view state consistency (Map ↔ Panels)
-
-Reliable follow-up visibility
-
-Solidifying observability and deployment stability
+- Cross-view state consistency (Map ↔ Panels)
+- Reliable follow-up visibility
+- Solidifying observability and deployment stability
 
 New features are deferred until these foundations are proven.
 
-Project Philosophy (Short Version)
+---
 
-Make it correct.
-Make it clear.
-Make it trustworthy.
-Then make it fast and beautiful.
+## Project Philosophy
+
+> **Make it correct.  
+> Make it clear.  
+> Make it trustworthy.  
+> Then make it fast and beautiful.**
