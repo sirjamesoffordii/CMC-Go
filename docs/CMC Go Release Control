@@ -69,6 +69,18 @@ No feature, fix, or enhancement is considered complete unless it satisfies the c
 - 🗒️ **Upgrade to @sentry/react v8.0.0** — Backlog  
   - PR: [#45](https://github.com/sirjamesoffordii/CMC-Go/pull/45)
 
+- ✅ **Code Coverage with Codecov configured** — Done
+  - GitHub Actions workflow: `.github/workflows/test-and-coverage.yml`
+  - Commit: `12ca7b1`
+  - Codecov dashboard: https://app.codecov.io/github/sirjamesoffordii/CMC-Go
+  - Coverage reports auto-upload on every push to main/develop and all PRs
+
+- ✅ **AI Code Review (Beta) enabled in Sentry** — Done
+  - Generative AI features enabled for organization
+  - AI agent automatically reviews pull requests
+  - Identifies bugs, security issues, and code quality concerns
+  - Documentation: `docs/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+
 #### Cross-View State
 
 - 🔄 **Map ↔ Panel state synchronization** — In Progress  
