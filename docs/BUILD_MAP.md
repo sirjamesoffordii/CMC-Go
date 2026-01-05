@@ -213,7 +213,13 @@ v1.0 is considered **build-complete** when:
 
 ## Progression Model
 
-```text
 ⚪ → 🔵 → 🟡 → 🟢
         ↘
          🔴
+
+## Status Legend
+- ⚪ **Backlog** — Approved scope, not started
+- 🔵 **In Progress** — Actively being worked
+- 🔴 **Blocked** — Waiting on dependency or decision
+- 🟡 **Verification Needed** — Implemented, pending confirmation
+- 🟢 **Completed** — Implemented and verified
