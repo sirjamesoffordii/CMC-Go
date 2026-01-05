@@ -1,10 +1,13 @@
-# CMC Go — Delivery Tracker (v1)
+# CMC Go — Release Control (v1)
 
 **Status:** Active  
-**Last verified:** Jan 4, 2026  
+**Last verified:** Jan 5, 2026  
 **Owner:** Lead Developer
 
-This document is the single source of truth for delivery status and release readiness for CMC Go. It tracks versioned scope, milestones, and verification state from initial development through production.
+This document governs **release readiness, phase progression, and verification criteria** for CMC Go.  
+It is the **single source of truth** for determining when CMC Go is allowed to advance phases and ship to production.
+
+No feature, fix, or enhancement is considered complete unless it satisfies the criteria defined here.
 
 ---
 
@@ -12,155 +15,172 @@ This document is the single source of truth for delivery status and release read
 
 ### Phase 1: Core System Integrity
 
-**Objective:** Prioritize correctness and system integrity before UX polish.
+**Objective:** Ensure the system is correct, stable, and observable before any UX polish or optimization.
 
 #### Data Model & Schema
 
-- ✅ **Schema finalized and aligned** — Done
-- ✅ **ENUM discipline enforced** — Done
-- ✅ **Seed data normalized and stable** — Done
+- ✅ **Schema finalized and aligned** — Done  
+- ✅ **ENUM discipline enforced** — Done  
+- ✅ **Seed data normalized and stable** — Done  
 
 #### Core Flows
 
-- ✅ **District list renders correctly** — Done
-- ✅ **Campus list renders correctly** — Done
-- ✅ **People list renders correctly** — Done
-- ✅ **Person detail view renders correctly** — Done
-- ✅ **Edits persist to database and rehydrate on refresh** — Done
-- ✅ **Notes flow functional** — Done
-- ✅ **Needs flow functional** — Done
+- ✅ **District list renders correctly** — Done  
+- ✅ **Campus list renders correctly** — Done  
+- ✅ **People list renders correctly** — Done  
+- ✅ **Person detail view renders correctly** — Done  
+- ✅ **Edits persist to database and rehydrate on refresh** — Done  
+- ✅ **Notes flow functional** — Done  
+- ✅ **Needs flow functional** — Done  
 
 #### State Management
 
-- ✅ **URL filter state persistence** — Done ([#36](https://github.com/sirjamesoffordii/CMC-Go/pull/36), commit 1089909)
-- ✅ **Lazy initialization for URL filter params** — Done ([#39](https://github.com/sirjamesoffordii/CMC-Go/pull/39), commit d600c31)
-- ✅ **Optimized URL parsing** — Done (commit 7342ada)
+- ✅ **URL filter state persistence** — Done  
+  - PR: [#36](https://github.com/sirjamesoffordii/CMC-Go/pull/36)  
+  - Commit: `1089909`
+- ✅ **Lazy initialization for URL filter params** — Done  
+  - PR: [#39](https://github.com/sirjamesoffordii/CMC-Go/pull/39)  
+  - Commit: `d600c31`
+- ✅ **Optimized URL parsing** — Done  
+  - Commit: `7342ada`
 
 #### Follow-Up & Visibility
 
-- ✅ **Active needs surfaced in Follow-Up view** — Done ([#21](https://github.com/sirjamesoffordii/CMC-Go/pull/21), commit b3ecdc6)
-- 🗒️ **Needs filter in People view** — Backlog ([#31](https://github.com/sirjamesoffordii/CMC-Go/pull/31))
-- 🗒️ **Explicit "Active Need" definition** — Backlog ([#30](https://github.com/sirjamesoffordii/CMC-Go/pull/30))
-- 🗒️ **Districts grouped by region in People filters** — Backlog ([#33](https://github.com/sirjamesoffordii/CMC-Go/pull/33))
+- ✅ **Active needs surfaced in Follow-Up view** — Done  
+  - PR: [#21](https://github.com/sirjamesoffordii/CMC-Go/pull/21)  
+  - Commit: `b3ecdc6`
+- 🗒️ **Needs filter in People view** — Backlog  
+  - PR: [#31](https://github.com/sirjamesoffordii/CMC-Go/pull/31)
+- 🗒️ **Explicit “Active Need” definition** — Backlog  
+  - PR: [#30](https://github.com/sirjamesoffordii/CMC-Go/pull/30)
+- 🗒️ **Districts grouped by region in People filters** — Backlog  
+  - PR: [#33](https://github.com/sirjamesoffordii/CMC-Go/pull/33)
 
 #### Observability
 
-- ✅ **Sentry initialized in main.tsx** — Done ([#40](https://github.com/sirjamesoffordii/CMC-Go/pull/40), commit a013d26)
-- ✅ **Sentry test trigger wired in People view** — Done ([#42](https://github.com/sirjamesoffordii/CMC-Go/pull/42), commit 50f9616)
-- 🗒️ **Promote Sentry test trigger to staging** — Backlog ([#43](https://github.com/sirjamesoffordii/CMC-Go/pull/43))
-- 🗒️ **Add @sentry/react v8.0.0 dependency** — Backlog ([#45](https://github.com/sirjamesoffordii/CMC-Go/pull/45))
+- ✅ **Sentry initialized in client entrypoint** — Done  
+  - PR: [#40](https://github.com/sirjamesoffordii/CMC-Go/pull/40)  
+  - Commit: `a013d26`
+- ✅ **Sentry test trigger wired in People view** — Done  
+  - PR: [#42](https://github.com/sirjamesoffordii/CMC-Go/pull/42)  
+  - Commit: `50f9616`
+- 🗒️ **Promote Sentry test trigger to staging** — Backlog  
+  - PR: [#43](https://github.com/sirjamesoffordii/CMC-Go/pull/43)
+- 🗒️ **Upgrade to @sentry/react v8.0.0** — Backlog  
+  - PR: [#45](https://github.com/sirjamesoffordii/CMC-Go/pull/45)
 
 #### Cross-View State
 
-- 🔄 **Map ↔ Panel state synchronization** — In Progress
-- 🧪 **Status updates propagate across all views** — QA Needed
-- 🧪 **Follow-Up view state consistency** — QA Needed
+- 🔄 **Map ↔ Panel state synchronization** — In Progress  
+- 🧪 **Status updates propagate across all views** — QA Needed  
+- 🧪 **Follow-Up view state consistency** — QA Needed  
 
 ---
 
 ### Phase 2: Desktop UX & Navigation
 
-**Objective:** Ensure the app is efficient and intuitive in its primary desktop environment.
+**Objective:** Make the system efficient and intuitive in its primary desktop environment.
 
 #### Default Scope & View Modes
 
-- 🗒️ **Default regional scope (TEXICO)** — Backlog
-- 🗒️ **Default district panel (South Texas)** — Backlog
-- 🗒️ **View mode selector** — Backlog
-  - National
-  - Regional
-  - District
+- 🗒️ **Default regional scope (TEXICO)** — Backlog  
+- 🗒️ **Default district panel (South Texas)** — Backlog  
+- 🗒️ **View mode selector** — Backlog  
+  - National  
+  - Regional  
+  - District  
 
 #### Panel Behavior
 
-- 🧪 **Stable panel open/close behavior** — QA Needed
-- 🗒️ **Smooth panel transitions** — Backlog
-- 🗒️ **Panel state persistence** — Backlog
+- 🧪 **Stable panel open/close behavior** — QA Needed  
+- 🗒️ **Smooth panel transitions** — Backlog  
+- 🗒️ **Panel state persistence** — Backlog  
 
 #### Filters & Sorting
 
-- 🔄 **District-level needs visibility** — In Progress
-- 🔄 **Filter logic clarity and predictability** — In Progress
-- 🗒️ **Status-based visibility rules** — Backlog
+- 🔄 **District-level needs visibility** — In Progress  
+- 🔄 **Filter logic clarity and predictability** — In Progress  
+- 🗒️ **Status-based visibility rules** — Backlog  
 
 #### Navigation & Usability
 
-- 🧪 **Clear navigation patterns** — QA Needed
-- 🧪 **No blocking UX friction** — QA Needed
-- 🧪 **Leader-friendly primary flows** — QA Needed
+- 🧪 **Clear navigation patterns** — QA Needed  
+- 🧪 **No blocking UX friction** — QA Needed  
+- 🧪 **Leader-friendly primary flows** — QA Needed  
 
 ---
 
 ### Phase 3: Authentication & Authorization (Late v1)
 
-**Objective:** Lock down access once behavior and UX are stable.
+**Objective:** Lock down access only after behavior and UX are stable.
 
 **Note:** Authentication is intentionally deferred to avoid compounding debugging complexity during core development.
 
 #### Authentication
 
-- 🗒️ **Login flow** — Backlog
-- 🗒️ **Session management** — Backlog
-- 🗒️ **Logout flow** — Backlog
+- 🗒️ **Login flow** — Backlog  
+- 🗒️ **Session management** — Backlog  
+- 🗒️ **Logout flow** — Backlog  
 
 #### Role-Based Access
 
-- 🗒️ **Role definitions** — Backlog
-  - Campus Director
-  - District Director
-  - Region Director
-  - Admin / National
-- 🗒️ **Role-based view gating** — Backlog
-- 🗒️ **Permission enforcement** — Backlog
+- 🗒️ **Role definitions** — Backlog  
+  - Campus Director  
+  - District Director  
+  - Region Director  
+  - Admin / National  
+- 🗒️ **Role-based view gating** — Backlog  
+- 🗒️ **Permission enforcement** — Backlog  
 
 #### Authorized Views
 
-- 🗒️ **View access control** — Backlog
-- 🗒️ **Data visibility scoped by role** — Backlog
-- 🗒️ **Authorization enforcement consistency** — Backlog
+- 🗒️ **View access control** — Backlog  
+- 🗒️ **Data visibility scoped by role** — Backlog  
+- 🗒️ **Authorization enforcement consistency** — Backlog  
 
 ---
 
 ### Phase 4: Mobile Optimization (Final v1 Phase)
 
-**Objective:** Adapt a completed system to mobile constraints.
+**Objective:** Adapt a completed and stable system to mobile constraints.
 
 **Note:** Mobile optimization occurs last to avoid premature optimization and rework.
 
 #### Mobile Layout
 
-- 🗒️ **Responsive layout** — Backlog
-- 🗒️ **Mobile-specific panel behavior** — Backlog
-- 🗒️ **Touch-friendly spacing** — Backlog
+- 🗒️ **Responsive layout** — Backlog  
+- 🗒️ **Mobile-specific panel behavior** — Backlog  
+- 🗒️ **Touch-friendly spacing** — Backlog  
 
 #### Touch Interactions
 
-- 🗒️ **Minimum touch targets (44×44px)** — Backlog
-- 🗒️ **Swipe gestures** — Backlog
-- 🗒️ **Mobile-optimized controls** — Backlog
+- 🗒️ **Minimum touch targets (44×44px)** — Backlog  
+- 🗒️ **Swipe gestures** — Backlog  
+- 🗒️ **Mobile-optimized controls** — Backlog  
 
 #### Core Mobile Flows
 
-- 🗒️ **Status updates** — Backlog
-- 🗒️ **Notes entry** — Backlog
-- 🗒️ **Needs tracking** — Backlog
-- 🗒️ **Follow-Up view usability** — Backlog
+- 🗒️ **Status updates** — Backlog  
+- 🗒️ **Notes entry** — Backlog  
+- 🗒️ **Needs tracking** — Backlog  
+- 🗒️ **Follow-Up view usability** — Backlog  
 
 ---
 
 ## v1.0 Definition of Done
 
-v1.0 is complete when:
+v1.0 is considered **release-ready** when:
 
 - All Phase 1–4 items are marked **Done**
 - Staging behavior matches expected functionality
-- Lead Developer signs off for production release
+- Observability is verified and operational
+- Lead Developer explicitly signs off for production release
 
 ---
 
 ## v2.0 — Enhancements (Backlog)
 
-Not active. Do not begin v2.0 work until v1.0 is fully complete and deployed.
+v2.0 work must **not** begin until v1.0 is fully released and stabilized.
 
 ### Planned Enhancements
 
@@ -173,8 +193,8 @@ Not active. Do not begin v2.0 work until v1.0 is fully complete and deployed.
 
 ## Status Legend
 
-- ✅ **Done** — Merged and verified in staging
-- 🔄 **In Progress** — Active development
-- 🧪 **QA Needed** — Implemented, pending verification
-- 🗒️ **Backlog** — Approved scope, not started
+- ✅ **Done** — Merged and verified in staging  
+- 🔄 **In Progress** — Active development  
+- 🧪 **QA Needed** — Implemented, pending verification  
+- 🗒️ **Backlog** — Approved scope, not started  
 - 🔴 **Blocked** — Waiting on dependency
