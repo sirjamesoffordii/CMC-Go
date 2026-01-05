@@ -13,14 +13,8 @@ import "./index.css";
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
-  if (!(error instanceof TRPCClientError)) return;
-  if (typeof window === "undefined") return;
-
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
-
-  if (!isUnauthorized) return;
-
-  window.location.href = getLoginUrl();
+  // Authentication disabled - don't redirect to login
+  return;
 };
 
 // PR 6: Friendly error handling with toasts

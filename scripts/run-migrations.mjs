@@ -23,18 +23,18 @@ async function runMigrations() {
     console.log("✓ Connected to MySQL database");
 
     // Get all migration files, sorted
-    const migrationsDir = join(projectRoot, "drizzle");
+    const migrationsDir = join(projectRoot, "drizzle", "migrations");
     const files = readdirSync(migrationsDir)
       .filter((f) => f.endsWith(".sql"))
       .sort();
 
     if (files.length === 0) {
-      console.log("⚠️  No migration files found in drizzle/ directory");
+      console.log("⚠️  No migration files found in drizzle/migrations/ directory");
       console.log("   Run 'pnpm db:generate' first to create migrations");
       return;
     }
 
-    console.log(`\nFound ${files.length} migration file(s):`);
+    console.log(`\nFound  migration file(s) in drizzle/migrations:`);
     files.forEach((f) => console.log(`  - ${f}`));
 
     // Check if migrations table exists
@@ -127,6 +127,11 @@ async function runMigrations() {
             // If table already exists error, that's okay - continue
             if (error.code === "ER_TABLE_EXISTS_ERROR" || error.message.includes("already exists")) {
               console.warn(`⚠️  Table already exists, skipping: ${error.message}`);
+              continue;
+            }
+            // If column already exists error (for ALTER TABLE ADD COLUMN), that's okay - continue
+            if (error.code === "ER_DUP_FIELDNAME" || error.message.includes("Duplicate column name") || error.message.includes("already exists")) {
+              console.warn(`⚠️  Column already exists, skipping: ${error.message}`);
               continue;
             }
             console.error(`❌ Error executing statement in ${file}:`);

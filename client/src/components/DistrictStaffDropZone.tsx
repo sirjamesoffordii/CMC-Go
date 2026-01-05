@@ -5,6 +5,9 @@ import { useState, useRef } from 'react';
 import { PersonTooltip } from './PersonTooltip';
 import { trpc } from '../lib/trpc';
 import { Input } from './ui/input';
+import { NeedIndicator } from './NeedIndicator';
+
+// Mirrors DistrictDirectorDropZone but represents a single "District Staff" slot.
 
 const reverseStatusMap = {
   'Yes': 'director' as const,
@@ -20,7 +23,7 @@ const statusColors = {
   'not-invited': 'text-slate-500'
 };
 
-interface DistrictDirectorDropZoneProps {
+interface DistrictStaffDropZoneProps {
   person: Person | null;
   onDrop: (personId: string, fromCampusId: string | number) => void;
   onEdit: (campusId: string | number, person: Person) => void;
@@ -44,11 +47,11 @@ interface Need {
   isActive: boolean;
 }
 
-export function DistrictDirectorDropZone({ 
-  person, 
-  onDrop, 
-  onEdit, 
-  onClick, 
+export function DistrictStaffDropZone({
+  person,
+  onDrop,
+  onEdit,
+  onClick,
   onAddClick,
   quickAddMode = false,
   quickAddName = '',
@@ -56,8 +59,8 @@ export function DistrictDirectorDropZone({
   onQuickAddSubmit,
   onQuickAddCancel,
   onQuickAddClick,
-  quickAddInputRef
-}: DistrictDirectorDropZoneProps) {
+  quickAddInputRef,
+}: DistrictStaffDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -66,29 +69,26 @@ export function DistrictDirectorDropZone({
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person?.personId || '' }, { enabled: !!person });
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
-  
+
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'person',
     drop: (item: { personId: string; campusId: string | number }) => {
       onDrop(item.personId, item.campusId);
     },
     canDrop: (item: { personId: string; campusId: string | number }) => {
-      // Can't drop on itself if it's already the district director
-      return item.campusId !== 'district';
+      return item.campusId !== 'district-staff';
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
-      canDrop: monitor.canDrop()
+      canDrop: monitor.canDrop(),
     })
   }));
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'person',
-    item: person ? { personId: person.personId, campusId: 'district' } : null,
+    item: person ? { personId: person.personId, campusId: 'district-staff' } : null,
     canDrag: () => !!person,
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging()
-    })
+    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
   }), [person]);
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
@@ -114,11 +114,11 @@ export function DistrictDirectorDropZone({
   };
 
   if (!person) {
-    // Show add button when no district director
+    // Show add button when no district staff
     return (
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
+        className="flex flex-col items-center group/person w-[60px] transition-transform"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
         <button 
@@ -197,7 +197,7 @@ export function DistrictDirectorDropZone({
     <>
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
+        className="flex flex-col items-center group/person w-[60px] transition-transform"
       >
       {/* Name Label with Edit Button */}
           <div 
@@ -213,7 +213,7 @@ export function DistrictDirectorDropZone({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onEdit('district', person);
+            onEdit('district-staff', person);
           }}
           onMouseDown={(e) => e.stopPropagation()}
           className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
@@ -252,12 +252,16 @@ export function DistrictDirectorDropZone({
               strokeWidth={1.5}
               fill="currentColor"
             />
+            {/* Need indicator (arm + icon) */}
+            {personNeed?.isActive && (
+              <NeedIndicator type={personNeed.type} />
+            )}
           </div>
         </button>
         
         {/* Role Label - Absolutely positioned, shown on hover */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {person.primaryRole || 'District Director'}
+          {person.primaryRole || 'District Staff'}
         </div>
       </div>
       </div>
@@ -277,4 +281,3 @@ export function DistrictDirectorDropZone({
     </>
   );
 }
-

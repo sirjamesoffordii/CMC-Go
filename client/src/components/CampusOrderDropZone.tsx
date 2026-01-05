@@ -1,13 +1,12 @@
 import { useDrop } from 'react-dnd';
-import { ReactNode } from 'react';
 
 interface CampusOrderDropZoneProps {
   index: number;
   onDrop: (draggedCampusId: number, targetIndex: number) => void;
-  children?: ReactNode;
+  position?: 'before' | 'after';
 }
 
-export function CampusOrderDropZone({ index, onDrop, children }: CampusOrderDropZoneProps) {
+export function CampusOrderDropZone({ index, onDrop, position = 'before' }: CampusOrderDropZoneProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'campus',
     drop: (item: { campusId: number }) => {
@@ -21,14 +20,15 @@ export function CampusOrderDropZone({ index, onDrop, children }: CampusOrderDrop
   return (
     <div
       ref={drop}
-      className={`transition-all my-2 ${
-        isOver 
-          ? 'h-8 bg-blue-200 border-t-2 border-b-2 border-blue-500 rounded shadow-md' 
-          : 'h-4 hover:h-6 hover:bg-slate-100'
+      className={`absolute left-0 right-0 z-0 pointer-events-auto ${
+        position === 'before' 
+          ? 'top-0' 
+          : 'bottom-0'
       }`}
-    >
-      {children}
-    </div>
+      style={{
+        height: '100px', // Large drop zone for easy snapping
+        [position === 'before' ? 'top' : 'bottom']: '-50px', // Extend beyond row boundaries
+      }}
+    />
   );
 }
-

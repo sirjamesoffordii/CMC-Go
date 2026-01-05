@@ -16,10 +16,7 @@ export default function Approvals() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = usePublicAuth();
   
-  const { data: pendingApprovals = [], isLoading } = trpc.approvals.list.useQuery(
-    undefined,
-    { enabled: isAuthenticated }
-  );
+  const { data: pendingApprovals = [], isLoading } = trpc.approvals.list.useQuery();
   
   const approveMutation = trpc.approvals.approve.useMutation({
     onSuccess: () => {
@@ -33,7 +30,8 @@ export default function Approvals() {
     },
   });
   
-  if (!isAuthenticated) {
+  // Authentication disabled - allow all users to view approvals
+  if (false) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Card className="max-w-md">

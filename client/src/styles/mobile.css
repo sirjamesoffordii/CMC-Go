@@ -18,7 +18,7 @@
     height: 0 !important;
   }
   
-  /* Right panel (follow-up) - full width bottom drawer on mobile */
+  /* Right panel (people) - full width bottom drawer on mobile */
   .right-panel-mobile {
     width: 100% !important;
     height: 50vh !important;
@@ -35,8 +35,8 @@
     height: 0 !important;
   }
   
-  /* Follow-up tab button - adjust for mobile */
-  .follow-up-tab-mobile {
+  /* People tab button - adjust for mobile */
+  .people-tab-mobile {
     bottom: 20px !important;
     right: 20px !important;
     top: auto !important;

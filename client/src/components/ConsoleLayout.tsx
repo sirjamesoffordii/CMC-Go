@@ -60,47 +60,7 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
     );
   }
 
-  // Not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div className="rounded-full bg-primary/10 p-6">
-            <Terminal className="h-12 w-12 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Authentication Required</h1>
-            <p className="text-muted-foreground">Please sign in to access the developer console</p>
-          </div>
-          <Button asChild size="lg">
-            <a href={getLoginUrl()}>Sign In</a>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Not admin
-  if (user?.role !== "admin") {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-6 text-center">
-          <div className="rounded-full bg-destructive/10 p-6">
-            <Terminal className="h-12 w-12 text-destructive" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-foreground">Access Denied</h1>
-            <p className="text-muted-foreground">
-              This console requires administrator privileges
-            </p>
-          </div>
-          <Button variant="outline" asChild>
-            <Link href="/">Return Home</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  // Authentication disabled - allow all users to access console
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

@@ -1,6 +1,12 @@
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 interface NationalPanelProps {
   onClose: () => void;
@@ -10,6 +16,82 @@ interface NationalPanelProps {
 
 export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: NationalPanelProps) {
   const { data: nationalStaffRaw = [], isLoading } = trpc.people.getNational.useQuery();
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
+  const utils = trpc.useUtils();
+  const [isAddPersonDialogOpen, setIsAddPersonDialogOpen] = useState(false);
+  const [personForm, setPersonForm] = useState({
+    name: '',
+    role: '',
+    nationalCategory: '',
+    status: 'Not Invited' as "Yes" | "Maybe" | "No" | "Not Invited",
+  });
+
+  // Generate name suggestions from existing people and common names
+  const nameSuggestions = useMemo(() => {
+    const existingNames = new Set<string>();
+    allPeople.forEach(p => {
+      if (p.name) {
+        // Add full name
+        existingNames.add(p.name.trim());
+        // Add first name
+        const firstName = p.name.split(' ')[0]?.trim();
+        if (firstName) existingNames.add(firstName);
+        // Add last name if exists
+        const parts = p.name.trim().split(' ');
+        if (parts.length > 1) {
+          const lastName = parts[parts.length - 1]?.trim();
+          if (lastName) existingNames.add(lastName);
+        }
+      }
+    });
+    
+    // Common first names
+    const commonNames = [
+      'Jacob', 'Jake', 'Jacky', 'Jack', 'James', 'John', 'Michael', 'David', 'Daniel', 'Matthew',
+      'Sarah', 'Emily', 'Jessica', 'Ashley', 'Amanda', 'Jennifer', 'Michelle', 'Nicole', 'Stephanie',
+      'Robert', 'William', 'Richard', 'Joseph', 'Thomas', 'Christopher', 'Charles', 'Mark', 'Donald',
+      'Elizabeth', 'Mary', 'Patricia', 'Linda', 'Barbara', 'Susan', 'Karen', 'Nancy', 'Lisa',
+      'Joshua', 'Andrew', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason',
+      'Betty', 'Helen', 'Sandra', 'Donna', 'Carol', 'Ruth', 'Sharon', 'Michelle', 'Laura'
+    ];
+    
+    commonNames.forEach(name => existingNames.add(name));
+    return Array.from(existingNames).sort();
+  }, [allPeople]);
+
+  const createPerson = trpc.people.create.useMutation({
+    onSuccess: () => {
+      utils.people.getNational.invalidate();
+      utils.people.list.invalidate();
+      setIsAddPersonDialogOpen(false);
+      setPersonForm({ name: '', role: '', nationalCategory: '', status: 'Not Invited' });
+    },
+    onError: (error) => {
+      console.error('Error creating national staff:', error);
+      alert(`Failed to create person: ${error.message || 'Unknown error'}`);
+    },
+  });
+
+  const handleAddPerson = () => {
+    if (!personForm.name.trim()) {
+      alert('Please enter a name');
+      return;
+    }
+
+    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    createPerson.mutate({
+      personId,
+      name: personForm.name.trim(),
+      primaryRole: personForm.role || undefined,
+      nationalCategory: personForm.nationalCategory || undefined,
+      status: personForm.status,
+      // No district or region - this makes them national staff
+      primaryDistrictId: undefined,
+      primaryRegion: undefined,
+      primaryCampusId: undefined,
+    });
+  };
   
   // Filter out CMC Go Coordinator and Sir James Offord
   const nationalStaff = nationalStaffRaw.filter(p => {
@@ -107,19 +189,28 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm shadow-md backdrop-blur-sm">
-              NXA
+              XAN
             </div>
             <div>
               <h2 className="text-xl font-semibold tracking-tight">Chi Alpha National Team</h2>
               <p className="text-sm text-white/90 mt-0.5 font-medium">{stats.total} team members</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsAddPersonDialogOpen(true)}
+              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Add Person
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -175,6 +266,74 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
           </div>
         )}
       </div>
+
+      {/* Add Person Dialog */}
+      <Dialog open={isAddPersonDialogOpen} onOpenChange={setIsAddPersonDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add National Team Member</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-person-name">Name *</Label>
+              <Input
+                id="add-person-name"
+                value={personForm.name}
+                onChange={(e) => setPersonForm({ ...personForm, name: e.target.value })}
+                placeholder="Enter name"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddPerson();
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-person-role">Role</Label>
+              <Input
+                id="add-person-role"
+                value={personForm.role}
+                onChange={(e) => setPersonForm({ ...personForm, role: e.target.value })}
+                placeholder="e.g., National Director, Regional Director"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-person-category">Category</Label>
+              <Input
+                id="add-person-category"
+                value={personForm.nationalCategory}
+                onChange={(e) => setPersonForm({ ...personForm, nationalCategory: e.target.value })}
+                placeholder="e.g., National Office, Regional Directors"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-person-status">Status</Label>
+              <Select
+                value={personForm.status}
+                onValueChange={(value) => setPersonForm({ ...personForm, status: value as "Yes" | "Maybe" | "No" | "Not Invited" })}
+              >
+                <SelectTrigger id="add-person-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Not Invited">Not Invited</SelectItem>
+                  <SelectItem value="Yes">Yes</SelectItem>
+                  <SelectItem value="Maybe">Maybe</SelectItem>
+                  <SelectItem value="No">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddPersonDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddPerson} disabled={!personForm.name.trim() || createPerson.isPending}>
+              {createPerson.isPending ? 'Adding...' : 'Add Person'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

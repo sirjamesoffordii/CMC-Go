@@ -42,7 +42,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   // PR 2: Fetch invite notes (leaders-only endpoint)
   const { data: inviteNotes = [] } = trpc.inviteNotes.byPerson.useQuery(
     { personId: person?.personId ?? '' },
-    { enabled: !!person && isAuthenticated && !!isLeader }
+    { enabled: !!person }
   );
 
   const { data: needs = [] } = trpc.needs.byPerson.useQuery(
@@ -367,7 +367,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
       <BottomSheet
         open={open}
         onOpenChange={onOpenChange}
-        title={person.name}
+        title={person.name || person.personId || 'Person Details'}
         defaultSnap={1}
         snapPoints={[25, 60, 90]}
       >
@@ -386,7 +386,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{person.name}</DialogTitle>
+          <DialogTitle>{person.name || person.personId || 'Person Details'}</DialogTitle>
           <p className="text-sm text-gray-600">
             {person.primaryRole && <>{person.primaryRole} • </>}
             Status: <span className="font-semibold">{person.status}</span>

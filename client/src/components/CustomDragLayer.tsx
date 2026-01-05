@@ -55,12 +55,12 @@ export function CustomDragLayer({ getPerson, getCampus }: CustomDragLayerProps) 
             {campus.people.slice(0, 8).map((person) => {
               const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
               return (
-                <div key={person.personId} className="flex flex-col items-center w-[50px]">
+                <div key={person.personId} className="flex flex-col items-center w-[60px]">
                   <div className="text-xs text-slate-600 text-center mb-1 truncate w-full">
-                    {person.name.split(' ')[0]}
+                    {person.name?.split(' ')[0] || person.personId || 'Person'}
                   </div>
                   <User
-                    className={`w-8 h-8 ${statusColors[figmaStatus]}`}
+                    className={`w-10 h-10 ${statusColors[figmaStatus]}`}
                     strokeWidth={1.5}
                     fill="currentColor"
                   />
@@ -82,7 +82,7 @@ export function CustomDragLayer({ getPerson, getCampus }: CustomDragLayerProps) 
   const person = getPerson(item.personId, item.campusId);
   if (!person) return null;
 
-  const firstName = person.name.split(' ')[0];
+  const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
   const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
@@ -98,7 +98,7 @@ export function CustomDragLayer({ getPerson, getCampus }: CustomDragLayerProps) 
         transform: `translate(${currentOffset.x}px, ${currentOffset.y}px)`,
       }}
     >
-      <div className="flex flex-col items-center w-[50px] opacity-80">
+      <div className="flex flex-col items-center w-[60px] opacity-80">
         {/* Name */}
         <div className="text-xs text-gray-600 font-medium text-center mb-1">
           {truncatedName}
@@ -106,7 +106,7 @@ export function CustomDragLayer({ getPerson, getCampus }: CustomDragLayerProps) 
         
         {/* Icon */}
         <div className="relative">
-          {person.notes && person.notes.toLowerCase().includes('spouse') && (
+          {person.notes && person.notes.toLowerCase().includes('spouse') && person.name && (
             <User
               className="w-10 h-10 text-gray-300 absolute top-0 left-3"
               strokeWidth={1.5}

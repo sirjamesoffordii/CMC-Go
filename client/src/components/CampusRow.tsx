@@ -3,7 +3,7 @@ import { Campus, Person } from "../../drizzle/schema";
 import { PersonIcon } from "./PersonIcon";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
-import { MoreVertical, User, Plus, Check, Edit2 } from "lucide-react";
+import { MoreVertical, User, Plus, Check, Edit2, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -41,6 +41,10 @@ export function CampusRow({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const updateCampusName = trpc.campuses.updateName.useMutation({
+    onSuccess: () => onCampusUpdate(),
+  });
+
+  const deleteCampus = trpc.campuses.delete.useMutation({
     onSuccess: () => onCampusUpdate(),
   });
 
@@ -95,11 +99,11 @@ export function CampusRow({
               <>
                 {/* Invisible backdrop to catch clicks outside */}
                 <div
-                  className="fixed inset-0 z-[5]"
+                  className="fixed inset-0 z-[100]"
                   onClick={() => setOpenMenuId(null)}
                 ></div>
 
-                <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+                <div className="absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[101]">
                   {onCampusEdit && (
                     <>
                       <button
@@ -111,6 +115,19 @@ export function CampusRow({
                       >
                         <Edit2 className="w-4 h-4" />
                         Edit Campus Name
+                      </button>
+                      <button
+                        onClick={() => {
+                          const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will be unassigned.`);
+                          if (ok) {
+                            deleteCampus.mutate({ id: campus.id });
+                          }
+                          setOpenMenuId(null);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Campus
                       </button>
                       <div className="border-t border-gray-200 my-1"></div>
                     </>

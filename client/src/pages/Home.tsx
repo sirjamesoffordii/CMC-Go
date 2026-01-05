@@ -4,37 +4,42 @@ import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
-import { FollowUpPanel } from "@/components/FollowUpPanel";
+import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
-import { MapPin, Calendar, Pencil, Search, X, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
+import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
+import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 export default function Home() {
+  // PR 2: Real authentication
+  const { isAuthenticated, user, login } = usePublicAuth();
+  const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
-  const [followUpPanelOpen, setFollowUpPanelOpen] = useState(false);
+  const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
   const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
-  const [followUpPanelWidth, setFollowUpPanelWidth] = useState(50); // percentage
+  const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
-  const [isResizingFollowUp, setIsResizingFollowUp] = useState(false);
+  const [isResizingPeople, setIsResizingPeople] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string>('#1a1a1a');
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>('');
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+  
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
@@ -45,15 +50,21 @@ export default function Home() {
   const [selectedFileName, setSelectedFileName] = useState<string>('');
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
 
-  // Fetch data
-  const { data: districts = [] } = trpc.districts.list.useQuery();
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
+  // Fetch data - store queries for error checking
+  const districtsQuery = trpc.districts.list.useQuery();
+  const campusesQuery = trpc.campuses.list.useQuery();
+  const peopleQuery = trpc.people.list.useQuery();
+  
+  const districts = districtsQuery.data || [];
+  const allCampuses = campusesQuery.data || [];
+  const allPeople = peopleQuery.data || [];
+  
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   
@@ -203,6 +214,8 @@ export default function Home() {
       setIsResizingHeader(false);
       // Save to database
       try {
+        // Note: This is a placeholder fetch - actual saving is done via tRPC mutations
+        // Keeping this for reference but it doesn't need to use configurable URL
         await fetch('/api/trpc/settings.get?batch=1&input=' + encodeURIComponent(JSON.stringify({"0":{"key":"headerHeight"}})), {
           method: 'GET'
         });
@@ -285,6 +298,7 @@ export default function Home() {
     "NorthDakota": "Great Plains North",
     "NorthernCal-Nevada": "West Coast",
     "NorthernNewEnglend": "Northeast",
+    "NorthernNewEngland": "Northeast",
     "NorthIdaho": "Northwest",
     "NorthernMissouri": "Great Plains South",
     "NorthTexas": "Texico",
@@ -328,6 +342,16 @@ export default function Home() {
     if (!selectedDistrictId) return null;
     const found = districts.find(d => d.id === selectedDistrictId);
     if (found) return found;
+    // Deliverable 2: XAN (Chi Alpha National) behaves as a first-class district
+    if (selectedDistrictId === "XAN") {
+      return {
+        id: "XAN",
+        name: "Chi Alpha National",
+        region: "NATIONAL",
+        leftNeighbor: null,
+        rightNeighbor: null,
+      };
+    }
     // District not in database yet - create a minimal district object
     // Extract name from ID (e.g., "NorthCarolina" -> "North Carolina")
     const name = selectedDistrictId
@@ -400,8 +424,8 @@ export default function Home() {
         if (selectedDistrictId) {
           setSelectedDistrictId(null);
         }
-        if (followUpPanelOpen) {
-          setFollowUpPanelOpen(false);
+        if (peoplePanelOpen) {
+          setPeoplePanelOpen(false);
         }
         return;
       }
@@ -425,7 +449,7 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, followUpPanelOpen, districts]);
+  }, [selectedDistrictId, peoplePanelOpen, districts]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -433,10 +457,10 @@ export default function Home() {
     setIsResizingDistrict(true);
   };
 
-  // Handle follow up panel resize
-  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+  // Handle people panel resize
+  const handlePeopleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsResizingFollowUp(true);
+    setIsResizingPeople(true);
   };
 
   // Mouse move handler for resizing
@@ -446,18 +470,18 @@ export default function Home() {
         const newWidth = (e.clientX / window.innerWidth) * 100;
         setDistrictPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
       }
-      if (isResizingFollowUp) {
+      if (isResizingPeople) {
         const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
-        setFollowUpPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
+        setPeoplePanelWidth(Math.min(Math.max(newWidth, 20), 80)); // 20-80%
       }
     };
 
     const handleMouseUp = () => {
       setIsResizingDistrict(false);
-      setIsResizingFollowUp(false);
+      setIsResizingPeople(false);
     };
 
-    if (isResizingDistrict || isResizingFollowUp) {
+    if (isResizingDistrict || isResizingPeople) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -465,12 +489,26 @@ export default function Home() {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizingDistrict, isResizingFollowUp]);
+  }, [isResizingDistrict, isResizingPeople]);
 
   // Calculate days until CMC
   const cmcDate = new Date('2025-07-06');
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+
+  // Diagnostic: Log if queries are failing
+  if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
+    console.error("[Home] Query errors:", {
+      districts: districtsQuery.error,
+      campuses: campusesQuery.error,
+      people: peopleQuery.error,
+    });
+  }
+
+  // Safety check: ensure component always returns something
+  if (!districtsQuery && !campusesQuery && !peopleQuery) {
+    console.warn('[Home] Queries not initialized yet');
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
@@ -489,7 +527,7 @@ export default function Home() {
         <div className="flex-shrink-0 h-12 w-auto mr-4 relative z-10 flex items-center gap-2" style={{ marginLeft: '12px' }}>
           {headerLogoUrl || savedHeaderLogo?.value ? (
             <img 
-              src={headerLogoUrl || savedHeaderLogo?.value} 
+              src={headerLogoUrl || savedHeaderLogo?.value || undefined} 
               alt="Logo" 
               className="h-full w-auto object-contain"
             />
@@ -498,7 +536,7 @@ export default function Home() {
               <div className="h-9 w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
                 style={{ 
                   opacity: 0,
-                  animation: 'roll-in 4s cubic-bezier(0.4, 0, 0.3, 1) 0s forwards'
+                  animation: 'roll-in 4.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s forwards'
                 }}>
                 <span>CMC</span>
                 <span className="text-[10px] leading-none">Go</span>
@@ -507,29 +545,35 @@ export default function Home() {
           )}
         </div>
         
+        
         {/* Header Text - Editable */}
         <div 
           className="flex-grow text-white/95 relative z-10"
-          style={{ fontSize: '18px' }}
+          style={{ 
+            fontSize: '18px',
+            fontFamily: "'Righteous', 'Bebas Neue', 'Oswald', sans-serif",
+            fontWeight: 400,
+            letterSpacing: '0.5px'
+          }}
           dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || 'Chi Alpha Campus Ministries' 
+            __html: headerText || savedHeaderText?.value || '' 
           }}
         />
         
-        {/* Banner Text - "Go Together" - Fades in towards end of CMC Go animation */}
+        {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div 
             className="whitespace-nowrap text-white absolute"
             style={{
               fontSize: '16px',
               fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-              animation: 'fade-in-text 1.2s ease-out 1.5s forwards',
+              animation: 'fade-in-text 1.2s ease-out 4.2s forwards',
               left: 'calc(12px + 36px + 16px + 12px)', // Position after logo
               fontWeight: 400,
               opacity: 0
             }}
           >
-            Go Together
+            Going Together
           </div>
         </div>
 
@@ -542,163 +586,63 @@ export default function Home() {
           Edit
         </button>
 
-        {/* Days Counter - Next to search icon */}
-        <div className="flex items-center gap-3 flex-shrink-0 z-10 mr-2">
-          {/* Days Until CMC Counter */}
-          <span className="text-white/90 text-sm font-medium whitespace-nowrap">
-            {daysUntilCMC} days until CMC
-          </span>
-        </div>
+        {/* User info (authentication disabled) */}
+        {user && (
+          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
+            <span>{user.fullName || user.email}</span>
+            {/* PR 4: Editing badge - mobile only */}
+            {isMobile && (
+              <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
+                Editing as: {user.districtName || user.campusName || user.role}
+              </span>
+            )}
+          </div>
+        )}
 
-        {/* Search Icon */}
-        <div className="relative flex-shrink-0 mr-2 z-10">
-          <button
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded transition-colors"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          
-          {/* Search Input and Results Dropdown */}
-          {searchOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
-              <div className="relative mb-2">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-300 rounded text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => { setSearchQuery(''); }}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              
-              {/* Search Results */}
-              {searchQuery && (
-                <div className="max-h-80 overflow-y-auto">
-                  {/* Filter and display results */}
-                  {(() => {
-                    const query = searchQuery.toLowerCase();
-                    const matchedPeople = allPeople.filter(p => 
-                      p.name.toLowerCase().includes(query) || 
-                      p.primaryRole?.toLowerCase().includes(query)
-                    ).slice(0, 5);
-                    const matchedCampuses = allCampuses.filter(c => 
-                      c.name.toLowerCase().includes(query)
-                    ).slice(0, 3);
-                    const matchedDistricts = districts.filter(d => 
-                      d.id.toLowerCase().includes(query) || 
-                      d.region?.toLowerCase().includes(query)
-                    ).slice(0, 3);
-                    
-                    const hasResults = matchedPeople.length > 0 || matchedCampuses.length > 0 || matchedDistricts.length > 0;
-                    
-                    if (!hasResults) {
-                      return <div className="p-3 text-gray-500 text-sm">No results found</div>;
-                    }
-                    
-                    return (
-                      <>
-                        {matchedPeople.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">People</div>
-                            {matchedPeople.map(person => (
-                              <button
-                                key={person.personId}
-                                onClick={() => {
-                                  setSelectedPerson(person);
-                                  setPersonDialogOpen(true);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                <div className={`w-2 h-2 rounded-full ${
-                                  person.status === 'Yes' ? 'bg-green-500' :
-                                  person.status === 'Maybe' ? 'bg-yellow-500' :
-                                  person.status === 'No' ? 'bg-red-500' : 'bg-gray-300'
-                                }`} />
-                                <span className="text-sm text-gray-900">{person.name}</span>
-                                {person.primaryRole && <span className="text-xs text-gray-500">{person.primaryRole}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {matchedCampuses.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Campuses</div>
-                            {matchedCampuses.map(campus => (
-                              <button
-                                key={campus.id}
-                                onClick={() => {
-                                  setSelectedDistrictId(campus.districtId);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100"
-                              >
-                                <span className="text-sm text-gray-900">{campus.name}</span>
-                                <span className="text-xs text-gray-500 ml-2">in {campus.districtId}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        {matchedDistricts.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">Districts</div>
-                            {matchedDistricts.map(district => (
-                              <button
-                                key={district.id}
-                                onClick={() => {
-                                  setSelectedDistrictId(district.id);
-                                  setSearchOpen(false);
-                                  setSearchQuery('');
-                                }}
-                                className="w-full px-3 py-2 text-left hover:bg-gray-100"
-                              >
-                                <span className="text-sm text-gray-900">{district.name}</span>
-                                {district.region && <span className="text-xs text-gray-500 ml-2">{district.region}</span>}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right Side Hamburger Menu */}
-        <div className="flex-shrink-0 relative">
+        {/* Right Side: Info, Login Button, and Hamburger Menu */}
+        <div className="flex items-center gap-2 flex-shrink-0 z-10">
+          {/* Info (moved from menu) */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="text-white/80 hover:text-white hover:bg-white/10"
+            onClick={(e) => {
+              e.preventDefault();
+              setLocation("/more-info");
+            }}
+            className="text-white/80 hover:text-white hover:bg-red-700"
           >
-            <Menu className="w-5 h-5" />
+            <span className="text-sm font-semibold tracking-wide">INFO</span>
           </Button>
-          
-          {/* Dropdown Menu */}
-          {menuOpen && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setMenuOpen(false)}
-              />
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+
+          {/* Login Button */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => window.location.href = getLoginUrl()}
+            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
+          >
+            LOGIN
+          </Button>
+
+          {/* Hamburger Menu */}
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="text-white/80 hover:text-white hover:bg-red-700"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            
+            {/* Dropdown Menu */}
+            {menuOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setMenuOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -723,17 +667,6 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    setLocation("/more-info");
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <MapPin className="w-4 h-4" />
-                  More Info
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
                     setLocation("/admin");
                     setMenuOpen(false);
                   }}
@@ -742,19 +675,16 @@ export default function Home() {
                   <Shield className="w-4 h-4" />
                   Admin Console
                 </button>
-                <button
-                  onClick={() => {
-                    window.location.href = getLoginUrl();
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Login
-                </button>
+                {/* Days Until CMC - Footer */}
+                <div className="px-4 py-2 border-t border-gray-200">
+                  <div className="text-sm font-bold text-gray-900">
+                    {daysUntilCMC} days until CMC
+                  </div>
+                </div>
               </div>
             </>
           )}
+          </div>
         </div>
       </div>
 
@@ -762,19 +692,31 @@ export default function Home() {
       <div className="flex main-content-area md:flex-row flex-col" style={{ height: 'calc(100vh - 120px)' }}>
         {/* Left District/National Panel */}
         <div
-          className={`bg-white border-r border-gray-300 flex-shrink-0 relative overflow-x-auto ${!isResizingDistrict ? 'transition-all duration-300 ease-in-out' : ''}`}
-          style={{ 
-            width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : '0%', 
-            overflowY: 'hidden'
+          className={[
+            "bg-white border-r border-gray-300 flex-shrink-0 relative",
+            !isResizingDistrict ? "transition-all duration-300 ease-in-out" : "",
+            isMobile ? "left-panel-mobile" : "",
+            isMobile && !(selectedDistrictId || nationalPanelOpen) ? "closed" : "",
+          ].filter(Boolean).join(" ")}
+          style={isMobile ? {
+            width: "100%",
+            height: (selectedDistrictId || nationalPanelOpen) ? "45vh" : "0",
+            overflow: (selectedDistrictId || nationalPanelOpen) ? "auto" : "hidden",
+          } : {
+            width: (selectedDistrictId || nationalPanelOpen) ? `${districtPanelWidth}%` : "0%",
+            height: "100%",
+            overflow: (selectedDistrictId || nationalPanelOpen) ? "auto" : "hidden",
           }}
         >
           {(selectedDistrictId || nationalPanelOpen) && (
             <>
-              {/* Resize Handle */}
-              <div
-                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                onMouseDown={handleDistrictMouseDown}
-              />
+              {/* Resize Handle (desktop only) */}
+              {!isMobile && (
+                <div
+                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                  onMouseDown={handleDistrictMouseDown}
+                />
+              )}
               <AnimatePresence mode="wait">
                 {selectedDistrictId && selectedDistrict && (
                   <DistrictPanel
@@ -805,15 +747,15 @@ export default function Home() {
         </div>
 
         {/* Center Map Area */}
-        <div className="flex-1 relative overflow-auto map-container-mobile">
+        <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
             style={{
-              paddingLeft: selectedDistrictId ? '2rem' : '1.5rem',
-              paddingRight: selectedDistrictId ? '2rem' : '1.5rem',
+              paddingLeft: '1.5rem',
+              paddingRight: '1.5rem',
               display: 'flex',
-              justifyContent: selectedDistrictId ? 'flex-end' : 'center',
+              justifyContent: 'center',
               alignItems: 'center',
               minHeight: '100%',
             }}
@@ -821,7 +763,7 @@ export default function Home() {
               // Close panels if clicking on padding/empty space around map
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                setPeoplePanelOpen(false);
               }
             }}
           >
@@ -831,13 +773,14 @@ export default function Home() {
               onDistrictSelect={handleDistrictSelect}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
               }}
               onNationalClick={() => {
-                setNationalPanelOpen(true);
-                setSelectedDistrictId(null);
-                setFollowUpPanelOpen(false);
+                // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
+                setSelectedDistrictId("XAN");
+                setNationalPanelOpen(false);
+                setPeoplePanelOpen(false);
               }}
             />
 
@@ -846,36 +789,51 @@ export default function Home() {
 
 
 
-        {/* Right Follow Up Panel */}
+        {/* Right People Panel */}
         <div
-          className={`bg-white border-l border-gray-100 flex-shrink-0 relative ${!isResizingFollowUp ? 'transition-all duration-300 ease-in-out' : ''}`}
-          style={{ width: followUpPanelOpen ? `${followUpPanelWidth}%` : '0%', overflow: 'hidden' }}
+          className={[
+            "bg-white border-l border-gray-100 flex-shrink-0 relative",
+            !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
+            isMobile ? "right-panel-mobile" : "",
+            isMobile && !peoplePanelOpen ? "closed" : "",
+          ].filter(Boolean).join(" ")}
+          style={isMobile ? {
+            width: "100%",
+            height: peoplePanelOpen ? "50vh" : "0",
+            overflow: "hidden",
+          } : {
+            width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+            overflow: "hidden",
+          }}
         >
-          {followUpPanelOpen && (
+          {peoplePanelOpen && (
             <>
               {/* Resize Handle */}
-              <div
-                className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                onMouseDown={handleFollowUpMouseDown}
-              />
-              <FollowUpPanel onClose={() => setFollowUpPanelOpen(false)} />
+              {!isMobile && (
+                <div
+                  className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                  onMouseDown={handlePeopleMouseDown}
+                />
+              )}
+              <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
             </>
           )}
         </div>
       </div>
 
-      {/* Follow Up Tab Button - Fixed to right side, slides out from edge on hover */}
-      {!followUpPanelOpen && (
+      {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
+      {!peoplePanelOpen && (
         <div
-          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block follow-up-tab-mobile"
+          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
           style={{ right: 0 }}
         >
           <button
-            onClick={() => setFollowUpPanelOpen(true)}
-            className="bg-black/80 text-white px-2 py-8 md:rounded-l-md rounded-full shadow-md font-medium text-sm backdrop-blur-sm translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            onClick={() => setPeoplePanelOpen(true)}
+            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
           >
-            Follow Ups
+            <span className="inline-block md:-rotate-90 whitespace-nowrap select-none">
+              People
+            </span>
           </button>
         </div>
       )}
@@ -941,6 +899,11 @@ export default function Home() {
       <ImportModal 
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
+      />
+      
+      <LoginModal
+        open={loginModalOpen}
+        onOpenChange={setLoginModalOpen}
       />
     </div>
   );

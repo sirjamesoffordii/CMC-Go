@@ -32,7 +32,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     onSuccess: (data) => {
       setStep("verify");
       // In development, show the code
-      if (process.env.NODE_ENV === "development" && (data as any).code) {
+      if (import.meta.env.DEV && (data as any).code) {
         alert(`Verification code: ${(data as any).code}`);
       }
     },

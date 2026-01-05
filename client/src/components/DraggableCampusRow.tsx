@@ -29,7 +29,7 @@ export function DraggableCampusRow({ campusId, children, isDragging }: Draggable
     <div
       ref={drag}
       style={{ opacity }}
-      className="relative cursor-grab active:cursor-grabbing"
+      className="relative cursor-grab active:cursor-grabbing z-10"
     >
       {children}
     </div>

@@ -13,9 +13,12 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
 
+  const devBypass = (import.meta as any)?.env?.VITE_DEV_BYPASS_AUTH === "true";
+
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,
+    enabled: !devBypass,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -26,6 +29,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   const logout = useCallback(async () => {
     try {
+      if (devBypass) return;
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
       if (
@@ -46,11 +50,33 @@ export function useAuth(options?: UseAuthOptions) {
       "manus-runtime-user-info",
       JSON.stringify(meQuery.data)
     );
+    const devUser = devBypass
+      ? ({
+          id: 0,
+          fullName: "Dev User",
+          email: "dev@local",
+          role: "ADMIN",
+          campusId: 0,
+          districtId: null,
+          regionId: null,
+          approvalStatus: "ACTIVE",
+          approvedByUserId: null,
+          approvedAt: null,
+          createdAt: new Date(),
+          lastLoginAt: null,
+          openId: null,
+          name: null,
+          loginMethod: null,
+          campusName: null,
+          districtName: null,
+          regionName: null,
+        } as any)
+      : null;
     return {
-      user: meQuery.data ?? null,
-      loading: meQuery.isLoading || logoutMutation.isPending,
-      error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
+      user: devBypass ? devUser : meQuery.data ?? null,
+      loading: devBypass ? false : meQuery.isLoading || logoutMutation.isPending,
+      error: devBypass ? null : meQuery.error ?? logoutMutation.error ?? null,
+      isAuthenticated: devBypass ? true : Boolean(meQuery.data),
     };
   }, [
     meQuery.data,
@@ -58,10 +84,12 @@ export function useAuth(options?: UseAuthOptions) {
     meQuery.isLoading,
     logoutMutation.error,
     logoutMutation.isPending,
+    devBypass,
   ]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
+    if (devBypass) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
     if (state.user) return;
     if (typeof window === "undefined") return;
@@ -74,6 +102,7 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.isPending,
     meQuery.isLoading,
     state.user,
+    devBypass,
   ]);
 
   return {

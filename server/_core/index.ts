@@ -38,25 +38,45 @@ async function startServer() {
   // terminate. Doing this check here prevents the server from
   // starting with missing configuration and makes failures obvious in
   // logs.
+  const isDevelopment = process.env.NODE_ENV === "development";
   try {
     validateEnv();
   } catch (error) {
-    console.error('[Startup] Environment validation failed. Server will not start.');
-    console.error('[Startup] Fix the missing variables and try again.');
-    process.exit(1);
+    if (!isDevelopment) {
+      console.error('[Startup] Environment validation failed. Server will not start.');
+      console.error('[Startup] Fix the missing variables and try again.');
+      process.exit(1);
+    }
+    console.warn("[Startup] Environment validation failed (development). Continuing without required env.");
+    console.warn("[Startup] Some API routes may fail until env vars are configured.");
   }
+
   // Perform startup database health check
-  // This will throw if critical schema issues are detected
-  try {
-    await startupDbHealthCheck();
-  } catch (error) {
-    console.error("[Startup] Database health check failed. Server will not start.");
-    console.error("[Startup] Fix the database schema issues and try again.");
-    process.exit(1);
+  // In development, do not hard-stop startup if DATABASE_URL is missing.
+  if (ENV.DATABASE_URL) {
+    try {
+      await startupDbHealthCheck();
+    } catch (error) {
+      if (!isDevelopment) {
+        console.error("[Startup] Database health check failed. Server will not start.");
+        console.error("[Startup] Fix the database schema issues and try again.");
+        process.exit(1);
+      }
+      console.warn("[Startup] Database health check failed (development). Continuing.");
+      console.warn("[Startup] API routes that hit the DB may fail until schema/env are fixed.");
+    }
+  } else if (isDevelopment) {
+    console.warn("[Startup] DATABASE_URL is empty (development). Skipping startup DB health check.");
   }
 
   const app = express();
   const server = createServer(app);
+
+  // Trust proxy for Railway deployment (required for rate limiter to work correctly)
+  if (!isDevelopment) {
+    app.set("trust proxy", 1);
+  }
+
   // -------------------------------------------------------------------------
   // Security & middleware configuration
   //
@@ -65,7 +85,6 @@ async function startServer() {
   // minute window. Adjust these numbers based on expected traffic patterns.
   // In development, use a much higher limit to avoid blocking Vite HMR and
   // asset requests.
-  const isDevelopment = process.env.NODE_ENV === "development";
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: isDevelopment ? 10000 : 100, // Much higher limit in dev for Vite HMR
@@ -85,7 +104,23 @@ async function startServer() {
 
   // Add Helmet to set a collection of sensible HTTP headers that improve
   // security such as Content‑Security‑Policy, X‑Frame‑Options and others.
-  app.use(helmet());
+  // In development, disable CSP to allow Vite's React preamble to work properly.
+  // CSP is re-enabled in production for security.
+  app.use(helmet({
+    contentSecurityPolicy: isDevelopment ? false : {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Vite HMR in dev
+        styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'", "https:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+  }));
 
   // Configure CORS. When CORS_ORIGIN is set in the environment, only those
   // origins (comma separated) will be allowed. If empty, all origins are

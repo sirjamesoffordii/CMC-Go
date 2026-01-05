@@ -53,7 +53,7 @@ async function verifyWrites() {
     const testPerson = {
       personId: `test_person_${Date.now()}`,
       name: "Test Person",
-      status: "Not Invited" as const,
+      status: "Not Invited",
       depositPaid: false,
       primaryDistrictId: "SouthernMissouri",
       primaryCampusId: campusId,
@@ -77,7 +77,7 @@ async function verifyWrites() {
     
     // Test 3: Update person
     console.log("\n3️⃣  Testing updatePerson...");
-    const updatedStatus = "Yes" as const;
+    const updatedStatus = "Yes";
     await db.update(people)
       .set({ status: updatedStatus })
       .where(eq(people.personId, testPerson.personId));

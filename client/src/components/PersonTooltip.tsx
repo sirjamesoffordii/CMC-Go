@@ -1,6 +1,7 @@
 import { Person } from "../../../drizzle/schema";
 import { Check } from "lucide-react";
 import { trpc } from "../lib/trpc";
+import { createPortal } from "react-dom";
 
 interface PersonTooltipProps {
   person: Person;
@@ -25,9 +26,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
       }
     }
   );
-  return (
+  const tooltipContent = (
     <div
-      className="fixed z-50 bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-3 pointer-events-none tooltip-animate min-w-[200px] max-w-[300px]"
+      className="fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-3 pointer-events-none tooltip-animate min-w-[200px] max-w-[300px]"
       style={{
         left: position.x + 15,
         top: position.y + 15,
@@ -35,7 +36,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
     >
       {/* Person Name */}
       <div className="text-sm font-semibold text-gray-800 mb-2">
-        {person.name}
+        {person.name || person.personId || 'Person'}
       </div>
       
       {/* Need Information */}
@@ -125,11 +126,22 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
         </div>
       )}
       
-      {/* Notes */}
-      {person.notes && (
+      {/* Notes (Need Notes + General Notes) */}
+      {(need?.description || person.notes) && (
         <div className="mb-2">
           <div className="text-xs text-gray-600 mb-1">Notes:</div>
-          <div className="text-xs text-gray-800 line-clamp-3">{person.notes}</div>
+          <div className="text-xs text-gray-800 space-y-1">
+            {need?.description && (
+              <div className={need.isActive ? '' : 'line-through text-gray-500'}>
+                <span className="text-gray-500">Need: </span>{need.description}
+              </div>
+            )}
+            {person.notes && (
+              <div>
+                <span className="text-gray-500">General: </span>{person.notes}
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -142,5 +154,12 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
       )}
     </div>
   );
+
+  // Use portal to render tooltip at document body level to avoid z-index stacking context issues
+  if (typeof document !== 'undefined') {
+    return createPortal(tooltipContent, document.body);
+  }
+  
+  return tooltipContent;
 }
 

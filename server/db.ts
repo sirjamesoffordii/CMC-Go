@@ -106,6 +106,20 @@ export async function getUserByOpenId(openId: string) {
   return result[0] || null;
 }
 
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0] || null;
+}
+
 export async function createUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -224,6 +238,16 @@ export async function updateCampusName(id: number, name: string) {
   await db.update(campuses).set({ name }).where(eq(campuses.id, id));
 }
 
+export async function deleteCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Detach people from this campus (retain their person record)
+  await db.update(people).set({ primaryCampusId: null }).where(eq(people.primaryCampusId, id));
+  // Remove the campus row
+  await db.delete(campuses).where(eq(campuses.id, id));
+}
+
 // ============================================================================
 // PEOPLE
 // ============================================================================
@@ -231,7 +255,19 @@ export async function updateCampusName(id: number, name: string) {
 export async function getAllPeople() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people);
+  try {
+    return await db.select().from(people);
+  } catch (error) {
+    console.error("[getAllPeople] Database error:", error);
+    if (error instanceof Error) {
+      console.error("[getAllPeople] Full error message:", error.message);
+      // Check for common schema mismatch issues
+      if (error.message.includes('notes') || error.message.includes('note')) {
+        console.error("[getAllPeople] Possible schema mismatch with 'notes' field");
+      }
+    }
+    throw error;
+  }
 }
 
 export async function getPersonByPersonId(personId: string) {
@@ -251,6 +287,34 @@ export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+}
+
+/**
+ * Sanitize person data for public viewing - removes private fields
+ * Public view only includes: personId, status, primaryDistrictId, primaryCampusId, primaryRole, primaryRegion
+ * Removes: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy, and other PII
+ * Note: name is excluded for privacy, but personId can be used as an identifier
+ */
+export function sanitizePersonForPublic(person: typeof people.$inferSelect) {
+  return {
+    id: person.id,
+    personId: person.personId,
+    status: person.status,
+    depositPaid: person.depositPaid,
+    statusLastUpdated: person.statusLastUpdated,
+    primaryDistrictId: person.primaryDistrictId,
+    primaryCampusId: person.primaryCampusId,
+    primaryRole: person.primaryRole,
+    primaryRegion: person.primaryRegion,
+    nationalCategory: person.nationalCategory,
+    householdId: person.householdId,
+    householdRole: person.householdRole,
+    spouseAttending: person.spouseAttending,
+    childrenCount: person.childrenCount,
+    guestsCount: person.guestsCount,
+    createdAt: person.createdAt,
+    // Explicitly exclude private fields: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy
+  };
 }
 
 export async function createPerson(person: InsertPerson) {
@@ -406,8 +470,22 @@ export async function createNeed(need: InsertNeed) {
 export async function getAllActiveNeeds() {
   const db = await getDb();
   if (!db) return [];
-  // Return only active needs (isActive = true)
-  return await db.select().from(needs).where(eq(needs.isActive, true));
+  try {
+    // Return only active needs (isActive = true)
+    return await db.select().from(needs).where(eq(needs.isActive, true));
+  } catch (error) {
+    console.error("[getAllActiveNeeds] Database error:", error);
+    // Check if it's a column name issue
+    if (error instanceof Error) {
+      if (error.message.includes('createdById') || error.message.includes('createdByUserId')) {
+        console.error("[getAllActiveNeeds] Schema mismatch: Check if database column name matches schema definition");
+        console.error("[getAllActiveNeeds] Schema expects: createdById");
+      }
+      // Log the full error for debugging
+      console.error("[getAllActiveNeeds] Full error:", error.message);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -551,13 +629,20 @@ export async function getMetrics() {
     .from(people)
     .groupBy(people.status);
 
+  // Get total count separately to ensure we count ALL people, including those with null status
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people);
+  const total = Number(totalResult[0]?.count) || 0;
+
   // Initialize counters with zero values
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -572,16 +657,30 @@ export async function getMetrics() {
         counts.notInvited = count;
         break;
       default:
-        // Unknown status values are ignored
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
         break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 
 export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in district
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryDistrictId, districtId));
+  const total = Number(totalResult[0]?.count) || 0;
 
   // Aggregate counts per status for a specific district in a single query.
   const statusCounts = await db
@@ -591,11 +690,12 @@ export async function getDistrictMetrics(districtId: string) {
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -609,14 +709,31 @@ export async function getDistrictMetrics(districtId: string) {
       case 'Not Invited':
         counts.notInvited = count;
         break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 
 export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in region
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryRegion, region));
+  const total = Number(totalResult[0]?.count) || 0;
 
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
@@ -625,11 +742,12 @@ export async function getRegionMetrics(region: string) {
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
-  let total = 0;
+  let countedTotal = 0;
+  
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
-    total += count;
+    countedTotal += count;
     switch (status) {
       case 'Yes':
         counts.going = count;
@@ -643,8 +761,18 @@ export async function getRegionMetrics(region: string) {
       case 'Not Invited':
         counts.notInvited = count;
         break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
     }
   }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
   return { ...counts, total };
 }
 

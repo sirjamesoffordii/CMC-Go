@@ -1,6 +1,5 @@
 import { Person } from "../../../drizzle/schema";
 import { StickyNote, DollarSign, Pencil, Check } from "lucide-react";
-import { Checkbox } from "./ui/checkbox";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useSortable } from "@dnd-kit/sortable";
@@ -15,9 +14,6 @@ interface PersonRowProps {
   hasNotes?: boolean;
   hasNeeds?: boolean;
   onPersonUpdate: () => void;
-  // PR 5: Bulk selection
-  isSelected?: boolean;
-  onToggleSelect?: (personId: string) => void;
 }
 
 // Universal response language for editing
@@ -67,8 +63,8 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     onStatusChange(person.personId, nextStatus);
   };
   
-  // Public mode: render neutral placeholder row
-  if (!isAuthenticated) {
+  // Authentication disabled - always show full person row
+  if (false) {
     return (
       <div className="flex items-center gap-1.5 bg-slate-50 rounded-lg border border-slate-200 pointer-events-none">
         <div className="w-1.5 h-8 rounded-l bg-slate-400 opacity-30 flex-shrink-0" />
@@ -83,23 +79,10 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border transition-all duration-200 cursor-pointer group relative ${
-        isSelected ? "border-blue-500 bg-blue-50" : "border-slate-200 hover:border-slate-300 hover:shadow-sm"
-      }`}
+      className="flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* PR 5: Bulk Selection Checkbox */}
-      {onToggleSelect && (
-        <div className="px-1.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(person.personId)}
-            className="touch-target"
-          />
-        </div>
-      )}
-      
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
         className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}

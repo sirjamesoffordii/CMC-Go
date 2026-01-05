@@ -102,13 +102,7 @@ tmp/
 temp/
 
 # Database
-# Allow data/cmc_go.db for deployment
-# *.db
-# *.sqlite
-# *.sqlite3
-data/*.db-wal
-data/*.db-shm
-data/export.json
+data/
 
 # Build/deploy artifacts
 *.zip

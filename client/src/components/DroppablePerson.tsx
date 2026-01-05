@@ -1,7 +1,7 @@
 import { useDrag, useDrop } from 'react-dnd';
 import { motion } from 'framer-motion';
-import { User, Edit2, Hand, Check } from 'lucide-react';
-import { Checkbox } from './ui/checkbox';
+import { User, Edit2, Check } from 'lucide-react';
+import { NeedIndicator } from './NeedIndicator';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';
 import { Person } from '../../../drizzle/schema';
@@ -39,6 +39,7 @@ interface DroppablePersonProps {
   onClick: (campusId: string | number, person: Person) => void;
   onMove: (draggedId: string, draggedCampusId: string | number, targetCampusId: string | number, targetIndex: number) => void;
   hasNeeds?: boolean;
+  onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
 }
 
 interface Need {
@@ -50,7 +51,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, isSelected, onToggleSelect }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -59,32 +60,34 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
-  // Only fetch in authenticated mode
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, { enabled: isAuthenticated });
+  // Authentication disabled - always fetch needs
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
   // Also fetch needs by person to get inactive needs
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person.personId },
-    { enabled: isAuthenticated }
+    { personId: person.personId }
   );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
   // Convert database status to Figma status for display
   const figmaStatus = person.status ? reverseStatusMap[person.status] || 'not-invited' : 'not-invited';
   
-  // Public mode: render neutral placeholder dot
-  if (!isAuthenticated) {
-    return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.8 }}
-        className="relative flex flex-col items-center w-[50px] flex-shrink-0 pointer-events-none"
-      >
-        <div className="w-3 h-3 rounded-full bg-slate-400 opacity-50" />
-      </motion.div>
-    );
-  }
+  // Handle status click to cycle through statuses
+  const handleStatusClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
+      "Not Invited",
+      "Yes",
+      "Maybe",
+      "No",
+    ];
+    const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
+    const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
+    const nextStatus = STATUS_CYCLE[nextIndex];
+    // Call the status change handler if available
+    if (onPersonStatusChange) {
+      onPersonStatusChange(person.personId, nextStatus);
+    }
+  }, [person.status, person.personId, onPersonStatusChange]);
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
@@ -127,13 +130,12 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name });
+    console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name || person.personId });
     onEdit(campusId, person);
   }, [campusId, person, onEdit]);
 
-  const firstName = person.name.split(' ')[0];
+  const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
-  const truncatedName = capitalizedFirstName.length > 10 ? capitalizedFirstName.slice(0, 10) + '.' : capitalizedFirstName;
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
@@ -162,50 +164,51 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         key={person.personId}
         layout
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: isDragging ? 0 : 1, scale: 1 }}
+        // Keep the icon same size while dragging; only add subtle lighting effect
+        animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{
           layout: { type: "spring", stiffness: 300, damping: 30 },
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 }
         }}
-        className={`relative group/person flex flex-col items-center w-[50px] flex-shrink-0 ${isSelected ? 'ring-2 ring-blue-500 rounded-lg p-1' : ''}`}
+        className={`relative group/person flex flex-col items-center w-[60px] flex-shrink-0 ${isDragging ? 'drop-shadow-lg' : ''}`}
       >
-      {/* PR 5: Bulk Selection Checkbox */}
-      {onToggleSelect && (
-        <div className="absolute -left-2 top-0 z-50" onClick={(e) => e.stopPropagation()}>
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect(person.personId)}
-            className="touch-target h-4 w-4"
-          />
-        </div>
-      )}
-      
       {/* First Name Label with Edit Button */}
       <div 
         ref={nameRef}
-        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+        className="relative flex items-center justify-center mb-1 group/name w-full min-w-0"
         onMouseEnter={handleNameMouseEnter}
         onMouseLeave={handleNameMouseLeave}
         onMouseMove={handleNameMouseMove}
       >
-        <div className="text-xs text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
-          {truncatedName}
+        <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+          {capitalizedFirstName}
         </div>
         <button
           ref={editButtonRef}
-          onClick={handleEditClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            console.log('Edit button clicked directly', { campusId, personId: person.personId });
+            onEdit(campusId, person);
+          }}
           onMouseDown={(e) => {
             e.stopPropagation();
             e.preventDefault();
           }}
           onPointerDown={(e) => {
             e.stopPropagation();
+            e.preventDefault();
+          }}
+          onDragStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
           }}
           className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
           title="Edit person"
           type="button"
+          draggable={false}
         >
           <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
         </button>
@@ -217,7 +220,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
       >
         <button
-          onClick={() => onClick(campusId, person)}
+          onClick={handleStatusClick}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
@@ -238,19 +241,14 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
               fill="currentColor"
             />
           </div>
-          {/* Raising hand indicator when person has needs */}
+          {/* Need indicator (arm + icon) */}
           {hasNeeds && (
-            <Hand
-              className="w-5 h-5 text-yellow-600 absolute -top-1 -right-1 z-20 pointer-events-none"
-              strokeWidth={2.5}
-              fill="currentColor"
-              style={{ transform: 'rotate(-20deg)' }}
-            />
+            <NeedIndicator type={personNeed?.type} />
           )}
         </button>
 
-        {/* Role Label - Absolutely positioned, shown on hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/person:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+        {/* Role Label - hidden until hover */}
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
           {person.primaryRole || 'Staff'}
         </div>
       </div>

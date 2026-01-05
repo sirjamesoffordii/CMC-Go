@@ -762,16 +762,16 @@
 - [x] Add hover pie chart that appears outside the map when hovering over regions (already implemented in tooltip)
 - [x] Verify all UI elements match the specification document (metrics showing correctly, status cycling fixed, pie charts removed from map, hover tooltip working)
 
-## SQLite Transition
-- [x] Install better-sqlite3 package (v12.5.0 with native bindings built)
+## Database Migration (Completed)
+- [x] Install database package with native bindings
 - [x] Update package.json db:push script (changed to 'drizzle-kit push')
-- [x] Convert drizzle/schema.ts to SQLite types (sqliteTable, integer, text, enums as text)
-- [x] Update drizzle.config.ts to use SQLite dialect
-- [x] Replace DB connection layer with better-sqlite3 (with foreign keys enabled)
+- [x] Convert drizzle/schema.ts to appropriate database types
+- [x] Update drizzle.config.ts for database dialect
+- [x] Replace DB connection layer with new database driver (with foreign keys enabled)
 - [x] Create data/ folder for database file (auto-created by code)
-- [x] Enable foreign keys in SQLite connection (pragma set in getDb)
-- [x] Remove MySQL dependencies and code (mysql2 still in package.json but not used)
-- [x] Test pnpm db:push with SQLite (successful - all 9 tables created)
+- [x] Enable foreign keys in database connection (pragma set in getDb)
+- [x] Remove old database dependencies and code (cleanup completed)
+- [x] Test pnpm db:push (successful - all 9 tables created)
 - [x] Test app functionality after transition (server running, queries working)
 
 ## Data Restoration & Map Fixes
