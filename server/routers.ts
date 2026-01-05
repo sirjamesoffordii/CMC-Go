@@ -128,7 +128,7 @@ export const appRouter = router({
         await db.consumeAuthToken(input.code);
         
         // Update last login
-        await db.updateUserLastSignedIn(user.id);
+        await db.updateUserLastLoginAt(user.id);
         
         // Create session
         setSessionCookie(ctx.req, ctx.res, user.id);
@@ -499,7 +499,7 @@ export const appRouter = router({
       .input(z.object({ personId: z.string() }))
       .query(async ({ input, ctx }) => {
         // Authentication disabled - return all needs
-        return await db.getNeedsByPersonId(input.personId, true, true);
+        return await db.getNeedsByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
@@ -644,7 +644,7 @@ export const appRouter = router({
         await db.createInviteNote({
           personId: input.personId,
           content: input.content,
-          createdById: ctx.user?.id || null,
+          createdByUserId: ctx.user?.id || null,
         });
         
         return { success: true };
