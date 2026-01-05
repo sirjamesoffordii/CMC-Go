@@ -644,7 +644,7 @@ export const appRouter = router({
         await db.createInviteNote({
           personId: input.personId,
           content: input.content,
-          createdById: ctx.user?.id || null,
+          createdByUserId: ctx.user?.id || null,
         });
         
         return { success: true };

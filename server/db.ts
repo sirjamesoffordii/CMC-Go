@@ -1066,9 +1066,9 @@ export async function revertStatusChange(statusChangeId: number, revertedByUserI
     throw new Error("Status change not found");
   }
   
-  // Revert person's status to previousStatus
+  // Revert person's status to fromStatus
   await db.update(people).set({
-    status: change[0].previousStatus,
+    status: change[0].fromStatus || "Not Invited",
     statusLastUpdated: new Date()
   }).where(eq(people.personId, change[0].personId));
   
@@ -1120,6 +1120,9 @@ export async function importPeople(rows: Array<{
   let skipped = 0;
   const errors: string[] = [];
   
+  // Load all campuses once at the start for efficiency
+  const allCampuses = await getAllCampuses();
+  
   for (const row of rows) {
     try {
       // Generate personId from name (simple approach - could be improved)
@@ -1137,8 +1140,7 @@ export async function importPeople(rows: Array<{
       let districtId: string | null = null;
       
       if (row.campus) {
-        const campuses = await getAllCampuses();
-        const campus = campuses.find(c => 
+        const campus = allCampuses.find(c => 
           c.name.toLowerCase() === row.campus?.toLowerCase()
         );
         if (campus) {
