@@ -128,7 +128,7 @@ export const appRouter = router({
         await db.consumeAuthToken(input.code);
         
         // Update last login
-        await db.updateUserLastSignedIn(user.id);
+        await db.updateUserLastLoginAt(user.id);
         
         // Create session
         setSessionCookie(ctx.req, ctx.res, user.id);

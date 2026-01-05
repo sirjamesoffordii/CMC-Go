@@ -137,7 +137,7 @@ export async function createUser(user: InsertUser) {
   return insertId;
 }
 
-export async function updateUserLastSignedIn(userId: number) {
+export async function updateUserLastLoginAt(userId: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
@@ -1066,9 +1066,14 @@ export async function revertStatusChange(statusChangeId: number, revertedByUserI
     throw new Error("Status change not found");
   }
   
+  // Check if this is an initial status (fromStatus is null)
+  if (!change[0].fromStatus) {
+    throw new Error("Cannot revert initial status change");
+  }
+  
   // Revert person's status to fromStatus
   await db.update(people).set({
-    status: change[0].fromStatus || "Not Invited",
+    status: change[0].fromStatus,
     statusLastUpdated: new Date()
   }).where(eq(people.personId, change[0].personId));
   
