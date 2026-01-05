@@ -499,7 +499,7 @@ export const appRouter = router({
       .input(z.object({ personId: z.string() }))
       .query(async ({ input, ctx }) => {
         // Authentication disabled - return all needs
-        return await db.getNeedsByPersonId(input.personId, true, true);
+        return await db.getNeedsByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({

@@ -12,6 +12,9 @@ import {
   settings,
   assignments,
   households,
+  authTokens,
+  inviteNotes,
+  statusChanges,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
@@ -19,7 +22,10 @@ import {
   InsertNote,
   InsertSetting,
   InsertAssignment,
-  InsertHousehold
+  InsertHousehold,
+  InsertAuthToken,
+  InsertInviteNote,
+  InsertStatusChange
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -124,13 +130,17 @@ export async function createUser(user: InsertUser) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(users).values(user);
-  return result[0].insertId;
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
 }
 
-export async function updateUserLastSignedIn(openId: string) {
+export async function updateUserLastSignedIn(userId: number) {
   const db = await getDb();
   if (!db) return;
-  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.openId, openId));
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
 }
 
 export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
@@ -145,7 +155,11 @@ export async function upsertUser(user: Partial<InsertUser> & { openId: string })
     return existing.id;
   } else {
     const result = await db.insert(users).values(user as InsertUser);
-    return result[0].insertId;
+    const insertId = result[0]?.insertId;
+    if (!insertId) {
+      throw new Error("Failed to get insert ID from database");
+    }
+    return insertId;
   }
 }
 
@@ -177,6 +191,18 @@ export async function updateDistrict(id: string, data: Partial<InsertDistrict>) 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(districts).set(data).where(eq(districts.id, id));
+}
+
+export async function updateDistrictName(id: string, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(districts).set({ name }).where(eq(districts.id, id));
+}
+
+export async function updateDistrictRegion(id: string, region: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(districts).set({ region }).where(eq(districts.id, id));
 }
 
 // ============================================================================
@@ -387,7 +413,11 @@ export async function createPerson(person: InsertPerson) {
     console.log('[db.createPerson] Inserting person:', JSON.stringify(values, null, 2));
     const result = await db.insert(people).values(values);
     console.log('[db.createPerson] Insert successful, result:', result);
-    return result[0].insertId;
+    const insertId = result[0]?.insertId;
+    if (!insertId) {
+      throw new Error("Failed to get insert ID from database");
+    }
+    return insertId;
   } catch (error) {
     console.error('[db.createPerson] Database error:', error);
     console.error('[db.createPerson] Error details:', error instanceof Error ? error.message : String(error));
@@ -442,7 +472,11 @@ export async function createAssignment(assignment: InsertAssignment) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(assignments).values(assignment);
-  return result[0].insertId;
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
 }
 
 // ============================================================================
@@ -464,7 +498,11 @@ export async function createNeed(need: InsertNeed) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(needs).values(need);
-  return result[0].insertId;
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
 }
 
 export async function getAllActiveNeeds() {
@@ -489,19 +527,19 @@ export async function getAllActiveNeeds() {
 }
 
 /**
- * Toggle need active status. When marking as met (isActive = false), set metAt timestamp.
+ * Toggle need active status. When marking as met (isActive = false), set resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */
 export async function toggleNeedActive(needId: number, isActive: boolean) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const updateData: { isActive: boolean; metAt?: Date | null } = { isActive };
+  const updateData: { isActive: boolean; resolvedAt?: Date | null } = { isActive };
   if (!isActive) {
-    // When marking as met, set metAt timestamp
-    updateData.metAt = new Date();
+    // When marking as met, set resolvedAt timestamp
+    updateData.resolvedAt = new Date();
   } else {
-    // When reactivating, clear metAt
-    updateData.metAt = null;
+    // When reactivating, clear resolvedAt
+    updateData.resolvedAt = null;
   }
   await db.update(needs).set(updateData).where(eq(needs.id, needId));
 }
@@ -520,7 +558,7 @@ export async function getNeedByPersonId(personId: string) {
 
 /**
  * Update or create need. Only creates if type is provided (not "None").
- * When marking as met (isActive = false), sets metAt timestamp.
+ * When marking as met (isActive = false), sets resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */
 export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
@@ -535,7 +573,7 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
     description: string;
     amount?: number | null;
     isActive: boolean;
-    metAt?: Date | null;
+    resolvedAt?: Date | null;
   } = {
     type: needData.type,
     description: needData.description,
@@ -543,12 +581,12 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
     isActive: needData.isActive,
   };
   
-  // Set metAt when marking as met, clear when reactivating
+  // Set resolvedAt when marking as met, clear when reactivating
   if (!needData.isActive) {
-    updateData.metAt = new Date();
+    updateData.resolvedAt = new Date();
   } else if (existing && !existing.isActive) {
     // Reactivating a previously met need
-    updateData.metAt = null;
+    updateData.resolvedAt = null;
   }
   
   if (existing) {
@@ -563,9 +601,13 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
       description: needData.description,
       amount: needData.amount ?? null,
       isActive: needData.isActive,
-      metAt: needData.isActive ? null : new Date(),
+      resolvedAt: needData.isActive ? null : new Date(),
     });
-    return result[0].insertId;
+    const insertId = result[0]?.insertId;
+    if (!insertId) {
+      throw new Error("Failed to get insert ID from database");
+    }
+    return insertId;
   }
 }
 
@@ -579,9 +621,15 @@ export async function deleteNeedByPersonId(personId: string) {
 // NOTES
 // ============================================================================
 
-export async function getNotesByPersonId(personId: string) {
+export async function getNotesByPersonId(personId: string, category?: "INVITE" | "INTERNAL") {
   const db = await getDb();
   if (!db) return [];
+  
+  if (category) {
+    return await db.select().from(notes)
+      .where(and(eq(notes.personId, personId), eq(notes.category, category)));
+  }
+  
   return await db.select().from(notes).where(eq(notes.personId, personId));
 }
 
@@ -589,7 +637,11 @@ export async function createNote(note: InsertNote) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(notes).values(note);
-  return result[0].insertId;
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
 }
 
 // ============================================================================
@@ -872,7 +924,11 @@ export async function createHousehold(data: InsertHousehold) {
   }
   
   const result = await db.insert(households).values(cleanData);
-  return (result[0] as any).insertId;
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
 }
 
 export async function updateHousehold(id: number, data: Partial<InsertHousehold>) {
@@ -896,4 +952,228 @@ export async function deleteHousehold(id: number) {
   
   // Then delete the household
   await db.delete(households).where(eq(households.id, id));
+}
+
+// ============================================================================
+// AUTH TOKENS
+// ============================================================================
+
+export async function createAuthToken(token: InsertAuthToken) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(authTokens).values(token);
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
+}
+
+export async function getAuthToken(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(authTokens)
+    .where(and(
+      eq(authTokens.token, token),
+      sql`${authTokens.expiresAt} > NOW()`,
+      sql`${authTokens.consumedAt} IS NULL`
+    ))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function consumeAuthToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(authTokens).set({ consumedAt: new Date() }).where(eq(authTokens.token, token));
+}
+
+// ============================================================================
+// USER APPROVALS
+// ============================================================================
+
+export async function getPendingApprovals(role: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(users)
+    .where(eq(users.approvalStatus, "PENDING_APPROVAL"));
+}
+
+export async function approveUser(userId: number, approvedByUserId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    approvalStatus: "ACTIVE",
+    approvedByUserId,
+    approvedAt: new Date()
+  }).where(eq(users.id, userId));
+}
+
+export async function rejectUser(userId: number, rejectedByUserId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({
+    approvalStatus: "REJECTED"
+  }).where(eq(users.id, userId));
+}
+
+// ============================================================================
+// INVITE NOTES
+// ============================================================================
+
+export async function getInviteNotesByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(inviteNotes)
+    .where(eq(inviteNotes.personId, personId))
+    .orderBy(sql`${inviteNotes.createdAt} DESC`);
+}
+
+export async function createInviteNote(note: InsertInviteNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(inviteNotes).values(note);
+  const insertId = result[0]?.insertId;
+  if (!insertId) {
+    throw new Error("Failed to get insert ID from database");
+  }
+  return insertId;
+}
+
+// ============================================================================
+// STATUS CHANGES
+// ============================================================================
+
+export async function getStatusHistory(personId: string, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(statusChanges)
+    .where(eq(statusChanges.personId, personId))
+    .orderBy(sql`${statusChanges.changedAt} DESC`)
+    .limit(limit);
+}
+
+export async function revertStatusChange(statusChangeId: number, revertedByUserId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Get the status change record
+  const change = await db.select().from(statusChanges)
+    .where(eq(statusChanges.id, statusChangeId))
+    .limit(1);
+  
+  if (!change[0]) {
+    throw new Error("Status change not found");
+  }
+  
+  // Revert person's status to previousStatus
+  await db.update(people).set({
+    status: change[0].previousStatus,
+    statusLastUpdated: new Date()
+  }).where(eq(people.personId, change[0].personId));
+  
+  return { success: true };
+}
+
+// ============================================================================
+// FOLLOW-UP PEOPLE
+// ============================================================================
+
+export async function getFollowUpPeople() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Get people with Maybe status or active needs
+  const maybeStatus = await db.select().from(people)
+    .where(eq(people.status, "Maybe"));
+  
+  const peopleWithNeeds = await db.select().from(people)
+    .where(sql`${people.personId} IN (
+      SELECT DISTINCT personId FROM ${needs} WHERE isActive = true
+    )`);
+  
+  // Combine and deduplicate by personId
+  const allPeople = [...maybeStatus, ...peopleWithNeeds];
+  const uniquePeople = Array.from(
+    new Map(allPeople.map(p => [p.personId, p])).values()
+  );
+  
+  return uniquePeople;
+}
+
+// ============================================================================
+// IMPORT PEOPLE
+// ============================================================================
+
+export async function importPeople(rows: Array<{
+  name: string;
+  campus?: string;
+  district?: string;
+  role?: string;
+  status?: "Yes" | "Maybe" | "No" | "Not Invited";
+  notes?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let imported = 0;
+  let skipped = 0;
+  const errors: string[] = [];
+  
+  for (const row of rows) {
+    try {
+      // Generate personId from name (simple approach - could be improved)
+      const personId = row.name.toLowerCase().replace(/\s+/g, '_');
+      
+      // Check if person already exists
+      const existing = await getPersonByPersonId(personId);
+      if (existing) {
+        skipped++;
+        continue;
+      }
+      
+      // Find campus if provided
+      let campusId: number | null = null;
+      let districtId: string | null = null;
+      
+      if (row.campus) {
+        const campuses = await getAllCampuses();
+        const campus = campuses.find(c => 
+          c.name.toLowerCase() === row.campus?.toLowerCase()
+        );
+        if (campus) {
+          campusId = campus.id;
+          districtId = campus.districtId;
+        }
+      }
+      
+      // Create person
+      await createPerson({
+        personId,
+        name: row.name,
+        primaryCampusId: campusId,
+        primaryDistrictId: districtId,
+        primaryRole: row.role,
+        status: row.status || "Not Invited",
+        notes: row.notes,
+        depositPaid: false
+      });
+      
+      imported++;
+    } catch (error) {
+      errors.push(`Failed to import ${row.name}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  
+  return { imported, skipped, errors };
+}
+
+// ============================================================================
+// NEED VISIBILITY
+// ============================================================================
+
+export async function updateNeedVisibility(needId: number, visibility: "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(needs).set({ visibility }).where(eq(needs.id, needId));
 }
