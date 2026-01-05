@@ -20,11 +20,28 @@ import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
+// View Mode types: any
+type ViewMode = "national" | "regional" | "district";
+
+interface ViewState {
+  mode: ViewMode;
+  regionId?: string;
+  districtId?: string;
+  panelOpen: boolean;
+}
 export default function Home() {
   // PR 2: Real authentication
   const { isAuthenticated, user, login } = usePublicAuth();
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
+
+  // View mode state with defaults
+  const [viewState, setViewState] = useState<ViewState>({
+    mode: "regional",
+    regionId: "texico",
+    districtId: "south-texas",
+    panelOpen: true
+  });
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -511,6 +528,28 @@ export default function Home() {
   }
 
   return (
+          {/* View Mode Selector */}
+      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: '#fff', padding: '8px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {(['national', 'regional', 'district'] as ViewMode[]).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewState({ ...viewState, mode })}
+              style={{
+                padding: '4px 12px',
+                backgroundColor: viewState.mode === mode ? '#4A90E2' : '#f0f0f0',
+                color: viewState.mode === mode ? '#fff' : '#000',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                textTransform: 'capitalize'
+              }}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
+      </div>
     <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
