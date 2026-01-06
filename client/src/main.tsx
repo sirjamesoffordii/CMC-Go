@@ -9,6 +9,24 @@ import { toast } from "sonner";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
+import * as Sentry from "@sentry/react";
+
+// Initialize Sentry with environment variables
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
+const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT;
+
+if (sentryDsn && sentryDsn.trim()) {
+    Sentry.init({
+          dsn: sentryDsn,
+          environment: sentryEnvironment || 'unknown',
+          tracesSampleRate: 1.0,
+          integrations: [
+                  new Sentry.Replay(),
+                ],
+          replaysSessionSampleRate: 0.1,
+          replaysOnErrorSampleRate: 1.0,
+        });
+  }
 
 const queryClient = new QueryClient();
 
