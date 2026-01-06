@@ -1,3 +1,7 @@
+// Initialize Sentry FIRST - must be before any other imports
+import { initSentry } from "./sentry";
+initSentry();
+
 import "dotenv/config";
 import express from "express";
 import helmet from 'helmet';

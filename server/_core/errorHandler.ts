@@ -1,3 +1,5 @@
+import { Sentry } from "./sentry";
+
 /**
  * PR 6: Structured error handling utilities
  * Ensures no PII is logged and errors are user-friendly
@@ -72,5 +74,32 @@ export function createErrorResponse(error: unknown): { error: string; code?: str
     error: "An unexpected error occurred",
     code: "UNKNOWN_ERROR",
   };
+}
+
+/**
+ * Capture error to Sentry for monitoring
+ */
+export function captureErrorToSentry(error: unknown): void {
+  // Sanitize error before sending to Sentry
+  const sanitizedMessage = sanitizeErrorForLogging(error);
+  
+  if (error instanceof StructuredError) {
+    // Send structured error with context
+    Sentry.captureException(error, {
+      tags: {
+        errorCode: error.code,
+        statusCode: error.statusCode.toString(),
+      },
+      extra: {
+        details: error.details,
+      },
+    });
+  } else if (error instanceof Error) {
+    // Send regular error
+    Sentry.captureException(error);
+  } else {
+    // Send as message if not an error object
+    Sentry.captureMessage(sanitizedMessage, "error");
+  }
 }
 
