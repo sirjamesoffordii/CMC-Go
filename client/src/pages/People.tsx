@@ -39,8 +39,8 @@ export default function People() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
 
-  const [myCampusOnly, setMyCampusOnly] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('myCampus') === 'true';
   });

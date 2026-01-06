@@ -2,7 +2,7 @@
 
 ## Completed Tickets
 
-- **Filter state persistence for People tab** - PR #36
+ **Filter state persistence for People tab** - PR #36
   - Implemented URL query parameter persistence for all filters
   - Filters persist across navigation and page refreshes
   - Commit: 56b259f
