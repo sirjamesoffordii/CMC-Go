@@ -4,10 +4,10 @@ A map-first coordination app that helps leaders see who has been invited, where 
 
 ## Documentation
 
-- [CMC Go Overview](/docs/CMC_GO_OVERVIEW.md) - Project identity and mental model
+- [CMC Go Overview](/docs/authority/CMC_OVERVIEW.md) - Project identity and mental model
 - [CMC Go Project Tracker](/docs/CMC_GO_PROJECT_TRACKER.md) - Development progress and milestones
-- - [Lead Developer Role](/docs/LEAD_DEVELOPER_ROLE.md) - Authority and decision-making framework
-  - - [Execution Agent Role](/docs/EXECUTION_AGENT_ROLE.md) - Capabilities and behavioral rules for execution agents
+- - [Lead Developer Role](/docs/authority/LEAD_DEVELOPER_ROLE.md) - Authority and decision-making framework
+  - - [Execution Agent Role](/docs/authority/EXECUTION_AGENT_ROLE.md) - Capabilities and behavioral rules for execution agents
 
 ## Overview
 
