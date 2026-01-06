@@ -134,7 +134,7 @@ If these documents are missing or unreadable, project continuity is compromised.
 
 ### 7.1 CMC Go Overview (Intent & Identity)
 
-- Location: `/docs/CMC_GO_OVERVIEW.md`
+- Location: `/docs/authority/CMC_OVERVIEW.md`
 - Purpose: define **what CMC Go is and why it exists**
 
 Contains:
@@ -154,7 +154,7 @@ Usage rules:
 
 ### 7.2 CMC Go — Build Map (Build Progression & Completion)
 
-- Location: `/docs/BUILD_MAP.md`
+- Location: `/docs/authority/BUILD_MAP.md`
 
 Purpose:
 
@@ -189,7 +189,7 @@ Build Map records **judgment and position**.
 
 ### 7.3 Lead Developer Role (Authority & Governance)
 
-- Location: `/docs/LEAD_DEVELOPER_ROLE.md`
+- Location: `/docs/authority/LEAD_DEVELOPER_ROLE.md`
 
 Purpose:
 
@@ -201,7 +201,7 @@ Purpose:
 
 ### 7.4 Execution Agent Role (Execution Discipline)
 
-- Location: `/docs/EXECUTION_AGENT_ROLE.md`
+- Location: `/docs/authority/EXECUTION_AGENT_ROLE.md`
 
 Purpose:
 
