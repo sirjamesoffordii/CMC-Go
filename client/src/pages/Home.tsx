@@ -6,6 +6,7 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
 import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
@@ -19,13 +20,102 @@ import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
+import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { District } from "../../../drizzle/schema";
+
+/**
+ * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
+ * 
+ * This mapping provides region assignments for districts that exist in the map SVG
+ * but haven't been seeded into the database yet. Used in two places:
+ * 
+ * 1. selectedDistrict useMemo: Creates synthetic district objects with region from map
+ * 2. ViewState region extraction: Falls back to map when district.region is missing
+ * 
+ * TODO: Remove once all districts are properly seeded with region assignments.
+ * Safety: All usages include fallback to "Unknown" or null to prevent crashes.
+ */
+
+/**
+ * Extracts region for ViewState: database first, then DISTRICT_REGION_MAP fallback.
+ * Returns null if not found (ViewState allows null regionId).
+ */
+function extractRegionForViewState(districtId: string | null, districts: District[]): string | null {
+  if (!districtId) return null;
+  
+  const district = districts.find(d => d.id === districtId);
+  if (district?.region) {
+    return district.region;
+  }
+  
+  // Fallback to map for districts not yet in database
+  return DISTRICT_REGION_MAP[districtId] || null;
+}
+
+/**
+ * Creates synthetic district for districts not yet in database.
+ * Special case: "XAN" → region "NATIONAL". Others use DISTRICT_REGION_MAP fallback.
+ * Returns existing district if found in database, or null if districtId is null.
+ */
+function createSyntheticDistrict(districtId: string | null, districts: District[]): District | null {
+  if (!districtId) return null;
+  
+  const found = districts.find(d => d.id === districtId);
+  if (found) return found;
+  
+  // Special case: XAN (Chi Alpha National)
+  if (districtId === "XAN") {
+    return {
+      id: "XAN",
+      name: "Chi Alpha National",
+      region: "NATIONAL",
+      leftNeighbor: null,
+      rightNeighbor: null,
+    } as District;
+  }
+  
+  // Create synthetic district: extract name from ID, get region from fallback map
+  const name = districtId
+    .replace(/([A-Z])/g, ' $1')
+    .trim()
+    .replace(/^./, str => str.toUpperCase());
+  
+  const region = DISTRICT_REGION_MAP[districtId] || "Unknown";
+  
+  return {
+    id: districtId,
+    name: name,
+    region: region,
+    leftNeighbor: null,
+    rightNeighbor: null,
+  } as District;
+}
 
 export default function Home() {
   // PR 2: Real authentication
-  const { isAuthenticated, user, login } = usePublicAuth();
+  const { user } = usePublicAuth();
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
+  
+  // View mode state - initialize from URL or defaults
+  // Default: district-scoped view (as per requirements)
+  const [viewState, setViewState] = useState<ViewState>(() => {
+    const urlState = initializeViewStateFromURL();
+    // If URL has view state, use it; otherwise default to district mode
+    if (urlState.districtId || urlState.regionId || urlState.campusId) {
+      return urlState;
+    }
+    return DEFAULT_VIEW_STATE;
+  });
+  
+  // Legacy selectedDistrictId for backward compatibility
+  // Sync with viewState.districtId
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(() => {
+    const urlState = initializeViewStateFromURL();
+    return urlState.districtId || null;
+  });
+  
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
@@ -41,7 +131,6 @@ export default function Home() {
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
   
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -270,103 +359,16 @@ export default function Home() {
     },
   });
 
-  // District to region mapping (for districts not yet in database)
-  const districtRegionMap: Record<string, string> = {
-    "Alabama": "Southeast",
-    "Alaska": "Northwest",
-    "Appalachian": "Mid-Atlantic",
-    "Arizona": "West Coast",
-    "Arkansas": "South Central",
-    "Colorado": "Big Sky",
-    "Georgia": "Southeast",
-    "Hawaii": "West Coast",
-    "Illinois": "Great Lakes",
-    "Indiana": "Great Lakes",
-    "Iowa": "Great Plains South",
-    "Kansas": "Great Plains South",
-    "Kentucky": "Mid-Atlantic",
-    "Louisiana": "South Central",
-    "Michigan": "Great Lakes",
-    "Minnesota": "Great Plains North",
-    "Mississippi": "Southeast",
-    "Montana": "Big Sky",
-    "Nebraska": "Great Plains South",
-    "NewJersey": "Northeast",
-    "NewMexico": "Texico",
-    "NewYork": "Northeast",
-    "NorthCarolina": "Mid-Atlantic",
-    "NorthDakota": "Great Plains North",
-    "NorthernCal-Nevada": "West Coast",
-    "NorthernNewEnglend": "Northeast",
-    "NorthernNewEngland": "Northeast",
-    "NorthIdaho": "Northwest",
-    "NorthernMissouri": "Great Plains South",
-    "NorthTexas": "Texico",
-    "Ohio": "Great Lakes",
-    "Oklahoma": "South Central",
-    "Oregon": "Northwest",
-    "PeninsularFlorida": "Southeast",
-    "Penn-Del": "Northeast",
-    "Potomac": "Mid-Atlantic",
-    "SouthCarolina": "Southeast",
-    "SouthDakota": "Great Plains North",
-    "SouthernCalifornia": "West Coast",
-    "SouthernNewEngland": "Northeast",
-    "SouthIdaho": "Big Sky",
-    "SouthernMissouri": "Great Plains South",
-    "SouthTexas": "Texico",
-    "Tennessee": "Mid-Atlantic",
-    "Utah": "Big Sky",
-    "Washington": "Northwest",
-    "WestFlorida": "Southeast",
-    "WestTexas": "Texico",
-    "Wisconsin-NorthMichigan": "Great Plains North",
-    "Wyoming": "Big Sky",
-    "Connecticut": "Northeast",
-    "Maine": "Northeast",
-    "Massachusetts": "Northeast",
-    "NewHampshire": "Northeast",
-    "Pennsylvania": "Northeast",
-    "Vermont": "Northeast",
-    "Virginia": "Mid-Atlantic",
-    "WestVirginia": "Mid-Atlantic",
-    "Florida": "Southeast",
-    "Nevada": "West Coast",
-    "NorthCalifornia": "West Coast",
-    "SouthCalifornia": "West Coast",
-  };
-
-  // Filter data for selected district
-  // Create a district object on the fly if it doesn't exist in database
+  // ViewMode filtering: Scoped data based on selectedDistrictId
+  // 
+  // These useMemos filter data to the currently selected district scope.
+  // The selectedDistrict may be from the database or a synthetic object created
+  // via DISTRICT_REGION_MAP fallback for districts not yet seeded.
   const selectedDistrict = useMemo(() => {
-    if (!selectedDistrictId) return null;
-    const found = districts.find(d => d.id === selectedDistrictId);
-    if (found) return found;
-    // Deliverable 2: XAN (Chi Alpha National) behaves as a first-class district
-    if (selectedDistrictId === "XAN") {
-      return {
-        id: "XAN",
-        name: "Chi Alpha National",
-        region: "NATIONAL",
-        leftNeighbor: null,
-        rightNeighbor: null,
-      };
-    }
-    // District not in database yet - create a minimal district object
-    // Extract name from ID (e.g., "NorthCarolina" -> "North Carolina")
-    const name = selectedDistrictId
-      .replace(/([A-Z])/g, ' $1')
-      .trim()
-      .replace(/^./, str => str.toUpperCase());
-    return {
-      id: selectedDistrictId,
-      name: name,
-      region: districtRegionMap[selectedDistrictId] || "Unknown",
-      leftNeighbor: null,
-      rightNeighbor: null,
-    };
+    return createSyntheticDistrict(selectedDistrictId, districts);
   }, [districts, selectedDistrictId]);
 
+  // Filter campuses and people to the selected district scope
   const selectedDistrictCampuses = useMemo(
     () => allCampuses.filter(c => c.districtId === selectedDistrictId),
     [allCampuses, selectedDistrictId]
@@ -377,18 +379,78 @@ export default function Home() {
     [allPeople, selectedDistrictId]
   );
 
-  // Add notes/needs indicators to people - DERIVED from active needs only
-  // hasNeeds is true if person has any active needs, false otherwise
-  // Only active needs are counted. Inactive needs are retained for history.
-  const peopleWithIndicators = useMemo(() => {
-    return allPeople.map(person => ({
-      ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
-    }));
-  }, [allPeople, allNeeds]);
-
+  // Sync selectedDistrictId with viewState.districtId
+  useEffect(() => {
+    if (viewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(viewState.districtId);
+    }
+  }, [viewState.districtId, selectedDistrictId]);
+  
+  // Update URL when viewState changes
+  useEffect(() => {
+    updateURLWithViewState(viewState);
+  }, [viewState]);
+  
+  const handleViewStateChange = (newViewState: ViewState) => {
+    setViewState(newViewState);
+    // Update selectedDistrictId to match
+    if (newViewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(newViewState.districtId);
+    }
+  };
+  
+  // District selection: Updates selectedDistrictId and viewState.regionId
+  // Only updates viewState if district exists in database (preserves original behavior).
+  // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
   const handleDistrictSelect = (districtId: string) => {
     setSelectedDistrictId(districtId);
+    
+    const selectedDistrict = districts.find(d => d.id === districtId);
+    if (selectedDistrict) {
+      // Extract region: database first, then fallback map
+      const regionId = selectedDistrict.region || extractRegionForViewState(districtId, districts);
+      const newViewState: ViewState = {
+        ...viewState,
+        districtId: districtId,
+        regionId: regionId,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+    }
+    // If district not in database, viewState unchanged (original behavior)
+  };
+  
+  // Region selection: Sets ViewMode to "region", clears district/campus scope
+  const handleRegionSelect = (regionId: string) => {
+    const newViewState: ViewState = {
+      ...viewState,
+      mode: "region",
+      regionId,
+      districtId: null,
+      campusId: null,
+      panelOpen: false,
+    };
+    setViewState(newViewState);
+    setSelectedDistrictId(null);
+  };
+  
+  // Campus selection: Updates viewState with campus, district, and region
+  // Region extracted from district (database or DISTRICT_REGION_MAP fallback)
+  const handleCampusSelect = (campusId: number) => {
+    const campus = allCampuses.find(c => c.id === campusId);
+    if (campus && campus.districtId) {
+      const regionId = extractRegionForViewState(campus.districtId, districts);
+      const newViewState: ViewState = {
+        ...viewState,
+        mode: "campus",
+        campusId,
+        districtId: campus.districtId,
+        regionId: regionId,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+      setSelectedDistrictId(campus.districtId);
+    }
   };
 
   const handlePersonStatusChange = (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
@@ -509,6 +571,28 @@ export default function Home() {
   if (!districtsQuery && !campusesQuery && !peopleQuery) {
     console.warn('[Home] Queries not initialized yet');
   }
+
+  // Debug: Log data when it loads
+  useEffect(() => {
+    if (districtsQuery.data) {
+      console.log('[Home] Districts loaded:', districtsQuery.data.length, districtsQuery.data.slice(0, 5).map(d => d.id));
+    }
+    if (peopleQuery.data) {
+      console.log('[Home] People loaded:', peopleQuery.data.length);
+      const peopleWithDistricts = peopleQuery.data.filter(p => p.primaryDistrictId);
+      console.log('[Home] People with districts:', peopleWithDistricts.length);
+      if (peopleWithDistricts.length > 0) {
+        const districtCounts = peopleWithDistricts.reduce((acc, p) => {
+          acc[p.primaryDistrictId!] = (acc[p.primaryDistrictId!] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('[Home] People by district (top 5):', Object.entries(districtCounts).slice(0, 5));
+      }
+    }
+    if (campusesQuery.data) {
+      console.log('[Home] Campuses loaded:', campusesQuery.data.length);
+    }
+  }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
@@ -748,6 +832,14 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
+          {/* View Mode Selector */}
+          <div className="absolute top-4 left-4 z-10">
+            <ViewModeSelector
+              viewState={viewState}
+              onViewStateChange={handleViewStateChange}
+            />
+          </div>
+          
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -764,6 +856,7 @@ export default function Home() {
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
+                setViewState({ ...viewState, districtId: null, regionId: null, panelOpen: false });
               }
             }}
           >
@@ -771,16 +864,21 @@ export default function Home() {
               districts={districts}
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
+              viewState={viewState}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
+                setViewState({ ...viewState, districtId: null, regionId: null, panelOpen: false });
               }}
               onNationalClick={() => {
                 // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
+                // Candidate for View Modes refactor: XAN hardcoded region "NATIONAL" may need
+                // special handling in region-scoped views.
                 setSelectedDistrictId("XAN");
                 setNationalPanelOpen(false);
                 setPeoplePanelOpen(false);
+                setViewState({ ...viewState, districtId: "XAN", regionId: "NATIONAL", panelOpen: true });
               }}
             />
 

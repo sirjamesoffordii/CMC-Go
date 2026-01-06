@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
+import { ViewState } from "@/types/viewModes";
+import { DISTRICT_REGION_MAP } from "@/lib/regions";
 
 interface InteractiveMapProps {
   districts: District[];
@@ -9,6 +11,7 @@ interface InteractiveMapProps {
   onDistrictSelect: (districtId: string) => void;
   onBackgroundClick?: () => void;
   onNationalClick?: () => void;
+  viewState?: ViewState; // Optional for backward compatibility
 }
 
 // Base region label positions - closest to map (for 1 metric active)
@@ -342,72 +345,6 @@ const getDynamicPosition = (
   return { labelX, labelY, labelDirection: base.labelDirection };
 };
 
-// District to region mapping (for districts not yet in database)
-const districtRegionMap: Record<string, string> = {
-  "Alabama": "Southeast",
-  "Alaska": "Northwest",
-  "Appalachian": "Mid-Atlantic",
-  "Arizona": "West Coast",
-  "Arkansas": "South Central",
-  "Colorado": "Big Sky",
-  "Georgia": "Southeast",
-  "Hawaii": "West Coast",
-  "Illinois": "Great Lakes",
-  "Indiana": "Great Lakes",
-  "Iowa": "Great Plains South",
-  "Kansas": "Great Plains South",
-  "Kentucky": "Mid-Atlantic",
-  "Louisiana": "South Central",
-  "Michigan": "Great Lakes",
-  "Minnesota": "Great Plains North",
-  "Mississippi": "Southeast",
-  "Montana": "Big Sky",
-  "Nebraska": "Great Plains South",
-  "NewJersey": "Northeast",
-  "NewMexico": "Texico",
-  "NewYork": "Northeast",
-  "NorthCarolina": "Mid-Atlantic",
-  "NorthDakota": "Great Plains North",
-  "NorthernCal-Nevada": "West Coast",
-  "NorthernNewEnglend": "Northeast",
-  "NorthernNewEngland": "Northeast",
-  "NorthIdaho": "Northwest",
-  "NorthernMissouri": "Great Plains South",
-  "NorthTexas": "Texico",
-  "Ohio": "Great Lakes",
-  "Oklahoma": "South Central",
-  "Oregon": "Northwest",
-  "PeninsularFlorida": "Southeast",
-  "Penn-Del": "Northeast",
-  "Potomac": "Mid-Atlantic",
-  "SouthCarolina": "Southeast",
-  "SouthDakota": "Great Plains North",
-  "SouthernCalifornia": "West Coast",
-  "SouthernNewEngland": "Northeast",
-  "SouthIdaho": "Big Sky",
-  "SouthernMissouri": "Great Plains South",
-  "SouthTexas": "Texico",
-  "Tennessee": "Mid-Atlantic",
-  "Utah": "Big Sky",
-  "Washington": "Northwest",
-  "WestFlorida": "Southeast",
-  "WestTexas": "Texico",
-  "Wisconsin-NorthMichigan": "Great Plains North",
-  "Wyoming": "Big Sky",
-  "Connecticut": "Northeast",
-  "Maine": "Northeast",
-  "Massachusetts": "Northeast",
-  "NewHampshire": "Northeast",
-  "Pennsylvania": "Northeast",
-  "Vermont": "Northeast",
-  "Virginia": "Mid-Atlantic",
-  "WestVirginia": "Mid-Atlantic",
-  "Florida": "Southeast",
-  "Nevada": "West Coast",
-  "NorthCalifornia": "West Coast",
-  "SouthCalifornia": "West Coast",
-};
-
 // District centroids for pie chart positioning (based on new SVG)
 const districtCentroids: Record<string, { x: number; y: number }> = {
   "Alabama": { x: 646, y: 376 },
@@ -461,7 +398,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   "Wyoming": { x: 377, y: 195 },
 };
 
-export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick }: InteractiveMapProps) {
+export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick, viewState }: InteractiveMapProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -576,8 +513,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       }
     });
     
-    // Also initialize regions from the constant districtRegionMap (for districts not yet in database)
-    Object.values(districtRegionMap).forEach(region => {
+    // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
+    Object.values(DISTRICT_REGION_MAP).forEach(region => {
       if (!totals[region]) {
         totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
       }
@@ -585,16 +522,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     
     // Group people by region using district lookup
     // Use both database districts and the constant mapping
-    const districtRegionMapLocal = new Map<string, string>();
+    const DISTRICT_REGION_MAPLocal = new Map<string, string>();
     districts.forEach(district => {
       if (district.region) {
-        districtRegionMapLocal.set(district.id, district.region);
+        DISTRICT_REGION_MAPLocal.set(district.id, district.region);
       }
     });
     // Add districts from constant mapping (for districts not yet in database)
-    Object.entries(districtRegionMap).forEach(([districtId, region]) => {
-      if (!districtRegionMapLocal.has(districtId)) {
-        districtRegionMapLocal.set(districtId, region);
+    Object.entries(DISTRICT_REGION_MAP).forEach(([districtId, region]) => {
+      if (!DISTRICT_REGION_MAPLocal.has(districtId)) {
+        DISTRICT_REGION_MAPLocal.set(districtId, region);
       }
     });
     
@@ -603,7 +540,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const districtId = person.primaryDistrictId;
       if (!districtId) return; // Skip people without a district
       
-      const region = districtRegionMapLocal.get(districtId);
+      const region = DISTRICT_REGION_MAPLocal.get(districtId);
       if (!region || !totals[region]) return; // Skip if no region or region not initialized
       
       // Count this person in the appropriate status bucket
@@ -751,9 +688,22 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const GREYED_OUT_FILTER = "saturate(0.85) brightness(0.9)"; // More noticeable dimming for contrast
     const GREYED_OUT_OPACITY = "0.85"; // More visible opacity reduction
 
-    // Get selected district's region for greyed out effect
+    // View mode dimming logic
+    // Determine which districts should be fully visible based on viewState
+    const activeRegionId = viewState?.regionId || null;
+    const activeDistrictId = viewState?.districtId || selectedDistrictId;
+    const activeCampusId = viewState?.campusId || null;
+    
+    // For campus mode, find the district containing the active campus
+    let activeDistrictForCampus: string | null = null;
+    if (viewState?.mode === "campus" && activeCampusId) {
+      const campus = allCampuses.find(c => c.id === activeCampusId);
+      activeDistrictForCampus = campus?.districtId || null;
+    }
+    
+    // Get selected district's region for greyed out effect (fallback to legacy behavior)
     const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
-    const selectedRegion = selectedDistrict?.region || (selectedDistrictId ? districtRegionMap[selectedDistrictId] : undefined);
+    const selectedRegion = selectedDistrict?.region || (selectedDistrictId ? DISTRICT_REGION_MAP[selectedDistrictId] : undefined);
 
     // Create district lookup map for performance
     const districtMap = new Map(districts.map(d => [d.id, d]));
@@ -768,7 +718,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
       const district = districtMap.get(pathId);
       // Get region from district in database, or from mapping if not in database yet
-      const region = district?.region || districtRegionMap[pathId];
+      const region = district?.region || DISTRICT_REGION_MAP[pathId];
       const baseColor = region ? (regionColors[region] || "#e5e7eb") : "#e5e7eb";
 
       path.style.fill = baseColor;
@@ -787,30 +737,77 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.style.transform = "scale(1) translateY(0)";
       }
 
-      // When a district is selected, apply shadow and lighting effects
-      if (selectedDistrictId && selectedRegion) {
-        const isInSelectedRegion = region && region === selectedRegion;
+      // View mode dimming logic
+      let shouldDim = false;
+      let isSelected = false;
+      
+      if (viewState) {
+        const pathDistrict = districtMap.get(pathId);
+        const pathRegion = pathDistrict?.region || DISTRICT_REGION_MAP[pathId];
         
-        if (pathId === selectedDistrictId) {
-          // Selected district
-          path.style.filter = SELECTED_FILTER;
-          path.style.opacity = "1";
-        } else if (isInSelectedRegion) {
-          // Same region as selected - lighting effect (brighten)
-          path.style.filter = "saturate(1.02) brightness(1.05)";
-          path.style.opacity = "1";
-        } else {
-          // Different region - shadow effect (darken)
-          path.style.filter = DIM_FILTER;
-          path.style.opacity = DIM_OPACITY;
+        switch (viewState.mode) {
+          case "region":
+            // Region mode: only active region fully visible
+            if (activeRegionId) {
+              isSelected = pathId === activeDistrictId;
+              shouldDim = pathRegion !== activeRegionId;
+            } else {
+              // No active region - show all (fallback)
+              isSelected = pathId === activeDistrictId;
+              shouldDim = false;
+            }
+            break;
+            
+          case "district":
+            // District mode: only districts in active region fully visible
+            if (activeRegionId) {
+              isSelected = pathId === activeDistrictId;
+              shouldDim = pathRegion !== activeRegionId;
+            } else if (activeDistrictId) {
+              // Fallback: use selected district's region
+              const activeDistrict = districtMap.get(activeDistrictId);
+              const activeRegion = activeDistrict?.region || DISTRICT_REGION_MAP[activeDistrictId];
+              isSelected = pathId === activeDistrictId;
+              shouldDim = pathRegion !== activeRegion;
+            } else {
+              isSelected = pathId === selectedDistrictId;
+              shouldDim = false;
+            }
+            break;
+            
+          case "campus":
+            // Campus mode: only district containing active campus fully visible
+            if (activeDistrictForCampus) {
+              isSelected = pathId === activeDistrictForCampus;
+              shouldDim = pathId !== activeDistrictForCampus;
+            } else {
+              // No active campus district - show all (fallback)
+              isSelected = pathId === activeDistrictId;
+              shouldDim = false;
+            }
+            break;
         }
       } else {
-        // No district selected - normal styling
-      if (selectedDistrictId === pathId) {
+        // Legacy behavior: when a district is selected, apply shadow and lighting effects
+        if (selectedDistrictId && selectedRegion) {
+          const isInSelectedRegion = region && region === selectedRegion;
+          isSelected = pathId === selectedDistrictId;
+          shouldDim = !isSelected && !isInSelectedRegion;
+        } else {
+          isSelected = pathId === selectedDistrictId;
+          shouldDim = false;
+        }
+      }
+      
+      // Apply styling based on dimming logic
+      if (isSelected) {
         path.style.filter = SELECTED_FILTER;
+        path.style.opacity = "1";
+      } else if (shouldDim) {
+        path.style.filter = DIM_FILTER;
+        path.style.opacity = DIM_OPACITY;
       } else {
         path.style.filter = "brightness(1.04)"; // Slightly brighter default
-        }
         path.style.opacity = "1";
       }
     });
@@ -836,7 +833,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       path.addEventListener("click", clickHandler);
 
       // Get region once for this path
-      const pathRegion = district?.region || districtRegionMap[pathId];
+      const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
 
        // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
@@ -854,7 +851,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           if (!vPathId) return;
           
           const vDistrict = districtMap.get(vPathId);
-          const vRegion = vDistrict?.region || districtRegionMap[vPathId];
+          const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
           const isInSameRegion = vRegion && pathRegion && vRegion === pathRegion;
 
           if (vPathId === pathId) {
@@ -898,7 +895,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             // Other regions - dimmed (but respect selected district greyed out effect)
             if (selectedDistrictId && selectedRegion) {
               const vDistrict = districtMap.get(vPathId);
-              const vRegion = vDistrict?.region || districtRegionMap[vPathId];
+              const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
               const isInSelectedRegion = vRegion && vRegion === selectedRegion;
               
               if (!isInSelectedRegion) {
@@ -962,7 +959,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           if (!vPathId) return;
 
           const vDistrict = districtMap.get(vPathId);
-          const vRegion = vDistrict?.region || districtRegionMap[vPathId];
+          const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
           const isInSelectedRegion = selectedRegion && vRegion && vRegion === selectedRegion;
 
           // Restore to selected state styling (with shadow and lighting effects if applicable)
