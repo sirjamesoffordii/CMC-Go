@@ -1,9 +1,9 @@
 /**
  * View Modes for map-first navigation
- * Allows leaders to scope their view to Region, District, or Campus level
+ * Allows leaders to scope their view to Nation, Region, District, or Campus level
  */
 
-export type ViewMode = "region" | "district" | "campus";
+export type ViewMode = "nation" | "region" | "district" | "campus";
 
 export interface ViewState {
   mode: ViewMode;
@@ -14,10 +14,10 @@ export interface ViewState {
 }
 
 /**
- * Default view state - district-scoped view
+ * Default view state - nation-level view (full map, no scope applied)
  */
 export const DEFAULT_VIEW_STATE: ViewState = {
-  mode: "district",
+  mode: "nation",
   regionId: null,
   districtId: null,
   campusId: null,

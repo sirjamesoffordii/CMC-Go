@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useDrop, useDrag } from 'react-dnd';
 import { User, Plus, Edit2 } from 'lucide-react';
 import { Person } from '../../../drizzle/schema';

@@ -1,6 +1,6 @@
 import { ViewMode, ViewState } from "@/types/viewModes";
 import { Button } from "@/components/ui/button";
-import { MapPin, Building2, School } from "lucide-react";
+import { Globe2, MapPin, Building2, School } from "lucide-react";
 
 interface ViewModeSelectorProps {
   viewState: ViewState;
@@ -24,6 +24,21 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
   return (
     <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-gray-200 p-2">
       <span className="text-sm text-gray-600 font-medium mr-1">View:</span>
+      <Button
+        variant={viewState.mode === "nation" ? "default" : "ghost"}
+        size="sm"
+        onClick={() => handleModeChange("nation")}
+        className={`
+          flex items-center gap-1.5
+          ${viewState.mode === "nation" 
+            ? "bg-indigo-600 text-white hover:bg-indigo-700" 
+            : "text-gray-600 hover:bg-gray-100"
+          }
+        `}
+      >
+        <Globe2 className="w-4 h-4" />
+        Nation
+      </Button>
       <Button
         variant={viewState.mode === "region" ? "default" : "ghost"}
         size="sm"

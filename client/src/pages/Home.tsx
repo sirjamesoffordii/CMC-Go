@@ -91,16 +91,6 @@ function createSyntheticDistrict(districtId: string | null, districts: District[
     rightNeighbor: null,
   } as District;
 }
-
-// View Mode types: any
-type ViewMode = "national" | "regional" | "district";
-
-interface ViewState {
-  mode: ViewMode;
-  regionId?: string;
-  districtId?: string;
-  panelOpen: boolean;
-}
 export default function Home() {
   // PR 2: Real authentication
   const { user } = usePublicAuth();
@@ -419,14 +409,25 @@ export default function Home() {
       // Extract region: database first, then fallback map
       const regionId = selectedDistrict.region || extractRegionForViewState(districtId, districts);
       const newViewState: ViewState = {
-        ...viewState,
+        mode: "district",
         districtId: districtId,
         regionId: regionId,
+        campusId: null,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+    } else {
+      // If district not in database, still update viewState but use fallback region
+      const regionId = extractRegionForViewState(districtId, districts);
+      const newViewState: ViewState = {
+        mode: "district",
+        districtId: districtId,
+        regionId: regionId,
+        campusId: null,
         panelOpen: true,
       };
       setViewState(newViewState);
     }
-    // If district not in database, viewState unchanged (original behavior)
   };
   
   // Region selection: Sets ViewMode to "region", clears district/campus scope
@@ -604,28 +605,6 @@ export default function Home() {
   }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
 
   return (
-          {/* View Mode Selector */}
-      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: '#fff', padding: '8px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {(['national', 'regional', 'district'] as ViewMode[]).map(mode => (
-            <button
-              key={mode}
-              onClick={() => setViewState({ ...viewState, mode })}
-              style={{
-                padding: '4px 12px',
-                backgroundColor: viewState.mode === mode ? '#4A90E2' : '#f0f0f0',
-                color: viewState.mode === mode ? '#fff' : '#000',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                textTransform: 'capitalize'
-              }}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      </div>
     <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
@@ -839,7 +818,16 @@ export default function Home() {
                     district={selectedDistrict}
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
-                    onClose={() => setSelectedDistrictId(null)}
+                    onClose={() => {
+                      setSelectedDistrictId(null);
+                      setViewState({
+                        ...viewState,
+                        districtId: null,
+                        regionId: null,
+                        campusId: null,
+                        panelOpen: false,
+                      });
+                    }}
                     onPersonStatusChange={handlePersonStatusChange}
                     onPersonAdd={handlePersonAdd}
                     onPersonClick={handlePersonClick}
@@ -863,14 +851,17 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
-          {/* View Mode Selector */}
-          <div className="absolute top-4 left-4 z-10">
+          {/* View Mode Selector - fixed near XAN at bottom-left of screen */}
+          <div
+            className="fixed z-30"
+            style={{ left: '12%', bottom: '5%', margin: 0, padding: 0 }}
+          >
             <ViewModeSelector
               viewState={viewState}
               onViewStateChange={handleViewStateChange}
             />
           </div>
-          
+        
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -887,7 +878,13 @@ export default function Home() {
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
-                setViewState({ ...viewState, districtId: null, regionId: null, panelOpen: false });
+                setViewState({ 
+                  ...viewState, 
+                  districtId: null, 
+                  regionId: null, 
+                  campusId: null,
+                  panelOpen: false 
+                });
               }
             }}
           >
@@ -900,7 +897,13 @@ export default function Home() {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
-                setViewState({ ...viewState, districtId: null, regionId: null, panelOpen: false });
+                setViewState({ 
+                  ...viewState, 
+                  districtId: null, 
+                  regionId: null, 
+                  campusId: null,
+                  panelOpen: false 
+                });
               }}
               onNationalClick={() => {
                 // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
@@ -909,7 +912,13 @@ export default function Home() {
                 setSelectedDistrictId("XAN");
                 setNationalPanelOpen(false);
                 setPeoplePanelOpen(false);
-                setViewState({ ...viewState, districtId: "XAN", regionId: "NATIONAL", panelOpen: true });
+                setViewState({ 
+                  mode: "district",
+                  districtId: "XAN", 
+                  regionId: "NATIONAL", 
+                  campusId: null,
+                  panelOpen: true 
+                });
               }}
             />
 
