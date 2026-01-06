@@ -4,7 +4,7 @@ import type { TrpcContext } from "./_core/context";
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAuthContext(role: "user" | "admin" = "user"): TrpcContext {
+function createAuthContext(role: "user" | "ADMIN" = "user"): TrpcContext {
   const user: AuthenticatedUser = {
     id: 1,
     openId: "test-user-openid",
@@ -29,7 +29,7 @@ function createAuthContext(role: "user" | "admin" = "user"): TrpcContext {
 
 describe("admin.getAllUsers", () => {
   it("allows admin to retrieve all users", async () => {
-    const ctx = createAuthContext("admin");
+    const ctx = createAuthContext("ADMIN");
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.admin.getAllUsers();
@@ -45,7 +45,7 @@ describe("admin.getAllUsers", () => {
   });
 
   it("returns user objects with correct structure", async () => {
-    const ctx = createAuthContext("admin");
+    const ctx = createAuthContext("ADMIN");
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.admin.getAllUsers();
