@@ -6,27 +6,28 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
-import App from "./App";
-import { getLoginUrl } from "./const";
-import "./index.css";
 import * as Sentry from "@sentry/react";
+import App from "./App";
+import "./index.css";
 
 // Initialize Sentry with environment variables
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT;
+const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
 
 if (sentryDsn && sentryDsn.trim()) {
-    Sentry.init({
-          dsn: sentryDsn,
-          environment: sentryEnvironment || 'unknown',
-          tracesSampleRate: 1.0,
-          integrations: [
-                  new Sentry.Replay(),
-                ],
-          replaysSessionSampleRate: 0.1,
-          replaysOnErrorSampleRate: 1.0,
-        });
-  }
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: sentryEnvironment,
+    sendDefaultPii: true,
+    // Enable performance monitoring
+    tracesSampleRate: 1.0,
+    integrations: [
+      Sentry.replayIntegration(),
+    ],
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 const queryClient = new QueryClient();
 
@@ -101,6 +102,8 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+import ErrorBoundary from "./components/ErrorBoundary";
+
 // Initialize React app with error handling
 try {
   const rootElement = document.getElementById("root");
@@ -109,11 +112,13 @@ try {
   }
 
   createRoot(rootElement).render(
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </trpc.Provider>
+    <ErrorBoundary>
+      <trpc.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <App />
+        </QueryClientProvider>
+      </trpc.Provider>
+    </ErrorBoundary>
   );
 } catch (error) {
   console.error("Failed to initialize React app:", error);
@@ -124,6 +129,8 @@ try {
         <h1>Application Error</h1>
         <p>Failed to initialize the application. Please check the browser console for details.</p>
         <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px; overflow: auto;">${error instanceof Error ? error.stack : String(error)}</pre>
+        <button onclick="window.location.assign('/')" style="margin-top: 16px; padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer;">Go Home</button>
+        <button onclick="window.location.reload()" style="margin-top: 8px; margin-left: 8px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 4px; cursor: pointer;">Reload</button>
       </div>
     `;
   }

@@ -15,6 +15,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { config } from "dotenv";
+import { checkNotDemoDatabase } from "./utils/check-demo-db.mjs";
 import { 
   districts, 
   campuses, 
@@ -44,6 +45,9 @@ if (!connectionString) {
   console.error('Format: DATABASE_URL=mysql://user:password@host:port/database');
   process.exit(1);
 }
+
+// Prevent running against Railway demo DB
+checkNotDemoDatabase(connectionString, "db:seed");
 
 // Test database connection first
 let connection;

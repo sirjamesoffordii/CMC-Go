@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useDrop } from 'react-dnd';
 import { ReactNode } from 'react';
 

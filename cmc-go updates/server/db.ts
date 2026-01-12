@@ -1,0 +1,899 @@
+import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { 
+  InsertUser, 
+  users, 
+  districts, 
+  campuses, 
+  people, 
+  needs, 
+  notes,
+  settings,
+  assignments,
+  households,
+  InsertDistrict,
+  InsertCampus,
+  InsertPerson,
+  InsertNeed,
+  InsertNote,
+  InsertSetting,
+  InsertAssignment,
+  InsertHousehold
+} from "../drizzle/schema";
+import { ENV } from './_core/env';
+
+let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
+
+/**
+ * Get database connection using MySQL/TiDB connection pool.
+ * Connection pooling is the standard practice for MySQL/TiDB to handle
+ * concurrent requests efficiently and manage connections properly.
+ */
+export async function getDb() {
+  if (!_db) {
+    try {
+      const connectionString = ENV.DATABASE_URL;
+      if (!connectionString) {
+        throw new Error("DATABASE_URL environment variable is required. Set DATABASE_URL or MYSQL_* variables (MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)");
+      }
+      
+      // Create connection pool for MySQL/TiDB
+      // Pool configuration optimizes for production workloads
+      _pool = mysql.createPool({
+        uri: connectionString,
+        connectionLimit: 10, // Maximum number of connections in the pool
+        queueLimit: 0, // Unlimited queue for waiting connections
+        enableKeepAlive: true, // Keep connections alive
+        keepAliveInitialDelay: 0, // Start keep-alive immediately
+      });
+      
+      _db = drizzle(_pool);
+      
+      // Test the connection with a simple query
+      try {
+        await _db.execute(sql`SELECT 1`);
+        console.log("[Database] Connected to MySQL/TiDB with connection pool");
+      } catch (testError) {
+        console.error("[Database] Connection pool created but test query failed:", testError);
+        throw testError;
+      }
+    } catch (error) {
+      console.error("[Database] Failed to connect:", error);
+      if (error instanceof Error) {
+        console.error("[Database] Error message:", error.message);
+        if (error.stack) {
+          console.error("[Database] Stack trace:", error.stack);
+        }
+      }
+      _db = null;
+      _pool = null;
+      throw error; // Re-throw so callers know connection failed
+    }
+  }
+  return _db;
+}
+
+/**
+ * Get the MySQL connection pool directly (for raw queries)
+ */
+export function getPool(): mysql.Pool | null {
+  return _pool;
+}
+
+/**
+ * Gracefully close database connections.
+ * Should be called on application shutdown.
+ */
+export async function closeDb() {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _db = null;
+    console.log("[Database] Connection pool closed");
+  }
+}
+
+// ============================================================================
+// USERS
+// ============================================================================
+
+export async function getUserByOpenId(openId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0] || null;
+}
+
+export async function createUser(user: InsertUser) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(users).values(user);
+  return result[0].insertId;
+}
+
+export async function updateUserLastSignedIn(openId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.openId, openId));
+}
+
+export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getUserByOpenId(user.openId);
+  if (existing) {
+    await db.update(users)
+      .set({ ...user, updatedAt: new Date() })
+      .where(eq(users.openId, user.openId));
+    return existing.id;
+  } else {
+    const result = await db.insert(users).values(user as InsertUser);
+    return result[0].insertId;
+  }
+}
+
+// ============================================================================
+// DISTRICTS
+// ============================================================================
+
+export async function getAllDistricts() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(districts);
+}
+
+export async function getDistrictById(id: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(districts).where(eq(districts.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function createDistrict(district: InsertDistrict) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(districts).values(district);
+  return district.id;
+}
+
+export async function updateDistrict(id: string, data: Partial<InsertDistrict>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(districts).set(data).where(eq(districts.id, id));
+}
+
+// ============================================================================
+// CAMPUSES
+// ============================================================================
+
+export async function getAllCampuses() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(campuses);
+}
+
+export async function getCampusesByDistrictId(districtId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
+}
+
+// Alias for backward compatibility
+export const getCampusesByDistrict = getCampusesByDistrictId;
+
+export async function getCampusById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(campuses).where(eq(campuses.id, id)).limit(1);
+  return result[0] || null;
+}
+
+export async function createCampus(campus: InsertCampus) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Insert campus with just name and districtId
+  // displayOrder is optional and will be null if column doesn't exist yet
+  const result = await db.insert(campuses).values({
+    name: campus.name,
+    districtId: campus.districtId,
+  });
+  
+  // Get the insertId from the result (MySQL with Drizzle returns it in result[0].insertId)
+  const insertId = result[0]?.insertId;
+  
+  if (!insertId) {
+    throw new Error(`Failed to get insert ID from database`);
+  }
+  
+  return insertId;
+}
+
+export async function updateCampus(id: number, data: Partial<InsertCampus>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses).set(data).where(eq(campuses.id, id));
+}
+
+export async function updateCampusName(id: number, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses).set({ name }).where(eq(campuses.id, id));
+}
+
+export async function deleteCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Detach people from this campus (retain their person record)
+  await db.update(people).set({ primaryCampusId: null }).where(eq(people.primaryCampusId, id));
+  // Remove the campus row
+  await db.delete(campuses).where(eq(campuses.id, id));
+}
+
+// ============================================================================
+// PEOPLE
+// ============================================================================
+
+export async function getAllPeople() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(people);
+  } catch (error) {
+    console.error("[getAllPeople] Database error:", error);
+    if (error instanceof Error) {
+      console.error("[getAllPeople] Full error message:", error.message);
+      // Check for common schema mismatch issues
+      if (error.message.includes('notes') || error.message.includes('note')) {
+        console.error("[getAllPeople] Possible schema mismatch with 'notes' field");
+      }
+    }
+    throw error;
+  }
+}
+
+export async function getPersonByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(people).where(eq(people.personId, personId)).limit(1);
+  return result[0] || null;
+}
+
+export async function getPeopleByDistrictId(districtId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.primaryDistrictId, districtId));
+}
+
+export async function getPeopleByCampusId(campusId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+}
+
+/**
+ * Sanitize person data for public viewing - removes private fields
+ * Public view only includes: personId, status, primaryDistrictId, primaryCampusId, primaryRole, primaryRegion
+ * Removes: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy, and other PII
+ * Note: name is excluded for privacy, but personId can be used as an identifier
+ */
+export function sanitizePersonForPublic(person: typeof people.$inferSelect) {
+  return {
+    id: person.id,
+    personId: person.personId,
+    status: person.status,
+    depositPaid: person.depositPaid,
+    statusLastUpdated: person.statusLastUpdated,
+    primaryDistrictId: person.primaryDistrictId,
+    primaryCampusId: person.primaryCampusId,
+    primaryRole: person.primaryRole,
+    primaryRegion: person.primaryRegion,
+    nationalCategory: person.nationalCategory,
+    householdId: person.householdId,
+    householdRole: person.householdRole,
+    spouseAttending: person.spouseAttending,
+    childrenCount: person.childrenCount,
+    guestsCount: person.guestsCount,
+    createdAt: person.createdAt,
+    // Explicitly exclude private fields: name, notes, spouse, kids, guests, childrenAges, lastEdited, lastEditedBy
+  };
+}
+
+export async function createPerson(person: InsertPerson) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Build values object explicitly - only include fields that are provided
+    // This prevents Drizzle from trying to insert undefined values
+    const values: any = {
+      personId: person.personId,
+      name: person.name,
+      status: person.status || 'Not Invited',
+      depositPaid: person.depositPaid ?? false,
+    };
+    
+    // Only add optional fields if they are explicitly provided (not undefined)
+    if (person.primaryDistrictId !== undefined) {
+      values.primaryDistrictId = person.primaryDistrictId;
+    }
+    if (person.primaryRegion !== undefined && person.primaryRegion !== null) {
+      values.primaryRegion = person.primaryRegion;
+    }
+    if (person.primaryRole !== undefined && person.primaryRole !== null) {
+      values.primaryRole = person.primaryRole;
+    }
+    if (person.primaryCampusId !== undefined && person.primaryCampusId !== null) {
+      values.primaryCampusId = person.primaryCampusId;
+    }
+    if (person.nationalCategory !== undefined && person.nationalCategory !== null) {
+      values.nationalCategory = person.nationalCategory;
+    }
+    if (person.notes !== undefined) {
+      values.notes = person.notes;
+    }
+    if (person.spouse !== undefined) {
+      values.spouse = person.spouse;
+    }
+    if (person.kids !== undefined) {
+      values.kids = person.kids;
+    }
+    if (person.guests !== undefined) {
+      values.guests = person.guests;
+    }
+    if (person.childrenAges !== undefined) {
+      values.childrenAges = person.childrenAges;
+    }
+    if (person.householdId !== undefined && person.householdId !== null) {
+      values.householdId = person.householdId;
+    }
+    if (person.householdRole !== undefined) {
+      values.householdRole = person.householdRole;
+    }
+    if (person.spouseAttending !== undefined) {
+      values.spouseAttending = person.spouseAttending;
+    }
+    if (person.childrenCount !== undefined) {
+      values.childrenCount = person.childrenCount;
+    }
+    if (person.guestsCount !== undefined) {
+      values.guestsCount = person.guestsCount;
+    }
+    if (person.lastEdited !== undefined) {
+      values.lastEdited = person.lastEdited;
+    }
+    if (person.lastEditedBy !== undefined) {
+      values.lastEditedBy = person.lastEditedBy;
+    }
+    
+    console.log('[db.createPerson] Inserting person:', JSON.stringify(values, null, 2));
+    const result = await db.insert(people).values(values);
+    console.log('[db.createPerson] Insert successful, result:', result);
+    return result[0].insertId;
+  } catch (error) {
+    console.error('[db.createPerson] Database error:', error);
+    console.error('[db.createPerson] Error details:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+export async function updatePerson(personId: string, data: Partial<InsertPerson>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people).set(data).where(eq(people.personId, personId));
+}
+
+export async function deletePerson(personId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(people).where(eq(people.personId, personId));
+}
+
+export async function updatePersonStatus(personId: string, status: "Yes" | "Maybe" | "No" | "Not Invited") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people).set({ 
+    status,
+    statusLastUpdated: new Date()
+  }).where(eq(people.personId, personId));
+}
+
+export async function updatePersonName(personId: string, name: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(people).set({ name }).where(eq(people.personId, personId));
+}
+
+// ============================================================================
+// ASSIGNMENTS
+// ============================================================================
+
+export async function getAllAssignments() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(assignments);
+}
+
+export async function getAssignmentsByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(assignments).where(eq(assignments.personId, personId));
+}
+
+export async function createAssignment(assignment: InsertAssignment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(assignments).values(assignment);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// NEEDS
+// ============================================================================
+
+/**
+ * Get all needs for a person (active and inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() and filter by personId.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function getNeedsByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`);
+}
+
+export async function createNeed(need: InsertNeed) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(needs).values(need);
+  return result[0].insertId;
+}
+
+export async function getAllActiveNeeds() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    // Return only active needs (isActive = true)
+    return await db.select().from(needs).where(eq(needs.isActive, true));
+  } catch (error) {
+    console.error("[getAllActiveNeeds] Database error:", error);
+    // Check if it's a column name issue
+    if (error instanceof Error) {
+      if (error.message.includes('createdById') || error.message.includes('createdByUserId')) {
+        console.error("[getAllActiveNeeds] Schema mismatch: Check if database column name matches schema definition");
+        console.error("[getAllActiveNeeds] Schema expects: createdById");
+      }
+      // Log the full error for debugging
+      console.error("[getAllActiveNeeds] Full error:", error.message);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Toggle need active status. When marking as met (isActive = false), set metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function toggleNeedActive(needId: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const updateData: { isActive: boolean; metAt?: Date | null } = { isActive };
+  if (!isActive) {
+    // When marking as met, set metAt timestamp
+    updateData.metAt = new Date();
+  } else {
+    // When reactivating, clear metAt
+    updateData.metAt = null;
+  }
+  await db.update(needs).set(updateData).where(eq(needs.id, needId));
+}
+
+/**
+ * Get need by personId. Returns most recent need (active or inactive) for display purposes.
+ * For counting, use getAllActiveNeeds() instead.
+ */
+export async function getNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  // Get most recent need (for display in tooltips/forms)
+  const result = await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`).limit(1);
+  return result[0] || null;
+}
+
+/**
+ * Update or create need. Only creates if type is provided (not "None").
+ * When marking as met (isActive = false), sets metAt timestamp.
+ * Only active needs are counted. Inactive needs are retained for history.
+ */
+export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Check if need exists for this person
+  const existing = await getNeedByPersonId(personId);
+  
+  const updateData: {
+    type: string;
+    description: string;
+    amount?: number | null;
+    isActive: boolean;
+    metAt?: Date | null;
+  } = {
+    type: needData.type,
+    description: needData.description,
+    amount: needData.amount ?? null,
+    isActive: needData.isActive,
+  };
+  
+  // Set metAt when marking as met, clear when reactivating
+  if (!needData.isActive) {
+    updateData.metAt = new Date();
+  } else if (existing && !existing.isActive) {
+    // Reactivating a previously met need
+    updateData.metAt = null;
+  }
+  
+  if (existing) {
+    // Update existing need
+    await db.update(needs).set(updateData).where(eq(needs.id, existing.id));
+    return existing.id;
+  } else {
+    // Create new need (only if type is not "None" - this should be validated by caller)
+    const result = await db.insert(needs).values({
+      personId,
+      type: needData.type,
+      description: needData.description,
+      amount: needData.amount ?? null,
+      isActive: needData.isActive,
+      metAt: needData.isActive ? null : new Date(),
+    });
+    return result[0].insertId;
+  }
+}
+
+export async function deleteNeedByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(needs).where(eq(needs.personId, personId));
+}
+
+// ============================================================================
+// NOTES
+// ============================================================================
+
+export async function getNotesByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(notes).where(eq(notes.personId, personId));
+}
+
+export async function createNote(note: InsertNote) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(notes).values(note);
+  return result[0].insertId;
+}
+
+// ============================================================================
+// SETTINGS
+// ============================================================================
+
+export async function getSetting(key: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
+  return result[0] || null;
+}
+
+export async function setSetting(key: string, value: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(settings).values({ key, value })
+    .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
+}
+
+// ============================================================================
+// METRICS & AGGREGATIONS
+// ============================================================================
+
+export async function getMetrics() {
+  const db = await getDb();
+  if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  /**
+   * Aggregate status counts in a single query. Using GROUP BY allows the
+   * database engine to compute counts efficiently rather than loading
+   * every row into application memory. The resulting rows will look
+   * like `{ status: 'Yes', count: 42 }`.
+   */
+  const statusCounts = await db
+    .select({ status: people.status, count: sql<number>`COUNT(*)` })
+    .from(people)
+    .groupBy(people.status);
+
+  // Get total count separately to ensure we count ALL people, including those with null status
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people);
+  const total = Number(totalResult[0]?.count) || 0;
+
+  // Initialize counters with zero values
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  let countedTotal = 0;
+  
+  for (const row of statusCounts) {
+    const status = row.status;
+    const count = Number((row as any).count) || 0;
+    countedTotal += count;
+    switch (status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+        counts.notInvited = count;
+        break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
+  return { ...counts, total };
+}
+
+export async function getDistrictMetrics(districtId: string) {
+  const db = await getDb();
+  if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in district
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryDistrictId, districtId));
+  const total = Number(totalResult[0]?.count) || 0;
+
+  // Aggregate counts per status for a specific district in a single query.
+  const statusCounts = await db
+    .select({ status: people.status, count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryDistrictId, districtId))
+    .groupBy(people.status);
+
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  let countedTotal = 0;
+  
+  for (const row of statusCounts) {
+    const status = row.status;
+    const count = Number((row as any).count) || 0;
+    countedTotal += count;
+    switch (status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+        counts.notInvited = count;
+        break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
+  return { ...counts, total };
+}
+
+export async function getRegionMetrics(region: string) {
+  const db = await getDb();
+  if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  // Get total count separately to ensure we count ALL people in region
+  const totalResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryRegion, region));
+  const total = Number(totalResult[0]?.count) || 0;
+
+  const statusCounts = await db
+    .select({ status: people.status, count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryRegion, region))
+    .groupBy(people.status);
+
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  let countedTotal = 0;
+  
+  for (const row of statusCounts) {
+    const status = row.status;
+    const count = Number((row as any).count) || 0;
+    countedTotal += count;
+    switch (status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+        counts.notInvited = count;
+        break;
+      default:
+        // Unknown or null status values are counted as "Not Invited"
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  // If there's a discrepancy (people with null status), add them to notInvited
+  if (total > countedTotal) {
+    counts.notInvited += (total - countedTotal);
+  }
+  
+  return { ...counts, total };
+}
+
+// National staff (no district/region)
+export async function getNationalStaff() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(
+    and(
+      sql`${people.primaryDistrictId} IS NULL`,
+      sql`${people.primaryRegion} IS NULL`
+    )
+  );
+}
+
+// ============================================================================
+// HOUSEHOLDS
+// ============================================================================
+
+export async function getAllHouseholds() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(households);
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching households (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function getHouseholdById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.select().from(households).where(eq(households.id, id)).limit(1);
+    return result[0] || null;
+  } catch (error) {
+    // If households table doesn't exist yet, return null
+    console.error('Error fetching household by id (table may not exist yet):', error);
+    return null;
+  }
+}
+
+export async function getHouseholdMembers(householdId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(people).where(eq(people.householdId, householdId));
+  } catch (error) {
+    // If households table doesn't exist yet, return empty array
+    console.error('Error fetching household members (table may not exist yet):', error);
+    return [];
+  }
+}
+
+export async function searchHouseholds(query: string) {
+  const db = await getDb();
+  if (!db) return [];
+  // Search by label or by member names
+  const allHouseholds = await db.select().from(households);
+  const matchingHouseholds = [];
+  
+  for (const household of allHouseholds) {
+    // Check label match
+    if (household.label && household.label.toLowerCase().includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+      continue;
+    }
+    
+    // Check member names
+    const members = await getHouseholdMembers(household.id);
+    const memberNames = members.map(m => m.name.toLowerCase()).join(' ');
+    if (memberNames.includes(query.toLowerCase())) {
+      matchingHouseholds.push(household);
+    }
+  }
+  
+  return matchingHouseholds;
+}
+
+export async function createHousehold(data: InsertHousehold) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const cleanData: any = {
+    childrenCount: data.childrenCount ?? 0,
+    guestsCount: data.guestsCount ?? 0,
+  };
+  
+  // Ensure label is not empty - fallback to "Household" if needed
+  if (data.label !== undefined && data.label !== null && data.label.trim()) {
+    cleanData.label = data.label.trim();
+  } else {
+    // Fallback to "Household" if label is empty or not provided
+    cleanData.label = "Household";
+  }
+  
+  const result = await db.insert(households).values(cleanData);
+  return (result[0] as any).insertId;
+}
+
+export async function updateHousehold(id: number, data: Partial<InsertHousehold>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData: any = {};
+  if (data.label !== undefined) updateData.label = data.label;
+  if (data.childrenCount !== undefined) updateData.childrenCount = data.childrenCount;
+  if (data.guestsCount !== undefined) updateData.guestsCount = data.guestsCount;
+  
+  await db.update(households).set(updateData).where(eq(households.id, id));
+}
+
+export async function deleteHousehold(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // First, unlink all people from this household
+  await db.update(people).set({ householdId: null, householdRole: 'primary' }).where(eq(people.householdId, id));
+  
+  // Then delete the household
+  await db.delete(households).where(eq(households.id, id));
+}

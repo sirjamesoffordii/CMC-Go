@@ -196,7 +196,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
-      <div className="h-full bg-white border-l border-gray-300 flex flex-col">
+      <div className="w-full bg-white border-l border-gray-300 flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">People</h2>
@@ -208,7 +208,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 p-6">
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -315,7 +315,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       </div>
 
       {/* Content - Hierarchical List */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1">
         {districtsWithData.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
             No districts found

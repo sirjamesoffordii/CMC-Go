@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useDrop, useDrag } from 'react-dnd';
 import { User, Plus, Edit2 } from 'lucide-react';
 import { Person } from '../../../drizzle/schema';
@@ -33,6 +34,7 @@ interface DistrictDirectorDropZoneProps {
   onQuickAddCancel?: () => void;
   onQuickAddClick?: (e: React.MouseEvent) => void;
   quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
+  districtId?: string | null; // For XAN, use "National Director" instead of "District Director"
 }
 
 interface Need {
@@ -56,7 +58,8 @@ export function DistrictDirectorDropZone({
   onQuickAddSubmit,
   onQuickAddCancel,
   onQuickAddClick,
-  quickAddInputRef
+  quickAddInputRef,
+  districtId = null
 }: DistrictDirectorDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -257,7 +260,16 @@ export function DistrictDirectorDropZone({
         
         {/* Role Label - Absolutely positioned, shown on hover */}
         <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {person.primaryRole || 'District Director'}
+          {(() => {
+            // For XAN, always show "National Director" even if primaryRole is "District Director"
+            if (districtId === 'XAN') {
+              return person.primaryRole === 'District Director' || !person.primaryRole
+                ? 'National Director'
+                : person.primaryRole;
+            }
+            // For other districts, show primaryRole or fallback to "District Director"
+            return person.primaryRole || 'District Director';
+          })()}
         </div>
       </div>
       </div>

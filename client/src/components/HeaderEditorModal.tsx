@@ -196,21 +196,17 @@ export function HeaderEditorModal({
                 </div>
 
                 {/* Text Preview */}
-                <div 
-                  className="flex-grow"
-                  style={{ color: textColor }}
-                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || '' }}
-                />
-
-                {/* Buttons Preview */}
-                <div className="flex-shrink-0 flex items-center gap-3 ml-4">
-                  <div className={`px-3 py-1.5 rounded text-sm ${isLightBackground ? 'bg-gray-100 text-black' : 'bg-white/90 text-black'}`}>
-                    INFO
+                {editor?.getHTML() && editor.getHTML().trim() ? (
+                  <div 
+                    className="flex-grow"
+                    style={{ color: textColor }}
+                    dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+                  />
+                ) : (
+                  <div className="flex-grow text-gray-400 italic text-sm">
+                    (No header text)
                   </div>
-                  <div className="px-3 py-1.5 rounded text-sm bg-gray-800 text-white">
-                    LOGIN
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

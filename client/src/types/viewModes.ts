@@ -1,9 +1,9 @@
 /**
  * View Modes for map-first navigation
- * Allows leaders to scope their view to Region, District, or Campus level
+ * Allows leaders to scope their view to Nation, Region, District, or Campus level
  */
 
-export type ViewMode = "region" | "district" | "campus";
+export type ViewMode = "nation" | "region" | "district" | "campus";
 
 export interface ViewState {
   mode: ViewMode;
@@ -14,10 +14,10 @@ export interface ViewState {
 }
 
 /**
- * Default view state - district-scoped view
+ * Default view state - nation-level view (full map, no scope applied)
  */
 export const DEFAULT_VIEW_STATE: ViewState = {
-  mode: "district",
+  mode: "nation",
   regionId: null,
   districtId: null,
   campusId: null,
@@ -27,24 +27,50 @@ export const DEFAULT_VIEW_STATE: ViewState = {
 /**
  * Initialize view state from URL parameters
  * Respects existing URL filters if present
+ * Safely handles invalid params - never throws
  */
 export function initializeViewStateFromURL(): ViewState {
-  const params = new URLSearchParams(window.location.search);
-  
-  const mode = (params.get('viewMode') as ViewMode) || DEFAULT_VIEW_STATE.mode;
-  const regionId = params.get('regionId') || null;
-  const districtId = params.get('districtId') || null;
-  const campusIdParam = params.get('campusId');
-  const campusId = campusIdParam ? parseInt(campusIdParam, 10) : null;
-  const panelOpen = params.get('panelOpen') === 'true';
-  
-  return {
-    mode,
-    regionId,
-    districtId,
-    campusId,
-    panelOpen,
-  };
+  try {
+    const params = new URLSearchParams(window.location.search);
+    
+    // Safely parse mode with validation
+    const modeParam = params.get('viewMode');
+    const validModes: ViewMode[] = ['nation', 'region', 'district', 'campus'];
+    const mode: ViewMode = (modeParam && validModes.includes(modeParam as ViewMode)) 
+      ? (modeParam as ViewMode) 
+      : DEFAULT_VIEW_STATE.mode;
+    
+    // Safely parse regionId (null if empty string)
+    const regionId = params.get('regionId') || null;
+    
+    // Safely parse districtId (null if empty string)
+    const districtId = params.get('districtId') || null;
+    
+    // Safely parse campusId with validation
+    let campusId: number | null = null;
+    const campusIdParam = params.get('campusId');
+    if (campusIdParam) {
+      const parsed = parseInt(campusIdParam, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        campusId = parsed;
+      }
+    }
+    
+    // Safely parse panelOpen
+    const panelOpen = params.get('panelOpen') === 'true';
+    
+    return {
+      mode,
+      regionId,
+      districtId,
+      campusId,
+      panelOpen,
+    };
+  } catch (error) {
+    // If URL parsing fails for any reason, return safe defaults
+    console.error("Error parsing URL parameters, using defaults:", error);
+    return DEFAULT_VIEW_STATE;
+  }
 }
 
 /**

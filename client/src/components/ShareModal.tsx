@@ -28,7 +28,7 @@ const DEFAULT_INVITATION_MESSAGE = `Hey,
 
 We're exploring CMC Go as a way to coordinate toward CMC. It's a map-first web app that replaces spreadsheets with a shared visual, helping leaders at every level see who's been personally invited, surfacing who needs support, and bringing clarity to each person's decision journey.
 
-When you have a moment, we'd really value your thoughts. Take a look and let us know if this feels like a helpful way for us to coordinate toward CMC. If so, we'd love for you to join us in using it as we invite and walk with people toward CMC, keeping our areas up to date and building shared momentum together.`;
+When you have a moment, I would value your thoughts. Take a look and let me know if this feels like a helpful tool in mobilizing people toward CMC. If so, I'd love for you to join us in using it, updating the picture as things change and building shared momentum.`;
 
 const SHORT_MESSAGE = `Check out CMC Go - a map-first web app to coordinate CMC invitations and track who needs support. Would love your thoughts!`;
 
@@ -122,7 +122,10 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
         <div className="space-y-4 py-2">
           {/* Quick Copy Section */}
           <div className="space-y-2">
-            <p className="text-sm text-gray-600">Share with other leaders to coordinate CMC invitations together.</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+              <p className="text-sm font-medium text-blue-900 mb-1">Share the CMC Go app with other leaders</p>
+              <p className="text-xs text-blue-700">This is for sending the CMC Go app to other leaders, not for inviting people to CMC. Use this to help other leaders coordinate and track invitations together.</p>
+            </div>
             
             {/* Copy Link Button */}
             <Button

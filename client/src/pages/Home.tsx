@@ -6,6 +6,7 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
 import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
@@ -19,30 +20,103 @@ import { useLocation } from "wouter";
 import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
+import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { District } from "../../../drizzle/schema";
 
-// View Mode types: any
-type ViewMode = "national" | "regional" | "district";
+/**
+ * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
+ * 
+ * This mapping provides region assignments for districts that exist in the map SVG
+ * but haven't been seeded into the database yet. Used in two places:
+ * 
+ * 1. selectedDistrict useMemo: Creates synthetic district objects with region from map
+ * 2. ViewState region extraction: Falls back to map when district.region is missing
+ * 
+ * TODO: Remove once all districts are properly seeded with region assignments.
+ * Safety: All usages include fallback to "Unknown" or null to prevent crashes.
+ */
 
-interface ViewState {
-  mode: ViewMode;
-  regionId?: string;
-  districtId?: string;
-  panelOpen: boolean;
+/**
+ * Extracts region for ViewState: database first, then DISTRICT_REGION_MAP fallback.
+ * Returns null if not found (ViewState allows null regionId).
+ */
+function extractRegionForViewState(districtId: string | null, districts: District[]): string | null {
+  if (!districtId) return null;
+  
+  const district = districts.find(d => d.id === districtId);
+  if (district?.region) {
+    return district.region;
+  }
+  
+  // Fallback to map for districts not yet in database
+  return DISTRICT_REGION_MAP[districtId] || null;
+}
+
+/**
+ * Creates synthetic district for districts not yet in database.
+ * Special case: "XAN" → region "NATIONAL". Others use DISTRICT_REGION_MAP fallback.
+ * Returns existing district if found in database, or null if districtId is null.
+ */
+function createSyntheticDistrict(districtId: string | null, districts: District[]): District | null {
+  if (!districtId) return null;
+  
+  const found = districts.find(d => d.id === districtId);
+  if (found) return found;
+  
+  // Special case: XAN (Chi Alpha National)
+  if (districtId === "XAN") {
+    return {
+      id: "XAN",
+      name: "Chi Alpha National",
+      region: "NATIONAL",
+      leftNeighbor: null,
+      rightNeighbor: null,
+    } as District;
+  }
+  
+  // Create synthetic district: extract name from ID, get region from fallback map
+  const name = districtId
+    .replace(/([A-Z])/g, ' $1')
+    .trim()
+    .replace(/^./, str => str.toUpperCase());
+  
+  const region = DISTRICT_REGION_MAP[districtId] || "Unknown";
+  
+  return {
+    id: districtId,
+    name: name,
+    region: region,
+    leftNeighbor: null,
+    rightNeighbor: null,
+  } as District;
 }
 export default function Home() {
   // PR 2: Real authentication
-  const { isAuthenticated, user, login } = usePublicAuth();
+  const { user } = usePublicAuth();
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
-
-  // View mode state with defaults
-  const [viewState, setViewState] = useState<ViewState>({
-    mode: "regional",
-    regionId: "texico",
-    districtId: "south-texas",
-    panelOpen: true
-  });
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
+  
+  // View mode state - initialize from URL or defaults
+  // Default: district-scoped view (as per requirements)
+  const getViewStateInitial = (): ViewState => {
+    const urlState = initializeViewStateFromURL();
+    // If URL has view state, use it; otherwise default to district mode
+    if (urlState.districtId || urlState.regionId || urlState.campusId) {
+      return urlState;
+    }
+    return DEFAULT_VIEW_STATE;
+  };
+  const [viewState, setViewState] = useState<ViewState>(getViewStateInitial());
+  
+  // Legacy selectedDistrictId for backward compatibility
+  // Sync with viewState.districtId
+  const getSelectedDistrictIdInitial = (): string | null => {
+    const urlState = initializeViewStateFromURL();
+    return urlState.districtId || null;
+  };
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(getSelectedDistrictIdInitial());
+  
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
@@ -58,7 +132,6 @@ export default function Home() {
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
   
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(56); // pixels - matches Chi Alpha toolbar
   const [isResizingHeader, setIsResizingHeader] = useState(false);
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
@@ -212,6 +285,15 @@ export default function Home() {
       setHeaderHeight(parseInt(savedHeaderHeight.value, 10));
     }
   }, [savedHeaderHeight]);
+
+  // Clear "National Director" from saved header text if it exists (legacy default)
+  useEffect(() => {
+    if (savedHeaderText?.value === 'National Director') {
+      setHeaderText('');
+      updateSetting.mutate({ key: 'headerText', value: '' });
+    }
+  }, [savedHeaderText]);
+
   
   // Header resize handlers
   const handleHeaderResizeStart = (e: React.MouseEvent) => {
@@ -287,103 +369,16 @@ export default function Home() {
     },
   });
 
-  // District to region mapping (for districts not yet in database)
-  const districtRegionMap: Record<string, string> = {
-    "Alabama": "Southeast",
-    "Alaska": "Northwest",
-    "Appalachian": "Mid-Atlantic",
-    "Arizona": "West Coast",
-    "Arkansas": "South Central",
-    "Colorado": "Big Sky",
-    "Georgia": "Southeast",
-    "Hawaii": "West Coast",
-    "Illinois": "Great Lakes",
-    "Indiana": "Great Lakes",
-    "Iowa": "Great Plains South",
-    "Kansas": "Great Plains South",
-    "Kentucky": "Mid-Atlantic",
-    "Louisiana": "South Central",
-    "Michigan": "Great Lakes",
-    "Minnesota": "Great Plains North",
-    "Mississippi": "Southeast",
-    "Montana": "Big Sky",
-    "Nebraska": "Great Plains South",
-    "NewJersey": "Northeast",
-    "NewMexico": "Texico",
-    "NewYork": "Northeast",
-    "NorthCarolina": "Mid-Atlantic",
-    "NorthDakota": "Great Plains North",
-    "NorthernCal-Nevada": "West Coast",
-    "NorthernNewEnglend": "Northeast",
-    "NorthernNewEngland": "Northeast",
-    "NorthIdaho": "Northwest",
-    "NorthernMissouri": "Great Plains South",
-    "NorthTexas": "Texico",
-    "Ohio": "Great Lakes",
-    "Oklahoma": "South Central",
-    "Oregon": "Northwest",
-    "PeninsularFlorida": "Southeast",
-    "Penn-Del": "Northeast",
-    "Potomac": "Mid-Atlantic",
-    "SouthCarolina": "Southeast",
-    "SouthDakota": "Great Plains North",
-    "SouthernCalifornia": "West Coast",
-    "SouthernNewEngland": "Northeast",
-    "SouthIdaho": "Big Sky",
-    "SouthernMissouri": "Great Plains South",
-    "SouthTexas": "Texico",
-    "Tennessee": "Mid-Atlantic",
-    "Utah": "Big Sky",
-    "Washington": "Northwest",
-    "WestFlorida": "Southeast",
-    "WestTexas": "Texico",
-    "Wisconsin-NorthMichigan": "Great Plains North",
-    "Wyoming": "Big Sky",
-    "Connecticut": "Northeast",
-    "Maine": "Northeast",
-    "Massachusetts": "Northeast",
-    "NewHampshire": "Northeast",
-    "Pennsylvania": "Northeast",
-    "Vermont": "Northeast",
-    "Virginia": "Mid-Atlantic",
-    "WestVirginia": "Mid-Atlantic",
-    "Florida": "Southeast",
-    "Nevada": "West Coast",
-    "NorthCalifornia": "West Coast",
-    "SouthCalifornia": "West Coast",
-  };
-
-  // Filter data for selected district
-  // Create a district object on the fly if it doesn't exist in database
+  // ViewMode filtering: Scoped data based on selectedDistrictId
+  // 
+  // These useMemos filter data to the currently selected district scope.
+  // The selectedDistrict may be from the database or a synthetic object created
+  // via DISTRICT_REGION_MAP fallback for districts not yet seeded.
   const selectedDistrict = useMemo(() => {
-    if (!selectedDistrictId) return null;
-    const found = districts.find(d => d.id === selectedDistrictId);
-    if (found) return found;
-    // Deliverable 2: XAN (Chi Alpha National) behaves as a first-class district
-    if (selectedDistrictId === "XAN") {
-      return {
-        id: "XAN",
-        name: "Chi Alpha National",
-        region: "NATIONAL",
-        leftNeighbor: null,
-        rightNeighbor: null,
-      };
-    }
-    // District not in database yet - create a minimal district object
-    // Extract name from ID (e.g., "NorthCarolina" -> "North Carolina")
-    const name = selectedDistrictId
-      .replace(/([A-Z])/g, ' $1')
-      .trim()
-      .replace(/^./, str => str.toUpperCase());
-    return {
-      id: selectedDistrictId,
-      name: name,
-      region: districtRegionMap[selectedDistrictId] || "Unknown",
-      leftNeighbor: null,
-      rightNeighbor: null,
-    };
+    return createSyntheticDistrict(selectedDistrictId, districts);
   }, [districts, selectedDistrictId]);
 
+  // Filter campuses and people to the selected district scope
   const selectedDistrictCampuses = useMemo(
     () => allCampuses.filter(c => c.districtId === selectedDistrictId),
     [allCampuses, selectedDistrictId]
@@ -394,18 +389,89 @@ export default function Home() {
     [allPeople, selectedDistrictId]
   );
 
-  // Add notes/needs indicators to people - DERIVED from active needs only
-  // hasNeeds is true if person has any active needs, false otherwise
-  // Only active needs are counted. Inactive needs are retained for history.
-  const peopleWithIndicators = useMemo(() => {
-    return allPeople.map(person => ({
-      ...person,
-      hasNeeds: allNeeds.some(n => n.personId === person.personId && n.isActive), // Only count active needs
-    }));
-  }, [allPeople, allNeeds]);
-
+  // Sync selectedDistrictId with viewState.districtId
+  useEffect(() => {
+    if (viewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(viewState.districtId);
+    }
+  }, [viewState.districtId, selectedDistrictId]);
+  
+  // Update URL when viewState changes
+  useEffect(() => {
+    updateURLWithViewState(viewState);
+  }, [viewState]);
+  
+  const handleViewStateChange = (newViewState: ViewState) => {
+    setViewState(newViewState);
+    // Update selectedDistrictId to match
+    if (newViewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(newViewState.districtId);
+    }
+  };
+  
+  // District selection: Updates selectedDistrictId and viewState.regionId
+  // Only updates viewState if district exists in database (preserves original behavior).
+  // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
   const handleDistrictSelect = (districtId: string) => {
     setSelectedDistrictId(districtId);
+    
+    const selectedDistrict = districts.find(d => d.id === districtId);
+    if (selectedDistrict) {
+      // Extract region: database first, then fallback map
+      const regionId = selectedDistrict.region || extractRegionForViewState(districtId, districts);
+      const newViewState: ViewState = {
+        mode: "district",
+        districtId: districtId,
+        regionId: regionId,
+        campusId: null,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+    } else {
+      // If district not in database, still update viewState but use fallback region
+      const regionId = extractRegionForViewState(districtId, districts);
+      const newViewState: ViewState = {
+        mode: "district",
+        districtId: districtId,
+        regionId: regionId,
+        campusId: null,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+    }
+  };
+  
+  // Region selection: Sets ViewMode to "region", clears district/campus scope
+  const handleRegionSelect = (regionId: string) => {
+    const newViewState: ViewState = {
+      ...viewState,
+      mode: "region",
+      regionId,
+      districtId: null,
+      campusId: null,
+      panelOpen: false,
+    };
+    setViewState(newViewState);
+    setSelectedDistrictId(null);
+  };
+  
+  // Campus selection: Updates viewState with campus, district, and region
+  // Region extracted from district (database or DISTRICT_REGION_MAP fallback)
+  const handleCampusSelect = (campusId: number) => {
+    const campus = allCampuses.find(c => c.id === campusId);
+    if (campus && campus.districtId) {
+      const regionId = extractRegionForViewState(campus.districtId, districts);
+      const newViewState: ViewState = {
+        ...viewState,
+        mode: "campus",
+        campusId,
+        districtId: campus.districtId,
+        regionId: regionId,
+        panelOpen: true,
+      };
+      setViewState(newViewState);
+      setSelectedDistrictId(campus.districtId);
+    }
   };
 
   const handlePersonStatusChange = (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
@@ -436,15 +502,57 @@ export default function Home() {
   // Keyboard shortcuts for district panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape to close panels
+      // Escape to close panels and modals (in priority order: modals first, then panels)
       if (e.key === 'Escape') {
-        if (selectedDistrictId) {
-          setSelectedDistrictId(null);
+        // Close modals first (they're typically on top)
+        if (cropModalOpen) {
+          setCropModalOpen(false);
+          e.preventDefault();
+          return;
+        }
+        if (headerEditorOpen) {
+          setHeaderEditorOpen(false);
+          e.preventDefault();
+          return;
+        }
+        // Close all hamburger menu related modals and menu
+        if (shareModalOpen || importModalOpen || loginModalOpen || menuOpen) {
+          if (shareModalOpen) setShareModalOpen(false);
+          if (importModalOpen) setImportModalOpen(false);
+          if (loginModalOpen) setLoginModalOpen(false);
+          if (menuOpen) setMenuOpen(false);
+          e.preventDefault();
+          return;
+        }
+        if (personDialogOpen) {
+          setPersonDialogOpen(false);
+          e.preventDefault();
+          return;
+        }
+        
+        // Close panels
+        if (nationalPanelOpen) {
+          setNationalPanelOpen(false);
+          e.preventDefault();
+          return;
         }
         if (peoplePanelOpen) {
           setPeoplePanelOpen(false);
+          e.preventDefault();
+          return;
         }
-        return;
+        if (selectedDistrictId) {
+          // Clear both selectedDistrictId and viewState to prevent reopening
+          setSelectedDistrictId(null);
+          setViewState(prev => ({
+            ...prev,
+            districtId: null,
+            campusId: null,
+            panelOpen: false,
+          }));
+          e.preventDefault();
+          return;
+        }
       }
       
       // Arrow keys to navigate between geographically adjacent districts (only when district panel is open)
@@ -466,7 +574,20 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, peoplePanelOpen, districts]);
+  }, [
+    selectedDistrictId, 
+    peoplePanelOpen, 
+    nationalPanelOpen,
+    personDialogOpen,
+    headerEditorOpen,
+    shareModalOpen,
+    cropModalOpen,
+    importModalOpen,
+    loginModalOpen,
+    menuOpen,
+    districts,
+    setViewState
+  ]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -508,10 +629,28 @@ export default function Home() {
     }
   }, [isResizingDistrict, isResizingPeople]);
 
-  // Calculate days until CMC
-  const cmcDate = new Date('2025-07-06');
-  const today = new Date();
-  const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  // Calculate days until CMC - dynamic counter that updates
+  const [daysUntilCMC, setDaysUntilCMC] = useState(() => {
+    const cmcDate = new Date('2026-07-06');
+    const today = new Date();
+    return Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  });
+
+  // Update days until CMC counter periodically
+  useEffect(() => {
+    const updateDaysUntilCMC = () => {
+      const cmcDate = new Date('2026-07-06');
+      const today = new Date();
+      const days = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+      setDaysUntilCMC(days);
+    };
+
+    // Update immediately and then every hour
+    updateDaysUntilCMC();
+    const interval = setInterval(updateDaysUntilCMC, 60 * 60 * 1000); // Update every hour
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Diagnostic: Log if queries are failing
   if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
@@ -527,29 +666,29 @@ export default function Home() {
     console.warn('[Home] Queries not initialized yet');
   }
 
+  // Debug: Log data when it loads
+  useEffect(() => {
+    if (districtsQuery.data) {
+      console.log('[Home] Districts loaded:', districtsQuery.data.length, districtsQuery.data.slice(0, 5).map(d => d.id));
+    }
+    if (peopleQuery.data) {
+      console.log('[Home] People loaded:', peopleQuery.data.length);
+      const peopleWithDistricts = peopleQuery.data.filter(p => p.primaryDistrictId);
+      console.log('[Home] People with districts:', peopleWithDistricts.length);
+      if (peopleWithDistricts.length > 0) {
+        const districtCounts = peopleWithDistricts.reduce((acc, p) => {
+          acc[p.primaryDistrictId!] = (acc[p.primaryDistrictId!] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('[Home] People by district (top 5):', Object.entries(districtCounts).slice(0, 5));
+      }
+    }
+    if (campusesQuery.data) {
+      console.log('[Home] Campuses loaded:', campusesQuery.data.length);
+    }
+  }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
+
   return (
-          {/* View Mode Selector */}
-      <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 1000, background: '#fff', padding: '8px', borderRadius: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {(['national', 'regional', 'district'] as ViewMode[]).map(mode => (
-            <button
-              key={mode}
-              onClick={() => setViewState({ ...viewState, mode })}
-              style={{
-                padding: '4px 12px',
-                backgroundColor: viewState.mode === mode ? '#4A90E2' : '#f0f0f0',
-                color: viewState.mode === mode ? '#fff' : '#000',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                textTransform: 'capitalize'
-              }}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      </div>
     <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div 
@@ -583,21 +722,6 @@ export default function Home() {
             </>
           )}
         </div>
-        
-        
-        {/* Header Text - Editable */}
-        <div 
-          className="flex-grow text-white/95 relative z-10"
-          style={{ 
-            fontSize: '18px',
-            fontFamily: "'Righteous', 'Bebas Neue', 'Oswald', sans-serif",
-            fontWeight: 400,
-            letterSpacing: '0.5px'
-          }}
-          dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || '' 
-          }}
-        />
         
         {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
@@ -638,29 +762,19 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Info, Login Button, and Hamburger Menu */}
-        <div className="flex items-center gap-2 flex-shrink-0 z-10">
-          {/* Info (moved from menu) */}
+        {/* Right Side: Why Personal Invitations Matter Button and Hamburger Menu */}
+        <div className="flex items-center gap-2 flex-shrink-0 z-10 ml-auto">
+          {/* Why Personal Invitations Matter Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => {
               e.preventDefault();
-              setLocation("/more-info");
+              setLocation("/why-invitations-matter");
             }}
             className="text-white/80 hover:text-white hover:bg-red-700"
           >
-            <span className="text-sm font-semibold tracking-wide">INFO</span>
-          </Button>
-
-          {/* Login Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => window.location.href = getLoginUrl()}
-            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
-          >
-            LOGIN
+            <span className="text-sm font-semibold tracking-wide">Why Personal Invitations Matter</span>
           </Button>
 
           {/* Hamburger Menu */}
@@ -685,16 +799,18 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setImportModalOpen(true);
+                    window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 font-semibold"
                 >
-                  <Upload className="w-4 h-4" />
-                  Import
+                  <LogIn className="w-4 h-4" />
+                  Login
                 </button>
+                <div className="border-t border-gray-200 my-1"></div>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setShareModalOpen(true);
                     setMenuOpen(false);
                   }}
@@ -702,6 +818,17 @@ export default function Home() {
                 >
                   <Share2 className="w-4 h-4" />
                   Share
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImportModalOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import
                 </button>
                 <button
                   onClick={(e) => {
@@ -713,6 +840,16 @@ export default function Home() {
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/more-info");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <span className="text-sm font-semibold">CMC Info</span>
                 </button>
                 {/* Days Until CMC - Footer */}
                 <div className="px-4 py-2 border-t border-gray-200">
@@ -763,7 +900,16 @@ export default function Home() {
                     district={selectedDistrict}
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
-                    onClose={() => setSelectedDistrictId(null)}
+                    onClose={() => {
+                      setSelectedDistrictId(null);
+                      setViewState({
+                        ...viewState,
+                        districtId: null,
+                        regionId: null,
+                        campusId: null,
+                        panelOpen: false,
+                      });
+                    }}
                     onPersonStatusChange={handlePersonStatusChange}
                     onPersonAdd={handlePersonAdd}
                     onPersonClick={handlePersonClick}
@@ -787,6 +933,17 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
+          {/* View Mode Selector - fixed near XAN at bottom-right of screen */}
+          <div
+            className="fixed z-30"
+            style={{ right: '12%', bottom: '5%', margin: 0, padding: 0 }}
+          >
+            <ViewModeSelector
+              viewState={viewState}
+              onViewStateChange={handleViewStateChange}
+            />
+          </div>
+        
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -803,6 +960,13 @@ export default function Home() {
               if (e.target === e.currentTarget) {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
+                setViewState({ 
+                  ...viewState, 
+                  districtId: null, 
+                  regionId: null, 
+                  campusId: null,
+                  panelOpen: false 
+                });
               }
             }}
           >
@@ -810,16 +974,33 @@ export default function Home() {
               districts={districts}
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
+              viewState={viewState}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
+                setViewState({ 
+                  ...viewState, 
+                  districtId: null, 
+                  regionId: null, 
+                  campusId: null,
+                  panelOpen: false 
+                });
               }}
               onNationalClick={() => {
                 // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
+                // Candidate for View Modes refactor: XAN hardcoded region "NATIONAL" may need
+                // special handling in region-scoped views.
                 setSelectedDistrictId("XAN");
                 setNationalPanelOpen(false);
                 setPeoplePanelOpen(false);
+                setViewState({ 
+                  mode: "district",
+                  districtId: "XAN", 
+                  regionId: "NATIONAL", 
+                  campusId: null,
+                  panelOpen: true 
+                });
               }}
             />
 
@@ -868,9 +1049,9 @@ export default function Home() {
         >
           <button
             onClick={() => setPeoplePanelOpen(true)}
-            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
+            className="bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 group-hover:bg-red-700/90 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
           >
-            <span className="inline-block md:-rotate-90 whitespace-nowrap select-none">
+            <span className="inline-block whitespace-nowrap select-none">
               People
             </span>
           </button>
@@ -894,7 +1075,14 @@ export default function Home() {
         open={headerEditorOpen}
         onClose={() => setHeaderEditorOpen(false)}
         logoUrl={headerLogoUrl || savedHeaderLogo?.value || null}
-        headerText={headerText || savedHeaderText?.value || ''}
+        headerText={(() => {
+          const currentText = headerText || savedHeaderText?.value || '';
+          // Clear "National Director" if it exists (legacy default)
+          if (currentText === 'National Director' || currentText.trim() === 'National Director') {
+            return '';
+          }
+          return currentText;
+        })()}
         backgroundColor={headerBgColor || savedBgColor?.value || '#000000'}
         onSave={async (data) => {
           // Save header text

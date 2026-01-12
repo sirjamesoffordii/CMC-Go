@@ -4,6 +4,7 @@ import mysql from "mysql2/promise";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { checkNotDemoDatabase } from "./utils/check-demo-db.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +22,9 @@ if (!connectionString) {
   console.error("❌ DATABASE_URL environment variable is required");
   process.exit(1);
 }
+
+// Prevent running against Railway demo DB
+checkNotDemoDatabase(connectionString, "db:reset");
 
 // Parse connection string to extract database name
 function parseDatabaseName(connectionString) {

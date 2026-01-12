@@ -22,39 +22,50 @@ export default function People() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Filter state - initialize from URL query parameters using lazy initialization
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(() => {
+  // Filter state - initialize from URL query parameters
+  const getStatusFilterInitial = (): Set<"Yes" | "Maybe" | "No" | "Not Invited"> => {
+    if (typeof window === 'undefined') return new Set();
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get('status');
     if (statusParam) {
       return new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">);
     }
     return new Set();
-  });
+  };
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(getStatusFilterInitial());
 
-  const [searchQuery, setSearchQuery] = useState(() => {
+  const getSearchQueryInitial = (): string => {
+    if (typeof window === 'undefined') return "";
     const params = new URLSearchParams(window.location.search);
     return params.get('search') || "";
-  });
+  };
+  const [searchQuery, setSearchQuery] = useState(getSearchQueryInitial());
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>('All');
-
+  
+  // Initialize myCampus from URL params
+  const getMyCampusInitial = (): boolean => {
+    if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     return params.get('myCampus') === 'true';
-  });
+  };
+  const [myCampus, setMyCampus] = useState<boolean>(getMyCampusInitial());
 
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(() => {
+  const getNeedTypeFilterInitial = (): 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other' => {
+    if (typeof window === 'undefined') return 'All';
     const params = new URLSearchParams(window.location.search);
     const needTypeParam = params.get('needType');
     return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
-  });
+  };
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(getNeedTypeFilterInitial());
 
-  const [hasActiveNeeds, setHasActiveNeeds] = useState(() => {
+  const getHasActiveNeedsInitial = (): boolean => {
+    if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     return params.get('hasNeeds') === 'true';
-  });
+  };
+  const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(getHasActiveNeedsInitial());
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -163,23 +174,25 @@ export default function People() {
     }
 
     // My campus filter
-    if (myCampusOnly && user?.campusId) {
+    if (myCampus && user?.campusId) {
       filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
     }
 
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
+  }, [allPeople, statusFilter, searchQuery, myCampus, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
   
   // Group people by district and campus, then group districts by region
   const regionsWithDistricts = useMemo(() => {
-    const districtMap = new Map<string, {
+    type DistrictData = {
       district: District;
       campuses: Map<number, {
         campus: Campus;
         people: Person[];
       }>;
       unassigned: Person[];
-    }>();
+    };
+
+    const districtMap = new Map<string, DistrictData>();
 
     // Initialize districts
     allDistricts.forEach(district => {
@@ -227,8 +240,8 @@ export default function People() {
     });
 
     // Group districts by region
-    const regionMap = new Map<string, typeof districtMap.values extends () => infer T ? T[] : never>();
-    Array.from(districtMap.values()).forEach(districtData => {
+    const regionMap = new Map<string, DistrictData[]>();
+    Array.from(districtMap.values()).forEach((districtData) => {
       const region = districtData.district.region;
       if (!regionMap.has(region)) {
         regionMap.set(region, []);
@@ -310,8 +323,8 @@ export default function People() {
       params.set('search', searchQuery);
     }
 
-    // Add myCampusOnly if true
-    if (myCampusOnly) {
+    // Add myCampus if true
+    if (myCampus) {
       params.set('myCampus', 'true');
     }
 
@@ -329,7 +342,7 @@ export default function People() {
     const newSearch = params.toString();
     const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
     window.history.replaceState({}, '', newUrl);
-  }, [statusFilter, searchQuery, myCampusOnly, needTypeFilter, hasActiveNeeds]);
+  }, [statusFilter, searchQuery, myCampus, needTypeFilter, hasActiveNeeds]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -492,10 +505,10 @@ export default function People() {
             {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setMyCampusOnly(!myCampusOnly)}
+                  onClick={() => setMyCampus(!myCampus)}
                   className={`
                     px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                    ${myCampusOnly 
+                    ${myCampus 
                       ? "bg-blue-100 text-blue-700 border-2 border-blue-300" 
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
                     }

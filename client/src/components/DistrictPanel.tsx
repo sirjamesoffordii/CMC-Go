@@ -793,7 +793,8 @@ export function DistrictPanel({
 
     // Set role and campus based on target
     if (targetId === 'district') {
-      mutationData.primaryRole = 'District Director';
+      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
+      mutationData.primaryRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
       mutationData.primaryCampusId = null;
     } else if (targetId === 'district-staff') {
       mutationData.primaryRole = 'District Staff';
@@ -871,8 +872,8 @@ export function DistrictPanel({
     
     // Set role and campus based on selection
     if (selectedCampusId === 'district') {
-      // Add district director
-      mutationData.primaryRole = 'District Director';
+      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
+      mutationData.primaryRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
       // Don't set primaryCampusId for district director (will be null in DB)
     } else if (selectedCampusId === 'district-staff') {
       // Add district staff
@@ -1214,9 +1215,11 @@ export function DistrictPanel({
     if (!person) return;
     
     // Update person to be district director (set role and remove campus)
+    // XAN (Chi Alpha National) uses "National Director", others use "District Director"
+    const role = district?.id === 'XAN' ? 'National Director' : 'District Director';
     updatePerson.mutate({
       personId: person.personId,
-      primaryRole: 'District Director',
+      primaryRole: role,
       primaryCampusId: null,
     });
   };
@@ -1281,8 +1284,8 @@ export function DistrictPanel({
         defaultRole = 'Campus Director';
       }
     } else if (campusId === 'district') {
-      // District Director is handled separately, not in the dropdown
-      defaultRole = 'Staff'; // This won't be used for district director
+      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
+      defaultRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
     } else if (campusId === 'district-staff') {
       defaultRole = 'District Staff';
     } else if (typeof campusId === 'number') {
@@ -1298,7 +1301,7 @@ export function DistrictPanel({
 
 
   const content = district ? (
-    <div className="w-full px-4 py-2 min-h-full">
+    <div className="w-full px-4 py-2">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200">
             {/* Title Section */}
@@ -1368,6 +1371,7 @@ export function DistrictPanel({
                     }}
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
                     quickAddInputRef={quickAddInputRef}
+                    districtId={district?.id || null}
                   />
                   </div>
                   
@@ -1518,7 +1522,7 @@ export function DistrictPanel({
       </div>
 
       {/* Campuses Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-2 transition-all md:hover:shadow-md md:hover:border-slate-200 overflow-x-auto">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-2 transition-all md:hover:shadow-md md:hover:border-slate-200 overflow-x-auto overflow-y-hidden">
             <div className="space-y-1.5 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -1939,7 +1943,7 @@ export function DistrictPanel({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="h-full flex flex-col"
+        className="w-full"
       >
         {content}
         
@@ -2003,7 +2007,7 @@ export function DistrictPanel({
                   {selectedCampusId === 'district' ? (
                     <Input
                       id="person-role"
-                      value="District Director"
+                      value={district?.id === 'XAN' ? 'National Director' : 'District Director'}
                       disabled
                       className="bg-slate-100 cursor-not-allowed h-9"
                     />
@@ -2418,7 +2422,7 @@ export function DistrictPanel({
                     {editingPerson?.campusId === 'district' ? (
                       <Input
                         id="edit-person-role"
-                        value="District Director"
+                        value={district?.id === 'XAN' ? 'National Director' : 'District Director'}
                         disabled
                         className="bg-slate-100 cursor-not-allowed"
                       />
