@@ -93,6 +93,18 @@ export default function People() {
     }
     return map;
   }, [allNeeds]);
+
+    const campusById = useMemo(() => {
+    const map = new Map<number, Campus>();
+    for (const c of allCampuses) map.set(c.id, c);
+    return map;
+  }, [allCampuses]);
+
+    const districtById = useMemo(() => {
+    const map = new Map<string, District>();
+    for (const d of allDistricts) map.set(d.id, d);
+    return map;
+  }, [allDistricts]);
   
   // Mutations
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -120,7 +132,6 @@ export default function People() {
   }, []);
   
   
-  95
   
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
@@ -128,16 +139,6 @@ export default function People() {
     // Status filter
     if (statusFilter.size > 0) {
       
-  // Sentry test trigger (staging only)
-  useEffect(() => {
-    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
-    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
-      // Clean up URL first
-      window.history.replaceState({}, document.title, window.location.pathname);
-      // Throw error to trigger Sentry
-      throw new Error('Sentry test: staging');
-    }
-  }, []);
 
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
@@ -149,9 +150,13 @@ export default function People() {
         const needs = needsByPersonId.get(p.personId) ?? [];
         const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
         return (
+                  const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
+                const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
           p.name?.toLowerCase().includes(query) ||
           p.primaryRole?.toLowerCase().includes(query) ||
           p.personId?.toLowerCase().includes(query) ||
+                      campus?.name.toLowerCase().includes(query) ||
+                      district?.name.toLowerCase().includes(query) ||
           needsText.includes(query)
         );
       });
