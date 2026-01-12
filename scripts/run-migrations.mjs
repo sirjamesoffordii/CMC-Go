@@ -11,6 +11,7 @@ const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 const connectionString = process.env.DATABASE_URL;
+console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
 if (!connectionString) {
   console.error("❌ DATABASE_URL environment variable is required");
   process.exit(1);
