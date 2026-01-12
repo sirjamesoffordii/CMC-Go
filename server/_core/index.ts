@@ -186,6 +186,37 @@ async function startServer() {
     console.log("[Debug] Database health endpoint available at /api/debug/db-health");
   }
   
+  // Health endpoint that includes demo DB info (dev only)
+  app.get("/api/health", async (req, res) => {
+    try {
+      // Test database connection
+      const { checkDbHealth } = await import('./db-health');
+      await checkDbHealth();
+      
+      const { getDatabaseInfo } = await import('./env');
+      const dbInfo = getDatabaseInfo();
+      
+      // Only return detailed info in development
+      if (process.env.NODE_ENV === "development") {
+        res.json({
+          ok: true,
+          dbHost: dbInfo.host,
+          connectionPath: dbInfo.connectionPath || null,
+          isDemoDb: dbInfo.isDemoDb,
+        });
+      } else {
+        // Production: minimal response
+        res.json({ ok: true });
+      }
+    } catch (error) {
+      // Database connection failed
+      res.status(500).json({
+        ok: false,
+        error: error instanceof Error ? error.message : 'Database connection failed',
+      });
+    }
+  });
+  
   // tRPC API
   app.use(
     "/api/trpc",

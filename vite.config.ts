@@ -1,10 +1,7 @@
-import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import fs from "node:fs";
 import path from "path";
 import { defineConfig } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 
 // Configure React plugin - disable fastRefresh in development if CSP causes issues
@@ -13,10 +10,16 @@ const plugins = [
   react({
     // Disable fast refresh if CSP nonce issues occur
     // fastRefresh: false, // Uncomment if CSP still causes preamble detection issues
+    // Use esbuild instead of Babel for better performance and TypeScript support
+    babel: {
+      parserOpts: {
+        plugins: ['typescript', 'jsx']
+      }
+    }
   }), 
   tailwindcss(), 
-  jsxLocPlugin(), 
-  vitePluginManusRuntime()
+  // jsxLocPlugin(), // Disabled: incompatible with Vite 7.x (requires Vite 4 or 5)
+  // vitePluginManusRuntime() // Temporarily disabled to test build
 ];
 
 export default defineConfig({

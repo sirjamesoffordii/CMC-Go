@@ -16,11 +16,14 @@
     "db:push:yes": "node scripts/db-push-yes.mjs",
     "db:init": "node scripts/init-mysql-db.mjs",
     "db:seed": "node scripts/seed-database.mjs",
+    "db:seed:baseline": "node scripts/seed-baseline.mjs",
     "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:push:yes && pnpm db:seed",
     "db:check": "node scripts/check-schema.mjs",
+    "db:audit": "node scripts/audit-migrations.mjs",
     "db:verify": "node scripts/verify-write.mjs",
     "db:reset": "node scripts/reset-db.mjs",
-    "db:reset:drop": "node scripts/reset-db.mjs --drop-db"
+    "db:reset:drop": "node scripts/reset-db.mjs --drop-db",
+    "db:reset:local": "node scripts/reset-local-db.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
