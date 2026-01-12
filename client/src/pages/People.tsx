@@ -149,9 +149,10 @@ export default function People() {
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
         const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
+        const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
+        const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
         return (
-                  const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
-                const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
+
           p.name?.toLowerCase().includes(query) ||
           p.primaryRole?.toLowerCase().includes(query) ||
           p.personId?.toLowerCase().includes(query) ||
