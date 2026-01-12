@@ -99,21 +99,23 @@ export default function Home() {
   
   // View mode state - initialize from URL or defaults
   // Default: district-scoped view (as per requirements)
-  const [viewState, setViewState] = useState<ViewState>(() => {
+  const getViewStateInitial = (): ViewState => {
     const urlState = initializeViewStateFromURL();
     // If URL has view state, use it; otherwise default to district mode
     if (urlState.districtId || urlState.regionId || urlState.campusId) {
       return urlState;
     }
     return DEFAULT_VIEW_STATE;
-  });
+  };
+  const [viewState, setViewState] = useState<ViewState>(getViewStateInitial());
   
   // Legacy selectedDistrictId for backward compatibility
   // Sync with viewState.districtId
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(() => {
+  const getSelectedDistrictIdInitial = (): string | null => {
     const urlState = initializeViewStateFromURL();
     return urlState.districtId || null;
-  });
+  };
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(getSelectedDistrictIdInitial());
   
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -851,10 +853,10 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
-          {/* View Mode Selector - fixed near XAN at bottom-left of screen */}
+          {/* View Mode Selector - fixed near XAN at bottom-right of screen */}
           <div
             className="fixed z-30"
-            style={{ left: '12%', bottom: '5%', margin: 0, padding: 0 }}
+            style={{ right: '12%', bottom: '5%', margin: 0, padding: 0 }}
           >
             <ViewModeSelector
               viewState={viewState}

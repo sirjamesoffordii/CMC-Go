@@ -16,18 +16,19 @@ import { useLocation } from "wouter";
 export default function Approvals() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = usePublicAuth();
+  const utils = trpc.useUtils();
   
   const { data: pendingApprovals = [], isLoading } = trpc.approvals.list.useQuery();
   
   const approveMutation = trpc.approvals.approve.useMutation({
     onSuccess: () => {
-      trpc.approvals.list.invalidate();
+      utils.approvals.list.invalidate();
     },
   });
   
   const rejectMutation = trpc.approvals.reject.useMutation({
     onSuccess: () => {
-      trpc.approvals.list.invalidate();
+      utils.approvals.list.invalidate();
     },
   });
   

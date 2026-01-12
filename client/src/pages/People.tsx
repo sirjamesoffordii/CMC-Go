@@ -22,39 +22,50 @@ export default function People() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Filter state - initialize from URL query parameters using lazy initialization
-  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(() => {
+  // Filter state - initialize from URL query parameters
+  const getStatusFilterInitial = (): Set<"Yes" | "Maybe" | "No" | "Not Invited"> => {
+    if (typeof window === 'undefined') return new Set();
     const params = new URLSearchParams(window.location.search);
     const statusParam = params.get('status');
     if (statusParam) {
       return new Set(statusParam.split(',') as Array<"Yes" | "Maybe" | "No" | "Not Invited">);
     }
     return new Set();
-  });
+  };
+  const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(getStatusFilterInitial());
 
-  const [searchQuery, setSearchQuery] = useState(() => {
+  const getSearchQueryInitial = (): string => {
+    if (typeof window === 'undefined') return "";
     const params = new URLSearchParams(window.location.search);
     return params.get('search') || "";
-  });
+  };
+  const [searchQuery, setSearchQuery] = useState(getSearchQueryInitial());
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   
-  const [myCampus, setMyCampus] = useState(() => {
+  // Initialize myCampus from URL params
+  const getMyCampusInitial = (): boolean => {
+    if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     return params.get('myCampus') === 'true';
-  });
+  };
+  const [myCampus, setMyCampus] = useState<boolean>(getMyCampusInitial());
 
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(() => {
+  const getNeedTypeFilterInitial = (): 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other' => {
+    if (typeof window === 'undefined') return 'All';
     const params = new URLSearchParams(window.location.search);
     const needTypeParam = params.get('needType');
     return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
-  });
+  };
+  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(getNeedTypeFilterInitial());
 
-  const [hasActiveNeeds, setHasActiveNeeds] = useState(() => {
+  const getHasActiveNeedsInitial = (): boolean => {
+    if (typeof window === 'undefined') return false;
     const params = new URLSearchParams(window.location.search);
     return params.get('hasNeeds') === 'true';
-  });
+  };
+  const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(getHasActiveNeedsInitial());
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());

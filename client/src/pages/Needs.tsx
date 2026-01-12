@@ -6,11 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hand, DollarSign, MapPin, User, CheckCircle } from "lucide-react";
 import { useLocation } from "wouter";
+import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { Person } from "../../../drizzle/schema";
 
 export default function Needs() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);
+  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Check if user is a leader
   const isLeader = user && ["CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"].includes(user.role);
@@ -162,8 +166,10 @@ export default function Needs() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        setLocation("/");
-                        // TODO: Open person details dialog
+                        if (item.person) {
+                          setSelectedPerson(item.person);
+                          setDialogOpen(true);
+                        }
                       }}
                       className="touch-target"
                     >
@@ -176,6 +182,12 @@ export default function Needs() {
           ))}
         </div>
       )}
+      
+      <PersonDetailsDialog
+        person={selectedPerson}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+      />
     </div>
   );
 }
