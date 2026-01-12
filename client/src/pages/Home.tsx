@@ -285,6 +285,15 @@ export default function Home() {
       setHeaderHeight(parseInt(savedHeaderHeight.value, 10));
     }
   }, [savedHeaderHeight]);
+
+  // Clear "National Director" from saved header text if it exists (legacy default)
+  useEffect(() => {
+    if (savedHeaderText?.value === 'National Director') {
+      setHeaderText('');
+      updateSetting.mutate({ key: 'headerText', value: '' });
+    }
+  }, [savedHeaderText]);
+
   
   // Header resize handlers
   const handleHeaderResizeStart = (e: React.MouseEvent) => {
@@ -493,15 +502,57 @@ export default function Home() {
   // Keyboard shortcuts for district panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape to close panels
+      // Escape to close panels and modals (in priority order: modals first, then panels)
       if (e.key === 'Escape') {
-        if (selectedDistrictId) {
-          setSelectedDistrictId(null);
+        // Close modals first (they're typically on top)
+        if (cropModalOpen) {
+          setCropModalOpen(false);
+          e.preventDefault();
+          return;
+        }
+        if (headerEditorOpen) {
+          setHeaderEditorOpen(false);
+          e.preventDefault();
+          return;
+        }
+        // Close all hamburger menu related modals and menu
+        if (shareModalOpen || importModalOpen || loginModalOpen || menuOpen) {
+          if (shareModalOpen) setShareModalOpen(false);
+          if (importModalOpen) setImportModalOpen(false);
+          if (loginModalOpen) setLoginModalOpen(false);
+          if (menuOpen) setMenuOpen(false);
+          e.preventDefault();
+          return;
+        }
+        if (personDialogOpen) {
+          setPersonDialogOpen(false);
+          e.preventDefault();
+          return;
+        }
+        
+        // Close panels
+        if (nationalPanelOpen) {
+          setNationalPanelOpen(false);
+          e.preventDefault();
+          return;
         }
         if (peoplePanelOpen) {
           setPeoplePanelOpen(false);
+          e.preventDefault();
+          return;
         }
-        return;
+        if (selectedDistrictId) {
+          // Clear both selectedDistrictId and viewState to prevent reopening
+          setSelectedDistrictId(null);
+          setViewState(prev => ({
+            ...prev,
+            districtId: null,
+            campusId: null,
+            panelOpen: false,
+          }));
+          e.preventDefault();
+          return;
+        }
       }
       
       // Arrow keys to navigate between geographically adjacent districts (only when district panel is open)
@@ -523,7 +574,20 @@ export default function Home() {
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedDistrictId, peoplePanelOpen, districts]);
+  }, [
+    selectedDistrictId, 
+    peoplePanelOpen, 
+    nationalPanelOpen,
+    personDialogOpen,
+    headerEditorOpen,
+    shareModalOpen,
+    cropModalOpen,
+    importModalOpen,
+    loginModalOpen,
+    menuOpen,
+    districts,
+    setViewState
+  ]);
 
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
@@ -565,10 +629,28 @@ export default function Home() {
     }
   }, [isResizingDistrict, isResizingPeople]);
 
-  // Calculate days until CMC
-  const cmcDate = new Date('2025-07-06');
-  const today = new Date();
-  const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  // Calculate days until CMC - dynamic counter that updates
+  const [daysUntilCMC, setDaysUntilCMC] = useState(() => {
+    const cmcDate = new Date('2026-07-06');
+    const today = new Date();
+    return Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+  });
+
+  // Update days until CMC counter periodically
+  useEffect(() => {
+    const updateDaysUntilCMC = () => {
+      const cmcDate = new Date('2026-07-06');
+      const today = new Date();
+      const days = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
+      setDaysUntilCMC(days);
+    };
+
+    // Update immediately and then every hour
+    updateDaysUntilCMC();
+    const interval = setInterval(updateDaysUntilCMC, 60 * 60 * 1000); // Update every hour
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Diagnostic: Log if queries are failing
   if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
@@ -641,21 +723,6 @@ export default function Home() {
           )}
         </div>
         
-        
-        {/* Header Text - Editable */}
-        <div 
-          className="flex-grow text-white/95 relative z-10"
-          style={{ 
-            fontSize: '18px',
-            fontFamily: "'Righteous', 'Bebas Neue', 'Oswald', sans-serif",
-            fontWeight: 400,
-            letterSpacing: '0.5px'
-          }}
-          dangerouslySetInnerHTML={{ 
-            __html: headerText || savedHeaderText?.value || '' 
-          }}
-        />
-        
         {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div 
@@ -695,29 +762,19 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Info, Login Button, and Hamburger Menu */}
-        <div className="flex items-center gap-2 flex-shrink-0 z-10">
-          {/* Info (moved from menu) */}
+        {/* Right Side: Why Personal Invitations Matter Button and Hamburger Menu */}
+        <div className="flex items-center gap-2 flex-shrink-0 z-10 ml-auto">
+          {/* Why Personal Invitations Matter Button */}
           <Button
             variant="ghost"
             size="sm"
             onClick={(e) => {
               e.preventDefault();
-              setLocation("/more-info");
+              setLocation("/why-invitations-matter");
             }}
             className="text-white/80 hover:text-white hover:bg-red-700"
           >
-            <span className="text-sm font-semibold tracking-wide">INFO</span>
-          </Button>
-
-          {/* Login Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => window.location.href = getLoginUrl()}
-            className="bg-black text-white hover:bg-red-700 border border-black hover:border-red-700"
-          >
-            LOGIN
+            <span className="text-sm font-semibold tracking-wide">Why Personal Invitations Matter</span>
           </Button>
 
           {/* Hamburger Menu */}
@@ -742,16 +799,18 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setImportModalOpen(true);
+                    window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 font-semibold"
                 >
-                  <Upload className="w-4 h-4" />
-                  Import
+                  <LogIn className="w-4 h-4" />
+                  Login
                 </button>
+                <div className="border-t border-gray-200 my-1"></div>
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     setShareModalOpen(true);
                     setMenuOpen(false);
                   }}
@@ -759,6 +818,17 @@ export default function Home() {
                 >
                   <Share2 className="w-4 h-4" />
                   Share
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImportModalOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import
                 </button>
                 <button
                   onClick={(e) => {
@@ -770,6 +840,16 @@ export default function Home() {
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLocation("/more-info");
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  <span className="text-sm font-semibold">CMC Info</span>
                 </button>
                 {/* Days Until CMC - Footer */}
                 <div className="px-4 py-2 border-t border-gray-200">
@@ -969,9 +1049,9 @@ export default function Home() {
         >
           <button
             onClick={() => setPeoplePanelOpen(true)}
-            className="bg-red-700/90 text-white px-2 py-8 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-6px)] md:group-hover:translate-x-0 group-hover:bg-black transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
+            className="bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 group-hover:bg-red-700/90 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
           >
-            <span className="inline-block md:-rotate-90 whitespace-nowrap select-none">
+            <span className="inline-block whitespace-nowrap select-none">
               People
             </span>
           </button>
@@ -995,7 +1075,14 @@ export default function Home() {
         open={headerEditorOpen}
         onClose={() => setHeaderEditorOpen(false)}
         logoUrl={headerLogoUrl || savedHeaderLogo?.value || null}
-        headerText={headerText || savedHeaderText?.value || ''}
+        headerText={(() => {
+          const currentText = headerText || savedHeaderText?.value || '';
+          // Clear "National Director" if it exists (legacy default)
+          if (currentText === 'National Director' || currentText.trim() === 'National Director') {
+            return '';
+          }
+          return currentText;
+        })()}
         backgroundColor={headerBgColor || savedBgColor?.value || '#000000'}
         onSave={async (data) => {
           // Save header text

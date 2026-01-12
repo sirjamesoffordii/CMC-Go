@@ -184,7 +184,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
   };
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="w-full flex flex-col bg-white">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-200 bg-gradient-to-r from-slate-700 to-slate-800 text-white p-5">
         <div className="flex items-center justify-between mb-4">
@@ -236,7 +236,7 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 p-4">
         {isLoading ? (
           <div className="text-center py-8 text-slate-500">Loading...</div>
         ) : nationalStaff.length === 0 ? (

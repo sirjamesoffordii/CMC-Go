@@ -497,7 +497,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     : 0;
   
   // Calculate days until CMC
-  const cmcDate = new Date('2025-07-06');
+  const cmcDate = new Date('2026-07-06');
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   

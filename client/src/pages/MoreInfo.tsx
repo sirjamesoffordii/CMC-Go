@@ -1,9 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin, Users, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
+import { useEffect } from "react";
 
 export default function MoreInfo() {
   const [, setLocation] = useLocation();
+
+  // Handle ESC key to navigate back
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLocation("/");
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setLocation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">

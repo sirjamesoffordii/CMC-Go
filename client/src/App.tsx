@@ -4,11 +4,11 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { SentryTestRedirect } from "./components/SentryTestRedirect";
-import { DemoDbBanner } from "./components/DemoDbBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import People from "./pages/People";
 import MoreInfo from "./pages/MoreInfo";
+import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
 import AdminConsole from "./pages/AdminConsole";
 import Approvals from "./pages/Approvals";
 import Import from "./pages/Import";
@@ -45,6 +45,7 @@ function Router() {
       <Route path="/people" component={People} />
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />
+      <Route path="/why-invitations-matter" component={WhyInvitationsMatter} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
       <Route path="/import" component={Import} />
@@ -97,7 +98,6 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <DemoDbBanner />
           <Toaster />
           <SentryTestRedirect />
           <Router />
