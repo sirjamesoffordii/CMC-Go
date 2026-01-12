@@ -187,14 +187,7 @@ export function DistrictPanel({
   const [pieChartOffset, setPieChartOffset] = useState(0);
   const [labelsOffset, setLabelsOffset] = useState(0);
   
-  // Fetch needs for the person being edited
-  const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: editingPerson?.person.personId || '' },
-    { 
-      enabled: !!editingPerson?.person.personId,
-      retry: false,
-    }
-  );
+  // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
@@ -211,6 +204,19 @@ export function DistrictPanel({
     'National Staff',
   ] as const;
   type CampusRole = typeof campusRoles[number];
+  
+  // Filter roles based on district - XAN gets all roles, others only get campus-specific roles
+  // But always include the current person's role if editing (to prevent errors when editing district directors)
+  const baseAvailableRoles = district?.id === 'XAN' 
+    ? campusRoles 
+    : campusRoles.filter(role => 
+        !['National Director', 'Regional Director', 'District Director', 'Field Director', 'National Staff'].includes(role)
+      );
+  
+  // If editing a person, ensure their current role is in the available roles list
+  const availableRoles = editingPerson?.person?.primaryRole && !baseAvailableRoles.includes(editingPerson.person.primaryRole as CampusRole)
+    ? [...baseAvailableRoles, editingPerson.person.primaryRole as CampusRole]
+    : baseAvailableRoles;
 
   // Quick add state
   const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
@@ -242,7 +248,9 @@ export function DistrictPanel({
   // Household combobox state
   const [householdInputValue, setHouseholdInputValue] = useState('');
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false);
+  const [isEditingHousehold, setIsEditingHousehold] = useState(false);
   const householdInputRef = useRef<HTMLInputElement>(null);
+  const householdDropdownRef = useRef<HTMLDivElement>(null);
   
   const [campusForm, setCampusForm] = useState({
     name: ''
@@ -303,6 +311,26 @@ export function DistrictPanel({
       setHouseholdInputValue('');
     }
   }, [personForm.householdId, allHouseholds, allPeople, isPersonDialogOpen, householdDropdownOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!householdDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (householdDropdownRef.current && 
+          householdInputRef.current &&
+          !householdDropdownRef.current.contains(e.target as Node) &&
+          !householdInputRef.current.contains(e.target as Node)) {
+        setHouseholdDropdownOpen(false);
+      }
+    };
+
+    // Use capture phase to catch clicks before they bubble
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [householdDropdownOpen]);
   
   // Update household mutation
   const updateHousehold = trpc.households.update.useMutation({
@@ -339,6 +367,11 @@ export function DistrictPanel({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
       onDistrictUpdate();
+    },
+  });
+  const createNote = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      utils.notes.byPerson.invalidate();
     },
   });
 
@@ -830,7 +863,7 @@ export function DistrictPanel({
   };
 
   // Handle add person
-  const handleAddPerson = () => {
+  const handleAddPerson = async () => {
     console.log('handleAddPerson called', { selectedCampusId, name: personForm.name, role: personForm.role, district: district?.id });
     
     if (!selectedCampusId) {
@@ -901,19 +934,68 @@ export function DistrictPanel({
     }
     
     // Household and family fields
-    if (personForm.householdId) {
-      mutationData.householdId = personForm.householdId;
-      mutationData.householdRole = 'primary';
-    }
     mutationData.spouseAttending = personForm.spouseAttending;
     mutationData.childrenCount = personForm.childrenCount;
     mutationData.guestsCount = personForm.guestsCount;
     
-    // Validation: spouseAttending or childrenCount > 0 requires householdId
-    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
-      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
-      alert("Household is required when spouse is attending or children count is greater than 0");
-      return;
+    // Auto-create or find existing household if family/guests are added and no household exists
+    let householdIdToUse = personForm.householdId;
+    if ((personForm.spouseAttending || personForm.childrenCount > 0 || personForm.guestsCount > 0) && !personForm.householdId) {
+      // Extract last name from person's name
+      const nameParts = personForm.name.trim().split(' ');
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+      const householdLabel = `${lastName} Household`;
+      
+      // Check if there's already a household with this last name for people in the same district
+      const existingHousehold = allHouseholds.find(h => {
+        if (!h.label || !h.label.toLowerCase().includes(lastName.toLowerCase())) {
+          return false;
+        }
+        // Check if any people in this district already belong to this household
+        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        if (householdMembers.length > 0) {
+          // Check if any member has the same last name
+          return householdMembers.some(member => {
+            const memberNameParts = member.name.trim().split(' ');
+            const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
+            return memberLastName.toLowerCase() === lastName.toLowerCase();
+          });
+        }
+        return false;
+      });
+      
+      if (existingHousehold) {
+        // Use existing household - counts will be recalculated after person is saved
+        householdIdToUse = existingHousehold.id;
+      } else {
+        // Create new household with person's last name
+        try {
+          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
+            createHousehold.mutate({
+              label: householdLabel,
+              childrenCount: personForm.childrenCount || 0,
+              guestsCount: personForm.guestsCount || 0,
+            }, {
+              onSuccess: (household) => {
+                resolve(household);
+              },
+              onError: (error) => {
+                reject(error);
+              },
+            });
+          });
+          householdIdToUse = newHousehold.id;
+        } catch (error) {
+          console.error('Failed to create household:', error);
+          alert('Failed to create household. Please try again.');
+          return;
+        }
+      }
+    }
+    
+    if (householdIdToUse) {
+      mutationData.householdId = householdIdToUse;
+      mutationData.householdRole = 'primary';
     }
     
     if (personForm.childrenAges.length > 0) {
@@ -925,11 +1007,38 @@ export function DistrictPanel({
     // Call the mutation
     createPerson.mutate(mutationData, {
       onSuccess: () => {
+        // Update household counts to aggregate all members' counts
+        if (householdIdToUse) {
+          // Invalidate and refetch to get updated person data, then recalculate household totals
+          utils.people.list.invalidate();
+          setTimeout(() => {
+            utils.people.list.refetch().then((result) => {
+              // Get fresh people data from refetch result
+              const updatedPeople = result.data || allPeople;
+              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
+              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+              
+              updateHousehold.mutate({
+                id: householdIdToUse,
+                childrenCount: totalChildrenCount,
+                guestsCount: totalGuestsCount,
+              });
+            });
+          }, 200);
+        }
         // Create need only if needType is not "None"
         if (personForm.needType !== 'None' && personForm.needType) {
-          const needDescription = personForm.needType === 'Financial' 
-            ? `Financial need: $${personForm.needAmount || '0'}`
-            : personForm.needDetails || `${personForm.needType} need`;
+          // Build need description - include needDetails for Financial needs if provided
+          let needDescription: string;
+          if (personForm.needType === 'Financial') {
+            const amountPart = `$${personForm.needAmount || '0'}`;
+            needDescription = personForm.needDetails 
+              ? `${amountPart} - ${personForm.needDetails}`
+              : `Financial need: ${amountPart}`;
+          } else {
+            needDescription = personForm.needDetails || `${personForm.needType} need`;
+          }
           
           updateOrCreateNeed.mutate({
             personId,
@@ -940,6 +1049,16 @@ export function DistrictPanel({
               : undefined,
             isActive: !personForm.needsMet, // Active if needsMet is false
           });
+          
+          // Save needDetails to notes table with noteType="NEED" if provided
+          if (personForm.needDetails?.trim()) {
+            createNote.mutate({
+              personId,
+              category: 'INTERNAL',
+              content: personForm.needDetails.trim(),
+              noteType: 'NEED',
+            });
+          }
         }
       },
     });
@@ -955,17 +1074,20 @@ export function DistrictPanel({
   };
 
   // Handle edit person
-  const handleEditPerson = (campusId: number | string, person: Person) => {
+  const handleEditPerson = async (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
     setIsEditPersonDialogOpen(true);
-  };
-  
-  // Update form when editing person or needs data changes
-  useEffect(() => {
-    if (editingPerson && isEditPersonDialogOpen) {
-      const person = editingPerson.person;
+    
+    // Load form data immediately when opening edit dialog
+    // This avoids using useEffect which can cause infinite loops
+    try {
       const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-      const personNeed = editingPersonNeeds.length > 0 ? editingPersonNeeds[0] : null;
+      
+      // Fetch needs and notes for this person
+      const needsResult = await utils.needs.byPerson.fetch({ personId: person.personId });
+      const notesResult = await utils.notes.byPerson.fetch({ personId: person.personId });
+      
+      const personNeed = (needsResult && needsResult.length > 0) ? needsResult[0] : null;
       
       // Parse childrenAges from JSON string if it exists
       let childrenAges: string[] = [];
@@ -973,9 +1095,39 @@ export function DistrictPanel({
         try {
           childrenAges = JSON.parse(person.childrenAges);
         } catch (e) {
-          // If parsing fails, treat as empty array
           childrenAges = [];
         }
+      }
+      
+      // Extract needDetails from need description or from notes with noteType="NEED"
+      let needDetails = '';
+      if (personNeed) {
+        try {
+          if (personNeed.type === 'Financial') {
+            const desc = personNeed.description || '';
+            const match = desc.match(/\$\d+(?:\.\d+)?\s*-\s*(.+)/);
+            needDetails = match ? match[1].trim() : '';
+          } else {
+            needDetails = personNeed.description || '';
+          }
+        } catch (error) {
+          console.error('Error extracting needDetails from need:', error);
+        }
+      }
+      
+      // Also check notes table for need notes (noteType="NEED")
+      try {
+        const safeNotes = notesResult || [];
+        const needNotes = safeNotes.filter((n: any) => {
+          if (!n) return false;
+          return (n.noteType === 'NEED' || n.note_type === 'NEED');
+        });
+        if (needNotes.length > 0 && !needDetails) {
+          const lastNote = needNotes[needNotes.length - 1];
+          needDetails = (lastNote?.content || lastNote?.note || '') as string;
+        }
+      } catch (error) {
+        console.error('Error processing need notes:', error);
       }
       
       setPersonForm({ 
@@ -986,7 +1138,7 @@ export function DistrictPanel({
         status: figmaStatus,
         needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
         needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
-        needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
+        needDetails: needDetails,
         notes: person.notes || '', 
         spouseAttending: (person.spouseAttending !== undefined && person.spouseAttending !== null) ? person.spouseAttending : false,
         childrenCount: (person.childrenCount !== undefined && person.childrenCount !== null) ? person.childrenCount : 0,
@@ -998,35 +1150,114 @@ export function DistrictPanel({
       });
 
       // Set household input value
-      if (person.householdId && allHouseholds && allPeople) {
-        const household = allHouseholds.find(h => h.id === person.householdId);
-        if (household) {
-          const members = allPeople.filter(p => p.householdId === household.id);
-          const displayName = household.label || 
-            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-          setHouseholdInputValue(displayName);
+      try {
+        if (person.householdId && allHouseholds && allPeople) {
+          const household = allHouseholds.find(h => h.id === person.householdId);
+          if (household) {
+            const members = allPeople.filter(p => p.householdId === household.id);
+            const displayName = household.label || 
+              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+            setHouseholdInputValue(displayName);
+          } else {
+            setHouseholdInputValue('');
+          }
+        } else {
+          setHouseholdInputValue('');
         }
-      } else {
+      } catch (error) {
+        console.error('Error setting household input value:', error);
         setHouseholdInputValue('');
       }
+    } catch (error) {
+      console.error('Error loading person data for editing:', error);
+      // Reset form to prevent showing invalid data
+      setPersonForm({ 
+        name: '', 
+        role: 'Staff', 
+        status: 'not-invited',
+        needType: 'None',
+        needAmount: '',
+        needDetails: '',
+        notes: '',
+        spouseAttending: false,
+        childrenCount: 0,
+        guestsCount: 0,
+        childrenAges: [],
+        depositPaid: false,
+        needsMet: false,
+        householdId: null,
+      });
+      setHouseholdInputValue('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingPerson, isEditPersonDialogOpen, editingPersonNeeds, allHouseholds, allPeople]);
+  };
 
   // Handle update person
-  const handleUpdatePerson = () => {
+  const handleUpdatePerson = async () => {
     if (!editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
     
     // Store form values for use in callbacks
     const formData = { ...personForm };
     
-    // Validation: spouseAttending or childrenCount > 0 requires householdId
-    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
-      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
-      alert("Household is required when spouse is attending or children count is greater than 0");
-      return;
+    // Auto-create or find existing household if family/guests are added and no household exists
+    let householdIdToUse = personForm.householdId;
+    if ((personForm.spouseAttending || personForm.childrenCount > 0 || personForm.guestsCount > 0) && !personForm.householdId) {
+      // Extract last name from person's name
+      const nameParts = personForm.name.trim().split(' ');
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+      const householdLabel = `${lastName} Household`;
+      
+      // Check if there's already a household with this last name for people in the same district
+      const existingHousehold = allHouseholds.find(h => {
+        if (!h.label || !h.label.toLowerCase().includes(lastName.toLowerCase())) {
+          return false;
+        }
+        // Check if any people in this district already belong to this household
+        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        if (householdMembers.length > 0) {
+          // Check if any member has the same last name
+          return householdMembers.some(member => {
+            const memberNameParts = member.name.trim().split(' ');
+            const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
+            return memberLastName.toLowerCase() === lastName.toLowerCase();
+          });
+        }
+        return false;
+      });
+      
+      if (existingHousehold) {
+        // Use existing household - counts will be recalculated after person is updated
+        householdIdToUse = existingHousehold.id;
+        setPersonForm({ ...personForm, householdId: existingHousehold.id });
+      } else {
+        // Create new household with person's last name
+        try {
+          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
+            createHousehold.mutate({
+              label: householdLabel,
+              childrenCount: personForm.childrenCount || 0,
+              guestsCount: personForm.guestsCount || 0,
+            }, {
+              onSuccess: (household) => {
+                resolve(household);
+              },
+              onError: (error) => {
+                reject(error);
+              },
+            });
+          });
+          householdIdToUse = newHousehold.id;
+          setPersonForm({ ...personForm, householdId: newHousehold.id });
+        } catch (error) {
+          console.error('Failed to create household:', error);
+          alert('Failed to create household. Please try again.');
+          return;
+        }
+      }
     }
+    
+    // Determine if this role requires primaryCampusId to be null (district/national level roles)
+    const isDistrictLevelRole = ['District Director', 'District Staff', 'National Director', 'Regional Director', 'Field Director', 'National Staff'].includes(personForm.role);
     
     // Update person with all fields
     updatePerson.mutate({ 
@@ -1039,17 +1270,45 @@ export function DistrictPanel({
       spouseAttending: personForm.spouseAttending,
       childrenCount: personForm.childrenCount,
       guestsCount: personForm.guestsCount,
-      householdId: personForm.householdId,
-      householdRole: personForm.householdId ? 'primary' : undefined,
+      householdId: householdIdToUse,
+      householdRole: householdIdToUse ? 'primary' : undefined,
       childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
+      // District/national level roles should have primaryCampusId as null
+      primaryCampusId: isDistrictLevelRole ? null : undefined,
     }, {
       onSuccess: () => {
+        // Update household counts to aggregate all members' counts
+        if (householdIdToUse) {
+          // Invalidate and refetch to get updated person data, then recalculate household totals
+          utils.people.list.invalidate();
+          setTimeout(() => {
+            utils.people.list.refetch().then((result) => {
+              // Get fresh people data from refetch result
+              const updatedPeople = result.data || allPeople;
+              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
+              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+              
+              updateHousehold.mutate({
+                id: householdIdToUse,
+                childrenCount: totalChildrenCount,
+                guestsCount: totalGuestsCount,
+              });
+            });
+          }, 200);
+        }
         // Handle needs: create/update if needType is not "None", delete if "None"
         if (formData.needType !== 'None' && formData.needType) {
-          // Create or update need
-          const needDescription = formData.needType === 'Financial' 
-            ? `Financial need: $${formData.needAmount || '0'}`
-            : formData.needDetails || `${formData.needType} need`;
+          // Build need description - include needDetails for all need types if provided
+          let needDescription: string;
+          if (formData.needType === 'Financial') {
+            const amountPart = `$${formData.needAmount || '0'}`;
+            needDescription = formData.needDetails?.trim()
+              ? `${amountPart} - ${formData.needDetails.trim()}`
+              : `Financial need: ${amountPart}`;
+          } else {
+            needDescription = formData.needDetails?.trim() || `${formData.needType} need`;
+          }
           
           updateOrCreateNeed.mutate({
             personId,
@@ -1061,6 +1320,15 @@ export function DistrictPanel({
             isActive: !formData.needsMet, // Active if needsMet is false
           }, {
             onSuccess: () => {
+          // Save needDetails to notes table with noteType="NEED" if provided
+          if (formData.needDetails?.trim()) {
+            createNote.mutate({
+              personId,
+              category: 'INTERNAL',
+              content: formData.needDetails.trim(),
+              noteType: 'NEED',
+            });
+          }
               // Close dialog and reset form after needs are updated
               setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
               setIsEditPersonDialogOpen(false);
@@ -1344,7 +1612,7 @@ export function DistrictPanel({
                 <div className="w-px h-8 bg-slate-200"></div>
                 
                 {/* District Director and Staff - grouped together with smaller gap */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   {/* District Director */}
                   <div ref={districtDirectorRef}>
                   <DistrictDirectorDropZone
@@ -1680,82 +1948,88 @@ export function DistrictPanel({
                       })}
                           
                           {/* Add Person Button */}
-                          <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openAddPersonDialog(campus.id);
-                              }}
-                              className="flex flex-col items-center w-[50px]"
-                            >
-                              {/* Plus sign in name position - clickable for quick add */}
-                              <div className="relative flex items-center justify-center mb-1">
-                                {quickAddMode === `campus-${campus.id}` ? (
-                                  <div className="relative">
-                                    <Input
-                                      ref={quickAddInputRef}
-                                      value={quickAddName}
-                                      onChange={(e) => setQuickAddName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
+                          <PersonDropZone
+                            campusId={campus.id}
+                            index={sortedPeople.length}
+                            onDrop={handlePersonMove}
+                          >
+                            <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openAddPersonDialog(campus.id);
+                                }}
+                                className="flex flex-col items-center w-full"
+                              >
+                                {/* Plus sign in name position - clickable for quick add */}
+                                <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                  {quickAddMode === `campus-${campus.id}` ? (
+                                    <div className="relative">
+                                      <Input
+                                        ref={quickAddInputRef}
+                                        value={quickAddName}
+                                        onChange={(e) => setQuickAddName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleQuickAddSubmit(`campus-${campus.id}`);
+                                          } else if (e.key === 'Escape') {
+                                            setQuickAddMode(null);
+                                            setQuickAddName('');
+                                          }
+                                        }}
+                                        onBlur={() => {
                                           handleQuickAddSubmit(`campus-${campus.id}`);
-                                        } else if (e.key === 'Escape') {
-                                          setQuickAddMode(null);
-                                          setQuickAddName('');
-                                        }
-                                      }}
-                                      onBlur={() => {
-                                        handleQuickAddSubmit(`campus-${campus.id}`);
-                                      }}
-                                      placeholder="Name"
-                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                      autoFocus
-                                      spellCheck={true}
-                                      autoComplete="name"
-                                    />
-                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                      Quick Add
+                                        }}
+                                        placeholder="Name"
+                                        className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                        autoFocus
+                                        spellCheck={true}
+                                        autoComplete="name"
+                                      />
+                                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                        Quick Add
+                                      </div>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <Plus 
-                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                  ) : (
+                                    <Plus 
+                                      className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                      strokeWidth={1.5}
+                                      onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                    />
+                                  )}
+                                </div>
+                                {/* Icon */}
+                                <div className="relative">
+                                  <User 
+                                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
                                     strokeWidth={1.5}
-                                    onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                    fill="none"
+                                    stroke="currentColor"
                                   />
-                                )}
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={1.5}
+                                    fill="none"
+                                    stroke="currentColor"
+                                  />
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={0}
+                                    fill="currentColor"
+                                    style={{
+                                      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                    }}
+                                  />
+                                </div>
+                              </button>
+                              {/* Label - Absolutely positioned, shown on hover */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                Add
                               </div>
-                              {/* Icon */}
-                              <div className="relative">
-                                <User 
-                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                  strokeWidth={1} 
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={1} 
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={0} 
-                                  fill="currentColor"
-                                  style={{
-                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                  }}
-                                />
-                              </div>
-                            </button>
-                            {/* Label - Absolutely positioned, shown on hover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-sm text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                              Add
                             </div>
-                          </div>
+                          </PersonDropZone>
                         </div>
                       </CampusDropZone>
                     </div>
@@ -1766,55 +2040,56 @@ export function DistrictPanel({
               })}
               
               {/* Add Campus (Inline) */}
-              {quickAddMode === 'add-campus' ? (
-                <div className="w-72">
-                  <Input
-                    ref={quickAddInputRef}
-                    value={quickAddName}
-                    onChange={(e) => setQuickAddName(e.target.value)}
-                    placeholder="New campus name…"
-                    className="h-12 text-base"
-                    spellCheck={true}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const name = quickAddName.trim();
-                        if (!name) return;
-                        createCampus.mutate({ name, districtId: district.id });
-                        setQuickAddName('');
-                        setQuickAddMode(null);
-                      } else if (e.key === 'Escape') {
-                        setQuickAddName('');
-                        setQuickAddMode(null);
-                      }
+              <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                {quickAddMode === 'add-campus' ? (
+                  <div className="w-48">
+                    <Input
+                      ref={quickAddInputRef}
+                      value={quickAddName}
+                      onChange={(e) => setQuickAddName(e.target.value)}
+                      placeholder="New campus name…"
+                      className="h-12 text-base"
+                      spellCheck={true}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const name = quickAddName.trim();
+                          if (!name) return;
+                          createCampus.mutate({ name, districtId: district.id });
+                          setQuickAddName('');
+                          setQuickAddMode(null);
+                        } else if (e.key === 'Escape') {
+                          setQuickAddName('');
+                          setQuickAddMode(null);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Keep tidy; only cancel if empty
+                        if (!quickAddName.trim()) {
+                          setQuickAddMode(null);
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setQuickAddMode('add-campus');
+                      setQuickAddName('');
+                      setTimeout(() => quickAddInputRef.current?.focus(), 0);
                     }}
-                    onBlur={() => {
-                      // Keep tidy; only cancel if empty
-                      if (!quickAddName.trim()) {
-                        setQuickAddMode(null);
-                      }
-                    }}
-                    autoFocus
-                  />
-                  <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setQuickAddMode('add-campus');
-                    setQuickAddName('');
-                    setTimeout(() => quickAddInputRef.current?.focus(), 0);
-                  }}
-                  className="w-72 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-3 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
-                >
-                  <Plus className="w-7 h-7" strokeWidth={2} />
-                  <span className="text-base">Add Campus</span
+                    className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
                   >
-                </button>
-              )}
+                    <Plus className="w-5 h-5" strokeWidth={2} />
+                    <span className="text-sm">Add Campus</span>
+                  </button>
+                )}
+              </div>
               
               {/* Unassigned Row - Only show if there are unassigned people */}
               {peopleWithoutCampus.length > 0 && (
@@ -1849,83 +2124,88 @@ export function DistrictPanel({
                     ))}
                         
                         {/* Add Person Button */}
-                        <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openAddPersonDialog('unassigned');
-                            }}
-                            className="flex flex-col items-center w-[50px]"
-                          >
-                            {/* Plus sign in name position - clickable for quick add */}
-                            <div className="relative flex items-center justify-center mb-1">
-                              {quickAddMode === 'unassigned' ? (
-                                <div className="relative">
-                                  <Input
-                                    ref={quickAddInputRef}
-                                    list="quick-add-name-suggestions"
-                                    value={quickAddName}
-                                    onChange={(e) => setQuickAddName(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
+                        <PersonDropZone
+                          campusId="unassigned"
+                          index={peopleWithoutCampus.length}
+                          onDrop={handlePersonMove}
+                        >
+                          <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openAddPersonDialog('unassigned');
+                              }}
+                              className="flex flex-col items-center w-full"
+                            >
+                              {/* Plus sign in name position - clickable for quick add */}
+                              <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                {quickAddMode === 'unassigned' ? (
+                                  <div className="relative">
+                                    <Input
+                                      ref={quickAddInputRef}
+                                      value={quickAddName}
+                                      onChange={(e) => setQuickAddName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleQuickAddSubmit('unassigned');
+                                        } else if (e.key === 'Escape') {
+                                          setQuickAddMode(null);
+                                          setQuickAddName('');
+                                        }
+                                      }}
+                                      onBlur={() => {
                                         handleQuickAddSubmit('unassigned');
-                                      } else if (e.key === 'Escape') {
-                                        setQuickAddMode(null);
-                                        setQuickAddName('');
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      handleQuickAddSubmit('unassigned');
-                                    }}
-                                    placeholder="Name"
-                                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                    autoFocus
-                                    spellCheck={true}
-                                    autoComplete="name"
-                                  />
-                                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                                    Quick Add
+                                      }}
+                                      placeholder="Name"
+                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                      autoFocus
+                                      spellCheck={true}
+                                      autoComplete="name"
+                                    />
+                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                      Quick Add
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <Plus 
-                                  className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                ) : (
+                                  <Plus 
+                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                    strokeWidth={1.5}
+                                    onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                  />
+                                )}
+                              </div>
+                              {/* Icon */}
+                              <div className="relative">
+                                <User 
+                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
                                   strokeWidth={1.5}
-                                  onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                  fill="none"
+                                  stroke="currentColor"
                                 />
-                              )}
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={1.5}
+                                  fill="none"
+                                  stroke="currentColor"
+                                />
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={0}
+                                  fill="currentColor"
+                                  style={{
+                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                  }}
+                                />
+                              </div>
+                            </button>
+                            {/* Label - Absolutely positioned, shown on hover */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                              Add
                             </div>
-                            {/* Icon */}
-                            <div className="relative">
-                              <User 
-                                className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                strokeWidth={1} 
-                                fill="none"
-                                stroke="currentColor"
-                              />
-                              <User 
-                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                strokeWidth={1} 
-                                fill="none"
-                                stroke="currentColor"
-                              />
-                              <User 
-                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                strokeWidth={0} 
-                                fill="currentColor"
-                                style={{
-                                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                }}
-                              />
-              </div>
-                          </button>
-                          {/* Label - Absolutely positioned, shown on hover */}
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-sm text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Add
-                </div>
-                        </div>
+                          </div>
+                        </PersonDropZone>
                       </div>
                     </CampusDropZone>
                   </div>
@@ -1985,7 +2265,6 @@ export function DistrictPanel({
                   <Label htmlFor="person-name" className="text-sm font-medium">Name *</Label>
                   <Input
                     id="person-name"
-                    list="person-name-suggestions"
                     value={personForm.name}
                     onChange={(e) => {
                       setPersonForm({ ...personForm, name: e.target.value });
@@ -1996,11 +2275,6 @@ export function DistrictPanel({
                     spellCheck={true}
                     autoComplete="name"
                   />
-                  <datalist id="person-name-suggestions">
-                    {nameSuggestions.map((name, idx) => (
-                      <option key={idx} value={name} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="person-role" className="text-sm font-medium">Role *</Label>
@@ -2020,7 +2294,7 @@ export function DistrictPanel({
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {campusRoles.map((role) => (
+                        {availableRoles.map((role) => (
                           <SelectItem key={role} value={role}>
                             {role}
                           </SelectItem>
@@ -2047,6 +2321,157 @@ export function DistrictPanel({
                   </Select>
                 </div>
 
+                {/* Family & Guests Section */}
+                <div className="col-span-3 space-y-4 mt-4">
+                  <div className="border-b border-slate-200 pb-2">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-semibold text-slate-700">Family & Guests:</h3>
+                      <div className="relative inline-block">
+                        {!isEditingHousehold ? (
+                          <span
+                            onClick={() => {
+                              setIsEditingHousehold(true);
+                              setHouseholdDropdownOpen(true);
+                              // Set input value to current household label if one is selected
+                              if (personForm.householdId && allHouseholds && allPeople) {
+                                const household = allHouseholds.find(h => h.id === personForm.householdId);
+                                if (household) {
+                                  const members = allPeople.filter(p => p.householdId === household.id);
+                                  const displayName = household.label || 
+                                    (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                                  setHouseholdInputValue(displayName);
+                                }
+                              } else if (householdInputValue) {
+                                // Keep existing value
+                              } else {
+                                setHouseholdInputValue('');
+                              }
+                              setTimeout(() => householdInputRef.current?.focus(), 0);
+                            }}
+                            className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
+                          >
+                            {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
+                              const household = allHouseholds.find(h => h.id === personForm.householdId);
+                              if (household) {
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                return household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                              }
+                              return '';
+                            })() : '')}
+                          </span>
+                        ) : (
+                          <Input
+                            ref={householdInputRef}
+                            id="person-household"
+                            value={householdInputValue}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setHouseholdInputValue(value);
+                              setHouseholdSearchQuery(value);
+                              setHouseholdDropdownOpen(true);
+                              setHouseholdValidationError(null);
+                              setHouseholdNameError(null);
+                            }}
+                            onFocus={() => {
+                              setHouseholdDropdownOpen(true);
+                            }}
+                            onBlur={() => {
+                              setIsEditingHousehold(false);
+                              // Delay to allow click on dropdown item
+                              setTimeout(() => {
+                                setHouseholdDropdownOpen(false);
+                                handleHouseholdInputBlur();
+                              }, 200);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleHouseholdInputBlur();
+                                setIsEditingHousehold(false);
+                                householdInputRef.current?.blur();
+                              } else if (e.key === 'Escape') {
+                                setIsEditingHousehold(false);
+                                setHouseholdDropdownOpen(false);
+                                setHouseholdInputValue('');
+                                setPersonForm({ ...personForm, householdId: null });
+                              }
+                            }}
+                            className="h-6 text-sm w-auto min-w-[120px] inline-block"
+                            autoFocus
+                          />
+                        )}
+                        {householdDropdownOpen && allHouseholds && allPeople && (
+                          <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+                            {householdInputValue.trim() && !allHouseholds.some(h => {
+                              const members = allPeople.filter(p => p.householdId === h.id);
+                              const displayName = h.label || 
+                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                              return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
+                            }) && (
+                              <div
+                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleCreateHouseholdFromInput();
+                                }}
+                              >
+                                Create "{householdInputValue.trim()}"
+                              </div>
+                            )}
+                            <div
+                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setHouseholdInputValue('');
+                                setPersonForm({ ...personForm, householdId: null });
+                                setHouseholdDropdownOpen(false);
+                              }}
+                            >
+                              None
+                            </div>
+                            {allHouseholds
+                              .filter(household => {
+                                if (!householdInputValue.trim()) return true;
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                const displayName = household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                                return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
+                              })
+                              .map((household) => {
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                const displayName = household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                                return (
+                                  <div
+                                    key={household.id}
+                                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setHouseholdInputValue(displayName);
+                                      setPersonForm({ ...personForm, householdId: household.id });
+                                      setHouseholdDropdownOpen(false);
+                                      setHouseholdValidationError(null);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span>{displayName}</span>
+                                      {members.length > 0 && (
+                                        <span className="text-xs text-slate-500">
+                                          {members.map(m => m.name).join(', ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Row 2 */}
                 <div className="space-y-2">
                   <Label htmlFor="person-spouse-attending" className="text-sm font-medium">Spouse Attending</Label>
@@ -2054,11 +2479,18 @@ export function DistrictPanel({
                     <Checkbox
                       id="person-spouse-attending"
                       checked={personForm.spouseAttending}
-                      onCheckedChange={(checked) => {
-                        setPersonForm({ ...personForm, spouseAttending: checked === true });
-                        setHouseholdValidationError(null);
-                        setHouseholdNameError(null);
-                      }}
+                    onCheckedChange={(checked) => {
+                      setPersonForm({ ...personForm, spouseAttending: checked === true });
+                      setHouseholdValidationError(null);
+                      setHouseholdNameError(null);
+                      // Auto-fill household if spouse is added and no household exists
+                      if (checked && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
+                    }}
                     />
                     <Label htmlFor="person-spouse-attending" className="cursor-pointer ml-2 text-sm">Yes</Label>
                   </div>
@@ -2080,6 +2512,13 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
+                      // Auto-fill household if children are added and no household exists
+                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
                     }}
                     placeholder="0"
                     className="h-9"
@@ -2102,129 +2541,21 @@ export function DistrictPanel({
                   />
                 </div>
 
-                {/* Row 3 */}
-                <div className="space-y-2">
-                  <Label htmlFor="person-household" className="text-sm font-medium">Household</Label>
-                  <div className="relative">
-                    <Input
-                      ref={householdInputRef}
-                      id="person-household"
-                      value={householdInputValue}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setHouseholdInputValue(value);
-                        setHouseholdSearchQuery(value);
-                        setHouseholdDropdownOpen(true);
-                        setHouseholdValidationError(null);
-                        setHouseholdNameError(null);
-                      }}
-                      onFocus={() => {
-                        setHouseholdDropdownOpen(true);
-                        // Set input value to current household label if one is selected
-                        if (personForm.householdId && allHouseholds && allPeople) {
-                          const household = allHouseholds.find(h => h.id === personForm.householdId);
-                          if (household) {
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                            setHouseholdInputValue(displayName);
-                          }
-                        }
-                      }}
-                      onBlur={() => {
-                        // Delay to allow click on dropdown item
-                        setTimeout(() => {
-                          setHouseholdDropdownOpen(false);
-                          handleHouseholdInputBlur();
-                        }, 200);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleHouseholdInputBlur();
-                          householdInputRef.current?.blur();
-                        } else if (e.key === 'Escape') {
-                          setHouseholdDropdownOpen(false);
-                          setHouseholdInputValue('');
-                          setPersonForm({ ...personForm, householdId: null });
-                        }
-                      }}
-                      placeholder="Type or select household"
-                      className="h-9"
-                    />
-                    {householdDropdownOpen && allHouseholds && allPeople && (
-                      <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                        {householdInputValue.trim() && !allHouseholds.some(h => {
-                          const members = allPeople.filter(p => p.householdId === h.id);
-                          const displayName = h.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
-                        }) && (
-                          <div
-                            className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              handleCreateHouseholdFromInput();
-                            }}
-                          >
-                            Create "{householdInputValue.trim()}"
-                          </div>
-                        )}
-                        <div
-                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setHouseholdInputValue('');
-                            setPersonForm({ ...personForm, householdId: null });
-                            setHouseholdDropdownOpen(false);
-                          }}
-                        >
-                          None
-                        </div>
-                        {allHouseholds
-                          .filter(household => {
-                            if (!householdInputValue.trim()) return true;
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                            return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
-                          })
-                          .map((household) => {
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                            return (
-                              <div
-                                key={household.id}
-                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  setHouseholdInputValue(displayName);
-                                  setPersonForm({ ...personForm, householdId: household.id });
-                                  setHouseholdDropdownOpen(false);
-                                  setHouseholdValidationError(null);
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span>{displayName}</span>
-                                  {members.length > 0 && (
-                                    <span className="text-xs text-slate-500">
-                                      {members.map(m => m.name).join(', ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                </div>
                 <div className="space-y-2">
                   <Label htmlFor="person-need" className="text-sm font-medium">Need Request</Label>
                   <Select
                     value={personForm.needType}
-                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    onValueChange={(value) => {
+                      // Only clear needAmount when switching to/from Financial, preserve needDetails
+                      const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
+                      if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
+                        // Clear needAmount when switching to/from Financial type
+                        setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
+                      } else {
+                        // Preserve needDetails when switching between non-Financial types
+                        setPersonForm({ ...personForm, needType: newNeedType });
+                      }
+                    }}
                   >
                     <SelectTrigger id="person-need" className="h-9">
                       <SelectValue />
@@ -2405,7 +2736,6 @@ export function DistrictPanel({
                     <Label htmlFor="edit-person-name">Name *</Label>
                     <Input
                       id="edit-person-name"
-                      list="edit-person-name-suggestions"
                       value={personForm.name}
                       onChange={(e) => {
                         setPersonForm({ ...personForm, name: e.target.value });
@@ -2435,7 +2765,7 @@ export function DistrictPanel({
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
-                          {campusRoles.map((role) => (
+                          {availableRoles.map((role) => (
                             <SelectItem key={role} value={role}>
                               {role}
                             </SelectItem>
@@ -2464,11 +2794,174 @@ export function DistrictPanel({
                 </div>
               </div>
 
-            {/* Family & Guests (optional) */}
+            {/* Family & Guests */}
             <div className="space-y-4 mt-4">
               <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
-              </div>
+                <div className="flex items-center gap-4">
+                  <h3 className="text-sm font-semibold text-slate-700">Family & Guests:</h3>
+                  <div className="relative inline-block">
+                    {!isEditingHousehold ? (
+                      <span
+                        onClick={() => {
+                          setIsEditingHousehold(true);
+                          setHouseholdDropdownOpen(true);
+                          // Set input value to current household label if one is selected
+                          if (personForm.householdId && allHouseholds && allPeople) {
+                            const household = allHouseholds.find(h => h.id === personForm.householdId);
+                            if (household) {
+                              const members = allPeople.filter(p => p.householdId === household.id);
+                              const displayName = household.label || 
+                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                              setHouseholdInputValue(displayName);
+                            }
+                          } else if (householdInputValue) {
+                            // Keep existing value
+                          } else {
+                            setHouseholdInputValue('');
+                          }
+                          setTimeout(() => householdInputRef.current?.focus(), 0);
+                        }}
+                        className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
+                      >
+                        {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
+                          const household = allHouseholds.find(h => h.id === personForm.householdId);
+                          if (household) {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            return household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          }
+                          return '';
+                        })() : '')}
+                      </span>
+                    ) : (
+                      <Input
+                        ref={householdInputRef}
+                        id="edit-person-household"
+                        value={householdInputValue}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setHouseholdInputValue(value);
+                          setHouseholdSearchQuery(value);
+                          setHouseholdDropdownOpen(true);
+                          setHouseholdValidationError(null);
+                          setHouseholdNameError(null);
+                        }}
+                        onFocus={() => {
+                          setHouseholdDropdownOpen(true);
+                        }}
+                        onBlur={(e) => {
+                          setIsEditingHousehold(false);
+                          // Don't close if clicking inside dropdown - use a small delay to check
+                          setTimeout(() => {
+                            const activeElement = document.activeElement;
+                            // If focus is still inside dropdown, don't close
+                            if (householdDropdownRef.current && 
+                                householdDropdownRef.current.contains(activeElement)) {
+                              return;
+                            }
+                            // Otherwise close the dropdown
+                            if (householdDropdownOpen) {
+                              setHouseholdDropdownOpen(false);
+                              handleHouseholdInputBlur();
+                            }
+                          }, 150);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleHouseholdInputBlur();
+                            setIsEditingHousehold(false);
+                            householdInputRef.current?.blur();
+                          } else if (e.key === 'Escape') {
+                            setIsEditingHousehold(false);
+                            setHouseholdDropdownOpen(false);
+                            setHouseholdInputValue('');
+                            setPersonForm({ ...personForm, householdId: null });
+                          }
+                        }}
+                        className="h-6 text-sm w-auto min-w-[120px] inline-block"
+                        autoFocus
+                      />
+                    )}
+                    {householdDropdownOpen && allHouseholds && allPeople && (
+                      <div 
+                        ref={householdDropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
+                        onMouseDown={(e) => {
+                          // Prevent blur when clicking inside dropdown
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
+                        {householdInputValue.trim() && !allHouseholds.some(h => {
+                          const members = allPeople.filter(p => p.householdId === h.id);
+                          const displayName = h.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
+                        }) && (
+                          <div
+                            className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCreateHouseholdFromInput();
+                            }}
+                          >
+                            Create "{householdInputValue.trim()}"
+                          </div>
+                        )}
+                        <div
+                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setHouseholdInputValue('');
+                            setPersonForm({ ...personForm, householdId: null });
+                            setHouseholdDropdownOpen(false);
+                          }}
+                        >
+                          None
+                        </div>
+                        {allHouseholds
+                          .filter(household => {
+                            if (!householdInputValue.trim()) return true;
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
+                          })
+                          .map((household) => {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return (
+                              <div
+                                key={household.id}
+                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setHouseholdInputValue(displayName);
+                                  setPersonForm({ ...personForm, householdId: household.id });
+                                  setHouseholdDropdownOpen(false);
+                                  setHouseholdValidationError(null);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{displayName}</span>
+                                  {members.length > 0 && (
+                                    <span className="text-xs text-slate-500">
+                                      {members.map(m => m.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                </div>
               
               {/* Inputs */}
               <div className="grid grid-cols-3 gap-4">
@@ -2477,11 +2970,18 @@ export function DistrictPanel({
                     <Checkbox
                       id="edit-person-spouse-attending"
                       checked={personForm.spouseAttending}
-                      onCheckedChange={(checked) => {
-                        setPersonForm({ ...personForm, spouseAttending: checked === true });
-                        setHouseholdValidationError(null);
-                        setHouseholdNameError(null);
-                      }}
+                    onCheckedChange={(checked) => {
+                      setPersonForm({ ...personForm, spouseAttending: checked === true });
+                      setHouseholdValidationError(null);
+                      setHouseholdNameError(null);
+                      // Auto-fill household if spouse is added and no household exists
+                      if (checked && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
+                    }}
                     />
                     <Label htmlFor="edit-person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
                   </div>
@@ -2503,6 +3003,13 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
+                      // Auto-fill household if children are added and no household exists
+                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
                     }}
                     placeholder="0"
                     className="w-24"
@@ -2526,122 +3033,6 @@ export function DistrictPanel({
                 </div>
               </div>
               
-              {/* Household Selector */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-household">Household (optional)</Label>
-                <div className="relative">
-                  <Input
-                    id="edit-person-household"
-                    value={householdInputValue}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setHouseholdInputValue(value);
-                      setHouseholdSearchQuery(value);
-                      setHouseholdDropdownOpen(true);
-                      setHouseholdValidationError(null);
-                      setHouseholdNameError(null);
-                    }}
-                    onFocus={() => {
-                      setHouseholdDropdownOpen(true);
-                      // Set input value to current household label if one is selected
-                      if (personForm.householdId && allHouseholds && allPeople) {
-                        const household = allHouseholds.find(h => h.id === personForm.householdId);
-                        if (household) {
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          setHouseholdInputValue(displayName);
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // Delay to allow click on dropdown item
-                      setTimeout(() => {
-                        setHouseholdDropdownOpen(false);
-                        handleHouseholdInputBlur();
-                      }, 200);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleHouseholdInputBlur();
-                        householdInputRef.current?.blur();
-                      } else if (e.key === 'Escape') {
-                        setHouseholdDropdownOpen(false);
-                        setHouseholdInputValue('');
-                        setPersonForm({ ...personForm, householdId: null });
-                      }
-                    }}
-                    placeholder="Type or select household"
-                  />
-                  {householdDropdownOpen && allHouseholds && allPeople && (
-                    <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                      {householdInputValue.trim() && !allHouseholds.some(h => {
-                        const members = allPeople.filter(p => p.householdId === h.id);
-                        const displayName = h.label || 
-                          (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                        return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
-                      }) && (
-                        <div
-                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleCreateHouseholdFromInput();
-                          }}
-                        >
-                          Create "{householdInputValue.trim()}"
-                        </div>
-                      )}
-                      <div
-                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setHouseholdInputValue('');
-                          setPersonForm({ ...personForm, householdId: null });
-                          setHouseholdDropdownOpen(false);
-                        }}
-                      >
-                        None
-                      </div>
-                      {allHouseholds
-                        .filter(household => {
-                          if (!householdInputValue.trim()) return true;
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
-                        })
-                        .map((household) => {
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return (
-                            <div
-                              key={household.id}
-                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setHouseholdInputValue(displayName);
-                                setPersonForm({ ...personForm, householdId: household.id });
-                                setHouseholdDropdownOpen(false);
-                                setHouseholdValidationError(null);
-                              }}
-                            >
-                              <div className="flex flex-col">
-                                <span>{displayName}</span>
-                                {members.length > 0 && (
-                                  <span className="text-xs text-slate-500">
-                                    {members.map(m => m.name).join(', ')}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-                
                 {/* Validation Errors */}
                 {householdNameError && (
                   <div className="text-sm text-red-600 mt-1">
@@ -2666,7 +3057,17 @@ export function DistrictPanel({
                   <Label htmlFor="edit-person-need">Need Request</Label>
                   <Select
                     value={personForm.needType}
-                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    onValueChange={(value) => {
+                      // Only clear needAmount when switching to/from Financial, preserve needDetails
+                      const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
+                      if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
+                        // Clear needAmount when switching to/from Financial type
+                        setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
+                      } else {
+                        // Preserve needDetails when switching between non-Financial types
+                        setPersonForm({ ...personForm, needType: newNeedType });
+                      }
+                    }}
                   >
                     <SelectTrigger id="edit-person-need">
                       <SelectValue />
@@ -2945,17 +3346,6 @@ export function DistrictPanel({
         {/* Custom Drag Layer */}
         <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
         
-        {/* Datalists for autocomplete suggestions */}
-        <datalist id="edit-person-name-suggestions">
-          {nameSuggestions.map((name, idx) => (
-            <option key={idx} value={name} />
-          ))}
-        </datalist>
-        <datalist id="quick-add-name-suggestions">
-          {nameSuggestions.map((name, idx) => (
-            <option key={idx} value={name} />
-          ))}
-        </datalist>
     </motion.div>
     </DndProvider>
   );
