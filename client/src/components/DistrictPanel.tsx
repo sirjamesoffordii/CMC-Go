@@ -14,6 +14,7 @@ import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1831,16 +1832,16 @@ export function DistrictPanel({
                           </button>
 
                           {/* Dropdown Menu */}
-                          {openCampusMenuId === campus.id && (
+                          {openCampusMenuId === campus.id && createPortal(
                             <>
                               {/* Invisible backdrop to catch clicks outside */}
                               <div
-                                className="fixed inset-0 z-[9998]"
+                                className="fixed inset-0 z-[99998]"
                                 onClick={() => setOpenCampusMenuId(null)}
                               ></div>
 
                               <div 
-                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[9999]"
+                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[99999]"
                                 style={{
                                   left: `${campusMenuPosition.x}px`,
                                   top: `${campusMenuPosition.y + 4}px`,
@@ -1905,7 +1906,8 @@ export function DistrictPanel({
                                   Delete Campus
                                 </button>
                               </div>
-                            </>
+                            </>,
+                            document.body
                           )}
                         </div>
                         <h3 className="font-medium text-slate-900 break-words text-xl">{campus.name}</h3>
