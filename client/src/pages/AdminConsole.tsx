@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertCircle, Users, MapPin, Building2, Heart, Activity, CheckCircle2, Clock } from "lucide-react";
+import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertCircle, Users, MapPin, Building2, Heart, Activity, CheckCircle2, Clock, Bug } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
@@ -335,6 +335,24 @@ export default function AdminConsole() {
                     {dbHealth.message}
                   </p>
                 )}
+              </div>
+              
+              {/* Sentry Test Error Button */}
+              <div className="pt-2 border-t">
+                <Button
+                  onClick={() => {
+                    throw new Error("This is your test error - Sentry error tracking verification");
+                  }}
+                  variant="destructive"
+                  className="w-full"
+                  size="sm"
+                >
+                  <Bug className="w-4 h-4 mr-2" />
+                  Test Sentry Error
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Click to trigger a test error and verify Sentry is capturing errors correctly.
+                </p>
               </div>
             </CardContent>
           </Card>

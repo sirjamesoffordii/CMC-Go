@@ -6,27 +6,29 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
+import * as Sentry from "@sentry/react";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
-import * as Sentry from "@sentry/react";
 
 // Initialize Sentry with environment variables
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT;
+const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
 
 if (sentryDsn && sentryDsn.trim()) {
-    Sentry.init({
-          dsn: sentryDsn,
-          environment: sentryEnvironment || 'unknown',
-          tracesSampleRate: 1.0,
-          integrations: [
-                  new Sentry.Replay(),
-                ],
-          replaysSessionSampleRate: 0.1,
-          replaysOnErrorSampleRate: 1.0,
-        });
-  }
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: sentryEnvironment,
+    sendDefaultPii: true,
+    // Enable performance monitoring
+    tracesSampleRate: 1.0,
+    integrations: [
+      Sentry.replayIntegration(),
+    ],
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 const queryClient = new QueryClient();
 

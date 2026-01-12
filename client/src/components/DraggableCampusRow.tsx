@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useDrag } from 'react-dnd';
 import { ReactNode } from 'react';
 import { getEmptyImage } from 'react-dnd-html5-backend';

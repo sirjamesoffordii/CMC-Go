@@ -1,4 +1,4 @@
-import { Person } from "../../drizzle/schema";
+import { Person } from "../../../drizzle/schema";
 import { User, Edit2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";

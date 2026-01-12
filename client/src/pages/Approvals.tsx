@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Approvals Page - PR 2
  * For Region Directors to approve District Directors

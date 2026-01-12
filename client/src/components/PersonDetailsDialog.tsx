@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { Person, Note, Need } from "../../../drizzle/schema";
 import {

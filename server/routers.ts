@@ -158,7 +158,22 @@ export const appRouter = router({
 
   districts: router({
     list: publicProcedure.query(async () => {
-      return await db.getAllDistricts();
+      try {
+        return await db.getAllDistricts();
+      } catch (error) {
+        console.error("[districts.list] Error:", error instanceof Error ? error.message : String(error));
+        // Check if it's a database connection error
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch districts list",
+        });
+      }
     }),
     getById: publicProcedure
       .input(z.object({ id: z.string() }))
@@ -183,7 +198,22 @@ export const appRouter = router({
 
   campuses: router({
     list: publicProcedure.query(async () => {
-      return await db.getAllCampuses();
+      try {
+        return await db.getAllCampuses();
+      } catch (error) {
+        console.error("[campuses.list] Error:", error instanceof Error ? error.message : String(error));
+        // Check if it's a database connection error
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch campuses list",
+        });
+      }
     }),
     byDistrict: publicProcedure
       .input(z.object({ districtId: z.string() }))
@@ -231,6 +261,13 @@ export const appRouter = router({
         return allPeople;
       } catch (error) {
         console.error("[people.list] Error:", error instanceof Error ? error.message : String(error));
+        // Check if it's a database connection error
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to fetch people list",
@@ -581,6 +618,13 @@ export const appRouter = router({
         return await db.getAllActiveNeeds();
       } catch (error) {
         console.error("[needs.listActive] Error:", error instanceof Error ? error.message : String(error));
+        // Check if it's a database connection error
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
         if (error instanceof Error && error.message.includes('createdById') || error.message.includes('createdByUserId')) {
           console.error("[needs.listActive] Schema mismatch detected: Check database column name");
         }
@@ -752,7 +796,22 @@ export const appRouter = router({
 
   households: router({
     list: publicProcedure.query(async () => {
-      return await db.getAllHouseholds();
+      try {
+        return await db.getAllHouseholds();
+      } catch (error) {
+        console.error("[households.list] Error:", error instanceof Error ? error.message : String(error));
+        // Check if it's a database connection error
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch households list",
+        });
+      }
     }),
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
