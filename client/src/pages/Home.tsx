@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { District } from "../../../drizzle/schema";
+import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
 
 /**
  * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
@@ -149,7 +150,28 @@ export default function Home() {
   // Fetch data - store queries for error checking
   const districtsQuery = trpc.districts.list.useQuery();
   const campusesQuery = trpc.campuses.list.useQuery();
-  const peopleQuery = trpc.people.list.useQuery();
+  
+  // Check if selected district/campus is in scope (before fetching people)
+  const isSelectedDistrictInScope = useMemo(() => {
+    if (!selectedDistrictId) return true; // No selection = in scope
+    const selectedDistrict = districtsQuery.data?.find(d => d.id === selectedDistrictId) || 
+      createSyntheticDistrict(selectedDistrictId, districtsQuery.data || []);
+    if (!selectedDistrict) return true; // District not found = assume in scope
+    return isDistrictInScope(selectedDistrictId, user, selectedDistrict.region || null);
+  }, [selectedDistrictId, districtsQuery.data, user]);
+  
+  const isSelectedCampusInScope = useMemo(() => {
+    if (!viewState.campusId) return true; // No campus selected = in scope
+    const campus = campusesQuery.data?.find(c => c.id === viewState.campusId);
+    if (!campus) return true; // Campus not found = assume in scope
+    const district = districtsQuery.data?.find(d => d.id === campus.districtId) || 
+      createSyntheticDistrict(campus.districtId, districtsQuery.data || []);
+    return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
+  }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
+  
+  // Only fetch people if selected district/campus is in scope
+  const shouldFetchPeople = isSelectedDistrictInScope && isSelectedCampusInScope;
+  const peopleQuery = trpc.people.list.useQuery(undefined, { enabled: shouldFetchPeople });
   
   const districts = districtsQuery.data || [];
   const allCampuses = campusesQuery.data || [];
@@ -900,6 +922,7 @@ export default function Home() {
                     district={selectedDistrict}
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
+                    isOutOfScope={!isSelectedDistrictInScope}
                     onClose={() => {
                       setSelectedDistrictId(null);
                       setViewState({

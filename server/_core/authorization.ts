@@ -218,4 +218,3 @@ export function canViewNeed(user: User | null, needVisibility: "LEADERSHIP_ONLY"
 
   return false;
 }
-
