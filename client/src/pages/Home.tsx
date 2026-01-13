@@ -8,6 +8,7 @@ import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
 import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -1084,19 +1085,38 @@ export default function Home() {
 
       {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
       {!peoplePanelOpen && (
-        <div
-          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
-          style={{ right: 0 }}
-        >
-          <button
-            onClick={() => setPeoplePanelOpen(true)}
-            className="bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 group-hover:bg-red-700/90 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
-          >
-            <span className="inline-block whitespace-nowrap select-none">
-              People
-            </span>
-          </button>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
+              style={{ right: 0 }}
+            >
+              <button
+                onClick={() => {
+                  if (!user) {
+                    // Do nothing - tooltip will show
+                    return;
+                  }
+                  setPeoplePanelOpen(true);
+                }}
+                disabled={!user}
+                className={`
+                  bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target
+                  ${!user ? 'opacity-50 cursor-not-allowed' : 'group-hover:bg-red-700/90'}
+                `}
+              >
+                <span className="inline-block whitespace-nowrap select-none">
+                  People
+                </span>
+              </button>
+            </div>
+          </TooltipTrigger>
+          {!user && (
+            <TooltipContent side="left">
+              <p>Please log in to view people</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
       )}
 
       <PersonDetailsDialog

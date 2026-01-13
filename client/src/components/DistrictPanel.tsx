@@ -80,6 +80,9 @@ export function DistrictPanel({
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
+
+  // Can interact: authenticated AND in scope
+  const canInteract = isAuthenticated && !isOutOfScope;
   
   // XAN is Chi Alpha National Team, not a district
   const isNationalTeam = district?.id === 'XAN';
@@ -2037,6 +2040,7 @@ export function DistrictPanel({
                                 onMove={handlePersonMove}
                                 hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                                 onPersonStatusChange={onPersonStatusChange}
+                                canInteract={canInteract}
                               />
                             </div>
                           </PersonDropZone>
@@ -2135,57 +2139,59 @@ export function DistrictPanel({
                 );
               })}
               
-              {/* Add {entityName} (Inline) */}
-              <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
-                {quickAddMode === 'add-campus' ? (
-                  <div className="w-48">
-                    <Input
-                      ref={quickAddInputRef}
-                      value={quickAddName}
-                      onChange={(e) => setQuickAddName(e.target.value)}
-                      placeholder={`New ${entityName.toLowerCase()} name…`}
-                      className="h-12 text-base"
-                      spellCheck={true}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const name = quickAddName.trim();
-                          if (!name) return;
-                          createCampus.mutate({ name, districtId: district.id });
-                          setQuickAddName('');
-                          setQuickAddMode(null);
-                        } else if (e.key === 'Escape') {
-                          setQuickAddName('');
-                          setQuickAddMode(null);
-                        }
+              {/* Add {entityName} (Inline) - Only when canInteract */}
+              {canInteract && (
+                <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                  {quickAddMode === 'add-campus' ? (
+                    <div className="w-48">
+                      <Input
+                        ref={quickAddInputRef}
+                        value={quickAddName}
+                        onChange={(e) => setQuickAddName(e.target.value)}
+                        placeholder={`New ${entityName.toLowerCase()} name…`}
+                        className="h-12 text-base"
+                        spellCheck={true}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const name = quickAddName.trim();
+                            if (!name) return;
+                            createCampus.mutate({ name, districtId: district.id });
+                            setQuickAddName('');
+                            setQuickAddMode(null);
+                          } else if (e.key === 'Escape') {
+                            setQuickAddName('');
+                            setQuickAddMode(null);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Keep tidy; only cancel if empty
+                          if (!quickAddName.trim()) {
+                            setQuickAddMode(null);
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setQuickAddMode('add-campus');
+                        setQuickAddName('');
+                        setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      onBlur={() => {
-                        // Keep tidy; only cancel if empty
-                        if (!quickAddName.trim()) {
-                          setQuickAddMode(null);
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setQuickAddMode('add-campus');
-                      setQuickAddName('');
-                      setTimeout(() => quickAddInputRef.current?.focus(), 0);
-                    }}
-                    className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <Plus className="w-5 h-5" strokeWidth={2} />
-                    <span className="text-sm">Add {entityName}</span>
-                  </button>
-                )}
-              </div>
+                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
+                    >
+                      <Plus className="w-5 h-5" strokeWidth={2} />
+                      <span className="text-sm">Add {entityName}</span>
+                    </button>
+                  )}
+                </div>
+              )}
               
               {/* Unassigned Row - Only show if there are unassigned people */}
               {peopleWithoutCampus.length > 0 && (
@@ -2215,6 +2221,7 @@ export function DistrictPanel({
                           onClick={handlePersonClick}
                           onMove={handlePersonMove}
                           hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
+                          canInteract={canInteract}
                         />
                       </PersonDropZone>
                     ))}
@@ -2314,16 +2321,29 @@ export function DistrictPanel({
     </div>
   ) : null;
 
+  // Conditionally wrap content in DndProvider only when canInteract
+  const mainContent = (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="w-full h-full flex flex-col"
+    >
+      {content}
+    </motion.div>
+  );
+
   return (
-    <DndProvider backend={HTML5Backend}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="w-full h-full flex flex-col"
-      >
-        {content}
+    <>
+      {canInteract ? (
+        <DndProvider backend={HTML5Backend}>
+          {mainContent}
+          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+        </DndProvider>
+      ) : (
+        mainContent
+      )}
         
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
@@ -3444,11 +3464,6 @@ export function DistrictPanel({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
-        {/* Custom Drag Layer */}
-        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-        
-    </motion.div>
-    </DndProvider>
+    </>
   );
 }
