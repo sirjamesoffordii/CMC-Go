@@ -68,7 +68,7 @@ export default function Approvals() {
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => setLocation("/")}>
+          <Button variant="ghost" onClick={() => setLocation("/")} className="text-black hover:bg-red-600 hover:text-white">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>

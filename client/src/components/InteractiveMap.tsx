@@ -413,16 +413,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(null);
   
-  // Fetch all people to calculate district stats (only for authenticated users with scope)
-  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
-    retry: false, // Don't retry on auth errors
-    onError: (error) => {
-      // Silently handle auth errors - serverMetrics will provide aggregate data
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[InteractiveMap] people.list error:", error);
-      }
-    }
-  });
+  // Fetch all people to calculate district stats
+  const { data: allPeople = [] } = trpc.people.list.useQuery();
   
   // Fetch all campuses to count campuses per district
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
@@ -430,10 +422,50 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
   
+  // Fetch aggregate district and region metrics (public - everyone can see these)
+  // These must be declared BEFORE useMemo hooks that use them
+  const { data: allDistrictMetrics = [] } = trpc.metrics.allDistricts.useQuery();
+  const { data: allRegionMetrics = [] } = trpc.metrics.allRegions.useQuery();
+  
   // Calculate national totals - ensure all people are counted accurately
   // Total should be the sum of all statuses (each person belongs to exactly one status)
   const nationalTotals = useMemo(() => {
-    // Prioritize server metrics when available (works for both authenticated and unauthenticated users)
+    // Count each person exactly once in the appropriate status bucket
+    let yes = 0;
+    let maybe = 0;
+    let no = 0;
+    let notInvited = 0;
+    
+    allPeople.forEach(person => {
+      const status = person.status || "Not Invited";
+      switch (status) {
+        case "Yes":
+          yes++;
+          break;
+        case "Maybe":
+          maybe++;
+          break;
+        case "No":
+          no++;
+          break;
+        case "Not Invited":
+        default:
+          // Handle null, undefined, or "Not Invited" status
+          notInvited++;
+          break;
+      }
+    });
+    
+    const invited = yes + maybe + no;
+    // Total is the sum of all statuses - each person belongs to exactly one status
+    const total = yes + maybe + no + notInvited;
+    
+    // Verify totals match allPeople.length (should always be true)
+    if (total !== allPeople.length) {
+      console.warn(`[Metrics] Total mismatch: sum of statuses ${total}, actual people count ${allPeople.length}.`);
+    }
+    
+    // Use server metrics if available and totals match
     if (serverMetrics) {
       const serverYes = serverMetrics.going || 0;
       const serverMaybe = serverMetrics.maybe || 0;
@@ -442,63 +474,26 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const serverTotal = serverYes + serverMaybe + serverNo + serverNotInvited;
       const serverInvited = serverYes + serverMaybe + serverNo;
       
-      return {
-        yes: serverYes,
-        maybe: serverMaybe,
-        no: serverNo,
-        notInvited: serverNotInvited,
-        total: serverTotal,
-        invited: serverInvited,
-      };
+      // Use server metrics if they sum correctly
+      if (serverTotal === total || serverTotal === allPeople.length) {
+        return {
+          yes: serverYes,
+          maybe: serverMaybe,
+          no: serverNo,
+          notInvited: serverNotInvited,
+          total: serverTotal, // Use sum of statuses from server
+          invited: serverInvited,
+        };
+      }
     }
     
-    // Fallback to calculating from allPeople if available (for authenticated users with scope)
-    if (allPeople.length > 0) {
-      let yes = 0;
-      let maybe = 0;
-      let no = 0;
-      let notInvited = 0;
-      
-      allPeople.forEach(person => {
-        const status = person.status || "Not Invited";
-        switch (status) {
-          case "Yes":
-            yes++;
-            break;
-          case "Maybe":
-            maybe++;
-            break;
-          case "No":
-            no++;
-            break;
-          case "Not Invited":
-          default:
-            notInvited++;
-            break;
-        }
-      });
-      
-      const invited = yes + maybe + no;
-      const total = yes + maybe + no + notInvited;
-      
-      return {
-        yes,
-        maybe,
-        no,
-        notInvited,
-        total,
-        invited,
-      };
-    }
-    
-    // Default to zeros if neither serverMetrics nor allPeople are available
     return {
-      yes: 0,
-      maybe: 0,
-      no: 0,
-      notInvited: 0,
-      total: 0,
-      invited: 0,
+      yes,
+      maybe,
+      no,
+      notInvited,
+      total, // Sum of all statuses
+      invited,
     };
   }, [allPeople, serverMetrics]);
   
@@ -511,7 +506,6 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Calculate regional totals - ensure all people are counted accurately
   // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
   // Everyone can see regional aggregate numbers
   const regionalTotals = useMemo(() => {
@@ -625,10 +619,6 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     setActiveMetrics(new Set());
   };
 
-  // Fetch aggregate district metrics (public - everyone can see these)
-  const { data: allDistrictMetrics = [] } = trpc.metrics.allDistricts.useQuery();
-  const { data: allRegionMetrics = [] } = trpc.metrics.allRegions.useQuery();
-  
   // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
     const stats: Record<string, DistrictStats> = {};
@@ -1424,7 +1414,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             }}
           >
             <div
-              className="rounded-full bg-slate-700 hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+              className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
               style={{
                 width: '3.5vw', // Larger default size, scales with viewport
                 height: '3.5vw',

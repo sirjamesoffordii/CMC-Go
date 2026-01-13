@@ -8,7 +8,6 @@ import { storagePut } from "./storage";
 import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_core/session";
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
-import { getPeopleScope, type PeopleScope } from "./_core/authorization";
 
 export const appRouter = router({
   system: systemRouter,
@@ -195,11 +194,6 @@ export const appRouter = router({
         await db.updateDistrictRegion(input.id, input.region);
         return { success: true };
       }),
-    metrics: publicProcedure
-      .input(z.object({ id: z.string() }))
-      .query(async ({ input }) => {
-        return await db.getDistrictMetrics(input.id);
-      }),
   }),
 
   campuses: router({
@@ -260,32 +254,12 @@ export const appRouter = router({
   }),
 
   people: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.user) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-      }
-      
+    list: publicProcedure.query(async ({ ctx }) => {
       try {
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        if (scope.level === "ALL") {
-          return await db.getAllPeople();
-        } else if (scope.level === "REGION") {
-          return await db.getPeopleByRegionId(scope.regionId);
-        } else if (scope.level === "DISTRICT") {
-          return await db.getPeopleByDistrictId(scope.districtId);
-        } else if (scope.level === "CAMPUS") {
-          return await db.getPeopleByCampusId(scope.campusId);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        // Authentication disabled - return all people data
+        const allPeople = await db.getAllPeople();
+        return allPeople;
       } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
         console.error("[people.list] Error:", error instanceof Error ? error.message : String(error));
         // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
@@ -300,100 +274,21 @@ export const appRouter = router({
         });
       }
     }),
-    getNational: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.user) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-      }
-      
-      const scope = getPeopleScope(ctx.user);
-      if (!scope || scope.level !== "ALL") {
-        throw new TRPCError({ code: "FORBIDDEN", message: "National staff access requires ALL scope" });
-      }
-      
+    getNational: publicProcedure.query(async ({ ctx }) => {
+      // Authentication disabled - return all national staff data
       return await db.getNationalStaff();
     }),
-    byDistrict: protectedProcedure
+    byDistrict: publicProcedure
       .input(z.object({ districtId: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if district is in scope
-        if (scope.level === "ALL") {
-          return await db.getPeopleByDistrictId(input.districtId);
-        } else if (scope.level === "REGION") {
-          // Check if district is in user's region
-          const district = await db.getDistrictById(input.districtId);
-          if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "District out of scope" });
-          }
-          return await db.getPeopleByDistrictId(input.districtId);
-        } else if (scope.level === "DISTRICT") {
-          if (scope.districtId !== input.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "District out of scope" });
-          }
-          return await db.getPeopleByDistrictId(input.districtId);
-        } else if (scope.level === "CAMPUS") {
-          // Check if campus belongs to the requested district
-          const campus = await db.getCampusById(scope.campusId);
-          if (!campus || campus.districtId !== input.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "District out of scope" });
-          }
-          return await db.getPeopleByDistrictId(input.districtId);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        // Authentication disabled - allow viewing any district
+        return await db.getPeopleByDistrictId(input.districtId);
       }),
-    byCampus: protectedProcedure
+    byCampus: publicProcedure
       .input(z.object({ campusId: z.number() }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if campus is in scope
-        if (scope.level === "ALL") {
-          return await db.getPeopleByCampusId(input.campusId);
-        } else if (scope.level === "REGION") {
-          // Check if campus is in user's region
-          const campus = await db.getCampusById(input.campusId);
-          if (!campus) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
-          }
-          const district = await db.getDistrictById(campus.districtId);
-          if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Campus out of scope" });
-          }
-          return await db.getPeopleByCampusId(input.campusId);
-        } else if (scope.level === "DISTRICT") {
-          // Check if campus belongs to user's district
-          const campus = await db.getCampusById(input.campusId);
-          if (!campus) {
-            throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
-          }
-          if (campus.districtId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Campus out of scope" });
-          }
-          return await db.getPeopleByCampusId(input.campusId);
-        } else if (scope.level === "CAMPUS") {
-          if (scope.campusId !== input.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Campus out of scope" });
-          }
-          return await db.getPeopleByCampusId(input.campusId);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        // Authentication disabled - allow viewing any campus
+        return await db.getPeopleByCampusId(input.campusId);
       }),
     create: publicProcedure
       .input(z.object({
@@ -514,44 +409,10 @@ export const appRouter = router({
         );
         return { success: true };
       }),
-    getById: protectedProcedure
+    getById: publicProcedure
       .input(z.object({ personId: z.string() }))
-      .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        const person = await db.getPersonByPersonId(input.personId);
-        if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
-        }
-        
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if person is in scope
-        if (scope.level === "ALL") {
-          return person;
-        } else if (scope.level === "REGION") {
-          if (person.primaryRegion !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return person;
-        } else if (scope.level === "DISTRICT") {
-          if (person.primaryDistrictId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return person;
-        } else if (scope.level === "CAMPUS") {
-          if (person.primaryCampusId !== scope.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return person;
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+      .query(async ({ input }) => {
+        return await db.getPersonByPersonId(input.personId);
       }),
     updateName: publicProcedure
       .input(z.object({ personId: z.string(), name: z.string() }))
@@ -631,47 +492,19 @@ export const appRouter = router({
         return { success: true };
       }),
     // PR 3: Status history endpoint
-    statusHistory: protectedProcedure
+    statusHistory: publicProcedure
       .input(z.object({
         personId: z.string(),
         limit: z.number().min(1).max(100).optional().default(20),
       }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
+        // Authentication disabled - allow all users to view status history
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
         }
         
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if person is in scope (same logic as getById)
-        if (scope.level === "ALL") {
-          return await db.getStatusHistory(input.personId, input.limit);
-        } else if (scope.level === "REGION") {
-          if (person.primaryRegion !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getStatusHistory(input.personId, input.limit);
-        } else if (scope.level === "DISTRICT") {
-          if (person.primaryDistrictId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getStatusHistory(input.personId, input.limit);
-        } else if (scope.level === "CAMPUS") {
-          if (person.primaryCampusId !== scope.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getStatusHistory(input.personId, input.limit);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        return await db.getStatusHistory(input.personId, input.limit);
       }),
     // PR 3: Revert status change
     revertStatusChange: publicProcedure
@@ -699,44 +532,11 @@ export const appRouter = router({
   }),
 
   needs: router({
-    byPerson: protectedProcedure
+    byPerson: publicProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        const person = await db.getPersonByPersonId(input.personId);
-        if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
-        }
-        
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if person is in scope (same logic as people.getById)
-        if (scope.level === "ALL") {
-          return await db.getNeedsByPersonId(input.personId);
-        } else if (scope.level === "REGION") {
-          if (person.primaryRegion !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNeedsByPersonId(input.personId);
-        } else if (scope.level === "DISTRICT") {
-          if (person.primaryDistrictId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNeedsByPersonId(input.personId);
-        } else if (scope.level === "CAMPUS") {
-          if (person.primaryCampusId !== scope.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNeedsByPersonId(input.personId);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        // Authentication disabled - return all needs
+        return await db.getNeedsByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({
@@ -813,42 +613,10 @@ export const appRouter = router({
         await db.updateNeedVisibility(input.needId, input.visibility);
         return { success: true };
       }),
-    listActive: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.user) {
-        throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-      }
-      
+    listActive: publicProcedure.query(async () => {
       try {
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Get all active needs, then filter by scope
-        const allNeeds = await db.getAllActiveNeeds();
-        
-        if (scope.level === "ALL") {
-          return allNeeds;
-        }
-        
-        // Filter needs by person scope
-        const peopleInScope = new Set<string>();
-        if (scope.level === "REGION") {
-          const regionPeople = await db.getPeopleByRegionId(scope.regionId);
-          regionPeople.forEach(p => peopleInScope.add(p.personId));
-        } else if (scope.level === "DISTRICT") {
-          const districtPeople = await db.getPeopleByDistrictId(scope.districtId);
-          districtPeople.forEach(p => peopleInScope.add(p.personId));
-        } else if (scope.level === "CAMPUS") {
-          const campusPeople = await db.getPeopleByCampusId(scope.campusId);
-          campusPeople.forEach(p => peopleInScope.add(p.personId));
-        }
-        
-        return allNeeds.filter(need => peopleInScope.has(need.personId));
+        return await db.getAllActiveNeeds();
       } catch (error) {
-        if (error instanceof TRPCError) {
-          throw error;
-        }
         console.error("[needs.listActive] Error:", error instanceof Error ? error.message : String(error));
         // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
@@ -869,44 +637,10 @@ export const appRouter = router({
   }),
 
   notes: router({
-    byPerson: protectedProcedure
+    byPerson: publicProcedure
       .input(z.object({ personId: z.string(), category: z.enum(["INVITE", "INTERNAL"]).optional() }))
-      .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
-        const person = await db.getPersonByPersonId(input.personId);
-        if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
-        }
-        
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if person is in scope (same logic as people.getById)
-        if (scope.level === "ALL") {
-          return await db.getNotesByPersonId(input.personId, input.category);
-        } else if (scope.level === "REGION") {
-          if (person.primaryRegion !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNotesByPersonId(input.personId, input.category);
-        } else if (scope.level === "DISTRICT") {
-          if (person.primaryDistrictId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNotesByPersonId(input.personId, input.category);
-        } else if (scope.level === "CAMPUS") {
-          if (person.primaryCampusId !== scope.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getNotesByPersonId(input.personId, input.category);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+      .query(async ({ input }) => {
+        return await db.getNotesByPersonId(input.personId, input.category);
       }),
     create: publicProcedure
       .input(z.object({
@@ -928,44 +662,16 @@ export const appRouter = router({
 
   // PR 2: Invite Notes (leaders-only)
   inviteNotes: router({
-    byPerson: protectedProcedure
+    byPerson: publicProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input, ctx }) => {
-        if (!ctx.user) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "Authentication required" });
-        }
-        
+        // Authentication disabled - allow all users to view invite notes
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
         }
         
-        const scope = getPeopleScope(ctx.user);
-        if (!scope) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "No access scope" });
-        }
-        
-        // Check if person is in scope (same logic as people.getById)
-        if (scope.level === "ALL") {
-          return await db.getInviteNotesByPersonId(input.personId);
-        } else if (scope.level === "REGION") {
-          if (person.primaryRegion !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getInviteNotesByPersonId(input.personId);
-        } else if (scope.level === "DISTRICT") {
-          if (person.primaryDistrictId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getInviteNotesByPersonId(input.personId);
-        } else if (scope.level === "CAMPUS") {
-          if (person.primaryCampusId !== scope.campusId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Person out of scope" });
-          }
-          return await db.getInviteNotesByPersonId(input.personId);
-        }
-        
-        throw new TRPCError({ code: "FORBIDDEN", message: "Out of scope" });
+        return await db.getInviteNotesByPersonId(input.personId);
       }),
     create: publicProcedure
       .input(z.object({

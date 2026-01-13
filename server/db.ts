@@ -315,12 +315,6 @@ export async function getPeopleByCampusId(campusId: number) {
   return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
 }
 
-export async function getPeopleByRegionId(regionId: string) {
-  const db = await getDb();
-  if (!db) return [];
-  return await db.select().from(people).where(eq(people.primaryRegion, regionId));
-}
-
 /**
  * Sanitize person data for public viewing - removes private fields
  * Public view only includes: personId, status, primaryDistrictId, primaryCampusId, primaryRole, primaryRegion

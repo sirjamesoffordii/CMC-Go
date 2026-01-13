@@ -841,7 +841,7 @@ export default function Home() {
                     window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 font-semibold"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Login
@@ -853,7 +853,7 @@ export default function Home() {
                     setShareModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Share2 className="w-4 h-4" />
                   Share
@@ -864,7 +864,7 @@ export default function Home() {
                     setImportModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   Import
@@ -875,7 +875,7 @@ export default function Home() {
                     setLocation("/admin");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
@@ -886,7 +886,7 @@ export default function Home() {
                     setLocation("/more-info");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <span className="text-sm font-semibold">CMC Info</span>
                 </button>

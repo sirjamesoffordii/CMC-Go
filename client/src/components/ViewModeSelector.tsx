@@ -31,8 +31,8 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         className={`
           flex items-center gap-1.5
           ${viewState.mode === "nation" 
-            ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-            : "text-gray-600 hover:bg-gray-100"
+            ? "bg-black text-white hover:bg-red-600" 
+            : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -46,8 +46,8 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         className={`
           flex items-center gap-1.5
           ${viewState.mode === "region" 
-            ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-            : "text-gray-600 hover:bg-gray-100"
+            ? "bg-black text-white hover:bg-red-600" 
+            : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -61,8 +61,8 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         className={`
           flex items-center gap-1.5
           ${viewState.mode === "district" 
-            ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-            : "text-gray-600 hover:bg-gray-100"
+            ? "bg-black text-white hover:bg-red-600" 
+            : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -76,8 +76,8 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         className={`
           flex items-center gap-1.5
           ${viewState.mode === "campus" 
-            ? "bg-indigo-600 text-white hover:bg-indigo-700" 
-            : "text-gray-600 hover:bg-gray-100"
+            ? "bg-black text-white hover:bg-red-600" 
+            : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >

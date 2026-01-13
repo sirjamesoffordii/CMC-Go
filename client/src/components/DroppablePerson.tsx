@@ -139,9 +139,9 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
-    if (nameRef.current) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
@@ -151,9 +151,9 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
-    if (nameRef.current && isHovered) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    if (iconRef.current && isHovered) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
@@ -254,7 +254,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
       </div>
       </motion.div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && (personNeed || person.notes || person.depositPaid) && (
+      {isHovered && tooltipPos && (
         <PersonTooltip
           person={person}
           need={personNeed ? {
