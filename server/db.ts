@@ -309,6 +309,12 @@ export async function getPeopleByDistrictId(districtId: string) {
   return await db.select().from(people).where(eq(people.primaryDistrictId, districtId));
 }
 
+export async function getPeopleByRegionId(regionId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.primaryRegion, regionId));
+}
+
 export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
