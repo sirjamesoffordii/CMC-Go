@@ -158,22 +158,44 @@ export const appRouter = router({
   }),
 
   districts: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async ({ ctx }) => {
       try {
-        return await db.getAllDistricts();
+        const scope = getPeopleScope(ctx.user);
+
+        // Return all districts for ALL scope, otherwise filtered by user's scope
+        const allDistricts = await db.getAllDistricts();
+
+        if (scope.level === "ALL") {
+          return allDistricts;
+        }
+
+        // Filter districts by scope
+        if (scope.level === "REGION") {
+          return allDistricts.filter(d => d.region === scope.regionId);
+        }
+
+        if (scope.level === "DISTRICT") {
+          return allDistricts.filter(d => d.id === scope.districtId);
+        }
+
+        if (scope.level === "CAMPUS") {
+          // Get the district that contains the user's campus
+          const campus = await db.getCampusById(scope.campusId);
+          if (campus) {
+            return allDistricts.filter(d => d.id === campus.districtId);
+          }
+        }
+
+        return [];
       } catch (error) {
         console.error("[districts.list] Error:", error instanceof Error ? error.message : String(error));
-        // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch districts list",
-        });
+        throw error;
       }
     }),
     getById: publicProcedure
@@ -198,22 +220,45 @@ export const appRouter = router({
   }),
 
   campuses: router({
-    list: publicProcedure.query(async () => {
+    list: protectedProcedure.query(async ({ ctx }) => {
       try {
-        return await db.getAllCampuses();
+        const scope = getPeopleScope(ctx.user);
+
+        // Return all campuses for ALL scope, otherwise filtered by user's scope
+        const allCampuses = await db.getAllCampuses();
+
+        if (scope.level === "ALL") {
+          return allCampuses;
+        }
+
+        // Filter campuses by scope
+        if (scope.level === "REGION") {
+          // Get all districts in the region first
+          const allDistricts = await db.getAllDistricts();
+          const regionDistrictIds = allDistricts
+            .filter(d => d.region === scope.regionId)
+            .map(d => d.id);
+          return allCampuses.filter(c => regionDistrictIds.includes(c.districtId));
+        }
+
+        if (scope.level === "DISTRICT") {
+          return allCampuses.filter(c => c.districtId === scope.districtId);
+        }
+
+        if (scope.level === "CAMPUS") {
+          return allCampuses.filter(c => c.id === scope.campusId);
+        }
+
+        return [];
       } catch (error) {
         console.error("[campuses.list] Error:", error instanceof Error ? error.message : String(error));
-        // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to fetch campuses list",
-        });
+        throw error;
       }
     }),
     byDistrict: publicProcedure
