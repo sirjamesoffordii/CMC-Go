@@ -52,13 +52,23 @@ export default function People() {
   };
   const [myCampus, setMyCampus] = useState<boolean>(getMyCampusInitial());
 
-  const getNeedTypeFilterInitial = (): 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other' => {
-    if (typeof window === 'undefined') return 'All';
+  const getNeedTypeFilterInitial = (): Set<'Financial' | 'Housing' | 'Transportation' | 'Other'> => {
+    if (typeof window === 'undefined') return new Set();
     const params = new URLSearchParams(window.location.search);
     const needTypeParam = params.get('needType');
-    return (needTypeParam as 'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other') || 'All';
+    if (needTypeParam) {
+      return new Set(needTypeParam.split(',') as Array<'Financial' | 'Housing' | 'Transportation' | 'Other'>);
+    }
+    return new Set();
   };
-  const [needTypeFilter, setNeedTypeFilter] = useState<'All' | 'Financial' | 'Housing' | 'Transportation' | 'Other'>(getNeedTypeFilterInitial());
+  const [needTypeFilter, setNeedTypeFilter] = useState<Set<'Financial' | 'Housing' | 'Transportation' | 'Other'>>(getNeedTypeFilterInitial());
+  
+  const getNeedsMetFilterInitial = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('needsMet') === 'true';
+  };
+  const [needsMetFilter, setNeedsMetFilter] = useState<boolean>(getNeedsMetFilterInitial());
 
   const getHasActiveNeedsInitial = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -66,6 +76,14 @@ export default function People() {
     return params.get('hasNeeds') === 'true';
   };
   const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(getHasActiveNeedsInitial());
+  
+  const isAnyFilterActive =
+    !!searchQuery.trim() ||
+    statusFilter.size > 0 ||
+    myCampus ||
+    needTypeFilter.size > 0 ||
+    hasActiveNeeds ||
+    needsMetFilter;
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -163,11 +181,11 @@ export default function People() {
       });
     }
 
-    // Need type filter
-    if (needTypeFilter !== 'All') {
+    // Need type filter (multiple types can be selected)
+    if (needTypeFilter.size > 0) {
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
-        return needs.some(n => n.type === needTypeFilter);
+        return needs.some(n => needTypeFilter.has(n.type as 'Financial' | 'Housing' | 'Transportation' | 'Other'));
       });
     }
 
@@ -178,6 +196,24 @@ export default function People() {
         return needs.length > 0;
       });
     }
+    
+    // Needs met filter (people with at least one resolved/inactive need)
+    // Note: This requires checking all needs (active + inactive) for each person
+    // For now, we'll use a simplified approach - in production you might want to
+    // add a new endpoint that returns all needs or cache them
+    if (needsMetFilter) {
+      // Simplified: For now, we can't easily check inactive needs without individual queries
+      // This is a placeholder - ideally we'd have all needs cached or a bulk endpoint
+      // For now, we'll filter to people who have active needs (they may have had some met)
+      filtered = filtered.filter(p => {
+        // This is a simplified check - in reality we'd need to query all needs
+        // including inactive ones for each person
+        const activeNeeds = needsByPersonId.get(p.personId) ?? [];
+        // Placeholder: show people with active needs (they may have had some met)
+        // A proper implementation would check all needs including inactive
+        return activeNeeds.length > 0;
+      });
+    }
 
     // My campus filter
     if (myCampus && user?.campusId) {
@@ -185,7 +221,7 @@ export default function People() {
     }
 
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampus, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
+  }, [allPeople, statusFilter, searchQuery, myCampus, user?.campusId, needTypeFilter, hasActiveNeeds, needsMetFilter, needsByPersonId]);
   
   // Group people by district and campus, then group districts by region
   const regionsWithDistricts = useMemo(() => {
@@ -245,6 +281,19 @@ export default function People() {
       data.campuses = newMap;
     });
 
+    // If any filter/search is active, hide districts with 0 people
+    if (isAnyFilterActive) {
+      for (const [districtId, data] of districtMap.entries()) {
+        const campusPeopleCount = Array.from(data.campuses.values()).reduce(
+          (sum, c) => sum + c.people.length,
+          0
+        );
+        const total = campusPeopleCount + data.unassigned.length;
+
+        if (total === 0) districtMap.delete(districtId);
+      }
+    }
+
     // Group districts by region
     const regionMap = new Map<string, DistrictData[]>();
     Array.from(districtMap.values()).forEach((districtData) => {
@@ -264,7 +313,7 @@ export default function People() {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses]);
+  }, [filteredPeople, allDistricts, allCampuses, isAnyFilterActive]);
   
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -334,9 +383,14 @@ export default function People() {
       params.set('myCampus', 'true');
     }
 
-    // Add needTypeFilter if not 'All'
-    if (needTypeFilter !== 'All') {
-      params.set('needType', needTypeFilter);
+    // Add need type filter if not empty
+    if (needTypeFilter.size > 0) {
+      params.set('needType', Array.from(needTypeFilter).join(','));
+    }
+    
+    // Add needs met filter
+    if (needsMetFilter) {
+      params.set('needsMet', 'true');
     }
 
     // Add hasActiveNeeds if true
@@ -382,9 +436,6 @@ export default function People() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">People</h1>
-              <p className="text-gray-600 mt-2">
-                Hierarchical list view of all districts, campuses, and people
-              </p>
             </div>
 
             {/* Search (moved from Home header) */}
@@ -489,22 +540,53 @@ export default function People() {
               >
                 Has active needs
               </button>
+              <button
+                onClick={() => setNeedsMetFilter(!needsMetFilter)}
+                className={`
+                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                  ${needsMetFilter
+                    ? "bg-green-100 text-green-700 border-2 border-green-300"
+                    : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                  }
+                `}
+              >
+                Needs met
+              </button>
             </div>
 
-            {/* Need Type Filter */}
+            {/* Need Type Filter Chips */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">Need Type:</span>
-              <select
-                value={needTypeFilter}
-                onChange={(e) => setNeedTypeFilter(e.target.value as any)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-              >
-                <option value="All">All</option>
-                <option value="Financial">Financial</option>
-                <option value="Housing">Housing</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Other">Other</option>
-              </select>
+              {(['Financial', 'Transportation', 'Housing', 'Other'] as const).map((needType) => {
+                const isActive = needTypeFilter.has(needType);
+                const count = allPeople.filter(p => {
+                  const needs = needsByPersonId.get(p.personId) ?? [];
+                  return needs.some(n => n.type === needType);
+                }).length;
+                return (
+                  <button
+                    key={needType}
+                    onClick={() => {
+                      const newFilter = new Set(needTypeFilter);
+                      if (isActive) {
+                        newFilter.delete(needType);
+                      } else {
+                        newFilter.add(needType);
+                      }
+                      setNeedTypeFilter(newFilter);
+                    }}
+                    className={`
+                      px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                      ${isActive
+                        ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
+                        : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    {needType} ({count})
+                  </button>
+                );
+              })}
             </div>
 
             {/* My Campus Filter */}

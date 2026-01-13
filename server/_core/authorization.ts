@@ -4,6 +4,8 @@
  */
 
 import type { User } from "../../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
+import { people } from "../../drizzle/schema";
 
 export type UserRole = "STAFF" | "CO_DIRECTOR" | "CAMPUS_DIRECTOR" | "DISTRICT_DIRECTOR" | "REGION_DIRECTOR" | "ADMIN";
 
@@ -217,4 +219,133 @@ export function canViewNeed(user: User | null, needVisibility: "LEADERSHIP_ONLY"
   }
 
   return false;
+}
+
+/**
+ * Normalize role names to handle legacy/alternate naming conventions.
+ * CAMPUS_CO_DIRECTOR => CAMPUS_DIRECTOR
+ * DISTRICT_STAFF => DISTRICT_DIRECTOR
+ */
+export function normalizeRole(role: string): string {
+  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "DISTRICT_STAFF") return "DISTRICT_DIRECTOR";
+  return role;
+}
+
+/**
+ * Determine the people viewing scope for a user based on their role and location.
+ * Returns the appropriate scope level (CAMPUS, DISTRICT, REGION, or ALL).
+ * Returns null if scope cannot be determined (user has no access).
+ * 
+ * Role → People-scope ladder:
+ * - Campus scope (own campus only): STAFF
+ * - District scope (entire district): CAMPUS_DIRECTOR, CAMPUS_CO_DIRECTOR
+ * - Region scope (entire region): DISTRICT_DIRECTOR, DISTRICT_STAFF
+ * - Full access (all people): NATIONAL_DIRECTOR, NATIONAL_STAFF, REGIONAL_DIRECTOR, FIELD_DIRECTOR, CMC_GO_ADMIN, REGION_DIRECTOR, ADMIN
+ */
+export type PeopleScope =
+  | { level: "CAMPUS"; campusId: number }
+  | { level: "DISTRICT"; districtId: string }
+  | { level: "REGION"; regionId: string }
+  | { level: "ALL" };
+
+export function getPeopleScope(user: User | null): PeopleScope | null {
+  if (!user) {
+    return null; // No user = no access
+  }
+
+  const role = normalizeRole(user.role);
+
+  // Full access - Full-access roles can see all people
+  const fullAccessRoles = [
+    "NATIONAL_DIRECTOR",
+    "NATIONAL_STAFF", 
+    "REGIONAL_DIRECTOR",
+    "REGION_DIRECTOR",
+    "FIELD_DIRECTOR",
+    "CMC_GO_ADMIN",
+    "ADMIN"
+  ];
+  if (fullAccessRoles.includes(role)) {
+    return { level: "ALL" };
+  }
+
+  // Region access - DISTRICT_DIRECTOR (and DISTRICT_STAFF via normalizeRole) can see their region
+  if (role === "DISTRICT_DIRECTOR") {
+    if (user.regionId) return { level: "REGION", regionId: user.regionId };
+    // fail-closed fallback (tightest we can)
+    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
+    return null; // No scope identifiers
+  }
+
+  // District access - CAMPUS_DIRECTOR (and CAMPUS_CO_DIRECTOR via normalizeRole) can see their district
+  if (role === "CAMPUS_DIRECTOR") {
+    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
+    return null; // No scope identifiers
+  }
+
+  // Campus access - STAFF can only see their campus
+  if (role === "STAFF") {
+    if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
+    return null; // No campusId
+  }
+
+  // Default fallback - try campus first
+  if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
+  return null; // No access
+}
+
+/**
+ * Check if a user can access a specific person.
+ * Returns true if the person is within the user's scope.
+ */
+export function canAccessPerson(user: User | null, person: { primaryCampusId?: number | null; primaryDistrictId?: string | null; primaryRegion?: string | null }): boolean {
+  if (!user) return false;
+  
+  const scope = getPeopleScope(user);
+  if (!scope) return false;
+  
+  if (scope.level === "ALL") return true;
+  if (scope.level === "CAMPUS") return person.primaryCampusId === scope.campusId;
+  if (scope.level === "DISTRICT") return person.primaryDistrictId === scope.districtId;
+  if (scope.level === "REGION") return person.primaryRegion === scope.regionId;
+  
+  return false;
+}
+
+/**
+ * Get Drizzle ORM where clause for filtering people by user's scope.
+ * Returns a condition that can be used in .where() clauses.
+ * Returns null if user has no access (should filter to empty result).
+ */
+export function peopleScopeWhereClause(user: User | null) {
+  if (!user) {
+    // No user = no access, return a condition that matches nothing
+    return sql`1 = 0`; // Always false
+  }
+  
+  const scope = getPeopleScope(user);
+  if (!scope) {
+    return sql`1 = 0`; // No scope = no access
+  }
+  
+  if (scope.level === "ALL") {
+    return null; // No filter needed - can see all
+  }
+  
+  if (scope.level === "CAMPUS") {
+    return eq(people.primaryCampusId, scope.campusId);
+  }
+  
+  if (scope.level === "DISTRICT") {
+    return eq(people.primaryDistrictId, scope.districtId);
+  }
+  
+  if (scope.level === "REGION") {
+    return eq(people.primaryRegion, scope.regionId);
+  }
+  
+  return sql`1 = 0`; // Fallback: no access
 }

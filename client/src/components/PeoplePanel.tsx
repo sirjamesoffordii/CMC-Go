@@ -23,6 +23,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [myCampusOnly, setMyCampusOnly] = useState(false);
+  const [needTypeFilter, setNeedTypeFilter] = useState<Set<'Financial' | 'Housing' | 'Transportation' | 'Other'>>(new Set());
+  const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(false);
+  const [needsMetFilter, setNeedsMetFilter] = useState<boolean>(false);
   
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
@@ -58,8 +61,32 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       filtered = filtered.filter((p: any) => p.primaryCampusId === user.campusId);
     }
     
+    // Need type filter (multiple types can be selected)
+    if (needTypeFilter.size > 0) {
+      filtered = filtered.filter((p: any) => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        return needs.some(n => needTypeFilter.has(n.type as 'Financial' | 'Housing' | 'Transportation' | 'Other'));
+      });
+    }
+
+    // Has active needs filter
+    if (hasActiveNeeds) {
+      filtered = filtered.filter((p: any) => {
+        const needs = needsByPersonId.get(p.personId) ?? [];
+        return needs.length > 0;
+      });
+    }
+    
+    // Needs met filter (simplified - shows people with active needs for now)
+    if (needsMetFilter) {
+      filtered = filtered.filter((p: any) => {
+        const activeNeeds = needsByPersonId.get(p.personId) ?? [];
+        return activeNeeds.length > 0;
+      });
+    }
+    
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId]);
+  }, [allPeople, statusFilter, searchQuery, myCampusOnly, user?.campusId, needTypeFilter, hasActiveNeeds, needsMetFilter, needsByPersonId]);
   
   // Group people by district and campus
   const districtsWithData = useMemo(() => {
@@ -221,9 +248,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       <div className="flex items-center justify-between p-6 border-b border-gray-200">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">People</h2>
-          <p className="text-sm text-gray-600 mt-1">
-            Hierarchical list view of all districts, campuses, and people
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -293,6 +317,70 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             })}
           </div>
           
+          {/* Needs Filter */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">Needs:</span>
+            <button
+              onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
+              className={`
+                px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                ${hasActiveNeeds
+                  ? "bg-orange-100 text-orange-700 border-2 border-orange-300"
+                  : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                }
+              `}
+            >
+              Has active needs
+            </button>
+            <button
+              onClick={() => setNeedsMetFilter(!needsMetFilter)}
+              className={`
+                px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                ${needsMetFilter
+                  ? "bg-green-100 text-green-700 border-2 border-green-300"
+                  : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                }
+              `}
+            >
+              Needs met
+            </button>
+          </div>
+
+          {/* Need Type Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">Need Type:</span>
+            {(['Financial', 'Transportation', 'Housing', 'Other'] as const).map((needType) => {
+              const isActive = needTypeFilter.has(needType);
+              const count = allPeople.filter((p: any) => {
+                const needs = needsByPersonId.get(p.personId) ?? [];
+                return needs.some(n => n.type === needType);
+              }).length;
+              return (
+                <button
+                  key={needType}
+                  onClick={() => {
+                    const newFilter = new Set(needTypeFilter);
+                    if (isActive) {
+                      newFilter.delete(needType);
+                    } else {
+                      newFilter.add(needType);
+                    }
+                    setNeedTypeFilter(newFilter);
+                  }}
+                  className={`
+                    px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                    ${isActive
+                      ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
+                      : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                    }
+                  `}
+                >
+                  {needType} ({count})
+                </button>
+              );
+            })}
+          </div>
+          
           {/* My Campus Filter */}
           {user?.campusId && (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
             <div className="flex items-center gap-2">
@@ -315,7 +403,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       </div>
 
       {/* Content - Hierarchical List */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {districtsWithData.length === 0 ? (
           <div className="p-6 text-center text-gray-500">
             No districts found

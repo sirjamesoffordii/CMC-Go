@@ -171,14 +171,31 @@ export default function Home() {
   
   // Only fetch people if selected district/campus is in scope
   const shouldFetchPeople = isSelectedDistrictInScope && isSelectedCampusInScope;
-  const peopleQuery = trpc.people.list.useQuery(undefined, { enabled: shouldFetchPeople });
+  const peopleQuery = trpc.people.list.useQuery(undefined, { 
+    enabled: shouldFetchPeople,
+    retry: false, // Don't retry on auth errors
+    onError: (error) => {
+      // Silently handle auth errors for aggregates - metrics.get will provide the data
+      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
+        console.error("[Home] people.list error:", error);
+      }
+    }
+  });
   
   const districts = districtsQuery.data || [];
   const allCampuses = campusesQuery.data || [];
   const allPeople = peopleQuery.data || [];
   
   const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery({
+    retry: false, // Don't retry on auth errors
+    onError: (error) => {
+      // Silently handle auth errors - needs are not needed for aggregates
+      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
+        console.error("[Home] needs.listActive error:", error);
+      }
+    }
+  });
   
   // Fetch saved header image, background color, height, and logo
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
@@ -1035,7 +1052,7 @@ export default function Home() {
         {/* Right People Panel */}
         <div
           className={[
-            "bg-white border-l border-gray-100 flex-shrink-0 relative",
+            "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
             !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
             isMobile ? "right-panel-mobile" : "",
             isMobile && !peoplePanelOpen ? "closed" : "",
@@ -1046,6 +1063,7 @@ export default function Home() {
             overflow: "hidden",
           } : {
             width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+            height: "100%",
             overflow: "hidden",
           }}
         >
