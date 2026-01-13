@@ -29,12 +29,20 @@ function isPortAvailable(port: number): Promise<boolean> {
 }
 
 async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
+  // Check ports from startPort to startPort + 10 (11 ports total: 3000-3010)
+  const endPort = Math.min(startPort + 10, 3010);
+  
+  for (let port = startPort; port <= endPort; port++) {
     if (await isPortAvailable(port)) {
       return port;
     }
   }
-  throw new Error(`No available port found starting from ${startPort}`);
+  
+  // If no port is available in the range, throw a clear error
+  throw new Error(
+    `No available port found in range ${startPort}-${endPort}. ` +
+    `Please free up a port or set PORT environment variable to a different starting port.`
+  );
 }
 
 async function startServer() {
@@ -261,15 +269,45 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  let port: number;
+  
+  try {
+    port = await findAvailablePort(preferredPort);
+    
+    if (port !== preferredPort) {
+      console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+    }
+  } catch (error) {
+    console.error("[Startup] Failed to find an available port:");
+    console.error(error instanceof Error ? error.message : String(error));
+    console.error("[Startup] Server will not start. Please free up a port and try again.");
+    process.exit(1);
   }
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-  });
+  // Attempt to bind to the port with error handling
+  // Even though we checked the port, there's a race condition window
+  // where another process might take it between check and bind
+  try {
+    server.listen(port, () => {
+      console.log(`Server running on http://localhost:${port}/`);
+    });
+    
+    // Handle server errors (including port binding failures)
+    server.on("error", (error: NodeJS.ErrnoException) => {
+      if (error.code === "EADDRINUSE") {
+        console.error(`[Startup] Port ${port} is already in use.`);
+        console.error("[Startup] This can happen if another process took the port after we checked it.");
+        console.error("[Startup] Please free up the port or restart the server.");
+      } else {
+        console.error("[Startup] Server error:", error.message);
+      }
+      process.exit(1);
+    });
+  } catch (error) {
+    console.error("[Startup] Failed to start server on port", port);
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 startServer().catch((error) => {
