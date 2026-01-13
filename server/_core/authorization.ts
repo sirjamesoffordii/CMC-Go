@@ -232,9 +232,16 @@ export type PeopleScope =
   | { level: "ALL" };
 
 function normalizeRole(role: string) {
-  if (role === "CAMPUS_CO_DIRECTOR") return "CAMPUS_DIRECTOR";
-  if (role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  // Campus-level roles - all normalize to appropriate campus scope role
+  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "CAMPUS_VOLUNTEER" || role === "CAMPUS_INTERN") return "STAFF";
+
+  // District-level roles
   if (role === "DISTRICT_STAFF") return "DISTRICT_DIRECTOR";
+
+  // Regional-level roles - Regional Staff gets full access
+  if (role === "REGIONAL_STAFF") return "REGIONAL_DIRECTOR";
+
   return role;
 }
 

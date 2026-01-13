@@ -40,6 +40,7 @@ interface DroppablePersonProps {
   onMove: (draggedId: string, draggedCampusId: string | number, targetCampusId: string | number, targetIndex: number) => void;
   hasNeeds?: boolean;
   onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
+  canInteract?: boolean;
 }
 
 interface Need {
@@ -51,7 +52,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, canInteract = true }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -73,6 +74,8 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   
   // Handle status click to cycle through statuses
   const handleStatusClick = useCallback((e: React.MouseEvent) => {
+    // Only allow status change if canInteract
+    if (!canInteract) return;
     e.stopPropagation();
     const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
       "Not Invited",
@@ -87,7 +90,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
     if (onPersonStatusChange) {
       onPersonStatusChange(person.personId, nextStatus);
     }
-  }, [person.status, person.personId, onPersonStatusChange]);
+  }, [person.status, person.personId, onPersonStatusChange, canInteract]);
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
@@ -128,16 +131,20 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   // Stable edit button click handler
   const handleEditClick = useCallback((e: React.MouseEvent) => {
+    // Only allow edit if canInteract
+    if (!canInteract) return;
     e.stopPropagation();
     e.preventDefault();
     console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name || person.personId });
     onEdit(campusId, person);
-  }, [campusId, person, onEdit]);
+  }, [campusId, person, onEdit, canInteract]);
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
+    // Only show tooltip if canInteract
+    if (!canInteract) return;
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -146,11 +153,15 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   };
 
   const handleNameMouseLeave = () => {
+    // Only handle if canInteract
+    if (!canInteract) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
+    // Only handle if canInteract
+    if (!canInteract) return;
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
@@ -185,17 +196,18 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
           {capitalizedFirstName}
         </div>
-        <button
-          ref={editButtonRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log('Edit button clicked directly', { campusId, personId: person.personId });
-            onEdit(campusId, person);
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
+        {canInteract && (
+          <button
+            ref={editButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log('Edit button clicked directly', { campusId, personId: person.personId });
+              onEdit(campusId, person);
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
           }}
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -212,12 +224,13 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         >
           <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
         </button>
+        )}
       </div>
 
-      <div 
-        ref={setDragDropRef}
-        className="relative cursor-grab active:cursor-grabbing"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      <div
+        ref={canInteract ? setDragDropRef : undefined}
+        className={`relative ${canInteract ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+        style={canInteract ? { cursor: isDragging ? 'grabbing' : 'grab' } : { cursor: 'default' }}
       >
         <button
           onClick={handleStatusClick}
