@@ -83,7 +83,7 @@ export default function Needs() {
             District-visible needs that can be mobilized by the community
           </p>
         </div>
-        <Button onClick={() => setLocation("/")} variant="outline">
+        <Button onClick={() => setLocation("/")} variant="outline" className="text-black hover:bg-red-600 hover:text-white">
           Back to Map
         </Button>
       </div>

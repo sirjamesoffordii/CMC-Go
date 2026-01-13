@@ -422,6 +422,11 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
   
+  // Fetch aggregate district and region metrics (public - everyone can see these)
+  // These must be declared BEFORE useMemo hooks that use them
+  const { data: allDistrictMetrics = [] } = trpc.metrics.allDistricts.useQuery();
+  const { data: allRegionMetrics = [] } = trpc.metrics.allRegions.useQuery();
+  
   // Calculate national totals - ensure all people are counted accurately
   // Total should be the sum of all statuses (each person belongs to exactly one status)
   const nationalTotals = useMemo(() => {
@@ -501,99 +506,96 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Calculate regional totals - ensure all people are counted accurately
-  // Use a more reliable approach: group people by region first, then count statuses
+  // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
+  // Everyone can see regional aggregate numbers
   const regionalTotals = useMemo(() => {
     const totals: Record<string, typeof nationalTotals> = {};
     
-    // Initialize all regions from districts in database
-    districts.forEach(district => {
-      if (district.region && !totals[district.region]) {
-        totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+    // Use aggregate region metrics if available (works for everyone)
+    if (allRegionMetrics.length > 0) {
+      for (const metric of allRegionMetrics) {
+        totals[metric.region] = {
+          yes: metric.going,
+          maybe: metric.maybe,
+          no: metric.notGoing,
+          notInvited: metric.notInvited,
+          total: metric.total,
+          invited: metric.going + metric.maybe + metric.notGoing,
+        };
       }
-    });
-    
-    // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
-    Object.values(DISTRICT_REGION_MAP).forEach(region => {
-      if (!totals[region]) {
-        totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
-      }
-    });
-    
-    // Group people by region using district lookup
-    // Use both database districts and the constant mapping
-    const DISTRICT_REGION_MAPLocal = new Map<string, string>();
-    districts.forEach(district => {
-      if (district.region) {
-        DISTRICT_REGION_MAPLocal.set(district.id, district.region);
-      }
-    });
-    // Add districts from constant mapping (for districts not yet in database)
-    Object.entries(DISTRICT_REGION_MAP).forEach(([districtId, region]) => {
-      if (!DISTRICT_REGION_MAPLocal.has(districtId)) {
-        DISTRICT_REGION_MAPLocal.set(districtId, region);
-      }
-    });
-    
-    // Count people by region and status
-    allPeople.forEach(person => {
-      const districtId = person.primaryDistrictId;
-      if (!districtId) return; // Skip people without a district
+    } else {
+      // Fallback to calculating from allPeople (for authenticated users with scope)
+      // Initialize all regions from districts in database
+      districts.forEach(district => {
+        if (district.region && !totals[district.region]) {
+          totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+        }
+      });
       
-      const region = DISTRICT_REGION_MAPLocal.get(districtId);
-      if (!region || !totals[region]) return; // Skip if no region or region not initialized
+      // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
+      Object.values(DISTRICT_REGION_MAP).forEach(region => {
+        if (!totals[region]) {
+          totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+        }
+      });
       
-      // Count this person in the appropriate status bucket
-      const status = person.status || "Not Invited";
-      switch (status) {
-        case "Yes":
-          totals[region].yes++;
-          totals[region].invited++;
-          break;
-        case "Maybe":
-          totals[region].maybe++;
-          totals[region].invited++;
-          break;
-        case "No":
-          totals[region].no++;
-          totals[region].invited++;
-          break;
-        case "Not Invited":
-        default:
-          // Handle null, undefined, or "Not Invited" status
-          totals[region].notInvited++;
-          break;
-      }
-      totals[region].total++;
-    });
-    
-    // Recalculate totals as sum of statuses for each region to ensure accuracy
-    Object.keys(totals).forEach(region => {
-      const regionTotals = totals[region];
-      regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
-      regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
-    });
-    
-    // Verify regional totals sum to national totals
-    const regionalSum = Object.values(totals).reduce((acc, region) => ({
-      yes: acc.yes + region.yes,
-      maybe: acc.maybe + region.maybe,
-      no: acc.no + region.no,
-      notInvited: acc.notInvited + region.notInvited,
-      total: acc.total + region.total,
-      invited: acc.invited + region.invited,
-    }), { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 });
-    
-    // If there's a discrepancy, log it for debugging
-    if (regionalSum.total !== nationalTotals.total) {
-      console.warn(`[Metrics] Regional total mismatch: regional sum ${regionalSum.total}, national total ${nationalTotals.total}`);
-      console.warn(`[Metrics] Regional breakdown:`, Object.entries(totals).map(([region, stats]) => 
-        `${region}: total=${stats.total}, yes=${stats.yes}, maybe=${stats.maybe}, no=${stats.no}, notInvited=${stats.notInvited}`
-      ));
+      // Group people by region using district lookup
+      // Use both database districts and the constant mapping
+      const DISTRICT_REGION_MAPLocal = new Map<string, string>();
+      districts.forEach(district => {
+        if (district.region) {
+          DISTRICT_REGION_MAPLocal.set(district.id, district.region);
+        }
+      });
+      // Add districts from constant mapping (for districts not yet in database)
+      Object.entries(DISTRICT_REGION_MAP).forEach(([districtId, region]) => {
+        if (!DISTRICT_REGION_MAPLocal.has(districtId)) {
+          DISTRICT_REGION_MAPLocal.set(districtId, region);
+        }
+      });
+      
+      // Count people by region and status
+      allPeople.forEach(person => {
+        const districtId = person.primaryDistrictId;
+        if (!districtId) return; // Skip people without a district
+        
+        const region = DISTRICT_REGION_MAPLocal.get(districtId);
+        if (!region || !totals[region]) return; // Skip if no region or region not initialized
+        
+        // Count this person in the appropriate status bucket
+        const status = person.status || "Not Invited";
+        switch (status) {
+          case "Yes":
+            totals[region].yes++;
+            totals[region].invited++;
+            break;
+          case "Maybe":
+            totals[region].maybe++;
+            totals[region].invited++;
+            break;
+          case "No":
+            totals[region].no++;
+            totals[region].invited++;
+            break;
+          case "Not Invited":
+          default:
+            // Handle null, undefined, or "Not Invited" status
+            totals[region].notInvited++;
+            break;
+        }
+        totals[region].total++;
+      });
+      
+      // Recalculate totals as sum of statuses for each region to ensure accuracy
+      Object.keys(totals).forEach(region => {
+        const regionTotals = totals[region];
+        regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
+        regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
+      });
     }
     
     return totals;
-  }, [districts, allPeople, nationalTotals.total]);
+  }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
   
   // Get displayed totals (regional if hovering, otherwise national)
   const displayedTotals = hoveredRegion && regionalTotals[hoveredRegion] 
@@ -617,13 +619,30 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     setActiveMetrics(new Set());
   };
 
-  // Calculate stats for each district using shared utility
+  // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
-    return districts.reduce<Record<string, DistrictStats>>((acc, district) => {
-      acc[district.id] = calculateDistrictStats(allPeople, district.id);
-      return acc;
-    }, {});
-  }, [districts, allPeople]);
+    const stats: Record<string, DistrictStats> = {};
+    
+    // Use aggregate metrics if available (works for everyone, even without people.list access)
+    if (allDistrictMetrics.length > 0) {
+      for (const metric of allDistrictMetrics) {
+        stats[metric.districtId] = {
+          yes: metric.going,
+          maybe: metric.maybe,
+          no: metric.notGoing,
+          notInvited: metric.notInvited,
+          total: metric.total,
+        };
+      }
+    } else {
+      // Fallback to calculating from allPeople (for authenticated users with scope)
+      districts.forEach(district => {
+        stats[district.id] = calculateDistrictStats(allPeople, district.id);
+      });
+    }
+    
+    return stats;
+  }, [districts, allPeople, allDistrictMetrics]);
 
   useEffect(() => {
     // Load SVG content
@@ -1395,7 +1414,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             }}
           >
             <div
-              className="rounded-full bg-slate-700 hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+              className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
               style={{
                 width: '3.5vw', // Larger default size, scales with viewport
                 height: '3.5vw',

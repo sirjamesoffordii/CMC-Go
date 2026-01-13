@@ -834,6 +834,120 @@ export async function getRegionMetrics(region: string) {
   return { ...counts, total };
 }
 
+/**
+ * Get aggregate metrics for all districts (no person identifiers).
+ * Returns counts for Yes, Maybe, No, Not Invited statuses per district.
+ * This is a public aggregate endpoint - everyone can see these numbers.
+ */
+export async function getAllDistrictMetrics() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      districtId: people.primaryDistrictId,
+      status: people.status,
+      count: sql<number>`COUNT(*)`.as('count'),
+    })
+    .from(people)
+    .where(sql`${people.primaryDistrictId} IS NOT NULL`)
+    .groupBy(people.primaryDistrictId, people.status);
+  
+  // Group by district and aggregate status counts
+  const districtMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
+  
+  for (const row of result) {
+    const districtId = row.districtId;
+    if (!districtId) continue;
+    
+    if (!districtMap.has(districtId)) {
+      districtMap.set(districtId, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+    }
+    
+    const counts = districtMap.get(districtId)!;
+    const count = Number(row.count) || 0;
+    counts.total += count;
+    
+    switch (row.status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+      default:
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  return Array.from(districtMap.entries()).map(([districtId, counts]) => ({
+    districtId,
+    ...counts,
+  }));
+}
+
+/**
+ * Get aggregate metrics for all regions (no person identifiers).
+ * Returns counts for Yes, Maybe, No, Not Invited statuses per region.
+ * This is a public aggregate endpoint - everyone can see these numbers.
+ */
+export async function getAllRegionMetrics() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      region: people.primaryRegion,
+      status: people.status,
+      count: sql<number>`COUNT(*)`.as('count'),
+    })
+    .from(people)
+    .where(sql`${people.primaryRegion} IS NOT NULL`)
+    .groupBy(people.primaryRegion, people.status);
+  
+  // Group by region and aggregate status counts
+  const regionMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
+  
+  for (const row of result) {
+    const region = row.region;
+    if (!region) continue;
+    
+    if (!regionMap.has(region)) {
+      regionMap.set(region, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+    }
+    
+    const counts = regionMap.get(region)!;
+    const count = Number(row.count) || 0;
+    counts.total += count;
+    
+    switch (row.status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+      default:
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  return Array.from(regionMap.entries()).map(([region, counts]) => ({
+    region,
+    ...counts,
+  }));
+}
+
 // National staff (no district/region)
 export async function getNationalStaff() {
   const db = await getDb();

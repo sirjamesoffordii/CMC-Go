@@ -321,3 +321,23 @@
 .deposit-glow::before {
   animation: glow-pulse 3s ease-in-out infinite;
 }
+
+/* Hide scrollbar for map container while keeping scroll functionality */
+.map-container-mobile {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.map-container-mobile::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Hide scrollbar utility class */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

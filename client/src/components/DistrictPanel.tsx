@@ -14,6 +14,7 @@ import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,6 +43,7 @@ interface DistrictPanelProps {
   district: District | null;
   campuses: Campus[];
   people: Person[];
+  isOutOfScope?: boolean;
   onClose: () => void;
   onPersonStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
   onPersonAdd: (campusId: number, name: string) => void;
@@ -68,6 +70,7 @@ export function DistrictPanel({
   district,
   campuses,
   people,
+  isOutOfScope = false,
   onClose,
   onPersonStatusChange,
   onPersonAdd,
@@ -77,6 +80,12 @@ export function DistrictPanel({
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
+  
+  // XAN is Chi Alpha National Team, not a district
+  const isNationalTeam = district?.id === 'XAN';
+  const entityName = isNationalTeam ? 'Category' : 'Campus';
+  const entityNamePlural = isNationalTeam ? 'Categories' : 'Campuses';
+  const organizationName = isNationalTeam ? 'National Team' : 'District';
   
   // PR 5: Filter state
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
@@ -102,7 +111,7 @@ export function DistrictPanel({
     },
     onError: (error) => {
       console.error('Error creating campus:', error);
-      alert(`Failed to create campus: ${error.message || 'Unknown error'}`);
+      alert(`Failed to create ${entityName.toLowerCase()}: ${error.message || 'Unknown error'}`);
     },
   });
   const updateCampusName = trpc.campuses.updateName.useMutation({
@@ -139,7 +148,7 @@ export function DistrictPanel({
       utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
       onDistrictUpdate();
       // Reset form and close dialog only after successful creation
-      setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+      setPersonForm({ name: '', role: 'Campus Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
       setIsPersonDialogOpen(false);
       setSelectedCampusId(null);
     },
@@ -187,30 +196,96 @@ export function DistrictPanel({
   const [pieChartOffset, setPieChartOffset] = useState(0);
   const [labelsOffset, setLabelsOffset] = useState(0);
   
-  // Fetch needs for the person being edited
-  const { data: editingPersonNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: editingPerson?.person.personId || '' },
-    { 
-      enabled: !!editingPerson?.person.personId,
-      retry: false,
-    }
-  );
+  // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [dontAskAgain, setDontAskAgain] = useState(false);
   
-  // Campus role options
+  // Authoritative role list - this is the only source of truth
   const campusRoles = [
-    'Campus Director',
+    'Volunteer',
+    'Intern',
+    'Campus Staff',
     'Campus Co-Director',
-    'Staff',
-    'District Director',
+    'Campus Director',
     'District Staff',
+    'District Director',
+    'Regional Staff',
     'Regional Director',
-    'National Director',
     'Field Director',
     'National Staff',
+    'National Director',
   ] as const;
   type CampusRole = typeof campusRoles[number];
+  
+  // Map old/invalid roles to new authoritative roles
+  const mapRoleToAuthoritative = (role: string | null | undefined): CampusRole | null => {
+    if (!role) return null;
+    
+    const roleLower = role.toLowerCase().trim();
+    
+    // Direct matches
+    if (campusRoles.includes(role as CampusRole)) {
+      return role as CampusRole;
+    }
+    
+    // Map old roles to new roles
+    const roleMapping: Record<string, CampusRole> = {
+      'staff': 'Campus Staff',
+      'campus staff': 'Campus Staff',
+      'co-director': 'Campus Co-Director',
+      'campus co-director': 'Campus Co-Director',
+      'campus codirector': 'Campus Co-Director',
+      'campus co director': 'Campus Co-Director',
+      'director': 'Campus Director',
+      'campus director': 'Campus Director',
+      'district staff': 'District Staff',
+      'district director': 'District Director',
+      'dd': 'District Director',
+      'regional staff': 'Regional Staff',
+      'regional director': 'Regional Director',
+      'field director': 'Field Director',
+      'national staff': 'National Staff',
+      'national director': 'National Director',
+      'volunteer': 'Volunteer',
+      'intern': 'Intern',
+    };
+    
+    // Check for partial matches
+    for (const [key, mappedRole] of Object.entries(roleMapping)) {
+      if (roleLower.includes(key)) {
+        return mappedRole;
+      }
+    }
+    
+    // Default fallback for unrecognized roles
+    return 'Campus Staff';
+  };
+  
+  // Filter roles based on organization - National Team (XAN) gets all roles, districts only get campus-specific roles
+  // But always include the current person's role if editing (to prevent errors when editing directors)
+  const baseAvailableRoles = isNationalTeam
+    ? campusRoles 
+    : campusRoles.filter(role => 
+        !['National Director', 'Regional Director', 'District Director', 'Field Director', 'National Staff', 'Regional Staff'].includes(role)
+      );
+  
+  // Determine if we're in district header context (district director or district staff)
+  const isDistrictHeaderContext = selectedCampusId === 'district' || selectedCampusId === 'district-staff' ||
+    editingPerson?.campusId === 'district' || editingPerson?.campusId === 'district-staff';
+  
+  // Filter out 'District Staff' for campus rows (only show it for district header add/edit)
+  const filteredRoles = isDistrictHeaderContext 
+    ? baseAvailableRoles 
+    : baseAvailableRoles.filter(role => role !== 'District Staff');
+  
+  // If editing a person, map their role to authoritative role and ensure it's in the available roles list
+  const mappedEditingRole = editingPerson?.person?.primaryRole 
+    ? mapRoleToAuthoritative(editingPerson.person.primaryRole)
+    : null;
+  
+  const availableRoles = mappedEditingRole && !filteredRoles.includes(mappedEditingRole)
+    ? [...filteredRoles, mappedEditingRole]
+    : filteredRoles;
 
   // Quick add state
   const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
@@ -220,7 +295,7 @@ export function DistrictPanel({
   // Form states
   const [personForm, setPersonForm] = useState({
     name: '',
-    role: 'Staff' as CampusRole,
+    role: 'Campus Staff' as CampusRole,
     status: 'not-invited' as keyof typeof statusMap,
     needType: 'None' as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other',
     needAmount: '',
@@ -242,7 +317,9 @@ export function DistrictPanel({
   // Household combobox state
   const [householdInputValue, setHouseholdInputValue] = useState('');
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false);
+  const [isEditingHousehold, setIsEditingHousehold] = useState(false);
   const householdInputRef = useRef<HTMLInputElement>(null);
+  const householdDropdownRef = useRef<HTMLDivElement>(null);
   
   const [campusForm, setCampusForm] = useState({
     name: ''
@@ -292,8 +369,9 @@ export function DistrictPanel({
       const household = allHouseholds.find(h => h.id === personForm.householdId);
       if (household) {
         const members = allPeople.filter(p => p.householdId === household.id);
-        const displayName = household.label || 
-          (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+        const baseName = household.label || 
+          (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+        const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
         if (householdInputValue !== displayName) {
           setHouseholdInputValue(displayName);
         }
@@ -303,6 +381,26 @@ export function DistrictPanel({
       setHouseholdInputValue('');
     }
   }, [personForm.householdId, allHouseholds, allPeople, isPersonDialogOpen, householdDropdownOpen]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!householdDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (householdDropdownRef.current && 
+          householdInputRef.current &&
+          !householdDropdownRef.current.contains(e.target as Node) &&
+          !householdInputRef.current.contains(e.target as Node)) {
+        setHouseholdDropdownOpen(false);
+      }
+    };
+
+    // Use capture phase to catch clicks before they bubble
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [householdDropdownOpen]);
   
   // Update household mutation
   const updateHousehold = trpc.households.update.useMutation({
@@ -315,7 +413,10 @@ export function DistrictPanel({
   const getHouseholdDisplayName = (householdId: number) => {
     const household = allHouseholds.find(h => h.id === householdId);
     if (!household) return `Household ${householdId}`;
-    if (household.label) return household.label;
+    // Always append "Household" to the label
+    if (household.label) {
+      return household.label.endsWith(' Household') ? household.label : `${household.label} Household`;
+    }
     // Try to get members to show last name
     const members = people.filter(p => p.householdId === householdId);
     if (members.length > 0) {
@@ -339,6 +440,11 @@ export function DistrictPanel({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
       onDistrictUpdate();
+    },
+  });
+  const createNote = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      utils.notes.byPerson.invalidate();
     },
   });
 
@@ -757,8 +863,12 @@ export function DistrictPanel({
     }
 
     setHouseholdNameError(null);
+    // Ensure label ends with "Household" if it doesn't already
+    const label = inputValue.toLowerCase().endsWith('household') 
+      ? inputValue 
+      : `${inputValue} Household`;
     createHousehold.mutate({
-      label: inputValue,
+      label: label,
       childrenCount: 0,
       guestsCount: 0,
     });
@@ -787,23 +897,23 @@ export function DistrictPanel({
       name: name.trim(),
       primaryDistrictId: district.id,
       status: 'Not Invited', // Default status
-      primaryRole: 'Staff', // Default role
+      primaryRole: 'Campus Staff', // Default role
       depositPaid: false,
     };
 
     // Set role and campus based on target
     if (targetId === 'district') {
-      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
-      mutationData.primaryRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
+      // National Team (XAN) uses "National Director", districts use "District Director"
+      mutationData.primaryRole = isNationalTeam ? 'National Director' : 'District Director';
       mutationData.primaryCampusId = null;
     } else if (targetId === 'district-staff') {
       mutationData.primaryRole = 'District Staff';
       mutationData.primaryCampusId = null;
     } else if (targetId === 'unassigned') {
-      mutationData.primaryRole = 'Staff';
+      mutationData.primaryRole = 'Campus Staff';
       mutationData.primaryCampusId = null;
     } else if (typeof targetId === 'number') {
-      mutationData.primaryRole = 'Staff';
+      mutationData.primaryRole = 'Campus Staff';
       mutationData.primaryCampusId = targetId;
     }
 
@@ -830,7 +940,7 @@ export function DistrictPanel({
   };
 
   // Handle add person
-  const handleAddPerson = () => {
+  const handleAddPerson = async () => {
     console.log('handleAddPerson called', { selectedCampusId, name: personForm.name, role: personForm.role, district: district?.id });
     
     if (!selectedCampusId) {
@@ -872,8 +982,8 @@ export function DistrictPanel({
     
     // Set role and campus based on selection
     if (selectedCampusId === 'district') {
-      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
-      mutationData.primaryRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
+      // National Team (XAN) uses "National Director", districts use "District Director"
+      mutationData.primaryRole = isNationalTeam ? 'National Director' : 'District Director';
       // Don't set primaryCampusId for district director (will be null in DB)
     } else if (selectedCampusId === 'district-staff') {
       // Add district staff
@@ -881,7 +991,7 @@ export function DistrictPanel({
       // Don't set primaryCampusId for district staff (will be null in DB)
     } else if (selectedCampusId === 'unassigned') {
       // Add to unassigned - create person without campus
-      mutationData.primaryRole = personForm.role.trim();
+      mutationData.primaryRole = mapRoleToAuthoritative(personForm.role.trim()) || 'Campus Staff';
       // Don't set primaryCampusId for unassigned (will be null in DB)
     } else if (typeof selectedCampusId === 'number') {
       // Add to specific campus
@@ -891,7 +1001,7 @@ export function DistrictPanel({
         alert('Campus not found');
         return;
       }
-      mutationData.primaryRole = personForm.role.trim();
+      mutationData.primaryRole = mapRoleToAuthoritative(personForm.role.trim()) || 'Campus Staff';
       mutationData.primaryCampusId = selectedCampusId;
     }
     
@@ -901,19 +1011,68 @@ export function DistrictPanel({
     }
     
     // Household and family fields
-    if (personForm.householdId) {
-      mutationData.householdId = personForm.householdId;
-      mutationData.householdRole = 'primary';
-    }
     mutationData.spouseAttending = personForm.spouseAttending;
     mutationData.childrenCount = personForm.childrenCount;
     mutationData.guestsCount = personForm.guestsCount;
     
-    // Validation: spouseAttending or childrenCount > 0 requires householdId
-    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
-      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
-      alert("Household is required when spouse is attending or children count is greater than 0");
-      return;
+    // Auto-create or find existing household if family/guests are added and no household exists
+    let householdIdToUse = personForm.householdId;
+    if ((personForm.spouseAttending || personForm.childrenCount > 0 || personForm.guestsCount > 0) && !personForm.householdId) {
+      // Extract last name from person's name
+      const nameParts = personForm.name.trim().split(' ');
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+      const householdLabel = `${lastName} Household`;
+      
+      // Check if there's already a household with this last name for people in the same district
+      const existingHousehold = allHouseholds.find(h => {
+        if (!h.label || !h.label.toLowerCase().includes(lastName.toLowerCase())) {
+          return false;
+        }
+        // Check if any people in this district already belong to this household
+        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        if (householdMembers.length > 0) {
+          // Check if any member has the same last name
+          return householdMembers.some(member => {
+            const memberNameParts = member.name.trim().split(' ');
+            const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
+            return memberLastName.toLowerCase() === lastName.toLowerCase();
+          });
+        }
+        return false;
+      });
+      
+      if (existingHousehold) {
+        // Use existing household - counts will be recalculated after person is saved
+        householdIdToUse = existingHousehold.id;
+      } else {
+        // Create new household with person's last name
+        try {
+          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
+            createHousehold.mutate({
+              label: householdLabel,
+              childrenCount: personForm.childrenCount || 0,
+              guestsCount: personForm.guestsCount || 0,
+            }, {
+              onSuccess: (household) => {
+                resolve(household);
+              },
+              onError: (error) => {
+                reject(error);
+              },
+            });
+          });
+          householdIdToUse = newHousehold.id;
+        } catch (error) {
+          console.error('Failed to create household:', error);
+          alert('Failed to create household. Please try again.');
+          return;
+        }
+      }
+    }
+    
+    if (householdIdToUse) {
+      mutationData.householdId = householdIdToUse;
+      mutationData.householdRole = 'primary';
     }
     
     if (personForm.childrenAges.length > 0) {
@@ -925,11 +1084,38 @@ export function DistrictPanel({
     // Call the mutation
     createPerson.mutate(mutationData, {
       onSuccess: () => {
+        // Update household counts to aggregate all members' counts
+        if (householdIdToUse) {
+          // Invalidate and refetch to get updated person data, then recalculate household totals
+          utils.people.list.invalidate();
+          setTimeout(() => {
+            utils.people.list.refetch().then((result) => {
+              // Get fresh people data from refetch result
+              const updatedPeople = result.data || allPeople;
+              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
+              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+              
+              updateHousehold.mutate({
+                id: householdIdToUse,
+                childrenCount: totalChildrenCount,
+                guestsCount: totalGuestsCount,
+              });
+            });
+          }, 200);
+        }
         // Create need only if needType is not "None"
         if (personForm.needType !== 'None' && personForm.needType) {
-          const needDescription = personForm.needType === 'Financial' 
-            ? `Financial need: $${personForm.needAmount || '0'}`
-            : personForm.needDetails || `${personForm.needType} need`;
+          // Build need description - include needDetails for Financial needs if provided
+          let needDescription: string;
+          if (personForm.needType === 'Financial') {
+            const amountPart = `$${personForm.needAmount || '0'}`;
+            needDescription = personForm.needDetails 
+              ? `${amountPart} - ${personForm.needDetails}`
+              : `Financial need: ${amountPart}`;
+          } else {
+            needDescription = personForm.needDetails || `${personForm.needType} need`;
+          }
           
           updateOrCreateNeed.mutate({
             personId,
@@ -940,6 +1126,16 @@ export function DistrictPanel({
               : undefined,
             isActive: !personForm.needsMet, // Active if needsMet is false
           });
+          
+          // Save needDetails to notes table with noteType="NEED" if provided
+          if (personForm.needDetails?.trim()) {
+            createNote.mutate({
+              personId,
+              category: 'INTERNAL',
+              content: personForm.needDetails.trim(),
+              noteType: 'NEED',
+            });
+          }
         }
       },
     });
@@ -955,17 +1151,20 @@ export function DistrictPanel({
   };
 
   // Handle edit person
-  const handleEditPerson = (campusId: number | string, person: Person) => {
+  const handleEditPerson = async (campusId: number | string, person: Person) => {
     setEditingPerson({ campusId, person });
     setIsEditPersonDialogOpen(true);
-  };
-  
-  // Update form when editing person or needs data changes
-  useEffect(() => {
-    if (editingPerson && isEditPersonDialogOpen) {
-      const person = editingPerson.person;
+    
+    // Load form data immediately when opening edit dialog
+    // This avoids using useEffect which can cause infinite loops
+    try {
       const figmaStatus = reverseStatusMap[person.status] || 'not-invited';
-      const personNeed = editingPersonNeeds.length > 0 ? editingPersonNeeds[0] : null;
+      
+      // Fetch needs and notes for this person
+      const needsResult = await utils.needs.byPerson.fetch({ personId: person.personId });
+      const notesResult = await utils.notes.byPerson.fetch({ personId: person.personId });
+      
+      const personNeed = (needsResult && needsResult.length > 0) ? needsResult[0] : null;
       
       // Parse childrenAges from JSON string if it exists
       let childrenAges: string[] = [];
@@ -973,20 +1172,48 @@ export function DistrictPanel({
         try {
           childrenAges = JSON.parse(person.childrenAges);
         } catch (e) {
-          // If parsing fails, treat as empty array
           childrenAges = [];
         }
       }
       
+      // Extract needDetails from need description or from notes with noteType="NEED"
+      let needDetails = '';
+      if (personNeed) {
+        try {
+          if (personNeed.type === 'Financial') {
+            const desc = personNeed.description || '';
+            const match = desc.match(/\$\d+(?:\.\d+)?\s*-\s*(.+)/);
+            needDetails = match ? match[1].trim() : '';
+          } else {
+            needDetails = personNeed.description || '';
+          }
+        } catch (error) {
+          console.error('Error extracting needDetails from need:', error);
+        }
+      }
+      
+      // Also check notes table for need notes (noteType="NEED")
+      try {
+        const safeNotes = notesResult || [];
+        const needNotes = safeNotes.filter((n: any) => {
+          if (!n) return false;
+          return (n.noteType === 'NEED' || n.note_type === 'NEED');
+        });
+        if (needNotes.length > 0 && !needDetails) {
+          const lastNote = needNotes[needNotes.length - 1];
+          needDetails = (lastNote?.content || lastNote?.note || '') as string;
+        }
+      } catch (error) {
+        console.error('Error processing need notes:', error);
+      }
+      
       setPersonForm({ 
         name: person.name, 
-        role: (person.primaryRole && campusRoles.includes(person.primaryRole as CampusRole)) 
-          ? (person.primaryRole as CampusRole) 
-          : 'Staff', 
+        role: mapRoleToAuthoritative(person.primaryRole) || 'Campus Staff', 
         status: figmaStatus,
         needType: personNeed ? (personNeed.type as 'Financial' | 'Transportation' | 'Housing' | 'Other') : 'None',
         needAmount: personNeed?.type === 'Financial' && personNeed?.amount ? (personNeed.amount / 100).toString() : '',
-        needDetails: personNeed?.type !== 'Financial' ? (personNeed?.description || '') : '',
+        needDetails: needDetails,
         notes: person.notes || '', 
         spouseAttending: (person.spouseAttending !== undefined && person.spouseAttending !== null) ? person.spouseAttending : false,
         childrenCount: (person.childrenCount !== undefined && person.childrenCount !== null) ? person.childrenCount : 0,
@@ -998,58 +1225,167 @@ export function DistrictPanel({
       });
 
       // Set household input value
-      if (person.householdId && allHouseholds && allPeople) {
-        const household = allHouseholds.find(h => h.id === person.householdId);
-        if (household) {
-          const members = allPeople.filter(p => p.householdId === household.id);
-          const displayName = household.label || 
-            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-          setHouseholdInputValue(displayName);
+      try {
+        if (person.householdId && allHouseholds && allPeople) {
+          const household = allHouseholds.find(h => h.id === person.householdId);
+          if (household) {
+            const members = allPeople.filter(p => p.householdId === household.id);
+            const displayName = household.label || 
+              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+            setHouseholdInputValue(displayName);
+          } else {
+            setHouseholdInputValue('');
+          }
+        } else {
+          setHouseholdInputValue('');
         }
-      } else {
+      } catch (error) {
+        console.error('Error setting household input value:', error);
         setHouseholdInputValue('');
       }
+    } catch (error) {
+      console.error('Error loading person data for editing:', error);
+      // Reset form to prevent showing invalid data
+      setPersonForm({ 
+        name: '', 
+        role: 'Campus Staff', 
+        status: 'not-invited',
+        needType: 'None',
+        needAmount: '',
+        needDetails: '',
+        notes: '',
+        spouseAttending: false,
+        childrenCount: 0,
+        guestsCount: 0,
+        childrenAges: [],
+        depositPaid: false,
+        needsMet: false,
+        householdId: null,
+      });
+      setHouseholdInputValue('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingPerson, isEditPersonDialogOpen, editingPersonNeeds, allHouseholds, allPeople]);
+  };
 
   // Handle update person
-  const handleUpdatePerson = () => {
+  const handleUpdatePerson = async () => {
     if (!editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
     
     // Store form values for use in callbacks
     const formData = { ...personForm };
     
-    // Validation: spouseAttending or childrenCount > 0 requires householdId
-    if ((personForm.spouseAttending || personForm.childrenCount > 0) && !personForm.householdId) {
-      setHouseholdValidationError("Household is required when spouse is attending or children count is greater than 0");
-      alert("Household is required when spouse is attending or children count is greater than 0");
-      return;
+    // Auto-create or find existing household if family/guests are added and no household exists
+    let householdIdToUse = personForm.householdId;
+    if ((personForm.spouseAttending || personForm.childrenCount > 0 || personForm.guestsCount > 0) && !personForm.householdId) {
+      // Extract last name from person's name
+      const nameParts = personForm.name.trim().split(' ');
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+      const householdLabel = `${lastName} Household`;
+      
+      // Check if there's already a household with this last name for people in the same district
+      const existingHousehold = allHouseholds.find(h => {
+        if (!h.label || !h.label.toLowerCase().includes(lastName.toLowerCase())) {
+          return false;
+        }
+        // Check if any people in this district already belong to this household
+        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        if (householdMembers.length > 0) {
+          // Check if any member has the same last name
+          return householdMembers.some(member => {
+            const memberNameParts = member.name.trim().split(' ');
+            const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
+            return memberLastName.toLowerCase() === lastName.toLowerCase();
+          });
+        }
+        return false;
+      });
+      
+      if (existingHousehold) {
+        // Use existing household - counts will be recalculated after person is updated
+        householdIdToUse = existingHousehold.id;
+        setPersonForm({ ...personForm, householdId: existingHousehold.id });
+      } else {
+        // Create new household with person's last name
+        try {
+          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
+            createHousehold.mutate({
+              label: householdLabel,
+              childrenCount: personForm.childrenCount || 0,
+              guestsCount: personForm.guestsCount || 0,
+            }, {
+              onSuccess: (household) => {
+                resolve(household);
+              },
+              onError: (error) => {
+                reject(error);
+              },
+            });
+          });
+          householdIdToUse = newHousehold.id;
+          setPersonForm({ ...personForm, householdId: newHousehold.id });
+        } catch (error) {
+          console.error('Failed to create household:', error);
+          alert('Failed to create household. Please try again.');
+          return;
+        }
+      }
     }
+    
+    // Determine if this role requires primaryCampusId to be null (district/national level roles)
+    // Map role to authoritative role before saving
+    const mappedRole = mapRoleToAuthoritative(personForm.role) || 'Campus Staff';
+    const isDistrictLevelRole = ['District Director', 'District Staff', 'National Director', 'Regional Director', 'Field Director', 'National Staff', 'Regional Staff'].includes(mappedRole);
     
     // Update person with all fields
     updatePerson.mutate({ 
       personId,
       name: personForm.name,
-      primaryRole: personForm.role,
+      primaryRole: mappedRole,
       status: statusMap[personForm.status],
       depositPaid: personForm.depositPaid,
       notes: personForm.notes,
       spouseAttending: personForm.spouseAttending,
       childrenCount: personForm.childrenCount,
       guestsCount: personForm.guestsCount,
-      householdId: personForm.householdId,
-      householdRole: personForm.householdId ? 'primary' : undefined,
+      householdId: householdIdToUse,
+      householdRole: householdIdToUse ? 'primary' : undefined,
       childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
+      // District/national level roles should have primaryCampusId as null
+      primaryCampusId: isDistrictLevelRole ? null : undefined,
     }, {
       onSuccess: () => {
+        // Update household counts to aggregate all members' counts
+        if (householdIdToUse) {
+          // Invalidate and refetch to get updated person data, then recalculate household totals
+          utils.people.list.invalidate();
+          setTimeout(() => {
+            utils.people.list.refetch().then((result) => {
+              // Get fresh people data from refetch result
+              const updatedPeople = result.data || allPeople;
+              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
+              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+              
+              updateHousehold.mutate({
+                id: householdIdToUse,
+                childrenCount: totalChildrenCount,
+                guestsCount: totalGuestsCount,
+              });
+            });
+          }, 200);
+        }
         // Handle needs: create/update if needType is not "None", delete if "None"
         if (formData.needType !== 'None' && formData.needType) {
-          // Create or update need
-          const needDescription = formData.needType === 'Financial' 
-            ? `Financial need: $${formData.needAmount || '0'}`
-            : formData.needDetails || `${formData.needType} need`;
+          // Build need description - include needDetails for all need types if provided
+          let needDescription: string;
+          if (formData.needType === 'Financial') {
+            const amountPart = `$${formData.needAmount || '0'}`;
+            needDescription = formData.needDetails?.trim()
+              ? `${amountPart} - ${formData.needDetails.trim()}`
+              : `Financial need: ${amountPart}`;
+          } else {
+            needDescription = formData.needDetails?.trim() || `${formData.needType} need`;
+          }
           
           updateOrCreateNeed.mutate({
             personId,
@@ -1061,8 +1397,17 @@ export function DistrictPanel({
             isActive: !formData.needsMet, // Active if needsMet is false
           }, {
             onSuccess: () => {
+          // Save needDetails to notes table with noteType="NEED" if provided
+          if (formData.needDetails?.trim()) {
+            createNote.mutate({
+              personId,
+              category: 'INTERNAL',
+              content: formData.needDetails.trim(),
+              noteType: 'NEED',
+            });
+          }
               // Close dialog and reset form after needs are updated
-              setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+              setPersonForm({ name: '', role: 'Campus Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
               setIsEditPersonDialogOpen(false);
               setEditingPerson(null);
             },
@@ -1083,14 +1428,14 @@ export function DistrictPanel({
             }, {
               onSuccess: () => {
                 // Close dialog and reset form after needs are updated
-                setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+                setPersonForm({ name: '', role: 'Campus Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
                 setIsEditPersonDialogOpen(false);
                 setEditingPerson(null);
               },
             });
           } else {
             // No active need to update, just close dialog
-            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+            setPersonForm({ name: '', role: 'Campus Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
             setIsEditPersonDialogOpen(false);
             setEditingPerson(null);
           }
@@ -1215,8 +1560,8 @@ export function DistrictPanel({
     if (!person) return;
     
     // Update person to be district director (set role and remove campus)
-    // XAN (Chi Alpha National) uses "National Director", others use "District Director"
-    const role = district?.id === 'XAN' ? 'National Director' : 'District Director';
+    // National Team (XAN) uses "National Director", districts use "District Director"
+    const role = isNationalTeam ? 'National Director' : 'District Director';
     updatePerson.mutate({
       personId: person.personId,
       primaryRole: role,
@@ -1278,14 +1623,14 @@ export function DistrictPanel({
   const openAddPersonDialog = (campusId: number | string) => {
     setSelectedCampusId(campusId);
     
-    let defaultRole: CampusRole = 'Staff';
+    let defaultRole: CampusRole = 'Campus Staff';
     if (campusId === 'unassigned') {
       if (peopleWithoutCampus.length === 0) {
         defaultRole = 'Campus Director';
       }
     } else if (campusId === 'district') {
-      // XAN (Chi Alpha National) uses "National Director", others use "District Director"
-      defaultRole = district?.id === 'XAN' ? 'National Director' : 'District Director';
+      // National Team (XAN) uses "National Director", districts use "District Director"
+      defaultRole = isNationalTeam ? 'National Director' : 'District Director';
     } else if (campusId === 'district-staff') {
       defaultRole = 'District Staff';
     } else if (typeof campusId === 'number') {
@@ -1301,14 +1646,32 @@ export function DistrictPanel({
 
 
   const content = district ? (
-    <div className="w-full px-4 py-2">
+    <div className="w-full h-full flex flex-col">
+          {isOutOfScope ? (
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Access Restricted</h3>
+                  <p className="text-slate-600 text-sm">
+                    You don't have permission to view people in this {organizationName.toLowerCase()}.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
           {/* Header Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200 w-full">
             {/* Title Section */}
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-5">
-                <div ref={districtNameRef} className="ml-2">
-                  <h1 className={`font-semibold text-slate-900 leading-tight tracking-tight whitespace-nowrap ${
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-3 min-w-max">
+              <div className="flex items-center gap-5 flex-wrap">
+                <div ref={districtNameRef} className="ml-2 min-w-0">
+                  <h1 className={`font-semibold text-slate-900 leading-tight tracking-tight ${
                     district.name === 'South Texas' ? 'text-3xl' : 
                     district.name === 'Texico' ? 'text-2xl' : 
                     'text-2xl'
@@ -1318,12 +1681,12 @@ export function DistrictPanel({
                 onSave={(newName) => {
                   updateDistrictName.mutate({ id: district.id, name: newName });
                 }}
-                      className={`font-semibold text-slate-900 tracking-tight whitespace-nowrap ${
+                      className={`font-semibold text-slate-900 tracking-tight ${
                         district.name === 'South Texas' ? 'text-3xl' : 
                         district.name === 'Texico' ? 'text-2xl' : 
                         'text-2xl'
                       }`}
-                      inputClassName={`font-semibold text-slate-900 tracking-tight whitespace-nowrap ${
+                      inputClassName={`font-semibold text-slate-900 tracking-tight ${
                         district.name === 'South Texas' ? 'text-3xl' : 
                         district.name === 'Texico' ? 'text-2xl' : 
                         'text-2xl'
@@ -1341,10 +1704,10 @@ export function DistrictPanel({
                     />
                   </span>
           </div>
-                <div className="w-px h-8 bg-slate-200"></div>
+                <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
                 
                 {/* District Director and Staff - grouped together with smaller gap */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {/* District Director */}
                   <div ref={districtDirectorRef}>
                   <DistrictDirectorDropZone
@@ -1413,7 +1776,7 @@ export function DistrictPanel({
                     const url = `/api/export/people.csv?districtId=${district.id}`;
                     window.open(url, '_blank');
                   }}
-                  className="ml-auto"
+                  className="ml-auto flex-shrink-0"
                 >
                   <Download className="h-5 w-5 mr-2" />
                   Export CSV
@@ -1421,7 +1784,7 @@ export function DistrictPanel({
               )}
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
-              <div className="flex items-center gap-3 mr-[60px]">
+              <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
                 <Hand className="w-6 h-6 text-yellow-600" />
                 <div className="flex items-center gap-3">
                 <div className="flex items-center gap-3">
@@ -1522,7 +1885,7 @@ export function DistrictPanel({
       </div>
 
       {/* Campuses Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-2 transition-all md:hover:shadow-md md:hover:border-slate-200 overflow-x-auto overflow-y-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200 w-full">
             <div className="space-y-1.5 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -1563,16 +1926,16 @@ export function DistrictPanel({
                           </button>
 
                           {/* Dropdown Menu */}
-                          {openCampusMenuId === campus.id && (
+                          {openCampusMenuId === campus.id && createPortal(
                             <>
                               {/* Invisible backdrop to catch clicks outside */}
                               <div
-                                className="fixed inset-0 z-[9998]"
+                                className="fixed inset-0 z-[99998]"
                                 onClick={() => setOpenCampusMenuId(null)}
                               ></div>
 
                               <div 
-                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[9999]"
+                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[99999]"
                                 style={{
                                   left: `${campusMenuPosition.x}px`,
                                   top: `${campusMenuPosition.y + 4}px`,
@@ -1621,11 +1984,11 @@ export function DistrictPanel({
                                   className="w-full px-5 py-2.5 text-left text-base text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                                 >
                                   <Edit2 className="w-5 h-5" />
-                                  Edit Campus Name
+                                  Edit {entityName} Name
                                 </button>
                                 <button
                                   onClick={() => {
-                                    const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will be unassigned.`);
+                                    const ok = window.confirm(`Delete ${entityName.toLowerCase()} "${campus.name}"? People in this ${entityName.toLowerCase()} will be unassigned.`);
                                     if (ok) {
                                       deleteCampus.mutate({ id: campus.id });
                                     }
@@ -1634,10 +1997,11 @@ export function DistrictPanel({
                                   className="w-full px-5 py-2.5 text-left text-base text-red-600 hover:bg-red-50 flex items-center gap-3"
                                 >
                                   <Trash2 className="w-5 h-5" />
-                                  Delete Campus
+                                  Delete {entityName}
                                 </button>
                               </div>
-                            </>
+                            </>,
+                            document.body
                           )}
                         </div>
                         <h3 className="font-medium text-slate-900 break-words text-xl">{campus.name}</h3>
@@ -1647,7 +2011,7 @@ export function DistrictPanel({
                     {/* Person Figures */}
                     <div className="flex-1 min-w-0">
                       <CampusDropZone campusId={campus.id} onDrop={handleCampusRowDrop}>
-                        <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16">
+                        <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
                       {sortedPeople.map((person, index) => {
                         // Mark first campus director (first person of first campus) with data attribute
                         const isFirstCampusDirector = index === 0 && 
@@ -1680,82 +2044,88 @@ export function DistrictPanel({
                       })}
                           
                           {/* Add Person Button */}
-                          <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openAddPersonDialog(campus.id);
-                              }}
-                              className="flex flex-col items-center w-[50px]"
-                            >
-                              {/* Plus sign in name position - clickable for quick add */}
-                              <div className="relative flex items-center justify-center mb-1">
-                                {quickAddMode === `campus-${campus.id}` ? (
-                                  <div className="relative">
-                                    <Input
-                                      ref={quickAddInputRef}
-                                      value={quickAddName}
-                                      onChange={(e) => setQuickAddName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
+                          <PersonDropZone
+                            campusId={campus.id}
+                            index={sortedPeople.length}
+                            onDrop={handlePersonMove}
+                          >
+                            <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                              <button 
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openAddPersonDialog(campus.id);
+                                }}
+                                className="flex flex-col items-center w-full"
+                              >
+                                {/* Plus sign in name position - clickable for quick add */}
+                                <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                  {quickAddMode === `campus-${campus.id}` ? (
+                                    <div className="relative">
+                                      <Input
+                                        ref={quickAddInputRef}
+                                        value={quickAddName}
+                                        onChange={(e) => setQuickAddName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleQuickAddSubmit(`campus-${campus.id}`);
+                                          } else if (e.key === 'Escape') {
+                                            setQuickAddMode(null);
+                                            setQuickAddName('');
+                                          }
+                                        }}
+                                        onBlur={() => {
                                           handleQuickAddSubmit(`campus-${campus.id}`);
-                                        } else if (e.key === 'Escape') {
-                                          setQuickAddMode(null);
-                                          setQuickAddName('');
-                                        }
-                                      }}
-                                      onBlur={() => {
-                                        handleQuickAddSubmit(`campus-${campus.id}`);
-                                      }}
-                                      placeholder="Name"
-                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                      autoFocus
-                                      spellCheck={true}
-                                      autoComplete="name"
-                                    />
-                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                      Quick Add
+                                        }}
+                                        placeholder="Name"
+                                        className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                        autoFocus
+                                        spellCheck={true}
+                                        autoComplete="name"
+                                      />
+                                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                        Quick Add
+                                      </div>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <Plus 
-                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                  ) : (
+                                    <Plus 
+                                      className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                      strokeWidth={1.5}
+                                      onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                    />
+                                  )}
+                                </div>
+                                {/* Icon */}
+                                <div className="relative">
+                                  <User 
+                                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
                                     strokeWidth={1.5}
-                                    onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                    fill="none"
+                                    stroke="currentColor"
                                   />
-                                )}
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={1.5}
+                                    fill="none"
+                                    stroke="currentColor"
+                                  />
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={0}
+                                    fill="currentColor"
+                                    style={{
+                                      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                    }}
+                                  />
+                                </div>
+                              </button>
+                              {/* Label - Absolutely positioned, shown on hover */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                Add
                               </div>
-                              {/* Icon */}
-                              <div className="relative">
-                                <User 
-                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                  strokeWidth={1} 
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={1} 
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={0} 
-                                  fill="currentColor"
-                                  style={{
-                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                  }}
-                                />
-                              </div>
-                            </button>
-                            {/* Label - Absolutely positioned, shown on hover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-sm text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                              Add
                             </div>
-                          </div>
+                          </PersonDropZone>
                         </div>
                       </CampusDropZone>
                     </div>
@@ -1765,56 +2135,57 @@ export function DistrictPanel({
                 );
               })}
               
-              {/* Add Campus (Inline) */}
-              {quickAddMode === 'add-campus' ? (
-                <div className="w-72">
-                  <Input
-                    ref={quickAddInputRef}
-                    value={quickAddName}
-                    onChange={(e) => setQuickAddName(e.target.value)}
-                    placeholder="New campus name…"
-                    className="h-12 text-base"
-                    spellCheck={true}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        const name = quickAddName.trim();
-                        if (!name) return;
-                        createCampus.mutate({ name, districtId: district.id });
-                        setQuickAddName('');
-                        setQuickAddMode(null);
-                      } else if (e.key === 'Escape') {
-                        setQuickAddName('');
-                        setQuickAddMode(null);
-                      }
+              {/* Add {entityName} (Inline) */}
+              <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                {quickAddMode === 'add-campus' ? (
+                  <div className="w-48">
+                    <Input
+                      ref={quickAddInputRef}
+                      value={quickAddName}
+                      onChange={(e) => setQuickAddName(e.target.value)}
+                      placeholder={`New ${entityName.toLowerCase()} name…`}
+                      className="h-12 text-base"
+                      spellCheck={true}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const name = quickAddName.trim();
+                          if (!name) return;
+                          createCampus.mutate({ name, districtId: district.id });
+                          setQuickAddName('');
+                          setQuickAddMode(null);
+                        } else if (e.key === 'Escape') {
+                          setQuickAddName('');
+                          setQuickAddMode(null);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Keep tidy; only cancel if empty
+                        if (!quickAddName.trim()) {
+                          setQuickAddMode(null);
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setQuickAddMode('add-campus');
+                      setQuickAddName('');
+                      setTimeout(() => quickAddInputRef.current?.focus(), 0);
                     }}
-                    onBlur={() => {
-                      // Keep tidy; only cancel if empty
-                      if (!quickAddName.trim()) {
-                        setQuickAddMode(null);
-                      }
-                    }}
-                    autoFocus
-                  />
-                  <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setQuickAddMode('add-campus');
-                    setQuickAddName('');
-                    setTimeout(() => quickAddInputRef.current?.focus(), 0);
-                  }}
-                  className="w-72 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-3 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all"
-                >
-                  <Plus className="w-7 h-7" strokeWidth={2} />
-                  <span className="text-base">Add Campus</span
+                    className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
                   >
-                </button>
-              )}
+                    <Plus className="w-5 h-5" strokeWidth={2} />
+                    <span className="text-sm">Add {entityName}</span>
+                  </button>
+                )}
+              </div>
               
               {/* Unassigned Row - Only show if there are unassigned people */}
               {peopleWithoutCampus.length > 0 && (
@@ -1827,7 +2198,7 @@ export function DistrictPanel({
                   {/* Person Figures */}
                   <div className="flex-1 min-w-0">
                     <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop}>
-                      <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16">
+                      <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
                     {getSortedPeople(peopleWithoutCampus, -1).map((person, index) => (
                       <PersonDropZone
                         key={`dropzone-${person.personId}`}
@@ -1849,83 +2220,88 @@ export function DistrictPanel({
                     ))}
                         
                         {/* Add Person Button */}
-                        <div className="relative flex flex-col items-center w-[50px] flex-shrink-0 group/add -ml-2">
-                          <button 
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              openAddPersonDialog('unassigned');
-                            }}
-                            className="flex flex-col items-center w-[50px]"
-                          >
-                            {/* Plus sign in name position - clickable for quick add */}
-                            <div className="relative flex items-center justify-center mb-1">
-                              {quickAddMode === 'unassigned' ? (
-                                <div className="relative">
-                                  <Input
-                                    ref={quickAddInputRef}
-                                    list="quick-add-name-suggestions"
-                                    value={quickAddName}
-                                    onChange={(e) => setQuickAddName(e.target.value)}
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
+                        <PersonDropZone
+                          campusId="unassigned"
+                          index={peopleWithoutCampus.length}
+                          onDrop={handlePersonMove}
+                        >
+                          <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openAddPersonDialog('unassigned');
+                              }}
+                              className="flex flex-col items-center w-full"
+                            >
+                              {/* Plus sign in name position - clickable for quick add */}
+                              <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                {quickAddMode === 'unassigned' ? (
+                                  <div className="relative">
+                                    <Input
+                                      ref={quickAddInputRef}
+                                      value={quickAddName}
+                                      onChange={(e) => setQuickAddName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleQuickAddSubmit('unassigned');
+                                        } else if (e.key === 'Escape') {
+                                          setQuickAddMode(null);
+                                          setQuickAddName('');
+                                        }
+                                      }}
+                                      onBlur={() => {
                                         handleQuickAddSubmit('unassigned');
-                                      } else if (e.key === 'Escape') {
-                                        setQuickAddMode(null);
-                                        setQuickAddName('');
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      handleQuickAddSubmit('unassigned');
-                                    }}
-                                    placeholder="Name"
-                                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                    autoFocus
-                                    spellCheck={true}
-                                    autoComplete="name"
-                                  />
-                                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                                    Quick Add
+                                      }}
+                                      placeholder="Name"
+                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                      autoFocus
+                                      spellCheck={true}
+                                      autoComplete="name"
+                                    />
+                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                      Quick Add
+                                    </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <Plus 
-                                  className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                ) : (
+                                  <Plus 
+                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                    strokeWidth={1.5}
+                                    onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                  />
+                                )}
+                              </div>
+                              {/* Icon */}
+                              <div className="relative">
+                                <User 
+                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
                                   strokeWidth={1.5}
-                                  onClick={(e) => handleQuickAddClick(e, 'unassigned')}
+                                  fill="none"
+                                  stroke="currentColor"
                                 />
-                              )}
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={1.5}
+                                  fill="none"
+                                  stroke="currentColor"
+                                />
+                                <User 
+                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                  strokeWidth={0}
+                                  fill="currentColor"
+                                  style={{
+                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                  }}
+                                />
+                              </div>
+                            </button>
+                            {/* Label - Absolutely positioned, shown on hover */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                              Add
                             </div>
-                            {/* Icon */}
-                            <div className="relative">
-                              <User 
-                                className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                strokeWidth={1} 
-                                fill="none"
-                                stroke="currentColor"
-                              />
-                              <User 
-                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                strokeWidth={1} 
-                                fill="none"
-                                stroke="currentColor"
-                              />
-                              <User 
-                                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                strokeWidth={0} 
-                                fill="currentColor"
-                                style={{
-                                  filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                }}
-                              />
-              </div>
-                          </button>
-                          {/* Label - Absolutely positioned, shown on hover */}
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-sm text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                            Add
-                </div>
-                        </div>
+                          </div>
+                        </PersonDropZone>
                       </div>
                     </CampusDropZone>
                   </div>
@@ -1933,6 +2309,8 @@ export function DistrictPanel({
               )}
             </div>
           </div>
+            </div>
+          )}
     </div>
   ) : null;
 
@@ -1943,7 +2321,7 @@ export function DistrictPanel({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="w-full"
+        className="w-full h-full flex flex-col"
       >
         {content}
         
@@ -1952,15 +2330,15 @@ export function DistrictPanel({
           setIsPersonDialogOpen(open);
           if (!open) {
             // Reset form when dialog is closed
-            setPersonForm({ name: '', role: 'Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+            setPersonForm({ name: '', role: 'Campus Staff', status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
             setSelectedCampusId(null);
             setHouseholdInputValue('');
             setHouseholdDropdownOpen(false);
           }
         }}>
-          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle>Add New Person</DialogTitle>
+          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-6 border-b border-slate-200/60">
+              <DialogTitle className="text-xl font-semibold text-slate-900 tracking-tight">Add New Person</DialogTitle>
             </DialogHeader>
             <form 
               onSubmit={(e) => {
@@ -1977,15 +2355,18 @@ export function DistrictPanel({
                 }
               }}
             >
-            <div className="py-4">
-              {/* 3x3 Grid Layout */}
-              <div className="grid grid-cols-3 gap-4">
+            <div className="py-4 space-y-5">
+              {/* Basic Information Section */}
+              <div className="space-y-3">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Basic Information</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
                 {/* Row 1 */}
                 <div className="space-y-2">
-                  <Label htmlFor="person-name" className="text-sm font-medium">Name *</Label>
+                  <Label htmlFor="person-name" className="text-sm font-semibold text-slate-700">Name *</Label>
                   <Input
                     id="person-name"
-                    list="person-name-suggestions"
                     value={personForm.name}
                     onChange={(e) => {
                       setPersonForm({ ...personForm, name: e.target.value });
@@ -1996,18 +2377,13 @@ export function DistrictPanel({
                     spellCheck={true}
                     autoComplete="name"
                   />
-                  <datalist id="person-name-suggestions">
-                    {nameSuggestions.map((name, idx) => (
-                      <option key={idx} value={name} />
-                    ))}
-                  </datalist>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-role" className="text-sm font-medium">Role *</Label>
+                  <Label htmlFor="person-role" className="text-sm font-semibold text-slate-700">Role *</Label>
                   {selectedCampusId === 'district' ? (
                     <Input
                       id="person-role"
-                      value={district?.id === 'XAN' ? 'National Director' : 'District Director'}
+                      value={isNationalTeam ? 'National Director' : 'District Director'}
                       disabled
                       className="bg-slate-100 cursor-not-allowed h-9"
                     />
@@ -2020,7 +2396,7 @@ export function DistrictPanel({
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        {campusRoles.map((role) => (
+                        {availableRoles.map((role) => (
                           <SelectItem key={role} value={role}>
                             {role}
                           </SelectItem>
@@ -2030,7 +2406,7 @@ export function DistrictPanel({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-status" className="text-sm font-medium">Status</Label>
+                  <Label htmlFor="person-status" className="text-sm font-semibold text-slate-700">Status</Label>
                   <Select
                     value={personForm.status}
                     onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
@@ -2047,10 +2423,166 @@ export function DistrictPanel({
                   </Select>
                 </div>
 
+                {/* Family & Guests Section */}
+                <div className="col-span-3 space-y-3 mt-4 border-t border-slate-200 pt-4">
+                  <div className="border-b border-slate-200 pb-2">
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Family & Guests</h3>
+                      <div className="relative inline-block">
+                        {!isEditingHousehold ? (
+                          <span
+                            onClick={() => {
+                              setIsEditingHousehold(true);
+                              setHouseholdDropdownOpen(true);
+                              // Set input value to current household label if one is selected
+                              if (personForm.householdId && allHouseholds && allPeople) {
+                                const household = allHouseholds.find(h => h.id === personForm.householdId);
+                                if (household) {
+                                  const members = allPeople.filter(p => p.householdId === household.id);
+                                  const baseName = household.label || 
+                                    (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                                  const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                                  setHouseholdInputValue(displayName);
+                                }
+                              } else if (householdInputValue) {
+                                // Keep existing value
+                              } else {
+                                setHouseholdInputValue('');
+                              }
+                              setTimeout(() => householdInputRef.current?.focus(), 0);
+                            }}
+                            className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
+                          >
+                            {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
+                              const household = allHouseholds.find(h => h.id === personForm.householdId);
+                              if (household) {
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                const baseName = household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                                return baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                              }
+                              return '';
+                            })() : '')}
+                          </span>
+                        ) : (
+                          <Input
+                            ref={householdInputRef}
+                            id="person-household"
+                            value={householdInputValue}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setHouseholdInputValue(value);
+                              setHouseholdSearchQuery(value);
+                              setHouseholdDropdownOpen(true);
+                              setHouseholdValidationError(null);
+                              setHouseholdNameError(null);
+                            }}
+                            onFocus={() => {
+                              setHouseholdDropdownOpen(true);
+                            }}
+                            onBlur={() => {
+                              setIsEditingHousehold(false);
+                              // Delay to allow click on dropdown item
+                              setTimeout(() => {
+                                setHouseholdDropdownOpen(false);
+                                handleHouseholdInputBlur();
+                              }, 200);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleHouseholdInputBlur();
+                                setIsEditingHousehold(false);
+                                householdInputRef.current?.blur();
+                              } else if (e.key === 'Escape') {
+                                setIsEditingHousehold(false);
+                                setHouseholdDropdownOpen(false);
+                                setHouseholdInputValue('');
+                                setPersonForm({ ...personForm, householdId: null });
+                              }
+                            }}
+                            className="h-6 text-sm w-auto min-w-[120px] inline-block"
+                            autoFocus
+                          />
+                        )}
+                        {householdDropdownOpen && allHouseholds && allPeople && (
+                          <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+                            {householdInputValue.trim() && !allHouseholds.some(h => {
+                              const members = allPeople.filter(p => p.householdId === h.id);
+                              const baseName = h.label || 
+                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                              const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                              return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
+                            }) && (
+                              <div
+                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleCreateHouseholdFromInput();
+                                }}
+                              >
+                                Create "{householdInputValue.trim()}"
+                              </div>
+                            )}
+                            <div
+                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setHouseholdInputValue('');
+                                setPersonForm({ ...personForm, householdId: null });
+                                setHouseholdDropdownOpen(false);
+                              }}
+                            >
+                              None
+                            </div>
+                            {allHouseholds
+                              .filter(household => {
+                                if (!householdInputValue.trim()) return true;
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                const baseName = household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                                const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                                return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
+                              })
+                              .map((household) => {
+                                const members = allPeople.filter(p => p.householdId === household.id);
+                                const baseName = household.label || 
+                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                                const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                                return (
+                                  <div
+                                    key={household.id}
+                                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setHouseholdInputValue(displayName);
+                                      setPersonForm({ ...personForm, householdId: household.id });
+                                      setHouseholdDropdownOpen(false);
+                                      setHouseholdValidationError(null);
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span>{displayName}</span>
+                                      {members.length > 0 && (
+                                        <span className="text-xs text-slate-500">
+                                          {members.map(m => m.name).join(', ')}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Row 2 */}
                 <div className="space-y-2">
-                  <Label htmlFor="person-spouse-attending" className="text-sm font-medium">Spouse Attending</Label>
-                  <div className="flex items-center h-9">
+                  <Label htmlFor="person-spouse-attending" className="text-sm font-semibold text-slate-700">Spouse Attending</Label>
+                  <div className="flex items-center gap-2 h-9">
                     <Checkbox
                       id="person-spouse-attending"
                       checked={personForm.spouseAttending}
@@ -2058,13 +2590,21 @@ export function DistrictPanel({
                         setPersonForm({ ...personForm, spouseAttending: checked === true });
                         setHouseholdValidationError(null);
                         setHouseholdNameError(null);
+                        // Auto-fill household if spouse is added and no household exists
+                        if (checked && !personForm.householdId && personForm.name.trim()) {
+                          const nameParts = personForm.name.trim().split(' ');
+                          const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                          const householdLabel = `${lastName} Household`;
+                          setHouseholdInputValue(householdLabel);
+                        }
                       }}
+                      className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                     />
-                    <Label htmlFor="person-spouse-attending" className="cursor-pointer ml-2 text-sm">Yes</Label>
+                    <Label htmlFor="person-spouse-attending" className="cursor-pointer text-sm font-medium">Spouse Attending</Label>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-children-count" className="text-sm font-medium">Children (0-10)</Label>
+                  <Label htmlFor="person-children-count" className="text-sm font-medium">Children</Label>
                   <Input
                     id="person-children-count"
                     type="number"
@@ -2080,13 +2620,20 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
+                      // Auto-fill household if children are added and no household exists
+                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
                     }}
                     placeholder="0"
                     className="h-9"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-guests-count" className="text-sm font-medium">Guests (0-10)</Label>
+                  <Label htmlFor="person-guests-count" className="text-sm font-semibold text-slate-700">Guests</Label>
                   <Input
                     id="person-guests-count"
                     type="number"
@@ -2101,59 +2648,364 @@ export function DistrictPanel({
                     className="h-9"
                   />
                 </div>
+              </div>
 
-                {/* Row 3 */}
-                <div className="space-y-2">
-                  <Label htmlFor="person-household" className="text-sm font-medium">Household</Label>
-                  <div className="relative">
-                    <Input
-                      ref={householdInputRef}
-                      id="person-household"
-                      value={householdInputValue}
+              {/* Needs Section */}
+              <div className="space-y-3 border-t border-slate-200 pt-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Needs</h3>
+                </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="person-need" className="text-sm font-semibold text-slate-700">Need Request</Label>
+                      <Select
+                        value={personForm.needType}
+                        onValueChange={(value) => {
+                          // Only clear needAmount when switching to/from Financial, preserve needDetails
+                          const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
+                          if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
+                            // Clear needAmount when switching to/from Financial type
+                            setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
+                          } else {
+                            // Preserve needDetails when switching between non-Financial types
+                            setPersonForm({ ...personForm, needType: newNeedType });
+                          }
+                        }}
+                      >
+                        <SelectTrigger id="person-need" className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="None">None</SelectItem>
+                          <SelectItem value="Financial">Financial</SelectItem>
+                          <SelectItem value="Transportation">Transportation</SelectItem>
+                          <SelectItem value="Housing">Housing</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <AnimatePresence mode="popLayout">
+                        {personForm.needType === 'Financial' ? (
+                          <motion.div
+                            key="amount"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-2"
+                          >
+                            <Label htmlFor="person-need-amount" className="text-sm font-semibold text-slate-700">Amount ($)</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                              <Input
+                                id="person-need-amount"
+                                type="number"
+                                value={personForm.needAmount}
+                                onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                                placeholder="0.00"
+                                className="pl-7 h-9"
+                              />
+                            </div>
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
+                    </div>
+                    {personForm.needType !== 'None' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="person-need-notes" className="text-sm font-semibold text-slate-700">Need Note</Label>
+                        <Textarea
+                          id="person-need-notes"
+                          value={personForm.needDetails || ''}
+                          onChange={(e) => {
+                            setPersonForm({ ...personForm, needDetails: e.target.value });
+                            // Auto-resize
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${e.target.scrollHeight}px`;
+                          }}
+                          onInput={(e) => {
+                            // Auto-resize on input
+                            const target = e.target as HTMLTextAreaElement;
+                            target.style.height = 'auto';
+                            target.style.height = `${target.scrollHeight}px`;
+                          }}
+                          placeholder="Enter note about the need"
+                          rows={1}
+                          className="resize-none overflow-hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Household Errors */}
+              {(householdNameError || hasHouseholdValidationError) && (
+                <div className="mt-2 space-y-1">
+                  {householdNameError && (
+                    <div className="text-xs text-red-600">{householdNameError}</div>
+                  )}
+                  {hasHouseholdValidationError && (
+                    <div className="text-xs text-red-600">To avoid double-counting, link or create a household for spouse/children.</div>
+                  )}
+                </div>
+              )}
+
+              {/* Journey Note Section */}
+              <div className="space-y-3 border-t border-slate-200 pt-4">
+                <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
+                  {/* Journey Note - Left Side */}
+                  <div className="space-y-2">
+                    <Label htmlFor="person-notes" className="text-sm font-semibold text-slate-700">Decision Journey Notes</Label>
+                    <Textarea
+                      id="person-notes"
+                      value={personForm.notes || ''}
                       onChange={(e) => {
-                        const value = e.target.value;
-                        setHouseholdInputValue(value);
-                        setHouseholdSearchQuery(value);
-                        setHouseholdDropdownOpen(true);
-                        setHouseholdValidationError(null);
+                        setPersonForm({ ...personForm, notes: e.target.value });
+                      }}
+                      placeholder="Enter decision journey notes"
+                      rows={3}
+                      className="resize-none"
+                    />
+                  </div>
+                  
+                  {/* Checkboxes - Right Side */}
+                  <div className="flex flex-col gap-4 pt-7">
+                    {personForm.needType !== 'None' && (
+                      <div className="flex items-center gap-2.5">
+                        <Label htmlFor="person-needs-met" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Need Met</Label>
+                        <Checkbox
+                          id="person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <Label htmlFor="person-deposit-paid" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Deposit Paid</Label>
+                      <Checkbox
+                        id="person-deposit-paid"
+                        checked={personForm.depositPaid}
+                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter className="pt-4 border-t border-slate-200 mt-4">
+              <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white border-slate-300">
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('Add Person button clicked', { 
+                    name: personForm.name, 
+                    role: personForm.role, 
+                    selectedCampusId,
+                    isPending: createPerson.isPending 
+                  });
+                  if (!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending) {
+                    return;
+                  }
+                  handleAddPerson();
+                }}
+                disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
+                className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {createPerson.isPending ? 'Adding...' : 'Add Person'}
+              </Button>
+            </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Person Dialog */}
+        <Dialog open={isEditPersonDialogOpen} onOpenChange={(open) => {
+          setIsEditPersonDialogOpen(open);
+          if (!open) {
+            setHouseholdInputValue('');
+            setHouseholdDropdownOpen(false);
+          }
+        }}>
+          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="pb-4 border-b border-slate-200">
+              <DialogTitle className="text-xl font-semibold text-slate-900 tracking-tight">Edit Person</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-5 py-4">
+              {/* Basic Information Section */}
+              <div className="space-y-3">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Basic Information</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-name">Name *</Label>
+                    <Input
+                      id="edit-person-name"
+                      value={personForm.name}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, name: e.target.value });
+                        // Clear household name error when name changes (but don't auto-update household label)
                         setHouseholdNameError(null);
                       }}
-                      onFocus={() => {
-                        setHouseholdDropdownOpen(true);
-                        // Set input value to current household label if one is selected
-                        if (personForm.householdId && allHouseholds && allPeople) {
+                      spellCheck={true}
+                      autoComplete="name"
+                      placeholder="Enter name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-role" className="text-sm font-semibold text-slate-700">Role *</Label>
+                    {editingPerson?.campusId === 'district' ? (
+                      <Input
+                        id="edit-person-role"
+                        value={isNationalTeam ? 'National Director' : 'District Director'}
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
+                      >
+                        <SelectTrigger id="edit-person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRoles.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="edit-person-status" className="text-sm font-semibold text-slate-700">Status</Label>
+                    <Select
+                      value={personForm.status}
+                      onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
+                    >
+                      <SelectTrigger id="edit-person-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="director">Going</SelectItem>
+                        <SelectItem value="staff">Maybe</SelectItem>
+                        <SelectItem value="co-director">Not Going</SelectItem>
+                        <SelectItem value="not-invited">Not Invited Yet</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+            {/* Family & Guests */}
+            <div className="space-y-3 mt-4 border-t border-slate-200 pt-4">
+              <div className="border-b border-slate-200 pb-2 mb-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Family & Guests</h3>
+                  <div className="relative inline-block">
+                    {!isEditingHousehold ? (
+                      <span
+                        onClick={() => {
+                          setIsEditingHousehold(true);
+                          setHouseholdDropdownOpen(true);
+                          // Set input value to current household label if one is selected
+                          if (personForm.householdId && allHouseholds && allPeople) {
+                            const household = allHouseholds.find(h => h.id === personForm.householdId);
+                            if (household) {
+                              const members = allPeople.filter(p => p.householdId === household.id);
+                              const baseName = household.label || 
+                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                              const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
+                              setHouseholdInputValue(displayName);
+                            }
+                          } else if (householdInputValue) {
+                            // Keep existing value
+                          } else {
+                            setHouseholdInputValue('');
+                          }
+                          setTimeout(() => householdInputRef.current?.focus(), 0);
+                        }}
+                        className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
+                      >
+                        {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
                           const household = allHouseholds.find(h => h.id === personForm.householdId);
                           if (household) {
                             const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
+                            return household.label || 
                               (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                            setHouseholdInputValue(displayName);
                           }
-                        }
-                      }}
-                      onBlur={() => {
-                        // Delay to allow click on dropdown item
-                        setTimeout(() => {
-                          setHouseholdDropdownOpen(false);
-                          handleHouseholdInputBlur();
-                        }, 200);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleHouseholdInputBlur();
-                          householdInputRef.current?.blur();
-                        } else if (e.key === 'Escape') {
-                          setHouseholdDropdownOpen(false);
-                          setHouseholdInputValue('');
-                          setPersonForm({ ...personForm, householdId: null });
-                        }
-                      }}
-                      placeholder="Type or select household"
-                      className="h-9"
-                    />
+                          return '';
+                        })() : '')}
+                      </span>
+                    ) : (
+                      <Input
+                        ref={householdInputRef}
+                        id="edit-person-household"
+                        value={householdInputValue}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setHouseholdInputValue(value);
+                          setHouseholdSearchQuery(value);
+                          setHouseholdDropdownOpen(true);
+                          setHouseholdValidationError(null);
+                          setHouseholdNameError(null);
+                        }}
+                        onFocus={() => {
+                          setHouseholdDropdownOpen(true);
+                        }}
+                        onBlur={(e) => {
+                          setIsEditingHousehold(false);
+                          // Don't close if clicking inside dropdown - use a small delay to check
+                          setTimeout(() => {
+                            const activeElement = document.activeElement;
+                            // If focus is still inside dropdown, don't close
+                            if (householdDropdownRef.current && 
+                                householdDropdownRef.current.contains(activeElement)) {
+                              return;
+                            }
+                            // Otherwise close the dropdown
+                            if (householdDropdownOpen) {
+                              setHouseholdDropdownOpen(false);
+                              handleHouseholdInputBlur();
+                            }
+                          }, 150);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleHouseholdInputBlur();
+                            setIsEditingHousehold(false);
+                            householdInputRef.current?.blur();
+                          } else if (e.key === 'Escape') {
+                            setIsEditingHousehold(false);
+                            setHouseholdDropdownOpen(false);
+                            setHouseholdInputValue('');
+                            setPersonForm({ ...personForm, householdId: null });
+                          }
+                        }}
+                        className="h-6 text-sm w-auto min-w-[120px] inline-block"
+                        autoFocus
+                      />
+                    )}
                     {householdDropdownOpen && allHouseholds && allPeople && (
-                      <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+                      <div 
+                        ref={householdDropdownRef}
+                        className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
+                        onMouseDown={(e) => {
+                          // Prevent blur when clicking inside dropdown
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
                         {householdInputValue.trim() && !allHouseholds.some(h => {
                           const members = allPeople.filter(p => p.householdId === h.id);
                           const displayName = h.label || 
@@ -2164,6 +3016,7 @@ export function DistrictPanel({
                             className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                             onMouseDown={(e) => {
                               e.preventDefault();
+                              e.stopPropagation();
                               handleCreateHouseholdFromInput();
                             }}
                           >
@@ -2174,6 +3027,7 @@ export function DistrictPanel({
                           className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                           onMouseDown={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             setHouseholdInputValue('');
                             setPersonForm({ ...personForm, householdId: null });
                             setHouseholdDropdownOpen(false);
@@ -2185,20 +3039,23 @@ export function DistrictPanel({
                           .filter(household => {
                             if (!householdInputValue.trim()) return true;
                             const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            const baseName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                            const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
                             return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
                           })
                           .map((household) => {
                             const members = allPeople.filter(p => p.householdId === household.id);
-                            const displayName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            const baseName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
+                            const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
                             return (
                               <div
                                 key={household.id}
                                 className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                                 onMouseDown={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
                                   setHouseholdInputValue(displayName);
                                   setPersonForm({ ...personForm, householdId: household.id });
                                   setHouseholdDropdownOpen(false);
@@ -2220,260 +3077,12 @@ export function DistrictPanel({
                     )}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="person-need" className="text-sm font-medium">Need Request</Label>
-                  <Select
-                    value={personForm.needType}
-                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
-                  >
-                    <SelectTrigger id="person-need" className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="None">None</SelectItem>
-                      <SelectItem value="Financial">Financial</SelectItem>
-                      <SelectItem value="Transportation">Transportation</SelectItem>
-                      <SelectItem value="Housing">Housing</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <AnimatePresence mode="popLayout">
-                    {personForm.needType === 'Financial' ? (
-                      <motion.div
-                        key="amount"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2"
-                      >
-                        <Label htmlFor="person-need-amount" className="text-sm font-medium">Amount ($)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-                          <Input
-                            id="person-need-amount"
-                            type="number"
-                            value={personForm.needAmount}
-                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                            placeholder="0.00"
-                            className="pl-7 h-9"
-                          />
-                        </div>
-                      </motion.div>
-                    ) : personForm.needType !== 'None' ? (
-                      <motion.div
-                        key="need-met"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2"
-                      >
-                        <Label htmlFor="person-needs-met" className="text-sm font-medium">Need Met</Label>
-                        <div className="flex items-center h-9">
-                          <Checkbox
-                            id="person-needs-met"
-                            checked={personForm.needsMet}
-                            onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                          />
-                          <Label htmlFor="person-needs-met" className="cursor-pointer ml-2 text-sm">Yes</Label>
-                        </div>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="deposit-paid"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="space-y-2"
-                      >
-                        <Label htmlFor="person-deposit-paid" className="text-sm font-medium">Deposit Paid</Label>
-                        <div className="flex items-center h-9">
-                          <Checkbox
-                            id="person-deposit-paid"
-                            checked={personForm.depositPaid}
-                            onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                          />
-                          <Label htmlFor="person-deposit-paid" className="cursor-pointer ml-2 text-sm">Yes</Label>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-
-              {/* Household Errors */}
-              {(householdNameError || hasHouseholdValidationError) && (
-                <div className="mt-2 space-y-1">
-                  {householdNameError && (
-                    <div className="text-xs text-red-600">{householdNameError}</div>
-                  )}
-                  {hasHouseholdValidationError && (
-                    <div className="text-xs text-red-600">To avoid double-counting, link or create a household for spouse/children.</div>
-                  )}
-                </div>
-              )}
-
-              {/* Need Notes and General Notes Section - Side by side */}
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                {/* Need Notes Section */}
-                <div className="space-y-2">
-                  <Label htmlFor="person-need-notes" className="text-sm font-medium">Need Notes</Label>
-                  <Textarea
-                    id="person-need-notes"
-                    value={personForm.needDetails || ''}
-                    onChange={(e) => {
-                      setPersonForm({ ...personForm, needDetails: e.target.value });
-                    }}
-                    placeholder="Enter notes about the need"
-                    rows={3}
-                    className="resize-none"
-                  />
-                </div>
-
-                {/* General Notes Section */}
-                <div className="space-y-2">
-                  <Label htmlFor="person-notes" className="text-sm font-medium">General Notes</Label>
-                  <Textarea
-                    id="person-notes"
-                    value={personForm.notes || ''}
-                    onChange={(e) => {
-                      setPersonForm({ ...personForm, notes: e.target.value });
-                    }}
-                    placeholder="Enter general notes"
-                    rows={3}
-                    className="resize-none"
-                  />
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  console.log('Add Person button clicked', { 
-                    name: personForm.name, 
-                    role: personForm.role, 
-                    selectedCampusId,
-                    isPending: createPerson.isPending 
-                  });
-                  if (!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending) {
-                    return;
-                  }
-                  handleAddPerson();
-                }}
-                disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
-                className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {createPerson.isPending ? 'Adding...' : 'Add Person'}
-              </Button>
-            </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Person Dialog */}
-        <Dialog open={isEditPersonDialogOpen} onOpenChange={(open) => {
-          setIsEditPersonDialogOpen(open);
-          if (!open) {
-            setHouseholdInputValue('');
-            setHouseholdDropdownOpen(false);
-          }
-        }}>
-          <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Edit Person</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              {/* Basic Information Section */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-name">Name *</Label>
-                    <Input
-                      id="edit-person-name"
-                      list="edit-person-name-suggestions"
-                      value={personForm.name}
-                      onChange={(e) => {
-                        setPersonForm({ ...personForm, name: e.target.value });
-                        // Clear household name error when name changes (but don't auto-update household label)
-                        setHouseholdNameError(null);
-                      }}
-                      spellCheck={true}
-                      autoComplete="name"
-                      placeholder="Enter name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-role">Role *</Label>
-                    {editingPerson?.campusId === 'district' ? (
-                      <Input
-                        id="edit-person-role"
-                        value={district?.id === 'XAN' ? 'National Director' : 'District Director'}
-                        disabled
-                        className="bg-slate-100 cursor-not-allowed"
-                      />
-                    ) : (
-                      <Select
-                        value={personForm.role}
-                        onValueChange={(value) => setPersonForm({ ...personForm, role: value as CampusRole })}
-                      >
-                        <SelectTrigger id="edit-person-role">
-                          <SelectValue placeholder="Select role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {campusRoles.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="edit-person-status">Status</Label>
-                    <Select
-                      value={personForm.status}
-                      onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
-                    >
-                      <SelectTrigger id="edit-person-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="director">Going</SelectItem>
-                        <SelectItem value="staff">Maybe</SelectItem>
-                        <SelectItem value="co-director">Not Going</SelectItem>
-                        <SelectItem value="not-invited">Not Invited Yet</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-
-            {/* Family & Guests (optional) */}
-            <div className="space-y-4 mt-4">
-              <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
-              </div>
               
               {/* Inputs */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-4 mt-4">
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <Label htmlFor="edit-person-spouse-attending" className="text-sm font-semibold text-slate-700">Spouse attending</Label>
+                  <div className="flex items-center justify-center h-9">
                     <Checkbox
                       id="edit-person-spouse-attending"
                       checked={personForm.spouseAttending}
@@ -2481,13 +3090,20 @@ export function DistrictPanel({
                         setPersonForm({ ...personForm, spouseAttending: checked === true });
                         setHouseholdValidationError(null);
                         setHouseholdNameError(null);
+                        // Auto-fill household if spouse is added and no household exists
+                        if (checked && !personForm.householdId && personForm.name.trim()) {
+                          const nameParts = personForm.name.trim().split(' ');
+                          const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                          const householdLabel = `${lastName} Household`;
+                          setHouseholdInputValue(householdLabel);
+                        }
                       }}
+                      className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                     />
-                    <Label htmlFor="edit-person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
                   </div>
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-children-count">Children attending (0-10)</Label>
+                  <Label htmlFor="edit-person-children-count" className="text-sm font-semibold text-slate-700">Children attending</Label>
                   <Input
                     id="edit-person-children-count"
                     type="number"
@@ -2503,13 +3119,20 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
+                      // Auto-fill household if children are added and no household exists
+                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
+                        const nameParts = personForm.name.trim().split(' ');
+                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
+                        const householdLabel = `${lastName} Household`;
+                        setHouseholdInputValue(householdLabel);
+                      }
                     }}
                     placeholder="0"
                     className="w-24"
                   />
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-guests-count">Guests attending (0-10)</Label>
+                  <Label htmlFor="edit-person-guests-count" className="text-sm font-semibold text-slate-700">Guests attending</Label>
                   <Input
                     id="edit-person-guests-count"
                     type="number"
@@ -2526,122 +3149,6 @@ export function DistrictPanel({
                 </div>
               </div>
               
-              {/* Household Selector */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-person-household">Household (optional)</Label>
-                <div className="relative">
-                  <Input
-                    id="edit-person-household"
-                    value={householdInputValue}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setHouseholdInputValue(value);
-                      setHouseholdSearchQuery(value);
-                      setHouseholdDropdownOpen(true);
-                      setHouseholdValidationError(null);
-                      setHouseholdNameError(null);
-                    }}
-                    onFocus={() => {
-                      setHouseholdDropdownOpen(true);
-                      // Set input value to current household label if one is selected
-                      if (personForm.householdId && allHouseholds && allPeople) {
-                        const household = allHouseholds.find(h => h.id === personForm.householdId);
-                        if (household) {
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          setHouseholdInputValue(displayName);
-                        }
-                      }
-                    }}
-                    onBlur={() => {
-                      // Delay to allow click on dropdown item
-                      setTimeout(() => {
-                        setHouseholdDropdownOpen(false);
-                        handleHouseholdInputBlur();
-                      }, 200);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleHouseholdInputBlur();
-                        householdInputRef.current?.blur();
-                      } else if (e.key === 'Escape') {
-                        setHouseholdDropdownOpen(false);
-                        setHouseholdInputValue('');
-                        setPersonForm({ ...personForm, householdId: null });
-                      }
-                    }}
-                    placeholder="Type or select household"
-                  />
-                  {householdDropdownOpen && allHouseholds && allPeople && (
-                    <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                      {householdInputValue.trim() && !allHouseholds.some(h => {
-                        const members = allPeople.filter(p => p.householdId === h.id);
-                        const displayName = h.label || 
-                          (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                        return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
-                      }) && (
-                        <div
-                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleCreateHouseholdFromInput();
-                          }}
-                        >
-                          Create "{householdInputValue.trim()}"
-                        </div>
-                      )}
-                      <div
-                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          setHouseholdInputValue('');
-                          setPersonForm({ ...personForm, householdId: null });
-                          setHouseholdDropdownOpen(false);
-                        }}
-                      >
-                        None
-                      </div>
-                      {allHouseholds
-                        .filter(household => {
-                          if (!householdInputValue.trim()) return true;
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
-                        })
-                        .map((household) => {
-                          const members = allPeople.filter(p => p.householdId === household.id);
-                          const displayName = household.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return (
-                            <div
-                              key={household.id}
-                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setHouseholdInputValue(displayName);
-                                setPersonForm({ ...personForm, householdId: household.id });
-                                setHouseholdDropdownOpen(false);
-                                setHouseholdValidationError(null);
-                              }}
-                            >
-                              <div className="flex flex-col">
-                                <span>{displayName}</span>
-                                {members.length > 0 && (
-                                  <span className="text-xs text-slate-500">
-                                    {members.map(m => m.name).join(', ')}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
-                </div>
-                
                 {/* Validation Errors */}
                 {householdNameError && (
                   <div className="text-sm text-red-600 mt-1">
@@ -2657,16 +3164,26 @@ export function DistrictPanel({
             </div>
 
             {/* Needs Section */}
-            <div className="space-y-4 mt-4">
+            <div className="space-y-3 mt-4 border-t border-slate-200 pt-4">
               <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
+                <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Needs</h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-need">Need Request</Label>
+                  <Label htmlFor="edit-person-need" className="text-sm font-semibold text-slate-700">Need Request</Label>
                   <Select
                     value={personForm.needType}
-                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                    onValueChange={(value) => {
+                      // Only clear needAmount when switching to/from Financial, preserve needDetails
+                      const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
+                      if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
+                        // Clear needAmount when switching to/from Financial type
+                        setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
+                      } else {
+                        // Preserve needDetails when switching between non-Financial types
+                        setPersonForm({ ...personForm, needType: newNeedType });
+                      }
+                    }}
                   >
                     <SelectTrigger id="edit-person-need">
                       <SelectValue />
@@ -2680,120 +3197,106 @@ export function DistrictPanel({
                     </SelectContent>
                   </Select>
                 </div>
-                <AnimatePresence mode="popLayout">
-                  {personForm.needType === 'Financial' && (
-                    <motion.div
-                      key="amount"
-                      initial={{ opacity: 0, x: -30, width: 0 }}
-                      animate={{ opacity: 1, x: 0, width: 'auto' }}
-                      exit={{ opacity: 0, x: -30, width: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden space-y-2"
-                      layout
-                    >
-                      <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                        <Input
-                          id="edit-person-need-amount"
-                          type="number"
-                          value={personForm.needAmount}
-                          onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                          placeholder="0.00"
-                          className="pl-7 w-28"
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
                 <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
-                    {personForm.needType !== 'None' ? (
+                    {personForm.needType === 'Financial' && (
                       <motion.div
-                        key="need-met"
+                        key="amount"
                         initial={{ opacity: 0, x: -30, width: 0 }}
                         animate={{ opacity: 1, x: 0, width: 'auto' }}
                         exit={{ opacity: 0, x: -30, width: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="flex items-center gap-2"
+                        className="overflow-hidden space-y-2"
                         layout
                       >
-                        <Label htmlFor="edit-person-needs-met" className="cursor-pointer">Need Met</Label>
-                        <Checkbox
-                          id="edit-person-needs-met"
-                          checked={personForm.needsMet}
-                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="deposit-paid"
-                        initial={{ opacity: 0, x: -30, width: 0 }}
-                        animate={{ opacity: 1, x: 0, width: 'auto' }}
-                        exit={{ opacity: 0, x: -30, width: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="flex items-center gap-2"
-                        layout
-                      >
-                        <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
-                        <Checkbox
-                          id="edit-person-deposit-paid"
-                          checked={personForm.depositPaid}
-                          onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                        />
+                        <Label htmlFor="edit-person-need-amount" className="text-sm font-semibold text-slate-700">Amount ($)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                          <Input
+                            id="edit-person-need-amount"
+                            type="number"
+                            value={personForm.needAmount}
+                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                            placeholder="0.00"
+                            className="pl-7 w-28"
+                          />
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
+                {personForm.needType !== 'None' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-need-notes" className="text-sm font-semibold text-slate-700">Need Note</Label>
+                    <Textarea
+                      id="edit-person-need-notes"
+                      value={personForm.needDetails || ''}
+                      onChange={(e) => {
+                        setPersonForm({ ...personForm, needDetails: e.target.value });
+                        // Auto-resize
+                        e.target.style.height = 'auto';
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
+                      onInput={(e) => {
+                        // Auto-resize on input
+                        const target = e.target as HTMLTextAreaElement;
+                        target.style.height = 'auto';
+                        target.style.height = `${target.scrollHeight}px`;
+                      }}
+                      placeholder="Enter note about the need"
+                      rows={1}
+                      className="resize-none overflow-hidden"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Need Notes and General Notes Section - Side by side */}
-            <div className="space-y-4 mt-4 grid grid-cols-2 gap-4">
-              {/* Need Notes Section */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Need Notes</h3>
-                </div>
+            {/* Journey Note Section */}
+            <div className="space-y-3 border-t border-slate-200 pt-4">
+              <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
+                {/* Journey Note - Left Side */}
                 <div className="space-y-2">
-                  <Textarea
-                    id="edit-person-need-notes"
-                    value={personForm.needDetails || ''}
-                    onChange={(e) => {
-                      setPersonForm({ ...personForm, needDetails: e.target.value });
-                    }}
-                    placeholder="Enter notes about the need"
-                    rows={4}
-                    className="resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* General Notes Section */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-700">General Notes</h3>
-                </div>
-                <div className="space-y-2">
+                  <Label htmlFor="edit-person-notes" className="text-sm font-semibold text-slate-700">Decision Journey Notes</Label>
                   <Textarea
                     id="edit-person-notes"
                     value={personForm.notes || ''}
                     onChange={(e) => {
                       setPersonForm({ ...personForm, notes: e.target.value });
                     }}
-                    placeholder="Enter general notes"
-                    rows={4}
+                    placeholder="Enter decision journey notes"
+                    rows={3}
                     className="resize-none"
                   />
                 </div>
+                
+                {/* Checkboxes - Right Side */}
+                <div className="flex flex-col gap-4 pt-7">
+                  {personForm.needType !== 'None' && (
+                    <div className="flex items-center gap-2.5">
+                      <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Need Met</Label>
+                      <Checkbox
+                        id="edit-person-needs-met"
+                        checked={personForm.needsMet}
+                        onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2.5">
+                      <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Deposit Paid</Label>
+                      <Checkbox
+                        id="edit-person-deposit-paid"
+                        checked={personForm.depositPaid}
+                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                </div>
               </div>
             </div>
-
-
-          </div>
-          <DialogFooter className="flex items-center justify-between">
+            </div>
+          <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDeletePerson}
@@ -2819,10 +3322,10 @@ export function DistrictPanel({
               )}
             </div>
             <div className="flex gap-2 ml-auto">
-              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white border-slate-300">
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
+              <Button type="button" onClick={handleUpdatePerson} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">Update Person</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -2867,15 +3370,15 @@ export function DistrictPanel({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Add Campus Dialog */}
+        {/* Add {entityName} Dialog */}
         <Dialog open={isCampusDialogOpen} onOpenChange={setIsCampusDialogOpen}>
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Add New Campus</DialogTitle>
+              <DialogTitle>Add New {entityName}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="campus-name">Campus Name</Label>
+                <Label htmlFor="campus-name">{entityName} Name</Label>
                 <Input
                   id="campus-name"
                   value={campusForm.name}
@@ -2888,7 +3391,7 @@ export function DistrictPanel({
                       }
                     }
                   }}
-                  placeholder="Enter campus name"
+                  placeholder={`Enter ${entityName.toLowerCase()} name`}
                   spellCheck={true}
                   autoComplete="organization"
                   autoFocus
@@ -2896,11 +3399,11 @@ export function DistrictPanel({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCampusDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIsCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
                 Cancel
               </Button>
-              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending}>
-                {createCampus.isPending ? 'Adding...' : 'Add Campus'}
+              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                {createCampus.isPending ? 'Adding...' : `Add ${entityName}`}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -2910,17 +3413,17 @@ export function DistrictPanel({
         <Dialog open={isEditCampusDialogOpen} onOpenChange={setIsEditCampusDialogOpen}>
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Edit Campus</DialogTitle>
+              <DialogTitle>Edit {entityName}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-campus-name">Campus Name</Label>
+                <Label htmlFor="edit-campus-name">{entityName} Name</Label>
                 <Input
                   id="edit-campus-name"
                   list="edit-campus-name-suggestions"
                   value={campusForm.name}
                   onChange={(e) => setCampusForm({ name: e.target.value })}
-                  placeholder="Enter campus name"
+                  placeholder={`Enter ${entityName.toLowerCase()} name`}
                   spellCheck={true}
                   autoComplete="organization"
                 />
@@ -2932,10 +3435,10 @@ export function DistrictPanel({
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending}>
+              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
                 {updateCampusName.isPending ? 'Updating...' : 'Update Campus'}
               </Button>
             </DialogFooter>
@@ -2945,17 +3448,6 @@ export function DistrictPanel({
         {/* Custom Drag Layer */}
         <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
         
-        {/* Datalists for autocomplete suggestions */}
-        <datalist id="edit-person-name-suggestions">
-          {nameSuggestions.map((name, idx) => (
-            <option key={idx} value={name} />
-          ))}
-        </datalist>
-        <datalist id="quick-add-name-suggestions">
-          {nameSuggestions.map((name, idx) => (
-            <option key={idx} value={name} />
-          ))}
-        </datalist>
     </motion.div>
     </DndProvider>
   );

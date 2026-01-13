@@ -1092,6 +1092,24 @@ export const appRouter = router({
     get: publicProcedure.query(async () => {
       return await db.getMetrics();
     }),
+    district: publicProcedure
+      .input(z.object({ districtId: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getDistrictMetrics(input.districtId);
+      }),
+    allDistricts: publicProcedure.query(async () => {
+      // Public aggregate endpoint - everyone can see district counts
+      return await db.getAllDistrictMetrics();
+    }),
+    region: publicProcedure
+      .input(z.object({ region: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getRegionMetrics(input.region);
+      }),
+    allRegions: publicProcedure.query(async () => {
+      // Public aggregate endpoint - everyone can see region counts
+      return await db.getAllRegionMetrics();
+    }),
   }),
 
   followUp: router({

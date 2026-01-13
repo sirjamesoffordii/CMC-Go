@@ -23,6 +23,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { District } from "../../../drizzle/schema";
+import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
 
 /**
  * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
@@ -149,14 +150,52 @@ export default function Home() {
   // Fetch data - store queries for error checking
   const districtsQuery = trpc.districts.list.useQuery();
   const campusesQuery = trpc.campuses.list.useQuery();
-  const peopleQuery = trpc.people.list.useQuery();
+  
+  // Check if selected district/campus is in scope (before fetching people)
+  const isSelectedDistrictInScope = useMemo(() => {
+    if (!selectedDistrictId) return true; // No selection = in scope
+    const selectedDistrict = districtsQuery.data?.find(d => d.id === selectedDistrictId) || 
+      createSyntheticDistrict(selectedDistrictId, districtsQuery.data || []);
+    if (!selectedDistrict) return true; // District not found = assume in scope
+    return isDistrictInScope(selectedDistrictId, user, selectedDistrict.region || null);
+  }, [selectedDistrictId, districtsQuery.data, user]);
+  
+  const isSelectedCampusInScope = useMemo(() => {
+    if (!viewState.campusId) return true; // No campus selected = in scope
+    const campus = campusesQuery.data?.find(c => c.id === viewState.campusId);
+    if (!campus) return true; // Campus not found = assume in scope
+    const district = districtsQuery.data?.find(d => d.id === campus.districtId) || 
+      createSyntheticDistrict(campus.districtId, districtsQuery.data || []);
+    return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
+  }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
+  
+  // Only fetch people if selected district/campus is in scope
+  const shouldFetchPeople = isSelectedDistrictInScope && isSelectedCampusInScope;
+  const peopleQuery = trpc.people.list.useQuery(undefined, { 
+    enabled: shouldFetchPeople,
+    retry: false, // Don't retry on auth errors
+    onError: (error) => {
+      // Silently handle auth errors for aggregates - metrics.get will provide the data
+      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
+        console.error("[Home] people.list error:", error);
+      }
+    }
+  });
   
   const districts = districtsQuery.data || [];
   const allCampuses = campusesQuery.data || [];
   const allPeople = peopleQuery.data || [];
   
   const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery({
+    retry: false, // Don't retry on auth errors
+    onError: (error) => {
+      // Silently handle auth errors - needs are not needed for aggregates
+      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
+        console.error("[Home] needs.listActive error:", error);
+      }
+    }
+  });
   
   // Fetch saved header image, background color, height, and logo
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
@@ -802,7 +841,7 @@ export default function Home() {
                     window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 font-semibold"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Login
@@ -814,7 +853,7 @@ export default function Home() {
                     setShareModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Share2 className="w-4 h-4" />
                   Share
@@ -825,7 +864,7 @@ export default function Home() {
                     setImportModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   Import
@@ -836,7 +875,7 @@ export default function Home() {
                     setLocation("/admin");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
@@ -847,7 +886,7 @@ export default function Home() {
                     setLocation("/more-info");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <span className="text-sm font-semibold">CMC Info</span>
                 </button>
@@ -900,6 +939,7 @@ export default function Home() {
                     district={selectedDistrict}
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
+                    isOutOfScope={!isSelectedDistrictInScope}
                     onClose={() => {
                       setSelectedDistrictId(null);
                       setViewState({
@@ -1012,7 +1052,7 @@ export default function Home() {
         {/* Right People Panel */}
         <div
           className={[
-            "bg-white border-l border-gray-100 flex-shrink-0 relative",
+            "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
             !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
             isMobile ? "right-panel-mobile" : "",
             isMobile && !peoplePanelOpen ? "closed" : "",
@@ -1023,6 +1063,7 @@ export default function Home() {
             overflow: "hidden",
           } : {
             width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+            height: "100%",
             overflow: "hidden",
           }}
         >

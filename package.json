@@ -2,6 +2,7 @@
   "name": "cmc-go",
   "version": "1.0.0",
   "type": "module",
+  
   "license": "MIT",
   "scripts": {
     "dev": "cross-env NODE_ENV=development tsx watch server/_core/index.ts",

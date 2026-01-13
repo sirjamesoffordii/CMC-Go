@@ -1,8 +1,9 @@
-// Initialize Sentry FIRST - must be before any other imports
+// Load environment variables FIRST - before Sentry initialization
+import "dotenv/config";
+
+// Initialize Sentry - must be early but after dotenv loads
 import { initSentry } from "./sentry";
 initSentry();
-
-import "dotenv/config";
 import express from "express";
 import helmet from 'helmet';
 import cors from 'cors';
@@ -184,6 +185,33 @@ async function startServer() {
       }
     });
     console.log("[Debug] Database health endpoint available at /api/debug/db-health");
+    
+    // Sentry test endpoint - only in development
+    app.get("/api/debug/sentry-test", async (req, res) => {
+      try {
+        const { Sentry } = await import("./sentry");
+        // Trigger a test error to verify Sentry is working
+        const testError = new Error("Sentry test error - this is intentional for testing");
+        Sentry.captureException(testError, {
+          tags: {
+            test: "true",
+            environment: process.env.NODE_ENV || "development",
+          },
+        });
+        res.json({
+          success: true,
+          message: "Test error sent to Sentry. Check your Sentry dashboard for the error with tag 'test: true'",
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+        });
+      }
+    });
+    console.log("[Debug] Sentry test endpoint available at /api/debug/sentry-test");
   }
   
   // Health endpoint that includes demo DB info (dev only)
