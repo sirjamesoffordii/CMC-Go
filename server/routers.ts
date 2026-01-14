@@ -266,20 +266,54 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
       }),
-    updateName: publicProcedure
+    updateName: protectedProcedure
       .input(z.object({ id: z.number(), name: z.string() }))
-      .mutation(async ({ input }) => {
-        // Authentication disabled - allow all users to update campus names
+      .mutation(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+        const campus = await db.getCampusById(input.id);
+        if (!campus) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
+        }
+
+        // Enforce scope: must be in-scope for this campus
+        if (scope.level === "CAMPUS" && campus.id !== scope.campusId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "DISTRICT" && campus.districtId !== scope.districtId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "REGION") {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+          }
+        }
+
         await db.updateCampusName(input.id, input.name);
         return { success: true };
       }),
-    create: publicProcedure
+    create: protectedProcedure
       .input(z.object({
         name: z.string(),
         districtId: z.string(),
       }))
-      .mutation(async ({ input }) => {
-        // Authentication disabled - allow all users to create campuses
+      .mutation(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+
+        // Enforce scope: campus-scope users cannot create new campuses
+        if (scope.level === "CAMPUS") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "DISTRICT" && input.districtId !== scope.districtId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "REGION") {
+          const district = await db.getDistrictById(input.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+          }
+        }
+
         const insertId = await db.createCampus(input);
         return { id: insertId, name: input.name, districtId: input.districtId };
       }),
