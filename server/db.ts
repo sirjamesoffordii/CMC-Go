@@ -303,6 +303,14 @@ export async function getPersonByPersonId(personId: string) {
   return result[0] || null;
 }
 
+export async function getPersonByNameCaseInsensitive(name: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const trimmedName = name.trim();
+  const result = await db.select().from(people).where(sql`LOWER(TRIM(${people.name})) = LOWER(${trimmedName})`).limit(1);
+  return result[0] || null;
+}
+
 export async function getPeopleByDistrictId(districtId: string) {
   const db = await getDb();
   if (!db) return [];

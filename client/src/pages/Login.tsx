@@ -18,14 +18,8 @@ export function Login() {
 
   // Fetch dropdown options
   const { data: regions = [] } = trpc.meta.regions.useQuery();
-  const { data: districts = [] } = trpc.meta.districtsByRegion.useQuery(
-    { regionId },
-    { enabled: !!regionId }
-  );
-  const { data: campuses = [] } = trpc.meta.campusesByDistrict.useQuery(
-    { districtId },
-    { enabled: !!districtId }
-  );
+  const { data: districts = [] } = trpc.meta.districtsByRegion.useQuery({ regionId });
+  const { data: campuses = [] } = trpc.meta.campusesByDistrict.useQuery({ districtId });
 
   const loginMutation = trpc.auth.localLogin.useMutation({
     onSuccess: () => {
@@ -114,7 +108,6 @@ export function Login() {
                 setCampusId(null);
                 setShowNewCampus(false);
               }}
-              disabled={!regionId && regionId !== null}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select district" />
@@ -146,7 +139,6 @@ export function Login() {
                   setCampusId(parseInt(value));
                 }
               }}
-              disabled={!districtId && districtId !== null}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select campus" />

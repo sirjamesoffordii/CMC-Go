@@ -34,7 +34,7 @@ export async function createOrUpdateSession(session: { userId: number; sessionId
       lastSeenAt: new Date(),
     });
 
-    return { id: Number(result.insertId), ...session };
+    return { id: Number(result[0]?.insertId), ...session };
   }
 }
 

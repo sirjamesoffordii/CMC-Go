@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Trash2, Shield, Activity } from "lucide-react";
+import { Users, Trash2, Shield, Activity, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export function UserManagement() {
@@ -61,6 +61,15 @@ export function UserManagement() {
       userId,
       approvalStatus: newStatus as "ACTIVE" | "DISABLED",
     });
+  };
+
+  const handleBanUser = (userId: number, fullName: string) => {
+    if (window.confirm(`Are you sure you want to ban user "${fullName}"? They will be disabled and unable to access the system.`)) {
+      updateStatusMutation.mutate({
+        userId,
+        approvalStatus: "DISABLED",
+      });
+    }
   };
 
   if (isLoading) {
@@ -134,6 +143,7 @@ export function UserManagement() {
                   <th className="text-left p-2 font-medium">Campus/District</th>
                   <th className="text-left p-2 font-medium">Status</th>
                   <th className="text-left p-2 font-medium">Last Login</th>
+                  <th className="text-left p-2 font-medium">Last Edited</th>
                   <th className="text-left p-2 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -196,6 +206,16 @@ export function UserManagement() {
                         ? new Date(user.lastLoginAt).toLocaleDateString()
                         : "Never"}
                     </td>
+                    <td className="p-2 text-sm text-gray-600">
+                      {user.lastEdited && user.lastEditedBy ? (
+                        <div>
+                          <div>{new Date(user.lastEdited).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-400">by {user.lastEditedBy}</div>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Never</span>
+                      )}
+                    </td>
                     <td className="p-2">
                       <div className="flex gap-2">
                         <Button
@@ -204,6 +224,14 @@ export function UserManagement() {
                           onClick={() => handleStatusToggle(user.id, user.approvalStatus)}
                         >
                           {user.approvalStatus === "ACTIVE" ? "Disable" : "Enable"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleBanUser(user.id, user.fullName)}
+                          disabled={user.approvalStatus === "DISABLED"}
+                        >
+                          <Ban className="w-4 h-4" />
                         </Button>
                         <Button
                           size="sm"

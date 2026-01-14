@@ -173,12 +173,18 @@ export const appRouter = router({
           let { campusId, districtId, regionId } = input;
 
           // Handle new campus creation
-          if (input.newCampusName && input.newCampusDistrictId) {
-            const newCampus = await db.createCampus({
+          if (input.newCampusName) {
+            if (!input.newCampusDistrictId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "District is required when creating a new campus",
+              });
+            }
+            const newCampusId = await db.createCampus({
               name: input.newCampusName,
               districtId: input.newCampusDistrictId,
             });
-            campusId = newCampus.id;
+            campusId = newCampusId;
           }
 
           // Derive districtId and regionId from campusId if provided
@@ -202,7 +208,7 @@ export const appRouter = router({
 
           if (!user) {
             // Create new user
-            user = await db.createUser({
+            const userId = await db.createUser({
               fullName: input.fullName,
               email,
               role: input.role,
@@ -213,35 +219,49 @@ export const appRouter = router({
               lastLoginAt: new Date(),
             });
 
-            // Create matching Person record
-            const personId = `LOCAL-${user.id}`;
-            await db.createPerson({
-              personId,
-              name: input.fullName,
-              primaryRole: input.role,
-              primaryCampusId: campusId,
-              primaryDistrictId: districtId,
-              primaryRegion: regionId,
-              status: "Not Invited",
-              lastEditedBy: "System",
-            });
+            // Fetch the created user
+            user = await db.getUserById(userId);
+            if (!user) {
+              throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Failed to create user",
+              });
+            }
+
+            // Check if person already exists (case-insensitive name match)
+            const existingPerson = await db.getPersonByNameCaseInsensitive(input.fullName);
+
+            if (!existingPerson) {
+              // Create matching Person record only if doesn't exist
+              const personId = `LOCAL-${user.id}`;
+              await db.createPerson({
+                personId,
+                name: input.fullName,
+                primaryRole: input.role,
+                primaryCampusId: campusId,
+                primaryDistrictId: districtId,
+                primaryRegion: regionId,
+                status: "Not Invited",
+                lastEditedBy: "System",
+              });
+            }
           } else {
             // Update lastLoginAt
             await dbAdditions.updateUserLastLogin(user.id);
           }
 
-          // Set session cookie
-          setSessionCookie(ctx.req, ctx.res, user.id);
+          // Set session cookie and get token
+          const token = setSessionCookie(ctx.req, ctx.res, user.id);
 
-          // Create/update session record
-          const sessionId = crypto.randomBytes(32).toString('hex');
+          // Hash token for session tracking
+          const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
           const userAgent = ctx.req.headers['user-agent'] || null;
           const ipAddress = (ctx.req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
                            (ctx.req.socket?.remoteAddress) || null;
 
           await dbAdditions.createOrUpdateSession({
             userId: user.id,
-            sessionId,
+            sessionId: tokenHash,
             userAgent,
             ipAddress,
           });
@@ -258,6 +278,7 @@ export const appRouter = router({
           };
         } catch (error) {
           console.error("[auth.localLogin] Error:", error);
+          if (error instanceof TRPCError) throw error;
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
             message: "Failed to log in",
@@ -303,10 +324,14 @@ export const appRouter = router({
         const activeSessions = await dbAdditions.getActiveSessions();
         const activeUserIds = new Set(activeSessions.map(s => s.userId));
 
-        // Enrich with campus/district names and session info
+        // Enrich with campus/district names, session info, and last edit tracking
         const enrichedUsers = await Promise.all(users.map(async (user) => {
           const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
           const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
+
+          // Get the person record to check last edit info
+          const personId = `LOCAL-${user.id}`;
+          const person = await db.getPersonById(personId);
 
           return {
             ...user,
@@ -314,6 +339,8 @@ export const appRouter = router({
             districtName: district?.name || null,
             regionName: user.regionId || null,
             isActiveSession: activeUserIds.has(user.id),
+            lastEditedBy: person?.lastEditedBy || null,
+            lastEdited: person?.lastEdited || null,
           };
         }));
 
