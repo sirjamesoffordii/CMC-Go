@@ -73,8 +73,7 @@ jobs:
             exit 0
           fi
           pnpm exec sentry-cli releases new "$SENTRY_RELEASE"
-          pnpm exec sentry-cli releases set-commits --auto "$SENTRY_RELEASE" || true
-          pnpm exec sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps "dist/public" --rewrite --url-prefix "~/" --validate
+          pnpm exec sentry-cli sourcemaps upload --release "$SENTRY_RELEASE" --url-prefix "~/" --validate dist/public
           pnpm exec sentry-cli releases finalize "$SENTRY_RELEASE"
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
