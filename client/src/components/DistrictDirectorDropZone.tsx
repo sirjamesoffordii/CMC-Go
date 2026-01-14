@@ -36,6 +36,7 @@ interface DistrictDirectorDropZoneProps {
   quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
   districtId?: string | null; // For XAN, use "National Director" instead of "District Director"
   canInteract?: boolean;
+  maskIdentity?: boolean;
 }
 
 interface Need {
@@ -61,7 +62,8 @@ export function DistrictDirectorDropZone({
   onQuickAddClick,
   quickAddInputRef,
   districtId = null,
-  canInteract = true
+  canInteract = true,
+  maskIdentity = false
 }: DistrictDirectorDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -69,7 +71,10 @@ export function DistrictDirectorDropZone({
   const nameRef = useRef<HTMLDivElement>(null);
   
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
-  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person?.personId || '' }, { enabled: !!person });
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: person?.personId || '' },
+    { enabled: !!person && canInteract && !maskIdentity }
+  );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
   
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
@@ -132,12 +137,14 @@ export function DistrictDirectorDropZone({
         <div className="relative flex flex-col items-center w-[60px] group/add">
         <button 
           type="button"
+          disabled={!canInteract}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (!canInteract) return;
             onAddClick();
           }}
-          className="flex flex-col items-center w-[60px]"
+          className="flex flex-col items-center w-[60px] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {/* Plus sign in name position - clickable for quick add */}
           <div className="relative flex items-center justify-center mb-1">
@@ -190,7 +197,7 @@ export function DistrictDirectorDropZone({
         </button>
           {/* Label - Absolutely positioned, shown on hover */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Add
+            Add{!canInteract ? " 🔒" : ""}
           </div>
         </div>
       </div>
@@ -217,7 +224,7 @@ export function DistrictDirectorDropZone({
             onMouseMove={handleNameMouseMove}
           >
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-          {truncatedName}
+          {maskIdentity ? "\u00A0" : truncatedName}
         </div>
         {canInteract && (
           <button
@@ -245,7 +252,10 @@ export function DistrictDirectorDropZone({
         style={{ opacity: isDragging ? 0.5 : 1 }}
       >
         <button
-          onClick={onClick}
+          onClick={() => {
+            if (maskIdentity || !canInteract) return;
+            onClick();
+          }}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has a spouse */}
@@ -258,7 +268,7 @@ export function DistrictDirectorDropZone({
           )}
           {/* Main person icon - solid */}
           <div 
-            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+            className={`relative ${maskIdentity ? 'text-zinc-400' : statusColors[figmaStatus]} ${(!maskIdentity && person.depositPaid) ? 'deposit-glow' : ''}`}
           >
             <User 
               className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
@@ -269,22 +279,24 @@ export function DistrictDirectorDropZone({
         </button>
         
         {/* Role Label - Absolutely positioned, shown on hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {(() => {
-            // For XAN, always show "National Director" even if primaryRole is "District Director"
-            if (districtId === 'XAN') {
-              return person.primaryRole === 'District Director' || !person.primaryRole
-                ? 'National Director'
-                : person.primaryRole;
-            }
-            // For other districts, show primaryRole or fallback to "District Director"
-            return person.primaryRole || 'District Director';
-          })()}
-        </div>
+        {!maskIdentity && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            {(() => {
+              // For XAN, always show "National Director" even if primaryRole is "District Director"
+              if (districtId === 'XAN') {
+                return person.primaryRole === 'District Director' || !person.primaryRole
+                  ? 'National Director'
+                  : person.primaryRole;
+              }
+              // For other districts, show primaryRole or fallback to "District Director"
+              return person.primaryRole || 'District Director';
+            })()}
+          </div>
+        )}
       </div>
       </div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
+      {!maskIdentity && isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

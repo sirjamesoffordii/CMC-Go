@@ -733,18 +733,29 @@ export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
 
+  // Include people assigned to the district either directly (primaryDistrictId)
+  // OR indirectly via their primaryCampusId's district.
+  //
+  // This fixes cases where primaryDistrictId is null but the campus belongs to the district.
+  const districtWhere = or(
+    eq(people.primaryDistrictId, districtId),
+    eq(campuses.districtId, districtId),
+  );
+
   // Get total count separately to ensure we count ALL people in district
   const totalResult = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryDistrictId, districtId));
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(districtWhere);
   const total = Number(totalResult[0]?.count) || 0;
 
   // Aggregate counts per status for a specific district in a single query.
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryDistrictId, districtId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(districtWhere)
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
@@ -843,15 +854,20 @@ export async function getAllDistrictMetrics() {
   const db = await getDb();
   if (!db) return [];
   
+  // Include people in a district either by primaryDistrictId or by the district
+  // of their primaryCampusId. Use COALESCE to derive the effective district.
+  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+
   const result = await db
     .select({
-      districtId: people.primaryDistrictId,
+      districtId: effectiveDistrictId.as('districtId'),
       status: people.status,
       count: sql<number>`COUNT(*)`.as('count'),
     })
     .from(people)
-    .where(sql`${people.primaryDistrictId} IS NOT NULL`)
-    .groupBy(people.primaryDistrictId, people.status);
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(sql`${effectiveDistrictId} IS NOT NULL`)
+    .groupBy(effectiveDistrictId, people.status);
   
   // Group by district and aggregate status counts
   const districtMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
