@@ -43,7 +43,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests with coverage
-      run: pnpm run test -- --coverage        env:
+      run: pnpm run test -- --coverage
+            env:
           DATABASE_URL: postgres://root:password@localhost:5432/cmc_test
 
       - name: Upload coverage reports to Codecov
