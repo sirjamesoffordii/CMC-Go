@@ -44,7 +44,7 @@ jobs:
 
       - name: Run tests with coverage
       run: pnpm run test -- --coverage
-            env:
+        env:
           DATABASE_URL: postgres://root:password@localhost:5432/cmc_test
 
       - name: Upload coverage reports to Codecov
