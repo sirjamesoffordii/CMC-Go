@@ -69,8 +69,11 @@ jobs:
           VITE_SENTRY_RELEASE: ${{ github.sha }}
 
       - name: Upload sourcemaps to Sentry (client)
-        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
         run: |
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            echo "SENTRY_AUTH_TOKEN not set; skipping sourcemap upload."
+            exit 0
+          fi
           pnpm exec sentry-cli releases new "$SENTRY_RELEASE"
           pnpm exec sentry-cli releases set-commits --auto "$SENTRY_RELEASE" || true
           pnpm exec sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps "dist/public" --rewrite --url-prefix "~/" --validate
