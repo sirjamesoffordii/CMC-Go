@@ -81,14 +81,28 @@ export function DistrictPanel({
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
-  // Can interact: authenticated AND in scope
-  const canInteract = isAuthenticated && !isOutOfScope;
+  // Editable mode: authenticated AND in-scope
+  const canEditDistrict = isAuthenticated && !isOutOfScope;
+  const isPublicSafeMode = !canEditDistrict;
+  // Back-compat name used throughout this component
+  const canInteract = canEditDistrict;
   
   // XAN is Chi Alpha National Team, not a district
   const isNationalTeam = district?.id === 'XAN';
   const entityName = isNationalTeam ? 'Category' : 'Campus';
   const entityNamePlural = isNationalTeam ? 'Categories' : 'Campuses';
   const organizationName = isNationalTeam ? 'National Team' : 'District';
+
+  // Public-safe data sources (always available)
+  const districtId = district?.id ?? null;
+  const { data: publicDistrictMetrics } = trpc.metrics.district.useQuery(
+    { districtId: districtId ?? "" },
+    { enabled: !!districtId }
+  );
+  const { data: publicCampuses = [] } = trpc.campuses.byDistrict.useQuery(
+    { districtId: districtId ?? "" },
+    { enabled: !!districtId }
+  );
   
   // PR 5: Filter state
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
@@ -337,7 +351,10 @@ export function DistrictPanel({
 
   // Fetch active needs only - used for counting and hasNeeds indicators
   // Only active needs are counted. Inactive needs are retained for history.
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
   
   // Fetch households for dropdown
   const { data: allHouseholds = [], error: householdsError } = trpc.households.list.useQuery(undefined, {
@@ -351,8 +368,14 @@ export function DistrictPanel({
   
   // Fetch all people directly to ensure stats match InteractiveMap exactly
   // This ensures we use the same data source as the map/tooltip for consistency
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
+  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
+  const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
   
   
   // Create household mutation
@@ -1092,12 +1115,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,
@@ -1204,7 +1232,7 @@ export function DistrictPanel({
         });
         if (needNotes.length > 0 && !needDetails) {
           const lastNote = needNotes[needNotes.length - 1];
-          needDetails = (lastNote?.content || lastNote?.note || '') as string;
+          needDetails = (lastNote?.content || '') as string;
         }
       } catch (error) {
         console.error('Error processing need notes:', error);
@@ -1271,7 +1299,7 @@ export function DistrictPanel({
 
   // Handle update person
   const handleUpdatePerson = async () => {
-    if (!editingPerson || !personForm.name || !personForm.role) return;
+    if (!district || !editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
     
     // Store form values for use in callbacks
@@ -1291,7 +1319,9 @@ export function DistrictPanel({
           return false;
         }
         // Check if any people in this district already belong to this household
-        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        const householdMembers = allPeople.filter(
+          (p) => p.householdId === h.id && p.primaryDistrictId === district.id
+        );
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
           return householdMembers.some(member => {
@@ -1362,12 +1392,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,
@@ -1650,20 +1685,93 @@ export function DistrictPanel({
 
   const content = district ? (
     <div className="w-full h-full flex flex-col">
-          {isOutOfScope ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
+          {isPublicSafeMode ? (
+            <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
+              <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4 mb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{district.name}</h1>
+                    <div className="text-slate-500 text-sm font-medium mt-0.5">{district.region}</div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="text-slate-500 hover:text-slate-700"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Access Restricted</h3>
-                  <p className="text-slate-600 text-sm">
-                    You don't have permission to view people in this {organizationName.toLowerCase()}.
-                  </p>
+
+                {/* Aggregate header totals (public) */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
+                    <span className="text-slate-600 text-sm font-medium">Going</span>
+                    <span className="text-slate-900 font-semibold">
+                      {publicDistrictMetrics ? publicDistrictMetrics.going : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
+                    <span className="text-slate-600 text-sm font-medium">Maybe</span>
+                    <span className="text-slate-900 font-semibold">
+                      {publicDistrictMetrics ? publicDistrictMetrics.maybe : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
+                    <span className="text-slate-600 text-sm font-medium">Not Going</span>
+                    <span className="text-slate-900 font-semibold">
+                      {publicDistrictMetrics ? publicDistrictMetrics.notGoing : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
+                    <span className="text-slate-600 text-sm font-medium">Not Invited</span>
+                    <span className="text-slate-900 font-semibold">
+                      {publicDistrictMetrics ? publicDistrictMetrics.notInvited : "—"}
+                    </span>
+                  </div>
                 </div>
+
+                {/* Anonymous presence icons (no identity/details) */}
+                <div className="mt-4">
+                  <div className="text-slate-600 text-sm font-semibold mb-2">People</div>
+                  {publicDistrictMetrics ? (
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {Array.from({ length: Math.min(publicDistrictMetrics.total, 24) }).map((_, idx) => (
+                        <User key={idx} className="w-5 h-5 text-slate-300" strokeWidth={1.5} />
+                      ))}
+                      {publicDistrictMetrics.total > 24 && (
+                        <span className="text-slate-500 text-sm font-medium ml-2">
+                          +{publicDistrictMetrics.total - 24}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-slate-500 text-sm">—</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Public campuses list */}
+              <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-slate-800 font-semibold">{entityNamePlural}</div>
+                  <div className="text-slate-500 text-sm font-medium">
+                    {publicCampuses.length}{" "}
+                    {publicCampuses.length === 1 ? entityName.toLowerCase() : entityNamePlural.toLowerCase()}
+                  </div>
+                </div>
+                {publicCampuses.length === 0 ? (
+                  <div className="text-slate-500 text-sm">No {entityNamePlural.toLowerCase()} found.</div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {publicCampuses.map((campus) => (
+                      <div key={campus.id} className="py-2 text-slate-800 text-sm">
+                        {campus.name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -2338,11 +2446,17 @@ export function DistrictPanel({
 
   return (
     <>
-      <DndProvider backend={HTML5Backend}>
-        {mainContent}
-        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-      </DndProvider>
+      {canEditDistrict ? (
+        <DndProvider backend={HTML5Backend}>
+          {mainContent}
+          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+        </DndProvider>
+      ) : (
+        mainContent
+      )}
         
+      {canEditDistrict && (
+        <>
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
           setIsPersonDialogOpen(open);
@@ -3462,6 +3576,8 @@ export function DistrictPanel({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </>
+      )}
     </>
   );
 }

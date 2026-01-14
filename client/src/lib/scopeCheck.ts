@@ -43,7 +43,8 @@ function normalizeRole(role: string): string {
  * Returns null if scope cannot be determined (user has no access).
  */
 export function getPeopleScope(user: User | null | undefined): PeopleScope | null {
-  if (!user) return { level: "ALL" }; // No user = public access (for dev)
+  // Logged out users have NO people scope. Public UI must use aggregate endpoints.
+  if (!user) return null;
 
   const role = normalizeRole(user.role);
 

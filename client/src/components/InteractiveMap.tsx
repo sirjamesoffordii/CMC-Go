@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 interface InteractiveMapProps {
   districts: District[];
@@ -399,6 +400,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
 };
 
 export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick, viewState }: InteractiveMapProps) {
+  const { isAuthenticated } = usePublicAuth();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -413,11 +415,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(null);
   
-  // Fetch all people to calculate district stats
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
+  // Protected queries: only run when authenticated (public map uses aggregate endpoints)
+  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   
   // Fetch all campuses to count campuses per district
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
+  const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
@@ -525,6 +533,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     };
   }, [allPeople, serverMetrics, allRegionMetrics]);
   
+  const showPublicPlaceholder = !isAuthenticated && allRegionMetrics.length === 0;
+  const showOverlayPlaceholder = !isAuthenticated && allDistrictMetrics.length === 0;
   const invitedPercent = nationalTotals.total > 0 
     ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
     : 0;
@@ -662,7 +672,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           total: metric.total,
         };
       }
-    } else {
+    } else if (isAuthenticated) {
       // Fallback to calculating from allPeople (for authenticated users with scope)
       districts.forEach(district => {
         stats[district.id] = calculateDistrictStats(allPeople, district.id);
@@ -670,7 +680,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     }
     
     return stats;
-  }, [districts, allPeople, allDistrictMetrics]);
+  }, [districts, allPeople, allDistrictMetrics, isAuthenticated]);
 
   useEffect(() => {
     // Load SVG content
@@ -1275,9 +1285,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             </button>
             <div className="flex flex-col items-start transition-transform duration-200 hover:scale-105 origin-left">
               <span className="text-4xl text-slate-800">
-                <span className="font-semibold">{displayedTotals.notInvited}</span> <span className="font-medium">Not Invited Yet</span>
+                <span className="font-semibold">{showPublicPlaceholder ? "—" : displayedTotals.notInvited}</span>{" "}
+                <span className="font-medium">Not Invited Yet</span>
               </span>
-              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">/{displayedTotals.total}</span>
+              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">
+                /{showPublicPlaceholder ? "—" : displayedTotals.total}
+              </span>
             </div>
           </div>
         </div>
@@ -1305,7 +1318,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Going</span>
-            <span className="text-4xl font-semibold text-slate-900" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.yes}</span>
+            <span className="text-4xl font-semibold text-slate-900" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.yes}
+            </span>
             <div className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('yes') 
                 ? 'bg-emerald-700 border-emerald-700' 
@@ -1333,7 +1348,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Maybe</span>
-            <span className="text-3xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.maybe}</span>
+            <span className="text-3xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+            </span>
             <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('maybe') 
                 ? 'bg-yellow-600 border-yellow-600' 
@@ -1361,7 +1378,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Not Going</span>
-            <span className="text-2xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.no}</span>
+            <span className="text-2xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.no}
+            </span>
             <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('no') 
                 ? 'bg-red-700 border-red-700' 
@@ -1484,10 +1503,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             {activeMetrics.size > 0 && (() => {
                 // Aggregate stats by region
                 const regionStats: Record<string, DistrictStats> = {};
-                districts.forEach(district => {
-                  const stats = districtStats[district.id];
-                  if (!stats) return;
-                  const region = district.region || 'Unknown';
+                const districtRegionLookup = new Map<string, string>();
+                districts.forEach(d => {
+                  if (d.region) districtRegionLookup.set(d.id, d.region);
+                });
+                Object.entries(districtStats).forEach(([districtId, stats]) => {
+                  const region = districtRegionLookup.get(districtId) || DISTRICT_REGION_MAP[districtId] || "Unknown";
                   if (!regionStats[region]) {
                     regionStats[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
                   }
@@ -1629,7 +1650,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                               }}
                             >
-                              {metric.value}
+                              {showOverlayPlaceholder ? "—" : metric.value}
                             </text>
                           </g>
                         );
