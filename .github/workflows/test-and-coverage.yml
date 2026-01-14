@@ -21,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -60,3 +62,21 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      - name: Build (for sourcemaps)
+        run: pnpm build
+        env:
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
+
+      - name: Upload sourcemaps to Sentry (client)
+        if: ${{ secrets.SENTRY_AUTH_TOKEN != '' }}
+        run: |
+          pnpm exec sentry-cli releases new "$SENTRY_RELEASE"
+          pnpm exec sentry-cli releases set-commits --auto "$SENTRY_RELEASE" || true
+          pnpm exec sentry-cli releases files "$SENTRY_RELEASE" upload-sourcemaps "dist/public" --rewrite --url-prefix "~/" --validate
+          pnpm exec sentry-cli releases finalize "$SENTRY_RELEASE"
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          SENTRY_RELEASE: ${{ github.sha }}
