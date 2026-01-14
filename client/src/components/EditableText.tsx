@@ -5,9 +5,10 @@ interface EditableTextProps {
   onSave: (newValue: string) => void;
   className?: string;
   inputClassName?: string;
+  disabled?: boolean;
 }
 
-export function EditableText({ value, onSave, className = "", inputClassName = "" }: EditableTextProps) {
+export function EditableText({ value, onSave, className = "", inputClassName = "", disabled = false }: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,9 +67,11 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
 
   return (
     <span
-      onClick={() => setIsEditing(true)}
-      className={`cursor-text hover:bg-gray-100 rounded px-1 ${className}`}
-      title="Click to edit"
+      onClick={() => {
+        if (!disabled) setIsEditing(true);
+      }}
+      className={`${disabled ? "cursor-default" : "cursor-text hover:bg-gray-100"} rounded px-1 ${className}`}
+      title={disabled ? undefined : "Click to edit"}
     >
       {value}
     </span>

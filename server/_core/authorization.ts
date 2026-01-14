@@ -3,6 +3,7 @@
  * Implements the editing ladder and viewing rules
  */
 
+import { TRPCError } from "@trpc/server";
 import type { User } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { people } from "../../drizzle/schema";
@@ -220,3 +221,64 @@ export function canViewNeed(user: User | null, needVisibility: "LEADERSHIP_ONLY"
 
   return false;
 }
+
+/**
+ * People scope type for server-side visibility enforcement
+ */
+export type PeopleScope =
+  | { level: "CAMPUS"; campusId: number }
+  | { level: "DISTRICT"; districtId: string }
+  | { level: "REGION"; regionId: string }
+  | { level: "ALL" };
+
+function normalizeRole(role: string) {
+  // Campus-level roles - all normalize to appropriate campus scope role
+  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "CAMPUS_VOLUNTEER" || role === "CAMPUS_INTERN") return "STAFF";
+
+  // District-level roles
+  if (role === "DISTRICT_STAFF") return "DISTRICT_DIRECTOR";
+
+  // Regional-level roles - Regional Staff gets full access
+  if (role === "REGIONAL_STAFF") return "REGIONAL_DIRECTOR";
+
+  return role;
+}
+
+const FULL_ACCESS = new Set([
+  "NATIONAL_DIRECTOR",
+  "NATIONAL_STAFF",
+  "REGIONAL_DIRECTOR",
+  "REGION_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "CMC_GO_ADMIN",
+  "ADMIN",
+]);
+
+/**
+ * Get people scope for a user based on their role and assignments
+ * Determines what people data the user can access
+ */
+export function getPeopleScope(user: { role: string; campusId?: number | null; districtId?: string | null; regionId?: string | null }): PeopleScope {
+  const role = normalizeRole(user.role);
+
+  if (FULL_ACCESS.has(role)) return { level: "ALL" };
+
+  if (role === "DISTRICT_DIRECTOR") {
+    if (user.regionId) return { level: "REGION", regionId: user.regionId };
+    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+  }
+
+  if (role === "CAMPUS_DIRECTOR") {
+    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+  }
+
+  // STAFF default
+  if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
+  throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+}
+

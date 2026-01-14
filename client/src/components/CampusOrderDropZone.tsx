@@ -5,18 +5,21 @@ interface CampusOrderDropZoneProps {
   index: number;
   onDrop: (draggedCampusId: number, targetIndex: number) => void;
   position?: 'before' | 'after';
+  canInteract?: boolean;
 }
 
-export function CampusOrderDropZone({ index, onDrop, position = 'before' }: CampusOrderDropZoneProps) {
+export function CampusOrderDropZone({ index, onDrop, position = 'before', canInteract = true }: CampusOrderDropZoneProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'campus',
     drop: (item: { campusId: number }) => {
+      if (!canInteract) return;
       onDrop(item.campusId, index);
     },
+    canDrop: () => canInteract,
     collect: (monitor) => ({
       isOver: monitor.isOver({ shallow: true }),
     }),
-  }), [index, onDrop]);
+  }), [index, onDrop, canInteract]);
 
   return (
     <div

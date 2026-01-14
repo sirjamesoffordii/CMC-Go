@@ -80,12 +80,36 @@ export function DistrictPanel({
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
+
+  // Visibility & edit gating:
+  // - Public/out-of-scope: aggregates + campuses + presence icons only (no identities)
+  // - In-scope: full interactive behavior
+  const canViewPeopleDetails = isAuthenticated && !isOutOfScope;
+  const canEditDistrict = isAuthenticated && !isOutOfScope;
+  const isPublicSafeMode = !canViewPeopleDetails;
+  const disableEdits = isPublicSafeMode || !canEditDistrict;
+  // Back-compat name used throughout this component
+  const canInteract = !disableEdits;
   
   // XAN is Chi Alpha National Team, not a district
   const isNationalTeam = district?.id === 'XAN';
   const entityName = isNationalTeam ? 'Category' : 'Campus';
   const entityNamePlural = isNationalTeam ? 'Categories' : 'Campuses';
   const organizationName = isNationalTeam ? 'National Team' : 'District';
+
+  // Public-safe data sources (always available)
+  const districtId = district?.id ?? null;
+  const { data: publicDistrictMetrics } = trpc.metrics.district.useQuery(
+    { districtId: districtId ?? "" },
+    { enabled: !!districtId }
+  );
+  const { data: publicCampuses = [] } = trpc.campuses.byDistrict.useQuery(
+    { districtId: districtId ?? "" },
+    { enabled: !!districtId }
+  );
+
+  // In public-safe mode we must still show campuses (public endpoint).
+  const campusesForLayout: Campus[] = isPublicSafeMode ? (publicCampuses as Campus[]) : campuses;
   
   // PR 5: Filter state
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
@@ -334,7 +358,10 @@ export function DistrictPanel({
 
   // Fetch active needs only - used for counting and hasNeeds indicators
   // Only active needs are counted. Inactive needs are retained for history.
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
   
   // Fetch households for dropdown
   const { data: allHouseholds = [], error: householdsError } = trpc.households.list.useQuery(undefined, {
@@ -348,8 +375,14 @@ export function DistrictPanel({
   
   // Fetch all people directly to ensure stats match InteractiveMap exactly
   // This ensures we use the same data source as the map/tooltip for consistency
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
+  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
+  const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
+    enabled: canEditDistrict,
+    retry: false,
+  });
   
   
   // Create household mutation
@@ -572,7 +605,7 @@ export function DistrictPanel({
 
   // Initialize campus order when campuses change
   useEffect(() => {
-    if (campuses.length > 0 && district?.id) {
+    if (campusesForLayout.length > 0 && district?.id) {
       // Try to load persisted order from localStorage
       const savedOrderJson = localStorage.getItem(`campus-order-${district.id}`);
       let savedOrder: number[] = [];
@@ -585,13 +618,13 @@ export function DistrictPanel({
       }
       
       // Filter saved order to only include existing campuses
-      const validSavedOrder = savedOrder.filter(id => campuses.some(c => c.id === id));
-      const missingCampuses = campuses.filter(c => !validSavedOrder.includes(c.id));
+      const validSavedOrder = savedOrder.filter(id => campusesForLayout.some(c => c.id === id));
+      const missingCampuses = campusesForLayout.filter(c => !validSavedOrder.includes(c.id));
       
       // Use saved order if valid, otherwise use default order
       const currentOrder = validSavedOrder.length > 0 
         ? [...validSavedOrder, ...missingCampuses.map(c => c.id)]
-        : campuses.map(c => c.id);
+        : campusesForLayout.map(c => c.id);
       
       setCampusOrder(currentOrder);
       
@@ -601,19 +634,19 @@ export function DistrictPanel({
       // Clear order when district changes
       setCampusOrder([]);
     }
-  }, [campuses, district?.id]); // Reset when district changes
+  }, [campusesForLayout, district?.id]); // Reset when district changes
 
   // Create ordered campuses with people (using filtered list)
   const campusesWithPeople = useMemo(() => {
     const ordered = campusOrder.length > 0 
-      ? campusOrder.map(id => campuses.find(c => c.id === id)).filter(Boolean) as Campus[]
-      : campuses;
+      ? campusOrder.map(id => campusesForLayout.find(c => c.id === id)).filter(Boolean) as Campus[]
+      : campusesForLayout;
     
     return ordered.map(campus => ({
       ...campus,
       people: filteredPeople.filter(p => p.primaryCampusId === campus.id)
     }));
-  }, [campuses, campusOrder, filteredPeople]);
+  }, [campusesForLayout, campusOrder, filteredPeople]);
 
   // Calculate dynamic offsets for pie chart and labels (after campusesWithPeople is defined)
   useLayoutEffect(() => {
@@ -714,10 +747,25 @@ export function DistrictPanel({
     if (!district?.id) {
       return { going: 0, maybe: 0, notGoing: 0, notInvited: 0 };
     }
+    if (isPublicSafeMode && publicDistrictMetrics) {
+      return {
+        going: publicDistrictMetrics.going,
+        maybe: publicDistrictMetrics.maybe,
+        notGoing: publicDistrictMetrics.notGoing,
+        notInvited: publicDistrictMetrics.notInvited,
+      };
+    }
     // Use allPeople (same source as InteractiveMap) for stats calculation
     const districtStats = calculateDistrictStats(allPeople, district.id);
     return toDistrictPanelStats(districtStats);
-  }, [allPeople, district?.id]);
+  }, [allPeople, district?.id, isPublicSafeMode, publicDistrictMetrics]);
+
+  const safeStats = {
+    going: stats.going ?? 0,
+    maybe: stats.maybe ?? 0,
+    notGoing: stats.notGoing ?? 0,
+    notInvited: stats.notInvited ?? 0,
+  };
 
   // Calculate needs summary for district - ONLY active needs are counted
   // Only active needs are counted. Inactive needs are retained for history.
@@ -736,9 +784,9 @@ export function DistrictPanel({
     };
   }, [allNeeds, peopleWithNeeds]);
 
-  const totalPeople = stats.going + stats.maybe + stats.notGoing + stats.notInvited;
+  const totalPeople = safeStats.going + safeStats.maybe + safeStats.notGoing + safeStats.notInvited;
   const invitedPercentage = totalPeople > 0 
-    ? Math.round(((totalPeople - stats.notInvited) / totalPeople) * 100) 
+    ? Math.round(((totalPeople - safeStats.notInvited) / totalPeople) * 100) 
     : 0;
 
   // Sort people based on campus preference
@@ -1089,12 +1137,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,
@@ -1201,7 +1254,7 @@ export function DistrictPanel({
         });
         if (needNotes.length > 0 && !needDetails) {
           const lastNote = needNotes[needNotes.length - 1];
-          needDetails = (lastNote?.content || lastNote?.note || '') as string;
+          needDetails = (lastNote?.content || '') as string;
         }
       } catch (error) {
         console.error('Error processing need notes:', error);
@@ -1268,7 +1321,7 @@ export function DistrictPanel({
 
   // Handle update person
   const handleUpdatePerson = async () => {
-    if (!editingPerson || !personForm.name || !personForm.role) return;
+    if (!district || !editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
     
     // Store form values for use in callbacks
@@ -1288,7 +1341,9 @@ export function DistrictPanel({
           return false;
         }
         // Check if any people in this district already belong to this household
-        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        const householdMembers = allPeople.filter(
+          (p) => p.householdId === h.id && p.primaryDistrictId === district.id
+        );
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
           return householdMembers.some(member => {
@@ -1359,12 +1414,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,
@@ -1647,24 +1707,7 @@ export function DistrictPanel({
 
   const content = district ? (
     <div className="w-full h-full flex flex-col">
-          {isOutOfScope ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-8 text-center">
-              <div className="flex flex-col items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Access Restricted</h3>
-                  <p className="text-slate-600 text-sm">
-                    You don't have permission to view people in this {organizationName.toLowerCase()}.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
+      <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200 w-full">
             {/* Title Section */}
@@ -1681,6 +1724,7 @@ export function DistrictPanel({
                 onSave={(newName) => {
                   updateDistrictName.mutate({ id: district.id, name: newName });
                 }}
+                disabled={disableEdits}
                       className={`font-semibold text-slate-900 tracking-tight ${
                         district.name === 'South Texas' ? 'text-3xl' : 
                         district.name === 'Texico' ? 'text-2xl' : 
@@ -1699,6 +1743,7 @@ export function DistrictPanel({
                 onSave={(newRegion) => {
                   updateDistrictRegion.mutate({ id: district.id, region: newRegion });
                 }}
+                disabled={disableEdits}
                       className="text-slate-500 text-sm"
                       inputClassName="text-slate-500 text-sm"
                     />
@@ -1735,6 +1780,8 @@ export function DistrictPanel({
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
                     quickAddInputRef={quickAddInputRef}
                     districtId={district?.id || null}
+                    canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
                   />
                   </div>
                   
@@ -1763,6 +1810,8 @@ export function DistrictPanel({
                     }}
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district-staff')}
                     quickAddInputRef={quickAddInputRef}
+                    canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
                   />
                 </div>
               </div>
@@ -1813,10 +1862,10 @@ export function DistrictPanel({
                 <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
             {(() => {
                   const total = totalPeople || 1;
-                  const goingAngle = (stats.going / total) * 360;
-                  const maybeAngle = (stats.maybe / total) * 360;
-                  const notGoingAngle = (stats.notGoing / total) * 360;
-                  const notInvitedAngle = (stats.notInvited / total) * 360;
+                  const goingAngle = (safeStats.going / total) * 360;
+                  const maybeAngle = (safeStats.maybe / total) * 360;
+                  const notGoingAngle = (safeStats.notGoing / total) * 360;
+                  const notInvitedAngle = (safeStats.notInvited / total) * 360;
                   
                   const createPieSlice = (startAngle: number, angle: number, color: string) => {
                     const startRad = (startAngle - 90) * Math.PI / 180;
@@ -1833,22 +1882,22 @@ export function DistrictPanel({
                   let currentAngle = 0;
                   const slices = [];
                   
-                  if (stats.going > 0) {
+                  if (safeStats.going > 0) {
                     slices.push(<path key="going" d={createPieSlice(currentAngle, goingAngle, '#047857')} fill="#047857" stroke="white" strokeWidth="1" />);
                     currentAngle += goingAngle;
                   }
                   
-                  if (stats.maybe > 0) {
+                  if (safeStats.maybe > 0) {
                     slices.push(<path key="maybe" d={createPieSlice(currentAngle, maybeAngle, '#ca8a04')} fill="#ca8a04" stroke="white" strokeWidth="1" />);
                     currentAngle += maybeAngle;
                   }
                   
-                  if (stats.notGoing > 0) {
+                  if (safeStats.notGoing > 0) {
                     slices.push(<path key="notGoing" d={createPieSlice(currentAngle, notGoingAngle, '#b91c1c')} fill="#b91c1c" stroke="white" strokeWidth="1" />);
                     currentAngle += notGoingAngle;
                   }
                   
-                  if (stats.notInvited > 0) {
+                  if (safeStats.notInvited > 0) {
                     slices.push(<path key="notInvited" d={createPieSlice(currentAngle, notInvitedAngle, '#64748b')} fill="#64748b" stroke="white" strokeWidth="1" />);
                   }
                   
@@ -1863,22 +1912,22 @@ export function DistrictPanel({
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-700 flex-shrink-0 ring-1 ring-emerald-200"></div>
                   <span className="text-slate-600 text-base font-medium">Going:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.going}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.going}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-yellow-600 flex-shrink-0 ring-1 ring-yellow-200"></div>
                   <span className="text-slate-600 text-base font-medium">Maybe:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.maybe}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.maybe}</span>
               </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-red-700 flex-shrink-0 ring-1 ring-red-200"></div>
                   <span className="text-slate-600 text-base font-medium">Not Going:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.notGoing}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.notGoing}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
                   <span className="text-slate-600 text-base font-medium">Not Invited Yet:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.notInvited}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.notInvited}</span>
                 </div>
               </div>
         </div>
@@ -1896,6 +1945,7 @@ export function DistrictPanel({
                       index={index}
                       onDrop={handleCampusReorder}
                       position="before"
+                      canInteract={canInteract}
                     />
                     
                     {/* Drop zone after campus (covers bottom half of row) */}
@@ -1903,24 +1953,27 @@ export function DistrictPanel({
                       index={index + 1}
                       onDrop={handleCampusReorder}
                       position="after"
+                      canInteract={canInteract}
                     />
                     
                     {/* Draggable Campus Row */}
-                    <DraggableCampusRow campusId={campus.id}>
+                    <DraggableCampusRow campusId={campus.id} canInteract={canInteract}>
                       <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
                     {/* Campus Name with Kebab Menu */}
-                    <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
+                    <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop} canInteract={canInteract}>
                       <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
                         {/* Kebab Menu */}
                         <div className="relative z-20">
                           <button
+                            disabled={disableEdits}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (disableEdits) return;
                               const rect = e.currentTarget.getBoundingClientRect();
                               setCampusMenuPosition({ x: rect.left, y: rect.bottom });
                               setOpenCampusMenuId(openCampusMenuId === campus.id ? null : campus.id);
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20"
+                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20 disabled:opacity-0 disabled:cursor-not-allowed"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-300 hover:text-gray-500" />
                           </button>
@@ -2010,7 +2063,7 @@ export function DistrictPanel({
                     
                     {/* Person Figures */}
                     <div className="flex-1 min-w-0">
-                      <CampusDropZone campusId={campus.id} onDrop={handleCampusRowDrop}>
+                      <CampusDropZone campusId={campus.id} onDrop={handleCampusRowDrop} canInteract={canInteract}>
                         <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
                       {sortedPeople.map((person, index) => {
                         // Mark first campus director (first person of first campus) with data attribute
@@ -2025,6 +2078,7 @@ export function DistrictPanel({
                             campusId={campus.id}
                             index={index}
                             onDrop={handlePersonMove}
+                            canInteract={canInteract}
                           >
                             <div ref={isFirstCampusDirector ? campusDirectorRef : null} data-first-campus-director={isFirstCampusDirector ? 'true' : undefined}>
                               <DroppablePerson
@@ -2037,6 +2091,8 @@ export function DistrictPanel({
                                 onMove={handlePersonMove}
                                 hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                                 onPersonStatusChange={onPersonStatusChange}
+                                canInteract={canInteract}
+                                maskIdentity={isPublicSafeMode}
                               />
                             </div>
                           </PersonDropZone>
@@ -2048,16 +2104,19 @@ export function DistrictPanel({
                             campusId={campus.id}
                             index={sortedPeople.length}
                             onDrop={handlePersonMove}
+                            canInteract={canInteract}
                           >
                             <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
                               <button 
                                 type="button"
+                                disabled={disableEdits}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  if (disableEdits) return;
                                   openAddPersonDialog(campus.id);
                                 }}
-                                className="flex flex-col items-center w-full"
+                                className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-not-allowed"
                               >
                                 {/* Plus sign in name position - clickable for quick add */}
                                 <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
@@ -2135,196 +2194,89 @@ export function DistrictPanel({
                 );
               })}
               
-              {/* Add {entityName} (Inline) */}
-              <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
-                {quickAddMode === 'add-campus' ? (
-                  <div className="w-48">
-                    <Input
-                      ref={quickAddInputRef}
-                      value={quickAddName}
-                      onChange={(e) => setQuickAddName(e.target.value)}
-                      placeholder={`New ${entityName.toLowerCase()} name…`}
-                      className="h-12 text-base"
-                      spellCheck={true}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const name = quickAddName.trim();
-                          if (!name) return;
-                          createCampus.mutate({ name, districtId: district.id });
-                          setQuickAddName('');
-                          setQuickAddMode(null);
-                        } else if (e.key === 'Escape') {
-                          setQuickAddName('');
-                          setQuickAddMode(null);
-                        }
+              {/* Add {entityName} (Inline) - Only when canInteract */}
+              {canInteract && (
+                <div className="relative z-10" style={{ pointerEvents: 'auto' }}>
+                  {quickAddMode === 'add-campus' ? (
+                    <div className="w-48">
+                      <Input
+                        ref={quickAddInputRef}
+                        value={quickAddName}
+                        onChange={(e) => setQuickAddName(e.target.value)}
+                        placeholder={`New ${entityName.toLowerCase()} name…`}
+                        className="h-12 text-base"
+                        spellCheck={true}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const name = quickAddName.trim();
+                            if (!name) return;
+                            createCampus.mutate({ name, districtId: district.id });
+                            setQuickAddName('');
+                            setQuickAddMode(null);
+                          } else if (e.key === 'Escape') {
+                            setQuickAddName('');
+                            setQuickAddMode(null);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Keep tidy; only cancel if empty
+                          if (!quickAddName.trim()) {
+                            setQuickAddMode(null);
+                          }
+                        }}
+                        autoFocus
+                      />
+                      <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={disableEdits}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (disableEdits) return;
+                        setQuickAddMode('add-campus');
+                        setQuickAddName('');
+                        setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      onBlur={() => {
-                        // Keep tidy; only cancel if empty
-                        if (!quickAddName.trim()) {
-                          setQuickAddMode(null);
-                        }
-                      }}
-                      autoFocus
-                    />
-                    <div className="mt-1 text-xs text-slate-500">Press Enter to add • Esc to cancel</div>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setQuickAddMode('add-campus');
-                      setQuickAddName('');
-                      setTimeout(() => quickAddInputRef.current?.focus(), 0);
-                    }}
-                    className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <Plus className="w-5 h-5" strokeWidth={2} />
-                    <span className="text-sm">Add {entityName}</span>
-                  </button>
-                )}
-              </div>
-              
-              {/* Unassigned Row - Only show if there are unassigned people */}
-              {peopleWithoutCampus.length > 0 && (
-                 <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
-                  {/* Unassigned Label */}
-                  <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
-                    <h3 className="font-medium text-slate-500 italic text-xl">Unassigned</h3>
-          </div>
-          
-                  {/* Person Figures */}
-                  <div className="flex-1 min-w-0">
-                    <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop}>
-                      <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
-                    {getSortedPeople(peopleWithoutCampus, -1).map((person, index) => (
-                      <PersonDropZone
-                        key={`dropzone-${person.personId}`}
-                        campusId="unassigned"
-                        index={index}
-                        onDrop={handlePersonMove}
-                      >
-                        <DroppablePerson
-                          key={person.personId}
-                          person={person}
-                          campusId="unassigned"
-                          index={index}
-                          onEdit={handleEditPerson}
-                          onClick={handlePersonClick}
-                          onMove={handlePersonMove}
-                          hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
-                        />
-                      </PersonDropZone>
-                    ))}
-                        
-                        {/* Add Person Button */}
-                        <PersonDropZone
-                          campusId="unassigned"
-                          index={peopleWithoutCampus.length}
-                          onDrop={handlePersonMove}
-                        >
-                          <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
-                            <button 
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openAddPersonDialog('unassigned');
-                              }}
-                              className="flex flex-col items-center w-full"
-                            >
-                              {/* Plus sign in name position - clickable for quick add */}
-                              <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
-                                {quickAddMode === 'unassigned' ? (
-                                  <div className="relative">
-                                    <Input
-                                      ref={quickAddInputRef}
-                                      value={quickAddName}
-                                      onChange={(e) => setQuickAddName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleQuickAddSubmit('unassigned');
-                                        } else if (e.key === 'Escape') {
-                                          setQuickAddMode(null);
-                                          setQuickAddName('');
-                                        }
-                                      }}
-                                      onBlur={() => {
-                                        handleQuickAddSubmit('unassigned');
-                                      }}
-                                      placeholder="Name"
-                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                      autoFocus
-                                      spellCheck={true}
-                                      autoComplete="name"
-                                    />
-                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                      Quick Add
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Plus 
-                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
-                                    strokeWidth={1.5}
-                                    onClick={(e) => handleQuickAddClick(e, 'unassigned')}
-                                  />
-                                )}
-                              </div>
-                              {/* Icon */}
-                              <div className="relative">
-                                <User 
-                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                  strokeWidth={1.5}
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={1.5}
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={0}
-                                  fill="currentColor"
-                                  style={{
-                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                  }}
-                                />
-                              </div>
-                            </button>
-                            {/* Label - Absolutely positioned, shown on hover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                              Add
-                            </div>
-                          </div>
-                        </PersonDropZone>
-                      </div>
-                    </CampusDropZone>
-                  </div>
+                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-5 h-5" strokeWidth={2} />
+                      <span className="text-sm">Add {entityName}</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           </div>
             </div>
-          )}
     </div>
   ) : null;
 
+  // Always wrap in DndProvider so hooks have context, but disable drag/drop via canDrag/canDrop
+  const mainContent = (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="w-full h-full flex flex-col"
+    >
+      {content}
+    </motion.div>
+  );
+
   return (
-    <DndProvider backend={HTML5Backend}>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.2 }}
-        className="w-full h-full flex flex-col"
-      >
-        {content}
+    <>
+      <DndProvider backend={HTML5Backend}>
+        {mainContent}
+        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+      </DndProvider>
         
+      {canEditDistrict && (
+        <>
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {
           setIsPersonDialogOpen(open);
@@ -3444,11 +3396,8 @@ export function DistrictPanel({
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
-        {/* Custom Drag Layer */}
-        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-        
-    </motion.div>
-    </DndProvider>
+        </>
+      )}
+    </>
   );
 }

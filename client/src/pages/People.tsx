@@ -15,7 +15,7 @@ import { EditableText } from "@/components/EditableText";
 
 export default function People() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated, isLoading: authLoading } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
@@ -43,7 +43,7 @@ export default function People() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Initialize myCampus from URL params
   const getMyCampusInitial = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -66,22 +66,30 @@ export default function People() {
     return params.get('hasNeeds') === 'true';
   };
   const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(getHasActiveNeedsInitial());
-  
+
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
   const [expandedCampuses, setExpandedCampuses] = useState<Set<number>>(new Set());
-  
+
   // Menu state
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [campusForm, setCampusForm] = useState({ name: '' });
-  
-  // Data queries
-  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery();
-  const { data: allCampuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery();
-  const { data: allDistricts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+
+  // Data queries - ONLY run when authenticated
+  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allCampuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allDistricts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const needsByPersonId = useMemo(() => {
     const map = new Map<string, typeof allNeeds>();
@@ -354,7 +362,44 @@ export default function People() {
     if (!searchOpen) return;
     setTimeout(() => searchInputRef.current?.focus(), 0);
   }, [searchOpen]);
-  
+
+  // Authentication gate - prevent data leak when logged out
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/")}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Map
+          </Button>
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+              <p className="text-gray-600 mb-4">Please log in to view people.</p>
+              <Button onClick={() => setLocation("/")}>
+                Go to Home
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">

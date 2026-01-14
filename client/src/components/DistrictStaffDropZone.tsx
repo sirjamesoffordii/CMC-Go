@@ -37,6 +37,8 @@ interface DistrictStaffDropZoneProps {
   onQuickAddCancel?: () => void;
   onQuickAddClick?: (e: React.MouseEvent) => void;
   quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
+  canInteract?: boolean;
+  maskIdentity?: boolean;
 }
 
 interface Need {
@@ -61,6 +63,8 @@ export function DistrictStaffDropZone({
   onQuickAddCancel,
   onQuickAddClick,
   quickAddInputRef,
+  canInteract = true,
+  maskIdentity = false
 }: DistrictStaffDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -68,32 +72,37 @@ export function DistrictStaffDropZone({
   const nameRef = useRef<HTMLDivElement>(null);
   
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
-  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery({ personId: person?.personId || '' }, { enabled: !!person });
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: person?.personId || '' },
+    { enabled: !!person && canInteract && !maskIdentity }
+  );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'person',
     drop: (item: { personId: string; campusId: string | number }) => {
-      onDrop(item.personId, item.campusId);
+      if (canInteract) {
+        onDrop(item.personId, item.campusId);
+      }
     },
     canDrop: (item: { personId: string; campusId: string | number }) => {
-      return item.campusId !== 'district-staff';
+      return canInteract && item.campusId !== 'district-staff';
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop(),
     })
-  }));
+  }), [onDrop, canInteract]);
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'person',
     item: person ? { personId: person.personId, campusId: 'district-staff' } : null,
-    canDrag: () => !!person,
+    canDrag: () => !!person && canInteract,
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
-  }), [person]);
+  }), [person, canInteract]);
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
-    if (person) {
+    if (person && canInteract) {
       setIsHovered(true);
       if (nameRef.current) {
         const rect = nameRef.current.getBoundingClientRect();
@@ -103,12 +112,14 @@ export function DistrictStaffDropZone({
   };
 
   const handleNameMouseLeave = () => {
-    setIsHovered(false);
-    setTooltipPos(null);
+    if (canInteract) {
+      setIsHovered(false);
+      setTooltipPos(null);
+    }
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
-    if (nameRef.current && isHovered && person) {
+    if (nameRef.current && isHovered && person && canInteract) {
       const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });
     }
@@ -124,12 +135,14 @@ export function DistrictStaffDropZone({
         <div className="relative flex flex-col items-center w-[60px] group/add">
         <button 
           type="button"
+          disabled={!canInteract}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (!canInteract) return;
             onAddClick();
           }}
-          className="flex flex-col items-center w-[60px]"
+          className="flex flex-col items-center w-[60px] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {/* Plus sign in name position - clickable for quick add */}
           <div className="relative flex items-center justify-center mb-1">
@@ -209,31 +222,38 @@ export function DistrictStaffDropZone({
             onMouseMove={handleNameMouseMove}
           >
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-          {truncatedName}
+          {maskIdentity ? "\u00A0" : truncatedName}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit('district-staff', person);
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
-          title="Edit person"
-        >
-          <Edit2 className="w-2.5 h-2.5 text-slate-500" />
-        </button>
+        {canInteract && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit('district-staff', person);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+            title="Edit person"
+          >
+            <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+          </button>
+        )}
       </div>
       
       <div
         ref={(node) => {
           iconRef.current = node;
-          drag(node);
+          if (canInteract) {
+            drag(node);
+          }
         }}
-        className="relative"
+        className={`relative ${canInteract ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         style={{ opacity: isDragging ? 0.5 : 1 }}
       >
         <button
-          onClick={onClick}
+          onClick={() => {
+            if (maskIdentity || !canInteract) return;
+            onClick();
+          }}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has a spouse */}
@@ -246,7 +266,7 @@ export function DistrictStaffDropZone({
           )}
           {/* Main person icon - solid */}
           <div 
-            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+            className={`relative ${maskIdentity ? 'text-zinc-400' : statusColors[figmaStatus]} ${(!maskIdentity && person.depositPaid) ? 'deposit-glow' : ''}`}
           >
             <User 
               className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
@@ -254,20 +274,22 @@ export function DistrictStaffDropZone({
               fill="currentColor"
             />
             {/* Need indicator (arm + icon) */}
-            {personNeed?.isActive && (
+            {!maskIdentity && personNeed?.isActive && (
               <NeedIndicator type={personNeed.type} />
             )}
           </div>
         </button>
         
         {/* Role Label - Absolutely positioned, shown on hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {person.primaryRole || 'District Staff'}
-        </div>
+        {!maskIdentity && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            {person.primaryRole || 'District Staff'}
+          </div>
+        )}
       </div>
       </div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
+      {!maskIdentity && isHovered && tooltipPos && person && (personNeed || person.notes || person.depositPaid) && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

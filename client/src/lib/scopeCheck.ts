@@ -20,12 +20,20 @@ interface User {
  * Normalize role names to handle legacy/alternate naming conventions.
  */
 function normalizeRole(role: string): string {
-  // Handle legacy/alternate role names
+  // Campus-level roles - all normalize to appropriate campus scope role
   if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "CAMPUS_VOLUNTEER" || role === "CAMPUS_INTERN") return "STAFF";
+
+  // District-level roles
   if (role === "DISTRICT_STAFF") return "DISTRICT_DIRECTOR";
+
+  // Regional-level roles - Regional Staff gets full access
+  if (role === "REGIONAL_STAFF") return "REGIONAL_DIRECTOR";
+
   // Handle national-level roles that map to REGION_DIRECTOR or ADMIN
   if (role === "NATIONAL_DIRECTOR" || role === "REGIONAL_DIRECTOR" || role === "FIELD_DIRECTOR") return "REGION_DIRECTOR";
   if (role === "NATIONAL_STAFF" || role === "CMC_GO_ADMIN") return "ADMIN";
+
   return role;
 }
 
@@ -35,7 +43,8 @@ function normalizeRole(role: string): string {
  * Returns null if scope cannot be determined (user has no access).
  */
 export function getPeopleScope(user: User | null | undefined): PeopleScope | null {
-  if (!user) return { level: "ALL" }; // No user = public access (for dev)
+  // Logged out users have NO people scope. Public UI must use aggregate endpoints.
+  if (!user) return null;
 
   const role = normalizeRole(user.role);
 
