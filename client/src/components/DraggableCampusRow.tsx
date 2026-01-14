@@ -8,16 +8,18 @@ interface DraggableCampusRowProps {
   campusId: number;
   children: ReactNode;
   isDragging?: boolean;
+  canInteract?: boolean;
 }
 
-export function DraggableCampusRow({ campusId, children, isDragging }: DraggableCampusRowProps) {
+export function DraggableCampusRow({ campusId, children, isDragging, canInteract = true }: DraggableCampusRowProps) {
   const [{ isDragging: dragState }, drag, preview] = useDrag(() => ({
     type: 'campus',
     item: { campusId },
+    canDrag: canInteract,
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
-  }), [campusId]);
+  }), [campusId, canInteract]);
 
   // Use the actual element as the drag preview instead of default
   useEffect(() => {
@@ -28,9 +30,9 @@ export function DraggableCampusRow({ campusId, children, isDragging }: Draggable
 
   return (
     <div
-      ref={drag}
+      ref={canInteract ? drag : undefined}
       style={{ opacity }}
-      className="relative cursor-grab active:cursor-grabbing z-10"
+      className={`relative z-10 ${canInteract ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
     >
       {children}
     </div>

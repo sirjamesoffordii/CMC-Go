@@ -1738,6 +1738,7 @@ export function DistrictPanel({
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district')}
                     quickAddInputRef={quickAddInputRef}
                     districtId={district?.id || null}
+                    canInteract={canInteract}
                   />
                   </div>
                   
@@ -1766,6 +1767,7 @@ export function DistrictPanel({
                     }}
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district-staff')}
                     quickAddInputRef={quickAddInputRef}
+                    canInteract={canInteract}
                   />
                 </div>
               </div>
@@ -1909,7 +1911,7 @@ export function DistrictPanel({
                     />
                     
                     {/* Draggable Campus Row */}
-                    <DraggableCampusRow campusId={campus.id}>
+                    <DraggableCampusRow campusId={campus.id} canInteract={canInteract}>
                       <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
                     {/* Campus Name with Kebab Menu */}
                     <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
@@ -2321,7 +2323,7 @@ export function DistrictPanel({
     </div>
   ) : null;
 
-  // Conditionally wrap content in DndProvider only when canInteract
+  // Always wrap in DndProvider so hooks have context, but disable drag/drop via canDrag/canDrop
   const mainContent = (
     <motion.div
       initial={{ opacity: 0 }}
@@ -2336,14 +2338,10 @@ export function DistrictPanel({
 
   return (
     <>
-      {canInteract ? (
-        <DndProvider backend={HTML5Backend}>
-          {mainContent}
-          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-        </DndProvider>
-      ) : (
-        mainContent
-      )}
+      <DndProvider backend={HTML5Backend}>
+        {mainContent}
+        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+      </DndProvider>
         
         {/* Add Person Dialog */}
         <Dialog open={isPersonDialogOpen} onOpenChange={(open) => {

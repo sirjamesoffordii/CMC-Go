@@ -95,10 +95,11 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
     item: { personId: person.personId, campusId, index },
+    canDrag: canInteract,
     collect: (monitor) => ({
       isDragging: monitor.isDragging()
     })
-  }), [person.personId, campusId, index]);
+  }), [person.personId, campusId, index, canInteract]);
 
   // Hide the default drag preview
   useEffect(() => {
@@ -107,15 +108,16 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'person',
+    canDrop: () => canInteract,
     drop: (item: { personId: string; campusId: string | number; index: number }) => {
-      if (item.personId !== person.personId) {
+      if (canInteract && item.personId !== person.personId) {
         onMove(item.personId, item.campusId, campusId, index);
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver()
     })
-  }), [person.personId, campusId, index, onMove]);
+  }), [person.personId, campusId, index, onMove, canInteract]);
 
   // Set iconRef for tooltip positioning
   const setIconRef = useCallback((node: HTMLDivElement | null) => {
