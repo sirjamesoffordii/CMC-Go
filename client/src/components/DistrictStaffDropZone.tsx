@@ -37,6 +37,7 @@ interface DistrictStaffDropZoneProps {
   onQuickAddCancel?: () => void;
   onQuickAddClick?: (e: React.MouseEvent) => void;
   quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
+  canInteract?: boolean;
 }
 
 interface Need {
@@ -61,6 +62,7 @@ export function DistrictStaffDropZone({
   onQuickAddCancel,
   onQuickAddClick,
   quickAddInputRef,
+  canInteract = true
 }: DistrictStaffDropZoneProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -74,26 +76,28 @@ export function DistrictStaffDropZone({
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: 'person',
     drop: (item: { personId: string; campusId: string | number }) => {
-      onDrop(item.personId, item.campusId);
+      if (canInteract) {
+        onDrop(item.personId, item.campusId);
+      }
     },
     canDrop: (item: { personId: string; campusId: string | number }) => {
-      return item.campusId !== 'district-staff';
+      return canInteract && item.campusId !== 'district-staff';
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
       canDrop: monitor.canDrop(),
     })
-  }));
+  }), [onDrop, canInteract]);
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'person',
     item: person ? { personId: person.personId, campusId: 'district-staff' } : null,
-    canDrag: () => !!person,
+    canDrag: () => !!person && canInteract,
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
-  }), [person]);
+  }), [person, canInteract]);
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
-    if (person) {
+    if (person && canInteract) {
       setIsHovered(true);
       if (nameRef.current) {
         const rect = nameRef.current.getBoundingClientRect();
@@ -103,12 +107,14 @@ export function DistrictStaffDropZone({
   };
 
   const handleNameMouseLeave = () => {
-    setIsHovered(false);
-    setTooltipPos(null);
+    if (canInteract) {
+      setIsHovered(false);
+      setTooltipPos(null);
+    }
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
-    if (nameRef.current && isHovered && person) {
+    if (nameRef.current && isHovered && person && canInteract) {
       const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });
     }
@@ -211,25 +217,29 @@ export function DistrictStaffDropZone({
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
           {truncatedName}
         </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit('district-staff', person);
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
-          title="Edit person"
-        >
-          <Edit2 className="w-2.5 h-2.5 text-slate-500" />
-        </button>
+        {canInteract && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit('district-staff', person);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+            className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+            title="Edit person"
+          >
+            <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+          </button>
+        )}
       </div>
       
       <div
         ref={(node) => {
           iconRef.current = node;
-          drag(node);
+          if (canInteract) {
+            drag(node);
+          }
         }}
-        className="relative"
+        className={`relative ${canInteract ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
         style={{ opacity: isDragging ? 0.5 : 1 }}
       >
         <button
