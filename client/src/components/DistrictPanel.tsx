@@ -1736,7 +1736,6 @@ export function DistrictPanel({
                         'text-2xl'
                       }`}
               />
-              {disableEdits && <span className="ml-1 text-slate-400">🔒</span>}
                   </h1>
                   <span className="text-slate-500 text-sm mt-0.5 block font-medium">
               <EditableText
@@ -1748,7 +1747,6 @@ export function DistrictPanel({
                       className="text-slate-500 text-sm"
                       inputClassName="text-slate-500 text-sm"
                     />
-              {disableEdits && <span className="ml-1 text-slate-400">🔒</span>}
                   </span>
           </div>
                 <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
@@ -2246,153 +2244,9 @@ export function DistrictPanel({
                       className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-5 h-5" strokeWidth={2} />
-                      <span className="text-sm">Add {entityName}{disableEdits ? " 🔒" : ""}</span>
+                      <span className="text-sm">Add {entityName}</span>
                     </button>
                   )}
-                </div>
-              )}
-              
-              {/* Unassigned Row - show presence in public-safe mode */}
-              {(peopleWithoutCampus.length > 0 || (isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0)) && (
-                 <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
-                  {/* Unassigned Label */}
-                  <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
-                    <h3 className="font-medium text-slate-500 italic text-xl">Unassigned</h3>
-          </div>
-          
-                  {/* Person Figures */}
-                  <div className="flex-1 min-w-0">
-                    <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop} canInteract={canInteract}>
-                      <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
-                    {isPublicSafeMode ? (
-                      <>
-                        {Array.from({ length: Math.min(publicDistrictMetrics?.total ?? 0, 24) }).map((_, idx) => (
-                          <div key={`presence-${idx}`} className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0">
-                            {/* Keep spacing where name label would be */}
-                            <div className="mb-1 h-4 w-full" />
-                            <User className="w-10 h-10 text-zinc-400" strokeWidth={1.5} />
-                          </div>
-                        ))}
-                        {(publicDistrictMetrics?.total ?? 0) > 24 && (
-                          <div className="text-sm text-slate-500 font-medium ml-2">
-                            +{(publicDistrictMetrics?.total ?? 0) - 24}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      getSortedPeople(peopleWithoutCampus, -1).map((person, index) => (
-                      <PersonDropZone
-                        key={`dropzone-${person.personId}`}
-                        campusId="unassigned"
-                        index={index}
-                        onDrop={handlePersonMove}
-                        canInteract={canInteract}
-                      >
-                        <DroppablePerson
-                          key={person.personId}
-                          person={person}
-                          campusId="unassigned"
-                          index={index}
-                          onEdit={handleEditPerson}
-                          onClick={handlePersonClick}
-                          onMove={handlePersonMove}
-                          hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
-                          canInteract={canInteract}
-                          maskIdentity={isPublicSafeMode}
-                        />
-                      </PersonDropZone>
-                      ))
-                    )}
-                        
-                        {/* Add Person Button */}
-                        <PersonDropZone
-                          campusId="unassigned"
-                          index={peopleWithoutCampus.length}
-                          onDrop={handlePersonMove}
-                          canInteract={canInteract}
-                        >
-                          <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
-                            <button 
-                              type="button"
-                              disabled={disableEdits}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (disableEdits) return;
-                                openAddPersonDialog('unassigned');
-                              }}
-                              className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                              {/* Plus sign in name position - clickable for quick add */}
-                              <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
-                                {quickAddMode === 'unassigned' ? (
-                                  <div className="relative">
-                                    <Input
-                                      ref={quickAddInputRef}
-                                      value={quickAddName}
-                                      onChange={(e) => setQuickAddName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          handleQuickAddSubmit('unassigned');
-                                        } else if (e.key === 'Escape') {
-                                          setQuickAddMode(null);
-                                          setQuickAddName('');
-                                        }
-                                      }}
-                                      onBlur={() => {
-                                        handleQuickAddSubmit('unassigned');
-                                      }}
-                                      placeholder="Name"
-                                      className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                      autoFocus
-                                      spellCheck={true}
-                                      autoComplete="name"
-                                    />
-                                    <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                      Quick Add
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <Plus 
-                                    className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
-                                    strokeWidth={1.5}
-                                    onClick={(e) => handleQuickAddClick(e, 'unassigned')}
-                                  />
-                                )}
-                              </div>
-                              {/* Icon */}
-                              <div className="relative">
-                                <User 
-                                  className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                                  strokeWidth={1.5}
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={1.5}
-                                  fill="none"
-                                  stroke="currentColor"
-                                />
-                                <User 
-                                  className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                                  strokeWidth={0}
-                                  fill="currentColor"
-                                  style={{
-                                    filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
-                                  }}
-                                />
-                              </div>
-                            </button>
-                            {/* Label - Absolutely positioned, shown on hover */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                              Add{disableEdits ? " 🔒" : ""}
-                            </div>
-                          </div>
-                        </PersonDropZone>
-                      </div>
-                    </CampusDropZone>
-                  </div>
                 </div>
               )}
             </div>

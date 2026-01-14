@@ -195,7 +195,7 @@ export function DistrictStaffDropZone({
         </button>
           {/* Label - Absolutely positioned, shown on hover */}
           <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Add{!canInteract ? " 🔒" : ""}
+            Add
           </div>
         </div>
       </div>
