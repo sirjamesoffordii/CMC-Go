@@ -262,6 +262,9 @@ const FULL_ACCESS = new Set([
 export function getPeopleScope(user: { role: string; campusId?: number | null; districtId?: string | null; regionId?: string | null }): PeopleScope {
   const role = normalizeRole(user.role);
 
+  // ADMIN role gets full access even without scope
+  if (role === "ADMIN") return { level: "ALL" };
+
   if (FULL_ACCESS.has(role)) return { level: "ALL" };
 
   if (role === "DISTRICT_DIRECTOR") {
