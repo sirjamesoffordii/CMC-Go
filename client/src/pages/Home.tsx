@@ -96,6 +96,7 @@ function createSyntheticDistrict(districtId: string | null, districts: District[
 export default function Home() {
   // PR 2: Real authentication
   const { user } = usePublicAuth();
+  const isAuthenticated = !!user;
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
   
@@ -148,9 +149,15 @@ export default function Home() {
 
   const utils = trpc.useUtils();
 
-  // Fetch data - store queries for error checking
-  const districtsQuery = trpc.districts.list.useQuery();
-  const campusesQuery = trpc.campuses.list.useQuery();
+  // Fetch data (protected): only when authenticated
+  const districtsQuery = trpc.districts.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+  const campusesQuery = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   
   // Check if selected district/campus is in scope (before fetching people)
   const isSelectedDistrictInScope = useMemo(() => {
@@ -170,8 +177,8 @@ export default function Home() {
     return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
   }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
   
-  // Only fetch people if selected district/campus is in scope
-  const shouldFetchPeople = isSelectedDistrictInScope && isSelectedCampusInScope;
+  // Only fetch people when authenticated AND selected district/campus is in scope
+  const shouldFetchPeople = isAuthenticated && isSelectedDistrictInScope && isSelectedCampusInScope;
   const peopleQuery = trpc.people.list.useQuery(undefined, { 
     enabled: shouldFetchPeople,
     retry: false, // Don't retry on auth errors
@@ -189,6 +196,7 @@ export default function Home() {
   
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery({
+    enabled: isAuthenticated,
     retry: false, // Don't retry on auth errors
     onError: (error) => {
       // Silently handle auth errors - needs are not needed for aggregates
