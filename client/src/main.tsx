@@ -13,11 +13,13 @@ import "./index.css";
 // Initialize Sentry with environment variables
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
+const sentryRelease = import.meta.env.VITE_SENTRY_RELEASE || import.meta.env.VITE_APP_VERSION || undefined;
 
 if (sentryDsn && sentryDsn.trim()) {
   Sentry.init({
     dsn: sentryDsn,
     environment: sentryEnvironment,
+    release: sentryRelease,
     sendDefaultPii: true,
     // Enable performance monitoring
     tracesSampleRate: 1.0,

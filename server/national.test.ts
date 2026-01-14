@@ -18,27 +18,27 @@ describe("National Staff", () => {
       const firstPerson = nationalStaff[0];
       expect(firstPerson).toHaveProperty("personId");
       expect(firstPerson).toHaveProperty("name");
-      expect(firstPerson).toHaveProperty("roleTitle");
-      expect(firstPerson).toHaveProperty("assignmentType");
-      expect(firstPerson.assignmentType).toBe("National");
+      // National staff are represented as people with no district/region assignment
+      expect(firstPerson.primaryDistrictId).toBeNull();
+      expect(firstPerson.primaryRegion).toBeNull();
     }
   });
 
-  it("should return people with National assignment type only", async () => {
+  it("returns only people with no district/region assignment", async () => {
     const nationalStaff = await db.getNationalStaff();
     
-    // All returned people should have National assignment type
     nationalStaff.forEach(person => {
-      expect(person.assignmentType).toBe("National");
+      expect(person.primaryDistrictId).toBeNull();
+      expect(person.primaryRegion).toBeNull();
     });
   });
 
-  it("should include role titles for national staff", async () => {
+  it("includes role information when present", async () => {
     const nationalStaff = await db.getNationalStaff();
     
-    // Each person should have either a role title or null
+    // Each person should have either a primaryRole string or null
     nationalStaff.forEach(person => {
-      expect(person.roleTitle === null || typeof person.roleTitle === "string").toBe(true);
+      expect(person.primaryRole === null || typeof person.primaryRole === "string").toBe(true);
     });
   });
 });
