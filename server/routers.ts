@@ -334,8 +334,13 @@ export const appRouter = router({
   }),
 
   people: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
+    list: publicProcedure.query(async ({ ctx }) => {
       try {
+        // If not authenticated, return all people (will be masked on client)
+        if (!ctx.user) {
+          return await db.getAllPeople();
+        }
+
         const scope = getPeopleScope(ctx.user);
 
         switch (scope.level) {

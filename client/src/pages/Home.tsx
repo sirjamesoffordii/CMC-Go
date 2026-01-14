@@ -184,10 +184,9 @@ export default function Home() {
     return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
   }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
   
-  // Only fetch people when authenticated AND selected district/campus is in scope
-  const shouldFetchPeople = isAuthenticated && isSelectedDistrictInScope && isSelectedCampusInScope;
-  const peopleQuery = trpc.people.list.useQuery(undefined, { 
-    enabled: shouldFetchPeople,
+  // Fetch people always - backend will handle auth and return public data when not authenticated
+  const peopleQuery = trpc.people.list.useQuery(undefined, {
+    enabled: true,
     retry: false, // Don't retry on auth errors
   });
   
