@@ -41,6 +41,7 @@ interface DroppablePersonProps {
   hasNeeds?: boolean;
   onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
   canInteract?: boolean;
+  maskIdentity?: boolean;
 }
 
 interface Need {
@@ -52,7 +53,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, canInteract = true }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, canInteract = true, maskIdentity = false }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -61,11 +62,15 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
-  // Authentication disabled - always fetch needs
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: needsEnabled,
+    retry: false,
+  });
   // Also fetch needs by person to get inactive needs
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person.personId }
+    { personId: person.personId },
+    { enabled: needsEnabled }
   );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
@@ -146,7 +151,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     // Only show tooltip if canInteract
-    if (!canInteract) return;
+    if (!canInteract || maskIdentity) return;
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -156,14 +161,14 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const handleNameMouseLeave = () => {
     // Only handle if canInteract
-    if (!canInteract) return;
+    if (!canInteract || maskIdentity) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
     // Only handle if canInteract
-    if (!canInteract) return;
+    if (!canInteract || maskIdentity) return;
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
@@ -196,7 +201,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         onMouseMove={handleNameMouseMove}
       >
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-          {capitalizedFirstName}
+          {maskIdentity ? "\u00A0" : capitalizedFirstName}
         </div>
         {canInteract && (
           <button
@@ -239,7 +244,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
-          {person.spouse && (
+          {!maskIdentity && person.spouse && (
             <User
               className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
               strokeWidth={1.5}
@@ -248,7 +253,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           )}
           {/* Main person icon - solid */}
           <div 
-            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+            className={`relative ${maskIdentity ? 'text-zinc-400' : statusColors[figmaStatus]} ${(!maskIdentity && person.depositPaid) ? 'deposit-glow' : ''}`}
           >
             <User
               className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
@@ -257,19 +262,21 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
             />
           </div>
           {/* Need indicator (arm + icon) */}
-          {hasNeeds && (
+          {!maskIdentity && hasNeeds && (
             <NeedIndicator type={personNeed?.type} />
           )}
         </button>
 
         {/* Role Label - hidden until hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {person.primaryRole || 'Staff'}
-        </div>
+        {!maskIdentity && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            {person.primaryRole || 'Staff'}
+          </div>
+        )}
       </div>
       </motion.div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && (
+      {!maskIdentity && isHovered && tooltipPos && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

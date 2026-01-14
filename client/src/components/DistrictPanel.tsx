@@ -81,11 +81,15 @@ export function DistrictPanel({
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
-  // Editable mode: authenticated AND in-scope
+  // Visibility & edit gating:
+  // - Public/out-of-scope: aggregates + campuses + presence icons only (no identities)
+  // - In-scope: full interactive behavior
+  const canViewPeopleDetails = isAuthenticated && !isOutOfScope;
   const canEditDistrict = isAuthenticated && !isOutOfScope;
-  const isPublicSafeMode = !canEditDistrict;
+  const isPublicSafeMode = !canViewPeopleDetails;
+  const disableEdits = isPublicSafeMode || !canEditDistrict;
   // Back-compat name used throughout this component
-  const canInteract = canEditDistrict;
+  const canInteract = !disableEdits;
   
   // XAN is Chi Alpha National Team, not a district
   const isNationalTeam = district?.id === 'XAN';
@@ -103,6 +107,9 @@ export function DistrictPanel({
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
   );
+
+  // In public-safe mode we must still show campuses (public endpoint).
+  const campusesForLayout: Campus[] = isPublicSafeMode ? (publicCampuses as Campus[]) : campuses;
   
   // PR 5: Filter state
   const [statusFilter, setStatusFilter] = useState<Set<"Yes" | "Maybe" | "No" | "Not Invited">>(new Set());
@@ -598,7 +605,7 @@ export function DistrictPanel({
 
   // Initialize campus order when campuses change
   useEffect(() => {
-    if (campuses.length > 0 && district?.id) {
+    if (campusesForLayout.length > 0 && district?.id) {
       // Try to load persisted order from localStorage
       const savedOrderJson = localStorage.getItem(`campus-order-${district.id}`);
       let savedOrder: number[] = [];
@@ -611,13 +618,13 @@ export function DistrictPanel({
       }
       
       // Filter saved order to only include existing campuses
-      const validSavedOrder = savedOrder.filter(id => campuses.some(c => c.id === id));
-      const missingCampuses = campuses.filter(c => !validSavedOrder.includes(c.id));
+      const validSavedOrder = savedOrder.filter(id => campusesForLayout.some(c => c.id === id));
+      const missingCampuses = campusesForLayout.filter(c => !validSavedOrder.includes(c.id));
       
       // Use saved order if valid, otherwise use default order
       const currentOrder = validSavedOrder.length > 0 
         ? [...validSavedOrder, ...missingCampuses.map(c => c.id)]
-        : campuses.map(c => c.id);
+        : campusesForLayout.map(c => c.id);
       
       setCampusOrder(currentOrder);
       
@@ -627,19 +634,19 @@ export function DistrictPanel({
       // Clear order when district changes
       setCampusOrder([]);
     }
-  }, [campuses, district?.id]); // Reset when district changes
+  }, [campusesForLayout, district?.id]); // Reset when district changes
 
   // Create ordered campuses with people (using filtered list)
   const campusesWithPeople = useMemo(() => {
     const ordered = campusOrder.length > 0 
-      ? campusOrder.map(id => campuses.find(c => c.id === id)).filter(Boolean) as Campus[]
-      : campuses;
+      ? campusOrder.map(id => campusesForLayout.find(c => c.id === id)).filter(Boolean) as Campus[]
+      : campusesForLayout;
     
     return ordered.map(campus => ({
       ...campus,
       people: filteredPeople.filter(p => p.primaryCampusId === campus.id)
     }));
-  }, [campuses, campusOrder, filteredPeople]);
+  }, [campusesForLayout, campusOrder, filteredPeople]);
 
   // Calculate dynamic offsets for pie chart and labels (after campusesWithPeople is defined)
   useLayoutEffect(() => {
@@ -740,10 +747,25 @@ export function DistrictPanel({
     if (!district?.id) {
       return { going: 0, maybe: 0, notGoing: 0, notInvited: 0 };
     }
+    if (isPublicSafeMode && publicDistrictMetrics) {
+      return {
+        going: publicDistrictMetrics.going,
+        maybe: publicDistrictMetrics.maybe,
+        notGoing: publicDistrictMetrics.notGoing,
+        notInvited: publicDistrictMetrics.notInvited,
+      };
+    }
     // Use allPeople (same source as InteractiveMap) for stats calculation
     const districtStats = calculateDistrictStats(allPeople, district.id);
     return toDistrictPanelStats(districtStats);
-  }, [allPeople, district?.id]);
+  }, [allPeople, district?.id, isPublicSafeMode, publicDistrictMetrics]);
+
+  const safeStats = {
+    going: stats.going ?? 0,
+    maybe: stats.maybe ?? 0,
+    notGoing: stats.notGoing ?? 0,
+    notInvited: stats.notInvited ?? 0,
+  };
 
   // Calculate needs summary for district - ONLY active needs are counted
   // Only active needs are counted. Inactive needs are retained for history.
@@ -762,9 +784,9 @@ export function DistrictPanel({
     };
   }, [allNeeds, peopleWithNeeds]);
 
-  const totalPeople = stats.going + stats.maybe + stats.notGoing + stats.notInvited;
+  const totalPeople = safeStats.going + safeStats.maybe + safeStats.notGoing + safeStats.notInvited;
   const invitedPercentage = totalPeople > 0 
-    ? Math.round(((totalPeople - stats.notInvited) / totalPeople) * 100) 
+    ? Math.round(((totalPeople - safeStats.notInvited) / totalPeople) * 100) 
     : 0;
 
   // Sort people based on campus preference
@@ -1685,97 +1707,7 @@ export function DistrictPanel({
 
   const content = district ? (
     <div className="w-full h-full flex flex-col">
-          {isPublicSafeMode ? (
-            <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
-              <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4 mb-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{district.name}</h1>
-                    <div className="text-slate-500 text-sm font-medium mt-0.5">{district.region}</div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onClose}
-                    className="text-slate-500 hover:text-slate-700"
-                    aria-label="Close"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
-
-                {/* Aggregate header totals (public) */}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
-                    <span className="text-slate-600 text-sm font-medium">Going</span>
-                    <span className="text-slate-900 font-semibold">
-                      {publicDistrictMetrics ? publicDistrictMetrics.going : "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
-                    <span className="text-slate-600 text-sm font-medium">Maybe</span>
-                    <span className="text-slate-900 font-semibold">
-                      {publicDistrictMetrics ? publicDistrictMetrics.maybe : "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
-                    <span className="text-slate-600 text-sm font-medium">Not Going</span>
-                    <span className="text-slate-900 font-semibold">
-                      {publicDistrictMetrics ? publicDistrictMetrics.notGoing : "—"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-md border border-slate-100 px-3 py-2">
-                    <span className="text-slate-600 text-sm font-medium">Not Invited</span>
-                    <span className="text-slate-900 font-semibold">
-                      {publicDistrictMetrics ? publicDistrictMetrics.notInvited : "—"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Anonymous presence icons (no identity/details) */}
-                <div className="mt-4">
-                  <div className="text-slate-600 text-sm font-semibold mb-2">People</div>
-                  {publicDistrictMetrics ? (
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {Array.from({ length: Math.min(publicDistrictMetrics.total, 24) }).map((_, idx) => (
-                        <User key={idx} className="w-5 h-5 text-slate-300" strokeWidth={1.5} />
-                      ))}
-                      {publicDistrictMetrics.total > 24 && (
-                        <span className="text-slate-500 text-sm font-medium ml-2">
-                          +{publicDistrictMetrics.total - 24}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-slate-500 text-sm">—</div>
-                  )}
-                </div>
-              </div>
-
-              {/* Public campuses list */}
-              <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-slate-800 font-semibold">{entityNamePlural}</div>
-                  <div className="text-slate-500 text-sm font-medium">
-                    {publicCampuses.length}{" "}
-                    {publicCampuses.length === 1 ? entityName.toLowerCase() : entityNamePlural.toLowerCase()}
-                  </div>
-                </div>
-                {publicCampuses.length === 0 ? (
-                  <div className="text-slate-500 text-sm">No {entityNamePlural.toLowerCase()} found.</div>
-                ) : (
-                  <div className="divide-y divide-slate-100">
-                    {publicCampuses.map((campus) => (
-                      <div key={campus.id} className="py-2 text-slate-800 text-sm">
-                        {campus.name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
+      <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200 w-full">
             {/* Title Section */}
@@ -1792,6 +1724,7 @@ export function DistrictPanel({
                 onSave={(newName) => {
                   updateDistrictName.mutate({ id: district.id, name: newName });
                 }}
+                disabled={disableEdits}
                       className={`font-semibold text-slate-900 tracking-tight ${
                         district.name === 'South Texas' ? 'text-3xl' : 
                         district.name === 'Texico' ? 'text-2xl' : 
@@ -1803,6 +1736,7 @@ export function DistrictPanel({
                         'text-2xl'
                       }`}
               />
+              {disableEdits && <span className="ml-1 text-slate-400">🔒</span>}
                   </h1>
                   <span className="text-slate-500 text-sm mt-0.5 block font-medium">
               <EditableText
@@ -1810,9 +1744,11 @@ export function DistrictPanel({
                 onSave={(newRegion) => {
                   updateDistrictRegion.mutate({ id: district.id, region: newRegion });
                 }}
+                disabled={disableEdits}
                       className="text-slate-500 text-sm"
                       inputClassName="text-slate-500 text-sm"
                     />
+              {disableEdits && <span className="ml-1 text-slate-400">🔒</span>}
                   </span>
           </div>
                 <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
@@ -1847,6 +1783,7 @@ export function DistrictPanel({
                     quickAddInputRef={quickAddInputRef}
                     districtId={district?.id || null}
                     canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
                   />
                   </div>
                   
@@ -1876,6 +1813,7 @@ export function DistrictPanel({
                     onQuickAddClick={(e) => handleQuickAddClick(e, 'district-staff')}
                     quickAddInputRef={quickAddInputRef}
                     canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
                   />
                 </div>
               </div>
@@ -1926,10 +1864,10 @@ export function DistrictPanel({
                 <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
             {(() => {
                   const total = totalPeople || 1;
-                  const goingAngle = (stats.going / total) * 360;
-                  const maybeAngle = (stats.maybe / total) * 360;
-                  const notGoingAngle = (stats.notGoing / total) * 360;
-                  const notInvitedAngle = (stats.notInvited / total) * 360;
+                  const goingAngle = (safeStats.going / total) * 360;
+                  const maybeAngle = (safeStats.maybe / total) * 360;
+                  const notGoingAngle = (safeStats.notGoing / total) * 360;
+                  const notInvitedAngle = (safeStats.notInvited / total) * 360;
                   
                   const createPieSlice = (startAngle: number, angle: number, color: string) => {
                     const startRad = (startAngle - 90) * Math.PI / 180;
@@ -1946,22 +1884,22 @@ export function DistrictPanel({
                   let currentAngle = 0;
                   const slices = [];
                   
-                  if (stats.going > 0) {
+                  if (safeStats.going > 0) {
                     slices.push(<path key="going" d={createPieSlice(currentAngle, goingAngle, '#047857')} fill="#047857" stroke="white" strokeWidth="1" />);
                     currentAngle += goingAngle;
                   }
                   
-                  if (stats.maybe > 0) {
+                  if (safeStats.maybe > 0) {
                     slices.push(<path key="maybe" d={createPieSlice(currentAngle, maybeAngle, '#ca8a04')} fill="#ca8a04" stroke="white" strokeWidth="1" />);
                     currentAngle += maybeAngle;
                   }
                   
-                  if (stats.notGoing > 0) {
+                  if (safeStats.notGoing > 0) {
                     slices.push(<path key="notGoing" d={createPieSlice(currentAngle, notGoingAngle, '#b91c1c')} fill="#b91c1c" stroke="white" strokeWidth="1" />);
                     currentAngle += notGoingAngle;
                   }
                   
-                  if (stats.notInvited > 0) {
+                  if (safeStats.notInvited > 0) {
                     slices.push(<path key="notInvited" d={createPieSlice(currentAngle, notInvitedAngle, '#64748b')} fill="#64748b" stroke="white" strokeWidth="1" />);
                   }
                   
@@ -1976,22 +1914,22 @@ export function DistrictPanel({
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-700 flex-shrink-0 ring-1 ring-emerald-200"></div>
                   <span className="text-slate-600 text-base font-medium">Going:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.going}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.going}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-yellow-600 flex-shrink-0 ring-1 ring-yellow-200"></div>
                   <span className="text-slate-600 text-base font-medium">Maybe:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.maybe}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.maybe}</span>
               </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-red-700 flex-shrink-0 ring-1 ring-red-200"></div>
                   <span className="text-slate-600 text-base font-medium">Not Going:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.notGoing}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.notGoing}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
                   <span className="text-slate-600 text-base font-medium">Not Invited Yet:</span>
-                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{stats.notInvited}</span>
+                  <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">{safeStats.notInvited}</span>
                 </div>
               </div>
         </div>
@@ -2009,6 +1947,7 @@ export function DistrictPanel({
                       index={index}
                       onDrop={handleCampusReorder}
                       position="before"
+                      canInteract={canInteract}
                     />
                     
                     {/* Drop zone after campus (covers bottom half of row) */}
@@ -2016,24 +1955,27 @@ export function DistrictPanel({
                       index={index + 1}
                       onDrop={handleCampusReorder}
                       position="after"
+                      canInteract={canInteract}
                     />
                     
                     {/* Draggable Campus Row */}
                     <DraggableCampusRow campusId={campus.id} canInteract={canInteract}>
                       <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
                     {/* Campus Name with Kebab Menu */}
-                    <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop}>
+                    <CampusNameDropZone campusId={campus.id} onDrop={handleCampusNameDrop} canInteract={canInteract}>
                       <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
                         {/* Kebab Menu */}
                         <div className="relative z-20">
                           <button
+                            disabled={disableEdits}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (disableEdits) return;
                               const rect = e.currentTarget.getBoundingClientRect();
                               setCampusMenuPosition({ x: rect.left, y: rect.bottom });
                               setOpenCampusMenuId(openCampusMenuId === campus.id ? null : campus.id);
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20"
+                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20 disabled:opacity-0 disabled:cursor-not-allowed"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-300 hover:text-gray-500" />
                           </button>
@@ -2123,7 +2065,7 @@ export function DistrictPanel({
                     
                     {/* Person Figures */}
                     <div className="flex-1 min-w-0">
-                      <CampusDropZone campusId={campus.id} onDrop={handleCampusRowDrop}>
+                      <CampusDropZone campusId={campus.id} onDrop={handleCampusRowDrop} canInteract={canInteract}>
                         <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
                       {sortedPeople.map((person, index) => {
                         // Mark first campus director (first person of first campus) with data attribute
@@ -2138,6 +2080,7 @@ export function DistrictPanel({
                             campusId={campus.id}
                             index={index}
                             onDrop={handlePersonMove}
+                            canInteract={canInteract}
                           >
                             <div ref={isFirstCampusDirector ? campusDirectorRef : null} data-first-campus-director={isFirstCampusDirector ? 'true' : undefined}>
                               <DroppablePerson
@@ -2151,6 +2094,7 @@ export function DistrictPanel({
                                 hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                                 onPersonStatusChange={onPersonStatusChange}
                                 canInteract={canInteract}
+                                maskIdentity={isPublicSafeMode}
                               />
                             </div>
                           </PersonDropZone>
@@ -2162,16 +2106,19 @@ export function DistrictPanel({
                             campusId={campus.id}
                             index={sortedPeople.length}
                             onDrop={handlePersonMove}
+                            canInteract={canInteract}
                           >
                             <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
                               <button 
                                 type="button"
+                                disabled={disableEdits}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  if (disableEdits) return;
                                   openAddPersonDialog(campus.id);
                                 }}
-                                className="flex flex-col items-center w-full"
+                                className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-not-allowed"
                               >
                                 {/* Plus sign in name position - clickable for quick add */}
                                 <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
@@ -2287,24 +2234,26 @@ export function DistrictPanel({
                   ) : (
                     <button
                       type="button"
+                      disabled={disableEdits}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (disableEdits) return;
                         setQuickAddMode('add-campus');
                         setQuickAddName('');
                         setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer"
+                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-5 h-5" strokeWidth={2} />
-                      <span className="text-sm">Add {entityName}</span>
+                      <span className="text-sm">Add {entityName}{disableEdits ? " 🔒" : ""}</span>
                     </button>
                   )}
                 </div>
               )}
               
-              {/* Unassigned Row - Only show if there are unassigned people */}
-              {peopleWithoutCampus.length > 0 && (
+              {/* Unassigned Row - show presence in public-safe mode */}
+              {(peopleWithoutCampus.length > 0 || (isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0)) && (
                  <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
                   {/* Unassigned Label */}
                   <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
@@ -2313,14 +2262,31 @@ export function DistrictPanel({
           
                   {/* Person Figures */}
                   <div className="flex-1 min-w-0">
-                    <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop}>
+                    <CampusDropZone campusId="unassigned" onDrop={handleCampusRowDrop} canInteract={canInteract}>
                       <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
-                    {getSortedPeople(peopleWithoutCampus, -1).map((person, index) => (
+                    {isPublicSafeMode ? (
+                      <>
+                        {Array.from({ length: Math.min(publicDistrictMetrics?.total ?? 0, 24) }).map((_, idx) => (
+                          <div key={`presence-${idx}`} className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0">
+                            {/* Keep spacing where name label would be */}
+                            <div className="mb-1 h-4 w-full" />
+                            <User className="w-10 h-10 text-zinc-400" strokeWidth={1.5} />
+                          </div>
+                        ))}
+                        {(publicDistrictMetrics?.total ?? 0) > 24 && (
+                          <div className="text-sm text-slate-500 font-medium ml-2">
+                            +{(publicDistrictMetrics?.total ?? 0) - 24}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      getSortedPeople(peopleWithoutCampus, -1).map((person, index) => (
                       <PersonDropZone
                         key={`dropzone-${person.personId}`}
                         campusId="unassigned"
                         index={index}
                         onDrop={handlePersonMove}
+                        canInteract={canInteract}
                       >
                         <DroppablePerson
                           key={person.personId}
@@ -2332,25 +2298,30 @@ export function DistrictPanel({
                           onMove={handlePersonMove}
                           hasNeeds={(person as Person & { hasNeeds?: boolean }).hasNeeds}
                           canInteract={canInteract}
+                          maskIdentity={isPublicSafeMode}
                         />
                       </PersonDropZone>
-                    ))}
+                      ))
+                    )}
                         
                         {/* Add Person Button */}
                         <PersonDropZone
                           campusId="unassigned"
                           index={peopleWithoutCampus.length}
                           onDrop={handlePersonMove}
+                          canInteract={canInteract}
                         >
                           <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
                             <button 
                               type="button"
+                              disabled={disableEdits}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                if (disableEdits) return;
                                 openAddPersonDialog('unassigned');
                               }}
-                              className="flex flex-col items-center w-full"
+                              className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-not-allowed"
                             >
                               {/* Plus sign in name position - clickable for quick add */}
                               <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
@@ -2415,7 +2386,7 @@ export function DistrictPanel({
                             </button>
                             {/* Label - Absolutely positioned, shown on hover */}
                             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                              Add
+                              Add{disableEdits ? " 🔒" : ""}
                             </div>
                           </div>
                         </PersonDropZone>
@@ -2427,7 +2398,6 @@ export function DistrictPanel({
             </div>
           </div>
             </div>
-          )}
     </div>
   ) : null;
 
@@ -2446,14 +2416,10 @@ export function DistrictPanel({
 
   return (
     <>
-      {canEditDistrict ? (
-        <DndProvider backend={HTML5Backend}>
-          {mainContent}
-          <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
-        </DndProvider>
-      ) : (
-        mainContent
-      )}
+      <DndProvider backend={HTML5Backend}>
+        {mainContent}
+        <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
+      </DndProvider>
         
       {canEditDistrict && (
         <>

@@ -149,6 +149,13 @@ export default function Home() {
 
   const utils = trpc.useUtils();
 
+  // Never allow the People panel to open when logged out.
+  useEffect(() => {
+    if (!isAuthenticated && peoplePanelOpen) {
+      setPeoplePanelOpen(false);
+    }
+  }, [isAuthenticated, peoplePanelOpen]);
+
   // Fetch data (protected): only when authenticated
   const districtsQuery = trpc.districts.list.useQuery(undefined, {
     enabled: isAuthenticated,

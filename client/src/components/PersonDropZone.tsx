@@ -7,12 +7,15 @@ interface PersonDropZoneProps {
   index: number;
   onDrop: (personId: string, fromCampusId: string | number, toCampusId: string | number, targetIndex: number) => void;
   children: ReactNode;
+  canInteract?: boolean;
 }
 
-export function PersonDropZone({ campusId, index, onDrop, children }: PersonDropZoneProps) {
+export function PersonDropZone({ campusId, index, onDrop, children, canInteract = true }: PersonDropZoneProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'person',
+    canDrop: () => canInteract,
     drop: (item: { personId: string; campusId: string | number; index: number }, monitor) => {
+      if (!canInteract) return;
       // Only handle if not dropped on a specific person
       if (!monitor.didDrop()) {
         onDrop(item.personId, item.campusId, campusId, index);
@@ -21,7 +24,7 @@ export function PersonDropZone({ campusId, index, onDrop, children }: PersonDrop
     collect: (monitor) => ({
       isOver: monitor.isOver({ shallow: true })
     })
-  }), [campusId, index, onDrop]);
+  }), [campusId, index, onDrop, canInteract]);
 
   return (
     <div 
