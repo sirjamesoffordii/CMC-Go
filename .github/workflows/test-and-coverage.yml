@@ -60,6 +60,7 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
+      - name: Build (for sourcemaps)
         run: pnpm build
         env:
           VITE_SENTRY_RELEASE: ${{ github.sha }}
