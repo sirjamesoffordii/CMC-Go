@@ -182,12 +182,6 @@ export default function Home() {
   const peopleQuery = trpc.people.list.useQuery(undefined, { 
     enabled: shouldFetchPeople,
     retry: false, // Don't retry on auth errors
-    onError: (error) => {
-      // Silently handle auth errors for aggregates - metrics.get will provide the data
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[Home] people.list error:", error);
-      }
-    }
   });
   
   const districts = districtsQuery.data || [];
@@ -195,15 +189,9 @@ export default function Home() {
   const allPeople = peopleQuery.data || [];
   
   const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery({
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false, // Don't retry on auth errors
-    onError: (error) => {
-      // Silently handle auth errors - needs are not needed for aggregates
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[Home] needs.listActive error:", error);
-      }
-    }
   });
   
   // Fetch saved header image, background color, height, and logo

@@ -1048,6 +1048,7 @@ export const appRouter = router({
         personId: z.string(),
         category: z.enum(["INVITE", "INTERNAL"]).default("INTERNAL"),
         content: z.string(),
+        noteType: z.enum(["GENERAL", "NEED"]).optional(),
         createdBy: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -1069,7 +1070,10 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
-        await db.createNote(input);
+        await db.createNote({
+          ...input,
+          noteType: input.noteType ?? "GENERAL",
+        });
         // Update person's lastUpdated
         await db.updatePersonStatus(input.personId, person.status);
         return { success: true };

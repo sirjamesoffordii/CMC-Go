@@ -354,11 +354,6 @@ export function DistrictPanel({
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
     enabled: canEditDistrict,
     retry: false,
-    onError: (error) => {
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[DistrictPanel] needs.listActive error:", error);
-      }
-    },
   });
   
   // Fetch households for dropdown
@@ -376,20 +371,10 @@ export function DistrictPanel({
   const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
     enabled: canEditDistrict,
     retry: false,
-    onError: (error) => {
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[DistrictPanel] people.list error:", error);
-      }
-    },
   });
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
     enabled: canEditDistrict,
     retry: false,
-    onError: (error) => {
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[DistrictPanel] campuses.list error:", error);
-      }
-    },
   });
   
   
@@ -1130,12 +1115,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,
@@ -1242,7 +1232,7 @@ export function DistrictPanel({
         });
         if (needNotes.length > 0 && !needDetails) {
           const lastNote = needNotes[needNotes.length - 1];
-          needDetails = (lastNote?.content || lastNote?.note || '') as string;
+          needDetails = (lastNote?.content || '') as string;
         }
       } catch (error) {
         console.error('Error processing need notes:', error);
@@ -1309,7 +1299,7 @@ export function DistrictPanel({
 
   // Handle update person
   const handleUpdatePerson = async () => {
-    if (!editingPerson || !personForm.name || !personForm.role) return;
+    if (!district || !editingPerson || !personForm.name || !personForm.role) return;
     const personId = editingPerson.person.personId;
     
     // Store form values for use in callbacks
@@ -1329,7 +1319,9 @@ export function DistrictPanel({
           return false;
         }
         // Check if any people in this district already belong to this household
-        const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
+        const householdMembers = allPeople.filter(
+          (p) => p.householdId === h.id && p.primaryDistrictId === district.id
+        );
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
           return householdMembers.some(member => {
@@ -1400,12 +1392,17 @@ export function DistrictPanel({
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
-            utils.people.list.refetch().then((result) => {
-              // Get fresh people data from refetch result
-              const updatedPeople = result.data || allPeople;
-              const householdMembers = updatedPeople.filter(p => p.householdId === householdIdToUse);
-              const totalChildrenCount = householdMembers.reduce((sum, p) => sum + (p.childrenCount || 0), 0);
-              const totalGuestsCount = householdMembers.reduce((sum, p) => sum + (p.guestsCount || 0), 0);
+            utils.people.list.fetch().then((updatedPeople) => {
+              const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const totalChildrenCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.childrenCount || 0),
+                0
+              );
+              const totalGuestsCount = householdMembers.reduce(
+                (sum: number, p) => sum + (p.guestsCount || 0),
+                0
+              );
               
               updateHousehold.mutate({
                 id: householdIdToUse,

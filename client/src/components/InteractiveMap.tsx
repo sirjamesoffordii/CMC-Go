@@ -419,22 +419,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false,
-    onError: (error) => {
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[InteractiveMap] people.list error:", error);
-      }
-    },
   });
   
   // Fetch all campuses to count campuses per district
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false,
-    onError: (error) => {
-      if (error.data?.code !== "UNAUTHORIZED" && error.data?.code !== "FORBIDDEN") {
-        console.error("[InteractiveMap] campuses.list error:", error);
-      }
-    },
   });
   
   // Fetch metrics from server for accurate totals

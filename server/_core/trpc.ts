@@ -23,7 +23,9 @@ const requireUser = t.middleware(async opts => {
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user,
+      // At this point user is guaranteed to be present (or dev bypass is enabled).
+      // Narrow the type for downstream protected procedures.
+      user: ctx.user as NonNullable<TrpcContext["user"]>,
     },
   });
 });
@@ -41,7 +43,7 @@ export const adminProcedure = t.procedure.use(
     return next({
       ctx: {
         ...ctx,
-        user: ctx.user,
+        user: ctx.user as NonNullable<TrpcContext["user"]>,
       },
     });
   }),
