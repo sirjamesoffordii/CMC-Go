@@ -481,8 +481,9 @@ export function DistrictPanel({
   
   // Update household mutation
   const updateHousehold = trpc.households.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       utils.households.list.invalidate();
+      utils.households.getById.invalidate({ id: variables.id });
     },
   });
   
