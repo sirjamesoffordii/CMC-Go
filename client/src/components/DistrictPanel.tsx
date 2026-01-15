@@ -158,6 +158,12 @@ export function DistrictPanel({
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
       onDistrictUpdate();
     },
   });
