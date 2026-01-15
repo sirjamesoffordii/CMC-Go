@@ -64,6 +64,8 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     onSuccess: () => {
       utils.people.getNational.invalidate();
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.followUp.list.invalidate();
       setIsAddPersonDialogOpen(false);
       setPersonForm({ name: '', role: '', nationalCategory: '', status: 'Not Invited' });
     },
