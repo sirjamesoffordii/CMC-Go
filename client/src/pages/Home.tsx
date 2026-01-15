@@ -397,6 +397,8 @@ export default function Home() {
     onSettled: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
       utils.followUp.list.invalidate();
     },
   });
@@ -405,6 +407,8 @@ export default function Home() {
     onSuccess: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
     },
   });
 
