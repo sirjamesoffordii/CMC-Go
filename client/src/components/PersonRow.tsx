@@ -35,9 +35,14 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
+  const utils = trpc.useUtils();
   
   const updatePersonName = trpc.people.updateName.useMutation({
-    onSuccess: () => onPersonUpdate(),
+    onSuccess: () => {
+      utils.people.list.invalidate();
+      utils.people.getNational.invalidate();
+      onPersonUpdate();
+    },
   });
   
   const {
