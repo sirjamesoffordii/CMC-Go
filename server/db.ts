@@ -231,6 +231,17 @@ export async function getCampusById(id: number) {
   return result[0] || null;
 }
 
+export async function getCampusByNameAndDistrict(name: string, districtId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(campuses)
+    .where(and(eq(campuses.name, name), eq(campuses.districtId, districtId)))
+    .limit(1);
+  return result[0] || null;
+}
+
 export async function createCampus(campus: InsertCampus) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

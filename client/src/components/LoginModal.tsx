@@ -9,11 +9,9 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "./ui/command";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 interface LoginModalProps {
   open: boolean;
@@ -32,25 +30,41 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [region, setRegion] = useState<string | null>(null);
   const [districtId, setDistrictId] = useState<string | null>(null);
   const [campusId, setCampusId] = useState<number | null>(null);
-  const [campusOpen, setCampusOpen] = useState(false);
-  const [regionOpen, setRegionOpen] = useState(false);
-  const [districtOpen, setDistrictOpen] = useState(false);
+  const [regionInput, setRegionInput] = useState("");
+  const [districtInput, setDistrictInput] = useState("");
+  const [campusInput, setCampusInput] = useState("");
+  const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
+  const [districtSuggestionsOpen, setDistrictSuggestionsOpen] = useState(false);
+  const [campusSuggestionsOpen, setCampusSuggestionsOpen] = useState(false);
   
   const { data: districts = [] } = trpc.districts.publicList.useQuery();
   const { data: campuses = [] } = trpc.campuses.byDistrict.useQuery(
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
   );
+  const createCampusMutation = trpc.campuses.createPublic.useMutation();
 
   const regions = useMemo(() => {
     const regionSet = new Set(districts.map((district) => district.region).filter(Boolean));
     return Array.from(regionSet).sort();
   }, [districts]);
 
-  const filteredDistricts = useMemo(
-    () => districts.filter((district) => (region ? district.region === region : false)),
-    [districts, region]
-  );
+  const filteredRegions = useMemo(() => {
+    const query = regionInput.trim().toLowerCase();
+    return regions.filter((regionName) => regionName.toLowerCase().includes(query));
+  }, [regions, regionInput]);
+
+  const filteredDistricts = useMemo(() => {
+    const query = districtInput.trim().toLowerCase();
+    return districts.filter((district) =>
+      region ? district.region === region && district.name.toLowerCase().includes(query) : false
+    );
+  }, [districts, region, districtInput]);
+
+  const filteredCampuses = useMemo(() => {
+    const query = campusInput.trim().toLowerCase();
+    return campuses.filter((campus) => campus.name.toLowerCase().includes(query));
+  }, [campuses, campusInput]);
 
   const selectedDistrict = districts.find((district) => district.id === districtId) || null;
   const selectedCampus = campuses.find((campus) => campus.id === campusId) || null;
@@ -88,10 +102,24 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setFullName("");
       setRole("STAFF");
       setRegion(null);
+      setRegionInput("");
       setDistrictId(null);
+      setDistrictInput("");
       setCampusId(null);
+      setCampusInput("");
     },
   });
+
+  const handleCreateCampus = async () => {
+    if (!districtId || !campusInput.trim()) return;
+    const result = await createCampusMutation.mutateAsync({
+      name: campusInput.trim(),
+      districtId,
+    });
+    setCampusId(result.id);
+    setCampusInput(result.name);
+    setCampusSuggestionsOpen(false);
+  };
   
   const handleStart = () => {
     if (!email || !fullName || !role || !campusId) {
@@ -125,16 +153,16 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="relative max-w-md overflow-hidden border border-black/10 bg-white text-black shadow-2xl">
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-16 left-1/2 h-52 w-52 -translate-x-1/2 rounded-full bg-red-500/10 blur-3xl" />
-          <div className="absolute -top-8 right-10 h-24 w-24 rounded-full bg-red-600/15 blur-2xl" />
-          <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-black/10 blur-3xl" />
-          <div className="absolute bottom-6 left-6 h-28 w-28 rounded-full bg-black/5 blur-2xl" />
+          <div className="absolute -top-20 left-1/2 h-60 w-60 -translate-x-1/2 rounded-full bg-red-500/15 blur-3xl" />
+          <div className="absolute -top-8 right-6 h-28 w-28 rounded-full bg-red-600/20 blur-2xl" />
+          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-black/15 blur-3xl" />
+          <div className="absolute bottom-10 left-6 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="select-none text-[72px] font-extrabold uppercase tracking-[0.2em] text-black/5 sm:text-[96px]">
+            <span className="select-none text-[84px] font-extrabold uppercase tracking-[0.22em] text-black/10 sm:text-[112px]">
               CMC GO
             </span>
           </div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.04),_transparent_55%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.08),_transparent_60%)]" />
           <div className="absolute inset-0 opacity-[0.15] [background-image:linear-gradient(120deg,rgba(0,0,0,0.04)_0%,rgba(0,0,0,0)_40%,rgba(0,0,0,0.05)_100%)]" />
           <div className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(rgba(0,0,0,0.2)_1px,transparent_1px)] [background-size:18px_18px]" />
         </div>
@@ -168,56 +196,51 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           >
             {startStep === "region" && (
               <div className="space-y-4">
-                <div>
+                <div className="relative">
                   <Label htmlFor="region" className="text-black">
                     Region *
                   </Label>
-                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={regionOpen}
-                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
-                      >
-                        {region || "Select region"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Type a region..." />
-                        <CommandList>
-                          <CommandEmpty>No regions found.</CommandEmpty>
-                          {regions.map((regionName) => (
-                            <CommandItem
-                              key={regionName}
-                              value={regionName}
-                              onSelect={() => {
-                                setRegion(regionName);
-                                setDistrictId(null);
-                                setCampusId(null);
-                                setRegionOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  region === regionName ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {regionName}
-                            </CommandItem>
-                          ))}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    id="region"
+                    value={regionInput}
+                    onChange={(e) => {
+                      setRegionInput(e.target.value);
+                      setRegionSuggestionsOpen(true);
+                      setRegion(null);
+                    }}
+                    onFocus={() => setRegionSuggestionsOpen(true)}
+                    onBlur={() => setTimeout(() => setRegionSuggestionsOpen(false), 150)}
+                    placeholder="Type your region"
+                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                  />
+                  {regionSuggestionsOpen && filteredRegions.length > 0 && (
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                      {filteredRegions.map((regionName) => (
+                        <button
+                          key={regionName}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setRegion(regionName);
+                            setRegionInput(regionName);
+                            setDistrictId(null);
+                            setDistrictInput("");
+                            setCampusId(null);
+                            setCampusInput("");
+                            setRegionSuggestionsOpen(false);
+                          }}
+                        >
+                          {regionName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={() => goToStartStep("district")}
                   disabled={!region}
-                  className="w-full bg-black text-white hover:bg-black/90"
+                  className="w-full bg-black text-white hover:bg-red-600"
                 >
                   Next
                 </Button>
@@ -226,55 +249,50 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
             {startStep === "district" && (
               <div className="space-y-4">
-                <div>
+                <div className="relative">
                   <Label htmlFor="district" className="text-black">
                     District *
                   </Label>
-                  <Popover open={districtOpen} onOpenChange={setDistrictOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={districtOpen}
-                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
-                      >
-                        {selectedDistrict ? selectedDistrict.name : "Select district"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Type a district..." />
-                        <CommandList>
-                          <CommandEmpty>No districts found.</CommandEmpty>
-                          {filteredDistricts.map((district) => (
-                            <CommandItem
-                              key={district.id}
-                              value={district.name}
-                              onSelect={() => {
-                                setDistrictId(district.id);
-                                setCampusId(null);
-                                setDistrictOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  districtId === district.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {district.name}
-                            </CommandItem>
-                          ))}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    id="district"
+                    value={districtInput}
+                    onChange={(e) => {
+                      setDistrictInput(e.target.value);
+                      setDistrictSuggestionsOpen(true);
+                      setDistrictId(null);
+                    }}
+                    onFocus={() => setDistrictSuggestionsOpen(true)}
+                    onBlur={() => setTimeout(() => setDistrictSuggestionsOpen(false), 150)}
+                    placeholder="Type your district"
+                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                  />
+                  {districtSuggestionsOpen && filteredDistricts.length > 0 && (
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                      {filteredDistricts.map((district) => (
+                        <button
+                          key={district.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setDistrictId(district.id);
+                            setDistrictInput(district.name);
+                            setCampusId(null);
+                            setCampusInput("");
+                            setDistrictSuggestionsOpen(false);
+                          }}
+                        >
+                          <span>{district.name}</span>
+                          <span className="text-xs text-black/50">{district.id}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={() => goToStartStep("campus")}
                   disabled={!districtId}
-                  className="w-full bg-black text-white hover:bg-black/90"
+                  className="w-full bg-black text-white hover:bg-red-600"
                 >
                   Next
                 </Button>
@@ -283,54 +301,59 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
             {startStep === "campus" && (
               <div className="space-y-4">
-                <div>
+                <div className="relative">
                   <Label htmlFor="campus" className="text-black">
                     Campus *
                   </Label>
-                  <Popover open={campusOpen} onOpenChange={setCampusOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={campusOpen}
-                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
-                      >
-                        {selectedCampus ? selectedCampus.name : "Select campus"}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Type a campus..." />
-                        <CommandList>
-                          <CommandEmpty>No campuses found.</CommandEmpty>
-                          {campuses.map((campus) => (
-                            <CommandItem
-                              key={campus.id}
-                              value={campus.name}
-                              onSelect={() => {
-                                setCampusId(campus.id);
-                                setCampusOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  campusId === campus.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {campus.name}
-                            </CommandItem>
-                          ))}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                  <Input
+                    id="campus"
+                    value={campusInput}
+                    onChange={(e) => {
+                      setCampusInput(e.target.value);
+                      setCampusSuggestionsOpen(true);
+                      setCampusId(null);
+                    }}
+                    onFocus={() => setCampusSuggestionsOpen(true)}
+                    onBlur={() => setTimeout(() => setCampusSuggestionsOpen(false), 150)}
+                    placeholder="Type your campus"
+                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                  />
+                  {campusSuggestionsOpen && (
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                      {filteredCampuses.map((campus) => (
+                        <button
+                          key={campus.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setCampusId(campus.id);
+                            setCampusInput(campus.name);
+                            setCampusSuggestionsOpen(false);
+                          }}
+                        >
+                          {campus.name}
+                        </button>
+                      ))}
+                      {campusInput.trim().length > 1 && filteredCampuses.length === 0 && (
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-black hover:bg-red-50"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={handleCreateCampus}
+                          disabled={createCampusMutation.isPending}
+                        >
+                          <Plus className="h-4 w-4 text-red-500" />
+                          Add "{campusInput.trim()}"
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <Button
                   onClick={() => goToStartStep("role")}
                   disabled={!campusId}
-                  className="w-full bg-black text-white hover:bg-black/90"
+                  className="w-full bg-black text-white hover:bg-red-600"
                 >
                   Next
                 </Button>
@@ -344,7 +367,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     Role *
                   </Label>
                   <Select value={role} onValueChange={(v) => setRole(v as any)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-black/20 text-black">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -356,7 +379,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => goToStartStep("name")} className="w-full bg-black text-white hover:bg-black/90">
+                <Button onClick={() => goToStartStep("name")} className="w-full bg-black text-white hover:bg-red-600">
                   Next
                 </Button>
               </div>

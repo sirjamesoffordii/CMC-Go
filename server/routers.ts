@@ -280,6 +280,19 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
       }),
+    createPublic: publicProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        districtId: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        const existing = await db.getCampusByNameAndDistrict(input.name, input.districtId);
+        if (existing) {
+          return { id: existing.id, name: existing.name, districtId: existing.districtId, created: false };
+        }
+        const insertId = await db.createCampus({ name: input.name, districtId: input.districtId });
+        return { id: insertId, name: input.name, districtId: input.districtId, created: true };
+      }),
     updateName: protectedProcedure
       .input(z.object({ id: z.number(), name: z.string() }))
       .mutation(async ({ input, ctx }) => {
