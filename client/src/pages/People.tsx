@@ -234,10 +234,10 @@ export default function People() {
           }
           districtData.campuses.get(campusId)!.people.push(person);
         } else {
-          // unassigned feature removed
+          districtData.unassigned.push(person);
         }
       } else {
-        // unassigned feature removed
+        districtData.unassigned.push(person);
       }
     });
 

@@ -218,10 +218,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             }
             districtData.campuses.get(campusId)!.people.push(person);
           } else {
-            // unassigned feature removed
+            districtData.unassigned.push(person);
           }
         } else {
-          // unassigned feature removed
+          districtData.unassigned.push(person);
         }
       });
       
@@ -294,10 +294,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           }
           districtData.campuses.get(campusId)!.people.push(person);
         } else {
-          // unassigned feature removed
+          districtData.unassigned.push(person);
         }
       } else {
-        // unassigned feature removed
+        districtData.unassigned.push(person);
       }
     });
     
