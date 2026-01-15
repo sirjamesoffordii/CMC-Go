@@ -11,10 +11,15 @@ import MoreInfo from "./pages/MoreInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
 import AdminConsole from "./pages/AdminConsole";
 import Approvals from "./pages/Approvals";
-import Import from "./pages/Import";
 import Needs from "./pages/Needs";
 import FollowUpView from "./pages/FollowUpView";
 import { useEffect } from "react";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+
+function PeopleRoute() {
+  const { isAuthenticated } = usePublicAuth();
+  return <People readOnly={!isAuthenticated} />;
+}
 
 function Router() {
   return (
@@ -42,13 +47,12 @@ function Router() {
           }
         }}
       </Route>
-      <Route path="/people" component={People} />
+      <Route path="/people" component={PeopleRoute} />
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />
       <Route path="/why-invitations-matter" component={WhyInvitationsMatter} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
-      <Route path="/import" component={Import} />
       <Route path="/needs" component={Needs} />
       <Route path="/404" component={NotFound} />
       <Route path="/app-auth">

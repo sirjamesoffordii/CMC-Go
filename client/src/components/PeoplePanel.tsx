@@ -1104,6 +1104,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        defaultTab="notes"
       />
     </div>
   );
