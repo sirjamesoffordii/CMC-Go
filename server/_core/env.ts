@@ -255,12 +255,20 @@ export const ENV = {
 export function validateEnv() {
   // In production we require DB connectivity at startup.
   // In development, we allow starting without DB/auth so UI work isn't blocked.
-  const requiredInProd = [{ key: "DATABASE_URL", value: ENV.DATABASE_URL }];
+  const requiredInProd = [
+    { key: "DATABASE_URL", value: ENV.DATABASE_URL },
+    { key: "SESSION_SECRET", value: ENV.SESSION_SECRET }
+  ];
   if (ENV.isProduction) {
     const missing = requiredInProd.filter(({ value }) => !value);
     if (missing.length > 0) {
       const missingKeys = missing.map(({ key }) => key).join(", ");
       throw new Error(`Missing required environment variables: ${missingKeys}`);
+    }
+    
+    // Security: Ensure SESSION_SECRET is not using the default value in production
+    if (ENV.SESSION_SECRET === "change-me-in-production") {
+      throw new Error("SESSION_SECRET must be changed from default value in production");
     }
   }
 }
