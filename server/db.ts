@@ -309,6 +309,7 @@ export async function getPersonByNameCaseInsensitive(name: string) {
   const trimmedName = name.trim();
   const result = await db.select().from(people).where(sql`LOWER(TRIM(${people.name})) = LOWER(${trimmedName})`).limit(1);
   return result[0] || null;
+}
 
 export async function getLatestPersonEditByEditorName(editorName: string) {
   const db = await getDb();
@@ -325,8 +326,6 @@ export async function getLatestPersonEditByEditorName(editorName: string) {
     .limit(1);
 
   return result[0] || null;
-}
-
 }
 
 export async function getPeopleByDistrictId(districtId: string) {
