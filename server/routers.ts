@@ -216,12 +216,12 @@ export const appRouter = router({
             }
           }
           if (input.role === "CO_DIRECTOR" || input.role === "CAMPUS_DIRECTOR") {
-            if (!districtId) {
+            if (districtId == null) {
               throw new TRPCError({ code: "BAD_REQUEST", message: "District is required for Campus Director roles" });
             }
           }
           if (input.role === "DISTRICT_DIRECTOR") {
-            if (!regionId) {
+            if (regionId == null) {
               throw new TRPCError({ code: "BAD_REQUEST", message: "Region is required for District Director role" });
             }
           }
