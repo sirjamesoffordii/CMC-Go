@@ -262,25 +262,23 @@ const FULL_ACCESS = new Set([
 export function getPeopleScope(user: { role: string; campusId?: number | null; districtId?: string | null; regionId?: string | null }): PeopleScope {
   const role = normalizeRole(user.role);
 
-  // Full access roles (including ADMIN) always have ALL scope
-  if (role === "ADMIN") return { level: "ALL" };
   if (FULL_ACCESS.has(role)) return { level: "ALL" };
 
-  // District Director = REGION scope (requires regionId)
   if (role === "DISTRICT_DIRECTOR") {
     if (user.regionId) return { level: "REGION", regionId: user.regionId };
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: District Director missing regionId" });
+    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
   }
 
-  // Campus Director = DISTRICT scope (requires districtId)
   if (role === "CAMPUS_DIRECTOR") {
     if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: Campus Director missing districtId" });
+    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
   }
 
-  // Staff (and other campus-level roles) = CAMPUS scope (requires campusId)
+  // STAFF default
   if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
-  throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: Campus user missing campusId" });
+  throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
 }
-
 
