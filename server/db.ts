@@ -311,6 +311,23 @@ export async function getPersonByNameCaseInsensitive(name: string) {
   return result[0] || null;
 }
 
+export async function getLatestPersonEditByEditorName(editorName: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const name = editorName.trim();
+  if (!name) return null;
+
+  const result = await db
+    .select()
+    .from(people)
+    .where(sql`TRIM(${people.lastEditedBy}) = ${name}`)
+    .orderBy(sql`${people.lastEdited} DESC`)
+    .limit(1);
+
+  return result[0] || null;
+}
+
 export async function getPeopleByDistrictId(districtId: string) {
   const db = await getDb();
   if (!db) return [];

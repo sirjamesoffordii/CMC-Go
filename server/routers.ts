@@ -199,6 +199,32 @@ export const appRouter = router({
             }
           }
 
+
+          
+          // Derive regionId from districtId if provided
+          if (districtId && !regionId) {
+            const district = await db.getDistrictById(districtId);
+            if (district) {
+              regionId = district.region;
+            }
+          }
+
+// Validate required scope anchors based on role (fail-closed)
+          if (input.role === "STAFF") {
+            if (campusId == null) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Campus is required for Staff role" });
+            }
+          }
+          if (input.role === "CO_DIRECTOR" || input.role === "CAMPUS_DIRECTOR") {
+            if (!districtId) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "District is required for Campus Director roles" });
+            }
+          }
+          if (input.role === "DISTRICT_DIRECTOR") {
+            if (!regionId) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Region is required for District Director role" });
+            }
+          }
           // Generate deterministic email
           const slug = input.fullName.toLowerCase().replace(/[^a-z0-9]/g, '-');
           const email = `${slug}.${input.role}.${campusId ?? 'none'}.${districtId ?? 'none'}.${regionId ?? 'none'}@local`;
@@ -329,9 +355,14 @@ export const appRouter = router({
           const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
           const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
 
-          // Get the person record to check last edit info
-          const personId = `LOCAL-${user.id}`;
-          const person = await db.getPersonById(personId);
+                    // Last edit tracking (best-effort)
+          // Prefer matching by lastEditedBy (set to editor's fullName on edits).
+          // Fallback: for legacy local-login-created records, also try LOCAL-<userId>.
+          const lastEditedPerson = await db.getLatestPersonEditByEditorName(user.fullName);
+          const fallbackPersonId = `LOCAL-${user.id}`;
+          const fallbackPerson = lastEditedPerson ? null : await db.getPersonByPersonId(fallbackPersonId);
+
+          const personForLastEdit = lastEditedPerson || fallbackPerson;
 
           return {
             ...user,
@@ -339,8 +370,8 @@ export const appRouter = router({
             districtName: district?.name || null,
             regionName: user.regionId || null,
             isActiveSession: activeUserIds.has(user.id),
-            lastEditedBy: person?.lastEditedBy || null,
-            lastEdited: person?.lastEdited || null,
+            lastEditedBy: personForLastEdit?.lastEditedBy || null,
+            lastEdited: personForLastEdit?.lastEdited || null,
           };
         }));
 

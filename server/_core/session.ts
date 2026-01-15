@@ -28,33 +28,38 @@ export function createSessionToken(userId: number): string {
 export function verifySessionToken(token: string): number | null {
   try {
     const decoded = Buffer.from(token, "base64url").toString("utf-8");
-    const [payload, signature] = decoded.split(":");
-    if (!payload || !signature) return null;
-    
-    const [userId, timestamp] = payload.split(":");
-    if (!userId || !timestamp) return null;
-    
+    // Expected format (before base64url): "<userId>:<timestamp>:<signature>"
+    const parts = decoded.split(":");
+    if (parts.length !== 3) return null;
+
+    const [userIdStr, timestampStr, signature] = parts;
+    if (!userIdStr || !timestampStr || !signature) return null;
+
+    const payload = `${userIdStr}:${timestampStr}`;
+
     // Verify signature
     const hmac = crypto.createHmac("sha256", SESSION_SECRET);
     hmac.update(payload);
     const expectedSignature = hmac.digest("hex");
-    
+
     if (signature !== expectedSignature) {
       return null; // Invalid signature
     }
-    
+
     // Check if token is expired (30 days)
-    const tokenAge = Date.now() - parseInt(timestamp);
+    const tokenAge = Date.now() - parseInt(timestampStr, 10);
     const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    if (tokenAge > maxAge) {
-      return null; // Token expired
+    if (!Number.isFinite(tokenAge) || tokenAge > maxAge) {
+      return null; // Token expired or invalid timestamp
     }
-    
-    return parseInt(userId);
-  } catch (error) {
+
+    const userId = parseInt(userIdStr, 10);
+    return Number.isFinite(userId) ? userId : null;
+  } catch {
     return null;
   }
 }
+
 
 /**
  * Set session cookie
@@ -72,14 +77,24 @@ export function setSessionCookie(req: Request, res: Response, userId: number): s
 /**
  * Get user ID from session cookie
  */
-export function getUserIdFromSession(req: Request): number | null {
-  const cookies = req.headers.cookie || "";
-  const cookieMatch = cookies.match(new RegExp(`(^|; )${COOKIE_NAME}=([^;]+)`));
+export function getSessionToken(req: Request): string | null {
+  // Prefer cookie-parser if present
+  const anyReq = req as any;
+  const tokenFromParser = anyReq?.cookies?.[COOKIE_NAME];
+  if (typeof tokenFromParser === "string" && tokenFromParser.length > 0) return tokenFromParser;
+
+  const cookiesHeader = req.headers.cookie || "";
+  const cookieMatch = cookiesHeader.match(new RegExp(`(^|; )${COOKIE_NAME}=([^;]+)`));
   if (!cookieMatch) return null;
-  
-  const token = cookieMatch[2];
+  return cookieMatch[2] || null;
+}
+
+export function getUserIdFromSession(req: Request): number | null {
+  const token = getSessionToken(req);
+  if (!token) return null;
   return verifySessionToken(token);
 }
+
 
 /**
  * Clear session cookie

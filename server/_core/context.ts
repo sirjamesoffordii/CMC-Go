@@ -1,10 +1,9 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
-import { getUserIdFromSession } from "./session";
+import { getSessionToken, getUserIdFromSession } from "./session";
 import * as db from "../db";
-import * as dbAdditions from "../db-additions";
-import { COOKIE_NAME } from "@shared/const";
+import * as dbAdditions from "../db-additions"; 
 import crypto from "crypto";
 
 export type TrpcContext = {
@@ -24,7 +23,7 @@ export async function createContext(
     user = await db.getUserById(userId);
     if (user) {
       // Update session lastSeenAt on each request
-      const token = opts.req.cookies?.[COOKIE_NAME];
+      const token = getSessionToken(opts.req);
       if (token) {
         const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
         await dbAdditions.updateSessionLastSeen(tokenHash).catch(() => {
