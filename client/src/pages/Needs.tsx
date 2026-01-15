@@ -12,6 +12,7 @@ import { Person } from "../../../drizzle/schema";
 export default function Needs() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
+  const utils = trpc.useUtils();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,6 +42,9 @@ export default function Needs() {
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
       setResolvingNeedId(null);
+      utils.needs.listActive.invalidate();
+      utils.followUp.list.invalidate();
+      utils.people.list.invalidate();
     },
   });
 
