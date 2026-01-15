@@ -571,7 +571,6 @@ export function DistrictPanel({
   
   // PR 5: Filter people based on status, search, and campus
   const filteredPeople = useMemo(() => {
-  const districtLevelPeople = filteredPeople.filter((p) => p.primaryCampusId == null);
     let filtered = peopleWithNeeds;
     
     // Status filter
@@ -595,6 +594,8 @@ export function DistrictPanel({
     
     return filtered;
   }, [peopleWithNeeds, statusFilter, searchQuery, myCampusOnly, user?.campusId]);
+
+  const districtLevelPeople = filteredPeople.filter((p) => p.primaryCampusId == null);
   
   // Campus order state - stores ordered campus IDs
   const [campusOrder, setCampusOrder] = useState<number[]>([]);
