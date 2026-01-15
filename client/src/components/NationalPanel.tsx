@@ -258,7 +258,10 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
                       person={person}
                       onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
                       onClick={() => onPersonClick(person)}
-                      onPersonUpdate={() => {}}
+                      onPersonUpdate={() => {
+                        utils.people.getNational.invalidate();
+                        utils.people.list.invalidate();
+                      }}
                     />
                   ))}
                 </div>
