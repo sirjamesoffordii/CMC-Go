@@ -148,6 +148,12 @@ export function DistrictPanel({
     onSuccess: () => {
       utils.people.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? '' });
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
       onDistrictUpdate();
     },
     onError: (error) => {
@@ -171,6 +177,12 @@ export function DistrictPanel({
     onSuccess: () => {
       // Invalidate all people queries to ensure UI updates
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
       if (district?.id) {
         utils.people.byDistrict.invalidate({ districtId: district.id });
       }
@@ -190,6 +202,12 @@ export function DistrictPanel({
   const deletePerson = trpc.people.delete.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
       setIsEditPersonDialogOpen(false);
       setEditingPerson(null);
       onDistrictUpdate();
