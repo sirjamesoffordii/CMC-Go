@@ -35,7 +35,8 @@ You may:
 You must remain aligned with:
 - Project intent
 - Existing architecture
-- `docs/agents/CMC_GO_BRIEF.md`
+- `docs/agents/CMC_GO_BRIEF.md` — System mental model
+- `docs/agents/BUILD_MAP.md` — Current phase and task tracking
 
 ---
 

@@ -77,33 +77,13 @@ Avoid:
 
 ---
 
-## Build Direction
+## Build Phases & Tracking
 
-### Phase A — System Integrity (Always)
-- Auth correctness
-- Visibility enforcement
-- Schema discipline
-- Stable builds
+Detailed phase definitions, current progress, and task tracking are in **[BUILD_MAP.md](BUILD_MAP.md)**.
 
-### Phase B — Core Workflows
-- Map navigation
-- People list correctness
-- Person detail accuracy
-- Filters reflecting real data
+The build progresses through phases: System Integrity → Core Workflows → Operator Experience → Observability & Safety → Polish & Performance.
 
-### Phase C — Operator Experience
-- Clear next actions
-- Reduced cognitive load
-- Consistent visuals
-
-### Phase D — Observability & Safety
-- Error visibility
-- Fail-closed behavior
-- Guardrails
-
-### Phase E — Polish & Performance
-- Animations
-- Optimizations
+We do not skip phases. We do not declare a phase complete until all tasks are verified.
 
 ---
 
