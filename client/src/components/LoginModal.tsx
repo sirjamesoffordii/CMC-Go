@@ -123,35 +123,68 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="relative max-w-md overflow-hidden border border-black/10 bg-white text-black shadow-2xl">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-16 left-1/2 h-52 w-52 -translate-x-1/2 rounded-full bg-red-500/10 blur-3xl" />
+          <div className="absolute -top-8 right-10 h-24 w-24 rounded-full bg-red-600/15 blur-2xl" />
+          <div className="absolute bottom-0 right-0 h-40 w-40 rounded-full bg-black/10 blur-3xl" />
+          <div className="absolute bottom-6 left-6 h-28 w-28 rounded-full bg-black/5 blur-2xl" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="select-none text-[72px] font-extrabold uppercase tracking-[0.2em] text-black/5 sm:text-[96px]">
+              CMC GO
+            </span>
+          </div>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.04),_transparent_55%)]" />
+          <div className="absolute inset-0 opacity-[0.15] [background-image:linear-gradient(120deg,rgba(0,0,0,0.04)_0%,rgba(0,0,0,0)_40%,rgba(0,0,0,0.05)_100%)]" />
+          <div className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(rgba(0,0,0,0.2)_1px,transparent_1px)] [background-size:18px_18px]" />
+        </div>
         <DialogHeader>
-          <DialogTitle>{step === "start" ? "Sign Up / Login" : "Verify Email"}</DialogTitle>
+          <div className="relative z-10 space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-black/60">
+              CMC Go Access
+              <span className="h-1 w-1 rounded-full bg-red-500" />
+            </div>
+            <DialogTitle className="text-lg font-semibold text-black">
+              {step === "start" ? "Sign Up / Login" : "Verify Email"}
+            </DialogTitle>
+            {step === "start" && (
+              <div className="flex items-center gap-2 text-xs text-black/50">
+                <span className={cn("h-1.5 w-6 rounded-full", startStep === "region" ? "bg-red-500" : "bg-black/10")} />
+                <span className={cn("h-1.5 w-6 rounded-full", startStep === "district" ? "bg-red-500" : "bg-black/10")} />
+                <span className={cn("h-1.5 w-6 rounded-full", startStep === "campus" ? "bg-red-500" : "bg-black/10")} />
+                <span className={cn("h-1.5 w-6 rounded-full", startStep === "role" ? "bg-red-500" : "bg-black/10")} />
+                <span className={cn("h-1.5 w-6 rounded-full", startStep === "name" ? "bg-red-500" : "bg-black/10")} />
+              </div>
+            )}
+          </div>
         </DialogHeader>
         
         {step === "start" ? (
           <div
             className={cn(
-              "space-y-4 transition-opacity duration-200",
-              isTransitioning ? "opacity-0" : "opacity-100"
+              "space-y-4 transition-all duration-300",
+              isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
             )}
           >
             {startStep === "region" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="region">Region *</Label>
+                  <Label htmlFor="region" className="text-black">
+                    Region *
+                  </Label>
                   <Popover open={regionOpen} onOpenChange={setRegionOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={regionOpen}
-                        className="w-full justify-between"
+                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
                       >
                         {region || "Select region"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Type a region..." />
                         <CommandList>
@@ -184,7 +217,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("district")}
                   disabled={!region}
-                  className="w-full"
+                  className="w-full bg-black text-white hover:bg-black/90"
                 >
                   Next
                 </Button>
@@ -194,20 +227,22 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "district" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="district">District *</Label>
+                  <Label htmlFor="district" className="text-black">
+                    District *
+                  </Label>
                   <Popover open={districtOpen} onOpenChange={setDistrictOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={districtOpen}
-                        className="w-full justify-between"
+                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
                       >
                         {selectedDistrict ? selectedDistrict.name : "Select district"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Type a district..." />
                         <CommandList>
@@ -239,7 +274,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("campus")}
                   disabled={!districtId}
-                  className="w-full"
+                  className="w-full bg-black text-white hover:bg-black/90"
                 >
                   Next
                 </Button>
@@ -249,20 +284,22 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "campus" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="campus">Campus *</Label>
+                  <Label htmlFor="campus" className="text-black">
+                    Campus *
+                  </Label>
                   <Popover open={campusOpen} onOpenChange={setCampusOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
                         role="combobox"
                         aria-expanded={campusOpen}
-                        className="w-full justify-between"
+                        className="w-full justify-between border-black/20 bg-white text-black hover:bg-black/5"
                       >
                         {selectedCampus ? selectedCampus.name : "Select campus"}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <PopoverContent className="w-[--radix-popover-trigger-width] border-black/15 bg-white p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Type a campus..." />
                         <CommandList>
@@ -293,7 +330,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("role")}
                   disabled={!campusId}
-                  className="w-full"
+                  className="w-full bg-black text-white hover:bg-black/90"
                 >
                   Next
                 </Button>
@@ -303,7 +340,9 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "role" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="role">Role *</Label>
+                  <Label htmlFor="role" className="text-black">
+                    Role *
+                  </Label>
                   <Select value={role} onValueChange={(v) => setRole(v as any)}>
                     <SelectTrigger>
                       <SelectValue />
@@ -317,7 +356,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => goToStartStep("name")} className="w-full">
+                <Button onClick={() => goToStartStep("name")} className="w-full bg-black text-white hover:bg-black/90">
                   Next
                 </Button>
               </div>
@@ -326,30 +365,36 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "name" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Label htmlFor="fullName" className="text-black">
+                    Full Name *
+                  </Label>
                   <Input
                     id="fullName"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
+                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email" className="text-black">
+                    Email *
+                  </Label>
                   <Input
                     id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@example.com"
+                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
                   />
                 </div>
 
                 <Button
                   onClick={handleStart}
                   disabled={!fullName || !email || !role || !campusId || startMutation.isPending}
-                  className="w-full"
+                  className="w-full bg-red-600 text-white hover:bg-red-500"
                 >
                   {startMutation.isPending ? (
                     <>
@@ -369,25 +414,28 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-black/60">
               We've sent a verification code to {email}. Please check your email and enter the code below.
             </p>
             
             <div>
-              <Label htmlFor="code">Verification Code *</Label>
+              <Label htmlFor="code" className="text-black">
+                Verification Code *
+              </Label>
               <Input
                 id="code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="123456"
                 maxLength={6}
+                className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
               />
             </div>
             
             <Button 
               onClick={handleVerify} 
               disabled={!code || verifyMutation.isPending}
-              className="w-full"
+              className="w-full bg-red-600 text-white hover:bg-red-500"
             >
               {verifyMutation.isPending ? (
                 <>
