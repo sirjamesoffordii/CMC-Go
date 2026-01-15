@@ -1063,19 +1063,11 @@ export function DistrictPanel({
       } else {
         // Create new household with person's last name
         try {
-          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
-            createHousehold.mutate({
-              label: householdLabel,
-              childrenCount: personForm.childrenCount || 0,
-              guestsCount: personForm.guestsCount || 0,
-            }, {
-              onSuccess: (household) => {
-                resolve(household);
-              },
-              onError: (error) => {
-                reject(error);
-              },
-            });
+          const newHousehold = await createHousehold.mutateAsync({
+                label: householdLabel,
+                childrenCount: personForm.childrenCount || 0,
+                guestsCount: personForm.guestsCount || 0,
+              })
           });
           householdIdToUse = newHousehold.id;
         } catch (error) {
@@ -1330,19 +1322,11 @@ export function DistrictPanel({
       } else {
         // Create new household with person's last name
         try {
-          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
-            createHousehold.mutate({
-              label: householdLabel,
-              childrenCount: personForm.childrenCount || 0,
-              guestsCount: personForm.guestsCount || 0,
-            }, {
-              onSuccess: (household) => {
-                resolve(household);
-              },
-              onError: (error) => {
-                reject(error);
-              },
-            });
+          const newHousehold = await createHousehold.mutateAsync({
+                label: householdLabel,
+                childrenCount: personForm.childrenCount || 0,
+                guestsCount: personForm.guestsCount || 0,
+              })
           });
           householdIdToUse = newHousehold.id;
           setPersonForm({ ...personForm, householdId: newHousehold.id });
