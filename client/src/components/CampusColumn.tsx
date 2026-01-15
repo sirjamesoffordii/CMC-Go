@@ -48,6 +48,12 @@ export function CampusColumn({
       // Invalidate campus queries to refresh the list
       utils.campuses.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      utils.metrics.district.invalidate({ districtId: campus.districtId });
+      utils.followUp.list.invalidate();
       // Call the update callback to refresh parent component
       onCampusUpdate();
     },
@@ -70,7 +76,11 @@ export function CampusColumn({
   };
   
   const updateCampusName = trpc.campuses.updateName.useMutation({
-    onSuccess: () => onCampusUpdate(),
+    onSuccess: () => {
+      utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
+      onCampusUpdate();
+    },
   });
 
   // Sort people based on selected sort option
