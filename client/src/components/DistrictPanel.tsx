@@ -1048,8 +1048,7 @@ export function DistrictPanel({
         const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
-          return householdMembers.some(member => {
-            const memberNameParts = member.name.trim().split(' ');
+            return householdMembers.some(async (member) => {            const memberNameParts = member.name.trim().split(' ');
             const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
             return memberLastName.toLowerCase() === lastName.toLowerCase();
           });
@@ -1325,7 +1324,7 @@ export function DistrictPanel({
                 label: householdLabel,
                 childrenCount: personForm.childrenCount || 0,
                 guestsCount: personForm.guestsCount || 0,
-              });
+          
           householdIdToUse = newHousehold.id;
           setPersonForm({ ...personForm, householdId: newHousehold.id });
         } catch (error) {
