@@ -29,20 +29,12 @@ function isPortAvailable(port: number): Promise<boolean> {
 }
 
 async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  // Check ports from startPort to startPort + 10 (11 ports total)
-  const endPort = startPort + 10;
-  
-  for (let port = startPort; port <= endPort; port++) {
+  for (let port = startPort; port < startPort + 20; port++) {
     if (await isPortAvailable(port)) {
       return port;
     }
   }
-  
-  // If no port is available in the range, throw a clear error
-  throw new Error(
-    `No available port found in range ${startPort}-${endPort}. ` +
-    `Please free up a port or set PORT environment variable to a different starting port.`
-  );
+  throw new Error(`No available port found starting from ${startPort}`);
 }
 
 async function startServer() {

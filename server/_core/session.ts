@@ -59,14 +59,13 @@ export function verifySessionToken(token: string): number | null {
 /**
  * Set session cookie
  */
-export function setSessionCookie(req: Request, res: Response, userId: number): string {
+export function setSessionCookie(req: Request, res: Response, userId: number): void {
   const token = createSessionToken(userId);
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, token, {
     ...cookieOptions,
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
-  return token;
 }
 
 /**
