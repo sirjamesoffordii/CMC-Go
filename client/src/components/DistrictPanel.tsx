@@ -1067,8 +1067,7 @@ export function DistrictPanel({
                 label: householdLabel,
                 childrenCount: personForm.childrenCount || 0,
                 guestsCount: personForm.guestsCount || 0,
-              })
-          });
+              });
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error('Failed to create household:', error);
@@ -1326,8 +1325,7 @@ export function DistrictPanel({
                 label: householdLabel,
                 childrenCount: personForm.childrenCount || 0,
                 guestsCount: personForm.guestsCount || 0,
-              })
-          });
+              });
           householdIdToUse = newHousehold.id;
           setPersonForm({ ...personForm, householdId: newHousehold.id });
         } catch (error) {
