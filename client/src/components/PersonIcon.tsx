@@ -67,9 +67,9 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
-    if (nameRef.current) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
@@ -79,9 +79,9 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
-    if (nameRef.current && isHovered) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    if (iconRef.current && isHovered) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
@@ -190,7 +190,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
       </div>
       </div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && (personNeed || person.notes || person.depositPaid) && (
+      {isHovered && tooltipPos && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

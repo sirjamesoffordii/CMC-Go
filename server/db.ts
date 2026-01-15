@@ -54,12 +54,13 @@ export async function getDb() {
         enableKeepAlive: true, // Keep connections alive
         keepAliveInitialDelay: 0, // Start keep-alive immediately
       });
-      
-      _db = drizzle(_pool);
-      
+
+      const db = drizzle(_pool as any);
+      _db = db;
+
       // Test the connection with a simple query
       try {
-        await _db.execute(sql`SELECT 1`);
+        await db.execute(sql`SELECT 1`);
         console.log("[Database] Connected to MySQL/TiDB with connection pool");
       } catch (testError) {
         console.error("[Database] Connection pool created but test query failed:", testError);
@@ -150,10 +151,13 @@ export async function upsertUser(user: Partial<InsertUser> & { openId: string })
   const existing = await getUserByOpenId(user.openId);
   if (existing) {
     await db.update(users)
-      .set({ ...user, updatedAt: new Date() })
+      .set({ ...user })
       .where(eq(users.openId, user.openId));
     return existing.id;
   } else {
+    if (!user.email) {
+      throw new Error("Email is required to create a new user");
+    }
     const result = await db.insert(users).values(user as InsertUser);
     const insertId = result[0]?.insertId;
     if (!insertId) {
@@ -303,10 +307,41 @@ export async function getPersonByPersonId(personId: string) {
   return result[0] || null;
 }
 
+export async function getPersonByNameCaseInsensitive(name: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const trimmedName = name.trim();
+  const result = await db.select().from(people).where(sql`LOWER(TRIM(${people.name})) = LOWER(${trimmedName})`).limit(1);
+  return result[0] || null;
+}
+
+export async function getLatestPersonEditByEditorName(editorName: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const name = editorName.trim();
+  if (!name) return null;
+
+  const result = await db
+    .select()
+    .from(people)
+    .where(sql`TRIM(${people.lastEditedBy}) = ${name}`)
+    .orderBy(sql`${people.lastEdited} DESC`)
+    .limit(1);
+
+  return result[0] || null;
+}
+
 export async function getPeopleByDistrictId(districtId: string) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(people).where(eq(people.primaryDistrictId, districtId));
+}
+
+export async function getPeopleByRegionId(regionId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(people).where(eq(people.primaryRegion, regionId));
 }
 
 export async function getPeopleByCampusId(campusId: number) {
@@ -556,12 +591,29 @@ export async function getNeedByPersonId(personId: string) {
   return result[0] || null;
 }
 
+export async function getNeedById(needId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(needs).where(eq(needs.id, needId)).limit(1);
+  return result[0] || null;
+}
+
 /**
  * Update or create need. Only creates if type is provided (not "None").
  * When marking as met (isActive = false), sets resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */
-export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
+export async function updateOrCreateNeed(
+  personId: string,
+  needData: {
+    type: InsertNeed["type"];
+    description: string;
+    amount?: number | null;
+    visibility?: InsertNeed["visibility"];
+    isActive: boolean;
+    createdById?: number | null;
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -569,9 +621,10 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
   const existing = await getNeedByPersonId(personId);
   
   const updateData: {
-    type: string;
+    type: InsertNeed["type"];
     description: string;
     amount?: number | null;
+    visibility?: InsertNeed["visibility"];
     isActive: boolean;
     resolvedAt?: Date | null;
   } = {
@@ -580,6 +633,10 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
     amount: needData.amount ?? null,
     isActive: needData.isActive,
   };
+
+  if (needData.visibility !== undefined) {
+    updateData.visibility = needData.visibility;
+  }
   
   // Set resolvedAt when marking as met, clear when reactivating
   if (!needData.isActive) {
@@ -595,14 +652,21 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
     return existing.id;
   } else {
     // Create new need (only if type is not "None" - this should be validated by caller)
-    const result = await db.insert(needs).values({
+    const insertValues: InsertNeed = {
       personId,
       type: needData.type,
       description: needData.description,
       amount: needData.amount ?? null,
       isActive: needData.isActive,
       resolvedAt: needData.isActive ? null : new Date(),
-    });
+      createdById: needData.createdById ?? null,
+    };
+
+    if (needData.visibility !== undefined) {
+      insertValues.visibility = needData.visibility;
+    }
+
+    const result = await db.insert(needs).values(insertValues);
     const insertId = result[0]?.insertId;
     if (!insertId) {
       throw new Error("Failed to get insert ID from database");
@@ -727,18 +791,29 @@ export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
 
+  // Include people assigned to the district either directly (primaryDistrictId)
+  // OR indirectly via their primaryCampusId's district.
+  //
+  // This fixes cases where primaryDistrictId is null but the campus belongs to the district.
+  const districtWhere = or(
+    eq(people.primaryDistrictId, districtId),
+    eq(campuses.districtId, districtId),
+  );
+
   // Get total count separately to ensure we count ALL people in district
   const totalResult = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryDistrictId, districtId));
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(districtWhere);
   const total = Number(totalResult[0]?.count) || 0;
 
   // Aggregate counts per status for a specific district in a single query.
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryDistrictId, districtId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(districtWhere)
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
@@ -826,6 +901,125 @@ export async function getRegionMetrics(region: string) {
   }
   
   return { ...counts, total };
+}
+
+/**
+ * Get aggregate metrics for all districts (no person identifiers).
+ * Returns counts for Yes, Maybe, No, Not Invited statuses per district.
+ * This is a public aggregate endpoint - everyone can see these numbers.
+ */
+export async function getAllDistrictMetrics() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Include people in a district either by primaryDistrictId or by the district
+  // of their primaryCampusId. Use COALESCE to derive the effective district.
+  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+
+  const result = await db
+    .select({
+      districtId: effectiveDistrictId.as('districtId'),
+      status: people.status,
+      count: sql<number>`COUNT(*)`.as('count'),
+    })
+    .from(people)
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(sql`${effectiveDistrictId} IS NOT NULL`)
+    .groupBy(effectiveDistrictId, people.status);
+  
+  // Group by district and aggregate status counts
+  const districtMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
+  
+  for (const row of result) {
+    const districtId = row.districtId;
+    if (!districtId) continue;
+    
+    if (!districtMap.has(districtId)) {
+      districtMap.set(districtId, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+    }
+    
+    const counts = districtMap.get(districtId)!;
+    const count = Number(row.count) || 0;
+    counts.total += count;
+    
+    switch (row.status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+      default:
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  return Array.from(districtMap.entries()).map(([districtId, counts]) => ({
+    districtId,
+    ...counts,
+  }));
+}
+
+/**
+ * Get aggregate metrics for all regions (no person identifiers).
+ * Returns counts for Yes, Maybe, No, Not Invited statuses per region.
+ * This is a public aggregate endpoint - everyone can see these numbers.
+ */
+export async function getAllRegionMetrics() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      region: people.primaryRegion,
+      status: people.status,
+      count: sql<number>`COUNT(*)`.as('count'),
+    })
+    .from(people)
+    .where(sql`${people.primaryRegion} IS NOT NULL`)
+    .groupBy(people.primaryRegion, people.status);
+  
+  // Group by region and aggregate status counts
+  const regionMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
+  
+  for (const row of result) {
+    const region = row.region;
+    if (!region) continue;
+    
+    if (!regionMap.has(region)) {
+      regionMap.set(region, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+    }
+    
+    const counts = regionMap.get(region)!;
+    const count = Number(row.count) || 0;
+    counts.total += count;
+    
+    switch (row.status) {
+      case 'Yes':
+        counts.going = count;
+        break;
+      case 'Maybe':
+        counts.maybe = count;
+        break;
+      case 'No':
+        counts.notGoing = count;
+        break;
+      case 'Not Invited':
+      default:
+        counts.notInvited += count;
+        break;
+    }
+  }
+  
+  return Array.from(regionMap.entries()).map(([region, counts]) => ({
+    region,
+    ...counts,
+  }));
 }
 
 // National staff (no district/region)

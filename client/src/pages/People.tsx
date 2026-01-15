@@ -15,7 +15,7 @@ import { EditableText } from "@/components/EditableText";
 
 export default function People() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated, isLoading: authLoading } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
@@ -43,7 +43,7 @@ export default function People() {
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Initialize myCampus from URL params
   const getMyCampusInitial = (): boolean => {
     if (typeof window === 'undefined') return false;
@@ -66,22 +66,30 @@ export default function People() {
     return params.get('hasNeeds') === 'true';
   };
   const [hasActiveNeeds, setHasActiveNeeds] = useState<boolean>(getHasActiveNeedsInitial());
-  
+
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(new Set());
   const [expandedCampuses, setExpandedCampuses] = useState<Set<number>>(new Set());
-  
+
   // Menu state
   const [openMenuId, setOpenMenuId] = useState<number | string | null>(null);
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [campusForm, setCampusForm] = useState({ name: '' });
-  
-  // Data queries
-  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery();
-  const { data: allCampuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery();
-  const { data: allDistricts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+
+  // Data queries - ONLY run when authenticated
+  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allCampuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allDistricts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   const needsByPersonId = useMemo(() => {
     const map = new Map<string, typeof allNeeds>();
@@ -93,11 +101,27 @@ export default function People() {
     }
     return map;
   }, [allNeeds]);
+
+    const campusById = useMemo(() => {
+    const map = new Map<number, Campus>();
+    for (const c of allCampuses) map.set(c.id, c);
+    return map;
+  }, [allCampuses]);
+
+    const districtById = useMemo(() => {
+    const map = new Map<string, District>();
+    for (const d of allDistricts) map.set(d.id, d);
+    return map;
+  }, [allDistricts]);
   
   // Mutations
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      utils.followUp.list.invalidate();
     },
   });
   
@@ -120,7 +144,6 @@ export default function People() {
   }, []);
   
   
-  95
   
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
@@ -128,16 +151,6 @@ export default function People() {
     // Status filter
     if (statusFilter.size > 0) {
       
-  // Sentry test trigger (staging only)
-  useEffect(() => {
-    const sentryTestParam = new URLSearchParams(window.location.search).get('sentryTest');
-    if (sentryTestParam === '1' && import.meta.env.VITE_SENTRY_ENVIRONMENT === 'staging') {
-      // Clean up URL first
-      window.history.replaceState({}, document.title, window.location.pathname);
-      // Throw error to trigger Sentry
-      throw new Error('Sentry test: staging');
-    }
-  }, []);
 
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
@@ -148,10 +161,15 @@ export default function People() {
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
         const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
+        const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
+        const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
         return (
+
           p.name?.toLowerCase().includes(query) ||
           p.primaryRole?.toLowerCase().includes(query) ||
           p.personId?.toLowerCase().includes(query) ||
+                      campus?.name.toLowerCase().includes(query) ||
+                      district?.name.toLowerCase().includes(query) ||
           needsText.includes(query)
         );
       });
@@ -348,7 +366,44 @@ export default function People() {
     if (!searchOpen) return;
     setTimeout(() => searchInputRef.current?.focus(), 0);
   }, [searchOpen]);
-  
+
+  // Authentication gate - prevent data leak when logged out
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/")}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Map
+          </Button>
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+              <p className="text-gray-600 mb-4">Please log in to view people.</p>
+              <Button onClick={() => setLocation("/")}>
+                Go to Home
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
@@ -458,7 +513,7 @@ export default function People() {
                           status === "Maybe" ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-300" :
                           status === "No" ? "bg-red-100 text-red-700 border-2 border-red-300" :
                           "bg-slate-100 text-slate-700 border-2 border-slate-300"
-                        : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                        : "bg-white text-black border border-gray-300 hover:bg-red-600 hover:text-white"
                       }
                     `}
                   >
@@ -491,7 +546,7 @@ export default function People() {
               <select
                 value={needTypeFilter}
                 onChange={(e) => setNeedTypeFilter(e.target.value as any)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-black border border-gray-300 hover:bg-red-600 hover:text-white"
               >
                 <option value="All">All</option>
                 <option value="Financial">Financial</option>
@@ -627,7 +682,7 @@ export default function People() {
                                                 handleEditCampus(campus.id);
                                                 setOpenMenuId(null);
                                               }}
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                              className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                                             >
                                               <Edit2 className="w-4 h-4" />
                                               Edit Campus Name
@@ -639,7 +694,7 @@ export default function People() {
                                                 handleCampusSortChange(campus.id, 'status');
                                                 setOpenMenuId(null);
                                               }}
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                              className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                             >
                                               <span>Status</span>
                                               <Check className="w-4 h-4" />
@@ -649,7 +704,7 @@ export default function People() {
                                                 handleCampusSortChange(campus.id, 'name');
                                                 setOpenMenuId(null);
                                               }}
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                              className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                             >
                                               <span>Name</span>
                                             </button>
@@ -658,7 +713,7 @@ export default function People() {
                                                 handleCampusSortChange(campus.id, 'role');
                                                 setOpenMenuId(null);
                                               }}
-                                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                                              className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                             >
                                               <span>Role</span>
                                             </button>
@@ -787,10 +842,10 @@ export default function People() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
               Cancel
             </Button>
-            <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending}>
+            <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending} className="bg-red-500 hover:bg-red-600 text-black disabled:opacity-50 disabled:cursor-not-allowed">
               {updateCampusName.isPending ? 'Updating...' : 'Update Campus'}
             </Button>
           </DialogFooter>

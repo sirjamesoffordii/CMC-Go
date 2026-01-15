@@ -7,6 +7,7 @@ import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertC
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
+import { UserManagement } from "@/components/UserManagement";
 
 // Get version from package.json (will be injected at build time or read from env)
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -16,6 +17,28 @@ interface DbHealthStatus {
   connected: boolean;
   status: "connected" | "disconnected" | "checking" | "error";
   message?: string;
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Revoke on next tick to avoid cancelling download in some browsers
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function csvEscape(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  const str = value instanceof Date ? value.toISOString() : String(value);
+  // Escape if contains CSV special chars
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }
 
 export default function AdminConsole() {
@@ -119,13 +142,111 @@ export default function AdminConsole() {
   };
 
   const handleExportContactsCSV = () => {
-    toast.info("Export Contacts CSV feature coming soon");
-    // TODO: Implement CSV export
+    try {
+      if (!allPeople || allPeople.length === 0) {
+        toast.error("No people to export yet");
+        return;
+      }
+
+      const headers = [
+        "personId",
+        "name",
+        "status",
+        "primaryRole",
+        "primaryDistrictId",
+        "primaryCampusId",
+        "depositPaid",
+        "notes",
+        "spouse",
+        "kids",
+        "guests",
+        "childrenAges",
+        "householdId",
+        "householdRole",
+        "spouseAttending",
+        "childrenCount",
+        "guestsCount",
+        "lastEdited",
+        "lastEditedBy",
+      ] as const;
+
+      const lines: string[] = [];
+      lines.push(headers.join(","));
+
+      for (const p of allPeople as any[]) {
+        lines.push(
+          headers
+            .map((h) => csvEscape(p?.[h]))
+            .join(",")
+        );
+      }
+
+      // Add UTF-8 BOM to help Excel open correctly
+      const csv = "\uFEFF" + lines.join("\r\n");
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `contacts-${dateStamp}.csv`);
+      toast.success(`Exported ${allPeople.length.toLocaleString()} contacts`);
+    } catch (e) {
+      toast.error("Failed to export contacts CSV");
+      if (NODE_ENV === "development") {
+        console.error("[AdminConsole] CSV export failed:", e);
+      }
+    }
   };
 
   const handleExportRegionsJSON = () => {
-    toast.info("Export Regions JSON feature coming soon");
-    // TODO: Implement JSON export
+    try {
+      if (!districts || districts.length === 0) {
+        toast.error("No districts to export yet");
+        return;
+      }
+
+      const campusesByDistrictId = new Map<string, Array<{ id: number; name: string; districtId: string }>>();
+      for (const c of campuses as any[]) {
+        if (!c?.districtId) continue;
+        const arr = campusesByDistrictId.get(c.districtId) ?? [];
+        arr.push({ id: c.id, name: c.name, districtId: c.districtId });
+        campusesByDistrictId.set(c.districtId, arr);
+      }
+
+      const regionMap = new Map<string, Array<{ id: string; name: string; region: string }>>();
+      for (const d of districts as any[]) {
+        const region = d?.region ?? "Unknown";
+        const arr = regionMap.get(region) ?? [];
+        arr.push({ id: d.id, name: d.name, region });
+        regionMap.set(region, arr);
+      }
+
+      const regions = Array.from(regionMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([region, regionDistricts]) => ({
+          region,
+          districts: regionDistricts
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((d) => ({
+              id: d.id,
+              name: d.name,
+              campuses: (campusesByDistrictId.get(d.id) ?? [])
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((c) => ({ id: c.id, name: c.name })),
+            })),
+        }));
+
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        regions,
+      };
+
+      const json = JSON.stringify(payload, null, 2);
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      downloadBlob(new Blob([json], { type: "application/json;charset=utf-8" }), `regions-${dateStamp}.json`);
+      toast.success("Exported regions JSON");
+    } catch (e) {
+      toast.error("Failed to export regions JSON");
+      if (NODE_ENV === "development") {
+        console.error("[AdminConsole] Regions export failed:", e);
+      }
+    }
   };
 
   const formatTimeAgo = (date: Date | string | null | undefined): string => {
@@ -472,6 +593,11 @@ export default function AdminConsole() {
             </div>
           </CardContent>
         </Card>
+
+        {/* User Management Section */}
+        <div className="mt-6">
+          <UserManagement />
+        </div>
       </div>
     </div>
   );

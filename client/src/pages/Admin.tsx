@@ -72,7 +72,7 @@ export default function Admin() {
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/")}
-              className="mr-2"
+              className="mr-2 text-black hover:bg-red-600 hover:text-white"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Home

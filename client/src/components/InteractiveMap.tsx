@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 interface InteractiveMapProps {
   districts: District[];
@@ -399,6 +400,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
 };
 
 export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick, viewState }: InteractiveMapProps) {
+  const { isAuthenticated } = usePublicAuth();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -413,24 +415,63 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(null);
   
-  // Fetch all people to calculate district stats
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
+  // Protected queries: only run when authenticated (public map uses aggregate endpoints)
+  const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   
   // Fetch all campuses to count campuses per district
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
+  const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
   
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
   
+  // Fetch aggregate district and region metrics (public - everyone can see these)
+  // These must be declared BEFORE useMemo hooks that use them
+  const { data: allDistrictMetrics = [] } = trpc.metrics.allDistricts.useQuery();
+  const { data: allRegionMetrics = [] } = trpc.metrics.allRegions.useQuery();
+  
   // Calculate national totals - ensure all people are counted accurately
   // Total should be the sum of all statuses (each person belongs to exactly one status)
   const nationalTotals = useMemo(() => {
+    // If allPeople is empty (not logged in or no scope), fall back to regional metrics
+    // Sum up all regional metrics to get national totals (public endpoint, works for everyone)
+    if (allPeople.length === 0 && allRegionMetrics.length > 0) {
+      let yes = 0;
+      let maybe = 0;
+      let no = 0;
+      let notInvited = 0;
+
+      allRegionMetrics.forEach(metric => {
+        yes += metric.going;
+        maybe += metric.maybe;
+        no += metric.notGoing;
+        notInvited += metric.notInvited;
+      });
+
+      const total = yes + maybe + no + notInvited;
+      const invited = yes + maybe + no;
+
+      return {
+        yes,
+        maybe,
+        no,
+        notInvited,
+        total,
+        invited,
+      };
+    }
+
     // Count each person exactly once in the appropriate status bucket
     let yes = 0;
     let maybe = 0;
     let no = 0;
     let notInvited = 0;
-    
+
     allPeople.forEach(person => {
       const status = person.status || "Not Invited";
       switch (status) {
@@ -450,16 +491,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           break;
       }
     });
-    
+
     const invited = yes + maybe + no;
     // Total is the sum of all statuses - each person belongs to exactly one status
     const total = yes + maybe + no + notInvited;
-    
+
     // Verify totals match allPeople.length (should always be true)
     if (total !== allPeople.length) {
       console.warn(`[Metrics] Total mismatch: sum of statuses ${total}, actual people count ${allPeople.length}.`);
     }
-    
+
     // Use server metrics if available and totals match
     if (serverMetrics) {
       const serverYes = serverMetrics.going || 0;
@@ -468,7 +509,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const serverNotInvited = serverMetrics.notInvited || 0;
       const serverTotal = serverYes + serverMaybe + serverNo + serverNotInvited;
       const serverInvited = serverYes + serverMaybe + serverNo;
-      
+
       // Use server metrics if they sum correctly
       if (serverTotal === total || serverTotal === allPeople.length) {
         return {
@@ -481,7 +522,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         };
       }
     }
-    
+
     return {
       yes,
       maybe,
@@ -490,8 +531,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       total, // Sum of all statuses
       invited,
     };
-  }, [allPeople, serverMetrics]);
+  }, [allPeople, serverMetrics, allRegionMetrics]);
   
+  const showPublicPlaceholder = !isAuthenticated && allRegionMetrics.length === 0;
+  const showOverlayPlaceholder = !isAuthenticated && allDistrictMetrics.length === 0;
   const invitedPercent = nationalTotals.total > 0 
     ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
     : 0;
@@ -501,99 +544,96 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const today = new Date();
   const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   
-  // Calculate regional totals - ensure all people are counted accurately
-  // Use a more reliable approach: group people by region first, then count statuses
+  // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
+  // Everyone can see regional aggregate numbers
   const regionalTotals = useMemo(() => {
     const totals: Record<string, typeof nationalTotals> = {};
     
-    // Initialize all regions from districts in database
-    districts.forEach(district => {
-      if (district.region && !totals[district.region]) {
-        totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+    // Use aggregate region metrics if available (works for everyone)
+    if (allRegionMetrics.length > 0) {
+      for (const metric of allRegionMetrics) {
+        totals[metric.region] = {
+          yes: metric.going,
+          maybe: metric.maybe,
+          no: metric.notGoing,
+          notInvited: metric.notInvited,
+          total: metric.total,
+          invited: metric.going + metric.maybe + metric.notGoing,
+        };
       }
-    });
-    
-    // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
-    Object.values(DISTRICT_REGION_MAP).forEach(region => {
-      if (!totals[region]) {
-        totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
-      }
-    });
-    
-    // Group people by region using district lookup
-    // Use both database districts and the constant mapping
-    const DISTRICT_REGION_MAPLocal = new Map<string, string>();
-    districts.forEach(district => {
-      if (district.region) {
-        DISTRICT_REGION_MAPLocal.set(district.id, district.region);
-      }
-    });
-    // Add districts from constant mapping (for districts not yet in database)
-    Object.entries(DISTRICT_REGION_MAP).forEach(([districtId, region]) => {
-      if (!DISTRICT_REGION_MAPLocal.has(districtId)) {
-        DISTRICT_REGION_MAPLocal.set(districtId, region);
-      }
-    });
-    
-    // Count people by region and status
-    allPeople.forEach(person => {
-      const districtId = person.primaryDistrictId;
-      if (!districtId) return; // Skip people without a district
+    } else {
+      // Fallback to calculating from allPeople (for authenticated users with scope)
+      // Initialize all regions from districts in database
+      districts.forEach(district => {
+        if (district.region && !totals[district.region]) {
+          totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+        }
+      });
       
-      const region = DISTRICT_REGION_MAPLocal.get(districtId);
-      if (!region || !totals[region]) return; // Skip if no region or region not initialized
+      // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
+      Object.values(DISTRICT_REGION_MAP).forEach(region => {
+        if (!totals[region]) {
+          totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+        }
+      });
       
-      // Count this person in the appropriate status bucket
-      const status = person.status || "Not Invited";
-      switch (status) {
-        case "Yes":
-          totals[region].yes++;
-          totals[region].invited++;
-          break;
-        case "Maybe":
-          totals[region].maybe++;
-          totals[region].invited++;
-          break;
-        case "No":
-          totals[region].no++;
-          totals[region].invited++;
-          break;
-        case "Not Invited":
-        default:
-          // Handle null, undefined, or "Not Invited" status
-          totals[region].notInvited++;
-          break;
-      }
-      totals[region].total++;
-    });
-    
-    // Recalculate totals as sum of statuses for each region to ensure accuracy
-    Object.keys(totals).forEach(region => {
-      const regionTotals = totals[region];
-      regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
-      regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
-    });
-    
-    // Verify regional totals sum to national totals
-    const regionalSum = Object.values(totals).reduce((acc, region) => ({
-      yes: acc.yes + region.yes,
-      maybe: acc.maybe + region.maybe,
-      no: acc.no + region.no,
-      notInvited: acc.notInvited + region.notInvited,
-      total: acc.total + region.total,
-      invited: acc.invited + region.invited,
-    }), { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 });
-    
-    // If there's a discrepancy, log it for debugging
-    if (regionalSum.total !== nationalTotals.total) {
-      console.warn(`[Metrics] Regional total mismatch: regional sum ${regionalSum.total}, national total ${nationalTotals.total}`);
-      console.warn(`[Metrics] Regional breakdown:`, Object.entries(totals).map(([region, stats]) => 
-        `${region}: total=${stats.total}, yes=${stats.yes}, maybe=${stats.maybe}, no=${stats.no}, notInvited=${stats.notInvited}`
-      ));
+      // Group people by region using district lookup
+      // Use both database districts and the constant mapping
+      const DISTRICT_REGION_MAPLocal = new Map<string, string>();
+      districts.forEach(district => {
+        if (district.region) {
+          DISTRICT_REGION_MAPLocal.set(district.id, district.region);
+        }
+      });
+      // Add districts from constant mapping (for districts not yet in database)
+      Object.entries(DISTRICT_REGION_MAP).forEach(([districtId, region]) => {
+        if (!DISTRICT_REGION_MAPLocal.has(districtId)) {
+          DISTRICT_REGION_MAPLocal.set(districtId, region);
+        }
+      });
+      
+      // Count people by region and status
+      allPeople.forEach(person => {
+        const districtId = person.primaryDistrictId;
+        if (!districtId) return; // Skip people without a district
+        
+        const region = DISTRICT_REGION_MAPLocal.get(districtId);
+        if (!region || !totals[region]) return; // Skip if no region or region not initialized
+        
+        // Count this person in the appropriate status bucket
+        const status = person.status || "Not Invited";
+        switch (status) {
+          case "Yes":
+            totals[region].yes++;
+            totals[region].invited++;
+            break;
+          case "Maybe":
+            totals[region].maybe++;
+            totals[region].invited++;
+            break;
+          case "No":
+            totals[region].no++;
+            totals[region].invited++;
+            break;
+          case "Not Invited":
+          default:
+            // Handle null, undefined, or "Not Invited" status
+            totals[region].notInvited++;
+            break;
+        }
+        totals[region].total++;
+      });
+      
+      // Recalculate totals as sum of statuses for each region to ensure accuracy
+      Object.keys(totals).forEach(region => {
+        const regionTotals = totals[region];
+        regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
+        regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
+      });
     }
     
     return totals;
-  }, [districts, allPeople, nationalTotals.total]);
+  }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
   
   // Get displayed totals (regional if hovering, otherwise national)
   const displayedTotals = hoveredRegion && regionalTotals[hoveredRegion] 
@@ -617,13 +657,30 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     setActiveMetrics(new Set());
   };
 
-  // Calculate stats for each district using shared utility
+  // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
-    return districts.reduce<Record<string, DistrictStats>>((acc, district) => {
-      acc[district.id] = calculateDistrictStats(allPeople, district.id);
-      return acc;
-    }, {});
-  }, [districts, allPeople]);
+    const stats: Record<string, DistrictStats> = {};
+    
+    // Use aggregate metrics if available (works for everyone, even without people.list access)
+    if (allDistrictMetrics.length > 0) {
+      for (const metric of allDistrictMetrics) {
+        stats[metric.districtId] = {
+          yes: metric.going,
+          maybe: metric.maybe,
+          no: metric.notGoing,
+          notInvited: metric.notInvited,
+          total: metric.total,
+        };
+      }
+    } else if (isAuthenticated) {
+      // Fallback to calculating from allPeople (for authenticated users with scope)
+      districts.forEach(district => {
+        stats[district.id] = calculateDistrictStats(allPeople, district.id);
+      });
+    }
+    
+    return stats;
+  }, [districts, allPeople, allDistrictMetrics, isAuthenticated]);
 
   useEffect(() => {
     // Load SVG content
@@ -1228,9 +1285,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             </button>
             <div className="flex flex-col items-start transition-transform duration-200 hover:scale-105 origin-left">
               <span className="text-4xl text-slate-800">
-                <span className="font-semibold">{displayedTotals.notInvited}</span> <span className="font-medium">Not Invited Yet</span>
+                <span className="font-semibold">{showPublicPlaceholder ? "—" : displayedTotals.notInvited}</span>{" "}
+                <span className="font-medium">Not Invited Yet</span>
               </span>
-              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">/{displayedTotals.total}</span>
+              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">
+                /{showPublicPlaceholder ? "—" : displayedTotals.total}
+              </span>
             </div>
           </div>
         </div>
@@ -1258,7 +1318,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Going</span>
-            <span className="text-4xl font-semibold text-slate-900" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.yes}</span>
+            <span className="text-4xl font-semibold text-slate-900" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.yes}
+            </span>
             <div className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('yes') 
                 ? 'bg-emerald-700 border-emerald-700' 
@@ -1286,7 +1348,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Maybe</span>
-            <span className="text-3xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.maybe}</span>
+            <span className="text-3xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+            </span>
             <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('maybe') 
                 ? 'bg-yellow-600 border-yellow-600' 
@@ -1314,7 +1378,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           }}
         >
             <span className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Not Going</span>
-            <span className="text-2xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>{displayedTotals.no}</span>
+            <span className="text-2xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
+              {showPublicPlaceholder ? "—" : displayedTotals.no}
+            </span>
             <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
             activeMetrics.has('no') 
                 ? 'bg-red-700 border-red-700' 
@@ -1395,7 +1461,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             }}
           >
             <div
-              className="rounded-full bg-slate-700 hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+              className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
               style={{
                 width: '3.5vw', // Larger default size, scales with viewport
                 height: '3.5vw',
@@ -1437,10 +1503,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             {activeMetrics.size > 0 && (() => {
                 // Aggregate stats by region
                 const regionStats: Record<string, DistrictStats> = {};
-                districts.forEach(district => {
-                  const stats = districtStats[district.id];
-                  if (!stats) return;
-                  const region = district.region || 'Unknown';
+                const districtRegionLookup = new Map<string, string>();
+                districts.forEach(d => {
+                  if (d.region) districtRegionLookup.set(d.id, d.region);
+                });
+                Object.entries(districtStats).forEach(([districtId, stats]) => {
+                  const region = districtRegionLookup.get(districtId) || DISTRICT_REGION_MAP[districtId] || "Unknown";
                   if (!regionStats[region]) {
                     regionStats[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
                   }
@@ -1582,7 +1650,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                                 fontFamily: 'system-ui, -apple-system, sans-serif'
                               }}
                             >
-                              {metric.value}
+                              {showOverlayPlaceholder ? "—" : metric.value}
                             </text>
                           </g>
                         );

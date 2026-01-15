@@ -10,13 +10,15 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/run-migrations.mjs",
     "db:push:dev": "drizzle-kit push",
     "db:push:yes": "node scripts/db-push-yes.mjs",
     "db:init": "node scripts/init-mysql-db.mjs",
-    "db:seed": "node scripts/seed-database.mjs",
-    "db:seed:baseline": "node scripts/seed-baseline.mjs",
+    "db:seed": "tsx scripts/seed-database.mjs",
+    "db:seed:baseline": "tsx scripts/seed-baseline.mjs",
     "db:setup": "node scripts/init-mysql-db.mjs && pnpm db:push:yes && pnpm db:seed",
     "db:check": "node scripts/check-schema.mjs",
     "db:audit": "node scripts/audit-migrations.mjs",
@@ -112,6 +114,8 @@
   },
   "devDependencies": {
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
+    "@playwright/test": "^1.57.0",
+    "@sentry/cli": "^3.1.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.3",
     "@types/cors": "^2.8.19",
@@ -123,6 +127,7 @@
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^2.1.9",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
     "cross-env": "^10.1.0",
@@ -151,6 +156,7 @@
     },
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
+      "@sentry/cli",
       "esbuild"
     ]
   }

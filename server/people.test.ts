@@ -4,7 +4,23 @@ import type { TrpcContext } from "./_core/context";
 
 function createTestContext(): TrpcContext {
   return {
-    user: null,
+    user: {
+      id: 1,
+      fullName: "Test Admin",
+      email: "test-admin@example.com",
+      role: "ADMIN",
+      campusId: 1,
+      districtId: null,
+      regionId: null,
+      approvalStatus: "ACTIVE",
+      approvedByUserId: null,
+      approvedAt: null,
+      createdAt: new Date(),
+      lastLoginAt: null,
+      openId: null,
+      name: null,
+      loginMethod: null,
+    },
     req: {
       protocol: "https",
       headers: {},
@@ -82,30 +98,30 @@ describe("metrics router", () => {
 
     const metrics = await caller.metrics.get();
 
-    expect(metrics).toHaveProperty("total");
-    expect(metrics).toHaveProperty("invited");
     expect(metrics).toHaveProperty("going");
-    expect(metrics).toHaveProperty("percentInvited");
+    expect(metrics).toHaveProperty("maybe");
+    expect(metrics).toHaveProperty("notGoing");
+    expect(metrics).toHaveProperty("notInvited");
+    expect(metrics).toHaveProperty("total");
 
-    expect(typeof metrics.total).toBe("number");
-    expect(typeof metrics.invited).toBe("number");
     expect(typeof metrics.going).toBe("number");
-    expect(typeof metrics.percentInvited).toBe("number");
+    expect(typeof metrics.maybe).toBe("number");
+    expect(typeof metrics.notGoing).toBe("number");
+    expect(typeof metrics.notInvited).toBe("number");
+    expect(typeof metrics.total).toBe("number");
 
     expect(metrics.total).toBeGreaterThanOrEqual(0);
-    expect(metrics.invited).toBeGreaterThanOrEqual(0);
     expect(metrics.going).toBeGreaterThanOrEqual(0);
-    expect(metrics.percentInvited).toBeGreaterThanOrEqual(0);
-    expect(metrics.percentInvited).toBeLessThanOrEqual(100);
+    expect(metrics.maybe).toBeGreaterThanOrEqual(0);
+    expect(metrics.notGoing).toBeGreaterThanOrEqual(0);
+    expect(metrics.notInvited).toBeGreaterThanOrEqual(0);
 
-    // Verify invited count is correct
+    // Verify counts are correct
     const allPeople = await caller.people.list();
-    const expectedInvited = allPeople.filter(p => p.status !== "Not Invited").length;
-    expect(metrics.invited).toBe(expectedInvited);
-
-    // Verify going count is correct
-    const expectedGoing = allPeople.filter(p => p.status === "Yes").length;
-    expect(metrics.going).toBe(expectedGoing);
+    expect(metrics.going).toBe(allPeople.filter(p => p.status === "Yes").length);
+    expect(metrics.maybe).toBe(allPeople.filter(p => p.status === "Maybe").length);
+    expect(metrics.notGoing).toBe(allPeople.filter(p => p.status === "No").length);
+    expect(metrics.notInvited).toBe(allPeople.filter(p => p.status === "Not Invited").length);
   });
 });
 

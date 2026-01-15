@@ -40,6 +40,8 @@ interface DroppablePersonProps {
   onMove: (draggedId: string, draggedCampusId: string | number, targetCampusId: string | number, targetIndex: number) => void;
   hasNeeds?: boolean;
   onPersonStatusChange?: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
+  canInteract?: boolean;
+  maskIdentity?: boolean;
 }
 
 interface Need {
@@ -51,7 +53,7 @@ interface Need {
   isActive: boolean;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange }: DroppablePersonProps) {
+export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove, hasNeeds = false, onPersonStatusChange, canInteract = true, maskIdentity = false }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
@@ -60,11 +62,15 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   const editButtonRef = useRef<HTMLButtonElement>(null);
   
   // Fetch all needs (including inactive) to show met needs with checkmark
-  // Authentication disabled - always fetch needs
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: needsEnabled,
+    retry: false,
+  });
   // Also fetch needs by person to get inactive needs
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person.personId }
+    { personId: person.personId },
+    { enabled: needsEnabled }
   );
   const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
   
@@ -73,6 +79,8 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   
   // Handle status click to cycle through statuses
   const handleStatusClick = useCallback((e: React.MouseEvent) => {
+    // Only allow status change if canInteract and not masked
+    if (!canInteract || maskIdentity) return;
     e.stopPropagation();
     const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
       "Not Invited",
@@ -87,15 +95,16 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
     if (onPersonStatusChange) {
       onPersonStatusChange(person.personId, nextStatus);
     }
-  }, [person.status, person.personId, onPersonStatusChange]);
+  }, [person.status, person.personId, onPersonStatusChange, canInteract, maskIdentity]);
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
     item: { personId: person.personId, campusId, index },
+    canDrag: canInteract,
     collect: (monitor) => ({
       isDragging: monitor.isDragging()
     })
-  }), [person.personId, campusId, index]);
+  }), [person.personId, campusId, index, canInteract]);
 
   // Hide the default drag preview
   useEffect(() => {
@@ -104,15 +113,16 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'person',
+    canDrop: () => canInteract,
     drop: (item: { personId: string; campusId: string | number; index: number }) => {
-      if (item.personId !== person.personId) {
+      if (canInteract && item.personId !== person.personId) {
         onMove(item.personId, item.campusId, campusId, index);
       }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver()
     })
-  }), [person.personId, campusId, index, onMove]);
+  }), [person.personId, campusId, index, onMove, canInteract]);
 
   // Set iconRef for tooltip positioning
   const setIconRef = useCallback((node: HTMLDivElement | null) => {
@@ -128,32 +138,40 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
 
   // Stable edit button click handler
   const handleEditClick = useCallback((e: React.MouseEvent) => {
+    // Only allow edit if canInteract
+    if (!canInteract) return;
     e.stopPropagation();
     e.preventDefault();
     console.log('Edit button clicked', { campusId, personId: person.personId, personName: person.name || person.personId });
     onEdit(campusId, person);
-  }, [campusId, person, onEdit]);
+  }, [campusId, person, onEdit, canInteract]);
 
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
   const handleNameMouseEnter = (e: React.MouseEvent) => {
+    // Only show tooltip if canInteract
+    if (!canInteract || maskIdentity) return;
     setIsHovered(true);
-    if (nameRef.current) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
   const handleNameMouseLeave = () => {
+    // Only handle if canInteract
+    if (!canInteract || maskIdentity) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (e: React.MouseEvent) => {
-    if (nameRef.current && isHovered) {
-      const rect = nameRef.current.getBoundingClientRect();
-      setTooltipPos({ x: rect.left, y: rect.top });
+    // Only handle if canInteract
+    if (!canInteract || maskIdentity) return;
+    if (iconRef.current && isHovered) {
+      const rect = iconRef.current.getBoundingClientRect();
+      setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
 
@@ -183,19 +201,20 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         onMouseMove={handleNameMouseMove}
       >
         <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-          {capitalizedFirstName}
+          {maskIdentity ? "\u00A0" : capitalizedFirstName}
         </div>
-        <button
-          ref={editButtonRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            console.log('Edit button clicked directly', { campusId, personId: person.personId });
-            onEdit(campusId, person);
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
+        {canInteract && (
+          <button
+            ref={editButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              console.log('Edit button clicked directly', { campusId, personId: person.personId });
+              onEdit(campusId, person);
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
           }}
           onPointerDown={(e) => {
             e.stopPropagation();
@@ -212,19 +231,21 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
         >
           <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
         </button>
+        )}
       </div>
 
-      <div 
-        ref={setDragDropRef}
-        className="relative cursor-grab active:cursor-grabbing"
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      <div
+        ref={canInteract ? setDragDropRef : undefined}
+        className={`relative ${canInteract ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}`}
+        style={canInteract ? { cursor: isDragging ? 'grabbing' : 'grab' } : { cursor: 'default' }}
       >
         <button
           onClick={handleStatusClick}
+          disabled={maskIdentity}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
-          {person.spouse && (
+          {!maskIdentity && person.spouse && (
             <User
               className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
               strokeWidth={1.5}
@@ -233,7 +254,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           )}
           {/* Main person icon - solid */}
           <div 
-            className={`relative ${statusColors[figmaStatus]} ${person.depositPaid ? 'deposit-glow' : ''}`}
+            className={`relative ${maskIdentity ? 'text-zinc-400' : statusColors[figmaStatus]} ${(!maskIdentity && person.depositPaid) ? 'deposit-glow' : ''}`}
           >
             <User
               className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
@@ -242,19 +263,21 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
             />
           </div>
           {/* Need indicator (arm + icon) */}
-          {hasNeeds && (
+          {!maskIdentity && hasNeeds && (
             <NeedIndicator type={personNeed?.type} />
           )}
         </button>
 
         {/* Role Label - hidden until hover */}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-          {person.primaryRole || 'Staff'}
-        </div>
+        {!maskIdentity && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            {person.primaryRole || 'Staff'}
+          </div>
+        )}
       </div>
       </motion.div>
       {/* Person Tooltip */}
-      {isHovered && tooltipPos && (personNeed || person.notes || person.depositPaid) && (
+      {!maskIdentity && isHovered && tooltipPos && (
         <PersonTooltip
           person={person}
           need={personNeed ? {

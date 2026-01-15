@@ -13,11 +13,13 @@ import "./index.css";
 // Initialize Sentry with environment variables
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
 const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
+const sentryRelease = import.meta.env.VITE_SENTRY_RELEASE || import.meta.env.VITE_APP_VERSION || undefined;
 
 if (sentryDsn && sentryDsn.trim()) {
   Sentry.init({
     dsn: sentryDsn,
     environment: sentryEnvironment,
+    release: sentryRelease,
     sendDefaultPii: true,
     // Enable performance monitoring
     tracesSampleRate: 1.0,
@@ -65,6 +67,20 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
+    
+    // Don't show toast for expected auth errors on aggregate/public queries
+    // These queries are expected to fail for unauthenticated users, and metrics.get provides the data
+    const queryKey = event.query.queryKey;
+    const isAggregateQuery = Array.isArray(queryKey) && (
+      queryKey[0]?.[0] === 'people.list' ||
+      queryKey[0]?.[0] === 'needs.listActive'
+    );
+    
+    if (isAggregateQuery && (error instanceof TRPCClientError && 
+        (error.data?.code === "UNAUTHORIZED" || error.data?.code === "FORBIDDEN"))) {
+      // Silently ignore - metrics.get will provide aggregate data
+      return;
+    }
     
     // PR 6: Show user-friendly toast instead of console.error
     const message = getErrorMessage(error);

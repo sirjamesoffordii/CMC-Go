@@ -70,6 +70,8 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   const createNeed = trpc.needs.create.useMutation({
     onSuccess: () => {
       utils.needs.byPerson.invalidate({ personId: person?.personId ?? '' });
+      utils.needs.listActive.invalidate();
+      utils.followUp.list.invalidate();
       utils.people.list.invalidate();
       setNeedDescription("");
       setNeedAmount("");
@@ -80,6 +82,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
       utils.needs.byPerson.invalidate({ personId: person?.personId ?? '' });
+      utils.needs.listActive.invalidate();
       utils.followUp.list.invalidate();
     },
   });
@@ -87,6 +90,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   const updateNeedVisibility = trpc.needs.updateVisibility.useMutation({
     onSuccess: () => {
       utils.needs.byPerson.invalidate({ personId: person?.personId ?? '' });
+      utils.needs.listActive.invalidate();
     },
   });
 

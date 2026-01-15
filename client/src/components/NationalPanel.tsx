@@ -64,6 +64,8 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     onSuccess: () => {
       utils.people.getNational.invalidate();
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.followUp.list.invalidate();
       setIsAddPersonDialogOpen(false);
       setPersonForm({ name: '', role: '', nationalCategory: '', status: 'Not Invited' });
     },
@@ -258,7 +260,10 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
                       person={person}
                       onStatusChange={(status) => onPersonStatusChange(person.personId, status as "Yes" | "Maybe" | "No" | "Not Invited")}
                       onClick={() => onPersonClick(person)}
-                      onPersonUpdate={() => {}}
+                      onPersonUpdate={() => {
+                        utils.people.getNational.invalidate();
+                        utils.people.list.invalidate();
+                      }}
                     />
                   ))}
                 </div>

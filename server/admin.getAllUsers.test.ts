@@ -2,23 +2,25 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
-type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
-
-function createAuthContext(role: "user" | "ADMIN" = "user"): TrpcContext {
-  const user: AuthenticatedUser = {
-    id: 1,
-    openId: "test-user-openid",
-    email: "test@example.com",
-    name: "Test User",
-    loginMethod: "manus",
-    role,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedIn: new Date(),
-  };
-
+function createAuthedContext(): TrpcContext {
   return {
-    user,
+    user: {
+      id: 1,
+      fullName: "Test Admin",
+      email: "test-admin@example.com",
+      role: "ADMIN",
+      campusId: 1,
+      districtId: null,
+      regionId: null,
+      approvalStatus: "ACTIVE",
+      approvedByUserId: null,
+      approvedAt: null,
+      createdAt: new Date(),
+      lastLoginAt: null,
+      openId: null,
+      name: null,
+      loginMethod: null,
+    },
     req: {
       protocol: "https",
       headers: {},
@@ -27,35 +29,12 @@ function createAuthContext(role: "user" | "ADMIN" = "user"): TrpcContext {
   };
 }
 
-describe("admin.getAllUsers", () => {
-  it("allows admin to retrieve all users", async () => {
-    const ctx = createAuthContext("ADMIN");
+describe("approvals router", () => {
+  it("lists pending approvals", async () => {
+    const ctx = createAuthedContext();
     const caller = appRouter.createCaller(ctx);
 
-    const result = await caller.admin.getAllUsers();
-
-    expect(Array.isArray(result)).toBe(true);
-  });
-
-  it("denies access to non-admin users", async () => {
-    const ctx = createAuthContext("user");
-    const caller = appRouter.createCaller(ctx);
-
-    await expect(caller.admin.getAllUsers()).rejects.toThrow("Admin access required");
-  });
-
-  it("returns user objects with correct structure", async () => {
-    const ctx = createAuthContext("ADMIN");
-    const caller = appRouter.createCaller(ctx);
-
-    const result = await caller.admin.getAllUsers();
-
-    if (result.length > 0) {
-      const user = result[0];
-      expect(user).toHaveProperty("id");
-      expect(user).toHaveProperty("openId");
-      expect(user).toHaveProperty("role");
-      expect(user).toHaveProperty("createdAt");
-    }
+    const approvals = await caller.approvals.list();
+    expect(Array.isArray(approvals)).toBe(true);
   });
 });

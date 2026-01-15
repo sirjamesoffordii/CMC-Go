@@ -8,6 +8,7 @@ import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
 import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -23,6 +24,7 @@ import { useIsMobile } from "@/hooks/useIsMobile";
 import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { District } from "../../../drizzle/schema";
+import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
 
 /**
  * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
@@ -94,6 +96,7 @@ function createSyntheticDistrict(districtId: string | null, districts: District[
 export default function Home() {
   // PR 2: Real authentication
   const { user } = usePublicAuth();
+  const isAuthenticated = !!user;
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
   
@@ -146,17 +149,56 @@ export default function Home() {
 
   const utils = trpc.useUtils();
 
-  // Fetch data - store queries for error checking
-  const districtsQuery = trpc.districts.list.useQuery();
-  const campusesQuery = trpc.campuses.list.useQuery();
-  const peopleQuery = trpc.people.list.useQuery();
+  // Never allow the People panel to open when logged out.
+  useEffect(() => {
+    if (!isAuthenticated && peoplePanelOpen) {
+      setPeoplePanelOpen(false);
+    }
+  }, [isAuthenticated, peoplePanelOpen]);
+
+  // Fetch data (protected): only when authenticated
+  const districtsQuery = trpc.districts.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+  const campusesQuery = trpc.campuses.list.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+  
+  // Check if selected district/campus is in scope (before fetching people)
+  const isSelectedDistrictInScope = useMemo(() => {
+    if (!selectedDistrictId) return true; // No selection = in scope
+    const selectedDistrict = districtsQuery.data?.find(d => d.id === selectedDistrictId) || 
+      createSyntheticDistrict(selectedDistrictId, districtsQuery.data || []);
+    if (!selectedDistrict) return true; // District not found = assume in scope
+    return isDistrictInScope(selectedDistrictId, user, selectedDistrict.region || null);
+  }, [selectedDistrictId, districtsQuery.data, user]);
+  
+  const isSelectedCampusInScope = useMemo(() => {
+    if (!viewState.campusId) return true; // No campus selected = in scope
+    const campus = campusesQuery.data?.find(c => c.id === viewState.campusId);
+    if (!campus) return true; // Campus not found = assume in scope
+    const district = districtsQuery.data?.find(d => d.id === campus.districtId) || 
+      createSyntheticDistrict(campus.districtId, districtsQuery.data || []);
+    return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
+  }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
+  
+  // Fetch people always - backend will handle auth and return public data when not authenticated
+  const peopleQuery = trpc.people.list.useQuery(undefined, {
+    enabled: true,
+    retry: false, // Don't retry on auth errors
+  });
   
   const districts = districtsQuery.data || [];
   const allCampuses = campusesQuery.data || [];
   const allPeople = peopleQuery.data || [];
   
   const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false, // Don't retry on auth errors
+  });
   
   // Fetch saved header image, background color, height, and logo
   const { data: savedHeaderImage } = trpc.settings.get.useQuery({ key: 'headerImageUrl' });
@@ -358,6 +400,8 @@ export default function Home() {
     onSettled: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
       utils.followUp.list.invalidate();
     },
   });
@@ -366,6 +410,8 @@ export default function Home() {
     onSuccess: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
     },
   });
 
@@ -802,7 +848,7 @@ export default function Home() {
                     window.location.href = getLoginUrl();
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2 font-semibold"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
                 >
                   <LogIn className="w-4 h-4" />
                   Login
@@ -814,7 +860,7 @@ export default function Home() {
                     setShareModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Share2 className="w-4 h-4" />
                   Share
@@ -825,7 +871,7 @@ export default function Home() {
                     setImportModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Upload className="w-4 h-4" />
                   Import
@@ -836,7 +882,7 @@ export default function Home() {
                     setLocation("/admin");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <Shield className="w-4 h-4" />
                   Admin Console
@@ -847,7 +893,7 @@ export default function Home() {
                     setLocation("/more-info");
                     setMenuOpen(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
                 >
                   <span className="text-sm font-semibold">CMC Info</span>
                 </button>
@@ -900,6 +946,7 @@ export default function Home() {
                     district={selectedDistrict}
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
+                    isOutOfScope={!isSelectedDistrictInScope}
                     onClose={() => {
                       setSelectedDistrictId(null);
                       setViewState({
@@ -1012,7 +1059,7 @@ export default function Home() {
         {/* Right People Panel */}
         <div
           className={[
-            "bg-white border-l border-gray-100 flex-shrink-0 relative",
+            "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
             !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
             isMobile ? "right-panel-mobile" : "",
             isMobile && !peoplePanelOpen ? "closed" : "",
@@ -1023,6 +1070,7 @@ export default function Home() {
             overflow: "hidden",
           } : {
             width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+            height: "100%",
             overflow: "hidden",
           }}
         >
@@ -1043,19 +1091,38 @@ export default function Home() {
 
       {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
       {!peoplePanelOpen && (
-        <div
-          className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
-          style={{ right: 0 }}
-        >
-          <button
-            onClick={() => setPeoplePanelOpen(true)}
-            className="bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 group-hover:bg-red-700/90 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target"
-          >
-            <span className="inline-block whitespace-nowrap select-none">
-              People
-            </span>
-          </button>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
+              style={{ right: 0 }}
+            >
+              <button
+                onClick={() => {
+                  if (!user) {
+                    // Do nothing - tooltip will show
+                    return;
+                  }
+                  setPeoplePanelOpen(true);
+                }}
+                disabled={!user}
+                className={`
+                  bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target
+                  ${!user ? 'opacity-50 cursor-not-allowed' : 'group-hover:bg-red-700/90'}
+                `}
+              >
+                <span className="inline-block whitespace-nowrap select-none">
+                  People
+                </span>
+              </button>
+            </div>
+          </TooltipTrigger>
+          {!user && (
+            <TooltipContent side="left">
+              <p>Please log in to view people</p>
+            </TooltipContent>
+          )}
+        </Tooltip>
       )}
 
       <PersonDetailsDialog
