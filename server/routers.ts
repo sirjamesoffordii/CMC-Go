@@ -1173,6 +1173,7 @@ export const appRouter = router({
             amount: input.amount,
             visibility: input.visibility,
             isActive: input.isActive ?? true,
+            createdById: ctx.user.id,
           });
         } else if (input.isActive !== undefined) {
           // Just update isActive
@@ -1425,7 +1426,7 @@ export const appRouter = router({
         await db.createInviteNote({
           personId: input.personId,
           content: input.content,
-          createdByUserId: ctx.user?.id || null,
+          createdByUserId: ctx.user.id,
         });
 
         return { success: true };
