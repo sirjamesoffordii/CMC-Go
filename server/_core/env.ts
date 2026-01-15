@@ -61,25 +61,31 @@ function getDatabaseUrl(): string {
         // Check username after any host rewrite
         const username = urlObj.username;
         if (isUsingProxy && username === 'root') {
-          // Replace root with demo user (cmc_go) if credentials are provided
-          const demoUser = process.env.DEMO_DB_USER || 'cmc_go';
-          const demoPassword = process.env.DEMO_DB_PASSWORD;
-          
-          if (demoUser && demoPassword) {
-            // Auto-swap root -> demo user for zero-friction setup
-            urlObj.username = demoUser;
-            urlObj.password = demoPassword;
-            console.log(`[ENV] Swapped root -> ${demoUser} for proxy connection (dev only)`);
+          if (process.env.DEMO_DB_ALLOW_ROOT === 'true') {
+            console.warn('[ENV] Using root via public proxy (dev only).');
           } else {
-            // Missing credentials - provide helpful error with copy/paste lines
-            throw new Error(
-              'Local dev is configured to use root via proxy. Root is blocked.\n\n' +
-              'Option 1 (Recommended): Update DATABASE_URL to use cmc_go user:\n' +
-              '  DATABASE_URL=mysql://cmc_go:<password>@shortline.proxy.rlwy.net:56109/railway\n\n' +
-              'Option 2: Add these to your .env file to auto-swap root -> cmc_go:\n' +
-              '  DEMO_DB_USER=cmc_go\n' +
-              '  DEMO_DB_PASSWORD=<your_cmc_go_password>'
-            );
+            // Replace root with demo user (cmc_go) if credentials are provided
+            const demoUser = process.env.DEMO_DB_USER || 'cmc_go';
+            const demoPassword = process.env.DEMO_DB_PASSWORD;
+            
+            if (demoUser && demoPassword) {
+              // Auto-swap root -> demo user for zero-friction setup
+              urlObj.username = demoUser;
+              urlObj.password = demoPassword;
+              console.log(`[ENV] Swapped root -> ${demoUser} for proxy connection (dev only)`);
+            } else {
+              // Missing credentials - provide helpful error with copy/paste lines
+              throw new Error(
+                'Local dev is configured to use root via proxy. Root is blocked.\n\n' +
+                'Option 1 (Recommended): Update DATABASE_URL to use cmc_go user:\n' +
+                '  DATABASE_URL=mysql://cmc_go:<password>@shortline.proxy.rlwy.net:56109/railway\n\n' +
+                'Option 2: Add these to your .env file to auto-swap root -> cmc_go:\n' +
+                '  DEMO_DB_USER=cmc_go\n' +
+                '  DEMO_DB_PASSWORD=<your_cmc_go_password>\n\n' +
+                'Option 3 (Dev only, not recommended):\n' +
+                '  DEMO_DB_ALLOW_ROOT=true'
+              );
+            }
           }
         }
         

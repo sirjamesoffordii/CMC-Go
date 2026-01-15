@@ -1470,6 +1470,51 @@ export function DistrictPanel({
     setPreserveOrder(false);
   };
 
+  const handleCampusRowDrop = (personId: string, fromCampusId: number | string, toCampusId: number | string) => {
+    if (fromCampusId === toCampusId) return;
+    handlePersonMove(personId, fromCampusId, toCampusId, 0);
+  };
+
+  const handleCampusNameDrop = (personId: string, fromCampusId: number | string, toCampusId: number | string) => {
+    if (fromCampusId === toCampusId) return;
+    handlePersonMove(personId, fromCampusId, toCampusId, 0);
+  };
+
+  const handleDistrictDirectorDrop = (personId: string, fromCampusId: number | string) => {
+    const person = districtPeople.find(p => p.personId === personId);
+    if (!person) return;
+
+    updatePerson.mutate({
+      personId: person.personId,
+      primaryRole: 'District Director',
+      primaryCampusId: null,
+    });
+  };
+
+  const handleDistrictStaffDrop = (personId: string, fromCampusId: number | string) => {
+    const person = districtPeople.find(p => p.personId === personId);
+    if (!person) return;
+
+    updatePerson.mutate({
+      personId: person.personId,
+      primaryRole: 'District Staff',
+      primaryCampusId: null,
+    });
+  };
+
+  const getPerson = (personId: string, campusId: number | string): Person | undefined => {
+    return districtPeople.find(p => p.personId === personId);
+  };
+
+  const getCampus = (campusId: number): { name: string; people: Person[] } | undefined => {
+    const campus = campusesWithPeople.find(c => c.id === campusId);
+    if (!campus) return undefined;
+    return {
+      name: campus.name,
+      people: campus.people
+    };
+  };
+
   // Handle drag and drop - person move
   const handlePersonMove = (draggedId: string, draggedCampusId: number | string, targetCampusId: number | string, targetIndex: number) => {
     // Find the person
