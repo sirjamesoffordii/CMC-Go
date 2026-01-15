@@ -1,225 +1,191 @@
 # CMC Go — Build Map
 
-**Owner:** Lead Developer (ChatGPT)  
-**Last verified:** Jan 5, 2026 · 12:17 PM CT
+**Owner:** Autonomous Agent (VS Code)  
+**Last verified:** Jan 15, 2026  
+**Reference:** See [CMC_GO_BRIEF.md](../../docs/agents/CMC_GO_BRIEF.md#build-direction) for phase definitions
 
-This document governs **build progression and verification** for CMC Go. It is the **single source of truth** for determining the system’s current build position and when advancement is allowed.
+This document tracks **build progression and verification** for CMC Go. It is the **single source of truth** for determining system build position and advancement readiness.
 
----
-
-## Latest Work Update
-
-**Current Position:** Phase 1.2 — Cross-View Consistency & Reliability
-
-Latest work has been focused on validating cross-view state behavior, with particular attention on map ↔ panel synchronization and follow-up view consistency. Progress has been steady but non-trivial: most core logic is in place, however verification is ongoing to ensure no edge-case desyncs remain.
-
-Recent friction has come from environment and deployment issues (Sentry env vars and lockfile mismatches), which temporarily slowed verification but did not change scope. No fundamental blockers are present; remaining work is primarily careful validation rather than new implementation.
+See [Agent Documentation](../../AGENTS.md) and [System Brief](../../docs/agents/CMC_GO_BRIEF.md) for decision heuristics and context.
 
 ---
 
-## v1.0 — Core Build
+## Build Phase Overview (from CMC_GO_BRIEF.md)
 
-### Phase 1: Core System Integrity
+Priority order by phase:
+- **Phase A — System Integrity** (Always): Auth correctness, visibility enforcement, schema discipline, stable builds
+- **Phase B — Core Workflows**: Map navigation, people list correctness, person detail accuracy, filters reflecting real data
+- **Phase C — Operator Experience**: Clear next actions, reduced cognitive load, consistent visuals
+- **Phase D — Observability & Safety**: Error visibility, fail-closed behavior, guardrails
+- **Phase E — Polish & Performance**: Animations, optimizations
 
-**Objective:** Ensure the system is correct, stable, and observable before any UX polish, access control, or optimization.
+---
+
+## Current Work Position
+
+**Status:** Phase A (System Integrity) — Cross-View Consistency & Reliability
+
+Most core logic is implemented. Current focus: validating cross-view state behavior (map ↔ panel synchronization, follow-up view consistency). Verification ongoing; no fundamental blockers.
 
 ---
 
-### Data Model & Schema
+## Phase A: System Integrity (CURRENT)
 
-- 🟢 **Schema finalized and aligned** — Completed  
-- 🟢 **ENUM discipline enforced** — Completed  
-- 🟢 **Seed data normalized and stable** — Completed  
+Objective: Ensure the system is correct, stable, and observable before any UX polish, access control, or optimization.
 
----
+### Auth Correctness
+- Authorization system enforced server-side
+- UI never invents access
+- Client-only hiding is a defect
+- All role-based queries validated
+
+### Schema Discipline
+- 🟢 **Schema finalized and aligned** — Completed
+- 🟢 **ENUM discipline enforced** — Completed
+- 🟢 **Seed data normalized and stable** — Completed
+
+### Data Integrity
+- 🟢 **Edits persist to database and rehydrate on refresh** — Completed
+- 🟡 **Cross-view state consistency** — In Progress
+- 🟡 **Status updates propagate across all views** — Verification Needed
 
 ### Core Flows
-
-- 🟢 **District list renders correctly** — Completed  
-- 🟢 **Campus list renders correctly** — Completed  
-- 🟢 **People list renders correctly** — Completed  
-- 🟢 **Person detail view renders correctly** — Completed  
-- 🟢 **Edits persist to database and rehydrate on refresh** — Completed  
-- 🟢 **Notes flow functional** — Completed  
-- 🟢 **Needs flow functional** — Completed  
-
----
-
-### State Management
-
-- 🟢 **URL filter state persistence** — Completed  
-  - PR #36  
-  - Commit: `1089909`
-
-- 🟢 **Lazy initialization for URL filter params** — Completed  
-  - PR #39  
-  - Commit: `d600c31`
-
-- 🟢 **Optimized URL parsing** — Completed  
-  - Commit: `7342ada`
-
----
-
-### Follow-Up & Visibility
-
-- 🟢 **Active needs surfaced in Follow-Up view** — Completed  
-  - PR #21  
-  - Commit: `b3ecdc6`
-
-- ⚪ **Needs filter in People view** — Backlog  
-  - PR #31
-
-- ⚪ **Explicit “Active Need” definition** — Backlog  
-  - PR #30
-
-- ⚪ **Districts grouped by region in People filters** — Backlog  
-  - PR #33
-
----
+- 🟢 **District list renders correctly** — Completed
+- 🟢 **Campus list renders correctly** — Completed
+- 🟢 **People list renders correctly** — Completed
+- 🟢 **Person detail view renders correctly** — Completed
+- 🟢 **Notes flow functional** — Completed
+- 🟢 **Needs flow functional** — Completed
 
 ### Observability
+- 🟢 **Sentry initialized in client entrypoint** — Completed
+- 🟢 **Sentry test trigger wired in People view** — Completed
+- 🟢 **Code Coverage with Codecov configured** — Completed
+- 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed
 
-- 🟢 **Sentry initialized in client entrypoint** — Completed  
-  - PR #40  
-  - Commit: `a013d26`
-
-- 🟢 **Sentry test trigger wired in People view** — Completed  
-  - PR #42  
-  - Commit: `50f9616`
-
-- ⚪ **Promote Sentry test trigger to staging** — Backlog  
-  - PR #43
-
-- ⚪ **Upgrade to @sentry/react v8.0.0** — Backlog  
-  - PR #45
-
-- 🟢 **Code Coverage with Codecov configured** — Completed  
-  - GitHub Actions workflow: `.github/workflows/test-and-coverage.yml`  
-  - Commit: `12ca7b1`
-
-- 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
-  - Automated AI review of pull requests  
-  - Documentation: `docs/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+### Stable Builds
+- 🟢 **Deterministic dependencies** — Completed
+- 🟢 **CI pipeline operational** — Completed
+- 🟡 **Build reproducibility verified** — Verification Needed
 
 ---
 
-### Cross-View State
+## Phase B: Core Workflows (NEXT)
 
-- 🔵 **Map ↔ Panel state synchronization** — In Progress  
-- 🟡 **Status updates propagate across all views** — Verification Needed  
-- 🟡 **Follow-Up view state consistency** — Verification Needed  
+Objective: Establish map navigation, people list accuracy, person detail correctness, and filters that reflect real data.
+
+### Map Navigation
+- ⚪ **Default regional scope (TEXICO)** — Backlog
+- ⚪ **Default district panel (South Texas)** — Backlog
+- ⚪ **Smooth map interaction and panning** — Backlog
+
+### People List Correctness
+- 🟢 **URL filter state persistence** — Completed
+- 🟢 **Lazy initialization for URL filter params** — Completed
+- 🔵 **Filter logic clarity and predictability** — In Progress
+- ⚪ **Needs filter in People view** — Backlog
+- ⚪ **Districts grouped by region in People filters** — Backlog
+
+### Person Detail Accuracy
+- 🟢 **Person detail view renders correctly** — Completed
+- 🟡 **Status updates persist and propagate** — Verification Needed
+- 🟡 **Notes and needs display accurately** — Verification Needed
+
+### Follow-Up View
+- 🟢 **Active needs surfaced in Follow-Up view** — Completed
+- 🟡 **Follow-Up view state consistency** — Verification Needed
+- ⚪ **Explicit 'Active Need' definition** — Backlog
 
 ---
 
-## Phase 2: Desktop UX & Navigation
+## Phase C: Operator Experience (FUTURE)
 
-**Objective:** Make the system efficient and intuitive in its primary desktop environment.
+Objective: Make the system efficient and intuitive for regional/district leaders.
 
-### Default Scope & View Modes
-
-- ⚪ **Default regional scope (TEXICO)** — Backlog  
-- ⚪ **Default district panel (South Texas)** — Backlog  
-- ⚪ **View mode selector** — Backlog  
-  - National  
-  - Regional  
-  - District  
+### Navigation Clarity
+- ⚪ **Clear next actions from each view** — Backlog
+- ⚪ **Intuitive view mode selector** — Backlog
+- ⚪ **Consistent visual language across views** — Backlog
 
 ### Panel Behavior
+- 🟡 **Stable panel open/close behavior** — Verification Needed
+- ⚪ **Smooth panel transitions** — Backlog
+- ⚪ **Panel state persistence** — Backlog
 
-- 🟡 **Stable panel open/close behavior** — Verification Needed  
-- ⚪ **Smooth panel transitions** — Backlog  
-- ⚪ **Panel state persistence** — Backlog  
-
-### Filters & Sorting
-
-- 🔵 **District-level needs visibility** — In Progress  
-- 🔵 **Filter logic clarity and predictability** — In Progress  
-- ⚪ **Status-based visibility rules** — Backlog  
-
-### Navigation & Usability
-
-- 🟡 **Clear navigation patterns** — Verification Needed  
-- 🟡 **No blocking UX friction** — Verification Needed  
-- 🟡 **Leader-friendly primary flows** — Verification Needed  
+### Workflow Efficiency
+- ⚪ **Leader-friendly primary flows** — Backlog
+- ⚪ **Quick status updates** — Backlog
+- ⚪ **Notes and needs entry streamlined** — Backlog
 
 ---
 
-## Phase 3: Authentication & Authorization (Late v1)
+## Phase D: Observability & Safety (FUTURE)
 
-**Objective:** Lock down access only after behavior and UX are stable.
+Objective: Detect errors early, fail safely, and maintain guardrails.
 
-**Note:** Authentication is intentionally deferred to avoid compounding debugging complexity.
+### Error Visibility
+- ⚪ **User-friendly error messages** — Backlog
+- ⚪ **Error details logged to Sentry** — Backlog
+- ⚪ **Performance monitoring active** — Backlog
 
-### Authentication
+### Fail-Closed Behavior
+- ⚪ **Unauthorized requests rejected cleanly** — Backlog
+- ⚪ **Invalid state detected and prevented** — Backlog
+- ⚪ **Graceful degradation on service issues** — Backlog
 
-- ⚪ **Login flow** — Backlog  
-- ⚪ **Session management** — Backlog  
-- ⚪ **Logout flow** — Backlog  
-
-### Role-Based Access
-
-- ⚪ **Role definitions** — Backlog  
-  - Campus Director  
-  - District Director  
-  - Region Director  
-  - Admin / National  
-
-- ⚪ **Role-based view gating** — Backlog  
-- ⚪ **Permission enforcement** — Backlog  
-
-### Authorized Views
-
-- ⚪ **View access control** — Backlog  
-- ⚪ **Data visibility scoped by role** — Backlog  
-- ⚪ **Authorization enforcement consistency** — Backlog  
+### Guardrails
+- ⚪ **Data validation on all inputs** — Backlog
+- ⚪ **Rate limiting on mutations** — Backlog
+- ⚪ **Audit logging for sensitive operations** — Backlog
 
 ---
 
-## Phase 4: Mobile Optimization (Final v1 Phase)
+## Phase E: Polish & Performance (FINAL)
 
-**Objective:** Adapt a completed and stable system to mobile constraints.
+Objective: Optimize animations, performance, and visual refinement.
 
-### Mobile Layout
+### Animations
+- ⚪ **Page transitions smooth** — Backlog
+- ⚪ **List updates animated** — Backlog
+- ⚪ **Modal and panel animations** — Backlog
 
-- ⚪ **Responsive layout** — Backlog  
-- ⚪ **Mobile-specific panel behavior** — Backlog  
-- ⚪ **Touch-friendly spacing** — Backlog  
+### Performance
+- ⚪ **Query optimization** — Backlog
+- ⚪ **Frontend bundle size reduction** — Backlog
+- ⚪ **Lazy loading of large lists** — Backlog
 
-### Touch Interactions
-
-- ⚪ **Minimum touch targets (44×44px)** — Backlog  
-- ⚪ **Swipe gestures** — Backlog  
-- ⚪ **Mobile-optimized controls** — Backlog  
-
-### Core Mobile Flows
-
-- ⚪ **Status updates** — Backlog  
-- ⚪ **Notes entry** — Backlog  
-- ⚪ **Needs tracking** — Backlog  
-- ⚪ **Follow-Up view usability** — Backlog  
+### Visual Polish
+- ⚪ **Consistent spacing and typography** — Backlog
+- ⚪ **Dark mode support** — Backlog
+- ⚪ **Mobile responsiveness** — Backlog
 
 ---
 
-## v1.0 Definition of Completion
+## Status Legend
 
-v1.0 is considered **build-complete** when:
-
-- All Phase 1–4 items are **Completed**
-- Staging behavior matches expected functionality
-- Observability is verified and operational
-- Lead Developer explicitly signs off for production readiness
+- ⚪ **Backlog** — Approved scope, not started
+- 🔵 **In Progress** — Actively being worked
+- 🔴 **Blocked** — Waiting on dependency or decision
+- 🟡 **Verification Needed** — Implemented, pending confirmation
+- 🟢 **Completed** — Implemented and verified
 
 ---
 
 ## Progression Model
 
 ⚪ → 🔵 → 🟡 → 🟢
-        ↘
-         🔴
 
-## Status Legend
-- ⚪ **Backlog** — Approved scope, not started
-- 🔵 **In Progress** — Actively being worked
-- 🔴 **Blocked** — Waiting on dependency or decision
-- 🟡 **Verification Needed** — Implemented, pending confirmation
-- 🟢 **Completed** — Implemented and verified
+Blocked: 🔴
+
+---
+
+## Decision Principles
+
+From [CMC_GO_BRIEF.md](../../docs/agents/CMC_GO_BRIEF.md):
+- Coherence beats speed long-term
+- The system must always tell the truth
+- Auth is structural, not a feature
+- State must be explicit and traceable
+- Belief without evidence is debt
+- Prefer small diffs, backend truth, and fixes over features
+
