@@ -249,9 +249,6 @@ export async function getCampusesByDistrictId(districtId: string) {
   return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
 }
 
-// Alias for backward compatibility
-export const getCampusesByDistrict = getCampusesByDistrictId;
-
 export async function getCampusById(id: number) {
   const db = await getDb();
   if (!db) return null;
@@ -1416,7 +1413,7 @@ export async function updateNeedVisibility(needId: number, visibility: "LEADERSH
 
 export async function createOrUpdateSession(sessionData: {
   userId: number;
-  sessionHash: string;
+  sessionId: string;
   userAgent?: string;
   ipAddress?: string;
 }) {
@@ -1425,7 +1422,7 @@ export async function createOrUpdateSession(sessionData: {
 
   // Check if session exists
   const existing = await db.select().from(userSessions)
-    .where(eq(userSessions.sessionHash, sessionData.sessionHash))
+    .where(eq(userSessions.sessionId, sessionData.sessionId))
     .limit(1);
 
   if (existing[0]) {
@@ -1438,7 +1435,7 @@ export async function createOrUpdateSession(sessionData: {
     // Create new session
     const result = await db.insert(userSessions).values({
       userId: sessionData.userId,
-      sessionHash: sessionData.sessionHash,
+      sessionId: sessionData.sessionId,
       userAgent: sessionData.userAgent,
       ipAddress: sessionData.ipAddress,
     });
@@ -1446,22 +1443,22 @@ export async function createOrUpdateSession(sessionData: {
   }
 }
 
-export async function updateSessionLastSeen(sessionHash: string) {
+export async function updateSessionLastSeen(sessionId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   await db.update(userSessions)
     .set({ lastSeenAt: new Date() })
-    .where(eq(userSessions.sessionHash, sessionHash));
+    .where(eq(userSessions.sessionId, sessionId));
 }
 
-export async function revokeSession(sessionHash: string) {
+export async function revokeSession(sessionId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   await db.update(userSessions)
     .set({ revokedAt: new Date() })
-    .where(eq(userSessions.sessionHash, sessionHash));
+    .where(eq(userSessions.sessionId, sessionId));
 }
 
 export async function getActiveSessions(minutesThreshold = 30) {
@@ -1473,7 +1470,7 @@ export async function getActiveSessions(minutesThreshold = 30) {
   const sessions = await db.select({
     id: userSessions.id,
     userId: userSessions.userId,
-    sessionHash: userSessions.sessionHash,
+    sessionId: userSessions.sessionId,
     createdAt: userSessions.createdAt,
     lastSeenAt: userSessions.lastSeenAt,
     userAgent: userSessions.userAgent,

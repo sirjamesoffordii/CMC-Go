@@ -295,15 +295,15 @@ export type InsertImportRun = typeof importRuns.$inferInsert;
 export const userSessions = mysqlTable("user_sessions", {
   id: int("id").primaryKey().autoincrement(),
   userId: int("userId").notNull(), // References users.id
-  sessionHash: varchar("sessionHash", { length: 255 }).notNull().unique(), // Hashed session identifier
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(), // Hashed session identifier
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
   revokedAt: timestamp("revokedAt"), // Nullable - set when manually revoked
-  userAgent: text("userAgent"), // Browser/client information
+  userAgent: varchar("userAgent", { length: 500 }), // Browser/client information
   ipAddress: varchar("ipAddress", { length: 45 }), // IPv4/IPv6 address
 }, (table) => ({
   userIdIdx: index("user_sessions_userId_idx").on(table.userId),
-  sessionHashIdx: index("user_sessions_sessionHash_idx").on(table.sessionHash),
+  sessionIdIdx: index("user_sessions_sessionId_idx").on(table.sessionId),
   lastSeenAtIdx: index("user_sessions_lastSeenAt_idx").on(table.lastSeenAt),
 }));
 
