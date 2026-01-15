@@ -1016,7 +1016,7 @@ export function DistrictPanel({
       // Add district staff
       mutationData.primaryRole = 'District Staff';
       // Don't set primaryCampusId for district staff (will be null in DB)
-    } else
+    } else {
       mutationData.primaryRole = mapRoleToAuthoritative(personForm.role.trim()) || 'Campus Staff';
       mutationData.primaryCampusId = selectedCampusId;
     }
@@ -1048,7 +1048,8 @@ export function DistrictPanel({
         const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
-            return householdMembers.some(async (member) => {            const memberNameParts = member.name.trim().split(' ');
+          return householdMembers.some((member) => {
+            const memberNameParts = member.name.trim().split(' ');
             const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
             return memberLastName.toLowerCase() === lastName.toLowerCase();
           });
@@ -1285,56 +1286,6 @@ export function DistrictPanel({
     // Store form values for use in callbacks
     const formData = { ...personForm };
     
-    // Auto-create or find existing household if family/guests are added and no household exists
-    let householdIdToUse = personForm.householdId;
-    if ((personForm.spouseAttending || personForm.childrenCount > 0 || personForm.guestsCount > 0) && !personForm.householdId) {
-      // Extract last name from person's name
-      const nameParts = personForm.name.trim().split(' ');
-      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-      const householdLabel = `${lastName} Household`;
-      
-      // Check if there's already a household with this last name for people in the same district
-      const existingHousehold = allHouseholds.find(h => {
-        if (!h.label || !h.label.toLowerCase().includes(lastName.toLowerCase())) {
-          return false;
-        }
-        // Check if any people in this district already belong to this household
-        const householdMembers = allPeople.filter(
-          (p) => p.householdId === h.id && p.primaryDistrictId === district.id
-        );
-        if (householdMembers.length > 0) {
-          // Check if any member has the same last name
-          return householdMembers.some(member => {
-            const memberNameParts = member.name.trim().split(' ');
-            const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
-            return memberLastName.toLowerCase() === lastName.toLowerCase();
-          });
-        }
-        return false;
-      });
-      
-      if (existingHousehold) {
-        // Use existing household - counts will be recalculated after person is updated
-        householdIdToUse = existingHousehold.id;
-        setPersonForm({ ...personForm, householdId: existingHousehold.id });
-      } else {
-        // Create new household with person's last name
-        try {
-          const newHousehold = await createHousehold.mutateAsync({
-                label: householdLabel,
-                childrenCount: personForm.childrenCount || 0,
-                guestsCount: personForm.guestsCount || 0,
-          
-          householdIdToUse = newHousehold.id;
-          setPersonForm({ ...personForm, householdId: newHousehold.id });
-        } catch (error) {
-          console.error('Failed to create household:', error);
-          alert('Failed to create household. Please try again.');
-          return;
-        }
-      }
-    }
-    
     // Determine if this role requires primaryCampusId to be null (district/national level roles)
     // Map role to authoritative role before saving
     const mappedRole = mapRoleToAuthoritative(personForm.role) || 'Campus Staff';
@@ -1351,21 +1302,21 @@ export function DistrictPanel({
       spouseAttending: personForm.spouseAttending,
       childrenCount: personForm.childrenCount,
       guestsCount: personForm.guestsCount,
-      householdId: householdIdToUse,
-      householdRole: householdIdToUse ? 'primary' : undefined,
+      householdId: personForm.householdId,
+      householdRole: personForm.householdId ? 'primary' : undefined,
       childrenAges: personForm.childrenAges.length > 0 ? JSON.stringify(personForm.childrenAges) : undefined,
       // District/national level roles should have primaryCampusId as null
       primaryCampusId: isDistrictLevelRole ? null : undefined,
     }, {
       onSuccess: () => {
         // Update household counts to aggregate all members' counts
-        if (householdIdToUse) {
+        if (personForm.householdId) {
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
             utils.people.list.fetch().then((updatedPeople) => {
               const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
-              const householdMembers = peopleToUse.filter((p) => p.householdId === householdIdToUse);
+              const householdMembers = peopleToUse.filter((p) => p.householdId === personForm.householdId);
               const totalChildrenCount = householdMembers.reduce(
                 (sum: number, p) => sum + (p.childrenCount || 0),
                 0
@@ -1376,7 +1327,7 @@ export function DistrictPanel({
               );
               
               updateHousehold.mutate({
-                id: householdIdToUse,
+                id: personForm.householdId,
                 childrenCount: totalChildrenCount,
                 guestsCount: totalGuestsCount,
               });
