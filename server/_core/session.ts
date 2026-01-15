@@ -9,6 +9,7 @@ import { getSessionCookieOptions } from "./cookies";
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./env";
 
+// Security: Default is for development only. Production will fail startup if not set (see env.ts validateEnv)
 const SESSION_SECRET = ENV.SESSION_SECRET || process.env.SESSION_SECRET || "change-me-in-production";
 
 /**
