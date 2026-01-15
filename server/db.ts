@@ -15,6 +15,7 @@ import {
   authTokens,
   inviteNotes,
   statusChanges,
+  userSessions,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
@@ -25,7 +26,8 @@ import {
   InsertHousehold,
   InsertAuthToken,
   InsertInviteNote,
-  InsertStatusChange
+  InsertStatusChange,
+  InsertUserSession
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1406,4 +1408,167 @@ export async function updateNeedVisibility(needId: number, visibility: "LEADERSH
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(needs).set({ visibility }).where(eq(needs.id, needId));
+}
+
+// ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
+
+export async function createOrUpdateSession(sessionData: {
+  userId: number;
+  sessionHash: string;
+  userAgent?: string;
+  ipAddress?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Check if session exists
+  const existing = await db.select().from(userSessions)
+    .where(eq(userSessions.sessionHash, sessionData.sessionHash))
+    .limit(1);
+
+  if (existing[0]) {
+    // Update lastSeenAt
+    await db.update(userSessions)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(userSessions.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    // Create new session
+    const result = await db.insert(userSessions).values({
+      userId: sessionData.userId,
+      sessionHash: sessionData.sessionHash,
+      userAgent: sessionData.userAgent,
+      ipAddress: sessionData.ipAddress,
+    });
+    return result[0].insertId;
+  }
+}
+
+export async function updateSessionLastSeen(sessionHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(userSessions)
+    .set({ lastSeenAt: new Date() })
+    .where(eq(userSessions.sessionHash, sessionHash));
+}
+
+export async function revokeSession(sessionHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(userSessions)
+    .set({ revokedAt: new Date() })
+    .where(eq(userSessions.sessionHash, sessionHash));
+}
+
+export async function getActiveSessions(minutesThreshold = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const cutoff = new Date(Date.now() - minutesThreshold * 60 * 1000);
+
+  const sessions = await db.select({
+    id: userSessions.id,
+    userId: userSessions.userId,
+    sessionHash: userSessions.sessionHash,
+    createdAt: userSessions.createdAt,
+    lastSeenAt: userSessions.lastSeenAt,
+    userAgent: userSessions.userAgent,
+    ipAddress: userSessions.ipAddress,
+    user: users,
+  })
+    .from(userSessions)
+    .leftJoin(users, eq(userSessions.userId, users.id))
+    .where(
+      and(
+        sql`${userSessions.lastSeenAt} >= ${cutoff}`,
+        sql`${userSessions.revokedAt} IS NULL`
+      )
+    )
+    .orderBy(sql`${userSessions.lastSeenAt} DESC`);
+
+  return sessions;
+}
+
+// ============================================================================
+// ADMIN USER MANAGEMENT
+// ============================================================================
+
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(users).orderBy(users.createdAt);
+}
+
+export async function updateUserRole(userId: number, role: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users).set({ role: role as any }).where(eq(users.id, userId));
+}
+
+export async function updateUserStatus(userId: number, approvalStatus: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(users).set({ approvalStatus: approvalStatus as any }).where(eq(users.id, userId));
+}
+
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Delete user sessions first (foreign key constraint)
+  await db.delete(userSessions).where(eq(userSessions.userId, userId));
+  
+  // Delete user
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+// ============================================================================
+// META ENDPOINTS
+// ============================================================================
+
+export async function getRegions() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db.select({
+    region: districts.region,
+  })
+    .from(districts)
+    .groupBy(districts.region)
+    .orderBy(districts.region);
+
+  return result.map((r) => ({ id: r.region, name: r.region }));
+}
+
+export async function getDistrictsByRegion(regionId: string | null) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (regionId) {
+    return db.select().from(districts)
+      .where(eq(districts.region, regionId))
+      .orderBy(districts.name);
+  } else {
+    return db.select().from(districts).orderBy(districts.name);
+  }
+}
+
+export async function getCampusesByDistrict(districtId: string | null) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (districtId) {
+    return db.select().from(campuses)
+      .where(eq(campuses.districtId, districtId))
+      .orderBy(campuses.name);
+  } else {
+    return db.select().from(campuses).orderBy(campuses.name);
+  }
 }

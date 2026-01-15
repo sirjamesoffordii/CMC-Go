@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import { getDb } from "./db";
 import { storagePut } from "./storage";
 import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_core/session";
 import { TRPCError } from "@trpc/server";
@@ -1521,6 +1522,252 @@ export const appRouter = router({
         await db.deleteHousehold(input.id);
         return { success: true };
       }),
+  }),
+
+  // ============================================================================
+  // META ENDPOINTS - Public metadata for regions, districts, campuses
+  // ============================================================================
+  meta: router({
+    regions: publicProcedure
+      .query(async () => {
+        return db.getRegions();
+      }),
+    districtsByRegion: publicProcedure
+      .input(z.object({
+        regionId: z.string().nullable().optional(),
+      }))
+      .query(async ({ input }) => {
+        return db.getDistrictsByRegion(input.regionId ?? null);
+      }),
+    campusesByDistrict: publicProcedure
+      .input(z.object({
+        districtId: z.string().nullable().optional(),
+      }))
+      .query(async ({ input }) => {
+        return db.getCampusesByDistrict(input.districtId ?? null);
+      }),
+  }),
+
+  // ============================================================================
+  // USER ENDPOINTS - User profile operations
+  // ============================================================================
+  user: router({
+    updateProfile: protectedProcedure
+      .input(z.object({
+        fullName: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Not logged in" });
+        }
+
+        const updates: any = {};
+        if (input.fullName) updates.fullName = input.fullName;
+        if (input.email) {
+          // Check if email is already taken
+          const existing = await db.getUserByEmail(input.email);
+          if (existing && existing.id !== ctx.user.id) {
+            throw new TRPCError({ code: "CONFLICT", message: "Email already in use" });
+          }
+          updates.email = input.email;
+        }
+
+        await db.updateUser(ctx.user.id, updates);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // ADMIN ENDPOINTS - Admin-only user management and monitoring
+  // ============================================================================
+  admin: router({
+    users: router({
+      list: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          const users = await db.getAllUsers();
+          
+          // Enrich with campus/district names
+          const enriched = await Promise.all(
+            users.map(async (user) => {
+              const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
+              const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
+              return {
+                ...user,
+                passwordHash: undefined, // Don't send password hash to client
+                campusName: campus?.name || null,
+                districtName: district?.name || null,
+                regionName: user.regionId || null,
+              };
+            })
+          );
+
+          return enriched;
+        }),
+      updateRole: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          role: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await db.updateUserRole(input.userId, input.role);
+          return { success: true };
+        }),
+      updateStatus: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          approvalStatus: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await db.updateUserStatus(input.userId, input.approvalStatus);
+          return { success: true };
+        }),
+      delete: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          // Prevent self-deletion
+          if (input.userId === ctx.user.id) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot delete your own account" });
+          }
+
+          await db.deleteUser(input.userId);
+          return { success: true };
+        }),
+    }),
+    sessions: router({
+      listActive: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          const sessions = await db.getActiveSessions(30);
+          return sessions.map((s) => ({
+            id: s.id,
+            userId: s.userId,
+            createdAt: s.createdAt,
+            lastSeenAt: s.lastSeenAt,
+            userAgent: s.userAgent,
+            ipAddress: s.ipAddress,
+            user: s.user ? {
+              id: s.user.id,
+              fullName: s.user.fullName,
+              email: s.user.email,
+              role: s.user.role,
+            } : null,
+          }));
+        }),
+    }),
+  }),
+
+  // ============================================================================
+  // CONSOLE ENDPOINTS - System monitoring and management
+  // ============================================================================
+  console: router({
+    health: router({
+      check: protectedProcedure
+        .query(async () => {
+          const db_ok = await getDb() !== null;
+          return {
+            status: db_ok ? "healthy" : "unhealthy",
+            database: db_ok ? "connected" : "disconnected",
+            timestamp: new Date().toISOString(),
+          };
+        }),
+    }),
+    systemMetrics: router({
+      list: protectedProcedure
+        .query(async () => {
+          // Return basic system metrics
+          const uptime = process.uptime();
+          const memory = process.memoryUsage();
+          
+          return [{
+            id: "system",
+            uptime,
+            memory: {
+              rss: memory.rss,
+              heapTotal: memory.heapTotal,
+              heapUsed: memory.heapUsed,
+              external: memory.external,
+            },
+            timestamp: new Date().toISOString(),
+          }];
+        }),
+    }),
+    users: router({
+      list: protectedProcedure
+        .input(z.object({
+          limit: z.number().optional(),
+        }))
+        .query(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          const users = await db.getAllUsers();
+          const limited = input.limit ? users.slice(0, input.limit) : users;
+
+          return limited.map((u) => ({
+            ...u,
+            passwordHash: undefined,
+          }));
+        }),
+      search: protectedProcedure
+        .input(z.object({
+          query: z.string().optional(),
+        }))
+        .query(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          const users = await db.getAllUsers();
+          
+          if (!input.query || input.query.trim() === "") {
+            return users.map((u) => ({ ...u, passwordHash: undefined }));
+          }
+
+          const query = input.query.toLowerCase();
+          const filtered = users.filter((u) => 
+            u.fullName?.toLowerCase().includes(query) ||
+            u.email?.toLowerCase().includes(query)
+          );
+
+          return filtered.map((u) => ({ ...u, passwordHash: undefined }));
+        }),
+      updateRole: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          role: z.string(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user?.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await db.updateUserRole(input.userId, input.role);
+          return { success: true };
+        }),
+    }),
   }),
 });
 

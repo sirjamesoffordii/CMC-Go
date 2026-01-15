@@ -1360,7 +1360,7 @@ export function DistrictPanel({
       onSuccess: () => {
         // Update household counts to aggregate all members' counts
         if (personForm.householdId != null) {
-          const householdId = personForm.householdId;
+          const householdId: number = personForm.householdId;
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
