@@ -18,6 +18,25 @@ const mysql = require('mysql2/promise');
 const path = require('path');
 const dotenv = require('dotenv');
 
+/**
+ * Security: Sanitize object to prevent prototype pollution
+ * Removes __proto__, constructor, and prototype properties
+ */
+function sanitizeObject(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const sanitized = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // Security: Block dangerous property names
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        continue;
+      }
+      sanitized[key] = obj[key];
+    }
+  }
+  return sanitized;
+}
+
 // Load environment variables
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
@@ -34,12 +53,42 @@ async function main() {
   const conn = await mysql.createConnection(DATABASE_URL);
   
   console.log('Loading Excel file...');
-  const workbook = XLSX.readFile(EXCEL_PATH);
+  
+  // Security: Validate file exists and is readable
+  const fs = require('fs');
+  if (!fs.existsSync(EXCEL_PATH)) {
+    console.error(`ERROR: Excel file not found at ${EXCEL_PATH}`);
+    process.exit(1);
+  }
+  
+  // Security: Check file size to prevent DoS (max 100MB)
+  const stats = fs.statSync(EXCEL_PATH);
+  const fileSizeInMB = stats.size / (1024 * 1024);
+  if (fileSizeInMB > 100) {
+    console.error(`ERROR: Excel file too large (${fileSizeInMB.toFixed(2)}MB). Maximum allowed is 100MB.`);
+    process.exit(1);
+  }
+  
+  let workbook;
+  try {
+    workbook = XLSX.readFile(EXCEL_PATH);
+  } catch (error) {
+    console.error('ERROR: Failed to parse Excel file. File may be corrupted or malformed.');
+    console.error(error.message);
+    process.exit(1);
+  }
+  
+  // Security: Validate workbook structure
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    console.error('ERROR: Excel file contains no sheets');
+    process.exit(1);
+  }
   
   // ============ LOAD CAMPUSES ============
   console.log('\n=== Loading Campuses ===');
   const campusSheet = workbook.Sheets['Campuses (305)'];
-  const campuses = XLSX.utils.sheet_to_json(campusSheet);
+  const campusesRaw = XLSX.utils.sheet_to_json(campusSheet);
+  const campuses = campusesRaw.map(sanitizeObject); // Security: Sanitize to prevent prototype pollution
   console.log(`Found ${campuses.length} campuses in Excel`);
   
   const campusNameToId = new Map();
@@ -61,7 +110,8 @@ async function main() {
   // ============ LOAD PEOPLE ============
   console.log('\n=== Loading People ===');
   const peopleSheet = workbook.Sheets['People (Unique)'];
-  const people = XLSX.utils.sheet_to_json(peopleSheet);
+  const peopleRaw = XLSX.utils.sheet_to_json(peopleSheet);
+  const people = peopleRaw.map(sanitizeObject); // Security: Sanitize to prevent prototype pollution
   console.log(`Found ${people.length} people in Excel`);
   
   const statusMap = {
@@ -124,7 +174,8 @@ async function main() {
   // ============ LOAD ASSIGNMENTS ============
   console.log('\n=== Loading Assignments ===');
   const assignmentSheet = workbook.Sheets['Assignments'];
-  const assignments = XLSX.utils.sheet_to_json(assignmentSheet);
+  const assignmentsRaw = XLSX.utils.sheet_to_json(assignmentSheet);
+  const assignments = assignmentsRaw.map(sanitizeObject); // Security: Sanitize to prevent prototype pollution
   console.log(`Found ${assignments.length} assignments in Excel`);
   
   let assignmentCount = 0;
