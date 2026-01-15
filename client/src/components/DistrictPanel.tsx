@@ -1062,21 +1062,23 @@ export function DistrictPanel({
         householdIdToUse = existingHousehold.id;
       } else {
         // Create new household with person's last name
-        try {
-          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
-            createHousehold.mutate({
-              label: householdLabel,
-              childrenCount: personForm.childrenCount || 0,
-              guestsCount: personForm.guestsCount || 0,
-            }, {
-              onSuccess: (household) => {
-                resolve(household);
-              },
-              onError: (error) => {
-                reject(error);
-              },
-            });
+        const newHouseholdPromise = new Promise<{ id: number }>((resolve, reject) => {
+          createHousehold.mutate({
+            label: householdLabel,
+            childrenCount: personForm.childrenCount || 0,
+            guestsCount: personForm.guestsCount || 0,
+          }, {
+            onSuccess: (household) => {
+              resolve(household);
+            },
+            onError: (error) => {
+              reject(error);
+            },
           });
+        });
+        
+        try {
+          const newHousehold = await newHouseholdPromise;
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error('Failed to create household:', error);
