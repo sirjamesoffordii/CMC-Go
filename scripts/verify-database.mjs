@@ -20,6 +20,13 @@ async function verifyDatabase() {
   let allGood = true;
   
   for (const [tableName, expectedColumns] of Object.entries(expectedTables)) {
+    // Security: Validate table name to prevent SQL injection
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+      console.log(`❌ ${tableName}: Invalid table name`);
+      allGood = false;
+      continue;
+    }
+    
     try {
       const [rows] = await conn.execute(`DESCRIBE ${tableName}`);
       const actualColumns = rows.map(r => r.Field);
@@ -48,6 +55,12 @@ async function verifyDatabase() {
   // Check row counts
   console.log('\n=== Table Row Counts ===\n');
   for (const tableName of Object.keys(expectedTables)) {
+    // Security: Validate table name to prevent SQL injection
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+      console.log(`${tableName}: Invalid table name`);
+      continue;
+    }
+    
     try {
       const [rows] = await conn.execute(`SELECT COUNT(*) as count FROM ${tableName}`);
       console.log(`${tableName}: ${rows[0].count} rows`);
