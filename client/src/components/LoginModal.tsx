@@ -151,53 +151,78 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="relative max-w-md overflow-hidden border border-black/10 bg-white text-black shadow-2xl">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-20 left-1/2 h-60 w-60 -translate-x-1/2 rounded-full bg-red-500/15 blur-3xl" />
-          <div className="absolute -top-8 right-6 h-28 w-28 rounded-full bg-red-600/20 blur-2xl" />
-          <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-black/15 blur-3xl" />
-          <div className="absolute bottom-10 left-6 h-32 w-32 rounded-full bg-black/10 blur-2xl" />
+      <DialogContent className="h-screen max-h-screen w-screen max-w-none overflow-hidden border-none bg-gradient-to-br from-black via-red-950 to-black p-0 shadow-none">
+        {/* Full-screen background layers */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {/* Animated gradient orbs */}
+          <div className="absolute -left-40 -top-40 h-96 w-96 animate-pulse rounded-full bg-red-500/20 blur-3xl" />
+          <div className="absolute -right-40 top-1/4 h-96 w-96 animate-pulse rounded-full bg-red-600/15 blur-3xl animation-delay-2000" />
+          <div className="absolute bottom-0 left-1/3 h-96 w-96 animate-pulse rounded-full bg-red-700/10 blur-3xl animation-delay-4000" />
+          
+          {/* Geometric shapes */}
+          <div className="absolute left-10 top-20 h-32 w-32 rotate-45 border-2 border-red-500/20" />
+          <div className="absolute bottom-20 right-20 h-40 w-40 rotate-12 border-2 border-white/10" />
+          <div className="absolute right-1/4 top-1/3 h-24 w-24 -rotate-12 border border-red-400/30" />
+          
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
+          
+          {/* Radial gradient overlay */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
+          
+          {/* Large CMC GO text */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="select-none text-[84px] font-extrabold uppercase tracking-[0.22em] text-black/10 sm:text-[112px]">
-              CMC GO
-            </span>
-          </div>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,0,0,0.08),_transparent_60%)]" />
-          <div className="absolute inset-0 opacity-[0.15] [background-image:linear-gradient(120deg,rgba(0,0,0,0.04)_0%,rgba(0,0,0,0)_40%,rgba(0,0,0,0.05)_100%)]" />
-          <div className="absolute inset-0 opacity-[0.08] [background-image:radial-gradient(rgba(0,0,0,0.2)_1px,transparent_1px)] [background-size:18px_18px]" />
-        </div>
-        <DialogHeader>
-          <div className="relative z-10 space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-black/60">
-              CMC Go Access
-              <span className="h-1 w-1 rounded-full bg-red-500" />
-            </div>
-            <DialogTitle className="text-lg font-semibold text-black">
-              {step === "start" ? "Sign Up / Login" : "Verify Email"}
-            </DialogTitle>
-            {step === "start" && (
-              <div className="flex items-center gap-2 text-xs text-black/50">
-                <span className={cn("h-1.5 w-6 rounded-full", startStep === "region" ? "bg-red-500" : "bg-black/10")} />
-                <span className={cn("h-1.5 w-6 rounded-full", startStep === "district" ? "bg-red-500" : "bg-black/10")} />
-                <span className={cn("h-1.5 w-6 rounded-full", startStep === "campus" ? "bg-red-500" : "bg-black/10")} />
-                <span className={cn("h-1.5 w-6 rounded-full", startStep === "role" ? "bg-red-500" : "bg-black/10")} />
-                <span className={cn("h-1.5 w-6 rounded-full", startStep === "name" ? "bg-red-500" : "bg-black/10")} />
+            <div className="select-none text-center">
+              <div className="text-[120px] font-black uppercase leading-none tracking-wider text-white/5 sm:text-[180px] lg:text-[240px]">
+                CMC
               </div>
-            )}
+              <div className="text-[120px] font-black uppercase leading-none tracking-wider text-white/5 sm:text-[180px] lg:text-[240px]">
+                GO
+              </div>
+            </div>
           </div>
-        </DialogHeader>
-        
-        {step === "start" ? (
-          <div
-            className={cn(
-              "space-y-4 transition-all duration-300",
-              isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
-            )}
-          >
+        </div>
+
+        {/* Content container */}
+        <div className="relative flex h-full items-center justify-center p-4">
+          <div className="w-full max-w-md space-y-8">
+            {/* Header */}
+            <div className="text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-black/40 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-red-400 backdrop-blur-sm">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                CMC Go Access
+              </div>
+              <h1 className="mb-2 text-4xl font-black uppercase tracking-tight text-white">
+                {step === "start" ? "Welcome" : "Verify"}
+              </h1>
+              <p className="text-sm text-white/60">
+                {step === "start" ? "Let's get you connected" : "Check your email for the code"}
+              </p>
+              
+              {step === "start" && (
+                <div className="mt-6 flex justify-center gap-2">
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
+                </div>
+              )}
+            </div>
+
+            {/* Form container */}
+            <div className="rounded-2xl border border-white/10 bg-black/40 p-8 backdrop-blur-xl">
+              {step === "start" ? (
+                <div
+                  className={cn(
+                    "space-y-6 transition-all duration-300",
+                    isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+                  )}
+                >
             {startStep === "region" && (
               <div className="space-y-4">
                 <div className="relative">
-                  <Label htmlFor="region" className="text-black">
+                  <Label htmlFor="region" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Region *
                   </Label>
                   <Input
@@ -211,15 +236,15 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     onFocus={() => setRegionSuggestionsOpen(true)}
                     onBlur={() => setTimeout(() => setRegionSuggestionsOpen(false), 150)}
                     placeholder="Type your region"
-                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                   {regionSuggestionsOpen && filteredRegions.length > 0 && (
-                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
                       {filteredRegions.map((regionName) => (
                         <button
                           key={regionName}
                           type="button"
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
                             setRegion(regionName);
@@ -240,7 +265,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("district")}
                   disabled={!region}
-                  className="w-full bg-black text-white hover:bg-red-600"
+                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
                 >
                   Next
                 </Button>
@@ -250,7 +275,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "district" && (
               <div className="space-y-4">
                 <div className="relative">
-                  <Label htmlFor="district" className="text-black">
+                  <Label htmlFor="district" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     District *
                   </Label>
                   <Input
@@ -264,15 +289,15 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     onFocus={() => setDistrictSuggestionsOpen(true)}
                     onBlur={() => setTimeout(() => setDistrictSuggestionsOpen(false), 150)}
                     placeholder="Type your district"
-                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                   {districtSuggestionsOpen && filteredDistricts.length > 0 && (
-                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
                       {filteredDistricts.map((district) => (
                         <button
                           key={district.id}
                           type="button"
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
                             setDistrictId(district.id);
@@ -283,7 +308,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                           }}
                         >
                           <span>{district.name}</span>
-                          <span className="text-xs text-black/50">{district.id}</span>
+                          <span className="text-xs text-white/40">{district.id}</span>
                         </button>
                       ))}
                     </div>
@@ -292,7 +317,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("campus")}
                   disabled={!districtId}
-                  className="w-full bg-black text-white hover:bg-red-600"
+                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
                 >
                   Next
                 </Button>
@@ -302,7 +327,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "campus" && (
               <div className="space-y-4">
                 <div className="relative">
-                  <Label htmlFor="campus" className="text-black">
+                  <Label htmlFor="campus" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Campus *
                   </Label>
                   <Input
@@ -316,15 +341,15 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     onFocus={() => setCampusSuggestionsOpen(true)}
                     onBlur={() => setTimeout(() => setCampusSuggestionsOpen(false), 150)}
                     placeholder="Type your campus"
-                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                   {campusSuggestionsOpen && (
-                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-md border border-black/15 bg-white shadow-lg">
+                    <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
                       {filteredCampuses.map((campus) => (
                         <button
                           key={campus.id}
                           type="button"
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-black hover:bg-black/5"
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={() => {
                             setCampusId(campus.id);
@@ -338,13 +363,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                       {campusInput.trim().length > 1 && filteredCampuses.length === 0 && (
                         <button
                           type="button"
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-black hover:bg-red-50"
+                          className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/30"
                           onMouseDown={(event) => event.preventDefault()}
                           onClick={handleCreateCampus}
                           disabled={createCampusMutation.isPending}
                         >
-                          <Plus className="h-4 w-4 text-red-500" />
-                          Add "{campusInput.trim()}"
+                          <Plus className="h-4 w-4 text-red-400" />
+                          <span>Add "{campusInput.trim()}"</span>
                         </button>
                       )}
                     </div>
@@ -353,7 +378,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 <Button
                   onClick={() => goToStartStep("role")}
                   disabled={!campusId}
-                  className="w-full bg-black text-white hover:bg-red-600"
+                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
                 >
                   Next
                 </Button>
@@ -363,23 +388,23 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "role" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="role" className="text-black">
+                  <Label htmlFor="role" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Role *
                   </Label>
                   <Select value={role} onValueChange={(v) => setRole(v as any)}>
-                    <SelectTrigger className="border-black/20 text-black">
+                    <SelectTrigger className="mt-2 border-white/20 bg-white/5 text-white">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="STAFF">Staff</SelectItem>
-                      <SelectItem value="CO_DIRECTOR">Co-Director</SelectItem>
-                      <SelectItem value="CAMPUS_DIRECTOR">Campus Director</SelectItem>
-                      <SelectItem value="DISTRICT_DIRECTOR">District Director</SelectItem>
-                      <SelectItem value="REGION_DIRECTOR">Region Director</SelectItem>
+                    <SelectContent className="border-white/20 bg-black/95 text-white backdrop-blur-xl">
+                      <SelectItem value="STAFF" className="hover:bg-red-500/20">Staff</SelectItem>
+                      <SelectItem value="CO_DIRECTOR" className="hover:bg-red-500/20">Co-Director</SelectItem>
+                      <SelectItem value="CAMPUS_DIRECTOR" className="hover:bg-red-500/20">Campus Director</SelectItem>
+                      <SelectItem value="DISTRICT_DIRECTOR" className="hover:bg-red-500/20">District Director</SelectItem>
+                      <SelectItem value="REGION_DIRECTOR" className="hover:bg-red-500/20">Region Director</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => goToStartStep("name")} className="w-full bg-black text-white hover:bg-red-600">
+                <Button onClick={() => goToStartStep("name")} className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500">
                   Next
                 </Button>
               </div>
@@ -388,7 +413,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             {startStep === "name" && (
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName" className="text-black">
+                  <Label htmlFor="fullName" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Full Name *
                   </Label>
                   <Input
@@ -396,12 +421,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
-                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="email" className="text-black">
+                  <Label htmlFor="email" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Email *
                   </Label>
                   <Input
@@ -410,14 +435,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="john@example.com"
-                    className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                 </div>
 
                 <Button
                   onClick={handleStart}
                   disabled={!fullName || !email || !role || !campusId || startMutation.isPending}
-                  className="w-full bg-red-600 text-white hover:bg-red-500"
+                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
                 >
                   {startMutation.isPending ? (
                     <>
@@ -430,19 +455,19 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </Button>
 
                 {startMutation.error && (
-                  <p className="text-sm text-red-600">{startMutation.error.message}</p>
+                  <p className="text-sm text-red-400">{startMutation.error.message}</p>
                 )}
               </div>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-black/60">
+          <div className="space-y-6">
+            <p className="text-sm text-white/70">
               We've sent a verification code to {email}. Please check your email and enter the code below.
             </p>
             
             <div>
-              <Label htmlFor="code" className="text-black">
+              <Label htmlFor="code" className="text-sm font-medium uppercase tracking-wide text-white/80">
                 Verification Code *
               </Label>
               <Input
@@ -451,14 +476,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="123456"
                 maxLength={6}
-                className="border-black/20 text-black placeholder:text-black/40 focus-visible:ring-red-500"
+                className="mt-2 border-white/20 bg-white/5 text-center text-2xl tracking-widest text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
               />
             </div>
             
             <Button 
               onClick={handleVerify} 
               disabled={!code || verifyMutation.isPending}
-              className="w-full bg-red-600 text-white hover:bg-red-500"
+              className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
             >
               {verifyMutation.isPending ? (
                 <>
@@ -471,10 +496,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             </Button>
             
             {verifyMutation.error && (
-              <p className="text-sm text-red-600">{verifyMutation.error.message}</p>
+              <p className="text-sm text-red-400">{verifyMutation.error.message}</p>
             )}
           </div>
         )}
+            </div>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
