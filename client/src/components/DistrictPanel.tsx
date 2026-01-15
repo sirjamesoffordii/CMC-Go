@@ -221,6 +221,14 @@ export function DistrictPanel({
     onSuccess: () => {
       utils.campuses.list.invalidate();
        utils.campuses.byDistrict.invalidate({ districtId: district!.id });
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
   });
@@ -228,6 +236,14 @@ export function DistrictPanel({
     onSuccess: () => {
       utils.campuses.list.invalidate();
        utils.campuses.byDistrict.invalidate({ districtId: district!.id });
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
   });
