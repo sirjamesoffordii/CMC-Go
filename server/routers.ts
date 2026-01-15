@@ -158,6 +158,20 @@ export const appRouter = router({
   }),
 
   districts: router({
+    publicList: publicProcedure.query(async () => {
+      try {
+        return await db.getAllDistricts();
+      } catch (error) {
+        console.error("[districts.publicList] Error:", error instanceof Error ? error.message : String(error));
+        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+          });
+        }
+        throw error;
+      }
+    }),
     list: protectedProcedure.query(async ({ ctx }) => {
       try {
         const scope = getPeopleScope(ctx.user);

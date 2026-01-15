@@ -46,11 +46,10 @@ export function verifySessionToken(token: string): number | null {
       return null; // Invalid signature
     }
 
-    // Check if token is expired (30 days)
+    // Check if token is expired (disabled for persistent sessions)
     const tokenAge = Date.now() - parseInt(timestampStr, 10);
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    if (!Number.isFinite(tokenAge) || tokenAge > maxAge) {
-      return null; // Token expired or invalid timestamp
+    if (!Number.isFinite(tokenAge)) {
+      return null; // Invalid timestamp
     }
 
     const userId = parseInt(userIdStr, 10);
@@ -69,7 +68,7 @@ export function setSessionCookie(req: Request, res: Response, userId: number): v
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, token, {
     ...cookieOptions,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years
   });
 }
 
