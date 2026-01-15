@@ -47,9 +47,9 @@ export function usePublicAuth() {
     user,
     isLoading: devBypass ? false : meQuery.isLoading,
     login: () => {
-      // Login is handled via auth.start and auth.verify endpoints
-      // This function can trigger a login modal/dialog
-      console.log("[usePublicAuth] Login - use auth.start and auth.verify");
+      // Login is handled via the Login modal/page (email + password).
+      // This function is kept for legacy callers.
+      console.log("[usePublicAuth] Login - open LoginModal or /login");
     },
     logout: async () => {
       if (devBypass) return;

@@ -1,4 +1,4 @@
-import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { eq, and, or, sql, inArray, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import { 
@@ -144,6 +144,20 @@ export async function updateUserLastLoginAt(userId: number) {
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
 }
 
+export async function updateUser(userId: number, data: Partial<InsertUser>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set(data).where(eq(users.id, userId));
+}
+
+export async function updateUserPasswordHash(userId: number, passwordHash: string) {
+  await updateUser(userId, { passwordHash } as Partial<InsertUser>);
+}
+
+export async function updateUserLinkedPersonId(userId: number, linkedPersonId: string) {
+  await updateUser(userId, { linkedPersonId } as Partial<InsertUser>);
+}
+
 export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -217,6 +231,14 @@ export async function getAllCampuses() {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(campuses);
+}
+
+export async function searchCampusesByName(query: string, limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  const q = query.trim();
+  if (q.length < 2) return [];
+  return await db.select().from(campuses).where(like(campuses.name, `%${q}%`)).limit(limit);
 }
 
 export async function getCampusesByDistrictId(districtId: string) {
@@ -334,6 +356,27 @@ export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+}
+
+export async function searchPeopleByName(query: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 2)
+    .slice(0, 4);
+
+  if (tokens.length === 0) return [];
+
+  const conditions = tokens.map((t) => like(people.name, `%${t}%`));
+  return await db
+    .select()
+    .from(people)
+    .where(or(...conditions))
+    .limit(limit);
 }
 
 /**

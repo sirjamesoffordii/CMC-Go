@@ -18,6 +18,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BottomSheet } from "./ui/bottom-sheet";
+import { formatStatusLabel } from "@/utils/statusLabel";
 
 interface PersonDetailsDialogProps {
   person: Person | null;
@@ -154,7 +155,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange, defaultTab = "
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm font-medium">Status: </span>
-                  <span className="text-sm font-semibold">{person.status}</span>
+                  <span className="text-sm font-semibold">{formatStatusLabel(person.status)}</span>
                 </div>
                 {person.depositPaid && (
                   <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
@@ -393,7 +394,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange, defaultTab = "
         <div className="px-4 pb-4">
           <p className="text-sm text-gray-600 mb-4">
             {person.primaryRole && <>{person.primaryRole} • </>}
-            Status: <span className="font-semibold">{person.status}</span>
+            Status: <span className="font-semibold">{formatStatusLabel(person.status)}</span>
           </p>
           {content}
         </div>
@@ -408,7 +409,7 @@ export function PersonDetailsDialog({ person, open, onOpenChange, defaultTab = "
           <DialogTitle>{person.name || person.personId || 'Person Details'}</DialogTitle>
           <p className="text-sm text-gray-600">
             {person.primaryRole && <>{person.primaryRole} • </>}
-            Status: <span className="font-semibold">{person.status}</span>
+            Status: <span className="font-semibold">{formatStatusLabel(person.status)}</span>
           </p>
         </DialogHeader>
         {content}

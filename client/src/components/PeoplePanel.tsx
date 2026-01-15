@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { formatStatusLabel } from "@/utils/statusLabel";
 
 interface PeoplePanelProps {
   onClose: () => void;
@@ -497,7 +498,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     {statusFilter.size === 0
                       ? "All Statuses"
                       : statusFilter.size === 1
-                      ? Array.from(statusFilter)[0]
+                      ? formatStatusLabel(Array.from(statusFilter)[0])
                       : `${statusFilter.size} selected`}
                   </span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
@@ -525,7 +526,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                             setStatusFilter(newFilter);
                           }}
                         />
-                        <span className="text-sm flex-1">{status}</span>
+                        <span className="text-sm flex-1">{formatStatusLabel(status)}</span>
                         <span className="text-xs text-gray-500">({count})</span>
                       </label>
                     );

@@ -8,8 +8,11 @@ export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
   fullName: varchar("fullName", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull().unique(),
-  role: mysqlEnum("role", ["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]).notNull(),
-  campusId: int("campusId").notNull(), // Required - used to derive districtId and regionId
+  role: varchar("role", { length: 64 }).notNull(),
+  roleTitle: varchar("roleTitle", { length: 255 }), // Optional UI-facing title (e.g., Volunteer/Intern/etc)
+  passwordHash: varchar("passwordHash", { length: 255 }), // Password-based auth (bcrypt hash)
+  linkedPersonId: varchar("linkedPersonId", { length: 64 }), // References people.personId (soft link)
+  campusId: int("campusId"), // Nullable for non-campus-scoped users
   districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
   regionId: varchar("regionId", { length: 255 }), // Derived from campusId server-side
   approvalStatus: mysqlEnum("approvalStatus", ["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]).default("PENDING_APPROVAL").notNull(),

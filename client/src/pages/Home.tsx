@@ -96,6 +96,7 @@ export default function Home() {
   const isAuthenticated = !!user;
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
+  const didApplyUserDefaultView = useRef(false);
   
   // View mode state - initialize from URL or defaults
   // Default: district-scoped view (as per requirements)
@@ -145,6 +146,58 @@ export default function Home() {
 
   const utils = trpc.useUtils();
 
+  // Post-login landing: if URL doesn't specify a scope, default the view to the user's anchor.
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      didApplyUserDefaultView.current = false;
+      return;
+    }
+
+    if (didApplyUserDefaultView.current) return;
+
+    const urlState = initializeViewStateFromURL();
+    if (urlState.districtId || urlState.regionId || urlState.campusId) {
+      didApplyUserDefaultView.current = true;
+      return;
+    }
+
+    const next: ViewState = user.campusId
+      ? {
+          mode: "campus",
+          campusId: user.campusId,
+          districtId: user.districtId ?? null,
+          regionId: user.regionId ?? null,
+          panelOpen: true,
+        }
+      : user.districtId
+        ? {
+            mode: "district",
+            campusId: null,
+            districtId: user.districtId,
+            regionId: user.regionId ?? null,
+            panelOpen: true,
+          }
+        : user.regionId
+          ? {
+              mode: "region",
+              campusId: null,
+              districtId: null,
+              regionId: user.regionId,
+              panelOpen: true,
+            }
+          : {
+              mode: "nation",
+              campusId: null,
+              districtId: null,
+              regionId: null,
+              panelOpen: false,
+            };
+
+    setViewState(next);
+    setSelectedDistrictId(next.districtId);
+    didApplyUserDefaultView.current = true;
+  }, [isAuthenticated, user, setSelectedDistrictId, setViewState]);
+
   // Never allow the People panel to open when logged out.
   useEffect(() => {
     if (!isAuthenticated && peoplePanelOpen) {
@@ -186,6 +239,23 @@ export default function Home() {
     enabled: shouldFetchPeople,
     retry: false, // Don't retry on auth errors
   });
+
+  // Post-login: auto-open the linked/created Person record.
+  const linkedPersonQuery = trpc.people.getByPersonId.useQuery(
+    { personId: user?.linkedPersonId ?? "" },
+    { enabled: isAuthenticated && !!user?.linkedPersonId }
+  );
+
+  useEffect(() => {
+    const person = linkedPersonQuery.data as Person | undefined;
+    if (!isAuthenticated) return;
+    if (!person) return;
+    if (selectedPerson?.personId === person.personId) return;
+
+    setSelectedPerson(person);
+    setPeoplePanelOpen(true);
+    setPersonDialogOpen(true);
+  }, [isAuthenticated, linkedPersonQuery.data, selectedPerson?.personId]);
   
   const districts = districtsQuery.data || [];
   const allCampuses = campusesQuery.data || [];

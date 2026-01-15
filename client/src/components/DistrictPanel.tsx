@@ -760,10 +760,10 @@ export function DistrictPanel({
       if (currentSort === 'status') {
         // Store status-sorted order as the initial order
         const statusOrder: Record<Person['status'], number> = {
-          'Not Invited': 0,
-          'Yes': 1,
-          'Maybe': 2,
-          'No': 3
+          'Yes': 0,
+          'Maybe': 1,
+          'No': 2,
+          'Not Invited': 3
         };
         const sorted = [...campus.people].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
         newOrder[campus.id] = sorted.map(p => p.personId);
@@ -847,10 +847,10 @@ export function DistrictPanel({
       peopleMap.forEach(person => unordered.push(person));
       if (unordered.length > 0) {
         const statusOrder: Record<Person['status'], number> = {
-          'Not Invited': 0,
-          'Yes': 1,
-          'Maybe': 2,
-          'No': 3
+          'Yes': 0,
+          'Maybe': 1,
+          'No': 2,
+          'Not Invited': 3
         };
         unordered.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
       }
@@ -866,12 +866,12 @@ export function DistrictPanel({
     } else if (sortBy === 'role') {
       return [...people].sort((a, b) => (a.primaryRole || '').localeCompare(b.primaryRole || ''));
     } else {
-      // Sort by status: Not Invited, Yes, Maybe, No (default)
+      // Sort by status: Yes, Maybe, No, Not Invited (default)
       const statusOrder: Record<Person['status'], number> = {
-        'Not Invited': 0,
-        'Yes': 1,
-        'Maybe': 2,
-        'No': 3
+        'Yes': 0,
+        'Maybe': 1,
+        'No': 2,
+        'Not Invited': 3
       };
       return [...people].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
     }
@@ -1359,13 +1359,14 @@ export function DistrictPanel({
     }, {
       onSuccess: () => {
         // Update household counts to aggregate all members' counts
-        if (personForm.householdId) {
+        if (personForm.householdId != null) {
+          const householdId = personForm.householdId;
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
             utils.people.list.fetch().then((updatedPeople) => {
               const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
-              const householdMembers = peopleToUse.filter((p) => p.householdId === personForm.householdId);
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdId);
               const totalChildrenCount = householdMembers.reduce(
                 (sum: number, p) => sum + (p.childrenCount || 0),
                 0
@@ -1376,7 +1377,7 @@ export function DistrictPanel({
               );
               
               updateHousehold.mutate({
-                id: personForm.householdId,
+                id: householdId,
                 childrenCount: totalChildrenCount,
                 guestsCount: totalGuestsCount,
               });
@@ -1485,7 +1486,7 @@ export function DistrictPanel({
 
   // Handle person click - cycle status
   const handlePersonClick = (campusId: number | string, person: Person) => {
-    const statusCycle: Person['status'][] = ['Not Invited', 'Yes', 'Maybe', 'No'];
+    const statusCycle: Person['status'][] = ['Yes', 'Maybe', 'No', 'Not Invited'];
     const currentIndex = statusCycle.indexOf(person.status);
     const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
     onPersonStatusChange(person.personId, nextStatus);
@@ -1574,10 +1575,75 @@ export function DistrictPanel({
       handleDistrictDirectorDrop(draggedId, draggedCampusId);
       return;
     }
-    
-    // Handle moving to district team
-    
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+
+    // Handle moving to district staff slot
+    if (targetCampusId === 'district-staff') {
+      handleDistrictStaffDrop(draggedId, draggedCampusId);
+      return;
+    }
+
+    // Handle moving to unassigned
+    if (targetCampusId === 'unassigned') {
+      updatePerson.mutate({
+        personId: person.personId,
+        primaryCampusId: null,
+      });
+      return;
+    }
+
+    // Handle moving to a campus
+    if (typeof targetCampusId === 'number') {
+      updatePerson.mutate({
+        personId: person.personId,
+        primaryCampusId: targetCampusId,
+      });
+    }
+  };
+
+  // Handle campus reordering (dragging campus rows)
+  const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
+    const currentIndex = campusOrder.indexOf(draggedCampusId);
+    if (currentIndex === -1) return;
+    if (currentIndex === targetIndex) return;
+
+    const newOrder = [...campusOrder];
+    newOrder.splice(currentIndex, 1);
+    const adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
+    setCampusOrder(newOrder);
+
+    if (district?.id) {
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(newOrder));
+    }
+  };
+
+  // Open add person dialog
+  const openAddPersonDialog = (campusId: number | string) => {
+    setSelectedCampusId(campusId);
+
+    let defaultRole: CampusRole = 'Campus Staff';
+    if (campusId === 'district') {
+      defaultRole = 'District Director';
+    } else if (campusId === 'district-staff') {
+      defaultRole = 'District Staff';
+    }
+
+    setPersonForm({
+      name: '',
+      role: defaultRole,
+      status: 'not-invited',
+      needType: 'None',
+      needAmount: '',
+      needDetails: '',
+      notes: '',
+      spouseAttending: false,
+      childrenCount: 0,
+      guestsCount: 0,
+      childrenAges: [],
+      depositPaid: false,
+      needsMet: false,
+      householdId: null,
+    });
     setIsPersonDialogOpen(true);
   };
 
@@ -1640,7 +1706,7 @@ export function DistrictPanel({
                     onEdit={handleEditPerson}
                     onClick={() => {
                       if (!districtDirector) return;
-                      const statusCycle: Person['status'][] = ['Not Invited', 'Yes', 'Maybe', 'No'];
+                      const statusCycle: Person['status'][] = ['Yes', 'Maybe', 'No', 'Not Invited'];
                       const currentIndex = statusCycle.indexOf(districtDirector.status);
                       const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
                       onPersonStatusChange(districtDirector.personId, nextStatus);
@@ -1671,7 +1737,7 @@ export function DistrictPanel({
                     onEdit={handleEditPerson}
                     onClick={() => {
                       if (!districtStaff) return;
-                      const statusCycle: Person['status'][] = ['Not Invited', 'Yes', 'Maybe', 'No'];
+                      const statusCycle: Person['status'][] = ['Yes', 'Maybe', 'No', 'Not Invited'];
                       const currentIndex = statusCycle.indexOf(districtStaff.status);
                       const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
                       onPersonStatusChange(districtStaff.personId, nextStatus);
@@ -1682,12 +1748,14 @@ export function DistrictPanel({
                 
                 {isPublicSafeMode && districtLevelPeople.length > 0 && (
                   <div className="flex flex-wrap gap-1 ml-2">
-                    {districtLevelPeople.map((p) => (
+                    {districtLevelPeople.map((p, idx) => (
                       <DroppablePerson
                         key={p.id}
                         person={p}
-                        districtId={district.id}
                         campusId={-1}
+                        index={idx}
+                        onEdit={() => {}}
+                        onMove={() => {}}
                         onClick={() => {}}
                         canInteract={false}
                         maskIdentity

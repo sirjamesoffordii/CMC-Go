@@ -9,143 +9,282 @@ import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_c
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import { getPeopleScope } from "./_core/authorization";
+import bcrypt from "bcryptjs";
+import { nanoid } from "nanoid";
+import { jaroWinklerScore, normalizeDisplayName } from "./_core/fuzzyName";
+
+function sanitizeUserForClient(user: any) {
+  const { passwordHash, ...safe } = user ?? {};
+  return safe;
+}
+
+async function enrichUserWithNames(user: any) {
+  const campus = user?.campusId ? await db.getCampusById(user.campusId) : null;
+  const district = user?.districtId ? await db.getDistrictById(user.districtId) : null;
+  return {
+    ...sanitizeUserForClient(user),
+    campusName: campus?.name || null,
+    districtName: district?.name || null,
+    regionName: user?.regionId || null,
+  };
+}
+
+async function ensureUserAnchors(user: any) {
+  if (!user) return null;
+
+  if (user.campusId != null) {
+    const campus = await db.getCampusById(user.campusId);
+    if (campus) {
+      const district = await db.getDistrictById(campus.districtId);
+      const next = {
+        districtId: campus.districtId,
+        regionId: district?.region ?? user.regionId ?? null,
+      };
+
+      if (user.districtId !== next.districtId || user.regionId !== next.regionId) {
+        await db.updateUser(user.id, next as any);
+        return (await db.getUserById(user.id)) ?? user;
+      }
+    }
+  }
+
+  if (user.districtId && !user.regionId) {
+    const district = await db.getDistrictById(user.districtId);
+    if (district?.region) {
+      await db.updateUser(user.id, { regionId: district.region } as any);
+      return (await db.getUserById(user.id)) ?? user;
+    }
+  }
+
+  return user;
+}
+
+function requireAnchorsForRole(role: string, anchors: { campusId: number | null; districtId: string | null; regionId: string | null }) {
+  const { campusId, districtId, regionId } = anchors;
+
+  // Campus ladder
+  if (["STAFF", "CO_DIRECTOR"].includes(role)) {
+    if (campusId == null) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Campus is required for this role." });
+    }
+    return;
+  }
+
+  // Campus Director can be campus-anchored or district-anchored
+  if (role === "CAMPUS_DIRECTOR") {
+    if (campusId == null && !districtId) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Campus or District is required for this role." });
+    }
+    return;
+  }
+
+  // District Director requires a district or region anchor
+  if (role === "DISTRICT_DIRECTOR") {
+    if (!districtId && !regionId) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "District (or Region) is required for this role." });
+    }
+    return;
+  }
+
+  // Region Director requires a region anchor
+  if (role === "REGION_DIRECTOR") {
+    if (!regionId) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Region is required for this role." });
+    }
+    return;
+  }
+
+  // Admin/national/other roles are allowed without anchors (aggregate scope)
+}
+
+async function ensureLinkedPersonForUser(user: any): Promise<string | null> {
+  if (!user) return null;
+  if (user.linkedPersonId) return user.linkedPersonId;
+
+  const personId = `U_${user.id}_${nanoid(10)}`;
+
+  // Prefer deriving placement from user anchors.
+  const primaryCampusId = user.campusId ?? null;
+  const primaryDistrictId = user.districtId ?? null;
+  const primaryRegion = user.regionId ?? null;
+
+  await db.createPerson({
+    personId,
+    name: user.fullName,
+    primaryCampusId,
+    primaryDistrictId: primaryDistrictId ?? undefined,
+    primaryRegion: primaryRegion ?? undefined,
+    primaryRole: user.roleTitle || user.role,
+    nationalCategory: primaryCampusId == null && !primaryDistrictId && !primaryRegion ? (user.roleTitle || user.role) : undefined,
+    status: "Not Invited",
+    depositPaid: false,
+    lastEdited: new Date(),
+    lastEditedBy: user.fullName || user.email || "System",
+  } as any);
+
+  await db.updateUserLinkedPersonId(user.id, personId);
+  return personId;
+}
 
 export const appRouter = router({
   system: systemRouter,
   auth: router({
-    // PR 2: Get current user with district/region/campus names
     me: publicProcedure.query(async ({ ctx }) => {
       if (!ctx.user) return null;
-      
-      // Get campus, district, and region names
-      const campus = ctx.user.campusId ? await db.getCampusById(ctx.user.campusId) : null;
-      const district = ctx.user.districtId ? await db.getDistrictById(ctx.user.districtId) : null;
-      
-      return {
-        ...ctx.user,
-        campusName: campus?.name || null,
-        districtName: district?.name || null,
-        regionName: ctx.user.regionId || null,
-      };
+      const canonical = (await db.getUserById(ctx.user.id)) ?? ctx.user;
+      const hydrated = (await ensureUserAnchors(canonical)) ?? canonical;
+      return enrichUserWithNames(hydrated);
     }),
-    
-    // PR 2: Start registration/login - send verification code
-    start: publicProcedure
-      .input(z.object({
-        fullName: z.string().min(1),
-        email: z.string().email(),
-        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]),
-        campusId: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        // Check if user already exists
-        const existingUser = await db.getUserByEmail(input.email);
-        if (existingUser) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "User with this email already exists",
-          });
-        }
-        
-        // Generate verification code (6 digits)
-        const code = crypto.randomInt(100000, 999999).toString();
-        
-        // Store code in auth_tokens table (expires in 15 minutes)
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-        await db.createAuthToken({
-          token: code,
-          email: input.email,
-          expiresAt,
-          consumedAt: null,
-        });
-        
-        // TODO: Send email with verification code
-        // PR 6: Removed PII from logs - only log in development without email
-        if (process.env.NODE_ENV === "development") {
-          console.log(`[Auth] Verification code sent (code: ${code})`);
-        }
-        
-        // Store registration data temporarily (in a real system, you'd use Redis or similar)
-        // For now, we'll store it in the auth token's metadata or create a separate table
-        // For simplicity, we'll require the user to provide the same data in the verify step
-        
-        return {
-          success: true,
-          message: "Verification code sent to email",
-          // In development, return the code for testing
-          ...(process.env.NODE_ENV === "development" && { code }),
-        };
-      }),
-    
-    // PR 2: Verify code and complete registration/login
-    verify: publicProcedure
+
+    signIn: publicProcedure
       .input(z.object({
         email: z.string().email(),
-        code: z.string().length(6),
-        // Registration data (only needed for new users)
-        fullName: z.string().min(1).optional(),
-        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]).optional(),
-        campusId: z.number().optional(),
+        password: z.string().min(1),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Verify code
-        const token = await db.getAuthToken(input.code);
-        if (!token || token.email !== input.email) {
-          throw new TRPCError({
-            code: "UNAUTHORIZED",
-            message: "Invalid or expired verification code",
-          });
+        const email = input.email.trim().toLowerCase();
+        const user = await db.getUserByEmail(email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid email or password" });
         }
-        
-        // Check if user exists
-        let user = await db.getUserByEmail(input.email);
-        
-        if (!user) {
-          // New user - create account
-          if (!input.fullName || !input.role || !input.campusId) {
-            throw new TRPCError({
-              code: "BAD_REQUEST",
-              message: "Registration data required for new users",
-            });
-          }
-          
-          const userId = await db.createUser({
-            fullName: input.fullName,
-            email: input.email,
-            role: input.role,
-            campusId: input.campusId,
-          });
-          
-          user = await db.getUserById(userId);
-          if (!user) {
-            throw new TRPCError({
-              code: "INTERNAL_SERVER_ERROR",
-              message: "Failed to create user",
-            });
-          }
+
+        const ok = await bcrypt.compare(input.password, user.passwordHash);
+        if (!ok) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid email or password" });
         }
-        
-        // Consume token
-        await db.consumeAuthToken(input.code);
-        
-        // Update last login
-        await db.updateUserLastLoginAt(user.id);
-        
-        // Create session
-        setSessionCookie(ctx.req, ctx.res, user.id);
-        
-        // Get campus, district, and region names
-        const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
-        const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
-        
+
+        const hydrated = (await ensureUserAnchors(user)) ?? user;
+
+        // Create session + update last login
+        setSessionCookie(ctx.req, ctx.res, hydrated.id);
+        await db.updateUserLastLoginAt(hydrated.id);
+
+        // Ensure person link exists (auto-create)
+        await ensureLinkedPersonForUser(hydrated);
+
+        const finalUser = (await db.getUserById(hydrated.id)) ?? hydrated;
         return {
           success: true,
-          user: {
-            ...user,
-            campusName: campus?.name || null,
-            districtName: district?.name || null,
-            regionName: user.regionId || null,
-          },
+          user: await enrichUserWithNames(finalUser),
+        };
+      }),
+
+    findPersonMatches: publicProcedure
+      .input(z.object({
+        fullName: z.string().min(1),
+      }))
+      .query(async ({ input }) => {
+        const candidates = await db.searchPeopleByName(input.fullName, 60);
+        const scored = candidates
+          .map((p) => ({
+            personId: p.personId,
+            name: p.name,
+            primaryCampusId: p.primaryCampusId,
+            primaryDistrictId: p.primaryDistrictId,
+            primaryRegion: p.primaryRegion,
+            primaryRole: p.primaryRole,
+            nationalCategory: p.nationalCategory,
+            score: jaroWinklerScore(input.fullName, p.name),
+          }))
+          .filter((c) => c.score >= 0.78)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 8);
+
+        return { candidates: scored };
+      }),
+
+    register: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string().min(8),
+        fullName: z.string().min(1),
+        // Role is the authoritative scope role string used by server enforcement.
+        role: z.string().min(1),
+        // Optional UI-friendly label
+        roleTitle: z.string().optional(),
+        // Anchors (derived when possible)
+        campusId: z.number().nullable().optional(),
+        districtId: z.string().nullable().optional(),
+        regionId: z.string().nullable().optional(),
+        // Optional person linkage from fuzzy match
+        matchedPersonId: z.string().nullable().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const email = input.email.trim().toLowerCase();
+        const existing = await db.getUserByEmail(email);
+        if (existing) {
+          throw new TRPCError({ code: "CONFLICT", message: "User with this email already exists" });
+        }
+
+        const matchedPerson = input.matchedPersonId
+          ? await db.getPersonByPersonId(input.matchedPersonId)
+          : null;
+
+        const canonicalName = normalizeDisplayName(matchedPerson?.name ?? input.fullName);
+
+        let campusId: number | null = input.campusId ?? null;
+        let districtId: string | null = input.districtId ?? null;
+        let regionId: string | null = input.regionId ?? null;
+
+        if (campusId == null && matchedPerson?.primaryCampusId != null) {
+          campusId = matchedPerson.primaryCampusId;
+        }
+        if (!districtId && matchedPerson?.primaryDistrictId) {
+          districtId = matchedPerson.primaryDistrictId;
+        }
+        if (!regionId && matchedPerson?.primaryRegion) {
+          regionId = matchedPerson.primaryRegion;
+        }
+
+        // Derive district/region from campus, and region from district.
+        if (campusId != null) {
+          const campus = await db.getCampusById(campusId);
+          if (!campus) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Selected campus not found" });
+          }
+          districtId = campus.districtId;
+          const district = await db.getDistrictById(campus.districtId);
+          regionId = district?.region ?? regionId;
+        } else if (districtId) {
+          const district = await db.getDistrictById(districtId);
+          if (!district) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Selected district not found" });
+          }
+          regionId = district.region;
+        }
+
+        requireAnchorsForRole(input.role, { campusId, districtId, regionId });
+
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        const userId = await db.createUser({
+          fullName: canonicalName,
+          email,
+          role: input.role,
+          roleTitle: input.roleTitle ?? null,
+          passwordHash,
+          campusId,
+          districtId,
+          regionId,
+          linkedPersonId: matchedPerson?.personId ?? null,
+        } as any);
+
+        const created = await db.getUserById(userId);
+        if (!created) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user" });
+        }
+
+        const hydrated = (await ensureUserAnchors(created)) ?? created;
+        setSessionCookie(ctx.req, ctx.res, hydrated.id);
+        await db.updateUserLastLoginAt(hydrated.id);
+
+        if (!hydrated.linkedPersonId) {
+          await ensureLinkedPersonForUser(hydrated);
+        }
+
+        const finalUser = (await db.getUserById(hydrated.id)) ?? hydrated;
+        return {
+          success: true,
+          user: await enrichUserWithNames(finalUser),
         };
       }),
     
@@ -280,6 +419,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
       }),
+    searchPublic: publicProcedure
+      .input(z.object({ query: z.string().min(1) }))
+      .query(async ({ input }) => {
+        return await db.searchCampusesByName(input.query, 20);
+      }),
     createPublic: publicProcedure
       .input(z.object({
         name: z.string().min(1),
@@ -361,6 +505,29 @@ export const appRouter = router({
   }),
 
   people: router({
+    getByPersonId: protectedProcedure
+      .input(z.object({ personId: z.string().min(1) }))
+      .query(async ({ input, ctx }) => {
+        const person = await db.getPersonByPersonId(input.personId);
+        if (!person) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+        }
+
+        const scope = getPeopleScope(ctx.user);
+
+        // Scope check: ensure the target person is visible in the user's scope.
+        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        return person;
+      }),
     list: protectedProcedure.query(async ({ ctx }) => {
       try {
         const scope = getPeopleScope(ctx.user);

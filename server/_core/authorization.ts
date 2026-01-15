@@ -8,7 +8,7 @@ import type { User } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { people } from "../../drizzle/schema";
 
-export type UserRole = "STAFF" | "CO_DIRECTOR" | "CAMPUS_DIRECTOR" | "DISTRICT_DIRECTOR" | "REGION_DIRECTOR" | "ADMIN";
+export type UserRole = string;
 
 /**
  * Check if a role is a leader role (CO_DIRECTOR+)

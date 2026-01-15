@@ -12,6 +12,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
+import { formatStatusLabel } from "@/utils/statusLabel";
 
 export default function People({ readOnly }: { readOnly?: boolean }) {
   const [, setLocation] = useLocation();
@@ -506,7 +507,7 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
                       }
                     `}
                   >
-                    {status} ({count})
+                    {formatStatusLabel(status)} ({count})
                   </button>
                 );
               })}

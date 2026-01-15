@@ -6,6 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { formatStatusLabel } from "@/utils/statusLabel";
 
 interface PersonRowProps {
   person: Person;
@@ -94,7 +95,11 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
       <div
         className={`w-1.5 h-8 rounded-l ${STATUS_COLORS[person.status || "Not Invited"]} ${isStatusInteractive ? "cursor-pointer hover:brightness-110" : "cursor-default"} transition-all flex-shrink-0`}
         onClick={isStatusInteractive ? handleStatusClick : undefined}
-        title={isStatusInteractive ? `Click to cycle status (current: ${person.status || "Not Invited"})` : undefined}
+        title={
+          isStatusInteractive
+            ? `Click to cycle status (current: ${formatStatusLabel(person.status || "Not Invited")})`
+            : undefined
+        }
       />
 
       {/* Person Info - Compact - Draggable area */}
