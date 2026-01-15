@@ -1048,8 +1048,7 @@ export function DistrictPanel({
         const householdMembers = allPeople.filter(p => p.householdId === h.id && p.primaryDistrictId === district.id);
         if (householdMembers.length > 0) {
           // Check if any member has the same last name
-          return householdMembers.some(member => {
-            const memberNameParts = member.name.trim().split(' ');
+            return householdMembers.some(async (member) => {            const memberNameParts = member.name.trim().split(' ');
             const memberLastName = memberNameParts.length > 1 ? memberNameParts[memberNameParts.length - 1] : memberNameParts[0];
             return memberLastName.toLowerCase() === lastName.toLowerCase();
           });
@@ -1062,23 +1061,12 @@ export function DistrictPanel({
         householdIdToUse = existingHousehold.id;
       } else {
         // Create new household with person's last name
-        const newHouseholdPromise = new Promise<{ id: number }>((resolve, reject) => {
-          createHousehold.mutate({
+        try {
+          const newHousehold = await createHousehold.mutateAsync({
             label: householdLabel,
             childrenCount: personForm.childrenCount || 0,
             guestsCount: personForm.guestsCount || 0,
-          }, {
-            onSuccess: (household) => {
-              resolve(household);
-            },
-            onError: (error) => {
-              reject(error);
-            },
           });
-        });
-        
-        try {
-          const newHousehold = await newHouseholdPromise;
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error('Failed to create household:', error);
@@ -1332,20 +1320,11 @@ export function DistrictPanel({
       } else {
         // Create new household with person's last name
         try {
-          const newHousehold = await new Promise<{ id: number }>((resolve, reject) => {
-            createHousehold.mutate({
-              label: householdLabel,
-              childrenCount: personForm.childrenCount || 0,
-              guestsCount: personForm.guestsCount || 0,
-            }, {
-              onSuccess: (household) => {
-                resolve(household);
-              },
-              onError: (error) => {
-                reject(error);
-              },
-            });
-          });
+          const newHousehold = await createHousehold.mutateAsync({
+                label: householdLabel,
+                childrenCount: personForm.childrenCount || 0,
+                guestsCount: personForm.guestsCount || 0,
+          
           householdIdToUse = newHousehold.id;
           setPersonForm({ ...personForm, householdId: newHousehold.id });
         } catch (error) {
