@@ -472,12 +472,14 @@ export function DistrictPanel({
   const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
   });
   const deleteNeed = trpc.needs.delete.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
   });
