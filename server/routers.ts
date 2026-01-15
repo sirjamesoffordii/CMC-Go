@@ -945,9 +945,8 @@ export const appRouter = router({
         isActive: z.boolean(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Get the need to find the person
-        const needs = await db.getAllActiveNeeds();
-        const need = needs.find(n => n.id === input.needId);
+        // Get the need to find the person (must work for active + inactive needs)
+        const need = await db.getNeedById(input.needId);
         if (!need) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Need not found" });
         }
@@ -979,9 +978,8 @@ export const appRouter = router({
         visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Get the need to find the person
-        const needs = await db.getAllActiveNeeds();
-        const need = needs.find(n => n.id === input.needId);
+        // Get the need to find the person (must work for active + inactive needs)
+        const need = await db.getNeedById(input.needId);
         if (!need) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Need not found" });
         }
