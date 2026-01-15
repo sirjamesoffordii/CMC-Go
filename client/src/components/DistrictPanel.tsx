@@ -154,6 +154,7 @@ export function DistrictPanel({
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
       }
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
     onError: (error) => {
@@ -170,6 +171,7 @@ export function DistrictPanel({
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
       }
+      utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
   });
@@ -183,6 +185,7 @@ export function DistrictPanel({
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
       }
+      utils.followUp.list.invalidate();
       if (district?.id) {
         utils.people.byDistrict.invalidate({ districtId: district.id });
       }
@@ -208,6 +211,7 @@ export function DistrictPanel({
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
       }
+      utils.followUp.list.invalidate();
       setIsEditPersonDialogOpen(false);
       setEditingPerson(null);
       onDistrictUpdate();

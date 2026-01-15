@@ -123,6 +123,7 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+      utils.followUp.list.invalidate();
     },
   });
   
