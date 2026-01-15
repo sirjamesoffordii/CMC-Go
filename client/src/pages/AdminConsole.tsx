@@ -7,7 +7,6 @@ import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertC
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
-import { UserManagement } from "@/components/UserManagement";
 
 // Get version from package.json (will be injected at build time or read from env)
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -593,11 +592,6 @@ export default function AdminConsole() {
             </div>
           </CardContent>
         </Card>
-
-        {/* User Management Section */}
-        <div className="mt-6">
-          <UserManagement />
-        </div>
       </div>
     </div>
   );

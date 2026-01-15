@@ -9,9 +9,9 @@ export const users = mysqlTable("users", {
   fullName: varchar("fullName", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull().unique(),
   role: mysqlEnum("role", ["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]).notNull(),
-  campusId: int("campusId"), // Nullable - can be null for admin or "No campus" users
-  districtId: varchar("districtId", { length: 64 }), // Nullable - derived from campusId or explicit
-  regionId: varchar("regionId", { length: 255 }), // Nullable - derived from campusId or explicit
+  campusId: int("campusId").notNull(), // Required - used to derive districtId and regionId
+  districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
+  regionId: varchar("regionId", { length: 255 }), // Derived from campusId server-side
   approvalStatus: mysqlEnum("approvalStatus", ["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]).default("PENDING_APPROVAL").notNull(),
   approvedByUserId: int("approvedByUserId"), // Nullable - set when approved
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
@@ -284,25 +284,3 @@ export const importRuns = mysqlTable("import_runs", {
 
 export type ImportRun = typeof importRuns.$inferSelect;
 export type InsertImportRun = typeof importRuns.$inferInsert;
-
-/**
- * User sessions table - tracks active sessions for "who's logged in" feature
- * Each session is identified by a hash of the session token
- */
-export const userSessions = mysqlTable("user_sessions", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(), // References users.id
-  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(), // Random session ID stored in cookie
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
-  revokedAt: timestamp("revokedAt"), // Nullable - set when session is revoked
-  userAgent: varchar("userAgent", { length: 500 }),
-  ipAddress: varchar("ipAddress", { length: 45 }), // IPv6 max length
-}, (table) => ({
-  userIdIdx: index("user_sessions_userId_idx").on(table.userId),
-  sessionIdIdx: index("user_sessions_sessionId_idx").on(table.sessionId),
-  lastSeenAtIdx: index("user_sessions_lastSeenAt_idx").on(table.lastSeenAt),
-}));
-
-export type UserSession = typeof userSessions.$inferSelect;
-export type InsertUserSession = typeof userSessions.$inferInsert;

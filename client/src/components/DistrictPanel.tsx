@@ -312,7 +312,7 @@ export function DistrictPanel({
     : filteredRoles;
 
   // Quick add state
-  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'unassigned'
+  const [quickAddMode, setQuickAddMode] = useState<string | null>(null); // 'campus-{id}', 'district', 'district'
   const [quickAddName, setQuickAddName] = useState('');
   const quickAddInputRef = useRef<HTMLInputElement>(null);
 
@@ -571,6 +571,7 @@ export function DistrictPanel({
   
   // PR 5: Filter people based on status, search, and campus
   const filteredPeople = useMemo(() => {
+  const districtLevelPeople = filteredPeople.filter((p) => p.primaryCampusId == null);
     let filtered = peopleWithNeeds;
     
     // Status filter
@@ -594,11 +595,6 @@ export function DistrictPanel({
     
     return filtered;
   }, [peopleWithNeeds, statusFilter, searchQuery, myCampusOnly, user?.campusId]);
-
-  const peopleWithoutCampus = filteredPeople.filter(p => 
-    !p.primaryCampusId && 
-    !(p.primaryRole?.toLowerCase().includes('district director') || p.primaryRole?.toLowerCase().includes('dd'))
-  );
   
   // Campus order state - stores ordered campus IDs
   const [campusOrder, setCampusOrder] = useState<number[]>([]);
@@ -726,17 +722,6 @@ export function DistrictPanel({
         newOrder[campus.id] = campus.people.map(p => p.personId);
       }
     });
-    // Also store order for unassigned
-    if (peopleWithoutCampus.length > 0) {
-      const statusOrder: Record<Person['status'], number> = {
-        'Not Invited': 0,
-        'Yes': 1,
-        'Maybe': 2,
-        'No': 3
-      };
-      const sorted = [...peopleWithoutCampus].sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
-      newOrder[-1] = sorted.map(p => p.personId);
-    }
     setCampusPeopleOrder(newOrder);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [district?.id]); // Reset order when district changes (panel opens/closes)
@@ -957,13 +942,7 @@ export function DistrictPanel({
     } else if (targetId === 'district-staff') {
       mutationData.primaryRole = 'District Staff';
       mutationData.primaryCampusId = null;
-    } else if (targetId === 'unassigned') {
-      mutationData.primaryRole = 'Campus Staff';
-      mutationData.primaryCampusId = null;
-    } else if (typeof targetId === 'number') {
-      mutationData.primaryRole = 'Campus Staff';
-      mutationData.primaryCampusId = targetId;
-    }
+    } else
 
      // Add primaryRegion if district has it
      if (district.region) {
@@ -1037,18 +1016,7 @@ export function DistrictPanel({
       // Add district staff
       mutationData.primaryRole = 'District Staff';
       // Don't set primaryCampusId for district staff (will be null in DB)
-    } else if (selectedCampusId === 'unassigned') {
-      // Add to unassigned - create person without campus
-      mutationData.primaryRole = mapRoleToAuthoritative(personForm.role.trim()) || 'Campus Staff';
-      // Don't set primaryCampusId for unassigned (will be null in DB)
-    } else if (typeof selectedCampusId === 'number') {
-      // Add to specific campus
-      const campus = campusesWithPeople.find(c => c.id === selectedCampusId);
-      if (!campus) {
-        console.error('Campus not found:', selectedCampusId);
-        alert('Campus not found');
-        return;
-      }
+    } else
       mutationData.primaryRole = mapRoleToAuthoritative(personForm.role.trim()) || 'Campus Staff';
       mutationData.primaryCampusId = selectedCampusId;
     }
@@ -1582,123 +1550,6 @@ export function DistrictPanel({
     }
     
     // Handle moving to district team
-
-    // Handle moving to unassigned
-    if (targetCampusId === 'unassigned') {
-      // Update person to remove campus
-      updatePerson.mutate({
-        personId: person.personId,
-        primaryCampusId: null,
-      });
-      return;
-    }
-
-    // Handle moving to a campus
-    if (typeof targetCampusId === 'number') {
-      // Update person's campus
-      updatePerson.mutate({
-        personId: person.personId,
-        primaryCampusId: targetCampusId,
-      });
-    }
-  };
-
-  const handleCampusRowDrop = (personId: string, fromCampusId: number | string, toCampusId: number | string) => {
-    if (fromCampusId === toCampusId) return;
-    handlePersonMove(personId, fromCampusId, toCampusId, 0);
-  };
-
-  // Handle drop on campus name
-  const handleCampusNameDrop = (personId: string, fromCampusId: number | string, toCampusId: number | string) => {
-    if (fromCampusId === toCampusId) return;
-    handlePersonMove(personId, fromCampusId, toCampusId, 0);
-  };
-
-  // Handle drop on district director
-  const handleDistrictDirectorDrop = (personId: string, fromCampusId: number | string) => {
-    const person = districtPeople.find(p => p.personId === personId);
-    if (!person) return;
-    
-    // Update person to be district director (set role and remove campus)
-    // National Team (XAN) uses "National Director", districts use "District Director"
-    const role = isNationalTeam ? 'National Director' : 'District Director';
-    updatePerson.mutate({
-      personId: person.personId,
-      primaryRole: role,
-      primaryCampusId: null,
-    });
-  };
-
-  // Handle drop on district staff slot (next to district director)
-  const handleDistrictStaffDrop = (personId: string, fromCampusId: number | string) => {
-    const person = districtPeople.find(p => p.personId === personId);
-    if (!person) return;
-
-    updatePerson.mutate({
-      personId: person.personId,
-      primaryRole: 'District Staff',
-      primaryCampusId: null,
-    });
-  };
-
-  // Get person for drag layer
-  const getPerson = (personId: string, campusId: number | string): Person | undefined => {
-    return districtPeople.find(p => p.personId === personId);
-  };
-
-  // Get campus for drag layer
-  const getCampus = (campusId: number): { name: string; people: Person[] } | undefined => {
-    const campus = campusesWithPeople.find(c => c.id === campusId);
-    if (!campus) return undefined;
-    return {
-      name: campus.name,
-      people: campus.people
-    };
-  };
-
-  // Handle campus reordering
-  const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
-    const currentIndex = campusOrder.indexOf(draggedCampusId);
-    if (currentIndex === -1) return;
-    
-    // If dropping at the same position, no change needed
-    if (currentIndex === targetIndex) return;
-
-    const newOrder = [...campusOrder];
-    // Remove from current position
-    newOrder.splice(currentIndex, 1);
-    // Adjust target index if we removed an item before it
-    const adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    // Insert at new position
-    newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
-    setCampusOrder(newOrder);
-    
-    // Persist to localStorage
-    if (district?.id) {
-      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(newOrder));
-    }
-  };
-
-  // Open add person dialog
-  const openAddPersonDialog = (campusId: number | string) => {
-    setSelectedCampusId(campusId);
-    
-    let defaultRole: CampusRole = 'Campus Staff';
-    if (campusId === 'unassigned') {
-      if (peopleWithoutCampus.length === 0) {
-        defaultRole = 'Campus Director';
-      }
-    } else if (campusId === 'district') {
-      // National Team (XAN) uses "National Director", districts use "District Director"
-      defaultRole = isNationalTeam ? 'National Director' : 'District Director';
-    } else if (campusId === 'district-staff') {
-      defaultRole = 'District Staff';
-    } else if (typeof campusId === 'number') {
-      const campus = campusesWithPeople.find(c => c.id === campusId);
-      if (campus && campus.people.length === 0) {
-        defaultRole = 'Campus Director';
-      }
-    }
     
     setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
     setIsPersonDialogOpen(true);
@@ -1736,6 +1587,7 @@ export function DistrictPanel({
                         'text-2xl'
                       }`}
               />
+              {disableEdits && <span className="ml-1 text-slate-400"></span>}
                   </h1>
                   <span className="text-slate-500 text-sm mt-0.5 block font-medium">
               <EditableText
@@ -1747,6 +1599,7 @@ export function DistrictPanel({
                       className="text-slate-500 text-sm"
                       inputClassName="text-slate-500 text-sm"
                     />
+              {disableEdits && <span className="ml-1 text-slate-400"></span>}
                   </span>
           </div>
                 <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
@@ -1813,7 +1666,23 @@ export function DistrictPanel({
                     canInteract={canInteract}
                     maskIdentity={isPublicSafeMode}
                   />
-                </div>
+                
+                {isPublicSafeMode && districtLevelPeople.length > 0 && (
+                  <div className="flex flex-wrap gap-1 ml-2">
+                    {districtLevelPeople.map((p) => (
+                      <DroppablePerson
+                        key={p.id}
+                        person={p}
+                        districtId={district.id}
+                        campusId={-1}
+                        onClick={() => {}}
+                        canInteract={false}
+                        maskIdentity
+                      />
+                    ))}
+                  </div>
+                )}
+</div>
               </div>
               
               {/* PR 3: Export Button */}
@@ -1973,7 +1842,7 @@ export function DistrictPanel({
                               setCampusMenuPosition({ x: rect.left, y: rect.bottom });
                               setOpenCampusMenuId(openCampusMenuId === campus.id ? null : campus.id);
                             }}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20 disabled:opacity-0 disabled:cursor-not-allowed"
+                            className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 relative z-20 disabled:opacity-0 disabled:cursor-default"
                           >
                             <MoreVertical className="w-5 h-5 text-gray-300 hover:text-gray-500" />
                           </button>
@@ -2041,7 +1910,7 @@ export function DistrictPanel({
                                 </button>
                                 <button
                                   onClick={() => {
-                                    const ok = window.confirm(`Delete ${entityName.toLowerCase()} "${campus.name}"? People in this ${entityName.toLowerCase()} will be unassigned.`);
+                                    const ok = window.confirm(`Delete ${entityName.toLowerCase()} "${campus.name}"? People in this ${entityName.toLowerCase()} will be removed from assignment.`);
                                     if (ok) {
                                       deleteCampus.mutate({ id: campus.id });
                                     }
@@ -2116,7 +1985,7 @@ export function DistrictPanel({
                                   if (disableEdits) return;
                                   openAddPersonDialog(campus.id);
                                 }}
-                                className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
                               >
                                 {/* Plus sign in name position - clickable for quick add */}
                                 <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
@@ -2241,12 +2110,26 @@ export function DistrictPanel({
                         setQuickAddName('');
                         setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
                     >
                       <Plus className="w-5 h-5" strokeWidth={2} />
-                      <span className="text-sm">Add {entityName}</span>
+                      <span className="text-sm">Add {entityName}{disableEdits ? " " : ""}</span>
                     </button>
                   )}
+                </div>
+              )}
+              
+              {/* Unassigned Row - show presence in public-safe mode */}
+              {([].length > 0 || (isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0)) && (
+                 <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
+                  {/* Unassigned Label */}
+                  <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
+                    <h3 className="font-medium text-slate-500 italic text-xl">Unassigned</h3>
+          </div>
+          
+                  {/* Person Figures */}
+                  <div className="flex-1 min-w-0">
+                  </div>
                 </div>
               )}
             </div>
@@ -2768,7 +2651,7 @@ export function DistrictPanel({
                   handleAddPerson();
                 }}
                 disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
-                className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default"
               >
                 {createPerson.isPending ? 'Adding...' : 'Add Person'}
               </Button>
@@ -3253,7 +3136,7 @@ export function DistrictPanel({
               <button
                 onClick={handleDeletePerson}
                 disabled={deletePerson.isPending}
-                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed -ml-2"
+                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-default -ml-2"
                 title="Delete person"
               >
                 <Trash2 className="w-4 h-4" />
@@ -3277,7 +3160,7 @@ export function DistrictPanel({
               <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white border-slate-300">
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdatePerson} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">Update Person</Button>
+              <Button type="button" onClick={handleUpdatePerson} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">Update Person</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -3300,7 +3183,7 @@ export function DistrictPanel({
               />
               <label
                 htmlFor="dont-ask-again"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                className="text-sm font-medium leading-none peer-disabled:cursor-default peer-disabled:opacity-70 cursor-pointer"
               >
                 Don't ask again
               </label>
@@ -3354,7 +3237,7 @@ export function DistrictPanel({
               <Button variant="outline" onClick={() => setIsCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
                 Cancel
               </Button>
-              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">
                 {createCampus.isPending ? 'Adding...' : `Add ${entityName}`}
               </Button>
             </DialogFooter>
@@ -3390,7 +3273,7 @@ export function DistrictPanel({
               <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
+              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">
                 {updateCampusName.isPending ? 'Updating...' : 'Update Campus'}
               </Button>
             </DialogFooter>
