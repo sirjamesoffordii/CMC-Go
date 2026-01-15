@@ -39,8 +39,12 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
       // Refresh all data
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
       utils.districts.list.invalidate();
       utils.campuses.list.invalidate();
+      utils.followUp.list.invalidate();
+      utils.people.getNational.invalidate();
     },
     onError: (error) => {
       console.error("Import failed:", error);
