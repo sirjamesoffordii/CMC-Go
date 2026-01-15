@@ -157,16 +157,20 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
-        const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
+        const needsText = needs
+          .map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount / 100).toFixed(2) : ''}`)
+          .join(' ')
+          .toLowerCase();
         const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
-        const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
+        const districtId = p.primaryDistrictId ?? campus?.districtId;
+        const district = districtId ? districtById.get(districtId) : undefined;
         return (
-
           p.name?.toLowerCase().includes(query) ||
           p.primaryRole?.toLowerCase().includes(query) ||
           p.personId?.toLowerCase().includes(query) ||
-                      campus?.name.toLowerCase().includes(query) ||
-                      district?.name.toLowerCase().includes(query) ||
+          campus?.name.toLowerCase().includes(query) ||
+          district?.name.toLowerCase().includes(query) ||
+          districtId?.toLowerCase().includes(query) ||
           needsText.includes(query)
         );
       });
@@ -194,7 +198,18 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
     }
 
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampus, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
+  }, [
+    allPeople,
+    statusFilter,
+    searchQuery,
+    myCampus,
+    user?.campusId,
+    needTypeFilter,
+    hasActiveNeeds,
+    needsByPersonId,
+    campusById,
+    districtById
+  ]);
   
   // Group people by district and campus, then group districts by region
   const regionsWithDistricts = useMemo(() => {
@@ -220,23 +235,19 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
 
     // Group people
     filteredPeople.forEach(person => {
-      const districtId = person.primaryDistrictId;
+      const campusId = person.primaryCampusId;
+      const campus = campusId ? campusById.get(campusId) : undefined;
+      const districtId = person.primaryDistrictId ?? campus?.districtId;
       if (!districtId) return;
 
       const districtData = districtMap.get(districtId);
       if (!districtData) return;
 
-      const campusId = person.primaryCampusId;
-      if (campusId) {
-        const campus = allCampuses.find(c => c.id === campusId);
-        if (campus) {
-          if (!districtData.campuses.has(campusId)) {
-            districtData.campuses.set(campusId, { campus, people: [] });
-          }
-          districtData.campuses.get(campusId)!.people.push(person);
-        } else {
-          // unassigned feature removed
+      if (campusId && campus) {
+        if (!districtData.campuses.has(campusId)) {
+          districtData.campuses.set(campusId, { campus, people: [] });
         }
+        districtData.campuses.get(campusId)!.people.push(person);
       } else {
         // unassigned feature removed
       }
@@ -273,7 +284,7 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses]);
+  }, [filteredPeople, allDistricts, allCampuses, campusById]);
   
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
