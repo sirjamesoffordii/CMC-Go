@@ -120,6 +120,9 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
     },
   });
   
