@@ -101,6 +101,11 @@ jspm_packages/
 tmp/
 temp/
 
+# Local AI temp artifacts
+.claude/
+tmpclaude-*/
+tmpclaude-*
+
 # Database
 data/
 

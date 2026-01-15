@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Person, Note, Need } from "../../../drizzle/schema";
 import {
   Dialog,
@@ -23,9 +23,10 @@ interface PersonDetailsDialogProps {
   person: Person | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: "notes" | "details";
 }
 
-export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetailsDialogProps) {
+export function PersonDetailsDialog({ person, open, onOpenChange, defaultTab = "notes" }: PersonDetailsDialogProps) {
   const utils = trpc.useUtils();
   const { user, isAuthenticated } = useAuth();
   // PR 2: Check if user is a leader (CO_DIRECTOR+)
@@ -122,6 +123,12 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
   // If we return early before calling useIsMobile(), the hook order changes
   // between renders, causing "Rendered more hooks than during the previous render" error.
   const isMobile = useIsMobile();
+  const notesSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open || defaultTab !== "notes") return;
+    notesSectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [open, defaultTab]);
 
   // Early return guard - must be AFTER all hooks are declared
   if (!person) return null;
@@ -196,40 +203,42 @@ export function PersonDetailsDialog({ person, open, onOpenChange }: PersonDetail
               </div>
             )}
 
-            {/* Invite Notes (Leaders Only) */}
-            {isLeader && (
-              <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-                <Label>Invite Notes (Leaders Only)</Label>
-                <Textarea
-                  placeholder="Enter invite note..."
-                  value={inviteNoteText}
-                  onChange={(e) => setInviteNoteText(e.target.value)}
-                  rows={3}
-                />
-                <Button onClick={handleAddInviteNote} disabled={!inviteNoteText.trim()}>
-                  Add Note
-                </Button>
-              </div>
-            )}
-
-            {/* Invite Notes List */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Invite Notes</Label>
-              {inviteNotes.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">No invite notes yet</p>
-              ) : (
-                inviteNotes.map((note) => (
-                  <div key={note.id} className="p-3 bg-white border border-gray-200 rounded">
-                    <p className="text-sm text-gray-900">{note.content}</p>
-                    <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                      <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                      {note.createdBy && (
-                        <span>by {note.createdBy}</span>
-                      )}
-                    </div>
-                  </div>
-                ))
+            <div ref={notesSectionRef} className="space-y-3">
+              {/* Invite Notes (Leaders Only) */}
+              {isLeader && (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+                  <Label>Invite Notes (Leaders Only)</Label>
+                  <Textarea
+                    placeholder="Enter invite note..."
+                    value={inviteNoteText}
+                    onChange={(e) => setInviteNoteText(e.target.value)}
+                    rows={3}
+                  />
+                  <Button onClick={handleAddInviteNote} disabled={!inviteNoteText.trim()}>
+                    Add Note
+                  </Button>
+                </div>
               )}
+
+              {/* Invite Notes List */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Invite Notes</Label>
+                {inviteNotes.length === 0 ? (
+                  <p className="text-sm text-gray-500 text-center py-4">No invite notes yet</p>
+                ) : (
+                  inviteNotes.map((note) => (
+                    <div key={note.id} className="p-3 bg-white border border-gray-200 rounded">
+                      <p className="text-sm text-gray-900">{note.content}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                        {note.createdBy && (
+                          <span>by {note.createdBy}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
 

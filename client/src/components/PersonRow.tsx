@@ -59,6 +59,8 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const isStatusInteractive = isAuthenticated && person.status !== "Not Invited";
   
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -90,9 +92,9 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     >
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
-        onClick={handleStatusClick}
-        title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
+        className={`w-1.5 h-8 rounded-l ${STATUS_COLORS[person.status || "Not Invited"]} ${isStatusInteractive ? "cursor-pointer hover:brightness-110" : "cursor-default"} transition-all flex-shrink-0`}
+        onClick={isStatusInteractive ? handleStatusClick : undefined}
+        title={isStatusInteractive ? `Click to cycle status (current: ${person.status || "Not Invited"})` : undefined}
       />
 
       {/* Person Info - Compact - Draggable area */}

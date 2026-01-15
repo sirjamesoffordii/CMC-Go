@@ -191,6 +191,7 @@ export default function FollowUpView() {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        defaultTab="notes"
       />
     </div>
   );

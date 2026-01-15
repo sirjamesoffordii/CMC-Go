@@ -235,6 +235,17 @@ export async function getCampusById(id: number) {
   return result[0] || null;
 }
 
+export async function getCampusByNameAndDistrict(name: string, districtId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(campuses)
+    .where(and(eq(campuses.name, name), eq(campuses.districtId, districtId)))
+    .limit(1);
+  return result[0] || null;
+}
+
 export async function createCampus(campus: InsertCampus) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -304,31 +315,6 @@ export async function getPersonByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.select().from(people).where(eq(people.personId, personId)).limit(1);
-  return result[0] || null;
-}
-
-export async function getPersonByNameCaseInsensitive(name: string) {
-  const db = await getDb();
-  if (!db) return null;
-  const trimmedName = name.trim();
-  const result = await db.select().from(people).where(sql`LOWER(TRIM(${people.name})) = LOWER(${trimmedName})`).limit(1);
-  return result[0] || null;
-}
-
-export async function getLatestPersonEditByEditorName(editorName: string) {
-  const db = await getDb();
-  if (!db) return null;
-
-  const name = editorName.trim();
-  if (!name) return null;
-
-  const result = await db
-    .select()
-    .from(people)
-    .where(sql`TRIM(${people.lastEditedBy}) = ${name}`)
-    .orderBy(sql`${people.lastEdited} DESC`)
-    .limit(1);
-
   return result[0] || null;
 }
 

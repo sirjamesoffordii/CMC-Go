@@ -218,10 +218,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             }
             districtData.campuses.get(campusId)!.people.push(person);
           } else {
-            districtData.unassigned.push(person);
+            // unassigned feature removed
           }
         } else {
-          districtData.unassigned.push(person);
+          // unassigned feature removed
         }
       });
       
@@ -294,10 +294,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           }
           districtData.campuses.get(campusId)!.people.push(person);
         } else {
-          districtData.unassigned.push(person);
+          // unassigned feature removed
         }
       } else {
-        districtData.unassigned.push(person);
+        // unassigned feature removed
       }
     });
     
@@ -1104,6 +1104,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        defaultTab="notes"
       />
     </div>
   );

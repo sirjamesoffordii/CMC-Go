@@ -4,13 +4,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
-import { Shield, Users, Database, Settings, Loader2, ArrowLeft } from "lucide-react";
+import { Shield, Users, Database, Settings, Loader2, ArrowLeft, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useState } from "react";
+import { ImportModal } from "@/components/ImportModal";
 
 export default function Admin() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const isAdmin = user?.role === "admin" || user?.role === "ADMIN";
 
   const allUsers = trpc.admin.getAllUsers.useQuery();
 
@@ -152,6 +156,22 @@ export default function Admin() {
             <CardDescription>Administrative tools and operations</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {isAdmin && (
+              <div className="flex items-center justify-between p-3 rounded-lg border">
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium">Import People</p>
+                  <p className="text-xs text-muted-foreground">Upload a CSV to create or update people</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportModalOpen(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Import
+                </Button>
+              </div>
+            )}
             <div className="flex items-center justify-between p-3 rounded-lg border">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium">Database Backup</p>
@@ -194,6 +214,13 @@ export default function Admin() {
           </CardContent>
         </Card>
       </div>
+
+      {isAdmin && (
+        <ImportModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+        />
+      )}
     </div>
   );
 }

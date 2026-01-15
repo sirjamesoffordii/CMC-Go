@@ -79,8 +79,8 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
   
   // Handle status click to cycle through statuses
   const handleStatusClick = useCallback((e: React.MouseEvent) => {
-    // Only allow status change if canInteract and not masked
-    if (!canInteract || maskIdentity) return;
+    // Only allow status change if canInteract
+    if (!canInteract) return;
     e.stopPropagation();
     const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
       "Not Invited",
@@ -95,7 +95,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
     if (onPersonStatusChange) {
       onPersonStatusChange(person.personId, nextStatus);
     }
-  }, [person.status, person.personId, onPersonStatusChange, canInteract, maskIdentity]);
+  }, [person.status, person.personId, onPersonStatusChange, canInteract]);
 
   const [{ isDragging }, drag, preview] = useDrag(() => ({
     type: 'person',
@@ -241,7 +241,6 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
       >
         <button
           onClick={handleStatusClick}
-          disabled={maskIdentity}
           className="relative transition-all hover:scale-110 active:scale-95"
         >
           {/* Gray spouse icon behind - shown when person has spouse */}

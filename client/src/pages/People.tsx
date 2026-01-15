@@ -13,11 +13,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
 
-export default function People() {
+export default function People({ readOnly }: { readOnly?: boolean }) {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
+  const isReadOnly = readOnly ?? !isAuthenticated;
 
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -160,16 +161,20 @@ export default function People() {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
-        const needsText = needs.map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount/100).toFixed(2) : ''}`).join(' ').toLowerCase();
+        const needsText = needs
+          .map(n => `${n.type} ${n.description ?? ''} ${n.amount ? (n.amount / 100).toFixed(2) : ''}`)
+          .join(' ')
+          .toLowerCase();
         const campus = p.primaryCampusId ? campusById.get(p.primaryCampusId) : undefined;
-        const district = p.primaryDistrictId ? districtById.get(p.primaryDistrictId) : undefined;
+        const districtId = p.primaryDistrictId ?? campus?.districtId;
+        const district = districtId ? districtById.get(districtId) : undefined;
         return (
-
           p.name?.toLowerCase().includes(query) ||
           p.primaryRole?.toLowerCase().includes(query) ||
           p.personId?.toLowerCase().includes(query) ||
-                      campus?.name.toLowerCase().includes(query) ||
-                      district?.name.toLowerCase().includes(query) ||
+          campus?.name.toLowerCase().includes(query) ||
+          district?.name.toLowerCase().includes(query) ||
+          districtId?.toLowerCase().includes(query) ||
           needsText.includes(query)
         );
       });
@@ -197,7 +202,18 @@ export default function People() {
     }
 
     return filtered;
-  }, [allPeople, statusFilter, searchQuery, myCampus, user?.campusId, needTypeFilter, hasActiveNeeds, needsByPersonId]);
+  }, [
+    allPeople,
+    statusFilter,
+    searchQuery,
+    myCampus,
+    user?.campusId,
+    needTypeFilter,
+    hasActiveNeeds,
+    needsByPersonId,
+    campusById,
+    districtById
+  ]);
   
   // Group people by district and campus, then group districts by region
   const regionsWithDistricts = useMemo(() => {
@@ -223,25 +239,21 @@ export default function People() {
 
     // Group people
     filteredPeople.forEach(person => {
-      const districtId = person.primaryDistrictId;
+      const campusId = person.primaryCampusId;
+      const campus = campusId ? campusById.get(campusId) : undefined;
+      const districtId = person.primaryDistrictId ?? campus?.districtId;
       if (!districtId) return;
 
       const districtData = districtMap.get(districtId);
       if (!districtData) return;
 
-      const campusId = person.primaryCampusId;
-      if (campusId) {
-        const campus = allCampuses.find(c => c.id === campusId);
-        if (campus) {
-          if (!districtData.campuses.has(campusId)) {
-            districtData.campuses.set(campusId, { campus, people: [] });
-          }
-          districtData.campuses.get(campusId)!.people.push(person);
-        } else {
-          districtData.unassigned.push(person);
+      if (campusId && campus) {
+        if (!districtData.campuses.has(campusId)) {
+          districtData.campuses.set(campusId, { campus, people: [] });
         }
+        districtData.campuses.get(campusId)!.people.push(person);
       } else {
-        districtData.unassigned.push(person);
+        // unassigned feature removed
       }
     });
 
@@ -276,7 +288,7 @@ export default function People() {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses]);
+  }, [filteredPeople, allDistricts, allCampuses, campusById]);
   
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -284,6 +296,7 @@ export default function People() {
   };
   
   const handlePersonStatusChange = (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
+    if (isReadOnly) return;
     updatePersonStatus.mutate({ personId, status: newStatus });
   };
   
@@ -308,6 +321,7 @@ export default function People() {
   };
   
   const handleEditCampus = (campusId: number) => {
+    if (isReadOnly) return;
     const campus = allCampuses.find(c => c.id === campusId);
     if (campus) {
       setSelectedCampusId(campusId);
@@ -317,6 +331,7 @@ export default function People() {
   };
   
   const handleUpdateCampus = () => {
+    if (isReadOnly) return;
     if (selectedCampusId && campusForm.name.trim()) {
       updateCampusName.mutate({ id: selectedCampusId, name: campusForm.name.trim() });
     }
@@ -378,32 +393,6 @@ export default function People() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => setLocation("/")}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Map
-          </Button>
-          <div className="flex h-[60vh] items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-              <p className="text-gray-600 mb-4">Please log in to view people.</p>
-              <Button onClick={() => setLocation("/")}>
-                Go to Home
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
@@ -422,7 +411,7 @@ export default function People() {
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="mb-4"
+            className="mb-4 text-black hover:bg-red-50 hover:text-red-600"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Map
@@ -657,7 +646,7 @@ export default function People() {
                                   </button>
                                   
                                   {/* Three Dots Menu */}
-                                  {isAuthenticated && (
+                                  {!isReadOnly && (
                                     <div className="relative">
                                       <button
                                         onClick={(e) => {
@@ -856,6 +845,7 @@ export default function People() {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        defaultTab="notes"
       />
     </div>
   );

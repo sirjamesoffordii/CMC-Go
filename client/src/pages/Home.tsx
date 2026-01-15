@@ -6,19 +6,16 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
-import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
-import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
+import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
-import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
-import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
@@ -141,7 +138,6 @@ export default function Home() {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
-  const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,9 +180,10 @@ export default function Home() {
     return isCampusInScope(viewState.campusId, campus.districtId, user, district?.region || null);
   }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
   
-  // Fetch people always - backend will handle auth and return public data when not authenticated
-  const peopleQuery = trpc.people.list.useQuery(undefined, {
-    enabled: true,
+  // Only fetch people when authenticated AND selected district/campus is in scope
+  const shouldFetchPeople = isAuthenticated && isSelectedDistrictInScope && isSelectedCampusInScope;
+  const peopleQuery = trpc.people.list.useQuery(undefined, { 
+    enabled: shouldFetchPeople,
     retry: false, // Don't retry on auth errors
   });
   
@@ -447,14 +444,6 @@ export default function Home() {
     updateURLWithViewState(viewState);
   }, [viewState]);
   
-  const handleViewStateChange = (newViewState: ViewState) => {
-    setViewState(newViewState);
-    // Update selectedDistrictId to match
-    if (newViewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(newViewState.districtId);
-    }
-  };
-  
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
@@ -562,9 +551,8 @@ export default function Home() {
           return;
         }
         // Close all hamburger menu related modals and menu
-        if (shareModalOpen || importModalOpen || loginModalOpen || menuOpen) {
+        if (shareModalOpen || loginModalOpen || menuOpen) {
           if (shareModalOpen) setShareModalOpen(false);
-          if (importModalOpen) setImportModalOpen(false);
           if (loginModalOpen) setLoginModalOpen(false);
           if (menuOpen) setMenuOpen(false);
           e.preventDefault();
@@ -628,7 +616,6 @@ export default function Home() {
     headerEditorOpen,
     shareModalOpen,
     cropModalOpen,
-    importModalOpen,
     loginModalOpen,
     menuOpen,
     districts,
@@ -845,7 +832,7 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.location.href = getLoginUrl();
+                    setLoginModalOpen(true);
                     setMenuOpen(false);
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
@@ -864,17 +851,6 @@ export default function Home() {
                 >
                   <Share2 className="w-4 h-4" />
                   Share
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setImportModalOpen(true);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
-                >
-                  <Upload className="w-4 h-4" />
-                  Import
                 </button>
                 <button
                   onClick={(e) => {
@@ -980,17 +956,6 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
-          {/* View Mode Selector - fixed near XAN at bottom-right of screen */}
-          <div
-            className="fixed z-30"
-            style={{ right: '12%', bottom: '5%', margin: 0, padding: 0 }}
-          >
-            <ViewModeSelector
-              viewState={viewState}
-              onViewStateChange={handleViewStateChange}
-            />
-          </div>
-        
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -1105,8 +1070,7 @@ export default function Home() {
                   }
                   setPeoplePanelOpen(true);
                 }}
-                disabled={!user}
-                className={`
+className={`
                   bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target
                   ${!user ? 'opacity-50 cursor-not-allowed' : 'group-hover:bg-red-700/90'}
                 `}
@@ -1129,6 +1093,7 @@ export default function Home() {
         person={selectedPerson}
         open={personDialogOpen}
         onOpenChange={setPersonDialogOpen}
+        defaultTab="notes"
       />
       
       <ImageCropModal
@@ -1190,11 +1155,6 @@ export default function Home() {
         onClose={() => setShareModalOpen(false)}
       />
 
-      <ImportModal 
-        open={importModalOpen}
-        onOpenChange={setImportModalOpen}
-      />
-      
       <LoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}

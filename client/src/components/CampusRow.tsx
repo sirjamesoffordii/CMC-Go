@@ -133,7 +133,7 @@ export function CampusRow({
                       </button>
                       <button
                         onClick={() => {
-                          const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will be unassigned.`);
+                          const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will no longer be assigned to it.`);
                           if (ok) {
                             deleteCampus.mutate({ id: campus.id });
                           }
