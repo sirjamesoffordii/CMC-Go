@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import * as dbAdditions from "./db-additions";
 import { storagePut } from "./storage";
 import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_core/session";
 import { TRPCError } from "@trpc/server";
@@ -154,6 +155,262 @@ export const appRouter = router({
       return {
         success: true,
       } as const;
+    }),
+
+    // Local login without email verification
+    localLogin: publicProcedure
+      .input(z.object({
+        fullName: z.string().min(1),
+        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]),
+        regionId: z.string().nullable(),
+        districtId: z.string().nullable(),
+        campusId: z.number().nullable(),
+        newCampusName: z.string().nullable().optional(),
+        newCampusDistrictId: z.string().nullable().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          let { campusId, districtId, regionId } = input;
+
+          // Handle new campus creation
+          if (input.newCampusName) {
+            if (!input.newCampusDistrictId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "District is required when creating a new campus",
+              });
+            }
+            const newCampusId = await db.createCampus({
+              name: input.newCampusName,
+              districtId: input.newCampusDistrictId,
+            });
+            campusId = newCampusId;
+          }
+
+          // Derive districtId and regionId from campusId if provided
+          if (campusId) {
+            const campus = await db.getCampusById(campusId);
+            if (campus) {
+              districtId = campus.districtId;
+              const district = await db.getDistrictById(campus.districtId);
+              if (district) {
+                regionId = district.region;
+              }
+            }
+          }
+
+          // Generate deterministic email
+          const slug = input.fullName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const email = `${slug}.${input.role}.${campusId ?? 'none'}.${districtId ?? 'none'}.${regionId ?? 'none'}@local`;
+
+          // Try to find existing user
+          let user = await db.getUserByEmail(email);
+
+          if (!user) {
+            // Create new user
+            const userId = await db.createUser({
+              fullName: input.fullName,
+              email,
+              role: input.role,
+              campusId,
+              districtId,
+              regionId,
+              approvalStatus: input.role === "ADMIN" ? "ACTIVE" : "ACTIVE", // Auto-approve for now
+              lastLoginAt: new Date(),
+            });
+
+            // Fetch the created user
+            user = await db.getUserById(userId);
+            if (!user) {
+              throw new TRPCError({
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Failed to create user",
+              });
+            }
+
+            // Check if person already exists (case-insensitive name match)
+            const existingPerson = await db.getPersonByNameCaseInsensitive(input.fullName);
+
+            if (!existingPerson) {
+              // Create matching Person record only if doesn't exist
+              const personId = `LOCAL-${user.id}`;
+              await db.createPerson({
+                personId,
+                name: input.fullName,
+                primaryRole: input.role,
+                primaryCampusId: campusId,
+                primaryDistrictId: districtId,
+                primaryRegion: regionId,
+                status: "Not Invited",
+                lastEditedBy: "System",
+              });
+            }
+          } else {
+            // Update lastLoginAt
+            await dbAdditions.updateUserLastLogin(user.id);
+          }
+
+          // Set session cookie and get token
+          const token = setSessionCookie(ctx.req, ctx.res, user.id);
+
+          // Hash token for session tracking
+          const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+          const userAgent = ctx.req.headers['user-agent'] || null;
+          const ipAddress = (ctx.req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+                           (ctx.req.socket?.remoteAddress) || null;
+
+          await dbAdditions.createOrUpdateSession({
+            userId: user.id,
+            sessionId: tokenHash,
+            userAgent,
+            ipAddress,
+          });
+
+          // Get campus and district names
+          const campus = campusId ? await db.getCampusById(campusId) : null;
+          const district = districtId ? await db.getDistrictById(districtId) : null;
+
+          return {
+            ...user,
+            campusName: campus?.name || null,
+            districtName: district?.name || null,
+            regionName: regionId,
+          };
+        } catch (error) {
+          console.error("[auth.localLogin] Error:", error);
+          if (error instanceof TRPCError) throw error;
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to log in",
+          });
+        }
+      }),
+  }),
+
+  // Meta endpoints for populating login dropdowns
+  meta: router({
+    regions: publicProcedure.query(async () => {
+      const districts = await db.getAllDistricts();
+      const regions = [...new Set(districts.map(d => d.region))].sort();
+      return regions.map(r => ({ id: r, name: r }));
+    }),
+
+    districtsByRegion: publicProcedure
+      .input(z.object({ regionId: z.string().nullable() }))
+      .query(async ({ input }) => {
+        const allDistricts = await db.getAllDistricts();
+        if (!input.regionId) return allDistricts;
+        return allDistricts.filter(d => d.region === input.regionId);
+      }),
+
+    campusesByDistrict: publicProcedure
+      .input(z.object({ districtId: z.string().nullable() }))
+      .query(async ({ input }) => {
+        if (!input.districtId) return [];
+        return await db.getCampusesByDistrict(input.districtId);
+      }),
+  }),
+
+  // Admin router for user management
+  admin: router({
+    users: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        // Only ADMIN role can access
+        if (ctx.user.role !== "ADMIN") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+
+        const users = await dbAdditions.getAllUsers();
+        const activeSessions = await dbAdditions.getActiveSessions();
+        const activeUserIds = new Set(activeSessions.map(s => s.userId));
+
+        // Enrich with campus/district names, session info, and last edit tracking
+        const enrichedUsers = await Promise.all(users.map(async (user) => {
+          const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
+          const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
+
+          // Get the person record to check last edit info
+          const personId = `LOCAL-${user.id}`;
+          const person = await db.getPersonById(personId);
+
+          return {
+            ...user,
+            campusName: campus?.name || null,
+            districtName: district?.name || null,
+            regionName: user.regionId || null,
+            isActiveSession: activeUserIds.has(user.id),
+            lastEditedBy: person?.lastEditedBy || null,
+            lastEdited: person?.lastEdited || null,
+          };
+        }));
+
+        return enrichedUsers;
+      }),
+
+      updateRole: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await dbAdditions.updateUserRole(input.userId, input.role);
+          return { success: true };
+        }),
+
+      updateStatus: protectedProcedure
+        .input(z.object({
+          userId: z.number(),
+          approvalStatus: z.enum(["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await dbAdditions.updateUserStatus(input.userId, input.approvalStatus);
+          return { success: true };
+        }),
+
+      delete: protectedProcedure
+        .input(z.object({ userId: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (ctx.user.role !== "ADMIN") {
+            throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+          }
+
+          await dbAdditions.deleteUser(input.userId);
+          return { success: true };
+        }),
+    }),
+
+    sessions: router({
+      listActive: protectedProcedure.query(async ({ ctx }) => {
+        if (ctx.user.role !== "ADMIN") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+        }
+
+        const sessions = await dbAdditions.getActiveSessions();
+
+        // Enrich with user info
+        const enrichedSessions = await Promise.all(sessions.map(async (session) => {
+          const user = await db.getUserById(session.userId);
+          return {
+            ...session,
+            user: user ? {
+              id: user.id,
+              fullName: user.fullName,
+              email: user.email,
+              role: user.role,
+            } : null,
+          };
+        }));
+
+        return enrichedSessions;
+      }),
     }),
   }),
 
