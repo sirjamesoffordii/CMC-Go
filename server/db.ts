@@ -144,6 +144,24 @@ export async function updateUserLastLoginAt(userId: number) {
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
 }
 
+export async function updateUserPasswordHash(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
+export async function updateUserPersonId(userId: number, personId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ personId }).where(eq(users.id, userId));
+}
+
+export async function updateUserRoleLabel(userId: number, roleLabel: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ roleLabel }).where(eq(users.id, userId));
+}
+
 export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -348,6 +366,22 @@ export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
   return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+}
+
+export async function getPeopleCandidatesByName(name: string, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  const trimmed = name.trim();
+  if (!trimmed) return [];
+
+  // Lightweight candidate fetch: pull rows matching any substring. Fuzzy scoring happens in code.
+  const like = `%${trimmed.toLowerCase()}%`;
+  const result = await db
+    .select()
+    .from(people)
+    .where(sql`LOWER(${people.name}) LIKE ${like}`)
+    .limit(limit);
+  return result;
 }
 
 /**

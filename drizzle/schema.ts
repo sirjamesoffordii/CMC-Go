@@ -8,10 +8,13 @@ export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
   fullName: varchar("fullName", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }),
   role: mysqlEnum("role", ["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]).notNull(),
+  roleLabel: varchar("roleLabel", { length: 255 }),
   campusId: int("campusId"), // Nullable - can be null for admin or "No campus" users
   districtId: varchar("districtId", { length: 64 }), // Nullable - derived from campusId or explicit
   regionId: varchar("regionId", { length: 255 }), // Nullable - derived from campusId or explicit
+  personId: varchar("personId", { length: 64 }),
   approvalStatus: mysqlEnum("approvalStatus", ["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]).default("PENDING_APPROVAL").notNull(),
   approvedByUserId: int("approvedByUserId"), // Nullable - set when approved
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
