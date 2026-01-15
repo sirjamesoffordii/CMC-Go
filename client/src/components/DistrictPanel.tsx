@@ -508,6 +508,7 @@ export function DistrictPanel({
   const createNote = trpc.notes.create.useMutation({
     onSuccess: () => {
       utils.notes.byPerson.invalidate();
+      utils.people.list.invalidate();
     },
   });
 
