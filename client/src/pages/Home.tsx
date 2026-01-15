@@ -16,7 +16,6 @@ import { ShareModal } from "@/components/ShareModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
-import { getLoginUrl } from "@/const";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { ViewState, initializeViewStateFromURL, updateURLWithViewState, DEFAULT_VIEW_STATE } from "@/types/viewModes";
@@ -829,7 +828,7 @@ export default function Home() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.location.href = getLoginUrl();
+                    setLoginModalOpen(true);
                     setMenuOpen(false);
                   }}
                   className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
