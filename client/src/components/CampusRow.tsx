@@ -39,13 +39,28 @@ export function CampusRow({
 }: CampusRowProps) {
   const [sortBy, setSortBy] = useState<"status" | "name" | "role">("status");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
 
   const updateCampusName = trpc.campuses.updateName.useMutation({
-    onSuccess: () => onCampusUpdate(),
+    onSuccess: () => {
+      utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
+      onCampusUpdate();
+    },
   });
 
   const deleteCampus = trpc.campuses.delete.useMutation({
-    onSuccess: () => onCampusUpdate(),
+    onSuccess: () => {
+      utils.campuses.list.invalidate();
+      utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      utils.metrics.district.invalidate({ districtId: campus.districtId });
+      utils.followUp.list.invalidate();
+      onCampusUpdate();
+    },
   });
 
   // Sort people based on selected sort option
