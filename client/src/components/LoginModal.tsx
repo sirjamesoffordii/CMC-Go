@@ -335,13 +335,26 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </div>
                   )}
                 </div>
-                <Button
-                  onClick={() => goToStartStep("district")}
-                  disabled={!region}
-                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                >
-                  Next
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setMode("email");
+                      setEmailStepError(null);
+                    }}
+                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => goToStartStep("district")}
+                    disabled={!region}
+                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
 
