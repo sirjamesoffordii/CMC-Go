@@ -7,7 +7,6 @@ import * as db from "./db";
 import { storagePut } from "./storage";
 import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_core/session";
 import { TRPCError } from "@trpc/server";
-import crypto from "crypto";
 import { getPeopleScope } from "./_core/authorization";
 
 export const appRouter = router({
@@ -29,51 +28,73 @@ export const appRouter = router({
       };
     }),
     
-    // PR 2: Start registration/login - send verification code
+    // PR 2: Start registration/login
     start: publicProcedure
       .input(z.object({
-        fullName: z.string().min(1),
         email: z.string().email(),
-        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]),
-        campusId: z.number(),
+        fullName: z.string().min(1).optional(),
+        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]).optional(),
+        campusId: z.number().optional(),
       }))
-      .mutation(async ({ input }) => {
-        // Check if user already exists
-        const existingUser = await db.getUserByEmail(input.email);
-        if (existingUser) {
-          throw new TRPCError({
-            code: "CONFLICT",
-            message: "User with this email already exists",
+      .mutation(async ({ input, ctx }) => {
+        let user = await db.getUserByEmail(input.email);
+
+        if (!user) {
+          if (!input.fullName || !input.role || !input.campusId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Registration data required for new users",
+            });
+          }
+
+          const campus = await db.getCampusById(input.campusId);
+          if (!campus) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Campus not found",
+            });
+          }
+
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "District not found",
+            });
+          }
+
+          const userId = await db.createUser({
+            fullName: input.fullName,
+            email: input.email,
+            role: input.role,
+            campusId: input.campusId,
+            districtId: campus.districtId,
+            regionId: district.region,
           });
+
+          user = await db.getUserById(userId);
+          if (!user) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message: "Failed to create user",
+            });
+          }
         }
-        
-        // Generate verification code (6 digits)
-        const code = crypto.randomInt(100000, 999999).toString();
-        
-        // Store code in auth_tokens table (expires in 15 minutes)
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-        await db.createAuthToken({
-          token: code,
-          email: input.email,
-          expiresAt,
-          consumedAt: null,
-        });
-        
-        // TODO: Send email with verification code
-        // PR 6: Removed PII from logs - only log in development without email
-        if (process.env.NODE_ENV === "development") {
-          console.log(`[Auth] Verification code sent (code: ${code})`);
-        }
-        
-        // Store registration data temporarily (in a real system, you'd use Redis or similar)
-        // For now, we'll store it in the auth token's metadata or create a separate table
-        // For simplicity, we'll require the user to provide the same data in the verify step
-        
+
+        await db.updateUserLastLoginAt(user.id);
+        setSessionCookie(ctx.req, ctx.res, user.id);
+
+        const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
+        const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
+
         return {
           success: true,
-          message: "Verification code sent to email",
-          // In development, return the code for testing
-          ...(process.env.NODE_ENV === "development" && { code }),
+          user: {
+            ...user,
+            campusName: campus?.name || null,
+            districtName: district?.name || null,
+            regionName: user.regionId || null,
+          },
         };
       }),
     

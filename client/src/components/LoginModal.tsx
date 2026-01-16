@@ -20,11 +20,9 @@ interface LoginModalProps {
 
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const utils = trpc.useUtils();
-  const [step, setStep] = useState<"start" | "verify">("start");
   const [startStep, setStartStep] = useState<"region" | "district" | "campus" | "role" | "name">("region");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<"STAFF" | "CO_DIRECTOR" | "CAMPUS_DIRECTOR" | "DISTRICT_DIRECTOR" | "REGION_DIRECTOR">("STAFF");
   const [region, setRegion] = useState<string | null>(null);
@@ -81,24 +79,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   };
   
   const startMutation = trpc.auth.start.useMutation({
-    onSuccess: (data) => {
-      setStep("verify");
-      // In development, show the code
-      if (import.meta.env.DEV && (data as any).code) {
-        alert(`Verification code: ${(data as any).code}`);
-      }
-    },
-  });
-  
-  const verifyMutation = trpc.auth.verify.useMutation({
     onSuccess: () => {
       utils.auth.me.invalidate();
       onOpenChange(false);
       // Reset form
-      setStep("start");
       setStartStep("region");
       setEmail("");
-      setCode("");
       setFullName("");
       setRole("STAFF");
       setRegion(null);
@@ -130,22 +116,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       email,
       role,
       campusId,
-    });
-  };
-  
-  const handleVerify = () => {
-    if (!email || !code) {
-      return;
-    }
-    verifyMutation.mutate({
-      email,
-      code,
-      // Include registration data if this is a new user
-      ...(step === "verify" && fullName && role && campusId ? {
-        fullName,
-        role,
-        campusId,
-      } : {}),
     });
   };
   
@@ -193,32 +163,29 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 CMC Go Access
               </div>
               <h1 className="mb-2 text-4xl font-black uppercase tracking-tight text-white">
-                {step === "start" ? "Welcome" : "Verify"}
+                Welcome
               </h1>
               <p className="text-sm text-white/60">
-                {step === "start" ? "Let's get you connected" : "Check your email for the code"}
+                Let's get you connected
               </p>
               
-              {step === "start" && (
-                <div className="mt-6 flex justify-center gap-2">
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
-                </div>
-              )}
+              <div className="mt-6 flex justify-center gap-2">
+                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
+                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
+                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
+                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
+                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
+              </div>
             </div>
 
             {/* Form container */}
             <div className="rounded-2xl border border-white/10 bg-black/40 p-8 backdrop-blur-xl">
-              {step === "start" ? (
-                <div
-                  className={cn(
-                    "space-y-6 transition-all duration-300",
-                    isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
-                  )}
-                >
+              <div
+                className={cn(
+                  "space-y-6 transition-all duration-300",
+                  isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
+                )}
+              >
             {startStep === "region" && (
               <div className="space-y-4">
                 <div className="relative">
@@ -447,10 +414,10 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   {startMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Sending code...
+                      Signing in...
                     </>
                   ) : (
-                    "Send Verification Code"
+                    "Sign In"
                   )}
                 </Button>
 
@@ -460,46 +427,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               </div>
             )}
           </div>
-        ) : (
-          <div className="space-y-6">
-            <p className="text-sm text-white/70">
-              We've sent a verification code to {email}. Please check your email and enter the code below.
-            </p>
-            
-            <div>
-              <Label htmlFor="code" className="text-sm font-medium uppercase tracking-wide text-white/80">
-                Verification Code *
-              </Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="123456"
-                maxLength={6}
-                className="mt-2 border-white/20 bg-white/5 text-center text-2xl tracking-widest text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-              />
-            </div>
-            
-            <Button 
-              onClick={handleVerify} 
-              disabled={!code || verifyMutation.isPending}
-              className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-            >
-              {verifyMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                "Verify & Sign In"
-              )}
-            </Button>
-            
-            {verifyMutation.error && (
-              <p className="text-sm text-red-400">{verifyMutation.error.message}</p>
-            )}
-          </div>
-        )}
             </div>
           </div>
         </div>
