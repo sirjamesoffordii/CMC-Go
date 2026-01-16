@@ -140,7 +140,10 @@ export async function createUser(user: InsertUser) {
 
 export async function updateUserLastLoginAt(userId: number) {
   const db = await getDb();
-  if (!db) return;
+  if (!db) {
+    console.error("[updateUserLastLoginAt] Database not available for user:", userId);
+    throw new Error("Database not available");
+  }
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
 }
 

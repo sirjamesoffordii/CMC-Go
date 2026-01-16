@@ -211,7 +211,7 @@ export const appRouter = router({
 
 // Validate required scope anchors based on role (fail-closed)
           if (input.role === "STAFF") {
-            if (campusId == null) {
+            if (campusId === null || campusId === undefined) {
               throw new TRPCError({ code: "BAD_REQUEST", message: "Campus is required for Staff role" });
             }
           }
