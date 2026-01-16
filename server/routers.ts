@@ -31,6 +31,13 @@ export const appRouter = router({
         personName: selectedPerson?.name || null,
       };
     }),
+
+    emailExists: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .query(async ({ input }) => {
+        const existing = await db.getUserByEmail(input.email);
+        return { exists: Boolean(existing) } as const;
+      }),
     
     // PR 2: Start registration/login
     start: publicProcedure

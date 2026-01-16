@@ -3,7 +3,7 @@
  * Handles self-registration with email verification
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -20,6 +20,8 @@ interface LoginModalProps {
 
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const utils = trpc.useUtils();
+  const [mode, setMode] = useState<"email" | "register">("email");
+  const [emailStepError, setEmailStepError] = useState<string | null>(null);
   const [startStep, setStartStep] = useState<"region" | "district" | "campus" | "role" | "name">("region");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [email, setEmail] = useState("");
@@ -69,8 +71,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
 
   const goToStartStep = (nextStep: "region" | "district" | "campus" | "role" | "name") => {
     if (isTransitioning || nextStep === startStep) return;
-    const order = ["region", "district", "campus", "role", "name"] as const;
-    if (order.indexOf(nextStep) <= order.indexOf(startStep)) return;
     setIsTransitioning(true);
     setTimeout(() => {
       setStartStep(nextStep);
@@ -83,6 +83,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       utils.auth.me.invalidate();
       onOpenChange(false);
       // Reset form
+      setMode("email");
       setStartStep("region");
       setEmail("");
       setFullName("");
@@ -93,8 +94,27 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setDistrictInput("");
       setCampusId(null);
       setCampusInput("");
+      setEmailStepError(null);
     },
   });
+
+  useEffect(() => {
+    if (open) return;
+    // Reset when modal closes (even if user cancels)
+    setMode("email");
+    setStartStep("region");
+    setIsTransitioning(false);
+    setEmail("");
+    setFullName("");
+    setRole("STAFF");
+    setRegion(null);
+    setRegionInput("");
+    setDistrictId(null);
+    setDistrictInput("");
+    setCampusId(null);
+    setCampusInput("");
+    setEmailStepError(null);
+  }, [open]);
 
   const handleCreateCampus = async () => {
     if (!districtId || !campusInput.trim()) return;
@@ -117,6 +137,30 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       role,
       campusId,
     });
+  };
+
+  const handleEmailContinue = async () => {
+    const trimmedEmail = email.trim();
+    setEmailStepError(null);
+    if (!trimmedEmail) {
+      setEmailStepError("Please enter your email.");
+      return;
+    }
+
+    try {
+      const { exists } = await utils.auth.emailExists.fetch({ email: trimmedEmail });
+      if (exists) {
+        await startMutation.mutateAsync({ email: trimmedEmail });
+        return;
+      }
+
+      setMode("register");
+      setStartStep("region");
+    } catch {
+      // If lookup fails (network/etc), still allow the user to proceed.
+      setMode("register");
+      setStartStep("region");
+    }
   };
   
   return (
@@ -168,14 +212,16 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               <p className="text-sm text-white/60">
                 Let's get you connected
               </p>
-              
-              <div className="mt-6 flex justify-center gap-2">
-                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
-                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
-                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
-                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
-                <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
-              </div>
+
+              {mode === "register" && (
+                <div className="mt-6 flex justify-center gap-2">
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
+                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
+                </div>
+              )}
             </div>
 
             {/* Form container */}
@@ -186,7 +232,67 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   isTransitioning ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"
                 )}
               >
-            {startStep === "region" && (
+            {mode === "email" && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email" className="text-sm font-medium uppercase tracking-wide text-white/80">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleEmailContinue();
+                      }
+                    }}
+                  />
+                </div>
+
+                {emailStepError && <p className="text-sm text-red-400">{emailStepError}</p>}
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setMode("register");
+                      setStartStep("region");
+                      setEmailStepError(null);
+                    }}
+                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    I'm new
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleEmailContinue}
+                    disabled={startMutation.isPending}
+                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
+                  >
+                    {startMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Continue...
+                      </>
+                    ) : (
+                      "Continue"
+                    )}
+                  </Button>
+                </div>
+
+                {startMutation.error && (
+                  <p className="text-sm text-red-400">{startMutation.error.message}</p>
+                )}
+              </div>
+            )}
+
+            {mode === "register" && startStep === "region" && (
               <div className="space-y-4">
                 <div className="relative">
                   <Label htmlFor="region" className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -239,7 +345,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               </div>
             )}
 
-            {startStep === "district" && (
+            {mode === "register" && startStep === "district" && (
               <div className="space-y-4">
                 <div className="relative">
                   <Label htmlFor="district" className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -281,17 +387,27 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </div>
                   )}
                 </div>
-                <Button
-                  onClick={() => goToStartStep("campus")}
-                  disabled={!districtId}
-                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                >
-                  Next
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => goToStartStep("region")}
+                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => goToStartStep("campus")}
+                    disabled={!districtId}
+                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
 
-            {startStep === "campus" && (
+            {mode === "register" && startStep === "campus" && (
               <div className="space-y-4">
                 <div className="relative">
                   <Label htmlFor="campus" className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -342,17 +458,27 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </div>
                   )}
                 </div>
-                <Button
-                  onClick={() => goToStartStep("role")}
-                  disabled={!campusId}
-                  className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                >
-                  Next
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => goToStartStep("district")}
+                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => goToStartStep("role")}
+                    disabled={!campusId}
+                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
 
-            {startStep === "role" && (
+            {mode === "register" && startStep === "role" && (
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="role" className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -371,13 +497,26 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={() => goToStartStep("name")} className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500">
-                  Next
-                </Button>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => goToStartStep("campus")}
+                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={() => goToStartStep("name")}
+                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500"
+                  >
+                    Next
+                  </Button>
+                </div>
               </div>
             )}
 
-            {startStep === "name" && (
+            {mode === "register" && startStep === "name" && (
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="fullName" className="text-sm font-medium uppercase tracking-wide text-white/80">
@@ -420,6 +559,28 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     "Sign In"
                   )}
                 </Button>
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => goToStartStep("role")}
+                    className="flex-1 border border-white/20 bg-white/5 py-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => {
+                      setMode("email");
+                      setEmailStepError(null);
+                    }}
+                    className="flex-1 border border-white/20 bg-white/5 py-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                  >
+                    Different email
+                  </Button>
+                </div>
 
                 {startMutation.error && (
                   <p className="text-sm text-red-400">{startMutation.error.message}</p>
