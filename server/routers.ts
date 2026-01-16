@@ -19,12 +19,16 @@ export const appRouter = router({
       // Get campus, district, and region names
       const campus = ctx.user.campusId ? await db.getCampusById(ctx.user.campusId) : null;
       const district = ctx.user.districtId ? await db.getDistrictById(ctx.user.districtId) : null;
+      const selectedPerson = ctx.user.personId
+        ? await db.getPersonByPersonId(ctx.user.personId)
+        : null;
       
       return {
         ...ctx.user,
         campusName: campus?.name || null,
         districtName: district?.name || null,
         regionName: ctx.user.regionId || null,
+        personName: selectedPerson?.name || null,
       };
     }),
     
@@ -96,6 +100,55 @@ export const appRouter = router({
             regionName: user.regionId || null,
           },
         };
+      }),
+
+    personSuggestions: protectedProcedure
+      .input(z.object({ query: z.string().min(1) }))
+      .query(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+        return await db.searchPeopleByNameInScope(input.query, scope, 20);
+      }),
+
+    setPerson: protectedProcedure
+      .input(z.object({ personId: z.string().min(1) }))
+      .mutation(async ({ input, ctx }) => {
+        const person = await db.getPersonByPersonId(input.personId);
+        if (!person) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+        }
+
+        const scope = getPeopleScope(ctx.user);
+
+        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        await db.updateUserPersonId(ctx.user.id, person.personId);
+        return { success: true } as const;
+      }),
+
+    createAndLinkPerson: protectedProcedure
+      .input(z.object({ name: z.string().min(1) }))
+      .mutation(async ({ input, ctx }) => {
+        const personId = `user-${ctx.user.id}-${Date.now()}`;
+
+        await db.createPerson({
+          personId,
+          name: input.name,
+          primaryCampusId: ctx.user.campusId ?? null,
+          primaryDistrictId: ctx.user.districtId ?? null,
+          primaryRegion: ctx.user.regionId ?? null,
+          primaryRole: ctx.user.role,
+        } as any);
+
+        await db.updateUserPersonId(ctx.user.id, personId);
+        return { success: true, personId } as const;
       }),
     
     // PR 2: Verify code and complete registration/login

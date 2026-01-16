@@ -28,6 +28,7 @@ import {
   InsertStatusChange
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import type { PeopleScope } from "./_core/authorization";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
@@ -142,6 +143,44 @@ export async function updateUserLastLoginAt(userId: number) {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
+}
+
+export async function updateUserPersonId(userId: number, personId: string | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ personId }).where(eq(users.id, userId));
+}
+
+export async function searchPeopleByNameInScope(query: string, scope: PeopleScope, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const q = query.trim();
+  if (!q) return [];
+
+  const likePattern = `%${q}%`;
+  const nameFilter = sql`${people.name} LIKE ${likePattern}`;
+
+  let scopeFilter = sql`1=1`;
+  if (scope.level === "CAMPUS") {
+    scopeFilter = eq(people.primaryCampusId, scope.campusId);
+  } else if (scope.level === "DISTRICT") {
+    scopeFilter = eq(people.primaryDistrictId, scope.districtId);
+  } else if (scope.level === "REGION") {
+    scopeFilter = eq(people.primaryRegion, scope.regionId);
+  }
+
+  return await db
+    .select({
+      personId: people.personId,
+      name: people.name,
+      primaryCampusId: people.primaryCampusId,
+      primaryDistrictId: people.primaryDistrictId,
+      primaryRegion: people.primaryRegion,
+    })
+    .from(people)
+    .where(and(nameFilter, scopeFilter))
+    .limit(limit);
 }
 
 export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {

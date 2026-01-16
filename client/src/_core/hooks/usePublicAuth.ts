@@ -26,6 +26,8 @@ export function usePublicAuth() {
         campusId: 0,
         districtId: null,
         regionId: null,
+        personId: "dev-person",
+        personName: "Dev Person",
         approvalStatus: "ACTIVE",
         approvedByUserId: null,
         approvedAt: null,

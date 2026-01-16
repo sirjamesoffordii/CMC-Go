@@ -18,6 +18,7 @@ import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { LoginModal } from "@/components/LoginModal";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { PersonOnboardingModal } from "@/components/PersonOnboardingModal";
 
 function PeopleRoute() {
   const { isAuthenticated } = usePublicAuth();
@@ -25,7 +26,7 @@ function PeopleRoute() {
 }
 
 function AuthWall({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = usePublicAuth();
+  const { isAuthenticated, isLoading, user } = usePublicAuth();
   const [loginOpen, setLoginOpen] = useState(true);
 
   if (isLoading) {
@@ -50,6 +51,18 @@ function AuthWall({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
         <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
+      </div>
+    );
+  }
+
+  if (user && !user.personId) {
+    return (
+      <div className="min-h-screen">
+        <PersonOnboardingModal
+          open
+          defaultName={user.fullName || ""}
+          onComplete={() => {}}
+        />
       </div>
     );
   }

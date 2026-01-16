@@ -12,6 +12,7 @@ export const users = mysqlTable("users", {
   campusId: int("campusId").notNull(), // Required - used to derive districtId and regionId
   districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
   regionId: varchar("regionId", { length: 255 }), // Derived from campusId server-side
+  personId: varchar("personId", { length: 64 }), // Optional link to people.personId (onboarding)
   approvalStatus: mysqlEnum("approvalStatus", ["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]).default("PENDING_APPROVAL").notNull(),
   approvedByUserId: int("approvedByUserId"), // Nullable - set when approved
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
