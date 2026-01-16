@@ -22,7 +22,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const utils = trpc.useUtils();
   const [mode, setMode] = useState<"email" | "register">("email");
   const [emailStepError, setEmailStepError] = useState<string | null>(null);
-  const [startStep, setStartStep] = useState<"region" | "district" | "campus" | "role" | "name">("region");
+  const [startStep, setStartStep] = useState<"region" | "district" | "campus" | "name">("region");
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
@@ -69,7 +69,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const selectedDistrict = districts.find((district) => district.id === districtId) || null;
   const selectedCampus = campuses.find((campus) => campus.id === campusId) || null;
 
-  const goToStartStep = (nextStep: "region" | "district" | "campus" | "role" | "name") => {
+  const goToStartStep = (nextStep: "region" | "district" | "campus" | "name") => {
     if (isTransitioning || nextStep === startStep) return;
     setIsTransitioning(true);
     setTimeout(() => {
@@ -162,6 +162,18 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setStartStep("region");
     }
   };
+
+  const handleImNew = () => {
+    const trimmedEmail = email.trim();
+    setEmailStepError(null);
+    if (!trimmedEmail) {
+      setEmailStepError("Please enter your email first.");
+      return;
+    }
+    setEmail(trimmedEmail);
+    setMode("register");
+    setStartStep("region");
+  };
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,7 +230,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "region" ? "bg-red-500" : "bg-white/20")} />
                   <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "district" ? "bg-red-500" : "bg-white/20")} />
                   <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "campus" ? "bg-red-500" : "bg-white/20")} />
-                  <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "role" ? "bg-red-500" : "bg-white/20")} />
                   <span className={cn("h-2 w-8 rounded-full transition-all", startStep === "name" ? "bg-red-500" : "bg-white/20")} />
                 </div>
               )}
@@ -260,11 +271,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => {
-                      setMode("register");
-                      setStartStep("region");
-                      setEmailStepError(null);
-                    }}
+                    onClick={handleImNew}
                     className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
                   >
                     I'm new
@@ -481,7 +488,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     Back
                   </Button>
                   <Button
-                    onClick={() => goToStartStep("role")}
+                    onClick={() => goToStartStep("name")}
                     disabled={!campusId}
                     className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
                   >
@@ -491,11 +498,11 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
               </div>
             )}
 
-            {mode === "register" && startStep === "role" && (
+            {mode === "register" && startStep === "name" && (
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="role" className="text-sm font-medium uppercase tracking-wide text-white/80">
-                    Role *
+                    Role
                   </Label>
                   <Select value={role} onValueChange={(v) => setRole(v as any)}>
                     <SelectTrigger className="mt-2 border-white/20 bg-white/5 text-white">
@@ -510,27 +517,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => goToStartStep("campus")}
-                    className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={() => goToStartStep("name")}
-                    className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500"
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
 
-            {mode === "register" && startStep === "name" && (
-              <div className="space-y-4">
                 <div>
                   <Label htmlFor="fullName" className="text-sm font-medium uppercase tracking-wide text-white/80">
                     Full Name *
@@ -540,20 +527,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
-                    className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="email" className="text-sm font-medium uppercase tracking-wide text-white/80">
-                    Email *
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="john@example.com"
                     className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
                   />
                 </div>
@@ -577,7 +550,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => goToStartStep("role")}
+                    onClick={() => goToStartStep("campus")}
                     className="flex-1 border border-white/20 bg-white/5 py-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-white/10"
                   >
                     Back
