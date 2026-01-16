@@ -72,7 +72,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
 
         {/* Family & Guests Section */}
         {(person.householdId || person.spouseAttending || (person.childrenCount && person.childrenCount > 0) || (person.guestsCount && person.guestsCount > 0) || 
-          (person.kids && parseInt(person.kids) > 0) || (person.guests && parseInt(person.guests) > 0)) && (
+          (person.kids && parseInt(person.kids, 10) > 0) || (person.guests && parseInt(person.guests, 10) > 0)) && (
           <div className="space-y-2">
             <div className="border-b border-slate-200 pb-1">
               <h3 className="text-xs font-semibold text-slate-700">Family & Guests</h3>
@@ -106,9 +106,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
                 <div className="font-medium text-slate-900">
                   {((person.householdId && household && household.childrenCount > 0) || 
                     (!person.householdId && person.childrenCount && person.childrenCount > 0) ||
-                    (!person.childrenCount && person.kids && parseInt(person.kids) > 0)) ? (
+                    (!person.childrenCount && person.kids && parseInt(person.kids, 10) > 0)) ? (
                     person.householdId && household ? household.childrenCount : 
-                    person.childrenCount || (person.kids ? parseInt(person.kids) : 0)
+                    person.childrenCount || (person.kids ? parseInt(person.kids, 10) : 0)
                   ) : (
                     <span className="text-slate-400">0</span>
                   )}
@@ -119,9 +119,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
                 <div className="font-medium text-slate-900">
                   {((person.householdId && household && household.guestsCount > 0) || 
                     (!person.householdId && person.guestsCount && person.guestsCount > 0) ||
-                    (!person.guestsCount && person.guests && parseInt(person.guests) > 0)) ? (
+                    (!person.guestsCount && person.guests && parseInt(person.guests, 10) > 0)) ? (
                     person.householdId && household ? household.guestsCount : 
-                    person.guestsCount || (person.guests ? parseInt(person.guests) : 0)
+                    person.guestsCount || (person.guests ? parseInt(person.guests, 10) : 0)
                   ) : (
                     <span className="text-slate-400">0</span>
                   )}
@@ -201,9 +201,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
         )}
         
         {/* No Additional Info - shown when there's no content */}
-        {!need && 
-         !(person.householdId || person.spouseAttending || (person.childrenCount && person.childrenCount > 0) || (person.guestsCount && person.guestsCount > 0) || 
-           (person.kids && parseInt(person.kids) > 0) || (person.guests && parseInt(person.guests) > 0)) &&
+        {!need &&
+          !(person.householdId || person.spouseAttending || (person.childrenCount && person.childrenCount > 0) || (person.guestsCount && person.guestsCount > 0) || 
+           (person.kids && parseInt(person.kids, 10) > 0) || (person.guests && parseInt(person.guests, 10) > 0)) &&
          !person.notes &&
          !person.depositPaid && (
           <div className="text-xs text-gray-400 italic">

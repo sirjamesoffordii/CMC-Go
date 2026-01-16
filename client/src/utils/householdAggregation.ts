@@ -24,8 +24,8 @@ export function calculateHouseholdTotals(people: Person[], households: Household
       countedHouseholdIds.add(person.householdId);
     } else {
       // Solo person - use fallback counts (new fields or legacy)
-      const childrenCount = person.childrenCount ?? (person.kids ? parseInt(person.kids) || 0 : 0);
-      const guestsCount = person.guestsCount ?? (person.guests ? parseInt(person.guests) || 0 : 0);
+      const childrenCount = person.childrenCount ?? (person.kids ? parseInt(person.kids, 10) || 0 : 0);
+      const guestsCount = person.guestsCount ?? (person.guests ? parseInt(person.guests, 10) || 0 : 0);
       
       if (childrenCount > 0) {
         soloChildren.set(person.personId, childrenCount);
