@@ -48,7 +48,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   // Get unique roles from all people
   const uniqueRoles = useMemo(() => {
     const roles = new Set<string>();
-    allPeople.forEach((p: any) => {
+    allPeople.forEach((p: Person) => {
       if (p.primaryRole) {
         roles.add(p.primaryRole);
       }
@@ -58,16 +58,16 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
   // Filter people - handle sanitized data that may not have name field
   const filteredPeople = useMemo(() => {
-    let filtered = allPeople as any[];
+    let filtered = allPeople as Person[];
     
     // Status filter
     if (statusFilter.size > 0) {
-      filtered = filtered.filter((p: any) => statusFilter.has(p.status));
+      filtered = filtered.filter((p: Person) => statusFilter.has(p.status));
     }
     
     // Need filter
     if (needFilter.size > 0) {
-      filtered = filtered.filter((p: any) => {
+      filtered = filtered.filter((p: Person) => {
         const personNeeds = allNeeds.filter(n => n.personId === p.personId && n.isActive);
         const personNeedTypes = new Set(personNeeds.map(n => n.type));
         
@@ -89,12 +89,12 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     
     // Role filter
     if (roleFilter.size > 0) {
-      filtered = filtered.filter((p: any) => p.primaryRole && roleFilter.has(p.primaryRole));
+      filtered = filtered.filter((p: Person) => p.primaryRole && roleFilter.has(p.primaryRole));
     }
     
     // Family & Guest filter
     if (familyGuestFilter.size > 0) {
-      filtered = filtered.filter((p: any) => {
+      filtered = filtered.filter((p: Person) => {
         if (familyGuestFilter.has('spouse') && p.spouseAttending) return true;
         if (familyGuestFilter.has('children') && p.childrenCount && p.childrenCount > 0) return true;
         if (familyGuestFilter.has('guest') && p.guestsCount && p.guestsCount > 0) return true;
@@ -104,7 +104,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     
     // Deposit Paid filter
     if (depositPaidFilter !== null) {
-      filtered = filtered.filter((p: any) => {
+      filtered = filtered.filter((p: Person) => {
         const hasDepositPaid = p.depositPaid === true;
         return depositPaidFilter === hasDepositPaid;
       });
@@ -113,7 +113,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((p: any) => 
+      filtered = filtered.filter((p: Person) => 
         (p.name?.toLowerCase() || '').includes(query) ||
         (p.primaryRole?.toLowerCase() || '').includes(query) ||
         (p.personId?.toLowerCase() || '').includes(query)
@@ -122,7 +122,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     
     // My campus filter
     if (myCampusOnly && user?.campusId) {
-      filtered = filtered.filter((p: any) => p.primaryCampusId === user.campusId);
+      filtered = filtered.filter((p: Person) => p.primaryCampusId === user.campusId);
     }
     
     return filtered;
@@ -159,9 +159,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
     if (sortBy === "Campus") {
       // Group by Campus -> People
-      const campusMap = new Map<number, { campus: Campus; people: any[] }>();
+      const campusMap = new Map<number, { campus: Campus; people: Person[] }>();
       
-      filteredPeople.forEach((person: any) => {
+      filteredPeople.forEach((person: Person) => {
         const campusId = person.primaryCampusId;
         if (campusId) {
           const campus = allCampuses.find(c => c.id === campusId);
@@ -202,7 +202,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         });
       });
       
-      filteredPeople.forEach((person: any) => {
+      filteredPeople.forEach((person: Person) => {
         const districtId = person.primaryDistrictId;
         if (!districtId) return;
         
@@ -274,7 +274,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       });
     });
     
-    filteredPeople.forEach((person: any) => {
+    filteredPeople.forEach((person: Person) => {
       const districtId = person.primaryDistrictId;
       if (!districtId) return;
       
@@ -341,7 +341,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     return { type: "region" as const, regions };
   }, [filteredPeople, allDistricts, allCampuses, sortBy, order]);
 
-  const handlePersonClick = (person: any) => {
+  const handlePersonClick = (person: Person) => {
     setSelectedPerson(person as Person);
     setDialogOpen(true);
   };
@@ -506,7 +506,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               <PopoverContent className="w-56 p-2" align="start">
                 <div className="space-y-1">
                   {(["Yes", "Maybe", "No", "Not Invited"] as const).map((status) => {
-                    const count = allPeople.filter((p: any) => p.status === status).length;
+                    const count = allPeople.filter((p: Person) => p.status === status).length;
                     const isChecked = statusFilter.has(status);
                     return (
                       <label
@@ -561,13 +561,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     let count = 0;
                     if (need === "Need Met") {
                       // Count people with no active needs
-                      count = allPeople.filter((p: any) => {
+                      count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(n => n.personId === p.personId && n.isActive);
                         return personNeeds.length === 0;
                       }).length;
                     } else {
                       // Count people with this specific need type
-                      count = allPeople.filter((p: any) => {
+                      count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(n => n.personId === p.personId && n.isActive);
                         return personNeeds.some(n => n.type === need);
                       }).length;

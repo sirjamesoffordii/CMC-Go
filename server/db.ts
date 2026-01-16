@@ -388,7 +388,7 @@ export async function createPerson(person: InsertPerson) {
   try {
     // Build values object explicitly - only include fields that are provided
     // This prevents Drizzle from trying to insert undefined values
-    const values: any = {
+    const values: Record<string, unknown> = {
       personId: person.personId,
       name: person.name,
       status: person.status || 'Not Invited',
@@ -449,7 +449,7 @@ export async function createPerson(person: InsertPerson) {
     }
     
     console.log('[db.createPerson] Inserting person:', JSON.stringify(values, null, 2));
-    const result = await db.insert(people).values(values);
+    const result = await db.insert(people).values(values as InsertPerson);
     console.log('[db.createPerson] Insert successful, result:', result);
     const insertId = result[0]?.insertId;
     if (!insertId) {
@@ -1107,7 +1107,7 @@ export async function createHousehold(data: InsertHousehold) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const cleanData: any = {
+  const cleanData: Partial<InsertHousehold> = {
     childrenCount: data.childrenCount ?? 0,
     guestsCount: data.guestsCount ?? 0,
   };
@@ -1132,7 +1132,7 @@ export async function updateHousehold(id: number, data: Partial<InsertHousehold>
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const updateData: any = {};
+  const updateData: Partial<InsertHousehold> = {};
   if (data.label !== undefined) updateData.label = data.label;
   if (data.childrenCount !== undefined) updateData.childrenCount = data.childrenCount;
   if (data.guestsCount !== undefined) updateData.guestsCount = data.guestsCount;

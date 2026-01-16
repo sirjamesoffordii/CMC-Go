@@ -10,6 +10,7 @@ import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_c
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 import { getPeopleScope } from "./_core/authorization";
+import { InsertPerson } from "../drizzle/schema";
 
 export const appRouter = router({
   system: systemRouter,
@@ -753,7 +754,7 @@ export const appRouter = router({
           console.log('[people.create] Received input:', JSON.stringify(input, null, 2));
 
           // Build createData object, only including fields that have values
-          const createData: any = {
+          const createData: Record<string, unknown> = {
             personId: input.personId,
             name: input.name,
             status: input.status || 'Not Invited',
@@ -813,7 +814,7 @@ export const appRouter = router({
           createData.lastEdited = new Date();
           createData.lastEditedBy = ctx.user?.fullName || ctx.user?.email || 'System';
 
-          const result = await db.createPerson(createData);
+          const result = await db.createPerson(createData as InsertPerson);
 
           return { success: true, insertId: result };
         } catch (error) {
@@ -938,7 +939,7 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
-        const updateData: any = { ...data };
+        const updateData: Partial<InsertPerson> = { ...data };
 
         // Convert null to undefined for optional fields (Drizzle handles undefined better)
         if (updateData.primaryCampusId === null) {
