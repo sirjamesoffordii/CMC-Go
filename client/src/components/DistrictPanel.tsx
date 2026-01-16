@@ -614,7 +614,7 @@ export function DistrictPanel({
   const districtStaff = peopleWithNeeds.find(p =>
     p.primaryRole?.toLowerCase().includes('district staff') &&
     // Keep the staff slot separate from campus placements
-    p.primaryCampusId == null
+    p.primaryCampusId === null || p.primaryCampusId === undefined
   ) || null;
   
   // PR 5: Filter people based on status, search, and campus

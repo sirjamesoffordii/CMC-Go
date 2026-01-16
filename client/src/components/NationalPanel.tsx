@@ -33,15 +33,17 @@ export function NationalPanel({ onClose, onPersonClick, onPersonStatusChange }: 
     allPeople.forEach(p => {
       if (p.name) {
         // Add full name
-        existingNames.add(p.name.trim());
-        // Add first name
-        const firstName = p.name.split(' ')[0]?.trim();
-        if (firstName) existingNames.add(firstName);
-        // Add last name if exists
-        const parts = p.name.trim().split(' ');
-        if (parts.length > 1) {
-          const lastName = parts[parts.length - 1]?.trim();
-          if (lastName) existingNames.add(lastName);
+        if (p.name) {
+          existingNames.add(p.name.trim());
+          // Add first name
+          const firstName = p.name.split(' ')[0]?.trim();
+          if (firstName) existingNames.add(firstName);
+          // Add last name if exists
+          const parts = p.name.trim().split(' ');
+          if (parts.length > 1) {
+            const lastName = parts[parts.length - 1]?.trim();
+            if (lastName) existingNames.add(lastName);
+          }
         }
       }
     });
