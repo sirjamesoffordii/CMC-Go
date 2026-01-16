@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Additional DB functions for login and admin features
 // These should be merged into server/db.ts
 

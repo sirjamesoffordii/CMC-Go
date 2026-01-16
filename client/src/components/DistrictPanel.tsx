@@ -1311,13 +1311,14 @@ export function DistrictPanel({
     }, {
       onSuccess: () => {
         // Update household counts to aggregate all members' counts
-        if (personForm.householdId) {
+        if (personForm.householdId != null) {
+          const householdId = personForm.householdId;
           // Invalidate and refetch to get updated person data, then recalculate household totals
           utils.people.list.invalidate();
           setTimeout(() => {
             utils.people.list.fetch().then((updatedPeople) => {
               const peopleToUse: Person[] = (updatedPeople ?? allPeople) as Person[];
-              const householdMembers = peopleToUse.filter((p) => p.householdId === personForm.householdId);
+              const householdMembers = peopleToUse.filter((p) => p.householdId === householdId);
               const totalChildrenCount = householdMembers.reduce(
                 (sum: number, p) => sum + (p.childrenCount || 0),
                 0
@@ -1328,7 +1329,7 @@ export function DistrictPanel({
               );
               
               updateHousehold.mutate({
-                id: personForm.householdId,
+                id: householdId,
                 childrenCount: totalChildrenCount,
                 guestsCount: totalGuestsCount,
               });
@@ -1515,6 +1516,43 @@ export function DistrictPanel({
     };
   };
 
+  // Handle campus reordering
+  const handleCampusReorder = (draggedCampusId: number, targetIndex: number) => {
+    const currentIndex = campusOrder.indexOf(draggedCampusId);
+    if (currentIndex === -1) return;
+    if (currentIndex === targetIndex) return;
+
+    const newOrder = [...campusOrder];
+    newOrder.splice(currentIndex, 1);
+    const adjustedTargetIndex = currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
+    setCampusOrder(newOrder);
+
+    if (district?.id) {
+      localStorage.setItem(`campus-order-${district.id}`, JSON.stringify(newOrder));
+    }
+  };
+
+  // Open add person dialog
+  const openAddPersonDialog = (campusId: number | string) => {
+    setSelectedCampusId(campusId);
+
+    let defaultRole: CampusRole = 'Campus Staff';
+    if (campusId === 'district') {
+      defaultRole = 'District Director';
+    } else if (campusId === 'district-staff') {
+      defaultRole = 'District Staff';
+    } else if (typeof campusId === 'number') {
+      const campus = campusesWithPeople.find(c => c.id === campusId);
+      if (campus && campus.people.length === 0) {
+        defaultRole = 'Campus Director';
+      }
+    }
+
+    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
+    setIsPersonDialogOpen(true);
+  };
+
   // Handle drag and drop - person move
   const handlePersonMove = (draggedId: string, draggedCampusId: number | string, targetCampusId: number | string, targetIndex: number) => {
     // Find the person
@@ -1526,11 +1564,28 @@ export function DistrictPanel({
       handleDistrictDirectorDrop(draggedId, draggedCampusId);
       return;
     }
-    
-    // Handle moving to district team
-    
-    setPersonForm({ name: '', role: defaultRole, status: 'not-invited', needType: 'None', needAmount: '', needDetails: '', notes: '', spouseAttending: false, childrenCount: 0, guestsCount: 0, childrenAges: [], depositPaid: false, needsMet: false, householdId: null });
-    setIsPersonDialogOpen(true);
+
+    if (targetCampusId === 'district-staff') {
+      handleDistrictStaffDrop(draggedId, draggedCampusId);
+      return;
+    }
+
+    // Handle moving to unassigned
+    if (targetCampusId === 'unassigned') {
+      updatePerson.mutate({
+        personId: person.personId,
+        primaryCampusId: null,
+      });
+      return;
+    }
+
+    // Handle moving to a campus
+    if (typeof targetCampusId === 'number') {
+      updatePerson.mutate({
+        personId: person.personId,
+        primaryCampusId: targetCampusId,
+      });
+    }
   };
 
 
@@ -1638,8 +1693,10 @@ export function DistrictPanel({
                       <DroppablePerson
                         key={p.id}
                         person={p}
-                        districtId={district.id}
                         campusId={-1}
+                        index={0}
+                        onEdit={() => {}}
+                        onMove={() => {}}
                         onClick={() => {}}
                         canInteract={false}
                         maskIdentity

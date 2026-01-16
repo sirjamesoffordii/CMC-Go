@@ -55,11 +55,12 @@ export async function getDb() {
         keepAliveInitialDelay: 0, // Start keep-alive immediately
       });
       
-      _db = drizzle(_pool);
+      // mysql2 Pool typing differs between callback and promise variants; runtime is compatible.
+      _db = drizzle(_pool as any);
       
       // Test the connection with a simple query
       try {
-        await _db.execute(sql`SELECT 1`);
+        await _db!.execute(sql`SELECT 1`);
         console.log("[Database] Connected to MySQL/TiDB with connection pool");
       } catch (testError) {
         console.error("[Database] Connection pool created but test query failed:", testError);
@@ -150,7 +151,7 @@ export async function upsertUser(user: Partial<InsertUser> & { openId: string })
   const existing = await getUserByOpenId(user.openId);
   if (existing) {
     await db.update(users)
-      .set({ ...user, updatedAt: new Date() })
+      .set({ ...user })
       .where(eq(users.openId, user.openId));
     return existing.id;
   } else {
@@ -578,7 +579,7 @@ export async function getNeedByPersonId(personId: string) {
  * When marking as met (isActive = false), sets resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */
-export async function updateOrCreateNeed(personId: string, needData: { type: string; description: string; amount?: number; isActive: boolean }) {
+export async function updateOrCreateNeed(personId: string, needData: { type: "Financial" | "Transportation" | "Housing" | "Other"; description: string; amount?: number; isActive: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -586,7 +587,7 @@ export async function updateOrCreateNeed(personId: string, needData: { type: str
   const existing = await getNeedByPersonId(personId);
   
   const updateData: {
-    type: string;
+    type: "Financial" | "Transportation" | "Housing" | "Other";
     description: string;
     amount?: number | null;
     isActive: boolean;

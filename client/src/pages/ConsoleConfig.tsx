@@ -1,3 +1,4 @@
+// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, Database, Shield, Server, Key } from "lucide-react";

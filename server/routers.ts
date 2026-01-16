@@ -877,7 +877,6 @@ export const appRouter = router({
         type: z.enum(["Financial", "Transportation", "Housing", "Other"]).optional(),
         description: z.string().optional(),
         amount: z.number().optional(),
-        visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]).optional(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -905,7 +904,6 @@ export const appRouter = router({
             type: input.type,
             description: input.description,
             amount: input.amount,
-            visibility: input.visibility,
             isActive: input.isActive ?? true,
           });
         } else if (input.isActive !== undefined) {
@@ -1159,7 +1157,7 @@ export const appRouter = router({
         await db.createInviteNote({
           personId: input.personId,
           content: input.content,
-          createdByUserId: ctx.user?.id || null,
+          createdByUserId: ctx.user.id,
         });
 
         return { success: true };
