@@ -187,6 +187,6 @@ if (!change[0].fromStatus) {
 
 ## Related Documentation
 
-- See `docs/SENTRY_SETUP.md` for error monitoring configuration
+- See `docs/runbooks/SENTRY_ERROR_MONITORING.md` for error monitoring configuration
 - See `server/_core/errorHandler.ts` for error handling patterns
 - See `drizzle/schema.ts` for database schema reference
