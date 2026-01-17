@@ -74,7 +74,7 @@ if (!isProduction) {
 - Never rewrite credentials in production
 - Log connection details (host, path, user - never password)
 
-### 2. `docs/runbooks/SHARED_DEMO_DB.md`
+### 2. `docs/how-to/SHARED_DEMO_DB.md`
 
 **Updated sections:**
 - Added explicit requirement: Local via proxy must use `cmc_go`, not `root`

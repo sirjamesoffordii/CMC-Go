@@ -45,7 +45,7 @@ Local Cursor dev now **automatically connects** to the Railway staging demo data
 - Only appears in development (never in production)
 - Displays on second line below main banner text
 
-### 5. Documentation (`docs/runbooks/SHARED_DEMO_DB.md`)
+### 5. Documentation (`docs/how-to/SHARED_DEMO_DB.md`)
 
 **Updated to state:**
 - Local dev automatically uses public proxy
@@ -69,7 +69,7 @@ Local Cursor dev now **automatically connects** to the Railway staging demo data
    - Added connection path display
    - Shows "PUBLIC PROXY" or "INTERNAL" on second line
 
-4. **`docs/runbooks/SHARED_DEMO_DB.md`**
+4. **`docs/how-to/SHARED_DEMO_DB.md`**
    - Updated to explain automatic rewrite behavior
    - Clarified that manual configuration is not needed
 

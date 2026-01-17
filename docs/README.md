@@ -1,29 +1,32 @@
-# CMC Go — Docs Index
+# CMC Go — Docs
 
-This folder is organized for fast agent onboarding and reliable operations.
+This repository’s documentation is organized into six categories. If a doc doesn’t fit, it should be moved into **Archive** or deleted.
 
-## Start here (agents)
+## Agent rules
 
-- Multi-agent workflow + role boundaries: `/AGENTS.md`
-- Agent onboarding brief: [docs/agents/CMC_GO_BRIEF.md](agents/CMC_GO_BRIEF.md)
-- Build progression + verification gates: [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
-- System identity + mental model: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
+- Start here: [docs/agent-rules/README.md](agent-rules/README.md)
+- Canonical multi-agent workflow rules: [AGENTS.md](/AGENTS.md)
+- Repo-specific AI rules: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
 
-## Operational runbooks
+## Agent roles
 
-- Runbooks index: [docs/runbooks/README.md](runbooks/README.md)
-- Local setup: [docs/runbooks/DEV_SETUP.md](runbooks/DEV_SETUP.md)
-- DB reset + verification: [docs/runbooks/DB_RESET_GUIDE.md](runbooks/DB_RESET_GUIDE.md), [docs/runbooks/DB_SETUP_VERIFICATION.md](runbooks/DB_SETUP_VERIFICATION.md)
+- Role-specific guidance: [docs/agent-roles/README.md](agent-roles/README.md)
 
-## Project tracking
+## Authority docs
 
-- Tracker: [docs/CMC_GO_PROJECT_TRACKER.md](CMC_GO_PROJECT_TRACKER.md)
-- Work queue + staging readiness: [docs/project/WORK_QUEUE.md](project/WORK_QUEUE.md), [docs/project/STAGING_READY.md](project/STAGING_READY.md)
+- Index: [docs/authority/README.md](authority/README.md)
+- CMC Go overview: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
+- Build map / gates: [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
 
-## Reference (history / deep dives)
+## Runbook
 
-- Reference index: [docs/reference/README.md](reference/README.md)
+- Index: [docs/runbook/README.md](runbook/README.md)
+- Coherence Engine: [docs/runbook/COHERENCE_ENGINE.md](runbook/COHERENCE_ENGINE.md)
 
-## Playbook (judgment + doctrine)
+## How-to guides
 
-- Playbook index: [docs/playbook/README.md](playbook/README.md)
+- Index: [docs/how-to/README.md](how-to/README.md)
+
+## Archive
+
+- Index: [docs/archive/README.md](archive/README.md)

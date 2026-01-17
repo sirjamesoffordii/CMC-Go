@@ -45,7 +45,7 @@ This implementation sets up a "single shared demo database" workflow where Railw
   - Added guard to prevent running against demo DB
 
 ### 5. Documentation
-- **`docs/runbooks/SHARED_DEMO_DB.md`** (NEW)
+- **`docs/how-to/SHARED_DEMO_DB.md`** (NEW)
   - Complete setup guide
   - Environment configuration instructions
   - Verification checklist
@@ -207,4 +207,4 @@ To test the setup:
 ## Documentation
 
 Full documentation available at:
-- **`docs/runbooks/SHARED_DEMO_DB.md`** - Complete setup and troubleshooting guide
+- **`docs/how-to/SHARED_DEMO_DB.md`** - Complete setup and troubleshooting guide
