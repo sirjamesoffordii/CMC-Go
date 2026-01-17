@@ -55,13 +55,13 @@ export async function getDb() {
         enableKeepAlive: true, // Keep connections alive
         keepAliveInitialDelay: 0, // Start keep-alive immediately
       });
-      
-      // mysql2 Pool typing differs between callback and promise variants; runtime is compatible.
-      _db = drizzle(_pool as any);
-      
+
+      const db = drizzle(_pool as any);
+      _db = db;
+
       // Test the connection with a simple query
       try {
-        await _db!.execute(sql`SELECT 1`);
+        await db.execute(sql`SELECT 1`);
         console.log("[Database] Connected to MySQL/TiDB with connection pool");
       } catch (testError) {
         console.error("[Database] Connection pool created but test query failed:", testError);
@@ -194,6 +194,9 @@ export async function upsertUser(user: Partial<InsertUser> & { openId: string })
       .where(eq(users.openId, user.openId));
     return existing.id;
   } else {
+    if (!user.email) {
+      throw new Error("Email is required to create a new user");
+    }
     const result = await db.insert(users).values(user as InsertUser);
     const insertId = result[0]?.insertId;
     if (!insertId) {
@@ -625,7 +628,17 @@ export async function getNeedById(needId: number) {
  * When marking as met (isActive = false), sets resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */
-export async function updateOrCreateNeed(personId: string, needData: { type: "Financial" | "Transportation" | "Housing" | "Other"; description: string; amount?: number; isActive: boolean }) {
+export async function updateOrCreateNeed(
+  personId: string,
+  needData: {
+    type: InsertNeed["type"];
+    description: string;
+    amount?: number | null;
+    visibility?: InsertNeed["visibility"];
+    isActive: boolean;
+    createdById?: number | null;
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
@@ -633,9 +646,10 @@ export async function updateOrCreateNeed(personId: string, needData: { type: "Fi
   const existing = await getNeedByPersonId(personId);
   
   const updateData: {
-    type: "Financial" | "Transportation" | "Housing" | "Other";
+    type: InsertNeed["type"];
     description: string;
     amount?: number | null;
+    visibility?: InsertNeed["visibility"];
     isActive: boolean;
     resolvedAt?: Date | null;
   } = {
@@ -644,6 +658,10 @@ export async function updateOrCreateNeed(personId: string, needData: { type: "Fi
     amount: needData.amount ?? null,
     isActive: needData.isActive,
   };
+
+  if (needData.visibility !== undefined) {
+    updateData.visibility = needData.visibility;
+  }
   
   // Set resolvedAt when marking as met, clear when reactivating
   if (!needData.isActive) {
@@ -659,14 +677,21 @@ export async function updateOrCreateNeed(personId: string, needData: { type: "Fi
     return existing.id;
   } else {
     // Create new need (only if type is not "None" - this should be validated by caller)
-    const result = await db.insert(needs).values({
+    const insertValues: InsertNeed = {
       personId,
       type: needData.type,
       description: needData.description,
       amount: needData.amount ?? null,
       isActive: needData.isActive,
       resolvedAt: needData.isActive ? null : new Date(),
-    });
+      createdById: needData.createdById ?? null,
+    };
+
+    if (needData.visibility !== undefined) {
+      insertValues.visibility = needData.visibility;
+    }
+
+    const result = await db.insert(needs).values(insertValues);
     const insertId = result[0]?.insertId;
     if (!insertId) {
       throw new Error("Failed to get insert ID from database");

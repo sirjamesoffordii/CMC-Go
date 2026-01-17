@@ -33,8 +33,8 @@ class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
     console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
     if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
+      console.warn(
+        "[OAuth] WARNING: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
       );
     }
   }
@@ -284,9 +284,9 @@ class SDKServer {
         await db.upsertUser({
           openId: userInfo.openId,
           name: userInfo.name || null,
-          email: userInfo.email ?? null,
+          email: userInfo.email ?? undefined,
           loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
-          lastSignedIn: signedInAt,
+          lastLoginAt: signedInAt,
         });
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
@@ -300,8 +300,8 @@ class SDKServer {
     }
 
     await db.upsertUser({
-      openId: user.openId,
-      lastSignedIn: signedInAt,
+      openId: sessionUserId,
+      lastLoginAt: signedInAt,
     });
 
     return user;

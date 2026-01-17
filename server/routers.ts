@@ -986,6 +986,7 @@ export const appRouter = router({
             description: input.description,
             amount: input.amount,
             isActive: input.isActive ?? true,
+            createdById: ctx.user.id,
           });
         } else if (input.isActive !== undefined) {
           // Just update isActive
