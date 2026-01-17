@@ -2956,6 +2956,8 @@ export function DistrictPanel({
                 </div>
               )}
 
+            </div>
+
             {/* Additional Information */}
             <div className="space-y-4 mt-4">
               <div className="border-b border-slate-200 pb-2">
