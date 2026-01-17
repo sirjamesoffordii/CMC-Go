@@ -18,5 +18,4 @@
 
 ## Operations
 
-- Runbook (situations): [docs/runbook/README.md](runbook/README.md)
-- How-to (setup/tooling): [docs/how-to/README.md](how-to/README.md)
+- Runbook & guides (ops + setup/tooling): [docs/runbook/README.md](runbook/README.md)

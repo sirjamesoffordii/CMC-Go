@@ -101,7 +101,7 @@ Recent friction has come from environment and deployment issues (Sentry env vars
 
 - 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
   - Automated AI review of pull requests  
-  - Documentation: `docs/how-to/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+  - Documentation: `docs/runbook/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
 
 ---
 

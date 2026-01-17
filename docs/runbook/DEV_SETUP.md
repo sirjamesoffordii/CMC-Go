@@ -164,7 +164,6 @@ This provides enough data to test all features. For production data, use the imp
 
 ## Additional Resources
 
-- **Verification Guide:** See `DB_SETUP_VERIFICATION.md` for detailed verification steps
-- **Database Fix Summary:** See `DATABASE_FIX_SUMMARY.md` for complete change log
-- **Schema Source:** `drizzle/schema.ts` is the single source of truth for database schema
+- Verification guide: [docs/runbook/DB_SETUP_VERIFICATION.md](DB_SETUP_VERIFICATION.md)
+- Schema source of truth: `drizzle/schema.ts`
 
