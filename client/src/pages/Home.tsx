@@ -6,13 +6,15 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
-import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Menu, LogIn, Shield } from "lucide-react";
+import { Calendar, Pencil, Share2, Copy, Mail, MessageCircle, Check, Upload, Menu, LogIn, Shield } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
+import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { useLocation } from "wouter";
@@ -138,6 +140,7 @@ export default function Home() {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>('');
   const [selectedFileName, setSelectedFileName] = useState<string>('');
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -444,6 +447,14 @@ export default function Home() {
     updateURLWithViewState(viewState);
   }, [viewState]);
   
+  const handleViewStateChange = (newViewState: ViewState) => {
+    setViewState(newViewState);
+    // Update selectedDistrictId to match
+    if (newViewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(newViewState.districtId);
+    }
+  };
+  
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
@@ -551,8 +562,9 @@ export default function Home() {
           return;
         }
         // Close all hamburger menu related modals and menu
-        if (shareModalOpen || loginModalOpen || menuOpen) {
+        if (shareModalOpen || importModalOpen || loginModalOpen || menuOpen) {
           if (shareModalOpen) setShareModalOpen(false);
+          if (importModalOpen) setImportModalOpen(false);
           if (loginModalOpen) setLoginModalOpen(false);
           if (menuOpen) setMenuOpen(false);
           e.preventDefault();
@@ -616,6 +628,7 @@ export default function Home() {
     headerEditorOpen,
     shareModalOpen,
     cropModalOpen,
+    importModalOpen,
     loginModalOpen,
     menuOpen,
     districts,
@@ -854,6 +867,17 @@ export default function Home() {
                 </button>
                 <button
                   onClick={(e) => {
+                    e.stopPropagation();
+                    setImportModalOpen(true);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import
+                </button>
+                <button
+                  onClick={(e) => {
                     e.preventDefault();
                     setLocation("/admin");
                     setMenuOpen(false);
@@ -956,6 +980,17 @@ export default function Home() {
 
         {/* Center Map Area */}
         <div className="flex-1 relative overflow-auto map-container-mobile" style={{ minWidth: 0 }}>
+          {/* View Mode Selector - fixed near XAN at bottom-right of screen */}
+          <div
+            className="fixed z-30"
+            style={{ right: '12%', bottom: '5%', margin: 0, padding: 0 }}
+          >
+            <ViewModeSelector
+              viewState={viewState}
+              onViewStateChange={handleViewStateChange}
+            />
+          </div>
+        
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -1093,7 +1128,6 @@ className={`
         person={selectedPerson}
         open={personDialogOpen}
         onOpenChange={setPersonDialogOpen}
-        defaultTab="notes"
       />
       
       <ImageCropModal
@@ -1155,6 +1189,11 @@ className={`
         onClose={() => setShareModalOpen(false)}
       />
 
+      <ImportModal 
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+      />
+      
       <LoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}

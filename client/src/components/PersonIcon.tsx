@@ -62,8 +62,6 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
     boxShadow: isDragging ? '0 10px 30px rgba(0,0,0,0.12)' : undefined,
   };
 
-  const isStatusInteractive = isAuthenticated && person.status !== "Not Invited";
-
   const firstName = person.name?.split(' ')[0] || person.personId || 'Person';
   const capitalizedFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
@@ -156,8 +154,8 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
 
       <div className="relative">
         <button
-          onClick={isStatusInteractive ? handleStatusClick : undefined}
-          className={`relative transition-all ${isDragging ? 'ring-2 ring-slate-200/70 rounded-full' : ''} ${isStatusInteractive ? 'hover:scale-110 active:scale-95' : 'cursor-default'}`}
+          onClick={handleStatusClick}
+          className={`relative transition-all ${isDragging ? 'ring-2 ring-slate-200/70 rounded-full' : 'hover:scale-110 active:scale-95'}`}
         >
           {/* Gray spouse icon behind - shown when person has spouse */}
           {person.spouse && (
@@ -172,7 +170,7 @@ export function PersonIcon({ person, onStatusChange, onClick, onEdit }: PersonIc
             className={`relative ${STATUS_COLORS[person.status]} ${person.depositPaid ? 'deposit-glow' : ''}`}
           >
             <User
-              className={`w-10 h-10 transition-colors ${isStatusInteractive ? 'cursor-pointer' : 'cursor-default'} relative z-10`}
+              className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
               strokeWidth={1.5}
               fill="currentColor"
             />

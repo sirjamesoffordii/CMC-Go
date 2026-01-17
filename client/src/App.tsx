@@ -11,64 +11,10 @@ import MoreInfo from "./pages/MoreInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
 import AdminConsole from "./pages/AdminConsole";
 import Approvals from "./pages/Approvals";
+import Import from "./pages/Import";
 import Needs from "./pages/Needs";
 import FollowUpView from "./pages/FollowUpView";
 import { useEffect } from "react";
-import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
-import { LoginModal } from "@/components/LoginModal";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { PersonOnboardingModal } from "@/components/PersonOnboardingModal";
-
-function PeopleRoute() {
-  const { isAuthenticated } = usePublicAuth();
-  return <People readOnly={!isAuthenticated} />;
-}
-
-function AuthWall({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, user } = usePublicAuth();
-  const [loginOpen, setLoginOpen] = useState(true);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Sign in to continue</h1>
-          <p className="text-gray-600 mb-6">You must log in before accessing the map.</p>
-          <Button onClick={() => setLoginOpen(true)} className="w-full">
-            Login
-          </Button>
-        </div>
-        <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
-      </div>
-    );
-  }
-
-  if (user && !user.personId) {
-    return (
-      <div className="min-h-screen">
-        <PersonOnboardingModal
-          open
-          defaultName={user.fullName || ""}
-          onComplete={() => {}}
-        />
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
 
 function Router() {
   return (
@@ -96,12 +42,13 @@ function Router() {
           }
         }}
       </Route>
-      <Route path="/people" component={PeopleRoute} />
+      <Route path="/people" component={People} />
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />
       <Route path="/why-invitations-matter" component={WhyInvitationsMatter} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
+      <Route path="/import" component={Import} />
       <Route path="/needs" component={Needs} />
       <Route path="/404" component={NotFound} />
       <Route path="/app-auth">
@@ -153,9 +100,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <SentryTestRedirect />
-          <AuthWall>
-            <Router />
-          </AuthWall>
+          <Router />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

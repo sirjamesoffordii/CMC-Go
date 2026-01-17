@@ -14,12 +14,11 @@ import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
 import { formatStatusLabel } from "@/utils/statusLabel";
 
-export default function People({ readOnly }: { readOnly?: boolean }) {
+export default function People() {
   const [, setLocation] = useLocation();
   const { isAuthenticated, isLoading: authLoading } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const isReadOnly = readOnly ?? !isAuthenticated;
 
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -297,7 +296,6 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
   };
   
   const handlePersonStatusChange = (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
-    if (isReadOnly) return;
     updatePersonStatus.mutate({ personId, status: newStatus });
   };
   
@@ -322,7 +320,6 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
   };
   
   const handleEditCampus = (campusId: number) => {
-    if (isReadOnly) return;
     const campus = allCampuses.find(c => c.id === campusId);
     if (campus) {
       setSelectedCampusId(campusId);
@@ -332,7 +329,6 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
   };
   
   const handleUpdateCampus = () => {
-    if (isReadOnly) return;
     if (selectedCampusId && campusForm.name.trim()) {
       updateCampusName.mutate({ id: selectedCampusId, name: campusForm.name.trim() });
     }
@@ -394,6 +390,32 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
     );
   }
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <Button
+            variant="ghost"
+            onClick={() => setLocation("/")}
+            className="mb-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Map
+          </Button>
+          <div className="flex h-[60vh] items-center justify-center">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+              <p className="text-gray-600 mb-4">Please log in to view people.</p>
+              <Button onClick={() => setLocation("/")}>
+                Go to Home
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
@@ -412,7 +434,7 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="mb-4 text-black hover:bg-red-50 hover:text-red-600"
+            className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Map
@@ -647,7 +669,7 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
                                   </button>
                                   
                                   {/* Three Dots Menu */}
-                                  {!isReadOnly && (
+                                  {isAuthenticated && (
                                     <div className="relative">
                                       <button
                                         onClick={(e) => {
@@ -846,7 +868,6 @@ export default function People({ readOnly }: { readOnly?: boolean }) {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        defaultTab="notes"
       />
     </div>
   );
