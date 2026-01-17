@@ -646,7 +646,7 @@
 ## Local Development Setup
 - [x] Add README.md with local setup instructions for Cursor
 - [x] Document all required environment variables in README
-- [x] Provide step-by-step instructions for getting credentials from Manus
+- [x] Provide step-by-step instructions for getting credentials from the hosting platform
 - [x] Note: seed data not changed (database already has correct districts)
 
 ## Data Consistency Fixes

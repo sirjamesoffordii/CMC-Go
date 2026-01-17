@@ -2,13 +2,13 @@
 
 **Date:** December 20, 2025  
 **Project:** CMC Go  
-**Migration:** SQLite → MySQL/TiDB (Manus Managed Database)
+**Migration:** SQLite → MySQL/TiDB (Managed Database)
 
 ---
 
 ## ✅ Migration Summary
 
-Successfully migrated CMC Go from local SQLite database to cloud-hosted MySQL/TiDB database provided by Manus platform.
+Successfully migrated CMC Go from local SQLite database to cloud-hosted MySQL/TiDB database provided by the hosting platform.
 
 ### Data Migrated
 
@@ -62,7 +62,7 @@ Successfully migrated CMC Go from local SQLite database to cloud-hosted MySQL/Ti
 
 The application is now ready for production deployment:
 
-1. **No secrets needed** - `DATABASE_URL` is automatically provided by Manus
+1. **No secrets needed** - `DATABASE_URL` is automatically provided by the hosting platform
 2. **Data persists** - All updates are saved to cloud MySQL database
 3. **Production safe** - Seed scripts cannot run in production
 4. **Scalable** - MySQL supports concurrent connections and larger datasets
@@ -71,13 +71,13 @@ The application is now ready for production deployment:
 
 ## 📝 Environment Variables
 
-### Automatically Provided by Manus
+### Automatically Provided by Hosting Platform
 - `DATABASE_URL` - MySQL/TiDB connection string (already configured)
 
 ### Optional (for production safety)
 - `APP_ENV=production` - Prevents seed scripts from running
 
-**Note:** When you publish from Manus UI, `APP_ENV` is automatically set to `production`.
+**Note:** When you publish from the hosting platform UI, `APP_ENV` may be set to `production`.
 
 ---
 
@@ -108,7 +108,7 @@ SELECT status, COUNT(*) as count FROM people GROUP BY status;
 
 1. **Test in development** - Verify all features work with MySQL
 2. **Save checkpoint** - Create deployment checkpoint
-3. **Publish** - Deploy to production via Manus UI
+3. **Publish** - Deploy to production via the hosting platform UI
 4. **Verify production** - Confirm metrics show correctly on published site
 
 ---

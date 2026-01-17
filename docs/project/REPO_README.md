@@ -5,9 +5,10 @@ A map-first coordination app that helps leaders see who has been invited, where 
 ## Documentation
 
 - [CMC Go Overview](/docs/authority/CMC_OVERVIEW.md) - Project identity and mental model
+- [CMC Go Coordinator](/docs/authority/CMC_GO_COORDINATOR.md) - Coordination and truth-enforcement role
+- [User Role — Sir James](/docs/authority/USER_SIR_JAMES.md) - Human authority and intent source
+- [The Coherence Engine](/docs/authority/The%20Coherence%20Engine.md) - System doctrine for truth and evidence
 - [CMC Go Project Tracker](/docs/CMC_GO_PROJECT_TRACKER.md) - Development progress and milestones
-- - [Lead Developer Role](/docs/authority/LEAD_DEVELOPER_ROLE.md) - Authority and decision-making framework
-  - - [Execution Agent Role](/docs/authority/EXECUTION_AGENT_ROLE.md) - Capabilities and behavioral rules for execution agents
 
 ## Overview
 
@@ -185,38 +186,39 @@ node scripts/seed-db.mjs
 
 ## Development
 
-### Local Development in Cursor
+### Local Development
 
-To run this project locally in Cursor (or any IDE), you need to set up environment variables:
+To run this project locally (Cursor or any IDE), set up environment variables.
 
-1. **Create a `.env` file** in the project root:
+1. **Create a `.env` file** in the project root (start from `.env.example`).
 
 ```env
-# Database (get from Manus Settings → Database panel, click "Show connection info")
-DATABASE_URL=mysql://user:password@host:port/database?ssl={"rejectUnauthorized":true}
+# Database
+DATABASE_URL=mysql://user:password@host:port/database
 
-# Authentication (get from Manus Settings → Secrets panel)
-JWT_SECRET=your-jwt-secret-from-manus
-VITE_APP_ID=your-app-id-from-manus
-OAUTH_SERVER_URL=https://api.manus.im
-VITE_OAUTH_PORTAL_URL=https://manus.im/oauth
-OWNER_OPEN_ID=your-owner-open-id
-OWNER_NAME=Your Name
+# Optional convenience for local dev (see server/_core/env.ts)
+# STAGING_DATABASE_URL=mysql://...
+# DEMO_DB_USER=cmc_go
+# DEMO_DB_PASSWORD=...
+# DEMO_DB_ALLOW_ROOT=false
 
-# Manus APIs (get from Manus Settings → Secrets panel)
-BUILT_IN_FORGE_API_URL=https://forge.manus.im
-BUILT_IN_FORGE_API_KEY=your-forge-api-key
-VITE_FRONTEND_FORGE_API_URL=https://forge.manus.im
-VITE_FRONTEND_FORGE_API_KEY=your-frontend-forge-api-key
+# Sentry (optional)
+SENTRY_DSN=
+VITE_SENTRY_DSN=
+VITE_SENTRY_ENVIRONMENT=SirCursor
+
+# Optional: OAuth / external services (only if you use those features)
+JWT_SECRET=
+VITE_APP_ID=
+OAUTH_SERVER_URL=https://oauth.example.com
+VITE_OAUTH_PORTAL_URL=https://oauth.example.com/portal
+BUILT_IN_FORGE_API_URL=https://forge.example.com
+BUILT_IN_FORGE_API_KEY=
+VITE_FRONTEND_FORGE_API_URL=https://forge.example.com
+VITE_FRONTEND_FORGE_API_KEY=
 ```
 
-2. **Get your credentials from Manus:**
-   - Open your project in Manus
-   - Click the **Settings** icon (gear) in the Management UI
-   - Go to **Database** panel → Click "Show connection info" → Copy the DATABASE_URL
-   - Go to **Secrets** panel → Copy each environment variable value
-
-3. **Install and run:**
+2. **Install and run:**
 
 ```bash
 # Install dependencies
@@ -234,11 +236,9 @@ pnpm dev
 
 4. **Open in browser:** Navigate to `http://localhost:3000`
 
-**Note:** The app uses the same Manus-hosted database whether running locally or in Manus, so your data stays in sync.
-
 ### Quick Setup (Existing Data)
 
-If the database is already seeded (you've been using the app in Manus):
+If the database is already seeded:
 
 ```bash
 pnpm install
@@ -295,8 +295,8 @@ const STATUS_COLORS = {
 
 ## Deployment
 
-The application is ready to deploy via the Manus platform. Use the "Publish" button in the Management UI after creating a checkpoint.
+The application is ready to deploy on your hosting platform (staging/production) using the normal build pipeline (`pnpm build`, `pnpm start`).
 
 ## Support
 
-For questions or issues, refer to the Manus documentation or contact support at https://help.manus.im
+For questions or issues, refer to the project docs in this repository.

@@ -36,7 +36,7 @@
 - **Command:** `pnpm dev`
 - **Port:** 3000
 - **Local URL:** http://localhost:3000
-- **Public URL:** https://3000-i9qxgyps5c4m2g5apaery-989a79a1.us2.manus.computer/
+- **Public URL:** (example) https://<your-preview-host>/
 - **HTTP Status:** 200 OK ✅
 - **Server Process:** Running and stable ✅
 
