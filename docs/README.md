@@ -1,28 +1,22 @@
 # CMC Go — Docs
 
-This repository’s documentation is organized into five categories.
+## Authority (read these first)
 
-## Agent rules
+- System overview: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
+- Build Map (phases, gates, “what’s next”): [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
 
-- Start here: [docs/agent-rules/README.md](agent-rules/README.md)
-- Canonical multi-agent workflow rules: [AGENTS.md](/AGENTS.md)
-- Repo-specific AI rules: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
+## Agent instruction + behavior (primary sources)
 
-## Agent roles
+- Multi-agent operating manual (Coordinator-centered): [AGENTS.md](/AGENTS.md)
+- Repo-specific coding rules for VS Code Copilot: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
+- Role files (used by your VS Code agents):
+	- Coordinator: [.github/agents/coordinator.agent.md](/.github/agents/coordinator.agent.md)
+	- Explorer: [.github/agents/explorer.agent.md](/.github/agents/explorer.agent.md)
+	- Builder: [.github/agents/builder.agent.md](/.github/agents/builder.agent.md)
+	- Verifier: [.github/agents/verifier.agent.md](/.github/agents/verifier.agent.md)
+	- Browser Operator: [.github/agents/browser-operator.agent.md](/.github/agents/browser-operator.agent.md)
 
-- Role-specific guidance: [docs/agent-roles/README.md](agent-roles/README.md)
+## Operations
 
-## Authority docs
-
-- Index: [docs/authority/README.md](authority/README.md)
-- CMC Go overview: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
-- Build map / gates: [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
-
-## Runbook
-
-- Index: [docs/runbook/README.md](runbook/README.md)
-- Coherence Engine: [docs/runbook/COHERENCE_ENGINE.md](runbook/COHERENCE_ENGINE.md)
-
-## How-to guides
-
-- Index: [docs/how-to/README.md](how-to/README.md)
+- Runbook (situations): [docs/runbook/README.md](runbook/README.md)
+- How-to (setup/tooling): [docs/how-to/README.md](how-to/README.md)

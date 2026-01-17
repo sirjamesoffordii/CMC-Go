@@ -18,6 +18,21 @@ This repository is worked on by multiple agents operating **concurrently**. The 
 - **Docs/runbooks** record procedures and decisions.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
 
+## Where role instructions live
+
+Role-specific instructions (used by your VS Code agents) live here:
+
+- Coordinator: [.github/agents/coordinator.agent.md](.github/agents/coordinator.agent.md)
+- Explorer: [.github/agents/explorer.agent.md](.github/agents/explorer.agent.md)
+- Builder: [.github/agents/builder.agent.md](.github/agents/builder.agent.md)
+- Verifier: [.github/agents/verifier.agent.md](.github/agents/verifier.agent.md)
+- Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
+
+The two canonical authority docs that drive prioritization are:
+
+- [docs/authority/CMC_OVERVIEW.md](docs/authority/CMC_OVERVIEW.md)
+- [docs/authority/BUILD_MAP.md](docs/authority/BUILD_MAP.md)
+
 ## Worktree policy (required)
 
 To avoid stepping on each other, work happens in isolated worktrees.

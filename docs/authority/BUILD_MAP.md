@@ -1,9 +1,11 @@
 # CMC Go — Build Map
 
-**Owner:** Lead Developer (ChatGPT)  
+**Owner:** Coordinator  
 **Last verified:** Jan 5, 2026 · 12:17 PM CT
 
 This document governs **build progression and verification** for CMC Go. It is the **single source of truth** for determining the system’s current build position and when advancement is allowed.
+
+Maintenance rule: the **Coordinator** updates this file whenever a PR meaningfully changes build position, scope, or verification status.
 
 ---
 
@@ -99,7 +101,7 @@ Recent friction has come from environment and deployment issues (Sentry env vars
 
 - 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
   - Automated AI review of pull requests  
-  - Documentation: `docs/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+  - Documentation: `docs/how-to/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
 
 ---
 

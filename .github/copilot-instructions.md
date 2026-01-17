@@ -2,6 +2,17 @@
 
 CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Express server in `server/`, MySQL via Drizzle in `drizzle/`.
 
+## Read-first (agent entrypoints)
+
+- Multi-agent operating manual: `AGENTS.md`
+- Authority docs: `docs/authority/CMC_OVERVIEW.md` and `docs/authority/BUILD_MAP.md`
+- Role files (if you’re running a role-specific agent):
+	- `.github/agents/coordinator.agent.md`
+	- `.github/agents/explorer.agent.md`
+	- `.github/agents/builder.agent.md`
+	- `.github/agents/verifier.agent.md`
+	- `.github/agents/browser-operator.agent.md`
+
 ## Multi-agent workflow (canonical)
 
 - **User (Human): Sir James** sets direction.
