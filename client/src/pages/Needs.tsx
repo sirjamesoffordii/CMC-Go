@@ -191,7 +191,6 @@ export default function Needs() {
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        defaultTab="notes"
       />
     </div>
   );

@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { useDrop, useDrag } from 'react-dnd';
-import { User, Edit2 } from 'lucide-react';
+import { User, Plus, Edit2 } from 'lucide-react';
 import { Person } from '../../../drizzle/schema';
 import { useState, useRef } from 'react';
 import { PersonTooltip } from './PersonTooltip';
 import { trpc } from '../lib/trpc';
+import { Input } from './ui/input';
 import { NeedIndicator } from './NeedIndicator';
 
 // Mirrors DistrictDirectorDropZone but represents a single "District Staff" slot.
@@ -28,6 +29,14 @@ interface DistrictStaffDropZoneProps {
   onDrop: (personId: string, fromCampusId: string | number) => void;
   onEdit: (campusId: string | number, person: Person) => void;
   onClick: () => void;
+  onAddClick: () => void;
+  quickAddMode?: boolean;
+  quickAddName?: string;
+  onQuickAddNameChange?: (name: string) => void;
+  onQuickAddSubmit?: () => void;
+  onQuickAddCancel?: () => void;
+  onQuickAddClick?: (e: React.MouseEvent) => void;
+  quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
   canInteract?: boolean;
   maskIdentity?: boolean;
 }
@@ -46,6 +55,14 @@ export function DistrictStaffDropZone({
   onDrop,
   onEdit,
   onClick,
+  onAddClick,
+  quickAddMode = false,
+  quickAddName = '',
+  onQuickAddNameChange,
+  onQuickAddSubmit,
+  onQuickAddCancel,
+  onQuickAddClick,
+  quickAddInputRef,
   canInteract = true,
   maskIdentity = false
 }: DistrictStaffDropZoneProps) {
@@ -109,19 +126,76 @@ export function DistrictStaffDropZone({
   };
 
   if (!person) {
-    // Empty slot when no district staff
+    // Show add button when no district staff
     return (
       <div
         ref={drop}
         className="flex flex-col items-center group/person w-[60px] transition-transform"
       >
-        <div className="relative flex flex-col items-center w-[60px]">
+        <div className="relative flex flex-col items-center w-[60px] group/add">
+        <button 
+          type="button"
+          disabled={!canInteract}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!canInteract) return;
+            onAddClick();
+          }}
+          className="flex flex-col items-center w-[60px] disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {/* Plus sign in name position - clickable for quick add */}
+          <div className="relative flex items-center justify-center mb-1">
+            {quickAddMode ? (
+              <div className="relative">
+                <Input
+                  ref={quickAddInputRef}
+                  list="quick-add-name-suggestions"
+                  value={quickAddName}
+                  onChange={(e) => onQuickAddNameChange?.(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      onQuickAddSubmit?.();
+                    } else if (e.key === 'Escape') {
+                      onQuickAddCancel?.();
+                    }
+                  }}
+                  onBlur={() => {
+                    onQuickAddSubmit?.();
+                  }}
+                  placeholder="Name"
+                  className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                  autoFocus
+                  spellCheck={true}
+                  autoComplete="name"
+                />
+                <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
+                  Quick Add
+                </div>
+              </div>
+            ) : (
+              <Plus 
+                className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                strokeWidth={1.5}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // This will be handled by parent
+                }}
+              />
+            )}
+          </div>
+          {/* Icon - solid */}
           <div className="relative">
-            <User
-              className="w-10 h-10 text-slate-300"
-              strokeWidth={1.5}
+            <User 
+              className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
+              strokeWidth={1.5} 
               fill="currentColor"
             />
+          </div>
+        </button>
+          {/* Label - Absolutely positioned, shown on hover */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Add
           </div>
         </div>
       </div>

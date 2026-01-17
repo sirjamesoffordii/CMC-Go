@@ -1,4 +1,4 @@
-import { X, Plus, User, Edit2, Check, Archive, Trash2, Download, MoreVertical } from "lucide-react";
+import { X, Plus, User, Edit2, Check, Archive, Hand, Trash2, Download, MoreVertical } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1731,6 +1731,19 @@ export function DistrictPanel({
                       const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
                       onPersonStatusChange(districtStaff.personId, nextStatus);
                     }}
+                    onAddClick={() => {
+                      openAddPersonDialog('district-staff');
+                    }}
+                    quickAddMode={quickAddMode === 'district-staff'}
+                    quickAddName={quickAddName}
+                    onQuickAddNameChange={setQuickAddName}
+                    onQuickAddSubmit={() => handleQuickAddSubmit('district-staff')}
+                    onQuickAddCancel={() => {
+                      setQuickAddMode(null);
+                      setQuickAddName('');
+                    }}
+                    onQuickAddClick={(e) => handleQuickAddClick(e, 'district-staff')}
+                    quickAddInputRef={quickAddInputRef}
                     canInteract={canInteract}
                     maskIdentity={isPublicSafeMode}
                   />
@@ -1772,16 +1785,19 @@ export function DistrictPanel({
               )}
           
               {/* Right side: Needs Summary - aligned above Maybe metric */}
-              <div className="flex items-center gap-6 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600 text-base">Needs:</span>
-                  <span className="font-semibold text-slate-900 text-base tabular-nums">{needsSummary.totalNeeds}</span>
+              <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
+                <Hand className="w-6 h-6 text-yellow-600" />
+                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
+                    <span className="text-slate-600 text-base">Needs:</span>
+                    <span className="font-semibold text-slate-900 text-base tabular-nums">{needsSummary.totalNeeds}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-600 text-base">Total:</span>
-                  <span className="font-semibold text-slate-900 text-base tabular-nums">
-                    ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-600 text-base">Total:</span>
+                    <span className="font-semibold text-slate-900 text-base tabular-nums">
+                      ${(needsSummary.totalFinancial / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1973,7 +1989,7 @@ export function DistrictPanel({
                                   className="w-full px-5 py-2.5 text-left text-base text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                                 >
                                   <Edit2 className="w-5 h-5" />
-                                  Edit {entityName} Name
+                                  Edit Campus Name
                                 </button>
                                 <button
                                   onClick={() => {
@@ -2035,6 +2051,92 @@ export function DistrictPanel({
                         );
                       })}
                           
+                          {/* Add Person Button */}
+                          <PersonDropZone
+                            campusId={campus.id}
+                            index={sortedPeople.length}
+                            onDrop={handlePersonMove}
+                            canInteract={canInteract}
+                          >
+                            <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                              <button 
+                                type="button"
+                                disabled={disableEdits}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (disableEdits) return;
+                                  openAddPersonDialog(campus.id);
+                                }}
+                                className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                              >
+                                {/* Plus sign in name position - clickable for quick add */}
+                                <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                  {quickAddMode === `campus-${campus.id}` ? (
+                                    <div className="relative">
+                                      <Input
+                                        ref={quickAddInputRef}
+                                        value={quickAddName}
+                                        onChange={(e) => setQuickAddName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            handleQuickAddSubmit(`campus-${campus.id}`);
+                                          } else if (e.key === 'Escape') {
+                                            setQuickAddMode(null);
+                                            setQuickAddName('');
+                                          }
+                                        }}
+                                        onBlur={() => {
+                                          handleQuickAddSubmit(`campus-${campus.id}`);
+                                        }}
+                                        placeholder="Name"
+                                        className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                        autoFocus
+                                        spellCheck={true}
+                                        autoComplete="name"
+                                      />
+                                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                        Quick Add
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <Plus 
+                                      className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer" 
+                                      strokeWidth={1.5}
+                                      onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                    />
+                                  )}
+                                </div>
+                                {/* Icon */}
+                                <div className="relative">
+                                  <User 
+                                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
+                                    strokeWidth={1.5}
+                                    fill="none"
+                                    stroke="currentColor"
+                                  />
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={1.5}
+                                    fill="none"
+                                    stroke="currentColor"
+                                  />
+                                  <User 
+                                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
+                                    strokeWidth={0}
+                                    fill="currentColor"
+                                    style={{
+                                      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                                    }}
+                                  />
+                                </div>
+                              </button>
+                              {/* Label - Absolutely positioned, shown on hover */}
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                Add
+                              </div>
+                            </div>
+                          </PersonDropZone>
                         </div>
                       </CampusDropZone>
                     </div>
@@ -2152,9 +2254,9 @@ export function DistrictPanel({
             setHouseholdDropdownOpen(false);
           }
         }}>
-          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-6 border-b border-slate-200/60">
-              <DialogTitle className="text-xl font-semibold text-slate-900 tracking-tight">Add New Person</DialogTitle>
+          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>Add New Person</DialogTitle>
             </DialogHeader>
             <form 
               onSubmit={(e) => {
@@ -2171,18 +2273,15 @@ export function DistrictPanel({
                 }
               }}
             >
-            <div className="py-4 space-y-5">
-              {/* Basic Information Section */}
-              <div className="space-y-3">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Basic Information</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
+            <div className="py-4">
+              {/* 3x3 Grid Layout */}
+              <div className="grid grid-cols-3 gap-4">
                 {/* Row 1 */}
                 <div className="space-y-2">
-                  <Label htmlFor="person-name" className="text-sm font-semibold text-slate-700">Name *</Label>
+                  <Label htmlFor="person-name" className="text-sm font-medium">Name *</Label>
                   <Input
                     id="person-name"
+                    list="person-name-suggestions"
                     value={personForm.name}
                     onChange={(e) => {
                       setPersonForm({ ...personForm, name: e.target.value });
@@ -2193,9 +2292,14 @@ export function DistrictPanel({
                     spellCheck={true}
                     autoComplete="name"
                   />
+                  <datalist id="person-name-suggestions">
+                    {nameSuggestions.map((name, idx) => (
+                      <option key={idx} value={name} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-role" className="text-sm font-semibold text-slate-700">Role *</Label>
+                  <Label htmlFor="person-role" className="text-sm font-medium">Role *</Label>
                   {selectedCampusId === 'district' ? (
                     <Input
                       id="person-role"
@@ -2222,7 +2326,7 @@ export function DistrictPanel({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-status" className="text-sm font-semibold text-slate-700">Status</Label>
+                  <Label htmlFor="person-status" className="text-sm font-medium">Status</Label>
                   <Select
                     value={personForm.status}
                     onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
@@ -2239,166 +2343,10 @@ export function DistrictPanel({
                   </Select>
                 </div>
 
-                {/* Family & Guests Section */}
-                <div className="col-span-3 space-y-3 mt-4 border-t border-slate-200 pt-4">
-                  <div className="border-b border-slate-200 pb-2">
-                    <div className="flex items-center gap-4">
-                      <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Family & Guests</h3>
-                      <div className="relative inline-block">
-                        {!isEditingHousehold ? (
-                          <span
-                            onClick={() => {
-                              setIsEditingHousehold(true);
-                              setHouseholdDropdownOpen(true);
-                              // Set input value to current household label if one is selected
-                              if (personForm.householdId && allHouseholds && allPeople) {
-                                const household = allHouseholds.find(h => h.id === personForm.householdId);
-                                if (household) {
-                                  const members = allPeople.filter(p => p.householdId === household.id);
-                                  const baseName = household.label || 
-                                    (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                                  const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                                  setHouseholdInputValue(displayName);
-                                }
-                              } else if (householdInputValue) {
-                                // Keep existing value
-                              } else {
-                                setHouseholdInputValue('');
-                              }
-                              setTimeout(() => householdInputRef.current?.focus(), 0);
-                            }}
-                            className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
-                          >
-                            {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
-                              const household = allHouseholds.find(h => h.id === personForm.householdId);
-                              if (household) {
-                                const members = allPeople.filter(p => p.householdId === household.id);
-                                const baseName = household.label || 
-                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                                return baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                              }
-                              return '';
-                            })() : '')}
-                          </span>
-                        ) : (
-                          <Input
-                            ref={householdInputRef}
-                            id="person-household"
-                            value={householdInputValue}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setHouseholdInputValue(value);
-                              setHouseholdSearchQuery(value);
-                              setHouseholdDropdownOpen(true);
-                              setHouseholdValidationError(null);
-                              setHouseholdNameError(null);
-                            }}
-                            onFocus={() => {
-                              setHouseholdDropdownOpen(true);
-                            }}
-                            onBlur={() => {
-                              setIsEditingHousehold(false);
-                              // Delay to allow click on dropdown item
-                              setTimeout(() => {
-                                setHouseholdDropdownOpen(false);
-                                handleHouseholdInputBlur();
-                              }, 200);
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleHouseholdInputBlur();
-                                setIsEditingHousehold(false);
-                                householdInputRef.current?.blur();
-                              } else if (e.key === 'Escape') {
-                                setIsEditingHousehold(false);
-                                setHouseholdDropdownOpen(false);
-                                setHouseholdInputValue('');
-                                setPersonForm({ ...personForm, householdId: null });
-                              }
-                            }}
-                            className="h-6 text-sm w-auto min-w-[120px] inline-block"
-                            autoFocus
-                          />
-                        )}
-                        {householdDropdownOpen && allHouseholds && allPeople && (
-                          <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                            {householdInputValue.trim() && !allHouseholds.some(h => {
-                              const members = allPeople.filter(p => p.householdId === h.id);
-                              const baseName = h.label || 
-                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                              const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                              return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
-                            }) && (
-                              <div
-                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  handleCreateHouseholdFromInput();
-                                }}
-                              >
-                                Create "{householdInputValue.trim()}"
-                              </div>
-                            )}
-                            <div
-                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                setHouseholdInputValue('');
-                                setPersonForm({ ...personForm, householdId: null });
-                                setHouseholdDropdownOpen(false);
-                              }}
-                            >
-                              None
-                            </div>
-                            {allHouseholds
-                              .filter(household => {
-                                if (!householdInputValue.trim()) return true;
-                                const members = allPeople.filter(p => p.householdId === household.id);
-                                const baseName = household.label || 
-                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                                const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                                return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
-                              })
-                              .map((household) => {
-                                const members = allPeople.filter(p => p.householdId === household.id);
-                                const baseName = household.label || 
-                                  (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                                const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                                return (
-                                  <div
-                                    key={household.id}
-                                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                    onMouseDown={(e) => {
-                                      e.preventDefault();
-                                      setHouseholdInputValue(displayName);
-                                      setPersonForm({ ...personForm, householdId: household.id });
-                                      setHouseholdDropdownOpen(false);
-                                      setHouseholdValidationError(null);
-                                    }}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span>{displayName}</span>
-                                      {members.length > 0 && (
-                                        <span className="text-xs text-slate-500">
-                                          {members.map(m => m.name).join(', ')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Row 2 */}
                 <div className="space-y-2">
-                  <Label htmlFor="person-spouse-attending" className="text-sm font-semibold text-slate-700">Spouse Attending</Label>
-                  <div className="flex items-center gap-2 h-9">
+                  <Label htmlFor="person-spouse-attending" className="text-sm font-medium">Spouse Attending</Label>
+                  <div className="flex items-center h-9">
                     <Checkbox
                       id="person-spouse-attending"
                       checked={personForm.spouseAttending}
@@ -2406,21 +2354,13 @@ export function DistrictPanel({
                         setPersonForm({ ...personForm, spouseAttending: checked === true });
                         setHouseholdValidationError(null);
                         setHouseholdNameError(null);
-                        // Auto-fill household if spouse is added and no household exists
-                        if (checked && !personForm.householdId && personForm.name.trim()) {
-                          const nameParts = personForm.name.trim().split(' ');
-                          const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-                          const householdLabel = `${lastName} Household`;
-                          setHouseholdInputValue(householdLabel);
-                        }
                       }}
-                      className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                     />
-                    <Label htmlFor="person-spouse-attending" className="cursor-pointer text-sm font-medium">Spouse Attending</Label>
+                    <Label htmlFor="person-spouse-attending" className="cursor-pointer ml-2 text-sm">Yes</Label>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-children-count" className="text-sm font-medium">Children</Label>
+                  <Label htmlFor="person-children-count" className="text-sm font-medium">Children (0-10)</Label>
                   <Input
                     id="person-children-count"
                     type="number"
@@ -2436,20 +2376,13 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
-                      // Auto-fill household if children are added and no household exists
-                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
-                        const nameParts = personForm.name.trim().split(' ');
-                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-                        const householdLabel = `${lastName} Household`;
-                        setHouseholdInputValue(householdLabel);
-                      }
                     }}
                     placeholder="0"
                     className="h-9"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="person-guests-count" className="text-sm font-semibold text-slate-700">Guests</Label>
+                  <Label htmlFor="person-guests-count" className="text-sm font-medium">Guests (0-10)</Label>
                   <Input
                     id="person-guests-count"
                     type="number"
@@ -2464,94 +2397,209 @@ export function DistrictPanel({
                     className="h-9"
                   />
                 </div>
-              </div>
 
-              {/* Needs Section */}
-              <div className="space-y-3 border-t border-slate-200 pt-4">
-                <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Needs</h3>
-                </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="person-need" className="text-sm font-semibold text-slate-700">Need Request</Label>
-                      <Select
-                        value={personForm.needType}
-                        onValueChange={(value) => {
-                          // Only clear needAmount when switching to/from Financial, preserve needDetails
-                          const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
-                          if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
-                            // Clear needAmount when switching to/from Financial type
-                            setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
-                          } else {
-                            // Preserve needDetails when switching between non-Financial types
-                            setPersonForm({ ...personForm, needType: newNeedType });
+                {/* Row 3 */}
+                <div className="space-y-2">
+                  <Label htmlFor="person-household" className="text-sm font-medium">Household</Label>
+                  <div className="relative">
+                    <Input
+                      ref={householdInputRef}
+                      id="person-household"
+                      value={householdInputValue}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setHouseholdInputValue(value);
+                        setHouseholdSearchQuery(value);
+                        setHouseholdDropdownOpen(true);
+                        setHouseholdValidationError(null);
+                        setHouseholdNameError(null);
+                      }}
+                      onFocus={() => {
+                        setHouseholdDropdownOpen(true);
+                        // Set input value to current household label if one is selected
+                        if (personForm.householdId && allHouseholds && allPeople) {
+                          const household = allHouseholds.find(h => h.id === personForm.householdId);
+                          if (household) {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            setHouseholdInputValue(displayName);
                           }
-                        }}
-                      >
-                        <SelectTrigger id="person-need" className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="None">None</SelectItem>
-                          <SelectItem value="Financial">Financial</SelectItem>
-                          <SelectItem value="Transportation">Transportation</SelectItem>
-                          <SelectItem value="Housing">Housing</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <AnimatePresence mode="popLayout">
-                        {personForm.needType === 'Financial' ? (
-                          <motion.div
-                            key="amount"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-2"
+                        }
+                      }}
+                      onBlur={() => {
+                        // Delay to allow click on dropdown item
+                        setTimeout(() => {
+                          setHouseholdDropdownOpen(false);
+                          handleHouseholdInputBlur();
+                        }, 200);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleHouseholdInputBlur();
+                          householdInputRef.current?.blur();
+                        } else if (e.key === 'Escape') {
+                          setHouseholdDropdownOpen(false);
+                          setHouseholdInputValue('');
+                          setPersonForm({ ...personForm, householdId: null });
+                        }
+                      }}
+                      placeholder="Type or select household"
+                      className="h-9"
+                    />
+                    {householdDropdownOpen && allHouseholds && allPeople && (
+                      <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+                        {householdInputValue.trim() && !allHouseholds.some(h => {
+                          const members = allPeople.filter(p => p.householdId === h.id);
+                          const displayName = h.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
+                        }) && (
+                          <div
+                            className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleCreateHouseholdFromInput();
+                            }}
                           >
-                            <Label htmlFor="person-need-amount" className="text-sm font-semibold text-slate-700">Amount ($)</Label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
-                              <Input
-                                id="person-need-amount"
-                                type="number"
-                                value={personForm.needAmount}
-                                onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                                placeholder="0.00"
-                                className="pl-7 h-9"
-                              />
-                            </div>
-                          </motion.div>
-                        ) : null}
-                      </AnimatePresence>
-                    </div>
-                    {personForm.needType !== 'None' && (
-                      <div className="space-y-2">
-                        <Label htmlFor="person-need-notes" className="text-sm font-semibold text-slate-700">Need Note</Label>
-                        <Textarea
-                          id="person-need-notes"
-                          value={personForm.needDetails || ''}
-                          onChange={(e) => {
-                            setPersonForm({ ...personForm, needDetails: e.target.value });
-                            // Auto-resize
-                            e.target.style.height = 'auto';
-                            e.target.style.height = `${e.target.scrollHeight}px`;
+                            Create "{householdInputValue.trim()}"
+                          </div>
+                        )}
+                        <div
+                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setHouseholdInputValue('');
+                            setPersonForm({ ...personForm, householdId: null });
+                            setHouseholdDropdownOpen(false);
                           }}
-                          onInput={(e) => {
-                            // Auto-resize on input
-                            const target = e.target as HTMLTextAreaElement;
-                            target.style.height = 'auto';
-                            target.style.height = `${target.scrollHeight}px`;
-                          }}
-                          placeholder="Enter note about the need"
-                          rows={1}
-                          className="resize-none overflow-hidden"
-                        />
+                        >
+                          None
+                        </div>
+                        {allHouseholds
+                          .filter(household => {
+                            if (!householdInputValue.trim()) return true;
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
+                          })
+                          .map((household) => {
+                            const members = allPeople.filter(p => p.householdId === household.id);
+                            const displayName = household.label || 
+                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                            return (
+                              <div
+                                key={household.id}
+                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  setHouseholdInputValue(displayName);
+                                  setPersonForm({ ...personForm, householdId: household.id });
+                                  setHouseholdDropdownOpen(false);
+                                  setHouseholdValidationError(null);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{displayName}</span>
+                                  {members.length > 0 && (
+                                    <span className="text-xs text-slate-500">
+                                      {members.map(m => m.name).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="person-need" className="text-sm font-medium">Need Request</Label>
+                  <Select
+                    value={personForm.needType}
+                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
+                  >
+                    <SelectTrigger id="person-need" className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="None">None</SelectItem>
+                      <SelectItem value="Financial">Financial</SelectItem>
+                      <SelectItem value="Transportation">Transportation</SelectItem>
+                      <SelectItem value="Housing">Housing</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType === 'Financial' ? (
+                      <motion.div
+                        key="amount"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        <Label htmlFor="person-need-amount" className="text-sm font-medium">Amount ($)</Label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                          <Input
+                            id="person-need-amount"
+                            type="number"
+                            value={personForm.needAmount}
+                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                            placeholder="0.00"
+                            className="pl-7 h-9"
+                          />
+                        </div>
+                      </motion.div>
+                    ) : personForm.needType !== 'None' ? (
+                      <motion.div
+                        key="need-met"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        <Label htmlFor="person-needs-met" className="text-sm font-medium">Need Met</Label>
+                        <div className="flex items-center h-9">
+                          <Checkbox
+                            id="person-needs-met"
+                            checked={personForm.needsMet}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                          <Label htmlFor="person-needs-met" className="cursor-pointer ml-2 text-sm">Yes</Label>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="deposit-paid"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-2"
+                      >
+                        <Label htmlFor="person-deposit-paid" className="text-sm font-medium">Deposit Paid</Label>
+                        <div className="flex items-center h-9">
+                          <Checkbox
+                            id="person-deposit-paid"
+                            checked={personForm.depositPaid}
+                            onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                          <Label htmlFor="person-deposit-paid" className="cursor-pointer ml-2 text-sm">Yes</Label>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -2567,52 +2615,41 @@ export function DistrictPanel({
                 </div>
               )}
 
-              {/* Journey Note Section */}
-              <div className="space-y-3 border-t border-slate-200 pt-4">
-                <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
-                  {/* Journey Note - Left Side */}
-                  <div className="space-y-2">
-                    <Label htmlFor="person-notes" className="text-sm font-semibold text-slate-700">Decision Journey Notes</Label>
-                    <Textarea
-                      id="person-notes"
-                      value={personForm.notes || ''}
-                      onChange={(e) => {
-                        setPersonForm({ ...personForm, notes: e.target.value });
-                      }}
-                      placeholder="Enter decision journey notes"
-                      rows={3}
-                      className="resize-none"
-                    />
-                  </div>
-                  
-                  {/* Checkboxes - Right Side */}
-                  <div className="flex flex-col gap-4 pt-7">
-                    {personForm.needType !== 'None' && (
-                      <div className="flex items-center gap-2.5">
-                        <Label htmlFor="person-needs-met" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Need Met</Label>
-                        <Checkbox
-                          id="person-needs-met"
-                          checked={personForm.needsMet}
-                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                        />
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2.5">
-                      <Label htmlFor="person-deposit-paid" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Deposit Paid</Label>
-                      <Checkbox
-                        id="person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
-                  </div>
+              {/* Need Notes and General Notes Section - Side by side */}
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                {/* Need Notes Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="person-need-notes" className="text-sm font-medium">Need Notes</Label>
+                  <Textarea
+                    id="person-need-notes"
+                    value={personForm.needDetails || ''}
+                    onChange={(e) => {
+                      setPersonForm({ ...personForm, needDetails: e.target.value });
+                    }}
+                    placeholder="Enter notes about the need"
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+
+                {/* General Notes Section */}
+                <div className="space-y-2">
+                  <Label htmlFor="person-notes" className="text-sm font-medium">General Notes</Label>
+                  <Textarea
+                    id="person-notes"
+                    value={personForm.notes || ''}
+                    onChange={(e) => {
+                      setPersonForm({ ...personForm, notes: e.target.value });
+                    }}
+                    placeholder="Enter general notes"
+                    rows={3}
+                    className="resize-none"
+                  />
                 </div>
               </div>
             </div>
-            <DialogFooter className="pt-4 border-t border-slate-200 mt-4">
-              <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white border-slate-300">
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsPersonDialogOpen(false)}>
                 Cancel
               </Button>
               <Button 
@@ -2632,7 +2669,7 @@ export function DistrictPanel({
                   handleAddPerson();
                 }}
                 disabled={!personForm.name.trim() || !personForm.role.trim() || !selectedCampusId || createPerson.isPending}
-                className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default"
+                className="bg-red-500 hover:bg-red-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createPerson.isPending ? 'Adding...' : 'Add Person'}
               </Button>
@@ -2649,21 +2686,22 @@ export function DistrictPanel({
             setHouseholdDropdownOpen(false);
           }
         }}>
-          <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader className="pb-4 border-b border-slate-200">
-              <DialogTitle className="text-xl font-semibold text-slate-900 tracking-tight">Edit Person</DialogTitle>
+          <DialogContent aria-describedby={undefined} className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Edit Person</DialogTitle>
             </DialogHeader>
-            <div className="space-y-5 py-4">
+            <div className="space-y-6 py-4">
               {/* Basic Information Section */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Basic Information</h3>
+                  <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-person-name">Name *</Label>
                     <Input
                       id="edit-person-name"
+                      list="edit-person-name-suggestions"
                       value={personForm.name}
                       onChange={(e) => {
                         setPersonForm({ ...personForm, name: e.target.value });
@@ -2674,9 +2712,14 @@ export function DistrictPanel({
                       autoComplete="name"
                       placeholder="Enter name"
                     />
+                    <datalist id="edit-person-name-suggestions">
+                      {nameSuggestions.map((name, idx) => (
+                        <option key={idx} value={name} />
+                      ))}
+                    </datalist>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-person-role" className="text-sm font-semibold text-slate-700">Role *</Label>
+                    <Label htmlFor="edit-person-role">Role *</Label>
                     {editingPerson?.campusId === 'district' ? (
                       <Input
                         id="edit-person-role"
@@ -2703,7 +2746,7 @@ export function DistrictPanel({
                     )}
                   </div>
                   <div className="space-y-2 relative">
-                    <Label htmlFor="edit-person-status" className="text-sm font-semibold text-slate-700">Status</Label>
+                    <Label htmlFor="edit-person-status">Status</Label>
                     <Select
                       value={personForm.status}
                       onValueChange={(value) => setPersonForm({ ...personForm, status: value as keyof typeof statusMap })}
@@ -2722,183 +2765,16 @@ export function DistrictPanel({
                 </div>
               </div>
 
-            {/* Family & Guests */}
-            <div className="space-y-3 mt-4 border-t border-slate-200 pt-4">
-              <div className="border-b border-slate-200 pb-2 mb-4">
-                <div className="flex items-center gap-4">
-                  <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Family & Guests</h3>
-                  <div className="relative inline-block">
-                    {!isEditingHousehold ? (
-                      <span
-                        onClick={() => {
-                          setIsEditingHousehold(true);
-                          setHouseholdDropdownOpen(true);
-                          // Set input value to current household label if one is selected
-                          if (personForm.householdId && allHouseholds && allPeople) {
-                            const household = allHouseholds.find(h => h.id === personForm.householdId);
-                            if (household) {
-                              const members = allPeople.filter(p => p.householdId === household.id);
-                              const baseName = household.label || 
-                                (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                              const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                              setHouseholdInputValue(displayName);
-                            }
-                          } else if (householdInputValue) {
-                            // Keep existing value
-                          } else {
-                            setHouseholdInputValue('');
-                          }
-                          setTimeout(() => householdInputRef.current?.focus(), 0);
-                        }}
-                        className="text-sm font-normal text-slate-500 italic cursor-pointer hover:text-slate-700 underline decoration-dotted underline-offset-2"
-                      >
-                        {householdInputValue || (personForm.householdId && allHouseholds && allPeople ? (() => {
-                          const household = allHouseholds.find(h => h.id === personForm.householdId);
-                          if (household) {
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            return household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          }
-                          return '';
-                        })() : '')}
-                      </span>
-                    ) : (
-                      <Input
-                        ref={householdInputRef}
-                        id="edit-person-household"
-                        value={householdInputValue}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          setHouseholdInputValue(value);
-                          setHouseholdSearchQuery(value);
-                          setHouseholdDropdownOpen(true);
-                          setHouseholdValidationError(null);
-                          setHouseholdNameError(null);
-                        }}
-                        onFocus={() => {
-                          setHouseholdDropdownOpen(true);
-                        }}
-                        onBlur={(e) => {
-                          setIsEditingHousehold(false);
-                          // Don't close if clicking inside dropdown - use a small delay to check
-                          setTimeout(() => {
-                            const activeElement = document.activeElement;
-                            // If focus is still inside dropdown, don't close
-                            if (householdDropdownRef.current && 
-                                householdDropdownRef.current.contains(activeElement)) {
-                              return;
-                            }
-                            // Otherwise close the dropdown
-                            if (householdDropdownOpen) {
-                              setHouseholdDropdownOpen(false);
-                              handleHouseholdInputBlur();
-                            }
-                          }, 150);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleHouseholdInputBlur();
-                            setIsEditingHousehold(false);
-                            householdInputRef.current?.blur();
-                          } else if (e.key === 'Escape') {
-                            setIsEditingHousehold(false);
-                            setHouseholdDropdownOpen(false);
-                            setHouseholdInputValue('');
-                            setPersonForm({ ...personForm, householdId: null });
-                          }
-                        }}
-                        className="h-6 text-sm w-auto min-w-[120px] inline-block"
-                        autoFocus
-                      />
-                    )}
-                    {householdDropdownOpen && allHouseholds && allPeople && (
-                      <div 
-                        ref={householdDropdownRef}
-                        className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
-                        onMouseDown={(e) => {
-                          // Prevent blur when clicking inside dropdown
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        {householdInputValue.trim() && !allHouseholds.some(h => {
-                          const members = allPeople.filter(p => p.householdId === h.id);
-                          const displayName = h.label || 
-                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
-                          return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
-                        }) && (
-                          <div
-                            className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleCreateHouseholdFromInput();
-                            }}
-                          >
-                            Create "{householdInputValue.trim()}"
-                          </div>
-                        )}
-                        <div
-                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setHouseholdInputValue('');
-                            setPersonForm({ ...personForm, householdId: null });
-                            setHouseholdDropdownOpen(false);
-                          }}
-                        >
-                          None
-                        </div>
-                        {allHouseholds
-                          .filter(household => {
-                            if (!householdInputValue.trim()) return true;
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            const baseName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                            const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                            return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
-                          })
-                          .map((household) => {
-                            const members = allPeople.filter(p => p.householdId === household.id);
-                            const baseName = household.label || 
-                              (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'}` : '');
-                            const displayName = baseName.endsWith(' Household') ? baseName : `${baseName} Household`;
-                            return (
-                              <div
-                                key={household.id}
-                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setHouseholdInputValue(displayName);
-                                  setPersonForm({ ...personForm, householdId: household.id });
-                                  setHouseholdDropdownOpen(false);
-                                  setHouseholdValidationError(null);
-                                }}
-                              >
-                                <div className="flex flex-col">
-                                  <span>{displayName}</span>
-                                  {members.length > 0 && (
-                                    <span className="text-xs text-slate-500">
-                                      {members.map(m => m.name).join(', ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                </div>
+            {/* Family & Guests (optional) */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Family & Guests (optional)</h3>
+              </div>
               
               {/* Inputs */}
-              <div className="grid grid-cols-3 gap-4 mt-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-spouse-attending" className="text-sm font-semibold text-slate-700">Spouse attending</Label>
-                  <div className="flex items-center justify-center h-9">
+                  <div className="flex items-center space-x-2">
                     <Checkbox
                       id="edit-person-spouse-attending"
                       checked={personForm.spouseAttending}
@@ -2906,20 +2782,13 @@ export function DistrictPanel({
                         setPersonForm({ ...personForm, spouseAttending: checked === true });
                         setHouseholdValidationError(null);
                         setHouseholdNameError(null);
-                        // Auto-fill household if spouse is added and no household exists
-                        if (checked && !personForm.householdId && personForm.name.trim()) {
-                          const nameParts = personForm.name.trim().split(' ');
-                          const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-                          const householdLabel = `${lastName} Household`;
-                          setHouseholdInputValue(householdLabel);
-                        }
                       }}
-                      className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                     />
+                    <Label htmlFor="edit-person-spouse-attending" className="cursor-pointer">Spouse attending</Label>
                   </div>
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-children-count" className="text-sm font-semibold text-slate-700">Children attending</Label>
+                  <Label htmlFor="edit-person-children-count">Children attending (0-10)</Label>
                   <Input
                     id="edit-person-children-count"
                     type="number"
@@ -2935,20 +2804,13 @@ export function DistrictPanel({
                       });
                       setHouseholdValidationError(null);
                       setHouseholdNameError(null);
-                      // Auto-fill household if children are added and no household exists
-                      if (count > 0 && !personForm.householdId && personForm.name.trim()) {
-                        const nameParts = personForm.name.trim().split(' ');
-                        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : nameParts[0];
-                        const householdLabel = `${lastName} Household`;
-                        setHouseholdInputValue(householdLabel);
-                      }
                     }}
                     placeholder="0"
                     className="w-24"
                   />
                 </div>
                 <div className="space-y-2 ml-4">
-                  <Label htmlFor="edit-person-guests-count" className="text-sm font-semibold text-slate-700">Guests attending</Label>
+                  <Label htmlFor="edit-person-guests-count">Guests attending (0-10)</Label>
                   <Input
                     id="edit-person-guests-count"
                     type="number"
@@ -2965,41 +2827,148 @@ export function DistrictPanel({
                 </div>
               </div>
               
-                {/* Validation Errors */}
-                {householdNameError && (
-                  <div className="text-sm text-red-600 mt-1">
-                    {householdNameError}
-                  </div>
-                )}
-                {hasHouseholdValidationError && (
-                  <div className="text-sm text-red-600 mt-1">
-                    To avoid double-counting, link or create a household for spouse/children.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Needs Section */}
-            <div className="space-y-3 mt-4 border-t border-slate-200 pt-4">
-              <div className="border-b border-slate-200 pb-2">
-                <h3 className="text-sm font-semibold text-slate-800 tracking-wide uppercase">Needs</h3>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-person-need" className="text-sm font-semibold text-slate-700">Need Request</Label>
-                  <Select
-                    value={personForm.needType}
-                    onValueChange={(value) => {
-                      // Only clear needAmount when switching to/from Financial, preserve needDetails
-                      const newNeedType = value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other';
-                      if (newNeedType === 'Financial' || personForm.needType === 'Financial') {
-                        // Clear needAmount when switching to/from Financial type
-                        setPersonForm({ ...personForm, needType: newNeedType, needAmount: '' });
-                      } else {
-                        // Preserve needDetails when switching between non-Financial types
-                        setPersonForm({ ...personForm, needType: newNeedType });
+              {/* Household Selector */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-person-household">Household (optional)</Label>
+                <div className="relative">
+                  <Input
+                    id="edit-person-household"
+                    value={householdInputValue}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setHouseholdInputValue(value);
+                      setHouseholdSearchQuery(value);
+                      setHouseholdDropdownOpen(true);
+                      setHouseholdValidationError(null);
+                      setHouseholdNameError(null);
+                    }}
+                    onFocus={() => {
+                      setHouseholdDropdownOpen(true);
+                      // Set input value to current household label if one is selected
+                      if (personForm.householdId && allHouseholds && allPeople) {
+                        const household = allHouseholds.find(h => h.id === personForm.householdId);
+                        if (household) {
+                          const members = allPeople.filter(p => p.householdId === household.id);
+                          const displayName = household.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          setHouseholdInputValue(displayName);
+                        }
                       }
                     }}
+                    onBlur={() => {
+                      // Delay to allow click on dropdown item
+                      setTimeout(() => {
+                        setHouseholdDropdownOpen(false);
+                        handleHouseholdInputBlur();
+                      }, 200);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleHouseholdInputBlur();
+                        householdInputRef.current?.blur();
+                      } else if (e.key === 'Escape') {
+                        setHouseholdDropdownOpen(false);
+                        setHouseholdInputValue('');
+                        setPersonForm({ ...personForm, householdId: null });
+                      }
+                    }}
+                    placeholder="Type or select household"
+                  />
+                  {householdDropdownOpen && allHouseholds && allPeople && (
+                    <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
+                      {householdInputValue.trim() && !allHouseholds.some(h => {
+                        const members = allPeople.filter(p => p.householdId === h.id);
+                        const displayName = h.label || 
+                          (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                        return displayName.toLowerCase() === householdInputValue.trim().toLowerCase();
+                      }) && (
+                        <div
+                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleCreateHouseholdFromInput();
+                          }}
+                        >
+                          Create "{householdInputValue.trim()}"
+                        </div>
+                      )}
+                      <div
+                        className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setHouseholdInputValue('');
+                          setPersonForm({ ...personForm, householdId: null });
+                          setHouseholdDropdownOpen(false);
+                        }}
+                      >
+                        None
+                      </div>
+                      {allHouseholds
+                        .filter(household => {
+                          if (!householdInputValue.trim()) return true;
+                          const members = allPeople.filter(p => p.householdId === household.id);
+                          const displayName = household.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return displayName.toLowerCase().includes(householdInputValue.toLowerCase());
+                        })
+                        .map((household) => {
+                          const members = allPeople.filter(p => p.householdId === household.id);
+                          const displayName = household.label || 
+                            (members.length > 0 ? `${members[0].name.split(' ').pop() || 'Household'} Household` : 'Household');
+                          return (
+                            <div
+                              key={household.id}
+                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setHouseholdInputValue(displayName);
+                                setPersonForm({ ...personForm, householdId: household.id });
+                                setHouseholdDropdownOpen(false);
+                                setHouseholdValidationError(null);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span>{displayName}</span>
+                                {members.length > 0 && (
+                                  <span className="text-xs text-slate-500">
+                                    {members.map(m => m.name).join(', ')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Household Errors */}
+              {(householdNameError || hasHouseholdValidationError) && (
+                <div className="mt-2 space-y-1">
+                  {householdNameError && (
+                    <div className="text-xs text-red-600">{householdNameError}</div>
+                  )}
+                  {hasHouseholdValidationError && (
+                    <div className="text-xs text-red-600">To avoid double-counting, link or create a household for spouse/children.</div>
+                  )}
+                </div>
+              )}
+
+            {/* Additional Information */}
+            <div className="space-y-4 mt-4">
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">Additional Information</h3>
+              </div>
+              
+              {/* Need Type & Amount Row */}
+              <div className="flex items-center gap-4">
+                <div className="w-40">
+                  <Label htmlFor="edit-person-need">Need Request</Label>
+                  <Select
+                    value={personForm.needType}
+                    onValueChange={(value) => setPersonForm({ ...personForm, needType: value as 'None' | 'Financial' | 'Transportation' | 'Housing' | 'Other', needAmount: '', needDetails: '' })}
                   >
                     <SelectTrigger id="edit-person-need">
                       <SelectValue />
@@ -3013,111 +2982,125 @@ export function DistrictPanel({
                     </SelectContent>
                   </Select>
                 </div>
+                <AnimatePresence mode="popLayout">
+                  {personForm.needType === 'Financial' && (
+                    <motion.div
+                      key="amount"
+                      initial={{ opacity: 0, x: -30, width: 0 }}
+                      animate={{ opacity: 1, x: 0, width: 'auto' }}
+                      exit={{ opacity: 0, x: -30, width: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-2"
+                      layout
+                    >
+                      <Label htmlFor="edit-person-need-amount">Amount ($)</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                        <Input
+                          id="edit-person-need-amount"
+                          type="number"
+                          value={personForm.needAmount}
+                          onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
+                          placeholder="0.00"
+                          className="pl-7 w-28"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="space-y-2">
                   <AnimatePresence mode="popLayout">
-                    {personForm.needType === 'Financial' && (
+                    {personForm.needType !== 'None' ? (
                       <motion.div
-                        key="amount"
+                        key="need-met"
                         initial={{ opacity: 0, x: -30, width: 0 }}
                         animate={{ opacity: 1, x: 0, width: 'auto' }}
                         exit={{ opacity: 0, x: -30, width: 0 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden space-y-2"
+                        className="flex items-center gap-2"
                         layout
                       >
-                        <Label htmlFor="edit-person-need-amount" className="text-sm font-semibold text-slate-700">Amount ($)</Label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                          <Input
-                            id="edit-person-need-amount"
-                            type="number"
-                            value={personForm.needAmount}
-                            onChange={(e) => setPersonForm({ ...personForm, needAmount: e.target.value })}
-                            placeholder="0.00"
-                            className="pl-7 w-28"
-                          />
-                        </div>
+                        <Label htmlFor="edit-person-needs-met" className="cursor-pointer">Need Met</Label>
+                        <Checkbox
+                          id="edit-person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="deposit-paid"
+                        initial={{ opacity: 0, x: -30, width: 0 }}
+                        animate={{ opacity: 1, x: 0, width: 'auto' }}
+                        exit={{ opacity: 0, x: -30, width: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="flex items-center gap-2"
+                        layout
+                      >
+                        <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer">Deposit Paid</Label>
+                        <Checkbox
+                          id="edit-person-deposit-paid"
+                          checked={personForm.depositPaid}
+                          onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
-                {personForm.needType !== 'None' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-need-notes" className="text-sm font-semibold text-slate-700">Need Note</Label>
-                    <Textarea
-                      id="edit-person-need-notes"
-                      value={personForm.needDetails || ''}
-                      onChange={(e) => {
-                        setPersonForm({ ...personForm, needDetails: e.target.value });
-                        // Auto-resize
-                        e.target.style.height = 'auto';
-                        e.target.style.height = `${e.target.scrollHeight}px`;
-                      }}
-                      onInput={(e) => {
-                        // Auto-resize on input
-                        const target = e.target as HTMLTextAreaElement;
-                        target.style.height = 'auto';
-                        target.style.height = `${target.scrollHeight}px`;
-                      }}
-                      placeholder="Enter note about the need"
-                      rows={1}
-                      className="resize-none overflow-hidden"
-                    />
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Journey Note Section */}
-            <div className="space-y-3 border-t border-slate-200 pt-4">
-              <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
-                {/* Journey Note - Left Side */}
+            {/* Need Notes and General Notes Section - Side by side */}
+            <div className="space-y-4 mt-4 grid grid-cols-2 gap-4">
+              {/* Need Notes Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Need Notes</h3>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="edit-person-notes" className="text-sm font-semibold text-slate-700">Decision Journey Notes</Label>
+                  <Textarea
+                    id="edit-person-need-notes"
+                    value={personForm.needDetails || ''}
+                    onChange={(e) => {
+                      setPersonForm({ ...personForm, needDetails: e.target.value });
+                    }}
+                    placeholder="Enter notes about the need"
+                    rows={4}
+                    className="resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* General Notes Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">General Notes</h3>
+                </div>
+                <div className="space-y-2">
                   <Textarea
                     id="edit-person-notes"
                     value={personForm.notes || ''}
                     onChange={(e) => {
                       setPersonForm({ ...personForm, notes: e.target.value });
                     }}
-                    placeholder="Enter decision journey notes"
-                    rows={3}
+                    placeholder="Enter general notes"
+                    rows={4}
                     className="resize-none"
                   />
                 </div>
-                
-                {/* Checkboxes - Right Side */}
-                <div className="flex flex-col gap-4 pt-7">
-                  {personForm.needType !== 'None' && (
-                    <div className="flex items-center gap-2.5">
-                      <Label htmlFor="edit-person-needs-met" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Need Met</Label>
-                      <Checkbox
-                        id="edit-person-needs-met"
-                        checked={personForm.needsMet}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, needsMet: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2.5">
-                      <Label htmlFor="edit-person-deposit-paid" className="cursor-pointer text-sm font-semibold text-slate-700 w-24">Deposit Paid</Label>
-                      <Checkbox
-                        id="edit-person-deposit-paid"
-                        checked={personForm.depositPaid}
-                        onCheckedChange={(checked) => setPersonForm({ ...personForm, depositPaid: checked === true })}
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                      />
-                    </div>
-                </div>
               </div>
             </div>
-            </div>
-          <DialogFooter className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
+
+
+          </div>
+          <DialogFooter className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDeletePerson}
                 disabled={deletePerson.isPending}
-                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-default -ml-2"
+                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed -ml-2"
                 title="Delete person"
               >
                 <Trash2 className="w-4 h-4" />
@@ -3138,10 +3121,10 @@ export function DistrictPanel({
               )}
             </div>
             <div className="flex gap-2 ml-auto">
-              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white border-slate-300">
+              <Button type="button" variant="outline" onClick={() => setIsEditPersonDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdatePerson} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">Update Person</Button>
+              <Button type="button" onClick={handleUpdatePerson}>Update Person</Button>
             </div>
           </DialogFooter>
         </DialogContent>
@@ -3186,15 +3169,15 @@ export function DistrictPanel({
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Add {entityName} Dialog */}
+        {/* Add Campus Dialog */}
         <Dialog open={isCampusDialogOpen} onOpenChange={setIsCampusDialogOpen}>
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Add New {entityName}</DialogTitle>
+              <DialogTitle>Add New Campus</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="campus-name">{entityName} Name</Label>
+                <Label htmlFor="campus-name">Campus Name</Label>
                 <Input
                   id="campus-name"
                   value={campusForm.name}
@@ -3207,7 +3190,7 @@ export function DistrictPanel({
                       }
                     }
                   }}
-                  placeholder={`Enter ${entityName.toLowerCase()} name`}
+                  placeholder="Enter campus name"
                   spellCheck={true}
                   autoComplete="organization"
                   autoFocus
@@ -3215,11 +3198,11 @@ export function DistrictPanel({
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
+              <Button variant="outline" onClick={() => setIsCampusDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">
-                {createCampus.isPending ? 'Adding...' : `Add ${entityName}`}
+              <Button onClick={handleAddCampus} disabled={!campusForm.name.trim() || createCampus.isPending}>
+                {createCampus.isPending ? 'Adding...' : 'Add Campus'}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -3229,17 +3212,17 @@ export function DistrictPanel({
         <Dialog open={isEditCampusDialogOpen} onOpenChange={setIsEditCampusDialogOpen}>
           <DialogContent aria-describedby={undefined}>
             <DialogHeader>
-              <DialogTitle>Edit {entityName}</DialogTitle>
+              <DialogTitle>Edit Campus</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-campus-name">{entityName} Name</Label>
+                <Label htmlFor="edit-campus-name">Campus Name</Label>
                 <Input
                   id="edit-campus-name"
                   list="edit-campus-name-suggestions"
                   value={campusForm.name}
                   onChange={(e) => setCampusForm({ name: e.target.value })}
-                  placeholder={`Enter ${entityName.toLowerCase()} name`}
+                  placeholder="Enter campus name"
                   spellCheck={true}
                   autoComplete="organization"
                 />
@@ -3251,10 +3234,10 @@ export function DistrictPanel({
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)} className="text-black hover:bg-red-600 hover:text-white">
+              <Button type="button" variant="outline" onClick={() => setIsEditCampusDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending} className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-default">
+              <Button type="button" onClick={handleUpdateCampus} disabled={!campusForm.name.trim() || updateCampusName.isPending}>
                 {updateCampusName.isPending ? 'Updating...' : 'Update Campus'}
               </Button>
             </DialogFooter>
