@@ -26,7 +26,3 @@ This repository’s documentation is organized into six categories. If a doc doe
 ## How-to guides
 
 - Index: [docs/how-to/README.md](how-to/README.md)
-
-## Archive
-
-- Index: [docs/archive/README.md](archive/README.md)
