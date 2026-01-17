@@ -2,6 +2,13 @@
 
 This file is a concise, actionable guide to help AI coding agents be productive in this repository.
 
+## 0. Governance (read first)
+- **Coordinator doctrine:** `docs/authority/CMC_GO_COORDINATOR.md` (truth enforcement, evidence gates, role boundaries)
+- **Human authority:** `docs/authority/USER_SIR_JAMES.md` (Sir James is the source of product intent)
+- **System doctrine (optional deep read):** `docs/authority/The Coherence Engine.md`
+
+When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.
+
 ## 1. Big picture
 - **Purpose**: A map-first coordination app for CMC conference attendance management (frontend React + backend tRPC + MySQL)
 - **Architecture**: Frontend in `client/` (React 19 + Tailwind + Radix UI), backend in `server/` (tRPC + Express), DB schema in `drizzle/schema.ts`, scripts in `scripts/`

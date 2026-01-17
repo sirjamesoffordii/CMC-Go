@@ -6,7 +6,7 @@
 
 This document synthesizes **system phases, development heuristics, and task tracking** for CMC Go. It is the **single source of truth** for understanding what phase we're in, what matters at each phase, and what's done vs. next.
 
-See [AGENTS.md](../../AGENTS.md) for autonomous developer role and [CMC_GO_BRIEF.md](CMC_GO_BRIEF.md) for system mental model.
+See [CMC_GO_COORDINATOR.md](../authority/CMC_GO_COORDINATOR.md) for coordination + truth enforcement and [CMC_GO_BRIEF.md](CMC_GO_BRIEF.md) for the system mental model.
 
 ---
 
@@ -251,5 +251,6 @@ Before advancing to the next phase:
 ## Navigation
 
 - **System Mental Model:** [CMC_GO_BRIEF.md](CMC_GO_BRIEF.md)
-- **Agent Role & Authority:** [AGENTS.md](../../AGENTS.md)
+- **Coordinator Role:** [CMC_GO_COORDINATOR.md](../authority/CMC_GO_COORDINATOR.md)
+- **Human Authority (Sir James):** [USER_SIR_JAMES.md](../authority/USER_SIR_JAMES.md)
 - **Technical Productivity:** [.github/copilot-instructions.md](../../.github/copilot-instructions.md)
