@@ -112,3 +112,9 @@ data/
 # Build/deploy artifacts
 *.zip
 .manus/
+
+# Worktrees (local-only)
+.worktrees/
+
+# Historical snapshot folder (do not re-add)
+cmc-go updates/
