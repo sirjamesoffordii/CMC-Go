@@ -1,6 +1,6 @@
 # CMC Go — Docs
 
-This repository’s documentation is organized into six categories. If a doc doesn’t fit, it should be moved into **Archive** or deleted.
+This repository’s documentation is organized into five categories.
 
 ## Agent rules
 
