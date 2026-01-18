@@ -8,9 +8,9 @@ If you have GitHub CLI installed, you can also use `scripts/create-agent-issues.
 
 ---
 
-## Explorer: Audit “ahead of staging” branches and propose merge order
+## Explorer: Audit "ahead of staging" branches and propose merge order
 
-**Title:** Explorer: Audit “ahead of staging” branches and propose merge order
+**Title:** Explorer: Audit "ahead of staging" branches and propose merge order
 
 **Labels:** `role:explorer`
 
