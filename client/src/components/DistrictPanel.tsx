@@ -263,6 +263,10 @@ export function DistrictPanel({
   const campusDirectorRef = useRef<HTMLDivElement>(null);
   const [pieChartOffset, setPieChartOffset] = useState(0);
   const [labelsOffset, setLabelsOffset] = useState(0);
+  const pieChartPadding = Math.max(0, pieChartOffset);
+  const statsGridOffset = labelsOffset > 0
+    ? Math.max(0, labelsOffset - pieChartPadding - 116)
+    : 16;
   
   // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -1801,9 +1805,25 @@ export function DistrictPanel({
                 </div>
               </div>
             </div>
+
+            {isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0 && (
+              <div className="mt-3">
+                <div className="text-slate-600 text-sm font-semibold mb-2">People</div>
+                <div className="flex items-center gap-1 flex-wrap">
+                  {Array.from({ length: Math.min(publicDistrictMetrics?.total ?? 0, 24) }).map((_, idx) => (
+                    <User key={`presence-${idx}`} className="w-5 h-5 text-slate-300" strokeWidth={1.5} />
+                  ))}
+                  {(publicDistrictMetrics?.total ?? 0) > 24 && (
+                    <span className="text-slate-500 text-sm font-medium ml-2">
+                      +{(publicDistrictMetrics?.total ?? 0) - 24}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* Stats Section - Left aligned */}
-            <div className="flex items-center mt-1.5">
+            <div className="flex items-center mt-1.5" style={{ paddingLeft: pieChartPadding }}>
               {/* Pie Chart - Left aligned */}
               <svg 
                 width="100" 
@@ -1859,7 +1879,8 @@ export function DistrictPanel({
               
               {/* Stats Grid - Left aligned */}
               <div 
-                className="grid grid-cols-2 gap-x-16 gap-y-2 ml-4"
+                className="grid grid-cols-2 gap-x-16 gap-y-2"
+                style={{ marginLeft: statsGridOffset }}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-700 flex-shrink-0 ring-1 ring-emerald-200"></div>
@@ -2203,7 +2224,7 @@ export function DistrictPanel({
               )}
               
               {/* Unassigned Row - show presence in public-safe mode */}
-              {([].length > 0 || (isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0)) && (
+              {(isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0) && (
                  <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
                   {/* Unassigned Label */}
                   <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
@@ -2212,6 +2233,19 @@ export function DistrictPanel({
           
                   {/* Person Figures */}
                   <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
+                      {Array.from({ length: Math.min(publicDistrictMetrics?.total ?? 0, 24) }).map((_, idx) => (
+                        <div key={`presence-${idx}`} className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0">
+                          <div className="mb-1 h-4 w-full" />
+                          <User className="w-10 h-10 text-zinc-400" strokeWidth={1.5} />
+                        </div>
+                      ))}
+                      {(publicDistrictMetrics?.total ?? 0) > 24 && (
+                        <div className="text-sm text-slate-500 font-medium ml-2">
+                          +{(publicDistrictMetrics?.total ?? 0) - 24}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
