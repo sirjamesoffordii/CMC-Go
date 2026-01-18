@@ -1,0 +1,11 @@
+# Line-ending normalization
+# Keep text files consistent across OSes to avoid noisy CRLF/LF diffs.
+
+* text=auto
+
+# Documentation
+*.md text eol=lf
+
+# GitHub / CI configs
+*.yml text eol=lf
+*.yaml text eol=lf
