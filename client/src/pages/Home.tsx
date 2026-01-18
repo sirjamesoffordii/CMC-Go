@@ -446,6 +446,14 @@ export default function Home() {
   useEffect(() => {
     updateURLWithViewState(viewState);
   }, [viewState]);
+
+  const handleViewStateChange = (newViewState: ViewState) => {
+    setViewState(newViewState);
+    // Keep selectedDistrictId consistent with URL/view state
+    if (newViewState.districtId !== selectedDistrictId) {
+      setSelectedDistrictId(newViewState.districtId);
+    }
+  };
   
   const handleViewStateChange = (newViewState: ViewState) => {
     setViewState(newViewState);
@@ -990,7 +998,6 @@ export default function Home() {
               onViewStateChange={handleViewStateChange}
             />
           </div>
-        
           {/* Map with Overlay Metrics */}
           <div 
             className="relative py-4"
@@ -1188,12 +1195,10 @@ className={`
         open={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
       />
-
-      <ImportModal 
+      <ImportModal
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
       />
-      
       <LoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}

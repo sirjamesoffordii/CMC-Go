@@ -995,11 +995,19 @@ export function DistrictPanel({
     } else if (targetId === 'district-staff') {
       mutationData.primaryRole = 'District Staff';
       mutationData.primaryCampusId = null;
-    } else
+    } else {
+      // Campus quick-add
+      if (typeof targetId === 'number') {
+        mutationData.primaryRole = 'Campus Staff';
+        mutationData.primaryCampusId = targetId;
+      } else {
+        mutationData.primaryCampusId = null;
+      }
 
-     // Add primaryRegion if district has it
-     if (district.region) {
-       mutationData.primaryRegion = district.region;
+      // Add primaryRegion if district has it
+      if (district.region) {
+        mutationData.primaryRegion = district.region;
+      }
     }
 
     createPerson.mutate(mutationData, {
@@ -1792,10 +1800,10 @@ export function DistrictPanel({
               <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
                 <Hand className="w-6 h-6 text-yellow-600" />
                 <div className="flex items-center gap-3">
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                     <span className="text-slate-600 text-base">Needs:</span>
                     <span className="font-semibold text-slate-900 text-base tabular-nums">{needsSummary.totalNeeds}</span>
-                </div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <span className="text-slate-600 text-base">Total:</span>
                     <span className="font-semibold text-slate-900 text-base tabular-nums">
@@ -2071,6 +2079,80 @@ export function DistrictPanel({
                           </PersonDropZone>
                         );
                       })}
+
+                      {/* Add Person Tile */}
+                      <PersonDropZone
+                        campusId={campus.id}
+                        index={sortedPeople.length}
+                        onDrop={handlePersonMove}
+                        canInteract={canInteract}
+                      >
+                        <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                          <button
+                            type="button"
+                            disabled={disableEdits}
+                            aria-label={`Add person to ${campus.name}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (disableEdits) return;
+                              openAddPersonDialog(campus.id);
+                            }}
+                            className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                          >
+                            {/* Plus sign in name position - clickable for quick add */}
+                            <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                              {quickAddMode === `campus-${campus.id}` ? (
+                                <div className="relative">
+                                  <Input
+                                    ref={quickAddInputRef}
+                                    list="quick-add-name-suggestions"
+                                    value={quickAddName}
+                                    onChange={(e) => setQuickAddName(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleQuickAddSubmit(`campus-${campus.id}`);
+                                      } else if (e.key === 'Escape') {
+                                        setQuickAddMode(null);
+                                        setQuickAddName('');
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      handleQuickAddSubmit(`campus-${campus.id}`);
+                                    }}
+                                    placeholder="Name"
+                                    className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                    autoFocus
+                                    spellCheck={true}
+                                    autoComplete="name"
+                                  />
+                                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                    Quick Add
+                                  </div>
+                                </div>
+                              ) : (
+                                <Plus
+                                  className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
+                                  strokeWidth={1.5}
+                                  onClick={(e) => handleQuickAddClick(e, campus.id)}
+                                />
+                              )}
+                            </div>
+                            {/* Icon - solid */}
+                            <div className="relative">
+                              <User
+                                className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                                strokeWidth={1.5}
+                                fill="currentColor"
+                              />
+                            </div>
+                          </button>
+                          {/* Label - shown on hover */}
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                            Add
+                          </div>
+                        </div>
+                      </PersonDropZone>
                           
                           {/* Add Person Button */}
                           <PersonDropZone
@@ -2274,6 +2356,13 @@ export function DistrictPanel({
         {mainContent}
         <CustomDragLayer getPerson={getPerson} getCampus={getCampus} />
       </DndProvider>
+
+      {/* Datalist for quick-add autocomplete */}
+      <datalist id="quick-add-name-suggestions">
+        {nameSuggestions.map((name, idx) => (
+          <option key={idx} value={name} />
+        ))}
+      </datalist>
         
       {canEditDistrict && (
         <>
