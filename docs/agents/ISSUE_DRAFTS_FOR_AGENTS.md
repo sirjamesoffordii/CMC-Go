@@ -140,11 +140,11 @@ VERIFICATION CHECKLIST:
 
 ---
 
-## Browser Operator: Deployed staging smoke check after merges
+## Browser: Deployed staging smoke check after merges
 
-**Title:** Browser Operator: Deployed staging smoke check after merges
+**Title:** Browser: Deployed staging smoke check after merges
 
-**Labels:** `role:browser-operator`
+**Labels:** `role:browser`
 
 **Body:**
 

@@ -137,7 +137,7 @@ VERIFICATION CHECKLIST:
 - If UI affected: `pnpm -s playwright test e2e/smoke.spec.ts`
 '@ },
 
-  @{ Title = 'Browser Operator: Deployed staging smoke check after merges'; Labels = @('role:browser-operator'); Body = @'
+  @{ Title = 'Browser: Deployed staging smoke check after merges'; Labels = @('role:browser'); Body = @'
 STATUS: In Progress
 
 CONTEXT:
