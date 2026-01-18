@@ -261,7 +261,14 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000", 10);
-  const port = isDevelopment ? await findAvailablePort(preferredPort) : preferredPort;
+  const strictPort = process.env.STRICT_PORT === "1";
+
+  // In environments that expect a stable port (e.g. Playwright webServer),
+  // do not silently hop to the next port. Fail fast so tooling can surface
+  // a clear error instead of hanging.
+  const port = isDevelopment
+    ? (strictPort ? preferredPort : await findAvailablePort(preferredPort))
+    : preferredPort;
 
   if (isDevelopment && port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
