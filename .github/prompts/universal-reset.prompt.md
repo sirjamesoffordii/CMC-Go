@@ -20,7 +20,7 @@ Orient (60–120 seconds):
 - Confirm which phase/gates matter (see `docs/agents/BUILD_MAP.md` if relevant).
 
 Act (smallest correct next step):
-- If you’re NOT the Coordinator: do not ask the human questions. If blocked, write the escalation comment format from `AGENTS.md`.
+- If you’re NOT the Coordinator: do not use operator chat for updates/questions. If blocked, write the escalation comment format from `AGENTS.md`, then continue safe parallel work or wait/poll the Issue thread without exiting.
 - If you ARE the Coordinator: decide the next action and require evidence for any “done” claim.
 
 Report (must include evidence):

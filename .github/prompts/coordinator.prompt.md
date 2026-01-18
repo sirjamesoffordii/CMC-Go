@@ -46,7 +46,7 @@ Every time you act as Coordinator, **re-read** `.github/agents/coordinator.agent
 
 ## Asking Sir James questions (GitHub only)
 - When a human decision is needed, ask via a GitHub Issue/PR comment mentioning **@sirjamesoffordII**.
-- In subsequent loop iterations, check that thread for the answer and proceed.
+- In subsequent loop iterations, check that thread for the answer and proceed (do not shift coordination to operator chat).
 
 ## Mission
 Keep the system coherent by:

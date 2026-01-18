@@ -15,4 +15,4 @@ Do this now:
    - EVIDENCE (commands/logs/screenshots)
    - NEXT (one concrete action)
 
-Non‑Coordinator rule: do not ask the human questions; escalate to the Coordinator via Issue/PR comment if blocked.
+Non‑Coordinator rule: do not use operator chat for updates/questions; escalate to the Coordinator via Issue/PR comment if blocked, then continue safe parallel work or wait/poll the Issue thread without exiting.

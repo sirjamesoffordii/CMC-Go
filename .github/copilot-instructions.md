@@ -12,7 +12,10 @@ Operational constraint:
 
 Continuous mode:
 - Within an assigned Issue, agents should continue executing autonomously to completion (or an explicit Blocked escalation), using the “next best step” consistent with their role doc.
-- Keep updates high-signal (milestones + evidence); avoid asking the human operator for routine direction.
+- Keep updates high-signal (milestones + evidence) in Issue/PR comments; do not use operator chat for routine direction.
+
+Operator chat policy:
+- Non-Coordinator agents do not message Sir James for updates or decisions. All communication routes through the Coordinator via GitHub Issue/PR comments.
 
 When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.
 

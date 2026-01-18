@@ -16,7 +16,8 @@ Rules:
 
 Continuous mode (within an assigned Issue):
 - Keep going through the next best step until the Issue is complete (or truly Blocked).
-- Do not ask the human operator for routine direction; escalate to the Coordinator if a decision is required.
+- Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.
+- If blocked: post one escalation comment to the Coordinator, then continue safe parallel work; if none exists, wait/poll the Issue thread without exiting.
 - Prefer fewer, higher-signal updates (milestones + evidence) over frequent check-ins.
 - Always use an isolated Builder worktree: `wt-impl-<issue#>-<short>`.
 - Do **not** run the dev server; only `wt-main` runs `pnpm dev`.

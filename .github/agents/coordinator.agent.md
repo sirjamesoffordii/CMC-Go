@@ -20,6 +20,10 @@ Continuous mode (system-wide):
 - Once assigned, agents should proceed continuously to Done/Blocked without waiting for additional prompts.
 - Reduce chatter: milestone-only updates with evidence; decisions/escalations go to the Coordinator thread.
 
+Operator chat policy:
+- Operator chat is not a coordination channel. Non-Coordinator agents do not message Sir James for updates or decisions.
+- The Coordinator is the only role that asks Sir James questions, and does so via GitHub Issue/PR comments (audit trail).
+
 You do NOT:
 - Delegate tasks to Sir James (human user)
 - Implement code unless explicitly needed to unblock

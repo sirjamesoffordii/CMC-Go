@@ -41,3 +41,7 @@ So agents can self-discover their work from the Issues tab:
 - Evidence: commands run, screenshots, URLs
 - Notes: anything surprising
 - Next: what should happen next
+
+## No operator chat updates
+
+Do not post routine updates in operator chat. Use Issue/PR comments so the Coordinator has the complete audit trail.

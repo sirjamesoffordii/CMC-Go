@@ -18,7 +18,8 @@ Rules:
 
 Continuous mode (within an assigned Issue):
 - Continue through the next best verification/config step until complete or truly Blocked.
-- Avoid asking the human operator for direction; escalate decision points to the Coordinator.
+- Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.
+- If blocked: post one escalation comment to the Coordinator, then continue safe parallel verification; if none exists, wait/poll the Issue thread without exiting.
 - Keep updates high-signal (milestones + evidence, including screenshots/URLs where possible).
 
 Runbook stewardship:

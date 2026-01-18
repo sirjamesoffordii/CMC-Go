@@ -19,7 +19,8 @@ Rules:
 
 Continuous mode (within an assigned Issue):
 - Keep going until verification is complete or truly Blocked.
-- Avoid asking the human operator for direction; escalate blockers to the Coordinator.
+- Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.
+- If blocked: post one escalation comment to the Coordinator, then continue safe parallel verification; if none exists, wait/poll the Issue thread without exiting.
 - Prefer milestone evidence comments (what you ran + what happened) over frequent pings.
 - Consult `docs/agents/BUILD_MAP.md` only when the change claims phase/gate impact (Coordinator reads it every time).
 

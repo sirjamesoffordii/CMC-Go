@@ -23,8 +23,12 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 - Use an isolated Builder worktree: `wt-impl-<issue#>-<short>`.
 - Do **not** run the dev server; only `wt-main` runs `pnpm dev`.
 - Smallest viable diff; avoid unrelated refactors.
-- Do **not** ask Sir James questions. If you need a decision, escalate to the Coordinator via an Issue/PR comment.
+- Do **not** use operator chat for updates/questions. If you need a decision, escalate to the Coordinator via an Issue/PR comment.
 - Stay in Builder mode for the entire task; do not switch roles mid-stream.
+
+## Strict loop
+- Once assigned, keep going through the next best step until Done/Blocked.
+- If Blocked: post one escalation comment to the Coordinator, then continue safe parallel work; if none exists, wait/poll the Issue thread without exiting.
 
 ## Required references (consult before implementing)
 Read these files and treat them as authoritative:

@@ -21,6 +21,11 @@ Once assigned, continue until complete:
 - Don’t ask the human operator for routine direction; escalate decisions to the Coordinator.
 - Prefer milestone updates with evidence over frequent check-ins.
 
+## Operator chat is not a channel
+
+Do not use operator chat for updates, questions, or coordination.
+All progress/evidence and all questions route through the Coordinator via GitHub Issue/PR comments.
+
 ## Status reporting format
 
 When updating an Issue/PR, include:

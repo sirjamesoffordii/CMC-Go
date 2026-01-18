@@ -24,7 +24,8 @@ This repository uses multiple AI agents running concurrently. **All agents must 
 
 1c. **Continuous execution (within an assignment)**
    - Once assigned, agents proceed continuously through the “next best step” in their role until the Issue is complete or truly blocked.
-   - Agents should avoid asking the human operator for direction; if a decision is required, escalate to the Coordinator via Issue/PR comment.
+   - Agents do not use operator chat for updates/questions; all communication goes to the Coordinator via Issue/PR comments.
+   - If a decision is required, escalate to the Coordinator via Issue/PR comment; then continue with safe parallel work or wait/poll the thread.
    - Prefer fewer, higher-signal updates (milestones + evidence) over frequent status pings.
 
 **Issue assignment convention (so agents can self-discover work):**

@@ -16,7 +16,8 @@ Rules:
 
 Continuous mode (within an assigned Issue):
 - Keep going until the plan/proposal is complete or you are truly Blocked.
-- Avoid asking the human operator for direction; escalate decision points to the Coordinator.
+- Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.
+- If blocked: post one escalation comment to the Coordinator, then continue safe parallel work; if none exists, wait/poll the Issue thread without exiting.
 - Post milestone evidence in Issue comments (commands run, diffs inspected, concrete findings).
 - Produce plans that reference the real code (file paths, functions, routes) and include acceptance criteria.
 - Before each scouting pass, re-read this role file.

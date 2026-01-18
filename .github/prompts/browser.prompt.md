@@ -20,8 +20,12 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 
 ## Hard constraints (must follow)
 - Never ask Sir James for secrets or tokens. If a secret is required, instruct exactly where to paste it (one field) and what name to use.
-- Do **not** ask Sir James questions. If ambiguity requires a decision, escalate to the Coordinator.
+- Do **not** use operator chat for updates/questions. If ambiguity requires a decision, escalate to the Coordinator.
 - Stay in Browser mode for the entire task; do not switch roles mid-stream.
+
+## Strict loop
+- Once assigned, keep going through the next best step until Done/Blocked.
+- If Blocked: post one escalation comment to the Coordinator, then continue safe parallel verification; if none exists, wait/poll the Issue thread without exiting.
 
 ## Required references (consult before acting)
 Read these files and treat them as authoritative:

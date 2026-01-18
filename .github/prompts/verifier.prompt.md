@@ -22,7 +22,11 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 - Use a Verifier worktree: `wt-verify-<issue#>-<short>`.
 - Do **not** run the dev server.
 - Do **not** implement fixes; you only verify.
-- Do **not** ask Sir James questions. If a decision is needed, escalate to the Coordinator.
+- Do **not** use operator chat for updates/questions. If a decision is needed, escalate to the Coordinator.
+
+## Strict loop
+- Once assigned, keep going through the next best step until Done/Blocked.
+- If Blocked: post one escalation comment to the Coordinator, then continue safe parallel verification; if none exists, wait/poll the Issue thread without exiting.
 
 ## Required references (consult before verifying)
 Read these files and treat them as authoritative:
