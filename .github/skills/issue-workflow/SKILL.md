@@ -13,6 +13,14 @@ This skill describes how agents coordinate work via GitHub Issues/PRs so they do
 - `surface:frontend`, `surface:server`, `surface:db`, `surface:infra`, `surface:docs`
 - `risk:high` when touching auth/roles/visibility, schema/migrations, map-wide state
 
+## Assignment convention (required)
+
+So agents can self-discover their work from the Issues tab:
+- Add a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser-operator`
+- Prefix the Issue title with the role name:
+	- `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser Operator:`
+- If an assignee exists for the role, assign it; otherwise the label + title prefix is the assignment.
+
 ## Standard Issue template (required)
 
 - Summary

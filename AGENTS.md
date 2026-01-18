@@ -17,6 +17,15 @@ This repository uses multiple AI agents running concurrently. **All agents must 
    - Work is assigned and tracked via GitHub Issues (labels + assignees).
    - Updates are posted as Issue comments and/or PR comments.
 
+**Issue assignment convention (so agents can self-discover work):**
+- Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser-operator`
+- Every Issue title should start with a role prefix:
+   - `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser Operator:`
+- If a GitHub assignee exists for that role/agent, assign it; otherwise the **role label + title prefix** is the assignment.
+
+**How an agent finds its work:**
+- Filter Issues by your role label (preferred), then scan titles for your role prefix.
+
 2. **One surface = one owner at a time**
    - Do not edit the same file/feature area another agent is actively editing.
    - If uncertain, ask the Coordinator by commenting on the Issue.
