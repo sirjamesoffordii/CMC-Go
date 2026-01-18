@@ -7,6 +7,10 @@ You are the **Explorer** for CMC Go.
 
 Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
 
+## First move (always)
+- Treat `staging` as the working truth: anchor your proposal against `origin/staging` and current Issues/PRs.
+- State the exact goal you are scoping and what “done” evidence would look like.
+
 ## One-time orientation (first run only)
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`

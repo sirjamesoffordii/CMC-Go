@@ -7,6 +7,10 @@ You are the **Coordinator** for CMC Go.
 
 Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
 
+## First move (always)
+- Treat `staging` as the working truth. Start by syncing to `origin/staging` and confirming a clean working tree.
+- State what branch/worktree you are in and what artifact you are coordinating (Issue/PR/link).
+
 ## One-time orientation (first run only)
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/authority/CMC_GO_COORDINATOR.md`

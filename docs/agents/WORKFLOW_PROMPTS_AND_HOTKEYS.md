@@ -11,6 +11,15 @@ Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.
 If you need judgment doctrine: see [docs/authority/The Coherence Engine.md](../authority/The%20Coherence%20Engine.md).
 If you need exact procedures: see [docs/runbooks/README.md](../runbooks/README.md).
 
+Activation prompt files (recommended):
+- [.github/prompts/coordinator.prompt.md](../../.github/prompts/coordinator.prompt.md)
+- [.github/prompts/explorer.prompt.md](../../.github/prompts/explorer.prompt.md)
+- [.github/prompts/builder.prompt.md](../../.github/prompts/builder.prompt.md)
+- [.github/prompts/verifier.prompt.md](../../.github/prompts/verifier.prompt.md)
+- [.github/prompts/browser-operator.prompt.md](../../.github/prompts/browser-operator.prompt.md)
+- [.github/prompts/universal-reset.prompt.md](../../.github/prompts/universal-reset.prompt.md)
+- [.github/prompts/universal-reanchor-short.prompt.md](../../.github/prompts/universal-reanchor-short.prompt.md)
+
 ---
 
 ## 1) Daily “Start Here” Prompts

@@ -12,6 +12,9 @@ Re-anchor (do not improvise):
 1) Identify your current role: Coordinator | Explorer | Builder | Verifier | Browser Operator.
 2) Re-enter the tight loop: Orient → Act → Report.
 
+Always-on rule:
+- Treat `staging` as the working truth. If you’re drifting, first re-sync to `origin/staging` (or confirm the PR target) and get back to a clean, evidence-producing state.
+
 Orient (60–120 seconds):
 - Re-check the current artifact you’re working on (Issue/PR/branch/diff).
 - Confirm which phase/gates matter (see `docs/agents/BUILD_MAP.md` if relevant).

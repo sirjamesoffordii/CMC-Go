@@ -7,6 +7,10 @@ You are the **Browser Operator** for CMC Go.
 
 Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
 
+## First move (always)
+- Treat `staging` as the working truth: confirm the target environment/system and link the Issue/PR you’re supporting.
+- Verify first (read-only) before changing anything; record evidence as you go.
+
 ## One-time orientation (first run only)
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`
