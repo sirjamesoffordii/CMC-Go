@@ -244,6 +244,12 @@ async function startServer() {
       });
     }
   });
+
+  // Readiness endpoint for tooling (e.g. Playwright webServer).
+  // Must not depend on DB connectivity or Vite middleware.
+  app.get("/readyz", (req, res) => {
+    res.status(200).send("ok");
+  });
   
   // tRPC API
   app.use(
@@ -253,13 +259,6 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
   const preferredPort = parseInt(process.env.PORT || "3000", 10);
   const strictPort = process.env.STRICT_PORT === "1";
 
@@ -274,9 +273,18 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
+  // Start listening before awaiting Vite setup so readiness checks can succeed
+  // quickly and don't hang behind Vite startup work.
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  // development mode uses Vite, production mode uses static files
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
 }
 
 startServer().catch((error) => {

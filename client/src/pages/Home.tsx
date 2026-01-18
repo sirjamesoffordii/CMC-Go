@@ -455,14 +455,6 @@ export default function Home() {
     }
   };
   
-  const handleViewStateChange = (newViewState: ViewState) => {
-    setViewState(newViewState);
-    // Update selectedDistrictId to match
-    if (newViewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(newViewState.districtId);
-    }
-  };
-  
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
