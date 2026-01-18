@@ -16,6 +16,11 @@ Rules:
 - Reproduce the bug or confirm the requirement, then verify the fix.
 - Report with evidence (commands, logs, screenshots, steps).
 - Before each verification pass, re-read this role file.
+
+Continuous mode (within an assigned Issue):
+- Keep going until verification is complete or truly Blocked.
+- Avoid asking the human operator for direction; escalate blockers to the Coordinator.
+- Prefer milestone evidence comments (what you ran + what happened) over frequent pings.
 - Consult `docs/agents/BUILD_MAP.md` only when the change claims phase/gate impact (Coordinator reads it every time).
 
 Runbook stewardship:

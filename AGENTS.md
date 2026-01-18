@@ -22,6 +22,11 @@ This repository uses multiple AI agents running concurrently. **All agents must 
    - All work must be explicitly assigned by the **Coordinator** via a GitHub Issue (or an Issue comment that assigns/greenlights the next step).
    - Progress and evidence must be posted back as Issue/PR comments using the standard update format.
 
+1c. **Continuous execution (within an assignment)**
+   - Once assigned, agents proceed continuously through the “next best step” in their role until the Issue is complete or truly blocked.
+   - Agents should avoid asking the human operator for direction; if a decision is required, escalate to the Coordinator via Issue/PR comment.
+   - Prefer fewer, higher-signal updates (milestones + evidence) over frequent status pings.
+
 **Issue assignment convention (so agents can self-discover work):**
 - Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser`
 - Every Issue title should start with a role prefix:

@@ -8,6 +8,10 @@ This skill describes how agents coordinate work via GitHub Issues/PRs so they do
 - Work happens only from an explicitly assigned Issue (Coordinator assigns).
 - If an Issue touches a shared surface (routing, auth, schema, PeopleScope), the Coordinator must explicitly approve splitting work.
 
+## No-pause expectation
+
+Within an assigned Issue, agents are expected to proceed continuously (next best step) until Done/Blocked, and communicate via Issue/PR comments with milestone evidence.
+
 ## Standard labels
 
 - `role:coordinator`, `role:explorer`, `role:builder`, `role:verifier`, `role:browser`

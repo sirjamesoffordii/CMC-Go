@@ -14,6 +14,13 @@ No private side-channels are authoritative.
 Non-Coordinator agents do not start work just because they noticed something.
 All work is assigned by the Coordinator via GitHub Issues, and all progress/evidence is reported back via Issue/PR comments.
 
+## Continuous mode
+
+Once assigned, continue until complete:
+- Keep going through the next best step until the Issue is **Done** or truly **Blocked**.
+- Don’t ask the human operator for routine direction; escalate decisions to the Coordinator.
+- Prefer milestone updates with evidence over frequent check-ins.
+
 ## Status reporting format
 
 When updating an Issue/PR, include:

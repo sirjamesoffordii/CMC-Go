@@ -10,6 +10,10 @@ This file is a concise, actionable guide to help AI coding agents be productive 
 Operational constraint:
 - Agents do not take work on their own initiative. The Coordinator assigns work via GitHub Issues, and all progress/evidence is reported via Issue/PR comments.
 
+Continuous mode:
+- Within an assigned Issue, agents should continue executing autonomously to completion (or an explicit Blocked escalation), using the “next best step” consistent with their role doc.
+- Keep updates high-signal (milestones + evidence); avoid asking the human operator for routine direction.
+
 When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.
 
 ## 1. Big picture

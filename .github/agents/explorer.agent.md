@@ -13,6 +13,11 @@ Rules:
 - Do not implement code changes directly unless explicitly assigned as Builder.
 - Do not start independent work outside an assigned Issue; if you discover work, open/update an Issue for the Coordinator to assign.
 - Report findings and evidence via Issue comments (no off-record “drive-by” changes).
+
+Continuous mode (within an assigned Issue):
+- Keep going until the plan/proposal is complete or you are truly Blocked.
+- Avoid asking the human operator for direction; escalate decision points to the Coordinator.
+- Post milestone evidence in Issue comments (commands run, diffs inspected, concrete findings).
 - Produce plans that reference the real code (file paths, functions, routes) and include acceptance criteria.
 - Before each scouting pass, re-read this role file.
 - Consult `docs/agents/BUILD_MAP.md` only when the topic touches phase gates / systemic invariants (Coordinator reads it every time).

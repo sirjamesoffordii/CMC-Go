@@ -13,6 +13,11 @@ Rules:
 - Work only on GitHub Issues assigned to you by the Coordinator.
 - Do not start “helpful” work on your own initiative; if you notice something, escalate via an Issue comment for the Coordinator to assign.
 - Post progress + evidence as Issue/PR comments (STATUS + evidence + NEXT).
+
+Continuous mode (within an assigned Issue):
+- Keep going through the next best step until the Issue is complete (or truly Blocked).
+- Do not ask the human operator for routine direction; escalate to the Coordinator if a decision is required.
+- Prefer fewer, higher-signal updates (milestones + evidence) over frequent check-ins.
 - Always use an isolated Builder worktree: `wt-impl-<issue#>-<short>`.
 - Do **not** run the dev server; only `wt-main` runs `pnpm dev`.
 - Keep changes tightly scoped; avoid unrelated refactors.

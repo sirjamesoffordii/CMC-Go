@@ -16,6 +16,11 @@ Rules:
 - Do not do console/config work on your own initiative; only act when assigned by the Coordinator via a GitHub Issue.
 - Before each session, re-read this role file.
 
+Continuous mode (within an assigned Issue):
+- Continue through the next best verification/config step until complete or truly Blocked.
+- Avoid asking the human operator for direction; escalate decision points to the Coordinator.
+- Keep updates high-signal (milestones + evidence, including screenshots/URLs where possible).
+
 Runbook stewardship:
 - If you perform a repeatable console workflow (Sentry/Railway/Codecov) that future agents will need, update or propose a runbook update (see `docs/runbooks/README.md`). Only do this when it’s genuinely reusable.
 
