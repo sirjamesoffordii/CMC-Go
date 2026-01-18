@@ -1,0 +1,26 @@
+# Skill: Coordination (how to stay in sync)
+
+## Single shared state
+
+All agents sync through GitHub artifacts:
+- Issues (work requests)
+- PRs (proposed changes)
+- Comments (status + evidence)
+
+No private side-channels are authoritative.
+
+## Status reporting format
+
+When updating an Issue/PR, include:
+- **Status:** (In progress | Blocked | Ready for review | Done)
+- **What changed:** short list
+- **Evidence:** commands run and output snippets
+- **Risks:** anything that might break
+- **Next action:** what the next agent should do
+
+## Sir James changes
+
+Sir James's commits/PRs are treated as `audit-required`. Agents should:
+- read the diff
+- run verification
+- report findings without assuming correctness
