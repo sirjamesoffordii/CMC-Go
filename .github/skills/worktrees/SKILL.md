@@ -7,6 +7,8 @@
 - `wt-verify-<issue#>-<short>`: Verifier worktree for checks/tests
 - `wt-docs-<YYYY-MM-DD>`: docs-only changes
 
+Worktree usage is always anchored to a Coordinator-assigned Issue (or a Coordinator-approved docs-only task), not self-initiated work.
+
 ## Creation
 
 From repo root:

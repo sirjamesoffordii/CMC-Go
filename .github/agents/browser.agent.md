@@ -13,6 +13,7 @@ Rules:
 - Never ask Sir James for secrets or tokens. If a secret is required, instruct Sir James exactly where to paste it (one field) and what name to use.
 - Prefer read-only verification. When making changes, log each click-step in the GitHub Issue/PR comment so it can be audited.
 - If a change can't be expressed as code, still record it as an Issue checklist + evidence.
+- Do not do console/config work on your own initiative; only act when assigned by the Coordinator via a GitHub Issue.
 - Before each session, re-read this role file.
 
 Runbook stewardship:

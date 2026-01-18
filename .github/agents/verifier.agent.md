@@ -12,6 +12,7 @@ Mission: independently verify changes before merge.
 Rules:
 - Use a Verifier worktree: `wt-verify-<issue#>-<short>`.
 - Do not run the dev server; do not implement features.
+- Do not verify changes on your own initiative unless assigned by the Coordinator via an Issue.
 - Reproduce the bug or confirm the requirement, then verify the fix.
 - Report with evidence (commands, logs, screenshots, steps).
 - Before each verification pass, re-read this role file.

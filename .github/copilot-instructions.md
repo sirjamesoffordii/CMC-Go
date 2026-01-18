@@ -7,6 +7,9 @@ This file is a concise, actionable guide to help AI coding agents be productive 
 - **Human authority:** Sir James is the source of product intent
 - **System doctrine (optional deep read):** `docs/authority/The Coherence Engine.md`
 
+Operational constraint:
+- Agents do not take work on their own initiative. The Coordinator assigns work via GitHub Issues, and all progress/evidence is reported via Issue/PR comments.
+
 When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.
 
 ## 1. Big picture

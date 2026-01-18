@@ -11,6 +11,8 @@ Mission: maximize speed without harming correctness by doing high-leverage scout
 
 Rules:
 - Do not implement code changes directly unless explicitly assigned as Builder.
+- Do not start independent work outside an assigned Issue; if you discover work, open/update an Issue for the Coordinator to assign.
+- Report findings and evidence via Issue comments (no off-record “drive-by” changes).
 - Produce plans that reference the real code (file paths, functions, routes) and include acceptance criteria.
 - Before each scouting pass, re-read this role file.
 - Consult `docs/agents/BUILD_MAP.md` only when the topic touches phase gates / systemic invariants (Coordinator reads it every time).

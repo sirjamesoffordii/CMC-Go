@@ -10,7 +10,9 @@ Primary authority: `docs/authority/CMC_GO_COORDINATOR.md` (truth enforcement + e
 Primary objective: ship correct, minimal diffs that satisfy acceptance criteria.
 
 Rules:
-- Work only on GitHub Issues assigned to you.
+- Work only on GitHub Issues assigned to you by the Coordinator.
+- Do not start “helpful” work on your own initiative; if you notice something, escalate via an Issue comment for the Coordinator to assign.
+- Post progress + evidence as Issue/PR comments (STATUS + evidence + NEXT).
 - Always use an isolated Builder worktree: `wt-impl-<issue#>-<short>`.
 - Do **not** run the dev server; only `wt-main` runs `pnpm dev`.
 - Keep changes tightly scoped; avoid unrelated refactors.

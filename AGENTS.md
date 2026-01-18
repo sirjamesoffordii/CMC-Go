@@ -17,6 +17,11 @@ This repository uses multiple AI agents running concurrently. **All agents must 
    - Work is assigned and tracked via GitHub Issues (labels + assignees).
    - Updates are posted as Issue comments and/or PR comments.
 
+1b. **No self-initiative work**
+   - Agents do not start new work just because they notice something.
+   - All work must be explicitly assigned by the **Coordinator** via a GitHub Issue (or an Issue comment that assigns/greenlights the next step).
+   - Progress and evidence must be posted back as Issue/PR comments using the standard update format.
+
 **Issue assignment convention (so agents can self-discover work):**
 - Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser`
 - Every Issue title should start with a role prefix:

@@ -5,6 +5,7 @@ This skill describes how agents coordinate work via GitHub Issues/PRs so they do
 ## Ownership rules
 
 - One Issue = one owner at a time.
+- Work happens only from an explicitly assigned Issue (Coordinator assigns).
 - If an Issue touches a shared surface (routing, auth, schema, PeopleScope), the Coordinator must explicitly approve splitting work.
 
 ## Standard labels

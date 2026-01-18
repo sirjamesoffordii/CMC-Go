@@ -9,6 +9,11 @@ All agents sync through GitHub artifacts:
 
 No private side-channels are authoritative.
 
+## No self-initiative
+
+Non-Coordinator agents do not start work just because they noticed something.
+All work is assigned by the Coordinator via GitHub Issues, and all progress/evidence is reported back via Issue/PR comments.
+
 ## Status reporting format
 
 When updating an Issue/PR, include:
