@@ -9,7 +9,7 @@ Authority (read/consult first):
 - `docs/authority/CMC_GO_COORDINATOR.md`
 
 Re-anchor (do not improvise):
-1) Identify your current role: Coordinator | Explorer | Builder | Verifier | Browser Operator.
+1) Identify your current role: Coordinator | Explorer | Builder | Verifier | Browser.
 2) Re-enter the tight loop: Orient → Act → Report.
 
 Always-on rule:

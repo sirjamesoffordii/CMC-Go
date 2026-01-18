@@ -4,7 +4,7 @@ This doc is a **copy/paste toolkit** for running the multi-agent workflow descri
 
 Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../AGENTS.md).
 
-- **Agents are roles** (Coordinator/Explorer/Builder/Verifier/Browser Operator).
+- **Agents are roles** (Coordinator/Explorer/Builder/Verifier/Browser).
 - **GitHub Issues/PRs are the handoff bus**.
 - **Only the Coordinator asks Sir James questions**; everyone else escalates to the Coordinator via an Issue comment.
 
@@ -16,7 +16,7 @@ Activation prompt files (recommended):
 - [.github/prompts/explorer.prompt.md](../../.github/prompts/explorer.prompt.md)
 - [.github/prompts/builder.prompt.md](../../.github/prompts/builder.prompt.md)
 - [.github/prompts/verifier.prompt.md](../../.github/prompts/verifier.prompt.md)
-- [.github/prompts/browser-operator.prompt.md](../../.github/prompts/browser-operator.prompt.md)
+- [.github/prompts/browser.prompt.md](../../.github/prompts/browser.prompt.md)
 - [.github/prompts/universal-reset.prompt.md](../../.github/prompts/universal-reset.prompt.md)
 - [.github/prompts/universal-reanchor-short.prompt.md](../../.github/prompts/universal-reanchor-short.prompt.md)
 
@@ -37,7 +37,7 @@ Do this:
 2) Identify current risk surfaces (auth/roles/visibility, schema/migrations, map state).
 3) Propose 3-7 Issues to create/update with:
    - acceptance criteria
-   - owner role (Explorer/Builder/Verifier/Browser Operator)
+  - owner role (Explorer/Builder/Verifier/Browser)
    - verification steps
 4) Call out any potential file/surface conflicts.
 
@@ -126,10 +126,10 @@ Return:
 - If blocked: minimal Coordinator escalation comment
 """
 
-### 1.5 Browser Operator — “Clicks as Evidence”
+### 1.5 Browser — “Clicks as Evidence”
 
 """
-You are the Browser Operator.
+You are the Browser.
 
 Task: <paste infra/console goal>
 

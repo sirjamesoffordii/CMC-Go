@@ -9,7 +9,7 @@ This repository uses multiple AI agents running concurrently. **All agents must 
 - **Explorer:** scouts solutions, proposes plans, and files issues with clear acceptance criteria.
 - **Builder:** implements code changes in isolated worktrees and opens PRs.
 - **Verifier:** runs checks/tests, validates UI flows, and reports evidence.
-- **Browser Operator:** uses browser automation/tools to configure external services (Railway/Sentry/Codecov) or verify visuals.
+- **Browser:** uses browser automation/tools to configure external services (Railway/Sentry/Codecov) or verify visuals.
 
 ## Shared operating rules
 
@@ -18,9 +18,9 @@ This repository uses multiple AI agents running concurrently. **All agents must 
    - Updates are posted as Issue comments and/or PR comments.
 
 **Issue assignment convention (so agents can self-discover work):**
-- Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser-operator`
+- Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser`
 - Every Issue title should start with a role prefix:
-   - `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser Operator:`
+   - `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser:`
 - If a GitHub assignee exists for that role/agent, assign it; otherwise the **role label + title prefix** is the assignment.
 
 **How an agent finds its work:**

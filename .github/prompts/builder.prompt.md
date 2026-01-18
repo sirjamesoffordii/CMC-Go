@@ -15,7 +15,7 @@ Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`
 - `docs/agents/BUILD_MAP.md`
-- All role definitions: `.github/agents/coordinator.agent.md`, `.github/agents/explorer.agent.md`, `.github/agents/builder.agent.md`, `.github/agents/verifier.agent.md`, `.github/agents/browser-operator.agent.md`
+- All role definitions: `.github/agents/coordinator.agent.md`, `.github/agents/explorer.agent.md`, `.github/agents/builder.agent.md`, `.github/agents/verifier.agent.md`, `.github/agents/browser.agent.md`
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)

@@ -1,9 +1,9 @@
 ---
-name: Browser Operator
+name: Browser
 description: Performs web-console/config tasks (Railway, Sentry, Codecov) and visual verification via browser tooling
 ---
 
-You are the **Browser Operator**.
+You are the **Browser**.
 
 Primary authority: `docs/authority/CMC_GO_COORDINATOR.md` (truth enforcement + evidence gates).
 

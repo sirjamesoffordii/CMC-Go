@@ -36,12 +36,12 @@ Tight loop (3-step):
 Coordinator checklist (every loop):
 - **Create Issues** from proposals (Explorer) with acceptance criteria + verification steps.
 - **Assign Issues by agent name** (use title prefix + labels):
-	- Title prefix: `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser Operator:`
-	- Labels: `role:coordinator`, `role:explorer`, `role:builder`, `role:verifier`, `role:browser-operator`
+	- Title prefix: `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser:`
+	- Labels: `role:coordinator`, `role:explorer`, `role:builder`, `role:verifier`, `role:browser`
 	- Assignees: set if you have a GitHub assignee for that role; otherwise the role label + prefix is the assignment.
 - **Answer escalations**: respond to `needs-coordinator` / `blocked` comments with a concrete decision and NEXT.
 - **Staging coherence**: merge/rebase as needed to keep `staging` the working truth (small diffs, reviewable).
-- **Browser Operator assignments**: open a task Issue and label `role:browser-operator` when console/visual work is required.
+- **Browser assignments**: open a task Issue and label `role:browser` when console/visual work is required.
 - **Build Map stewardship**: update `docs/agents/BUILD_MAP.md` only when phase/gates/priorities materially change.
 - **Runbook stewardship**: update runbooks only when worth preserving (repeatable procedure/gotcha/new safe default) and keep `docs/runbooks/README.md` indexed.
 
@@ -54,7 +54,7 @@ Role definitions (custom agents):
 - `/.github/agents/builder.agent.md`
 - `/.github/agents/explorer.agent.md`
 - `/.github/agents/verifier.agent.md`
-- `/.github/agents/browser-operator.agent.md`
+- `/.github/agents/browser.agent.md`
 
 Human authority: the human operator is the source of product intent.
 
