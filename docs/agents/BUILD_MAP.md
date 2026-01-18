@@ -252,5 +252,5 @@ Before advancing to the next phase:
 
 - **System Mental Model:** [CMC_GO_BRIEF.md](CMC_GO_BRIEF.md)
 - **Coordinator Role:** [CMC_GO_COORDINATOR.md](../authority/CMC_GO_COORDINATOR.md)
-- **Human Authority (Sir James):** [USER_SIR_JAMES.md](../authority/USER_SIR_JAMES.md)
+- **Human Authority (Sir James):** Source of product intent (no direct doc link)
 - **Technical Productivity:** [.github/copilot-instructions.md](../../.github/copilot-instructions.md)

@@ -6,7 +6,7 @@ A map-first coordination app that helps leaders see who has been invited, where 
 
 - [CMC Go Overview](/docs/authority/CMC_OVERVIEW.md) - Project identity and mental model
 - [CMC Go Coordinator](/docs/authority/CMC_GO_COORDINATOR.md) - Coordination and truth-enforcement role
-- [User Role — Sir James](/docs/authority/USER_SIR_JAMES.md) - Human authority and intent source
+- Human authority (Sir James): source of product intent
 - [The Coherence Engine](/docs/authority/The%20Coherence%20Engine.md) - System doctrine for truth and evidence
 - [CMC Go Project Tracker](/docs/CMC_GO_PROJECT_TRACKER.md) - Development progress and milestones
 

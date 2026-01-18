@@ -4,7 +4,7 @@ This file is a concise, actionable guide to help AI coding agents be productive 
 
 ## 0. Governance (read first)
 - **Coordinator doctrine:** `docs/authority/CMC_GO_COORDINATOR.md` (truth enforcement, evidence gates, role boundaries)
-- **Human authority:** `docs/authority/USER_SIR_JAMES.md` (Sir James is the source of product intent)
+- **Human authority:** Sir James is the source of product intent
 - **System doctrine (optional deep read):** `docs/authority/The Coherence Engine.md`
 
 When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.

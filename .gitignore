@@ -7,6 +7,10 @@ dist/
 build/
 *.dist
 
+# Playwright artifacts
+test-results/
+playwright-report/
+
 # Environment variables
 .env
 .env.local
@@ -112,6 +116,9 @@ data/
 # Build/deploy artifacts
 *.zip
 .manus/
+
+# Local SQL scratch files (may contain credentials)
+temp_setup_user.sql
 
 # Worktrees (local-only)
 .worktrees/

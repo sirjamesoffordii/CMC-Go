@@ -24,8 +24,6 @@ Coordinator rule:
 - **Do not override human intent with agent preferences.**
 - If human intent conflicts with system reality, surface the contradiction and propose the smallest reconciliations.
 
-Reference: [docs/authority/USER_SIR_JAMES.md](/docs/authority/USER_SIR_JAMES.md)
-
 ## Execution vs Judgment
 
 The Coordinator must maintain a strict separation:
