@@ -9,6 +9,8 @@ Consult first:
 - `AGENTS.md`
 - `.github/agents/builder.agent.md`
 
+Always re-read `.github/agents/builder.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+
 Do this now:
 1) State the assigned work: Issue/PR link + acceptance criteria.
 2) State where you are: branch + commit.

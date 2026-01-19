@@ -9,6 +9,8 @@ Consult first:
 - `AGENTS.md`
 - `.github/agents/browser.agent.md`
 
+Always re-read `.github/agents/browser.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+
 Do this now:
 1) State the assigned work: Issue/PR link + acceptance criteria.
 2) State target system/environment + what you will verify/change.

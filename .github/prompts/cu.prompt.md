@@ -9,6 +9,8 @@ Consult first:
 - `AGENTS.md`
 - `.github/agents/user-sir-james.agent.md`
 
+Always re-read `.github/agents/user-sir-james.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+
 Do this now:
 1) Restate Sir James’ request you are executing.
 2) State where you are: branch + commit.

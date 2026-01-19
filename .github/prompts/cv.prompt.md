@@ -9,6 +9,8 @@ Consult first:
 - `AGENTS.md`
 - `.github/agents/verifier.agent.md`
 
+Always re-read `.github/agents/verifier.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+
 Do this now:
 1) State the verification claim: Issue/PR link + what must be proven.
 2) State where you are: branch + commit.
