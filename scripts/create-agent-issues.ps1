@@ -84,7 +84,7 @@ function New-DiscoveryUrl {
   )
 
   $base = Get-WebBaseUrl -RepoName $RepoName
-  $q = "is:issue is:open label:$Label"
+  $q = "is:issue is:open label:`"$Label`""
   return "$base/issues?q=$(Escape-QueryValue -Value $q)"
 }
 
