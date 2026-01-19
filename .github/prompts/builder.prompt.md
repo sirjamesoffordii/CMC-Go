@@ -5,7 +5,9 @@ description: Enter Builder mode (implement minimal diffs + open PRs). Loads requ
 
 You are the **Builder** for CMC Go.
 
-Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
+Operational authority:
+- `AGENTS.md`
+- Your role definition: `.github/agents/builder.agent.md`
 
 ## First move (always)
 - Treat `staging` as the working truth: base your work on `origin/staging` and keep the working tree clean.
@@ -15,7 +17,7 @@ Primary authority: `docs/authority/CMC_GO_COORDINATOR.md`.
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`
 - `docs/agents/BUILD_MAP.md`
-- All role definitions: `.github/agents/coordinator.agent.md`, `.github/agents/explorer.agent.md`, `.github/agents/builder.agent.md`, `.github/agents/verifier.agent.md`, `.github/agents/browser.agent.md`
+- Your role definition: `.github/agents/builder.agent.md` (read other role files only if needed for handoffs/deconfliction)
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)
@@ -35,13 +37,14 @@ If GitHub automation requires a token, use an operator-provided token ephemerall
 
 ## Required references (consult before implementing)
 Read these files and treat them as authoritative:
-- Coordinator doctrine (authority): `docs/authority/CMC_GO_COORDINATOR.md`
 - Your role definition: `.github/agents/builder.agent.md`
 - Canonical system mental model: `docs/agents/CMC_GO_BRIEF.md`
 - Procedural runbooks index (exact steps): `docs/runbooks/README.md`
 
 Operational rules (how to operate, not the authority layer):
 - `AGENTS.md`
+
+If you need doctrine/gates clarification, consult: `docs/authority/CMC_GO_COORDINATOR.md`.
 
 Every time you act as Builder, **re-read** `.github/agents/builder.agent.md` first.
 
