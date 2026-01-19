@@ -1,7 +1,7 @@
 # CMC Go — Build Map
 
 **Owner:** Coordinator  
-**Last verified:** Jan 5, 2026 · 12:17 PM CT
+**Last verified:** Jan 19, 2026 · 2:50 AM CT
 
 This document governs **build progression and verification** for CMC Go. It is the **single source of truth** for determining the system’s current build position and when advancement is allowed.
 
@@ -16,6 +16,10 @@ Maintenance rule: the **Coordinator** updates this file whenever a PR meaningful
 Latest work has been focused on validating cross-view state behavior, with particular attention on map ↔ panel synchronization and follow-up view consistency. Progress has been steady but non-trivial: most core logic is in place, however verification is ongoing to ensure no edge-case desyncs remain.
 
 Recent friction has come from environment and deployment issues (Sentry env vars and lockfile mismatches), which temporarily slowed verification but did not change scope. No fundamental blockers are present; remaining work is primarily careful validation rather than new implementation.
+
+Recent coordination/doc stabilization work landed in `staging`:
+- Merge of `agent/docs/agent-playbook-nav` into `staging` (commit `3469e19`)
+- Fix GitHub Issue discovery link quoting for `role:coordinator` label (commit `5a1c844`)
 
 ---
 
