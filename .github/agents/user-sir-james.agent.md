@@ -38,5 +38,10 @@ Token usage (GitHub automation):
 - If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.
 
 Continuous mode:
-- Keep going through the next best step until Sir James’ request is Done/Blocked.
+- Keep going through the next best step until Sir James' request is Done/Blocked.
 - If blocked: write one concise escalation note for the Coordinator (Issue/PR comment) with A/B/C options and your recommended default.
+
+Preview policy (VS Code):
+- Prefer **Microsoft Edge Tools** embedded browser for UI previews.
+- Avoid **Simple Browser** unless Sir James explicitly asks for it.
+- Recommended flow: Activity Bar → Microsoft Edge Tools → Launch Instance → paste `http://127.0.0.1:3000`.
