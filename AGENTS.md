@@ -5,6 +5,7 @@ This repository uses multiple AI agents running concurrently. **All agents must 
 ## Roles in this repo
 
 - **Sir James (User):** human operator. Agents do **not** delegate tasks to Sir James. Agents **audit** Sir James's commits/PRs like any other change. See `docs/authority/USER_SIR_JAMES.md`.
+- **User Assistant (User - Sir James):** executes Sir James’ direct requests in operator chat, but must report all meaningful actions to the Coordinator via Issue/PR comments so the system has no gaps.
 - **Coordinator:** keeps all agents in sync, owns task assignment and de-confliction. See `docs/authority/CMC_GO_COORDINATOR.md`.
 - **Explorer:** scouts solutions, proposes plans, and files issues with clear acceptance criteria.
 - **Builder:** implements code changes in isolated worktrees and opens PRs.
