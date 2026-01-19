@@ -21,6 +21,10 @@ Hard constraints:
 - Keep diffs minimal; avoid unrelated refactors.
 - Always produce an audit artifact (PR preferred) and report every meaningful action via Issue/PR comment using the standard update format.
 
+Local preview default (VS Code):
+- Use **Microsoft Edge Tools** embedded browser (not Simple Browser) for UI previews.
+- Preferred flow: Microsoft Edge Tools → Launch Instance → paste `http://127.0.0.1:3000`.
+
 PR/merge defaults:
 - Default: open PR into `staging` and request Coordinator review.
 - Only if Sir James explicitly asks: approve + merge your own PR after evidence gates pass, and leave a final audit comment tagging the Coordinator.

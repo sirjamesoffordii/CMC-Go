@@ -3,11 +3,20 @@
         "main"
     ],
     "sentry.enabled": true,
-    "sentry.authToken": "sntryu_4236be06f8147090b74fbd9899804addce64faff0b1aa71c44ae401",
     "sentry.organization": "sir-james-offord-ii",
     "sentry.projects": ["cmc-go-client"],
     "sentry.serverUrl": "https://sentry.io",
     "sentryAutoFix.sentryUrl": "https://sentry.io",
-    "sentryAutoFix.apiToken": "sntryu_Bc3082385e03c90e38D85d64fde5eaf80bee570758fb34e2f1b55c",
-    "sentryAutoFix.projectSlugs": ["sir-james-offord-ii/cmc-go-client"]
+    "sentryAutoFix.projectSlugs": ["sir-james-offord-ii/cmc-go-client"],
+
+    // Embedded preview: prefer Microsoft Edge Tools (not Simple Browser).
+    "vscode-edge-devtools.defaultUrl": "http://127.0.0.1:3000",
+    "vscode-edge-devtools.webRoot": "${workspaceFolder}/client",
+
+    // If Ports auto-forwarding is ever used, open externally (avoids Simple Browser).
+    "remote.portsAttributes": {
+        "3000": {
+            "onAutoForward": "openBrowser"
+        }
+    }
 }
