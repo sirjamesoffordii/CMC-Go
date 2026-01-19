@@ -1,76 +1,92 @@
-# AGENTS.md — CMC Go Agent Rules (applies to ALL agents)
+# CMC Go — Agent Operating Manual (AGENTS.md)
 
-This repository uses multiple AI agents running concurrently. **All agents must follow these rules.**
+This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, strict role boundaries, and a worktree policy.
 
-## Roles in this repo
+## Roles (canonical names)
 
-- **Sir James (User):** human operator. Agents do **not** delegate tasks to Sir James. Agents **audit** Sir James's commits/PRs like any other change. See `docs/authority/USER_SIR_JAMES.md`.
-- **User Assistant (User - Sir James):** executes Sir James’ direct requests in operator chat, but must report all meaningful actions to the Coordinator via Issue/PR comments so the system has no gaps.
-- **Coordinator:** keeps all agents in sync, owns task assignment and de-confliction. See `docs/authority/CMC_GO_COORDINATOR.md`.
-- **Explorer:** scouts solutions, proposes plans, and files issues with clear acceptance criteria.
-- **Builder:** implements code changes in isolated worktrees and opens PRs.
-- **Verifier:** runs checks/tests, validates UI flows, and reports evidence.
-- **Browser:** uses browser automation/tools to configure external services (Railway/Sentry/Codecov) or verify visuals.
+- **User (Human): Sir James** — sets direction; may override priorities; may inject code/PRs.
+- **Coordinator (AI)** — keeps the build moving; prevents collisions; assigns/issues work; integrates; updates Build Map/runbooks.
+- **Explorer (AI)** — investigates unknowns; proposes approaches; de-risks.
+- **Builder (AI)** — implements scoped changes; opens PRs.
+- **Verifier (AI)** — independently validates acceptance criteria; reports evidence.
+- **Browser Operator (AI)** — performs web-console work (Railway/Sentry/Codecov) and visual checks; reports evidence.
 
-## Shared operating rules
+## Source of truth
 
-1. **GitHub is the handoff bus**
-   - Work is assigned and tracked via GitHub Issues (labels + assignees).
-   - Updates are posted as Issue comments and/or PR comments.
+- **GitHub Issues** are the task queue.
+- **GitHub PRs** are the change vehicle.
+- **Docs/runbooks** record procedures and decisions.
+- This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
 
-1b. **No self-initiative work**
-   - Agents do not start new work just because they notice something.
-   - All work must be explicitly assigned by the **Coordinator** via a GitHub Issue (or an Issue comment that assigns/greenlights the next step).
-   - Progress and evidence must be posted back as Issue/PR comments using the standard update format.
+## Where role instructions live
 
-Exception:
-- The **User Assistant (User - Sir James)** may take tasks directly from Sir James in operator chat, but must still produce a GitHub audit trail (PR preferred) so the Coordinator has no gaps.
+Role-specific instructions (used by your VS Code agents) live here:
 
-1c. **Continuous execution (within an assignment)**
-   - Once assigned, agents proceed continuously through the “next best step” in their role until the Issue is complete or truly blocked.
-   - Agents do not use operator chat for updates/questions; all communication goes to the Coordinator via Issue/PR comments.
-   - If a decision is required, escalate to the Coordinator via Issue/PR comment; then continue with safe parallel work or wait/poll the thread.
-   - Prefer fewer, higher-signal updates (milestones + evidence) over frequent status pings.
+- Coordinator: [.github/agents/coordinator.agent.md](.github/agents/coordinator.agent.md)
+- Explorer: [.github/agents/explorer.agent.md](.github/agents/explorer.agent.md)
+- Builder: [.github/agents/builder.agent.md](.github/agents/builder.agent.md)
+- Verifier: [.github/agents/verifier.agent.md](.github/agents/verifier.agent.md)
+- Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
 
-**Issue assignment convention (so agents can self-discover work):**
-- Every Issue should include a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser`
-- Every Issue title should start with a role prefix:
-   - `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser:`
-- If a GitHub assignee exists for that role/agent, assign it; otherwise the **role label + title prefix** is the assignment.
+The two canonical authority docs that drive prioritization are:
 
-**How an agent finds its work:**
-- Filter Issues by your role label (preferred), then scan titles for your role prefix.
+- [docs/authority/CMC_OVERVIEW.md](docs/authority/CMC_OVERVIEW.md)
+- [docs/authority/BUILD_MAP.md](docs/authority/BUILD_MAP.md)
 
-2. **One surface = one owner at a time**
-   - Do not edit the same file/feature area another agent is actively editing.
-   - If uncertain, ask the Coordinator by commenting on the Issue.
+## Worktree policy (required)
 
-3. **Work in worktrees (required)**
-   - Primary worktree: `wt-main` (only one allowed to run `pnpm dev`).
-   - Builder worktree: `wt-impl-<issue#>-<short>`
-   - Verifier worktree: `wt-verify-<issue#>-<short>` (runs checks/tests; does **not** run dev server)
-   - Docs worktree: `wt-docs-<YYYY-MM-DD>` (docs-only changes)
+To avoid stepping on each other, work happens in isolated worktrees.
 
-4. **Evidence gates**
-   - If you claim something is fixed, include evidence: command output, screenshots, reproduction steps, or test results.
-   - Prefer automated verification (`pnpm test`, `pnpm check`, Playwright) when possible.
+- **Primary worktree:** `wt-main` (only one allowed to run `pnpm dev`)
+- **Builder worktree:** `wt-impl-<issue#>-<slug>`
+- **Verifier worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
+- **Docs worktree:** `wt-docs-<YYYY-MM-DD>` (docs-only changes)
 
-5. **No secret handling in repo**
-   - Never commit secrets/tokens to git.
-   - If external configuration is required, describe *where* to set it and *how to verify*, but do not paste secrets.
-   - **Allowed (ephemeral):** If a GitHub token is required for automation, the operator may provide it for the current session only (e.g. `$env:GITHUB_TOKEN`). Use a secure prompt when possible, do not print it, and clear it immediately after use.
+If you are not already in the correct worktree, create/switch before editing.
 
-## Standard update format (Issue comment)
+## Git discipline
 
-Use this template when reporting:
+- Keep diffs small and scoped to the assigned Issue.
+- One PR per Issue unless the Coordinator explicitly approves bundling.
+- Prefer additive changes over risky refactors.
+- Do not commit secrets. Use `.env.local` or platform environment variables.
 
-**STATUS:** In Progress | Blocked | Ready for Review | Completed
+### Branch naming
 
-**WHAT CHANGED:**
-- ...
+- Agent branches: `agent/<role>/<issue#>-<slug>`
+- User (Sir James) branches: `user/sir-james/<issue#>-<slug>` (or `user/sir-james/<slug>`)
 
-**EVIDENCE:**
-- ...
+### Commit message prefix
 
-**NEXT:**
-- ...
+- Agent commits: `agent(<role>): <summary>`
+- User commits: `user(sir-james): <summary>`
+
+## Definition of Done (DoD)
+
+A task is "Done" only when:
+
+1. Acceptance criteria in the Issue are met.
+2. Verification evidence is posted (commands run + results).
+3. A PR is opened (or updated) and linked to the Issue.
+4. Coordinator acknowledges integration/next steps.
+
+## Reporting standard (GitHub comment format)
+
+All agents post updates to the assigned Issue using this structure:
+
+- **Status:** (In Progress / Blocked / Ready for Verify / Verified)
+- **Worktree:** (name)
+- **Branch/PR:** (link)
+- **What changed:** (bullet list)
+- **How verified:** (commands run + brief results)
+- **Notes/Risks:** (anything the Coordinator should know)
+
+## Rapid Dev Mode (Owner-approved)
+
+Sir James has explicitly accepted increased risk during rapid development.
+
+Rules for agents:
+- Do **not** debate or repeatedly warn about credential handling.
+- Never commit secrets to the repository.
+- Prefer environment variables (`.env.local`, Railway vars, GitHub secrets). If missing, instruct where to place and continue once present.
+

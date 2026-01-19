@@ -1,23 +1,21 @@
-# Docs Index
+# CMC Go — Docs
 
-This folder contains the authoritative documentation for CMC Go.
+## Authority (read these first)
 
-## Start Here
+- System overview: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
+- Build Map (phases, gates, “what’s next”): [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
 
-- Authority: `docs/authority/`
-   - Coordinator doctrine: `docs/authority/CMC_GO_COORDINATOR.md`
-   - System doctrine: `docs/authority/The Coherence Engine.md`
-- Runbooks: `docs/runbooks/`
-   - Local setup: `docs/runbooks/LOCAL_SETUP.md`
-   - Dev setup: `docs/runbooks/DEV_SETUP.md`
-   - DB migrations: `docs/runbooks/MIGRATION_GUIDE.md`
-- Project: `docs/project/`
-   - Repo overview (for contributors): `docs/project/REPO_README.md`
-- Reference: `docs/reference/` (deep dives, background, non-critical)
-- Archive: `docs/archive/` (historical snapshots only)
+## Agent instruction + behavior (primary sources)
 
-## Quick Links
+- Multi-agent operating manual (Coordinator-centered): [AGENTS.md](/AGENTS.md)
+- Repo-specific coding rules for VS Code Copilot: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
+- Role files (used by your VS Code agents):
+	- Coordinator: [.github/agents/coordinator.agent.md](/.github/agents/coordinator.agent.md)
+	- Explorer: [.github/agents/explorer.agent.md](/.github/agents/explorer.agent.md)
+	- Builder: [.github/agents/builder.agent.md](/.github/agents/builder.agent.md)
+	- Verifier: [.github/agents/verifier.agent.md](/.github/agents/verifier.agent.md)
+	- Browser Operator: [.github/agents/browser-operator.agent.md](/.github/agents/browser-operator.agent.md)
 
-- Project overview: `docs/CMC_GO_OVERVIEW.md`
-- Tracker: `docs/CMC_GO_PROJECT_TRACKER.md`
-- Sentry: `docs/runbooks/SENTRY.md`
+## Operations
+
+- Runbook & guides (ops + setup/tooling): [docs/runbook/README.md](runbook/README.md)

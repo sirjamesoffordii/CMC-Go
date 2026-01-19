@@ -1,25 +1,33 @@
-# Skill: Worktrees (fast parallel work without collisions)
+# Skill: Worktrees (CMC Go)
+
+Use worktrees to avoid collisions between agents.
 
 ## Standard worktrees
 
-- `wt-main`: primary worktree (only one running `pnpm dev`)
-- `wt-impl-<issue#>-<short>`: Builder worktree for implementation
-- `wt-verify-<issue#>-<short>`: Verifier worktree for checks/tests
-- `wt-docs-<YYYY-MM-DD>`: docs-only changes
+- `wt-main` — primary worktree (only one runs `pnpm dev`)
+- `wt-impl-<issue#>-<slug>` — Builder
+- `wt-verify-<pr#>-<slug>` — Verifier
+- `wt-docs-<YYYY-MM-DD>` — docs-only
 
-Worktree usage is always anchored to a Coordinator-assigned Issue (or a Coordinator-approved docs-only task), not self-initiated work.
+## Canonical commands
 
-## Creation
+> Note: adjust paths as needed. The directory names are conventions.
 
-From repo root:
+Create worktree:
 
-- `git worktree add ../.worktrees/wt-impl-123-fix-filter staging`
-- `git worktree add ../.worktrees/wt-verify-123-fix-filter staging`
+- From repo root:
+  - `git worktree add ../wt-impl-123-fix-login -b agent/builder/123-fix-login`
 
-Then `pnpm install` once per worktree if needed.
+List worktrees:
+- `git worktree list`
 
-## Cleanup
+Remove worktree:
+- `git worktree remove ../wt-impl-123-fix-login`
 
-After merge:
-- `git worktree remove ../.worktrees/wt-impl-123-fix-filter`
-- `git branch -D wt-impl-123-fix-filter`
+Prune stale:
+- `git worktree prune`
+
+## Safety rules
+- Never run two dev servers bound to the same port simultaneously.
+- Only `wt-main` runs `pnpm dev`.
+- Verifier worktrees must not run dev server; they run tests/checks.
