@@ -19,6 +19,14 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Read-TokenInteractive {
+  $sec = Read-Host 'Paste GitHub token (input hidden)' -AsSecureString
+  if (-not $sec) { return $null }
+  return [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+  )
+}
+
 function Escape-QueryValue {
   param([Parameter(Mandatory=$true)][string]$Value)
   return [System.Uri]::EscapeDataString($Value)
@@ -315,6 +323,9 @@ if ($Mode -eq 'gh') {
   }
 }
 elseif ($Mode -eq 'rest') {
+  if (-not $Token) {
+    $Token = Read-TokenInteractive
+  }
   if (-not $Token) {
     throw "Mode=rest requires -Token or $env:GITHUB_TOKEN (fine-grained PAT with Issues: Read/Write)."
   }

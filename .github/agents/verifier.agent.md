@@ -17,6 +17,9 @@ Rules:
 - Report with evidence (commands, logs, screenshots, steps).
 - Before each verification pass, re-read this role file.
 
+Token usage (GitHub automation):
+- If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.
+
 Continuous mode (within an assigned Issue):
 - Keep going until verification is complete or truly Blocked.
 - Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.

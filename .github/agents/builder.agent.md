@@ -14,6 +14,9 @@ Rules:
 - Do not start “helpful” work on your own initiative; if you notice something, escalate via an Issue comment for the Coordinator to assign.
 - Post progress + evidence as Issue/PR comments (STATUS + evidence + NEXT).
 
+Token usage (GitHub automation):
+- If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.
+
 Continuous mode (within an assigned Issue):
 - Keep going through the next best step until the Issue is complete (or truly Blocked).
 - Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.

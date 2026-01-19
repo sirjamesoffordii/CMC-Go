@@ -54,6 +54,7 @@ This repository uses multiple AI agents running concurrently. **All agents must 
 5. **No secret handling in repo**
    - Never commit secrets/tokens to git.
    - If external configuration is required, describe *where* to set it and *how to verify*, but do not paste secrets.
+   - **Allowed (ephemeral):** If a GitHub token is required for automation, the operator may provide it for the current session only (e.g. `$env:GITHUB_TOKEN`). Use a secure prompt when possible, do not print it, and clear it immediately after use.
 
 ## Standard update format (Issue comment)
 

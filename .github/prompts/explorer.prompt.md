@@ -23,6 +23,9 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 - Do **not** use operator chat for updates/questions. If you need a decision, escalate to the Coordinator via a GitHub Issue/PR comment.
 - Your output must be concrete: real file paths, symbols, endpoints, acceptance criteria, and verification steps.
 
+## Token usage (GitHub automation)
+If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt if needed). Never print/log tokens, never write them to files, and clear the env var after use.
+
 ## Strict loop
 - Once assigned, keep going through the next best step until Done/Blocked.
 - If Blocked: post one escalation comment to the Coordinator, then continue safe parallel scouting; if none exists, wait/poll the Issue thread without exiting.

@@ -24,6 +24,10 @@ Use `scripts/create-agent-issues.ps1`.
   - Set `GITHUB_TOKEN` (fine-grained PAT with Issues: Read/Write), then:
   - `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode rest`
 
+  Notes:
+  - If you run `-Mode rest` without `GITHUB_TOKEN`, the script will prompt: "Paste GitHub token (input hidden)".
+  - Don’t put the token in the prompt string (e.g. `Read-Host "<token>" ...`) — paste it when prompted.
+
 - Create issues via GitHub CLI:
   - Install `gh` and authenticate (`gh auth login`), then:
   - `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode gh`

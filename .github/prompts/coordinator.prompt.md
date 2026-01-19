@@ -68,3 +68,6 @@ When something is claimed fixed, require at least one:
 - `pnpm test`
 - Playwright run (targeted)
 - Repro steps + screenshot/video
+
+## GitHub automation (token)
+If GitHub automation requires a token (Issues/labels/etc), use an operator-provided token **ephemerally** via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.

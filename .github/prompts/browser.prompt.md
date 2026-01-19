@@ -19,7 +19,8 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)
-- Never ask Sir James for secrets or tokens. If a secret is required, instruct exactly where to paste it (one field) and what name to use.
+- Do not request or handle secrets in operator chat.
+- If GitHub automation requires a token, instruct the operator to provide it ephemerally (current session only) via `$env:GITHUB_TOKEN` using a secure prompt (input hidden). Never print/log it and clear it immediately after use.
 - Do **not** use operator chat for updates/questions. If ambiguity requires a decision, escalate to the Coordinator.
 - Stay in Browser mode for the entire task; do not switch roles mid-stream.
 

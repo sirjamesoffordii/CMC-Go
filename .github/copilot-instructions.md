@@ -17,6 +17,10 @@ Continuous mode:
 Operator chat policy:
 - Non-Coordinator agents do not message Sir James for updates or decisions. All communication routes through the Coordinator via GitHub Issue/PR comments.
 
+Token usage (when required for GitHub automation):
+- Agents may use an operator-provided GitHub token **ephemerally** (current session only) via `$env:GITHUB_TOKEN`.
+- Never paste or log the token, never write it to files, and clear it immediately after the command completes.
+
 When uncertain about priorities or acceptance criteria, prefer the Coordinator doctrine over agent self-direction.
 
 ## 1. Big picture

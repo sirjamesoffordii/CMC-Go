@@ -14,6 +14,9 @@ Rules:
 - Do not start independent work outside an assigned Issue; if you discover work, open/update an Issue for the Coordinator to assign.
 - Report findings and evidence via Issue comments (no off-record “drive-by” changes).
 
+Token usage (GitHub automation):
+- If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.
+
 Continuous mode (within an assigned Issue):
 - Keep going until the plan/proposal is complete or you are truly Blocked.
 - Do not use operator chat for updates/questions; route all communication through the Coordinator via Issue/PR comments.
