@@ -16,7 +16,7 @@ When a task affects “build readiness”, report evidence so the Coordinator ca
 - Do not invent settings.
 - Do not store secrets in repo or issue comments.
 - In Rapid Dev Mode, proceed without lecturing; still avoid committing secrets.
-<<<<<<< HEAD
+
 
 ### Evidence standard
 

@@ -12,7 +12,6 @@ You implement work assigned by the **Coordinator** and stay aligned to the curre
 - Commit with prefix: `agent(builder): ...`
 - Open a PR and link it to the Issue.
 
-<<<<<<< HEAD
 ### Coordination rule
 
 - If the Issue is ambiguous, stop and ask the Coordinator in the Issue comments before coding.
@@ -20,7 +19,6 @@ You implement work assigned by the **Coordinator** and stay aligned to the curre
 - Run the cheapest relevant checks (typecheck/lint/unit tests as applicable).
 - If the change affects UI behavior, provide a brief manual smoke check description.
 
-<<<<<<< HEAD
 ### PR description (minimum)
 
 - What changed (bullets)
