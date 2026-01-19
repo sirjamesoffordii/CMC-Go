@@ -18,6 +18,32 @@ This repository is worked on by multiple agents operating **concurrently**. The 
 - **Docs/runbooks** record procedures and decisions.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
 
+## Low-Risk Fast Path (token-saving)
+
+Default workflow is still **Issue → assigned role → PR → verify → merge**.
+
+However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, obvious fixes.
+
+**Fast Path is allowed only if ALL are true:**
+
+- **Small & local:** typically ≤ 1–2 files and ≤ ~50 LOC changed.
+- **Low blast radius:** docs-only, comments-only, typo fixes, agent-role docs/runbook clarifications, test-only improvements that do not change production behavior.
+- **No schema/auth changes:** does not touch `drizzle/schema.ts`, auth/scope, or production env contracts.
+- **No collisions:** unlikely to conflict with active Builder work on the same surface.
+
+**Fast Path procedure:**
+
+1) Create a dedicated worktree (docs worktree for docs-only changes).
+2) Open a PR directly.
+3) In the PR description, include:
+	- **Why** (1 sentence)
+	- **What changed** (bullets)
+	- **How verified** (for docs-only: `git grep`/lint as relevant)
+	- **Risk** (1 line)
+4) If there is no Issue, that’s OK; the **Coordinator** will later link/create a tracking Issue if needed.
+
+If any ambiguity exists, do NOT use Fast Path—open/ask on an Issue.
+
 ## Where role instructions live
 
 Role-specific instructions (used by your VS Code agents) live here:
@@ -50,6 +76,25 @@ If you are not already in the correct worktree, create/switch before editing.
 - One PR per Issue unless the Coordinator explicitly approves bundling.
 - Prefer additive changes over risky refactors.
 - Do not commit secrets. Use `.env.local` or platform environment variables.
+
+## Token budget playbook
+
+These rules exist to reduce repeated context and long transcripts.
+
+- **Default to deltas:** only state what changed since the last update.
+- **No log dumps:** summarize key evidence; link to PR/Issue; include only the 3–10 most relevant lines.
+- **Short commands:** prefer `pnpm -s`, `git diff --name-only`, and narrow test runs.
+- **Avoid re-reading:** don’t paste large file contents into Issues unless required.
+- **Templates everywhere:** use the report formats in this doc; keep status comments short.
+- **One question max:** if blocked, ask a single crisp question and propose a default.
+
+## Ops fallback (Browser Operator unavailable)
+
+If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
+
+- The **Coordinator** assigns the task to any available agent/human who has access.
+- The assignee follows a step-by-step checklist in the Issue and posts evidence.
+- Never paste secrets into Issues; name variables but not values.
 
 ### Branch naming
 

@@ -12,6 +12,16 @@ When a task affects “build readiness”, report evidence so the Coordinator ca
 - Capture evidence: what you changed, where, and how to confirm.
 - For visual checks: confirm the specified screens/flows and report discrepancies.
 
+## Ops continuity (when Browser Operator is unavailable)
+
+If you are unavailable, the **Coordinator** may reassign your Issue to any agent/human with console access.
+The new assignee must follow the same evidence standards and avoid posting secrets.
+
+## Token discipline
+
+- Use checklists and short evidence.
+- Prefer screenshots/URLs over long narrative.
+
 ### Hard rules
 - Do not invent settings.
 - Do not store secrets in repo or issue comments.

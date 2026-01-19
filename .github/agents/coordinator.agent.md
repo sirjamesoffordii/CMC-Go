@@ -36,6 +36,21 @@ The **Browser Operator** is not a VS Code agent; they still follow [.github/agen
 - Integrate changes by reviewing PRs, requesting independent verification, and merging when ready.
 - Update [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) when reality changes.
 
+## Low-risk fast path (token-saving)
+
+You may open a docs-only / tiny low-risk PR without first creating an Issue **only** when it meets the criteria in [AGENTS.md](/AGENTS.md#low-risk-fast-path-token-saving).
+
+When Fast Path is used:
+- Keep the PR extremely small.
+- Ensure no collisions with active Builder surfaces.
+- Ask the **Verifier** for evidence only if risk warrants it.
+
+## Token discipline
+
+- Prefer deltas over restating context.
+- Avoid pasting large logs; include only key lines and links.
+- If blocked, ask one crisp question and propose a default.
+
 ## How you run work (default loop)
 
 1. Read Build Map → pick the smallest next step that advances the current phase.
