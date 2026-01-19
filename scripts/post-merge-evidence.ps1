@@ -2,6 +2,13 @@ param(
   # GitHub repo in owner/name format.
   [string]$Repo = 'sirjamesoffordii/CMC-Go',
 
+  # Optional PAT for REST fallback (if gh auth isn't available).
+  [string]$Token = $env:GITHUB_TOKEN,
+
+  # If we have to prompt for a token, optionally keep it in this PowerShell session
+  # as $env:GITHUB_TOKEN to avoid repeated prompts.
+  [switch]$SetSessionToken,
+
   # Issue numbers to comment on.
   [int]$IssueSetupAgentWorkflow = 74,
   [int]$IssueUpdateKeyAgentDocs = 75,
@@ -16,6 +23,18 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+function Test-GhReady {
+  $gh = Get-Command gh -ErrorAction SilentlyContinue
+  if (-not $gh) { return $false }
+
+  try {
+    gh auth status -h github.com | Out-Null
+    return $LASTEXITCODE -eq 0
+  } catch {
+    return $false
+  }
+}
 
 function Read-TokenInteractive {
   $sec = Read-Host 'Paste GitHub token (hidden)' -AsSecureString
@@ -43,6 +62,12 @@ function Post-IssueComment {
     [string]$Body
   )
 
+  if (Test-GhReady) {
+    $payload = @{ body = $Body } | ConvertTo-Json
+    $payload | gh api "repos/$RepoName/issues/$IssueNumber/comments" --method POST --input - | Out-Null
+    return
+  }
+
   $uri = "https://api.github.com/repos/$RepoName/issues/$IssueNumber/comments"
   $payload = @{ body = $Body } | ConvertTo-Json
   Invoke-RestMethod -Method Post -Headers $Headers -Uri $uri -Body $payload | Out-Null
@@ -51,13 +76,21 @@ function Post-IssueComment {
 # Ensure refs are current
 git fetch --prune origin | Out-Null
 
-$token = Read-TokenInteractive
-if (-not $token) { throw 'No token provided.' }
+$headers = $null
+if (-not (Test-GhReady)) {
+  $token = $Token
+  if (-not $token) { $token = Read-TokenInteractive }
+  if (-not $token) { throw 'No token provided.' }
 
-$headers = @{
-  'User-Agent'    = 'CMC-Go-Coordinator'
-  'Accept'        = 'application/vnd.github+json'
-  'Authorization' = "Bearer $token"
+  if ($SetSessionToken -and -not $Token) {
+    $env:GITHUB_TOKEN = $token
+  }
+
+  $headers = @{
+    'User-Agent'    = 'CMC-Go-Coordinator'
+    'Accept'        = 'application/vnd.github+json'
+    'Authorization' = "Bearer $token"
+  }
 }
 
 $diffSetup = Get-NameStatusDiff -From $Base -To $BranchSetupAgentWorkflow
