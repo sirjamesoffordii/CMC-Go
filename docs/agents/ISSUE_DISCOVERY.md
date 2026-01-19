@@ -6,7 +6,7 @@ Agents discover work via **GitHub Issues** filtered by the role label.
 
 ## Role label filters
 
-- Coordinator: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3Arole%3Acoordinator
+- Coordinator: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Acoordinator%22
 - Explorer: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Aexplorer%22
 - Builder: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Abuilder%22
 - Verifier: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Averifier%22
