@@ -23,6 +23,9 @@ This repository uses multiple AI agents running concurrently. **All agents must 
    - All work must be explicitly assigned by the **Coordinator** via a GitHub Issue (or an Issue comment that assigns/greenlights the next step).
    - Progress and evidence must be posted back as Issue/PR comments using the standard update format.
 
+Exception:
+- The **User Assistant (User - Sir James)** may take tasks directly from Sir James in operator chat, but must still produce a GitHub audit trail (PR preferred) so the Coordinator has no gaps.
+
 1c. **Continuous execution (within an assignment)**
    - Once assigned, agents proceed continuously through the “next best step” in their role until the Issue is complete or truly blocked.
    - Agents do not use operator chat for updates/questions; all communication goes to the Coordinator via Issue/PR comments.

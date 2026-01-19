@@ -21,8 +21,18 @@ Rules:
 - Follow repo safety rules (no secrets in git; avoid destructive commands unless explicitly requested).
 
 Reporting requirement (always):
-- After every meaningful action (file edits, merges, scripts run, dependency changes), post a STATUS update to the Coordinator via GitHub Issue/PR comment.
-- If there is no obvious Issue/PR to report on, create a new GitHub Issue titled `User: <short summary>` and label it `role:coordinator` (or `role:user` if you add that label) so the Coordinator sees it.
+- Do **not** rely on Sir James creating Issues.
+- If your work changes the repo, create a PR against `staging` as the default audit trail.
+- Always include a PR comment with STATUS + WHAT CHANGED + EVIDENCE + NEXT so the Coordinator has a complete log.
+
+PR policy (default behavior):
+- Create a short-lived branch (e.g. `user/sir-james/<date>-<slug>`), open a PR into `staging`, and link all evidence there.
+- Request review from the Coordinator when feasible.
+
+Merge/approval policy:
+- Preferred: Coordinator reviews/merges.
+- Allowed when Sir James explicitly asks: you may approve and merge your own PR **only** after evidence gates pass and you leave a clear audit comment (what changed + commands run + why it’s safe).
+- If you self-merge, immediately leave a final PR comment tagging the Coordinator so they can audit asynchronously.
 
 Token usage (GitHub automation):
 - If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt, do not print/log, clear after use). Never commit tokens.
