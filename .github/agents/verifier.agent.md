@@ -17,7 +17,6 @@ You provide independent evidence so the **Coordinator** can safely merge and upd
 - Provide evidence (commands run + key output).
 - Mark the Issue "Verified" only when acceptance criteria are met.
 
-<<<<<<< HEAD
 ### Report format (post on PR)
 
 - **Result**: Pass / Fail / Pass-with-notes

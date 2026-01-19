@@ -21,7 +21,6 @@ Your output should be decision-ready for the **Coordinator**, and aligned to the
 - Do not open large PRs unless the Coordinator assigns you as Builder.
 - Prefer minimal change plans aligned with Phase 1 integrity.
 
-<<<<<<< HEAD
 ### What “good” looks like
 
 - A recommended approach the Coordinator can paste into the Issue
