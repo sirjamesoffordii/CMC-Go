@@ -17,7 +17,7 @@ Activation prompt files (recommended):
 - [.github/prompts/builder.prompt.md](../../.github/prompts/builder.prompt.md)
 - [.github/prompts/verifier.prompt.md](../../.github/prompts/verifier.prompt.md)
 - [.github/prompts/browser.prompt.md](../../.github/prompts/browser.prompt.md)
-- [.github/prompts/continue.prompt.md](../../.github/prompts/continue.prompt.md)
+- [.github/prompts/c.prompt.md](../../.github/prompts/c.prompt.md)
 
 ---
 
