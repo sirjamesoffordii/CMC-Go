@@ -18,7 +18,14 @@ Activation prompt files (recommended):
 - [.github/prompts/verifier.prompt.md](../../.github/prompts/verifier.prompt.md)
 - [.github/prompts/browser.prompt.md](../../.github/prompts/browser.prompt.md)
 - [.github/prompts/user-sir-james.prompt.md](../../.github/prompts/user-sir-james.prompt.md)
-- [.github/prompts/c.prompt.md](../../.github/prompts/c.prompt.md)
+
+Continue prompt files (role-specific):
+- [.github/prompts/cc.prompt.md](../../.github/prompts/cc.prompt.md)
+- [.github/prompts/ce.prompt.md](../../.github/prompts/ce.prompt.md)
+- [.github/prompts/cb.prompt.md](../../.github/prompts/cb.prompt.md)
+- [.github/prompts/cv.prompt.md](../../.github/prompts/cv.prompt.md)
+- [.github/prompts/cbr.prompt.md](../../.github/prompts/cbr.prompt.md)
+- [.github/prompts/cu.prompt.md](../../.github/prompts/cu.prompt.md)
 
 ---
 
