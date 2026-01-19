@@ -13,8 +13,8 @@ Only if needed:
 - Doctrine / gates ambiguity: `docs/authority/CMC_GO_COORDINATOR.md`
 
 Do this now:
-1) State your role: Coordinator | Explorer | Builder | Verifier | Browser.
-2) State the assigned work: Issue/PR link + acceptance criteria.
+1) State your role: Coordinator | Explorer | Builder | Verifier | Browser | User - Sir James.
+2) State the assigned work: Issue/PR link (or “no Issue; PR audit trail”) + acceptance criteria.
 3) State where you are: branch + commit.
 4) Re-anchor to working truth:
    - treat `staging` as canonical and sync to `origin/staging`, OR confirm the PR target branch.
