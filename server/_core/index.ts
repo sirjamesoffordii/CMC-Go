@@ -48,8 +48,14 @@ async function startServer() {
     validateEnv();
   } catch (error) {
     if (!isDevelopment) {
-      console.error('[Startup] Environment validation failed. Server will not start.');
-      console.error('[Startup] Fix the missing variables and try again.');
+      const err = error instanceof Error ? error : new Error(String(error));
+      console.error("[Startup] Environment validation failed. Server will not start.");
+      console.error(`[Startup] ${err.message}`);
+      if (err.stack) {
+        console.error(err.stack);
+      }
+      console.error("[Startup] Fix the missing variables and redeploy.");
+      console.error("[Startup] Railway: Service → Variables → add missing keys (e.g. SESSION_SECRET) then redeploy.");
       process.exit(1);
     }
     console.warn("[Startup] Environment validation failed (development). Continuing without required env.");
