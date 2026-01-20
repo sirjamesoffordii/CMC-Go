@@ -18,5 +18,5 @@ Commands to run (edit as needed):
 
 ## Evidence to report (on PR)
 - Result: Pass / Fail / Pass-with-notes
-- Commands run + concise results (≤ 10 relevant lines)
+- Commands run + concise results (<= 10 relevant lines)
 - Notes/Risks (brief)

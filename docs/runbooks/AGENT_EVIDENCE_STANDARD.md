@@ -17,9 +17,9 @@ Goal: preserve confidence while keeping Issue/PR comments short.
 ## Recommended “evidence blocks”
 
 ### Builder PR description
-- **What changed:** 2–5 bullets
+- **What changed:** 2-5 bullets
 - **How verified:** commands + short result
-- **Risk:** 1–2 lines
+- **Risk:** 1-2 lines
 
 ### Verifier PR comment
 - **Result:** Pass / Fail / Pass-with-notes
@@ -28,5 +28,5 @@ Goal: preserve confidence while keeping Issue/PR comments short.
 
 ## Never do
 
-- Don’t paste secrets.
-- Don’t paste multi-page logs; link to CI/Railway/Sentry instead.
+- Don't paste secrets.
+- Don't paste multi-page logs; link to CI/Railway/Sentry instead.

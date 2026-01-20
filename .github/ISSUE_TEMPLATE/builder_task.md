@@ -27,5 +27,5 @@ If UI/server integration changes:
 
 ## PR requirements
 - Link this Issue
-- Include **Risk** (1–2 lines)
-- Evidence snippet standard: ≤ 10 relevant lines; prefer links over dumps
+- Include **Risk** (1-2 lines)
+- Evidence snippet standard: <= 10 relevant lines; prefer links over dumps
