@@ -215,7 +215,7 @@ When conflicts arise, priority order:
 2. **CMC_GO_BRIEF.md** (system invariants)
 3. **BUILD_MAP.md** (current phase priorities)
 4. **AGENTS.md** (role definitions)
-5. **This document** (operational rules)
+5. **AGENT_GOVERNANCE.md** (operational rules)
 6. **Prompt files** (agent-specific guidance)
 
 ## Document Maintenance

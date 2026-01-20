@@ -60,7 +60,7 @@ You coordinate between human intent and autonomous execution agents.
 - Complete task context
 - Clear boundaries
 - Explicit success criteria
-- No assume shared knowledge
+- Assume no shared knowledge
 
 ## Browser Operations
 

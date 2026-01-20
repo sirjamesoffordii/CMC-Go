@@ -4,9 +4,9 @@
 
 ### Start Here (Required Reading)
 1. **[AGENTS.md](../AGENTS.md)** — Your role and authority definition
-2. **[agents/CMC_GO_BRIEF.md](agents/CMC_GO_BRIEF.md)** — System mental model and invariants
-3. **[agents/BUILD_MAP.md](agents/BUILD_MAP.md)** — Current phase and task tracking
-4. **[authority/AGENT_GOVERNANCE.md](authority/AGENT_GOVERNANCE.md)** — Governance rules and protocols
+2. **[CMC_GO_BRIEF.md](agents/CMC_GO_BRIEF.md)** — System mental model and invariants
+3. **[BUILD_MAP.md](agents/BUILD_MAP.md)** — Current phase and task tracking
+4. **[AGENT_GOVERNANCE.md](authority/AGENT_GOVERNANCE.md)** — Governance rules and protocols
 
 ### Prompt Files (Operational Guidance)
 - **[.github/loop.prompt.md](../.github/loop.prompt.md)** — Continuous execution loop
@@ -72,11 +72,11 @@ docs/
 When documents conflict, follow this priority:
 
 1. **The Coherence Engine** — Epistemic foundations (highest authority)
-2. **CMC_GO_BRIEF.md** — System invariants
-3. **BUILD_MAP.md** — Current phase priorities
-4. **AGENT_GOVERNANCE.md** — Operational rules
-5. **Prompt files** — Role-specific guidance
-6. **Runbooks** — Procedural instructions
+2. **agents/CMC_GO_BRIEF.md** — System invariants
+3. **agents/BUILD_MAP.md** — Current phase priorities
+4. **authority/AGENT_GOVERNANCE.md** — Operational rules
+5. **Prompt files** (.github/*.prompt.md) — Role-specific guidance
+6. **Runbooks** (runbooks/*.md) — Procedural instructions
 
 ## Finding What You Need
 
