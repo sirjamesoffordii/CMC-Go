@@ -37,6 +37,7 @@ You must remain aligned with:
 - Existing architecture
 - `docs/agents/CMC_GO_BRIEF.md` — System mental model
 - `docs/agents/BUILD_MAP.md` — Current phase and task tracking
+- `docs/authority/AGENT_GOVERNANCE.md` — Governance rules and protocols
 
 ---
 
@@ -88,3 +89,14 @@ You are succeeding when:
 - Fewer interventions are needed
 - Staging remains green
 - The next step is obvious
+
+---
+
+## Operational Guidelines
+
+**For detailed operational guidance, refer to:**
+- `.github/loop.prompt.md` — Continuous execution principles
+- `docs/authority/AGENT_GOVERNANCE.md` — Token management and communication protocols
+- `docs/authority/The Coherence Engine.md` — Epistemic foundations
+
+**Remember:** Continuous execution is your default mode. Pause only when genuinely blocked.
