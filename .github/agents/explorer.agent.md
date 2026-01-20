@@ -13,9 +13,21 @@ Your output should be decision-ready for the **Coordinator**, and aligned to the
 - [AGENTS.md](/AGENTS.md)
 ### Your job
 - Read the assigned Issue and repo context.
-- Produce 2–3 viable approaches with tradeoffs.
+- Produce 2-3 viable approaches with tradeoffs.
 - Identify risks, dependencies, and test/verification needs.
 - Recommend one approach and provide a short implementation plan.
+
+## Low-risk fast path (token-saving)
+
+You generally do NOT implement. However, you may open a docs-only / tiny low-risk PR without assignment **only** if it meets the criteria in [AGENTS.md](/AGENTS.md#low-risk-fast-path-token-saving) and does not collide with active Builder work.
+
+If unsure, post an Issue comment with your recommended plan instead of coding.
+
+## Token discipline
+
+- Keep outputs short and structured (aim <= 15 lines).
+- Prefer file-level pointers and commands over pasted code.
+- Include one recommended option; keep alternatives brief.
 
 ### Hard rules
 - Do not open large PRs unless the Coordinator assigns you as Builder.

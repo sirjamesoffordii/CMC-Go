@@ -17,6 +17,17 @@ You provide independent evidence so the **Coordinator** can safely merge and upd
 - Provide evidence (commands run + key output).
 - Mark the Issue "Verified" only when acceptance criteria are met.
 
+## Low-risk fast path (token-saving)
+
+If a PR is clearly docs-only / tiny and meets the criteria in [AGENTS.md](/AGENTS.md#low-risk-fast-path-token-saving), you may verify with a minimal evidence set (e.g., `git diff --name-only`, targeted grep) instead of running the full suite.
+
+If anything touches runtime behavior, fall back to normal verification.
+
+## Token discipline
+
+- Evidence should be the smallest useful slice (commands + concise result).
+- Prefer "Pass-with-notes" over long explanations.
+
 ### Report format (post on PR)
 
 - **Result**: Pass / Fail / Pass-with-notes

@@ -12,12 +12,27 @@ You implement work assigned by the **Coordinator** and stay aligned to the curre
 - Commit with prefix: `agent(builder): ...`
 - Open a PR and link it to the Issue.
 
+## Low-risk fast path (token-saving)
+
+If and only if a change meets the criteria in [AGENTS.md](/AGENTS.md#low-risk-fast-path-token-saving), you may open a tiny PR without waiting for an Issue.
+
+Constraints:
+- Still use a dedicated worktree/branch.
+- Keep diff minimal and avoid shared hot surfaces.
+- In PR description, include **Risk** + **How verified**.
+
 ### Coordination rule
 
 - If the Issue is ambiguous, stop and ask the Coordinator in the Issue comments before coding.
 ### Verification (minimum)
 - Run the cheapest relevant checks (typecheck/lint/unit tests as applicable).
 - If the change affects UI behavior, provide a brief manual smoke check description.
+
+## Token discipline
+
+- Post deltas only (what changed, not full context).
+- Don't paste stack traces/logs unless it's the top failure.
+- Prefer narrowed commands (single test file, `pnpm -s`).
 
 ### PR description (minimum)
 
