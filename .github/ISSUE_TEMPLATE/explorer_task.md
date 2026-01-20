@@ -14,7 +14,7 @@ labels: ["role:explorer", "status:ready"]
 ## Deliverable
 Post an Issue comment with:
 - Recommended approach (1)
-- Alternatives (1–2) + why rejected
+- Alternatives (1-2) + why rejected
 - Files/modules likely touched
 - Verification plan (commands + success criteria)
 
@@ -22,4 +22,4 @@ Post an Issue comment with:
 - Prefer file lists and short diffs:
   - `git diff --name-only <base>...<branch>`
   - `git log --oneline -n 20 <branch>`
-- Keep logs to ≤ 10 relevant lines.
+- Keep logs to <= 10 relevant lines.
