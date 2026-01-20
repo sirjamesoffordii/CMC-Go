@@ -31,7 +31,7 @@ Constraints:
 ## Token discipline
 
 - Post deltas only (what changed, not full context).
-- Don’t paste stack traces/logs unless it’s the top failure.
+- Don't paste stack traces/logs unless it's the top failure.
 - Prefer narrowed commands (single test file, `pnpm -s`).
 
 ### PR description (minimum)

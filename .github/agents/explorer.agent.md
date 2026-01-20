@@ -13,7 +13,7 @@ Your output should be decision-ready for the **Coordinator**, and aligned to the
 - [AGENTS.md](/AGENTS.md)
 ### Your job
 - Read the assigned Issue and repo context.
-- Produce 2–3 viable approaches with tradeoffs.
+- Produce 2-3 viable approaches with tradeoffs.
 - Identify risks, dependencies, and test/verification needs.
 - Recommend one approach and provide a short implementation plan.
 
@@ -25,7 +25,7 @@ If unsure, post an Issue comment with your recommended plan instead of coding.
 
 ## Token discipline
 
-- Keep outputs short and structured (aim ≤ 15 lines).
+- Keep outputs short and structured (aim <= 15 lines).
 - Prefer file-level pointers and commands over pasted code.
 - Include one recommended option; keep alternatives brief.
 

@@ -26,7 +26,7 @@ If anything touches runtime behavior, fall back to normal verification.
 ## Token discipline
 
 - Evidence should be the smallest useful slice (commands + concise result).
-- Prefer “Pass-with-notes” over long explanations.
+- Prefer "Pass-with-notes" over long explanations.
 
 ### Report format (post on PR)
 

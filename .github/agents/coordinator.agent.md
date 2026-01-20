@@ -26,7 +26,7 @@ The **Browser Operator** is not a VS Code agent; they still follow [.github/agen
 
 ### Your job
 - Maintain a single coherent plan and current state.
-- Keep the team aligned to the current Build Map phase (no “random feature drift”).
+- Keep the team aligned to the current Build Map phase (no "random feature drift").
 - Create/triage GitHub Issues and assign them to roles.
 - Enforce worktree + branch conventions.
 - Ensure every task has:
@@ -80,7 +80,7 @@ When you create an Issue, include:
 - If two tasks overlap files/modules, serialize them.
 ## Build Map discipline
 
-- Treat [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) as the single truth for “what phase are we in?”
+- Treat [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) as the single truth for "what phase are we in?"
 - When you advance or re-scope, update:
 	- **Last verified** timestamp
 	- **Current Position**
