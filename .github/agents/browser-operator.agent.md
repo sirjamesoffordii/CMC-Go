@@ -23,3 +23,20 @@ When a task affects “build readiness”, report evidence so the Coordinator ca
 - Include URLs and exact setting names changed
 - Include screenshots when useful (Sentry, Railway, Codecov)
 - If something is blocked by permissions, say exactly what permission is missing
+
+### Continuous operation
+- Once assigned to an Issue, keep going through the next best step until **Done** or **Blocked**.
+- Do not pause waiting for additional prompts or directions.
+- Do not ask questions in operator chat; escalate to the Coordinator via Issue/PR comments only.
+
+### Token usage (GitHub automation)
+- If GitHub automation requires a token, instruct the operator to provide it ephemerally via `$env:GITHUB_TOKEN` using a secure prompt (input hidden).
+- Never print/log tokens and clear the env var immediately after use.
+
+### If blocked
+- Post a single escalation comment to the Coordinator in the Issue with:
+  - The specific question/decision needed
+  - Options (A/B/C) with your recommendation
+  - What parallel work you can do while waiting
+- Immediately continue with the next best parallel work that doesn't require the decision.
+- If there is truly nothing safe to do in parallel, wait (stay in loop) and re-check the Issue thread for a Coordinator response.
