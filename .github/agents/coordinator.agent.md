@@ -74,3 +74,12 @@ When you create an Issue, include:
 ### Output style
 - Always leave the repo in a clearer state.
 - Prefer structured checklists and small PRs.
+
+### Token usage (GitHub automation)
+- If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt if needed).
+- Never print/log tokens, never commit them to files, and clear the env var after use.
+
+### Continuous operation
+- Maintain the central control loop: continuously assess, assign, deconflict, and integrate.
+- You are the only role that asks Sir James questions; all other roles escalate to you via Issue/PR comments.
+- Keep the Build Map and Issue queue aligned to reality.
