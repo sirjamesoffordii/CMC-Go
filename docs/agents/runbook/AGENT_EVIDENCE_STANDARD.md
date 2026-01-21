@@ -15,7 +15,6 @@ Goal: preserve confidence while keeping Issue/PR comments short.
   - first failure location (if fail)
 
 ## Recommended “evidence blocks”
-
 ### Implementation PR description
 - **What changed:** 2-5 bullets
 - **How verified:** commands + short result
@@ -27,6 +26,5 @@ Goal: preserve confidence while keeping Issue/PR comments short.
 - **Notes/Risks:** brief
 
 ## Never do
-
 - Don't paste secrets.
 - Don't paste multi-page logs; link to CI/Railway/Sentry instead.
