@@ -3,9 +3,11 @@
 **Owner:** Coordinator  
 **Last verified:** Jan 19, 2026 · 2:50 AM CT
 
-This document governs **build progression and verification** for CMC Go. It is the **single source of truth** for determining the system’s current build position and when advancement is allowed.
+**Operational board (Projects v2):** https://github.com/users/sirjamesoffordii/projects/2
 
-Maintenance rule: the **Coordinator** updates this file whenever a PR meaningfully changes build position, scope, or verification status.
+This document governs **build progression and verification** for CMC Go. Phase definitions and advancement rules live here; day-to-day execution tracking lives in the **Operational board** above.
+
+Maintenance rule: the **Coordinator** updates this file when a PR meaningfully changes build position/scope, and keeps the Operational board's milestones/statuses in sync.
 
 ---
 
@@ -72,13 +74,13 @@ Recent coordination/doc stabilization work landed in `staging`:
   - PR #21  
   - Commit: `b3ecdc6`
 
-- ⚪ **Needs filter in People view** — Backlog  
+- 🟢 **Needs filter in People view** — Completed  
   - PR #31
 
-- ⚪ **Explicit “Active Need” definition** — Backlog  
+- 🟢 **Explicit "Active Need" definition** — Completed  
   - PR #30
 
-- ⚪ **Districts grouped by region in People filters** — Backlog  
+- 🟢 **Districts grouped by region in People filters** — Completed  
   - PR #33
 
 ---
@@ -93,10 +95,10 @@ Recent coordination/doc stabilization work landed in `staging`:
   - PR #42  
   - Commit: `50f9616`
 
-- ⚪ **Promote Sentry test trigger to staging** — Backlog  
+- 🟢 **Promote Sentry test trigger to staging** — Completed  
   - PR #43
 
-- ⚪ **Upgrade to @sentry/react v8.0.0** — Backlog  
+- 🟢 **Upgrade to @sentry/react v8.0.0** — Completed  
   - PR #45
 
 - 🟢 **Code Coverage with Codecov configured** — Completed  

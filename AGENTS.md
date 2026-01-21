@@ -15,6 +15,7 @@ This repository is worked on by multiple agents operating **concurrently**. The 
 
 - **GitHub Issues** are the task queue.
 - **GitHub PRs** are the change vehicle.
+- **GitHub Projects v2** is the operational status board (triage + workflow state).
 - **Docs/runbooks** record procedures and decisions.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
 
