@@ -1,6 +1,6 @@
 ---
 name: Feature / Fix Task
-about: Standard work item for universal agents (TL/SWE) + peer verification
+about: Standard work item for TL/SWE + peer verification
 title: "[Task] <short title>"
 labels: ["status:ready"]
 ---

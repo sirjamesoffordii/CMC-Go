@@ -2,26 +2,24 @@
 
 This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, a simple **claim** mechanism to prevent collisions, and a strict worktree policy.
 
-## Agents (canonical names)
-
-- **User (Human): Sir James** — sets direction; may override priorities; may inject code/PRs.
-- **Tech Lead (TL) (AI)** — runs first by convention; defaults to triage/coordination/deconfliction.
-- **Software Engineer (SWE) (AI)** — runs second by convention; defaults to implementation and peer verification.
-- **Charlie (AI)** — optional/future; adds parallelism (deep verify, repro hunts, ops checks).
-
-TL/SWE/Charlie are **universal agents** (same capabilities). The names are a coordination convention, not hard role boundaries.
-
-Default priority order (unless the Issue says otherwise):
-1) Clear the **review/verify queue** first (open items labeled `status:verify`).
-2) Otherwise implement the next `status:ready` item.
-
 ## Source of truth
 
 - **GitHub Issues** are the task queue.
 - **GitHub PRs** are the change vehicle.
 - **GitHub Projects v2** is the operational status board (triage + workflow state).
-- **Docs/runbooks** record procedures and decisions.
+- **Docs (under `docs/agents/`)** record procedures and decisions.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
+
+No private side-channels are authoritative.
+
+- **Operator chat is not a coordination channel.** Ask/answer in the Issue/PR thread.
+- **Sir James changes are `audit-required`.** Treat them like any other PR: read diff, verify, post evidence.
+
+## Shared prompts
+
+These prompts define shared behavior across all roles:
+
+- Loop mode (never stop until Done): `.github/prompts/loop.prompt.md`
 
 ## Low-Risk Fast Path (token-saving)
 
@@ -45,41 +43,35 @@ However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, 
 	- **What changed** (bullets)
 	- **How verified** (for docs-only: `git grep`/lint as relevant)
 	- **Risk** (1 line)
-4) If there is no Issue, that’s OK; **TL** will later link/create a tracking Issue if needed.
+4) If there is no Issue, that’s OK; create/link a tracking Issue later if needed.
 
 If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
 
-## Where agent instructions live
+## Where role instructions live
 
-Universal agent definitions:
+- Role instruction files live under `.github/agents/`.
+- Role activation prompts live under `.github/prompts/`.
 
-- Tech Lead (TL): [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
-- Software Engineer (SWE): [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
-
-Legacy/specialized agents (still used when helpful):
-
-- Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
-
-Legacy role files may exist for historical context, but the operational model is TL/SWE/Charlie.
+Keep this file focused on common rules. Role-specific behavior (priorities, checklists, escalation) belongs in the role file.
 
 Working truth is maintained in GitHub Projects v2:
 https://github.com/users/sirjamesoffordii/projects/2
 
 Legacy Build Map doc is retained for historical context:
 
-- [docs/legacy/BUILD_MAP.md](docs/legacy/BUILD_MAP.md)
+- [docs/agents/legacy/BUILD_MAP.md](docs/agents/legacy/BUILD_MAP.md)
 
 The canonical authority doc that drives prioritization is:
 
-- [docs/authority/CMC_OVERVIEW.md](docs/authority/CMC_OVERVIEW.md)
+- [docs/agents/authority/CMC_OVERVIEW.md](docs/agents/authority/CMC_OVERVIEW.md)
 
 ## Worktree policy (required)
 
 To avoid stepping on each other, work happens in isolated worktrees.
 
 - **Primary worktree:** `wt-main` (only one allowed to run `pnpm dev`)
-- **Builder worktree:** `wt-impl-<issue#>-<slug>`
-- **Verifier worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
+- **Implementation worktree:** `wt-impl-<issue#>-<slug>`
+- **Verification worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
 - **Docs worktree:** `wt-docs-<YYYY-MM-DD>` (docs-only changes)
 
 If you are not already in the correct worktree, create/switch before editing.
@@ -98,6 +90,10 @@ If you are not already in the correct worktree, create/switch before editing.
 - **v0**: Builder self-verifies and may merge when CI is green.
 - **v1**: Another agent/human verifies (>= 1 approval from someone other than the PR author) before merge.
 - **v2**: Another agent/human verifies (>= 1 approval) **and** additional verification evidence is required.
+
+Interpretation:
+- **v0**: PR author provides evidence.
+- **v1/v2**: someone other than the PR author provides evidence.
 
 **How to mark a PR** (labels):
 

@@ -5,12 +5,13 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 ## Read-first (agent entrypoints)
 
 - Multi-agent operating manual: `AGENTS.md`
-- Authority doc: `docs/authority/CMC_OVERVIEW.md`
+- App overview (authority): `docs/agents/authority/CMC_OVERVIEW.md`
+- Runbooks index: `docs/agents/runbook/RUNBOOK_INDEX.md`
 - Operational status board (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
-- Universal agent files (preferred):
+
+Role files:
 	- `.github/agents/tech-lead.agent.md`
 	- `.github/agents/software-engineer.agent.md`
-	- (future) `.github/agents/charlie.agent.md`
 - Specialized agent (console/visual checks):
 	- `.github/agents/browser-operator.agent.md`
 
@@ -19,9 +20,6 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 - **User (Human): Sir James** sets direction.
 - **Tech Lead (TL)** runs first: syncs Project/Issues, deconflicts, clarifies acceptance criteria.
 - **Software Engineer (SWE)** runs second: implements changes and/or performs peer verification with evidence.
-- **Charlie** (optional/future): adds parallelism for deeper verification and ops checks.
-
-TL/SWE/Charlie are **universal agents**. Names are a convention to coordinate work, not hard capability boundaries.
 
 Priority:
 - Clear the **review/verify queue** first (items labeled `status:verify`), otherwise implement.

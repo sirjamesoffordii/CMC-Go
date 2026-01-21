@@ -1,8 +1,8 @@
 # Issue Discovery — Work Queue
 
-Authority: `docs/authority/CMC_GO_COORDINATOR.md`
+Authority: `docs/agents/legacy/CMC_GO_COORDINATOR.md`
 
-CMC Go uses **universal agents** (TL/SWE/Charlie). Work discovery is Project-first.
+Legacy note: predates the current TL/SWE role split. Work discovery is Project-first.
 
 ## Primary queue (recommended)
 
@@ -39,7 +39,7 @@ The script `scripts/create-agent-issues.ps1` is legacy/bootstrap tooling; use it
   - `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode rest`
 
   If you want to avoid re-pasting tokens, prefer GitHub CLI auth:
-  - Install + login: [docs/runbooks/GITHUB_AUTH.md](../runbooks/GITHUB_AUTH.md)
+  - Install + login: [docs/agents/runbook/GITHUB_AUTH.md](../../runbook/GITHUB_AUTH.md)
   - Then run: `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode gh`
 
   If you want the terminal to prompt you each time (no env vars):

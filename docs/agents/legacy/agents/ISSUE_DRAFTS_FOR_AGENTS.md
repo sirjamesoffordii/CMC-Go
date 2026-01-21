@@ -1,8 +1,8 @@
-# Issue Drafts — Universal Agents (TL/SWE)
+# Issue Drafts — TL/SWE (Legacy)
 
-Authority: `docs/authority/CMC_GO_COORDINATOR.md`
+Authority: `docs/agents/legacy/CMC_GO_COORDINATOR.md`
 
-These are **copy/paste-ready** GitHub Issue drafts (titles + labels + bodies) aligned to the universal agent model.
+These are **copy/paste-ready** GitHub Issue drafts (titles + labels + bodies) aligned to the TL/SWE workflow.
 
 ---
 

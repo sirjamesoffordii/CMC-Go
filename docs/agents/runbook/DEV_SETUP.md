@@ -164,6 +164,6 @@ This provides enough data to test all features. For production data, use the imp
 
 ## Additional Resources
 
-- Verification guide: [docs/runbook/DB_SETUP_VERIFICATION.md](DB_SETUP_VERIFICATION.md)
+- Verification guide: [DB_SETUP_VERIFICATION.md](DB_SETUP_VERIFICATION.md)
 - Schema source of truth: `drizzle/schema.ts`
 

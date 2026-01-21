@@ -1,23 +1,23 @@
 # CMC Go — Workflow Prompts + Hotkeys (VS Code + Copilot)
 
-This doc is a **copy/paste toolkit** for running the multi-agent workflow described in the Coordinator doctrine: [docs/authority/CMC_GO_COORDINATOR.md](../authority/CMC_GO_COORDINATOR.md) using VS Code + Copilot Chat.
+This doc is a **copy/paste toolkit** for running the multi-agent workflow described in the Coordinator doctrine: [docs/agents/legacy/CMC_GO_COORDINATOR.md](../CMC_GO_COORDINATOR.md) using VS Code + Copilot Chat.
 
-Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../AGENTS.md).
+Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../../AGENTS.md).
 
-- **Agents are universal** (TL/SWE/Charlie by convention).
+- Roles: Tech Lead (TL) and Software Engineer (SWE).
 - **GitHub Issues/PRs are the handoff bus**.
 - **Only TL pings Sir James** by default; everyone else escalates via an Issue comment.
 - **Priority:** clear the review/verify queue first (`status:verify`), otherwise implement.
 
-If you need judgment doctrine: see [docs/authority/The Coherence Engine.md](../authority/The%20Coherence%20Engine.md).
-If you need exact procedures: see [docs/runbooks/README.md](../runbooks/README.md).
+If you need judgment doctrine: see [docs/agents/runbook/COHERENCE_ENGINE.md](../../runbook/COHERENCE_ENGINE.md).
+If you need exact procedures: see [docs/agents/runbook/RUNBOOK_INDEX.md](../../runbook/RUNBOOK_INDEX.md).
 
 Activation prompt files (recommended):
-- [.github/prompts/tech-lead.prompt.md](../../.github/prompts/tech-lead.prompt.md)
-- [.github/prompts/software-engineer.prompt.md](../../.github/prompts/software-engineer.prompt.md)
-- [.github/prompts/loop.prompt.md](../../.github/prompts/loop.prompt.md)
+- [.github/prompts/tech-lead.prompt.md](../../../.github/prompts/tech-lead.prompt.md)
+- [.github/prompts/software-engineer.prompt.md](../../../.github/prompts/software-engineer.prompt.md)
+- [.github/prompts/loop.prompt.md](../../../.github/prompts/loop.prompt.md)
 
-Legacy role prompts still exist for historical context, but the operational model is TL/SWE/Charlie.
+Legacy role prompts still exist for historical context.
 
 ---
 
@@ -32,7 +32,7 @@ You are Tech Lead (TL).
 Goal: produce a 10-minute execution-ready coordination pass.
 
 Do this:
-1) Read docs/authority/CMC_GO_COORDINATOR.md + docs/agents/CMC_GO_BRIEF.md quickly.
+1) Read docs/agents/legacy/CMC_GO_COORDINATOR.md + docs/agents/authority/CMC_OVERVIEW.md quickly.
 2) Identify current risk surfaces (auth/roles/visibility, schema/migrations, map state).
 3) Propose 3-7 Issues to create/update with:
    - acceptance criteria
@@ -177,7 +177,7 @@ EVIDENCE:
 Locate the authoritative source for <topic>.
 Return:
 - the primary file(s)
-- any related invariants from docs/agents/CMC_GO_BRIEF.md
+- any related invariants from docs/agents/authority/CMC_OVERVIEW.md
 - where tests live (if any)
 - the smallest safe edit point
 """

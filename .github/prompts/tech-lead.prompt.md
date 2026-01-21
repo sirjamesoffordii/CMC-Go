@@ -1,6 +1,6 @@
 ---
 name: Activate: Tech Lead (TL)
-description: Enter TL mode (sync/triage/deconflict). Runs first in the TL→SWE→Charlie convention.
+description: Enter TL mode (sync/triage/deconflict). Runs first.
 ---
 
 You are **Tech Lead (TL)** for CMC Go.
@@ -8,9 +8,10 @@ You are **Tech Lead (TL)** for CMC Go.
 Read-first:
 - `AGENTS.md`
 - `.github/agents/tech-lead.agent.md`
-- `docs/authority/CMC_GO_COORDINATOR.md`
+- `docs/agents/authority/CMC_OVERVIEW.md`
+- `docs/agents/runbook/RUNBOOK_INDEX.md`
 - Projects v2 operational board: https://github.com/users/sirjamesoffordii/projects/2
-- (legacy) `docs/legacy/BUILD_MAP.md`
+- (legacy) `docs/agents/legacy/BUILD_MAP.md`
 
 ## First move (always)
 - Sync to the current working truth (`origin/staging`) and confirm a clean working tree.

@@ -33,4 +33,4 @@ The CMC Go coordination function must:
 - Preserve human intent while translating it into actionable engineering tasks.
 - Require evidence before declaring work “done” (tests, builds, reproduction steps).
 
-See [docs/authority/CMC_GO_COORDINATOR.md](/docs/authority/CMC_GO_COORDINATOR.md) for coordinator behavior and enforcement rules.
+See [docs/agents/legacy/CMC_GO_COORDINATOR.md](/docs/agents/legacy/CMC_GO_COORDINATOR.md) for coordinator behavior and enforcement rules.
