@@ -1,50 +1,42 @@
 # CMC Go — Workflow Prompts + Hotkeys (VS Code + Copilot)
 
-This doc is a **copy/paste toolkit** for running the multi-agent workflow described in the Coordinator doctrine: [docs/authority/CMC_GO_COORDINATOR.md](../authority/CMC_GO_COORDINATOR.md) using VS Code + Copilot Chat.
+This doc is a **copy/paste toolkit** for running the multi-agent workflow described in the Coordinator doctrine: [docs/agents/legacy/CMC_GO_COORDINATOR.md](../CMC_GO_COORDINATOR.md) using VS Code + Copilot Chat.
 
-Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../AGENTS.md).
+Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../../AGENTS.md).
 
-- **Agents are roles** (Coordinator/Explorer/Builder/Verifier/Browser).
+- Roles: Tech Lead (TL) and Software Engineer (SWE).
 - **GitHub Issues/PRs are the handoff bus**.
-- **Only the Coordinator asks Sir James questions**; everyone else escalates to the Coordinator via an Issue comment.
+- **Only TL pings Sir James** by default; everyone else escalates via an Issue comment.
+- **Priority:** clear the review/verify queue first (`status:verify`), otherwise implement.
 
-If you need judgment doctrine: see [docs/authority/The Coherence Engine.md](../authority/The%20Coherence%20Engine.md).
-If you need exact procedures: see [docs/runbooks/README.md](../runbooks/README.md).
+If you need judgment doctrine: see [docs/agents/runbook/COHERENCE_ENGINE.md](../../runbook/COHERENCE_ENGINE.md).
+If you need exact procedures: see [docs/agents/runbook/RUNBOOK_INDEX.md](../../runbook/RUNBOOK_INDEX.md).
 
 Activation prompt files (recommended):
-- [.github/prompts/coordinator.prompt.md](../../.github/prompts/coordinator.prompt.md)
-- [.github/prompts/explorer.prompt.md](../../.github/prompts/explorer.prompt.md)
-- [.github/prompts/builder.prompt.md](../../.github/prompts/builder.prompt.md)
-- [.github/prompts/verifier.prompt.md](../../.github/prompts/verifier.prompt.md)
-- [.github/prompts/browser.prompt.md](../../.github/prompts/browser.prompt.md)
-- [.github/prompts/user-sir-james.prompt.md](../../.github/prompts/user-sir-james.prompt.md)
+- [.github/prompts/tech-lead.prompt.md](../../../.github/prompts/tech-lead.prompt.md)
+- [.github/prompts/software-engineer.prompt.md](../../../.github/prompts/software-engineer.prompt.md)
+- [.github/prompts/loop.prompt.md](../../../.github/prompts/loop.prompt.md)
 
-Continue prompt files (role-specific):
-- [.github/prompts/cc.prompt.md](../../.github/prompts/cc.prompt.md)
-- [.github/prompts/ce.prompt.md](../../.github/prompts/ce.prompt.md)
-- [.github/prompts/cb.prompt.md](../../.github/prompts/cb.prompt.md)
-- [.github/prompts/cv.prompt.md](../../.github/prompts/cv.prompt.md)
-- [.github/prompts/cbr.prompt.md](../../.github/prompts/cbr.prompt.md)
-- [.github/prompts/cu.prompt.md](../../.github/prompts/cu.prompt.md)
+Legacy role prompts still exist for historical context.
 
 ---
 
 ## 1) Daily “Start Here” Prompts
 
-### 1.1 Coordinator — Daily Sync Prompt
+### 1.1 Tech Lead (TL) — Daily Sync Prompt
 Paste into Copilot Chat:
 
 """
-You are the Coordinator.
+You are Tech Lead (TL).
 
 Goal: produce a 10-minute execution-ready coordination pass.
 
 Do this:
-1) Read docs/authority/CMC_GO_COORDINATOR.md + docs/agents/CMC_GO_BRIEF.md quickly.
+1) Read docs/agents/legacy/CMC_GO_COORDINATOR.md + docs/agents/authority/CMC_OVERVIEW.md quickly.
 2) Identify current risk surfaces (auth/roles/visibility, schema/migrations, map state).
 3) Propose 3-7 Issues to create/update with:
    - acceptance criteria
-  - owner role (Explorer/Builder/Verifier/Browser)
+  - owner (TL/SWE/Browser Operator)
    - verification steps
 4) Call out any potential file/surface conflicts.
 
@@ -62,19 +54,19 @@ Output format:
 - NEXT ACTIONS
 """
 
-### 1.2 Explorer — Turn “Idea → Actionable Issue”
+### 1.2 Tech Lead (TL) — Turn “Idea → Actionable Issue”
 
 """
-You are the Explorer.
+You are Tech Lead (TL).
 
 Task: turn the following goal into a GitHub Issue spec.
 Goal: <paste goal>
 
 Constraints:
-- Do not implement code.
+- Do not implement code in this step.
 - Include acceptance criteria + verification steps.
 - Reference real file paths/symbols you expect will change.
-- If ambiguity needs a decision, write an escalation comment for the Coordinator.
+- If ambiguity needs a decision, write an escalation comment for the Issue thread.
 
 Deliverable:
 - Issue title
@@ -83,25 +75,25 @@ Deliverable:
 - Files likely to change
 - Verification steps
 - Risk notes
-- Coordinator escalation (if needed)
+- Escalation (if needed)
 """
 
-### 1.3 Builder — Implement with Evidence Gates
+### 1.3 Software Engineer (SWE) — Implement with Evidence Gates
 
 """
-You are the Builder.
+You are Software Engineer (SWE).
 
 Issue: <paste issue link or issue text>
 
 Constraints:
-- Work in a Builder worktree: wt-impl-<issue#>-<short>
+- Work in `wt-impl-<issue#>-<short>`
 - Smallest viable diff; no drive-by refactors.
 - Do not run the dev server.
 
 Do:
 1) Identify the smallest set of files to change.
 2) Implement.
-3) Run pnpm check and relevant tests.
+3) Run `pnpm check` and relevant tests.
 4) Prepare a PR description with evidence.
 
 Return:
@@ -110,15 +102,15 @@ Return:
 - PR-ready summary
 """
 
-### 1.4 Verifier — Independent Verification Script
+### 1.4 Software Engineer (SWE) — Peer Verification Script (L1/L2)
 
 """
-You are the Verifier.
+You are Software Engineer (SWE).
 
 Change to verify: <paste PR link or summary>
 
 Constraints:
-- Work in wt-verify-<issue#>-<short>
+- Work in `wt-verify-<pr#>-<short>`
 - Do not implement fixes.
 
 Do:
@@ -129,14 +121,14 @@ Do:
 Return:
 - Repro/verification steps
 - Commands run + results
-- Verdict (Ready / Blocked)
-- If blocked: minimal Coordinator escalation comment
+- Verdict (Pass / Pass-with-notes / Fail)
+- If blocked: minimal escalation comment
 """
 
-### 1.5 Browser — “Clicks as Evidence”
+### 1.5 Browser Operator — “Clicks as Evidence”
 
 """
-You are the Browser.
+You are the Browser Operator.
 
 Task: <paste infra/console goal>
 
@@ -153,7 +145,7 @@ Return:
 
 ---
 
-## 2) “No-Drama” Escalation Prompt (Non‑Coordinator)
+## 2) “No-Drama” Escalation Prompt (Any agent)
 
 Use this whenever you need a decision.
 
@@ -162,7 +154,7 @@ Write a GitHub Issue comment in this exact format:
 
 STATUS: Blocked
 
-COORDINATOR INPUT NEEDED:
+DECISION NEEDED:
 - Question:
 - Why it matters:
 - Options (A/B/C):
@@ -185,7 +177,7 @@ EVIDENCE:
 Locate the authoritative source for <topic>.
 Return:
 - the primary file(s)
-- any related invariants from docs/agents/CMC_GO_BRIEF.md
+- any related invariants from docs/agents/authority/CMC_OVERVIEW.md
 - where tests live (if any)
 - the smallest safe edit point
 """

@@ -1,23 +1,25 @@
 # CMC Go — Agent Operating Manual (AGENTS.md)
 
-This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, strict role boundaries, and a worktree policy.
-
-## Roles (canonical names)
-
-- **User (Human): Sir James** — sets direction; may override priorities; may inject code/PRs.
-- **Coordinator (AI)** — keeps the build moving; prevents collisions; assigns/issues work; integrates; updates Build Map/runbooks.
-- **Explorer (AI)** — investigates unknowns; proposes approaches; de-risks.
-- **Builder (AI)** — implements scoped changes; opens PRs.
-- **Verifier (AI)** — independently validates acceptance criteria; reports evidence.
-- **Browser Operator (AI)** — performs web-console work (Railway/Sentry/Codecov) and visual checks; reports evidence.
+This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, a simple **claim** mechanism to prevent collisions, and a strict worktree policy.
 
 ## Source of truth
 
 - **GitHub Issues** are the task queue.
 - **GitHub PRs** are the change vehicle.
 - **GitHub Projects v2** is the operational status board (triage + workflow state).
-- **Docs/runbooks** record procedures and decisions.
+- **Docs (under `docs/agents/`)** record procedures and decisions.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
+
+No private side-channels are authoritative.
+
+- **Operator chat is not a coordination channel.** Ask/answer in the Issue/PR thread.
+- **Sir James changes are `audit-required`.** Treat them like any other PR: read diff, verify, post evidence.
+
+## Shared prompts
+
+These prompts define shared behavior across all roles:
+
+- Loop mode (never stop until Done): `.github/prompts/loop.prompt.md`
 
 ## Low-Risk Fast Path (token-saving)
 
@@ -41,32 +43,35 @@ However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, 
 	- **What changed** (bullets)
 	- **How verified** (for docs-only: `git grep`/lint as relevant)
 	- **Risk** (1 line)
-4) If there is no Issue, that’s OK; the **Coordinator** will later link/create a tracking Issue if needed.
+4) If there is no Issue, that’s OK; create/link a tracking Issue later if needed.
 
 If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
 
 ## Where role instructions live
 
-Role-specific instructions (used by your VS Code agents) live here:
+- Role instruction files live under `.github/agents/`.
+- Role activation prompts live under `.github/prompts/`.
 
-- Coordinator: [.github/agents/coordinator.agent.md](.github/agents/coordinator.agent.md)
-- Explorer: [.github/agents/explorer.agent.md](.github/agents/explorer.agent.md)
-- Builder: [.github/agents/builder.agent.md](.github/agents/builder.agent.md)
-- Verifier: [.github/agents/verifier.agent.md](.github/agents/verifier.agent.md)
-- Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
+Keep this file focused on common rules. Role-specific behavior (priorities, checklists, escalation) belongs in the role file.
 
-The two canonical authority docs that drive prioritization are:
+Working truth is maintained in GitHub Projects v2:
+https://github.com/users/sirjamesoffordii/projects/2
 
-- [docs/authority/CMC_OVERVIEW.md](docs/authority/CMC_OVERVIEW.md)
-- [docs/authority/BUILD_MAP.md](docs/authority/BUILD_MAP.md)
+Legacy Build Map doc is retained for historical context:
+
+- [docs/agents/legacy/BUILD_MAP.md](docs/agents/legacy/BUILD_MAP.md)
+
+The canonical authority doc that drives prioritization is:
+
+- [docs/agents/authority/CMC_OVERVIEW.md](docs/agents/authority/CMC_OVERVIEW.md)
 
 ## Worktree policy (required)
 
 To avoid stepping on each other, work happens in isolated worktrees.
 
 - **Primary worktree:** `wt-main` (only one allowed to run `pnpm dev`)
-- **Builder worktree:** `wt-impl-<issue#>-<slug>`
-- **Verifier worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
+- **Implementation worktree:** `wt-impl-<issue#>-<slug>`
+- **Verification worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
 - **Docs worktree:** `wt-docs-<YYYY-MM-DD>` (docs-only changes)
 
 If you are not already in the correct worktree, create/switch before editing.
@@ -74,7 +79,7 @@ If you are not already in the correct worktree, create/switch before editing.
 ## Git discipline
 
 - Keep diffs small and scoped to the assigned Issue.
-- One PR per Issue unless the Coordinator explicitly approves bundling.
+- One PR per Issue unless **TL** explicitly approves bundling.
 - Prefer additive changes over risky refactors.
 - Do not commit secrets. Use `.env.local` or platform environment variables.
 
@@ -85,6 +90,10 @@ If you are not already in the correct worktree, create/switch before editing.
 - **v0**: Builder self-verifies and may merge when CI is green.
 - **v1**: Another agent/human verifies (>= 1 approval from someone other than the PR author) before merge.
 - **v2**: Another agent/human verifies (>= 1 approval) **and** additional verification evidence is required.
+
+Interpretation:
+- **v0**: PR author provides evidence.
+- **v1/v2**: someone other than the PR author provides evidence.
 
 **How to mark a PR** (labels):
 
@@ -121,19 +130,36 @@ These rules exist to reduce repeated context and long transcripts.
 
 If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
 
-- The **Coordinator** assigns the task to any available agent/human who has access.
+- **TL** assigns the task to any available agent/human who has access.
 - The assignee follows a step-by-step checklist in the Issue and posts evidence.
 - Never paste secrets into Issues; name variables but not values.
 
+## Claiming work (collision prevention)
+
+Agents must **claim** a task before making changes.
+
+Use the strongest available mechanism and do all that apply:
+- Assign the Issue to yourself.
+- Add a label like `claimed:tl` / `claimed:swe` (if using claim labels).
+- Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`.
+
+If you go idle or blocked for an extended period, unclaim and leave a note.
+
 ### Branch naming
 
-- Agent branches: `agent/<role>/<issue#>-<slug>`
+- Agent branches: `agent/<agent>/<issue#>-<slug>` (e.g. `agent/tl/123-thing`, `agent/swe/123-thing`)
 - User (Sir James) branches: `user/sir-james/<issue#>-<slug>` (or `user/sir-james/<slug>`)
 
 ### Commit message prefix
 
-- Agent commits: `agent(<role>): <summary>`
+- Agent commits: `agent(<agent>): <summary>`
 - User commits: `user(sir-james): <summary>`
+
+## Verification levels (peer verification)
+
+- **L0**: self-verify (fast path for low-risk tasks).
+- **L1**: peer verification required (another agent posts evidence + verdict).
+- **L2**: peer verification + deeper coverage (e2e/DB-backed tests/console checks as relevant).
 
 ## Definition of Done (DoD)
 
@@ -142,7 +168,8 @@ A task is "Done" only when:
 1. Acceptance criteria in the Issue are met.
 2. Verification evidence is posted (commands run + results).
 3. A PR is opened (or updated) and linked to the Issue.
-4. Coordinator acknowledges integration/next steps.
+4. If the Issue requires peer verification (L1/L2), a second agent posts a verification verdict.
+5. Issue/Project status is updated to reflect reality.
 
 ## Reporting standard (GitHub comment format)
 
@@ -153,7 +180,8 @@ All agents post updates to the assigned Issue using this structure:
 - **Branch/PR:** (link)
 - **What changed:** (bullet list)
 - **How verified:** (commands run + brief results)
-- **Notes/Risks:** (anything the Coordinator should know)
+- **Notes/Risks:** (anything TL should know)
+
 
 ## Rapid Dev Mode (Owner-approved)
 

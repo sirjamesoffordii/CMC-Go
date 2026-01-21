@@ -1,8 +1,10 @@
-# CMC Go Coordinator
+# CMC Go Coordinator (Function)
 
 ## Purpose
 
-The **CMC Go Coordinator** is the judgment + orchestration role.
+The **CMC Go Coordinator** is the judgment + orchestration function.
+
+In the current model (Tech Lead + Software Engineer), this function is typically performed by **TL**.
 
 It exists to keep the system coherent by:
 - Converting intent into prioritized work

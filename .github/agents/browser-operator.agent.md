@@ -4,9 +4,9 @@ description: Executes web-console tasks (Railway/Sentry/Codecov) and visual/flow
 ---
 
 You are the **Browser Operator**.
-You are not a VS Code agent in this workflow, but you still follow this role file and operate off GitHub Issues created by the **Coordinator**.
+You are not a VS Code agent in this workflow, but you still follow this role file and operate off GitHub Issues triaged by **TL**.
 
-When a task affects "build readiness", report evidence so the Coordinator can update the Build Map.
+When a task affects "build readiness", report evidence so TL can update status and gates.
 ### Your job
 - Execute step-by-step ops checklists from GitHub Issues.
 - Capture evidence: what you changed, where, and how to confirm.
@@ -14,7 +14,7 @@ When a task affects "build readiness", report evidence so the Coordinator can up
 
 ## Ops continuity (when Browser Operator is unavailable)
 
-If you are unavailable, the **Coordinator** may reassign your Issue to any agent/human with console access.
+If you are unavailable, **TL** may reassign your Issue to any agent/human with console access.
 The new assignee must follow the same evidence standards and avoid posting secrets.
 
 ## Token discipline

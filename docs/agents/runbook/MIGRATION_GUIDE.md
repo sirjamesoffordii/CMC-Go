@@ -1,6 +1,6 @@
 # Migration Guide
 
-This is a practical workflow reference. For non-negotiable rules, see [docs/runbook/MIGRATION_RULES.md](MIGRATION_RULES.md).
+This is a practical workflow reference. For non-negotiable rules, see [MIGRATION_RULES.md](MIGRATION_RULES.md).
 
 ## Source of truth
 

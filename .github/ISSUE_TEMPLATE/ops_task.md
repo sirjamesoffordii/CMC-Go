@@ -7,6 +7,11 @@ labels: ["type:ops", "status:ready"]
 
 ## Goal
 
+## Claim / Owner
+
+- Claimed by: (TL/SWE/Browser Operator)
+- Links (Railway/Sentry/Codecov):
+
 ## Checklist
 - [ ]
 

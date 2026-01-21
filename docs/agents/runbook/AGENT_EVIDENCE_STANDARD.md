@@ -16,12 +16,12 @@ Goal: preserve confidence while keeping Issue/PR comments short.
 
 ## Recommended “evidence blocks”
 
-### Builder PR description
+### Implementation PR description
 - **What changed:** 2-5 bullets
 - **How verified:** commands + short result
 - **Risk:** 1-2 lines
 
-### Verifier PR comment
+### Peer verification PR comment
 - **Result:** Pass / Fail / Pass-with-notes
 - **Evidence:** commands run + short result
 - **Notes/Risks:** brief
