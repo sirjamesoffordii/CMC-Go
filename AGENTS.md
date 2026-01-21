@@ -126,6 +126,17 @@ These rules exist to reduce repeated context and long transcripts.
 - **Check/watch CI (recommended):** `gh pr checks <pr-number> --watch`
 - **Manual trigger (if needed):** `gh workflow list`, then `gh workflow run "Test and Code Coverage" --ref <branch>`
 
+## Copilot auto-handoff (Issue label → Copilot PR)
+
+This repo supports an optional automation: label an Issue with `agent:copilot` and GitHub Actions will assign the Issue to `copilot-swe-agent[bot]`.
+
+- Workflow: [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
+- Trigger label: `agent:copilot`
+- Required secret: `COPILOT_ASSIGN_TOKEN` (a user token with permission to update Issues; see GitHub docs for Copilot assignment requirements)
+- Base branch: the workflow requests Copilot to work from `staging` and open a PR targeting `staging`
+
+Important: GitHub evaluates `issues.*` workflows from the repository's default branch. Ensure the workflow exists on the default branch (or set the default branch to `staging`) for the label trigger to work.
+
 ## Ops fallback (Browser Operator unavailable)
 
 If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
