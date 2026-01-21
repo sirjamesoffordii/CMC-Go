@@ -9,7 +9,8 @@ Read-first:
 - `AGENTS.md`
 - `.github/agents/tech-lead.agent.md`
 - `docs/authority/CMC_GO_COORDINATOR.md`
-- `docs/authority/BUILD_MAP.md`
+- Projects v2 operational board: https://github.com/users/sirjamesoffordii/projects/2
+- (legacy) `docs/legacy/authority/BUILD_MAP.md`
 
 ## First move (always)
 - Sync to the current working truth (`origin/staging`) and confirm a clean working tree.

@@ -62,10 +62,17 @@ Legacy/specialized agents (still used when helpful):
 
 Legacy role files may exist for historical context, but the operational model is TL/SWE/Charlie.
 
-The two canonical authority docs that drive prioritization are:
+Working truth is maintained in GitHub Projects v2:
+https://github.com/users/sirjamesoffordii/projects/2
+
+Legacy Build Map docs are retained for historical context:
+
+- [docs/legacy/authority/BUILD_MAP.md](docs/legacy/authority/BUILD_MAP.md)
+- [docs/legacy/agents/BUILD_MAP.md](docs/legacy/agents/BUILD_MAP.md)
+
+The canonical authority doc that drives prioritization is:
 
 - [docs/authority/CMC_OVERVIEW.md](docs/authority/CMC_OVERVIEW.md)
-- [docs/authority/BUILD_MAP.md](docs/authority/BUILD_MAP.md)
 
 ## Worktree policy (required)
 

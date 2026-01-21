@@ -14,7 +14,8 @@ TL/SWE/Charlie are **universal agents** (same capabilities). The names are a **c
 
 ## Shared truth
 - Work is tracked in **GitHub Issues/PRs** and the **GitHub Project (operational board)**.
-- When in doubt about phase/gates, consult `docs/authority/BUILD_MAP.md`.
+- Working truth lives in Projects v2: https://github.com/users/sirjamesoffordii/projects/2
+- Legacy phase/gate narrative (historical): `docs/legacy/authority/BUILD_MAP.md`
 
 ## Default operating loop
 1) Sync the work queue (Project + open Issues).

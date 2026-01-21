@@ -16,7 +16,7 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 - `docs/authority/CMC_GO_COORDINATOR.md`
 - `docs/agents/CMC_GO_BRIEF.md`
 - `docs/agents/BUILD_MAP.md`
-- All role definitions: `.github/agents/coordinator.agent.md`, `.github/agents/explorer.agent.md`, `.github/agents/builder.agent.md`, `.github/agents/verifier.agent.md`, `.github/agents/browser.agent.md`
+- All role definitions: `.github/agents/legacy-roles/coordinator.agent.md`, `.github/agents/legacy-roles/explorer.agent.md`, `.github/agents/legacy-roles/builder.agent.md`, `.github/agents/legacy-roles/verifier.agent.md`, `.github/agents/legacy-roles/browser.agent.md`
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)
@@ -29,7 +29,7 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 ## Required references (consult before deciding)
 Read these files and treat them as authoritative:
 - Coordinator doctrine (authority): `docs/authority/CMC_GO_COORDINATOR.md`
-- Your role definition: `.github/agents/coordinator.agent.md`
+- Your role definition: `.github/agents/legacy-roles/coordinator.agent.md`
 - Canonical system mental model: `docs/agents/CMC_GO_BRIEF.md`
 - Phase tracking + gates: `docs/agents/BUILD_MAP.md`
 - Procedural runbooks index: `docs/runbooks/README.md`
@@ -38,7 +38,7 @@ Read these files and treat them as authoritative:
 Operational rules (how to operate, not the authority layer):
 - `AGENTS.md`
 
-Every time you act as Coordinator, **re-read** `.github/agents/coordinator.agent.md` and consult `docs/agents/BUILD_MAP.md` first.
+Every time you act as Coordinator, **re-read** `.github/agents/legacy-roles/coordinator.agent.md` and consult `docs/agents/BUILD_MAP.md` first.
 
 ## Stewardship duties
 - Keep `docs/agents/BUILD_MAP.md` aligned to reality when priorities/gates/phase status materially change.

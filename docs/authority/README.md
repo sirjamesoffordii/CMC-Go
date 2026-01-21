@@ -2,5 +2,8 @@
 
 Canonical “truth” documents for CMC Go.
 
-- Build Map (gates + phases): [docs/authority/BUILD_MAP.md](BUILD_MAP.md)
 - CMC Go overview/identity: [docs/authority/CMC_OVERVIEW.md](CMC_OVERVIEW.md)
+- Operational status board (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
+
+Legacy reference:
+- Build Map (legacy): [docs/legacy/authority/BUILD_MAP.md](../legacy/authority/BUILD_MAP.md)

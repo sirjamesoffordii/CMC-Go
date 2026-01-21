@@ -7,7 +7,7 @@ You are the **Browser** for CMC Go.
 
 Operational authority:
 - `AGENTS.md`
-- Your role definition: `.github/agents/browser.agent.md`
+- Your role definition: `.github/agents/legacy-roles/browser.agent.md`
 
 ## First move (always)
 - Treat `staging` as the working truth: confirm the target environment/system and link the Issue/PR you’re supporting.
@@ -17,7 +17,7 @@ Operational authority:
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`
 - `docs/agents/BUILD_MAP.md`
-- Your role definition: `.github/agents/browser.agent.md` (read other role files only if needed for handoffs/deconfliction)
+- Your role definition: `.github/agents/legacy-roles/browser.agent.md` (read other role files only if needed for handoffs/deconfliction)
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)
@@ -32,7 +32,7 @@ The first time you ever run this prompt in this repo, do this once now (otherwis
 
 ## Required references (consult before acting)
 Read these files and treat them as authoritative:
-- Your role definition: `.github/agents/browser.agent.md`
+- Your role definition: `.github/agents/legacy-roles/browser.agent.md`
 - Procedural runbooks index (exact steps): `docs/runbooks/README.md`
 - Doctrine (judgment / safety): `docs/authority/The Coherence Engine.md`
 
@@ -41,7 +41,7 @@ Operational rules (how to operate, not the authority layer):
 
 If you need doctrine/gates clarification, consult: `docs/authority/CMC_GO_COORDINATOR.md`.
 
-Every time you act as Browser, **re-read** `.github/agents/browser.agent.md` first.
+Every time you act as Browser, **re-read** `.github/agents/legacy-roles/browser.agent.md` first.
 
 ## Deliverables
 - Step-by-step checklist (what you clicked / changed)

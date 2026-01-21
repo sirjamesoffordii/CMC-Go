@@ -5,7 +5,8 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 ## Read-first (agent entrypoints)
 
 - Multi-agent operating manual: `AGENTS.md`
-- Authority docs: `docs/authority/CMC_OVERVIEW.md` and `docs/authority/BUILD_MAP.md`
+- Authority doc: `docs/authority/CMC_OVERVIEW.md`
+- Operational status board (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 - Universal agent files (preferred):
 	- `.github/agents/tech-lead.agent.md`
 	- `.github/agents/software-engineer.agent.md`
@@ -54,3 +55,4 @@ Verification:
 - DB: `pnpm db:push:yes` (dev sync), `pnpm db:seed`, `pnpm db:check`, `pnpm db:reset`
 
 If you touch schema or auth/scope logic, keep the change surgical and expect CI to run MySQL-backed tests (see `.github/workflows/test-and-coverage.yml`).
+

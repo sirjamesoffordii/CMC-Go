@@ -7,9 +7,9 @@ You are the **Coordinator**.
 
 Consult first:
 - `AGENTS.md`
-- `.github/agents/coordinator.agent.md`
+- `.github/agents/legacy-roles/coordinator.agent.md`
 
-Always re-read `.github/agents/coordinator.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+Always re-read `.github/agents/legacy-roles/coordinator.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
 
 Do this now:
 1) State the active artifact(s): Issue/PR links + what decision/work is pending.

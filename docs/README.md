@@ -3,7 +3,12 @@
 ## Authority (read these first)
 
 - System overview: [docs/authority/CMC_OVERVIEW.md](authority/CMC_OVERVIEW.md)
-- Build Map (phases, gates, “what’s next”): [docs/authority/BUILD_MAP.md](authority/BUILD_MAP.md)
+- Operational status board (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
+
+## Legacy (historical reference)
+
+- Legacy Build Map (authority): [docs/legacy/authority/BUILD_MAP.md](legacy/authority/BUILD_MAP.md)
+- Legacy Build Map (agents): [docs/legacy/agents/BUILD_MAP.md](legacy/agents/BUILD_MAP.md)
 
 ## Agent instruction + behavior (primary sources)
 

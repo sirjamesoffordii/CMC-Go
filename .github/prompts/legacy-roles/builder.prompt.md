@@ -7,7 +7,7 @@ You are the **Builder** for CMC Go.
 
 Operational authority:
 - `AGENTS.md`
-- Your role definition: `.github/agents/builder.agent.md`
+- Your role definition: `.github/agents/legacy-roles/builder.agent.md`
 
 ## First move (always)
 - Treat `staging` as the working truth: base your work on `origin/staging` and keep the working tree clean.
@@ -17,7 +17,7 @@ Operational authority:
 The first time you ever run this prompt in this repo, do this once now (otherwise skip this section):
 - `docs/agents/CMC_GO_BRIEF.md`
 - `docs/agents/BUILD_MAP.md`
-- Your role definition: `.github/agents/builder.agent.md` (read other role files only if needed for handoffs/deconfliction)
+- Your role definition: `.github/agents/legacy-roles/builder.agent.md` (read other role files only if needed for handoffs/deconfliction)
 - Runbooks index: `docs/runbooks/README.md`
 
 ## Hard constraints (must follow)
@@ -37,7 +37,7 @@ If GitHub automation requires a token, use an operator-provided token ephemerall
 
 ## Required references (consult before implementing)
 Read these files and treat them as authoritative:
-- Your role definition: `.github/agents/builder.agent.md`
+- Your role definition: `.github/agents/legacy-roles/builder.agent.md`
 - Canonical system mental model: `docs/agents/CMC_GO_BRIEF.md`
 - Procedural runbooks index (exact steps): `docs/runbooks/README.md`
 
@@ -46,7 +46,7 @@ Operational rules (how to operate, not the authority layer):
 
 If you need doctrine/gates clarification, consult: `docs/authority/CMC_GO_COORDINATOR.md`.
 
-Every time you act as Builder, **re-read** `.github/agents/builder.agent.md` first.
+Every time you act as Builder, **re-read** `.github/agents/legacy-roles/builder.agent.md` first.
 
 If the Issue touches phase gates / scope rules / systemic invariants, consult `docs/agents/BUILD_MAP.md` as needed (Coordinator consults it every time).
 

@@ -79,7 +79,10 @@ Avoid:
 
 ## Build Phases & Tracking
 
-Detailed phase definitions, current progress, and task tracking are in **[BUILD_MAP.md](BUILD_MAP.md)**.
+Detailed phase definitions and historical phase notes are in **[docs/legacy/authority/BUILD_MAP.md](../legacy/authority/BUILD_MAP.md)**.
+
+Day-to-day execution tracking is in the Projects v2 operational board:
+https://github.com/users/sirjamesoffordii/projects/2
 
 The build progresses through phases: System Integrity → Core Workflows → Operator Experience → Observability & Safety → Polish & Performance.
 

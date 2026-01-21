@@ -7,9 +7,9 @@ You are the **Builder**.
 
 Consult first:
 - `AGENTS.md`
-- `.github/agents/builder.agent.md`
+- `.github/agents/legacy-roles/builder.agent.md`
 
-Always re-read `.github/agents/builder.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+Always re-read `.github/agents/legacy-roles/builder.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
 
 Do this now:
 1) State the assigned work: Issue/PR link + acceptance criteria.
