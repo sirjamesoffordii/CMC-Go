@@ -18,7 +18,7 @@ All work is explicitly claimed via GitHub Issues, and all progress/evidence is r
 
 Once assigned, continue until complete:
 - Keep going through the next best step until the Issue is **Done** or truly **Blocked**.
-- Don’t ask the human operator for routine direction; escalate decisions in the Issue thread (Alpha pings the human when needed).
+- Don’t ask the human operator for routine direction; escalate decisions in the Issue thread (TL pings the human when needed).
 - Prefer milestone updates with evidence over frequent check-ins.
 
 ## Operator chat is not a channel

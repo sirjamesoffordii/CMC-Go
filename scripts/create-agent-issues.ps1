@@ -134,8 +134,8 @@ function Ensure-LabelRest {
   )
 
   $colors = @{
-    'claimed:alpha' = '5319e7'
-    'claimed:bravo' = '1d76db'
+    'claimed:tl' = '5319e7'
+    'claimed:swe' = '1d76db'
     'status:ready' = '0e8a16'
     'status:verify' = 'fbca04'
     'type:ops' = 'c5def5'
@@ -191,7 +191,7 @@ $resolvedRepo = Resolve-Repo -RepoName $Repo
 
 $issues = @(
   @{
-    Title  = 'Alpha: Daily sync + triage (Project-first)'
+    Title  = 'TL: Daily sync + triage (Project-first)'
     Labels = @('status:ready')
     Body   = @'
 STATUS: Todo
@@ -213,7 +213,7 @@ OUTPUT (comment on this Issue):
   },
 
   @{
-    Title  = 'Alpha: Convert goal -> executable Issue spec'
+    Title  = 'TL: Convert goal -> executable Issue spec'
     Labels = @('status:ready')
     Body   = @'
 STATUS: Todo
@@ -228,7 +228,7 @@ ACCEPTANCE CRITERIA:
   },
 
   @{
-    Title  = 'Bravo: Implement <short title> (evidence-gated)'
+    Title  = 'SWE: Implement <short title> (evidence-gated)'
     Labels = @('status:ready')
     Body   = @'
 STATUS: Todo
@@ -248,7 +248,7 @@ VERIFICATION (minimum evidence):
   },
 
   @{
-    Title  = 'Bravo: Peer verify PR #<n> (L1/L2)'
+    Title  = 'SWE: Peer verify PR #<n> (L1/L2)'
     Labels = @('status:verify')
     Body   = @'
 STATUS: Verify

@@ -1,6 +1,6 @@
 ---
 name: Legacy (deprecated): Coordination Task
-about: Deprecated. Alpha handles coordination by convention; use "Feature / Fix Task" for tracked work.
+about: Deprecated. TL handles coordination by convention; use "Feature / Fix Task" for tracked work.
 title: "[Coord] <short title>"
 labels: ["status:ready"]
 ---

@@ -4,29 +4,30 @@ This doc is a **copy/paste toolkit** for running the multi-agent workflow descri
 
 Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.md](../../AGENTS.md).
 
-- **Agents are universal** (Alpha/Bravo/Charlie by convention).
+- **Agents are universal** (TL/SWE/Charlie by convention).
 - **GitHub Issues/PRs are the handoff bus**.
-- **Only Alpha pings Sir James** by default; everyone else escalates via an Issue comment.
+- **Only TL pings Sir James** by default; everyone else escalates via an Issue comment.
+- **Priority:** clear the review/verify queue first (`status:verify`), otherwise implement.
 
 If you need judgment doctrine: see [docs/authority/The Coherence Engine.md](../authority/The%20Coherence%20Engine.md).
 If you need exact procedures: see [docs/runbooks/README.md](../runbooks/README.md).
 
 Activation prompt files (recommended):
-- [.github/prompts/alpha.prompt.md](../../.github/prompts/alpha.prompt.md)
-- [.github/prompts/bravo.prompt.md](../../.github/prompts/bravo.prompt.md)
+- [.github/prompts/tech-lead.prompt.md](../../.github/prompts/tech-lead.prompt.md)
+- [.github/prompts/software-engineer.prompt.md](../../.github/prompts/software-engineer.prompt.md)
 - [.github/prompts/loop.prompt.md](../../.github/prompts/loop.prompt.md)
 
-Legacy role prompts still exist for historical context, but the operational model is Alpha/Bravo/Charlie.
+Legacy role prompts still exist for historical context, but the operational model is TL/SWE/Charlie.
 
 ---
 
 ## 1) Daily “Start Here” Prompts
 
-### 1.1 Alpha — Daily Sync Prompt
+### 1.1 Tech Lead (TL) — Daily Sync Prompt
 Paste into Copilot Chat:
 
 """
-You are Alpha.
+You are Tech Lead (TL).
 
 Goal: produce a 10-minute execution-ready coordination pass.
 
@@ -35,7 +36,7 @@ Do this:
 2) Identify current risk surfaces (auth/roles/visibility, schema/migrations, map state).
 3) Propose 3-7 Issues to create/update with:
    - acceptance criteria
-  - owner (Alpha/Bravo/Browser Operator)
+  - owner (TL/SWE/Browser Operator)
    - verification steps
 4) Call out any potential file/surface conflicts.
 
@@ -53,10 +54,10 @@ Output format:
 - NEXT ACTIONS
 """
 
-### 1.2 Alpha — Turn “Idea → Actionable Issue”
+### 1.2 Tech Lead (TL) — Turn “Idea → Actionable Issue”
 
 """
-You are Alpha.
+You are Tech Lead (TL).
 
 Task: turn the following goal into a GitHub Issue spec.
 Goal: <paste goal>
@@ -77,10 +78,10 @@ Deliverable:
 - Escalation (if needed)
 """
 
-### 1.3 Bravo — Implement with Evidence Gates
+### 1.3 Software Engineer (SWE) — Implement with Evidence Gates
 
 """
-You are Bravo.
+You are Software Engineer (SWE).
 
 Issue: <paste issue link or issue text>
 
@@ -101,10 +102,10 @@ Return:
 - PR-ready summary
 """
 
-### 1.4 Bravo — Peer Verification Script (L1/L2)
+### 1.4 Software Engineer (SWE) — Peer Verification Script (L1/L2)
 
 """
-You are Bravo.
+You are Software Engineer (SWE).
 
 Change to verify: <paste PR link or summary>
 

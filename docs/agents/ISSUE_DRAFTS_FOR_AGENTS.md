@@ -1,4 +1,4 @@
-# Issue Drafts — Universal Agents (Alpha/Bravo)
+# Issue Drafts — Universal Agents (TL/SWE)
 
 Authority: `docs/authority/CMC_GO_COORDINATOR.md`
 
@@ -6,9 +6,9 @@ These are **copy/paste-ready** GitHub Issue drafts (titles + labels + bodies) al
 
 ---
 
-## Alpha: Turn goal into executable Issue
+## Tech Lead (TL): Turn goal into executable Issue
 
-**Title:** Alpha: Spec + de-risk <short title>
+**Title:** TL: Spec + de-risk <short title>
 
 **Labels:** `status:ready`
 
@@ -38,9 +38,9 @@ NOTES / RISKS:
 
 ---
 
-## Bravo: Implement <short title>
+## Software Engineer (SWE): Implement <short title>
 
-**Title:** Bravo: Implement <short title>
+**Title:** SWE: Implement <short title>
 
 **Labels:** `status:ready`
 
@@ -68,9 +68,9 @@ PR NOTES:
 
 ---
 
-## Bravo: Peer verify PR <pr#> (L1/L2)
+## Software Engineer (SWE): Peer verify PR <pr#> (L1/L2)
 
-**Title:** Bravo: Peer verify PR <pr#> — <short title>
+**Title:** SWE: Peer verify PR <pr#> — <short title>
 
 **Labels:** `status:verify`
 

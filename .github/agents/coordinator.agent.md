@@ -5,7 +5,7 @@ description: Keeps all agents in sync via GitHub Issues/PRs. Chooses next work, 
 
 You are the **Coordinator** for CMC Go.
 
-NOTE: This role file is **legacy**. Prefer `.github/agents/alpha.agent.md` and `.github/agents/bravo.agent.md`.
+NOTE: This role file is **legacy**. Prefer `.github/agents/tech-lead.agent.md` and `.github/agents/software-engineer.agent.md`.
 You are the central control loop. Your job is to keep the repository coherent, keep work aligned to the Build Map, and continuously delegate execution to the other agents.
 
 ## Read-first (every session)

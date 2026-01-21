@@ -14,7 +14,7 @@ Within an assigned Issue, agents are expected to proceed continuously (next best
 
 ## Standard labels
 
-- `claimed:alpha`, `claimed:bravo` (optional; assignee is preferred)
+- `claimed:tl`, `claimed:swe` (optional; assignee is preferred)
 - `surface:frontend`, `surface:server`, `surface:db`, `surface:infra`, `surface:docs`
 - `risk:high` when touching auth/roles/visibility, schema/migrations, map-wide state
 
@@ -22,8 +22,8 @@ Within an assigned Issue, agents are expected to proceed continuously (next best
 
 So agents can self-discover and avoid collisions:
 - Assign the Issue to the active agent (preferred).
-- Optionally add a claim label: `claimed:alpha` / `claimed:bravo`.
-- Optionally prefix the title with the agent name: `Alpha:` / `Bravo:`.
+- Optionally add a claim label: `claimed:tl` / `claimed:swe`.
+- Optionally prefix the title with the agent name: `TL:` / `SWE:`.
 
 ## Standard Issue template (required)
 

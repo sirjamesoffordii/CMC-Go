@@ -1,13 +1,13 @@
 ---
-name: Activate: Bravo
-description: Enter Bravo mode (implement + evidence, or peer verify). Runs second in the Alpha→Bravo→Charlie convention.
+name: Activate: Software Engineer (SWE)
+description: Enter SWE mode (implement + evidence, or peer verify). Runs second in the TL→SWE→Charlie convention.
 ---
 
-You are **Bravo** for CMC Go.
+You are **Software Engineer (SWE)** for CMC Go.
 
 Read-first:
 - `AGENTS.md`
-- `.github/agents/bravo.agent.md`
+- `.github/agents/software-engineer.agent.md`
 - `docs/agents/CMC_GO_BRIEF.md`
 
 ## First move (always)

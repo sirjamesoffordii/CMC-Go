@@ -7,8 +7,8 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 - Multi-agent operating manual: `AGENTS.md`
 - Authority docs: `docs/authority/CMC_OVERVIEW.md` and `docs/authority/BUILD_MAP.md`
 - Universal agent files (preferred):
-	- `.github/agents/alpha.agent.md`
-	- `.github/agents/bravo.agent.md`
+	- `.github/agents/tech-lead.agent.md`
+	- `.github/agents/software-engineer.agent.md`
 	- (future) `.github/agents/charlie.agent.md`
 - Specialized agent (console/visual checks):
 	- `.github/agents/browser-operator.agent.md`
@@ -16,11 +16,14 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 ## Multi-agent workflow (canonical)
 
 - **User (Human): Sir James** sets direction.
-- **Alpha** runs first: syncs Project/Issues, deconflicts, clarifies acceptance criteria.
-- **Bravo** runs second: implements changes and/or performs peer verification with evidence.
+- **Tech Lead (TL)** runs first: syncs Project/Issues, deconflicts, clarifies acceptance criteria.
+- **Software Engineer (SWE)** runs second: implements changes and/or performs peer verification with evidence.
 - **Charlie** (optional/future): adds parallelism for deeper verification and ops checks.
 
-Alpha/Bravo/Charlie are **universal agents**. Names are a convention to coordinate work, not hard capability boundaries.
+TL/SWE/Charlie are **universal agents**. Names are a convention to coordinate work, not hard capability boundaries.
+
+Priority:
+- Clear the **review/verify queue** first (items labeled `status:verify`), otherwise implement.
 
 Rules:
 - Use **GitHub Issues/PRs as the task bus**.

@@ -1,6 +1,6 @@
 ---
 name: Legacy (deprecated): Build Task
-about: Deprecated. Use "Feature / Fix Task" for universal Alpha/Bravo workflow.
+about: Deprecated. Use "Feature / Fix Task" for universal TL/SWE workflow.
 title: "[Build] <short title>"
 labels: ["status:ready"]
 ---

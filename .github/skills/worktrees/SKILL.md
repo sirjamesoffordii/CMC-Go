@@ -16,7 +16,7 @@ Use worktrees to avoid collisions between agents.
 Create worktree:
 
 - From repo root:
-  - `git worktree add ../wt-impl-123-fix-login -b agent/bravo/123-fix-login`
+  - `git worktree add ../wt-impl-123-fix-login -b agent/swe/123-fix-login`
 
 List worktrees:
 - `git worktree list`

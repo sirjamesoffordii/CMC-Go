@@ -10,8 +10,8 @@
 - Multi-agent operating manual: [AGENTS.md](/AGENTS.md)
 - Repo-specific coding rules for VS Code Copilot: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
 - Universal agent files (preferred):
-	- Alpha: [.github/agents/alpha.agent.md](/.github/agents/alpha.agent.md)
-	- Bravo: [.github/agents/bravo.agent.md](/.github/agents/bravo.agent.md)
+	- Tech Lead (TL): [.github/agents/tech-lead.agent.md](/.github/agents/tech-lead.agent.md)
+	- Software Engineer (SWE): [.github/agents/software-engineer.agent.md](/.github/agents/software-engineer.agent.md)
 	- Browser Operator: [.github/agents/browser-operator.agent.md](/.github/agents/browser-operator.agent.md)
 
 ## Operations

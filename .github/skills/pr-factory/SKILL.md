@@ -1,6 +1,6 @@
 # Skill: PR Factory (CMC Go)
 
-Standardize PR creation so Alpha (coordination) can integrate quickly.
+Standardize PR creation so TL (coordination) can integrate quickly.
 
 ## Branch naming
 - Agent: `agent/<agent>/<issue#>-<slug>`

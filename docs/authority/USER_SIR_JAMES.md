@@ -24,7 +24,7 @@ Humans contribute intent; agents contribute execution.
 
 - Humans propose goals, constraints, and acceptance criteria.
 - Execution agents implement and verify.
-- The coordination function evaluates evidence and decides what becomes “truth” in the repo (Alpha by convention).
+- The coordination function evaluates evidence and decides what becomes “truth” in the repo (TL by convention).
 
 ## Coordination Expectations
 

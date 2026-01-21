@@ -2,7 +2,7 @@
 
 Authority: `docs/authority/CMC_GO_COORDINATOR.md`
 
-CMC Go uses **universal agents** (Alpha/Bravo/Charlie). Work discovery is Project-first.
+CMC Go uses **universal agents** (TL/SWE/Charlie). Work discovery is Project-first.
 
 ## Primary queue (recommended)
 
@@ -16,8 +16,8 @@ CMC Go uses **universal agents** (Alpha/Bravo/Charlie). Work discovery is Projec
 These links are useful when you can’t (or don’t want to) use the Project UI.
 
 - Ready/unclaimed: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22+no%3Aassignee
-- Claimed by Alpha: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Aalpha%22
-- Claimed by Bravo: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Abravo%22
+- Claimed by TL: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Atl%22
+- Claimed by SWE: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Aswe%22
 - Needs verification: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Averify%22
 
 If you are using multiple GitHub accounts (one per agent), `assignee:<user>` can replace claim labels.

@@ -5,11 +5,15 @@ This repository is worked on by multiple agents operating **concurrently**. The 
 ## Agents (canonical names)
 
 - **User (Human): Sir James** — sets direction; may override priorities; may inject code/PRs.
-- **Alpha (AI)** — runs first by convention; defaults to triage/coordination/deconfliction.
-- **Bravo (AI)** — runs second by convention; defaults to implementation and peer verification.
+- **Tech Lead (TL) (AI)** — runs first by convention; defaults to triage/coordination/deconfliction.
+- **Software Engineer (SWE) (AI)** — runs second by convention; defaults to implementation and peer verification.
 - **Charlie (AI)** — optional/future; adds parallelism (deep verify, repro hunts, ops checks).
 
-Alpha/Bravo/Charlie are **universal agents** (same capabilities). The names are a coordination convention, not hard role boundaries.
+TL/SWE/Charlie are **universal agents** (same capabilities). The names are a coordination convention, not hard role boundaries.
+
+Default priority order (unless the Issue says otherwise):
+1) Clear the **review/verify queue** first (open items labeled `status:verify`).
+2) Otherwise implement the next `status:ready` item.
 
 ## Source of truth
 
@@ -41,7 +45,7 @@ However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, 
 	- **What changed** (bullets)
 	- **How verified** (for docs-only: `git grep`/lint as relevant)
 	- **Risk** (1 line)
-4) If there is no Issue, that’s OK; **Alpha** will later link/create a tracking Issue if needed.
+4) If there is no Issue, that’s OK; **TL** will later link/create a tracking Issue if needed.
 
 If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
 
@@ -49,14 +53,14 @@ If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
 
 Universal agent definitions:
 
-- Alpha: [.github/agents/alpha.agent.md](.github/agents/alpha.agent.md)
-- Bravo: [.github/agents/bravo.agent.md](.github/agents/bravo.agent.md)
+- Tech Lead (TL): [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- Software Engineer (SWE): [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
 Legacy/specialized agents (still used when helpful):
 
 - Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
 
-Legacy role files may exist for historical context, but the operational model is Alpha/Bravo/Charlie.
+Legacy role files may exist for historical context, but the operational model is TL/SWE/Charlie.
 
 The two canonical authority docs that drive prioritization are:
 
@@ -77,7 +81,7 @@ If you are not already in the correct worktree, create/switch before editing.
 ## Git discipline
 
 - Keep diffs small and scoped to the assigned Issue.
-- One PR per Issue unless **Alpha** explicitly approves bundling.
+- One PR per Issue unless **TL** explicitly approves bundling.
 - Prefer additive changes over risky refactors.
 - Do not commit secrets. Use `.env.local` or platform environment variables.
 
@@ -124,7 +128,7 @@ These rules exist to reduce repeated context and long transcripts.
 
 If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
 
-- **Alpha** assigns the task to any available agent/human who has access.
+- **TL** assigns the task to any available agent/human who has access.
 - The assignee follows a step-by-step checklist in the Issue and posts evidence.
 - Never paste secrets into Issues; name variables but not values.
 
@@ -134,14 +138,14 @@ Agents must **claim** a task before making changes.
 
 Use the strongest available mechanism and do all that apply:
 - Assign the Issue to yourself.
-- Add a label like `claimed:alpha` / `claimed:bravo` (if using claim labels).
-- Leave a short Issue comment: `CLAIMED by <Alpha|Bravo> — <worktree>/<branch> — ETA <time>`.
+- Add a label like `claimed:tl` / `claimed:swe` (if using claim labels).
+- Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`.
 
 If you go idle or blocked for an extended period, unclaim and leave a note.
 
 ### Branch naming
 
-- Agent branches: `agent/<agent>/<issue#>-<slug>` (e.g. `agent/alpha/123-thing`, `agent/bravo/123-thing`)
+- Agent branches: `agent/<agent>/<issue#>-<slug>` (e.g. `agent/tl/123-thing`, `agent/swe/123-thing`)
 - User (Sir James) branches: `user/sir-james/<issue#>-<slug>` (or `user/sir-james/<slug>`)
 
 ### Commit message prefix
@@ -174,7 +178,8 @@ All agents post updates to the assigned Issue using this structure:
 - **Branch/PR:** (link)
 - **What changed:** (bullet list)
 - **How verified:** (commands run + brief results)
-- **Notes/Risks:** (anything Alpha should know)
+- **Notes/Risks:** (anything TL should know)
+
 
 ## Rapid Dev Mode (Owner-approved)
 

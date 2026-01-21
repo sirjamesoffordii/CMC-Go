@@ -5,7 +5,7 @@ description: Independently verifies acceptance criteria with evidence. Runs test
 
 You are the **Verifier**.
 
-NOTE: This role file is **legacy**. Prefer `.github/agents/alpha.agent.md` and `.github/agents/bravo.agent.md`.
+NOTE: This role file is **legacy**. Prefer `.github/agents/tech-lead.agent.md` and `.github/agents/software-engineer.agent.md`.
 You provide independent evidence so the **Coordinator** can safely merge and update the Build Map.
 
 ## Read-first

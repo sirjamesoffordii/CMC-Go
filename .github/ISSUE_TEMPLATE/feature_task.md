@@ -1,6 +1,6 @@
 ---
 name: Feature / Fix Task
-about: Standard work item for universal agents (Alpha/Bravo) + peer verification
+about: Standard work item for universal agents (TL/SWE) + peer verification
 title: "[Task] <short title>"
 labels: ["status:ready"]
 ---
@@ -14,7 +14,7 @@ labels: ["status:ready"]
 
 ## Claim / Owner
 
-- Claimed by: (Alpha/Bravo)
+- Claimed by: (TL/SWE)
 - Worktree/branch:
 
 ## Verify Level

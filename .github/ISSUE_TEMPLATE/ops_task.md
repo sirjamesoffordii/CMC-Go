@@ -9,7 +9,7 @@ labels: ["type:ops", "status:ready"]
 
 ## Claim / Owner
 
-- Claimed by: (Alpha/Bravo/Browser Operator)
+- Claimed by: (TL/SWE/Browser Operator)
 - Links (Railway/Sentry/Codecov):
 
 ## Checklist
