@@ -1,6 +1,6 @@
-# Runbook & Guides
+# Runbooks Index
 
-Single entrypoint for operational playbooks and agent-friendly setup/tooling references.
+Single entrypoint for operational playbooks, setup/tooling references, and agent runbooks.
 
 ## Setup & workflow
 
@@ -34,3 +34,11 @@ Single entrypoint for operational playbooks and agent-friendly setup/tooling ref
 ## Ops log
 
 - Ops change log: [docs/runbook/ops-change-log.md](ops-change-log.md)
+
+## Agent runbooks
+
+Additional agent-specific runbooks live in [docs/runbooks/](../runbooks/):
+
+- Agent evidence standard: [docs/runbooks/AGENT_EVIDENCE_STANDARD.md](../runbooks/AGENT_EVIDENCE_STANDARD.md)
+- Agent quick commands: [docs/runbooks/AGENT_QUICK_COMMANDS.md](../runbooks/AGENT_QUICK_COMMANDS.md)
+- GitHub auth notes: [docs/runbooks/GITHUB_AUTH.md](../runbooks/GITHUB_AUTH.md)

@@ -65,10 +65,9 @@ Legacy role files may exist for historical context, but the operational model is
 Working truth is maintained in GitHub Projects v2:
 https://github.com/users/sirjamesoffordii/projects/2
 
-Legacy Build Map docs are retained for historical context:
+Legacy Build Map doc is retained for historical context:
 
-- [docs/legacy/authority/BUILD_MAP.md](docs/legacy/authority/BUILD_MAP.md)
-- [docs/legacy/agents/BUILD_MAP.md](docs/legacy/agents/BUILD_MAP.md)
+- [docs/legacy/BUILD_MAP.md](docs/legacy/BUILD_MAP.md)
 
 The canonical authority doc that drives prioritization is:
 
