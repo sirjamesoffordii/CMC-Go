@@ -1,0 +1,57 @@
+name: Copilot auto-handoff
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  assign_to_copilot:
+    name: Assign to Copilot
+    if: github.event.label.name == 'agent:copilot'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Assign issue to Copilot coding agent
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.COPILOT_ASSIGN_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = context.payload.issue.number;
+
+            const assignees = (context.payload.issue.assignees ?? []).map(a => a.login);
+            if (assignees.includes('copilot-swe-agent[bot]') || assignees.includes('copilot-swe-agent')) {
+              core.info('Copilot is already assigned.');
+              return;
+            }
+
+            const target_repo = `${owner}/${repo}`;
+
+            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
+              owner,
+              repo,
+              issue_number,
+              assignees: ['copilot-swe-agent[bot]'],
+              agent_assignment: {
+                target_repo,
+                base_branch: 'staging',
+                custom_instructions: [
+                  'Work from the `staging` branch and open a PR targeting `staging`.',
+                  'Follow repository instructions in AGENTS.md and docs/authority/BUILD_MAP.md.',
+                  'Keep the diff small and scoped to the issue.',
+                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.'
+                ].join('\n')
+              },
+              headers: {
+                'Accept': 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2022-11-28'
+              }
+            });
+
+            core.info('Assigned issue to copilot-swe-agent[bot].');
