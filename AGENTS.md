@@ -78,6 +78,25 @@ If you are not already in the correct worktree, create/switch before editing.
 - Prefer additive changes over risky refactors.
 - Do not commit secrets. Use `.env.local` or platform environment variables.
 
+## Verification Levels (v0 / v1 / v2)
+
+`staging` is the primary integration branch. PRs into `staging` must pass CI and follow one of these verification levels:
+
+- **v0**: Builder self-verifies and may merge when CI is green.
+- **v1**: Another agent/human verifies (>= 1 approval from someone other than the PR author) before merge.
+- **v2**: Another agent/human verifies (>= 1 approval) **and** additional verification evidence is required.
+
+**How to mark a PR** (labels):
+
+- `verify:v0` (default if no label)
+- `verify:v1`
+- `verify:v2`
+
+**v2 required evidence labels**:
+
+- `evidence:db-or-ci` (DB-backed tests/CI evidence posted)
+- `evidence:deployed-smoke` (deployed staging smoke check evidence posted)
+
 ## Token budget playbook
 
 These rules exist to reduce repeated context and long transcripts.

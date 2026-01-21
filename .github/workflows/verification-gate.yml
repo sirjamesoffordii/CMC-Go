@@ -1,0 +1,81 @@
+name: Verification Gate (v0/v1/v2)
+
+on:
+  pull_request:
+    branches: [ staging ]
+
+# Principle: staging is the integration branch.
+# This gate encodes the repo's verification policy levels:
+# - v0: Builder self-verifies (no extra approval required)
+# - v1: Another agent/human verifies (>=1 approval)
+# - v2: Another agent/human + additional evidence labels
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verification-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate verification level + approvals
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = (pr.labels || []).map(l => l.name);
+            const level = labels.includes('verify:v2')
+              ? 'v2'
+              : labels.includes('verify:v1')
+                ? 'v1'
+                : 'v0';
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = pr.number;
+
+            // Count unique approvers (excluding PR author).
+            const reviews = await github.paginate(
+              github.rest.pulls.listReviews,
+              { owner, repo, pull_number, per_page: 100 }
+            );
+
+            const approvalsByUser = new Map();
+            for (const review of reviews) {
+              if (!review || !review.user || !review.user.login) continue;
+              const login = review.user.login;
+              if (login === pr.user?.login) continue;
+              approvalsByUser.set(login, review.state);
+            }
+
+            const approvers = [...approvalsByUser.entries()]
+              .filter(([, state]) => state === 'APPROVED')
+              .map(([login]) => login);
+
+            core.info(`Verification level: ${level}`);
+            core.info(`Approvers: ${approvers.join(', ') || '(none)'}`);
+            core.info(`Labels: ${labels.join(', ') || '(none)'}`);
+
+            if (level === 'v1' || level === 'v2') {
+              if (approvers.length < 1) {
+                core.setFailed(`Verification ${level} requires >=1 approval from someone other than the PR author.`);
+                return;
+              }
+            }
+
+            if (level === 'v2') {
+              // Additional verification checks are represented as evidence labels.
+              // This keeps the policy explicit without forcing expensive CI on every PR.
+              const requiredEvidenceLabels = [
+                'evidence:db-or-ci',
+                'evidence:deployed-smoke'
+              ];
+
+              const missing = requiredEvidenceLabels.filter(name => !labels.includes(name));
+              if (missing.length > 0) {
+                core.setFailed(`Verification v2 requires evidence labels: ${missing.join(', ')}`);
+                return;
+              }
+            }
+
+            core.info('Verification gate passed.');
