@@ -1,8 +1,8 @@
 ---
-name: Browser / Ops Task
-about: Railway/Sentry/Codecov/dashboard changes + visual verification
+name: Legacy (deprecated): Browser / Ops Task
+about: Deprecated. Use "Ops / Console Task" for universal ops/console work.
 title: "[Browser] <short title>"
-labels: ["role:browser", "type:ops", "status:ready"]
+labels: ["type:ops", "status:ready"]
 ---
 
 ## Goal

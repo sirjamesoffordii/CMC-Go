@@ -1,6 +1,6 @@
 ---
 name: Feature / Fix Task
-about: Standard work item for Builder + Verifier flow
+about: Standard work item for universal agents (Alpha/Bravo) + peer verification
 title: "[Task] <short title>"
 labels: ["status:ready"]
 ---
@@ -12,17 +12,24 @@ labels: ["status:ready"]
 
 ## Surface Area (files/modules)
 
-## Builder Notes
+## Claim / Owner
+
+- Claimed by: (Alpha/Bravo)
+- Worktree/branch:
+
+## Verify Level
+
+- L0 (self) | L1 (peer) | L2 (deep)
 
 ## Verification Steps
 Commands to run:
+- `pnpm check`
 - `pnpm test`
-- `pnpm lint`
-- `pnpm typecheck`
+- If UI flow changed: `pnpm -s playwright test e2e/smoke.spec.ts`
 
 Manual checks:
 - 
 
 ## Reporting
-Builder posts progress + PR link.
-Verifier posts commands run + evidence and marks Verified/Blocked.
+- Implementation agent posts progress + PR link.
+- If Verify Level is L1/L2: a second agent posts commands run + evidence + verdict.

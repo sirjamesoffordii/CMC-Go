@@ -1,8 +1,8 @@
 ---
-name: Explorer Task
-about: Research/triage task producing a decision-ready recommendation
+name: Legacy (deprecated): Explore Task
+about: Deprecated. Use "Feature / Fix Task" for a universal Issue spec; keep research notes in the Issue body.
 title: "[Explore] <question or area>"
-labels: ["role:explorer", "status:ready"]
+labels: ["status:ready"]
 ---
 
 ## Question / Goal

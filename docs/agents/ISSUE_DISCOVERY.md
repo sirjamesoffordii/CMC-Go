@@ -1,20 +1,30 @@
-# Issue Discovery — Agent Work Queue
+# Issue Discovery — Work Queue
 
 Authority: `docs/authority/CMC_GO_COORDINATOR.md`
 
-Agents discover work via **GitHub Issues** filtered by the role label.
+CMC Go uses **universal agents** (Alpha/Bravo/Charlie). Work discovery is Project-first.
 
-## Role label filters
+## Primary queue (recommended)
 
-- Coordinator: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Acoordinator%22
-- Explorer: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Aexplorer%22
-- Builder: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Abuilder%22
-- Verifier: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Averifier%22
-- Browser: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22role%3Abrowser%22
+- Use the **GitHub Project (operational board)** as the command center for:
+  - status (Todo/In Progress/Blocked/Verify/Done)
+  - phase
+  - item type
 
-## Creating the initial issues
+## Secondary queue (Issue search links)
 
-Use `scripts/create-agent-issues.ps1`.
+These links are useful when you can’t (or don’t want to) use the Project UI.
+
+- Ready/unclaimed: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Aready%22+no%3Aassignee
+- Claimed by Alpha: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Aalpha%22
+- Claimed by Bravo: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22claimed%3Abravo%22
+- Needs verification: https://github.com/sirjamesoffordii/CMC-Go/issues?q=is%3Aissue+is%3Aopen+label%3A%22status%3Averify%22
+
+If you are using multiple GitHub accounts (one per agent), `assignee:<user>` can replace claim labels.
+
+## Creating bootstrap issues (optional)
+
+The script `scripts/create-agent-issues.ps1` is legacy/bootstrap tooling; use it only if you need a starting set of Issues in a fresh repo.
 
 - Print prefilled “new issue” links (works without `gh`):
   - `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode url`

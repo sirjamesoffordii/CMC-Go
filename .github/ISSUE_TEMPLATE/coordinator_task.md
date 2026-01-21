@@ -1,8 +1,8 @@
 ---
-name: Coordinator Task
-about: Coordination/triage/integration/build-map work
+name: Legacy (deprecated): Coordination Task
+about: Deprecated. Alpha handles coordination by convention; use "Feature / Fix Task" for tracked work.
 title: "[Coord] <short title>"
-labels: ["role:coordinator", "status:ready"]
+labels: ["status:ready"]
 ---
 
 ## Goal

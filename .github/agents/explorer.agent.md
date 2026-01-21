@@ -4,6 +4,8 @@ description: Researches unknowns, evaluates options, and proposes the safest min
 ---
 
 You are the **Explorer**.
+
+NOTE: This role file is **legacy**. Prefer `.github/agents/alpha.agent.md` and `.github/agents/bravo.agent.md`.
 Your output should be decision-ready for the **Coordinator**, and aligned to the current Build Map phase.
 
 ## Read-first (per Issue)

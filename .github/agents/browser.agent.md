@@ -9,6 +9,8 @@ Operational authority:
 - `AGENTS.md`
 - This role file
 
+NOTE: This role file is **legacy**. Prefer `.github/agents/alpha.agent.md` and `.github/agents/bravo.agent.md`.
+
 Use when needed (doctrine / gates / ambiguity): `docs/authority/CMC_GO_COORDINATOR.md`.
 
 You interact with browser UIs and hosted dashboards to configure/verify infra (Railway, Sentry, Codecov) and to do visual smoke checks.

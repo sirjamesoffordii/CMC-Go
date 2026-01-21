@@ -1,8 +1,8 @@
 ---
-name: Verifier Task
-about: Independent verification task with evidence
+name: Legacy (deprecated): Verify Task
+about: Deprecated. Use "Feature / Fix Task" + Verify Level (L1/L2) for peer verification.
 title: "[Verify] PR #<n> <short title>"
-labels: ["role:verifier", "status:ready"]
+labels: ["status:verify"]
 ---
 
 ## PR

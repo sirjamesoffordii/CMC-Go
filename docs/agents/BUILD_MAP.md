@@ -1,4 +1,12 @@
-# CMC Go — Build Map
+# CMC Go — Build Map (Deprecated)
+
+This file is retained for historical context only.
+
+Current sources of truth:
+- Authority Build Map: `docs/authority/BUILD_MAP.md`
+- Operational command center: GitHub Project (status/phase/type)
+
+---
 
 **Owner:** Autonomous Agent (VS Code)  
 **Last verified:** Jan 15, 2026  

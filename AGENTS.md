@@ -1,15 +1,15 @@
 # CMC Go — Agent Operating Manual (AGENTS.md)
 
-This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, strict role boundaries, and a worktree policy.
+This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, a simple **claim** mechanism to prevent collisions, and a strict worktree policy.
 
-## Roles (canonical names)
+## Agents (canonical names)
 
 - **User (Human): Sir James** — sets direction; may override priorities; may inject code/PRs.
-- **Coordinator (AI)** — keeps the build moving; prevents collisions; assigns/issues work; integrates; updates Build Map/runbooks.
-- **Explorer (AI)** — investigates unknowns; proposes approaches; de-risks.
-- **Builder (AI)** — implements scoped changes; opens PRs.
-- **Verifier (AI)** — independently validates acceptance criteria; reports evidence.
-- **Browser Operator (AI)** — performs web-console work (Railway/Sentry/Codecov) and visual checks; reports evidence.
+- **Alpha (AI)** — runs first by convention; defaults to triage/coordination/deconfliction.
+- **Bravo (AI)** — runs second by convention; defaults to implementation and peer verification.
+- **Charlie (AI)** — optional/future; adds parallelism (deep verify, repro hunts, ops checks).
+
+Alpha/Bravo/Charlie are **universal agents** (same capabilities). The names are a coordination convention, not hard role boundaries.
 
 ## Source of truth
 
@@ -41,19 +41,22 @@ However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, 
 	- **What changed** (bullets)
 	- **How verified** (for docs-only: `git grep`/lint as relevant)
 	- **Risk** (1 line)
-4) If there is no Issue, that’s OK; the **Coordinator** will later link/create a tracking Issue if needed.
+4) If there is no Issue, that’s OK; **Alpha** will later link/create a tracking Issue if needed.
 
 If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
 
-## Where role instructions live
+## Where agent instructions live
 
-Role-specific instructions (used by your VS Code agents) live here:
+Universal agent definitions:
 
-- Coordinator: [.github/agents/coordinator.agent.md](.github/agents/coordinator.agent.md)
-- Explorer: [.github/agents/explorer.agent.md](.github/agents/explorer.agent.md)
-- Builder: [.github/agents/builder.agent.md](.github/agents/builder.agent.md)
-- Verifier: [.github/agents/verifier.agent.md](.github/agents/verifier.agent.md)
+- Alpha: [.github/agents/alpha.agent.md](.github/agents/alpha.agent.md)
+- Bravo: [.github/agents/bravo.agent.md](.github/agents/bravo.agent.md)
+
+Legacy/specialized agents (still used when helpful):
+
 - Browser Operator: [.github/agents/browser-operator.agent.md](.github/agents/browser-operator.agent.md)
+
+Legacy role files may exist for historical context, but the operational model is Alpha/Bravo/Charlie.
 
 The two canonical authority docs that drive prioritization are:
 
@@ -74,7 +77,7 @@ If you are not already in the correct worktree, create/switch before editing.
 ## Git discipline
 
 - Keep diffs small and scoped to the assigned Issue.
-- One PR per Issue unless the Coordinator explicitly approves bundling.
+- One PR per Issue unless **Alpha** explicitly approves bundling.
 - Prefer additive changes over risky refactors.
 - Do not commit secrets. Use `.env.local` or platform environment variables.
 
@@ -121,19 +124,36 @@ These rules exist to reduce repeated context and long transcripts.
 
 If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
 
-- The **Coordinator** assigns the task to any available agent/human who has access.
+- **Alpha** assigns the task to any available agent/human who has access.
 - The assignee follows a step-by-step checklist in the Issue and posts evidence.
 - Never paste secrets into Issues; name variables but not values.
 
+## Claiming work (collision prevention)
+
+Agents must **claim** a task before making changes.
+
+Use the strongest available mechanism and do all that apply:
+- Assign the Issue to yourself.
+- Add a label like `claimed:alpha` / `claimed:bravo` (if using claim labels).
+- Leave a short Issue comment: `CLAIMED by <Alpha|Bravo> — <worktree>/<branch> — ETA <time>`.
+
+If you go idle or blocked for an extended period, unclaim and leave a note.
+
 ### Branch naming
 
-- Agent branches: `agent/<role>/<issue#>-<slug>`
+- Agent branches: `agent/<agent>/<issue#>-<slug>` (e.g. `agent/alpha/123-thing`, `agent/bravo/123-thing`)
 - User (Sir James) branches: `user/sir-james/<issue#>-<slug>` (or `user/sir-james/<slug>`)
 
 ### Commit message prefix
 
-- Agent commits: `agent(<role>): <summary>`
+- Agent commits: `agent(<agent>): <summary>`
 - User commits: `user(sir-james): <summary>`
+
+## Verification levels (peer verification)
+
+- **L0**: self-verify (fast path for low-risk tasks).
+- **L1**: peer verification required (another agent posts evidence + verdict).
+- **L2**: peer verification + deeper coverage (e2e/DB-backed tests/console checks as relevant).
 
 ## Definition of Done (DoD)
 
@@ -142,7 +162,8 @@ A task is "Done" only when:
 1. Acceptance criteria in the Issue are met.
 2. Verification evidence is posted (commands run + results).
 3. A PR is opened (or updated) and linked to the Issue.
-4. Coordinator acknowledges integration/next steps.
+4. If the Issue requires peer verification (L1/L2), a second agent posts a verification verdict.
+5. Issue/Project status is updated to reflect reality.
 
 ## Reporting standard (GitHub comment format)
 
@@ -153,7 +174,7 @@ All agents post updates to the assigned Issue using this structure:
 - **Branch/PR:** (link)
 - **What changed:** (bullet list)
 - **How verified:** (commands run + brief results)
-- **Notes/Risks:** (anything the Coordinator should know)
+- **Notes/Risks:** (anything Alpha should know)
 
 ## Rapid Dev Mode (Owner-approved)
 

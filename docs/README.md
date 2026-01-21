@@ -7,13 +7,11 @@
 
 ## Agent instruction + behavior (primary sources)
 
-- Multi-agent operating manual (Coordinator-centered): [AGENTS.md](/AGENTS.md)
+- Multi-agent operating manual: [AGENTS.md](/AGENTS.md)
 - Repo-specific coding rules for VS Code Copilot: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
-- Role files (used by your VS Code agents):
-	- Coordinator: [.github/agents/coordinator.agent.md](/.github/agents/coordinator.agent.md)
-	- Explorer: [.github/agents/explorer.agent.md](/.github/agents/explorer.agent.md)
-	- Builder: [.github/agents/builder.agent.md](/.github/agents/builder.agent.md)
-	- Verifier: [.github/agents/verifier.agent.md](/.github/agents/verifier.agent.md)
+- Universal agent files (preferred):
+	- Alpha: [.github/agents/alpha.agent.md](/.github/agents/alpha.agent.md)
+	- Bravo: [.github/agents/bravo.agent.md](/.github/agents/bravo.agent.md)
 	- Browser Operator: [.github/agents/browser-operator.agent.md](/.github/agents/browser-operator.agent.md)
 
 ## Operations

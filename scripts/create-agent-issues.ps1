@@ -134,11 +134,11 @@ function Ensure-LabelRest {
   )
 
   $colors = @{
-    'role:coordinator' = '5319e7'
-    'role:explorer' = '0e8a16'
-    'role:builder' = '1d76db'
-    'role:verifier' = 'fbca04'
-    'role:browser' = 'c5def5'
+    'claimed:alpha' = '5319e7'
+    'claimed:bravo' = '1d76db'
+    'status:ready' = '0e8a16'
+    'status:verify' = 'fbca04'
+    'type:ops' = 'c5def5'
   }
   $color = $colors[$Label]
   if (-not $color) { $color = 'ededed' }
@@ -190,108 +190,83 @@ function Create-IssueRest {
 $resolvedRepo = Resolve-Repo -RepoName $Repo
 
 $issues = @(
-  @{ Title = 'Explorer: Audit "ahead of staging" branches and propose merge order'; Labels = @('role:explorer'); Body = @'
-STATUS: In Progress
+  @{ Title = 'Alpha: Daily sync + triage (Project-first)'; Labels = @('status:ready'); Body = @'
+STATUS: Todo
 
-CONTEXT:
-- `origin/staging` is working truth.
-- These remote branches are ahead of `origin/staging` and need triage:
-  - `origin/agent/docs/agent-playbook-nav`
-  - `origin/agent/setup-agent-workflow`
-  - `origin/copilot/update-key-agent-docs`
+GOAL:
+- Produce a 10-minute execution-ready coordination pass.
+
+CHECKLIST:
+- Review the GitHub Project (operational board) and open Issues.
+- Identify the smallest next steps that advance the current phase.
+- Ensure Issues are executable (goal/scope/AC/verification).
+- Deconflict collisions (one surface = one owner).
+
+OUTPUT (comment on this Issue):
+- Status
+- Work queue (3–7 items)
+- Blockers/questions (only if needed)
+'@ },
+
+  @{ Title = 'Alpha: Convert goal → executable Issue spec'; Labels = @('status:ready'); Body = @'
+STATUS: Todo
+
+GOAL:
+- Take an incoming request and rewrite it into an executable Issue.
 
 ACCEPTANCE CRITERIA:
-- Produce a short merge plan recommending order (risk-based) and why.
-- For each branch: list what surfaces change (docs-only vs client/server/db), likely conflicts, and required gates.
-- Identify any dependency constraints (must merge together / must not merge together).
+- Includes: Goal, Scope (in/out), Acceptance Criteria, Verification steps, Files likely touched.
+- If a human decision is required: ask via GitHub mention @sirjamesoffordII.
+'@ },
+
+  @{ Title = 'Bravo: Implement <short title> (evidence-gated)'; Labels = @('status:ready'); Body = @'
+STATUS: Todo
+
+GOAL:
+- Implement the assigned Issue with the smallest safe diff.
+
+ACCEPTANCE CRITERIA:
+- Matches Issue acceptance criteria.
+- PR opened against staging and linked to Issue.
+
+VERIFICATION (minimum evidence):
+- `pnpm check`
+- targeted `pnpm test`
+- If UI flow changed: `pnpm -s playwright test e2e/smoke.spec.ts`
+'@ },
+
+  @{ Title = 'Bravo: Peer verify PR #<n> (L1/L2)'; Labels = @('status:verify'); Body = @'
+STATUS: Verify
+
+PR:
+- <link>
+
+VERIFY LEVEL:
+- L1 (peer) | L2 (deep)
+
+VERIFICATION:
+- `pnpm check`
+- `pnpm test`
+- Add focused e2e/DB/ops checks as appropriate
+
+OUTPUT (comment on PR):
+- Evidence (commands + concise results)
+- Verdict: Pass / Pass-with-notes / Fail
+'@ },
+
+  @{ Title = 'Ops: Console/visual verification (Railway/Sentry/Codecov)'; Labels = @('type:ops','status:ready'); Body = @'
+STATUS: Todo
+
+GOAL:
+- Perform the requested console/config change or visual verification.
 
 EVIDENCE REQUIRED:
-- `git log --oneline --max-count=20 <branch>`
-- `git diff --name-only origin/staging...<branch>`
+- What changed (setting name only; no secret values)
+- Where (links or navigation path)
+- How to confirm (what proves it worked)
 
-NEXT:
-- Post the plan as an Issue comment with the evidence.
-'@ },
-
-  @{ Title = 'Builder: Merge docs playbook nav into staging'; Labels = @('role:builder'); Body = @'
-STATUS: In Progress
-
-CONTEXT:
-- `staging` is working truth. Merge `origin/agent/docs/agent-playbook-nav` into `staging` as a small, reviewable change.
-
-ACCEPTANCE CRITERIA:
-- `staging` includes the docs improvements from `origin/agent/docs/agent-playbook-nav`.
-- Keep changes tightly scoped (docs/prompts only).
-- Push to `origin/staging`.
-
-EVIDENCE REQUIRED:
-- `pnpm check`
-- `pnpm test`
-- `git status -sb` shows `staging...origin/staging` in sync after push.
-'@ },
-
-  @{ Title = 'Builder: Merge setup-agent-workflow (onboarding/registration) into staging'; Labels = @('role:builder'); Body = @'
-STATUS: In Progress
-
-CONTEXT:
-- `staging` is working truth.
-- Merge `origin/agent/setup-agent-workflow` separately (contains app behavior changes).
-
-ACCEPTANCE CRITERIA:
-- Merge is isolated (not combined with other branches).
-- Resolve conflicts with the smallest safe diff.
-- Push to `origin/staging`.
-
-EVIDENCE REQUIRED:
-- `pnpm check`
-- `pnpm test`
-- If UI flow changed, run: `pnpm -s playwright test e2e/smoke.spec.ts` (paste output)
-'@ },
-
-  @{ Title = 'Builder: Evaluate merge of copilot/update-key-agent-docs into staging'; Labels = @('role:builder'); Body = @'
-STATUS: In Progress
-
-CONTEXT:
-- `staging` is working truth.
-- Branch `origin/copilot/update-key-agent-docs` includes code changes (client + server) and must be merged with full evidence gates.
-
-ACCEPTANCE CRITERIA:
-- Either:
-  - A) Merge into `staging`, push to `origin/staging`, and provide full evidence gates.
-  - OR
-  - B) If not safe to merge: post a Coordinator escalation comment explaining why + propose a safe slice (specific commits/files).
-
-EVIDENCE REQUIRED (for option A):
-- `pnpm check`
-- `pnpm test`
-- `pnpm -s playwright test e2e/smoke.spec.ts`
-'@ },
-
-  @{ Title = 'Verifier: Run post-merge gates for each staging merge'; Labels = @('role:verifier'); Body = @'
-STATUS: In Progress
-
-CONTEXT:
-- After each merge lands in `origin/staging`, independently verify.
-
-ACCEPTANCE CRITERIA:
-- For each merge commit: comment with commands run + results + verdict.
-
-VERIFICATION CHECKLIST:
-- `pnpm check`
-- `pnpm test`
-- If UI affected: `pnpm -s playwright test e2e/smoke.spec.ts`
-'@ },
-
-  @{ Title = 'Browser: Deployed staging smoke check after merges'; Labels = @('role:browser'); Body = @'
-STATUS: In Progress
-
-CONTEXT:
-- After merges land in `origin/staging`, do a fast deployed smoke check.
-
-ACCEPTANCE CRITERIA:
-- Record click-steps + evidence (screenshots/URLs).
-- Prefer read-only verification; only change config if explicitly tasked.
-- Report regressions with repro steps.
+NOTES:
+- If login/2FA blocks progress, specify the smallest User action needed.
 '@ }
 )
 
@@ -330,7 +305,7 @@ elseif ($Mode -eq 'rest') {
     throw "Mode=rest requires -Token or $env:GITHUB_TOKEN (fine-grained PAT with Issues: Read/Write)."
   }
 
-  Write-Host "Ensuring role labels exist (REST)..." -ForegroundColor Cyan
+  Write-Host "Ensuring labels exist (REST)..." -ForegroundColor Cyan
   foreach ($lab in $allLabels) {
     Ensure-LabelRest -RepoName $resolvedRepo -TokenValue $Token -Label $lab
   }

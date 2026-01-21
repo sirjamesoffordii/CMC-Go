@@ -24,11 +24,11 @@ Humans contribute intent; agents contribute execution.
 
 - Humans propose goals, constraints, and acceptance criteria.
 - Execution agents implement and verify.
-- The coordinator evaluates evidence and decides what becomes “truth” in the repo.
+- The coordination function evaluates evidence and decides what becomes “truth” in the repo (Alpha by convention).
 
-## Coordinator Expectations
+## Coordination Expectations
 
-The CMC Go Coordinator must:
+The CMC Go coordination function must:
 - Treat Sir James’ inputs as authoritative for direction and scope.
 - Preserve human intent while translating it into actionable engineering tasks.
 - Require evidence before declaring work “done” (tests, builds, reproduction steps).

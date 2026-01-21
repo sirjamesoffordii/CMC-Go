@@ -5,8 +5,8 @@ Use worktrees to avoid collisions between agents.
 ## Standard worktrees
 
 - `wt-main` — primary worktree (only one runs `pnpm dev`)
-- `wt-impl-<issue#>-<slug>` — Builder
-- `wt-verify-<pr#>-<slug>` — Verifier
+- `wt-impl-<issue#>-<slug>` — implementation
+- `wt-verify-<pr#>-<slug>` — peer verification
 - `wt-docs-<YYYY-MM-DD>` — docs-only
 
 ## Canonical commands
@@ -16,7 +16,7 @@ Use worktrees to avoid collisions between agents.
 Create worktree:
 
 - From repo root:
-  - `git worktree add ../wt-impl-123-fix-login -b agent/builder/123-fix-login`
+  - `git worktree add ../wt-impl-123-fix-login -b agent/bravo/123-fix-login`
 
 List worktrees:
 - `git worktree list`
@@ -30,4 +30,4 @@ Prune stale:
 ## Safety rules
 - Never run two dev servers bound to the same port simultaneously.
 - Only `wt-main` runs `pnpm dev`.
-- Verifier worktrees must not run dev server; they run tests/checks.
+- Verification worktrees must not run dev server; they run tests/checks.

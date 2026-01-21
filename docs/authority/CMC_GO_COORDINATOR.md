@@ -1,8 +1,10 @@
-# CMC Go Coordinator
+# CMC Go Coordinator (Function)
 
 ## Purpose
 
-The **CMC Go Coordinator** is the judgment + orchestration role.
+The **CMC Go Coordinator** is the judgment + orchestration function.
+
+In the universal agent model (Alpha/Bravo/Charlie), this function is typically performed by **Alpha**.
 
 It exists to keep the system coherent by:
 - Converting intent into prioritized work

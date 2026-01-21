@@ -5,8 +5,8 @@ This skill describes how agents coordinate work via GitHub Issues/PRs so they do
 ## Ownership rules
 
 - One Issue = one owner at a time.
-- Work happens only from an explicitly assigned Issue (Coordinator assigns).
-- If an Issue touches a shared surface (routing, auth, schema, PeopleScope), the Coordinator must explicitly approve splitting work.
+- Work happens only from an explicitly claimed Issue.
+- If an Issue touches a shared surface (routing, auth, schema, PeopleScope), keep it single-owner unless explicitly split in the Issue.
 
 ## No-pause expectation
 
@@ -14,17 +14,16 @@ Within an assigned Issue, agents are expected to proceed continuously (next best
 
 ## Standard labels
 
-- `role:coordinator`, `role:explorer`, `role:builder`, `role:verifier`, `role:browser`
+- `claimed:alpha`, `claimed:bravo` (optional; assignee is preferred)
 - `surface:frontend`, `surface:server`, `surface:db`, `surface:infra`, `surface:docs`
 - `risk:high` when touching auth/roles/visibility, schema/migrations, map-wide state
 
-## Assignment convention (required)
+## Claiming convention (required)
 
-So agents can self-discover their work from the Issues tab:
-- Add a role label: `role:coordinator` | `role:explorer` | `role:builder` | `role:verifier` | `role:browser`
-- Prefix the Issue title with the role name:
-	- `Coordinator:` / `Explorer:` / `Builder:` / `Verifier:` / `Browser:`
-- If an assignee exists for the role, assign it; otherwise the label + title prefix is the assignment.
+So agents can self-discover and avoid collisions:
+- Assign the Issue to the active agent (preferred).
+- Optionally add a claim label: `claimed:alpha` / `claimed:bravo`.
+- Optionally prefix the title with the agent name: `Alpha:` / `Bravo:`.
 
 ## Standard Issue template (required)
 
@@ -33,6 +32,7 @@ So agents can self-discover their work from the Issues tab:
 - Acceptance criteria (bullet list)
 - Files likely to change
 - Verification steps
+- Verify Level (L0/L1/L2)
 - Risk notes
 
 ## Standard report comment (required)
@@ -44,4 +44,4 @@ So agents can self-discover their work from the Issues tab:
 
 ## No operator chat updates
 
-Do not post routine updates in operator chat. Use Issue/PR comments so the Coordinator has the complete audit trail.
+Do not post routine updates in operator chat. Use Issue/PR comments so the shared log is complete.

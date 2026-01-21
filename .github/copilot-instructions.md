@@ -6,27 +6,31 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 
 - Multi-agent operating manual: `AGENTS.md`
 - Authority docs: `docs/authority/CMC_OVERVIEW.md` and `docs/authority/BUILD_MAP.md`
-- Role files (if you’re running a role-specific agent):
-	- `.github/agents/coordinator.agent.md`
-	- `.github/agents/explorer.agent.md`
-	- `.github/agents/builder.agent.md`
-	- `.github/agents/verifier.agent.md`
+- Universal agent files (preferred):
+	- `.github/agents/alpha.agent.md`
+	- `.github/agents/bravo.agent.md`
+	- (future) `.github/agents/charlie.agent.md`
+- Specialized agent (console/visual checks):
 	- `.github/agents/browser-operator.agent.md`
 
 ## Multi-agent workflow (canonical)
 
 - **User (Human): Sir James** sets direction.
-- **Coordinator** sequences work via Issues/PRs.
-- **Explorer** investigates + de-risks.
-- **Builder** implements changes in an isolated worktree + opens PRs.
-- **Verifier** independently validates acceptance criteria + posts evidence.
-- **Browser Operator** does web-console/visual checks (Railway/Sentry/Codecov).
+- **Alpha** runs first: syncs Project/Issues, deconflicts, clarifies acceptance criteria.
+- **Bravo** runs second: implements changes and/or performs peer verification with evidence.
+- **Charlie** (optional/future): adds parallelism for deeper verification and ops checks.
+
+Alpha/Bravo/Charlie are **universal agents**. Names are a convention to coordinate work, not hard capability boundaries.
 
 Rules:
 - Use **GitHub Issues/PRs as the task bus**.
 - **Worktrees are required**; do not work directly on `staging`.
 - Keep diffs small; avoid drive-by refactors.
 - Never commit secrets (`.env*` stays local; use platform/GitHub secrets).
+
+Verification:
+- **L0**: self-verify for low-risk tasks.
+- **L1/L2**: peer verification required (another agent posts evidence + verdict).
 
 ## Project invariants (don’t break)
 

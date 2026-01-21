@@ -1,8 +1,8 @@
 ---
-name: Builder Task
-about: Implementation task (scoped PR) for Builder + Verifier workflow
+name: Legacy (deprecated): Build Task
+about: Deprecated. Use "Feature / Fix Task" for universal Alpha/Bravo workflow.
 title: "[Build] <short title>"
-labels: ["role:builder", "status:ready"]
+labels: ["status:ready"]
 ---
 
 ## Goal

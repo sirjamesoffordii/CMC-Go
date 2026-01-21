@@ -11,20 +11,20 @@ No private side-channels are authoritative.
 
 ## No self-initiative
 
-Non-Coordinator agents do not start work just because they noticed something.
-All work is assigned by the Coordinator via GitHub Issues, and all progress/evidence is reported back via Issue/PR comments.
+Agents do not start work just because they noticed something.
+All work is explicitly claimed via GitHub Issues, and all progress/evidence is reported via Issue/PR comments.
 
 ## Continuous mode
 
 Once assigned, continue until complete:
 - Keep going through the next best step until the Issue is **Done** or truly **Blocked**.
-- Don’t ask the human operator for routine direction; escalate decisions to the Coordinator.
+- Don’t ask the human operator for routine direction; escalate decisions in the Issue thread (Alpha pings the human when needed).
 - Prefer milestone updates with evidence over frequent check-ins.
 
 ## Operator chat is not a channel
 
 Do not use operator chat for updates, questions, or coordination.
-All progress/evidence and all questions route through the Coordinator via GitHub Issue/PR comments.
+All progress/evidence and all questions route through the GitHub Issue/PR thread.
 
 ## Status reporting format
 
