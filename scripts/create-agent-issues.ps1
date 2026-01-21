@@ -190,7 +190,10 @@ function Create-IssueRest {
 $resolvedRepo = Resolve-Repo -RepoName $Repo
 
 $issues = @(
-  @{ Title = 'Alpha: Daily sync + triage (Project-first)'; Labels = @('status:ready'); Body = @'
+  @{
+    Title  = 'Alpha: Daily sync + triage (Project-first)'
+    Labels = @('status:ready')
+    Body   = @'
 STATUS: Todo
 
 GOAL:
@@ -204,11 +207,15 @@ CHECKLIST:
 
 OUTPUT (comment on this Issue):
 - Status
-- Work queue (3–7 items)
+- Work queue (3-7 items)
 - Blockers/questions (only if needed)
-'@ },
+'@
+  },
 
-  @{ Title = 'Alpha: Convert goal → executable Issue spec'; Labels = @('status:ready'); Body = @'
+  @{
+    Title  = 'Alpha: Convert goal -> executable Issue spec'
+    Labels = @('status:ready')
+    Body   = @'
 STATUS: Todo
 
 GOAL:
@@ -217,9 +224,13 @@ GOAL:
 ACCEPTANCE CRITERIA:
 - Includes: Goal, Scope (in/out), Acceptance Criteria, Verification steps, Files likely touched.
 - If a human decision is required: ask via GitHub mention @sirjamesoffordII.
-'@ },
+'@
+  },
 
-  @{ Title = 'Bravo: Implement <short title> (evidence-gated)'; Labels = @('status:ready'); Body = @'
+  @{
+    Title  = 'Bravo: Implement <short title> (evidence-gated)'
+    Labels = @('status:ready')
+    Body   = @'
 STATUS: Todo
 
 GOAL:
@@ -233,9 +244,13 @@ VERIFICATION (minimum evidence):
 - `pnpm check`
 - targeted `pnpm test`
 - If UI flow changed: `pnpm -s playwright test e2e/smoke.spec.ts`
-'@ },
+'@
+  },
 
-  @{ Title = 'Bravo: Peer verify PR #<n> (L1/L2)'; Labels = @('status:verify'); Body = @'
+  @{
+    Title  = 'Bravo: Peer verify PR #<n> (L1/L2)'
+    Labels = @('status:verify')
+    Body   = @'
 STATUS: Verify
 
 PR:
@@ -252,9 +267,13 @@ VERIFICATION:
 OUTPUT (comment on PR):
 - Evidence (commands + concise results)
 - Verdict: Pass / Pass-with-notes / Fail
-'@ },
+'@
+  },
 
-  @{ Title = 'Ops: Console/visual verification (Railway/Sentry/Codecov)'; Labels = @('type:ops','status:ready'); Body = @'
+  @{
+    Title  = 'Ops: Console/visual verification (Railway/Sentry/Codecov)'
+    Labels = @('type:ops','status:ready')
+    Body   = @'
 STATUS: Todo
 
 GOAL:
@@ -267,7 +286,8 @@ EVIDENCE REQUIRED:
 
 NOTES:
 - If login/2FA blocks progress, specify the smallest User action needed.
-'@ }
+'@
+  }
 )
 
 $allLabels = @()
