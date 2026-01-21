@@ -3,8 +3,8 @@
 This file is retained for historical context only.
 
 Current sources of truth:
-- Authority Build Map: `docs/authority/BUILD_MAP.md`
-- Operational command center: GitHub Project (status/phase/type)
+- Legacy authority Build Map: `docs/legacy/authority/BUILD_MAP.md`
+- Operational command center: GitHub Projects v2 board https://github.com/users/sirjamesoffordii/projects/2
 
 ---
 
