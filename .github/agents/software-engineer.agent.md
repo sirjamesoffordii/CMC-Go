@@ -24,3 +24,9 @@ Working truth:
 - Small PRs that meet acceptance criteria.
 - Evidence for verification levels.
 - Clear verdicts on verification tasks: Pass / Pass-with-notes / Fail.
+
+## Codespaces guidance
+
+- Use Codespaces when the task is DB-backed (migrations/seeds/imports, DB debugging, health-check failures) or when you need a clean repro.
+- Prefer local worktrees for tiny docs/UI changes.
+- Runbook: `docs/agents/runbook/CODESPACES.md`

@@ -126,6 +126,20 @@ These rules exist to reduce repeated context and long transcripts.
 - **Check/watch CI (recommended):** `gh pr checks <pr-number> --watch`
 - **Manual trigger (if needed):** `gh workflow list`, then `gh workflow run "Test and Code Coverage" --ref <branch>`
 
+## Codespaces policy (when to use it)
+
+Codespaces is optional. It is best used as a **clean, DB-backed dev environment** when local setup is slow or inconsistent.
+
+Use Codespaces when one or more are true:
+- DB-backed work (migrations, seeds/imports, DB debugging, health-check failures)
+- Need a clean repro closer to CI-like Linux behavior
+- Onboarding/new machine (avoid local MySQL + toolchain setup)
+
+Prefer local worktrees when:
+- Docs-only or small UI-only changes and local dev is stable
+
+Cost control (personal accounts): stop/delete Codespaces when idle; set a spending limit in GitHub Billing → Codespaces. See runbook: `docs/agents/runbook/CODESPACES.md`.
+
 ## Copilot auto-handoff (Issue label → Copilot PR)
 
 This repo supports an optional automation: label an Issue with `agent:copilot` and GitHub Actions will assign the Issue to `copilot-swe-agent[bot]`.

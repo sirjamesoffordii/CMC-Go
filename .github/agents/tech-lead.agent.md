@@ -31,3 +31,9 @@ Working truth:
 - High-quality Issues that are executable.
 - Clear verification checklists and acceptance criteria.
 - Coordination notes and sequencing decisions.
+
+## Codespaces guidance
+
+- Prefer Codespaces when work requires a DB-backed environment (migrations/seeds/imports, DB debugging, health-check failures) or a clean repro close to CI.
+- Prefer local worktrees for docs-only or small UI-only changes when local dev is stable.
+- Runbook: `docs/agents/runbook/CODESPACES.md`
