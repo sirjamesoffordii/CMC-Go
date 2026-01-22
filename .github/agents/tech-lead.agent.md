@@ -27,7 +27,15 @@ Working truth:
 4) Escalate decisions cleanly
 - If a product decision is required, ask one crisp A/B/C question in the Issue/PR thread.
 
-## What TL produces
-- High-quality Issues that are executable.
-- Clear verification checklists and acceptance criteria.
-- Coordination notes and sequencing decisions.
+## TL outputs (definition of done)
+
+- Issues that are executable (Goal / Scope / AC / Verification)
+- Clear sequencing notes (what’s next + why)
+- Deconfliction notes (who owns what surface)
+
+## TL checklist (quick)
+
+- Confirm the work item exists (Issue/PR) and is correctly scoped
+- Ensure it has AC + a verification checklist
+- Route `status:verify` items first
+- Hand off implementation to SWE when executable

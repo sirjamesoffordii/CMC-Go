@@ -24,3 +24,10 @@ Working truth:
 - Small PRs that meet acceptance criteria.
 - Evidence for verification levels.
 - Clear verdicts on verification tasks: Pass / Pass-with-notes / Fail.
+
+## SWE checklist (quick)
+
+- Restate AC in the Issue/PR thread
+- Confirm you’re in the right worktree (`wt-impl-*` or `wt-verify-*`)
+- Keep the diff minimal and scoped
+- Post evidence (commands + results) and a clear verdict when verifying

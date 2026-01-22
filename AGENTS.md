@@ -1,204 +1,107 @@
-# CMC Go — Agent Operating Manual (AGENTS.md)
+# CMC Go — Agent Operating Manual
 
-This repository is worked on by multiple agents operating **concurrently**. The system stays coherent by using **GitHub Issues/PRs as the task bus**, a simple **claim** mechanism to prevent collisions, and a strict worktree policy.
+This is the **single source of truth** for how humans + agents work in this repo.
 
-## Source of truth
+## Read-first
 
-- **GitHub Issues** are the task queue.
-- **GitHub PRs** are the change vehicle.
-- **GitHub Projects v2** is the operational status board (triage + workflow state).
-- **Agent docs (under `.github/agents/`)** define how work happens.
-- **Archived material (under `.github/_unused/`)** is retained for reference only.
-- This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
+- Product intent + invariants: [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
+- Active agent docs index: [.github/README.md](.github/README.md)
+- TL role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- SWE role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
-No private side-channels are authoritative.
+Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 
-- **Operator chat is not a coordination channel.** Ask/answer in the Issue/PR thread.
-- **Sir James changes are `audit-required`.** Treat them like any other PR: read diff, verify, post evidence.
+## Operating principles
 
-## Shared prompts
+- **GitHub Issues/PRs are the task bus.** Put decisions and evidence in the Issue/PR thread.
+- **Worktrees are required.** Do not work directly on `staging`.
+- **Small diffs win.** Prefer surgical, reviewable changes.
+- **No secrets in git.** Keep `.env*` local or use platform/GitHub secrets.
 
-These prompts define shared behavior across all roles:
+## Standard workflow
 
-- Loop mode (never stop until Done): `.github/prompts/loop.prompt.md`
+1) TL makes the work executable
+- Goal + scope + acceptance criteria (AC)
+- Verification checklist (what to run / what to look for)
 
-## Low-Risk Fast Path (token-saving)
+2) SWE implements or verifies
+- Implementation: smallest viable diff + evidence
+- Verification: run checklist + verdict
 
-Default workflow is still **Issue → assigned role → PR → verify → merge**.
+3) Evidence is required for “Done”
+- Commands run + results
+- Links to PR/Issue/CI as relevant
 
-However, to save time/tokens, agents may use a **Low-Risk Fast Path** for tiny, obvious fixes.
+## Roles (active)
 
-**Fast Path is allowed only if ALL are true:**
+- **Tech Lead (TL)** runs first (triage/coherence/deconflict): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- **Software Engineer (SWE)** runs second (implement + evidence, or verify): see [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
-- **Small & local:** typically <= 1-2 files and <= ~50 LOC changed.
-- **Low blast radius:** docs-only, comments-only, typo fixes, agent-role docs/runbook clarifications, test-only improvements that do not change production behavior.
-- **No schema/auth changes:** does not touch `drizzle/schema.ts`, auth/scope, or production env contracts.
-- **No collisions:** unlikely to conflict with active Builder work on the same surface.
+## Worktree policy
 
-**Fast Path procedure:**
+Work happens in isolated worktrees to prevent collisions.
 
-1) Create a dedicated worktree (docs worktree for docs-only changes).
-2) Open a PR directly.
-3) In the PR description, include:
-	- **Why** (1 sentence)
-	- **What changed** (bullets)
-	- **How verified** (for docs-only: `git grep`/lint as relevant)
-	- **Risk** (1 line)
-4) If there is no Issue, that’s OK; create/link a tracking Issue later if needed.
-
-If any ambiguity exists, do NOT use Fast Path - open/ask on an Issue.
-
-## Where role instructions live
-
-- Role instruction files live under `.github/agents/`.
-- Role activation prompts live under `.github/prompts/`.
-
-Keep this file focused on common rules. Role-specific behavior (priorities, checklists, escalation) belongs in the role file.
-
-Working truth is maintained in GitHub Projects v2:
-https://github.com/users/sirjamesoffordii/projects/2
-
-Archived agent docs are retained under `.github/_unused/` (do not use unless explicitly asked).
-
-CMC Go Brief:
-
-- [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
-
-## Worktree policy (required)
-
-To avoid stepping on each other, work happens in isolated worktrees.
-
-- **Primary worktree:** `wt-main` (only one allowed to run `pnpm dev`)
-- **Implementation worktree:** `wt-impl-<issue#>-<slug>`
-- **Verification worktree:** `wt-verify-<pr#>-<slug>` (runs checks; does NOT run the dev server)
-- **Docs worktree:** `wt-docs-<YYYY-MM-DD>` (docs-only changes)
-
-If you are not already in the correct worktree, create/switch before editing.
-
-## Git discipline
-
-- Keep diffs small and scoped to the assigned Issue.
-- One PR per Issue unless **TL** explicitly approves bundling.
-- Prefer additive changes over risky refactors.
-- Do not commit secrets. Use `.env.local` or platform environment variables.
-
-## Verification Levels (v0 / v1 / v2)
-
-`staging` is the primary integration branch. PRs into `staging` must pass CI and follow one of these verification levels:
-
-- **v0**: Builder self-verifies and may merge when CI is green.
-- **v1**: Another agent/human verifies (>= 1 approval from someone other than the PR author) before merge.
-- **v2**: Another agent/human verifies (>= 1 approval) **and** additional verification evidence is required.
-
-Interpretation:
-- **v0**: PR author provides evidence.
-- **v1/v2**: someone other than the PR author provides evidence.
-
-**How to mark a PR** (labels):
-
-- `verify:v0` (default if no label)
-- `verify:v1`
-- `verify:v2`
-
-**v2 required evidence labels**:
-
-- `evidence:db-or-ci` (DB-backed tests/CI evidence posted)
-- `evidence:deployed-smoke` (deployed staging smoke check evidence posted)
-
-## Token budget playbook
-
-These rules exist to reduce repeated context and long transcripts.
-
-- **Default to deltas:** only state what changed since the last update.
-- **No log dumps:** summarize key evidence; link to PR/Issue; include only the 3–10 most relevant lines.
-- **Short commands:** prefer `pnpm -s`, `git diff --name-only`, and narrow test runs.
-- **Avoid re-reading:** don't paste large file contents into Issues unless required.
-- **Templates everywhere:** use the report formats in this doc; keep status comments short.
-- **One question max:** if blocked, ask a single crisp question and propose a default.
-
-## Modes + CI gate (how work gets verified)
-
-- **Local mode (VS Code):** best for rapid UI tweaks and tight iteration.
-- **Background mode (async agent):** best for multi-step implementation; opens PRs and posts evidence.
-- **Cloud/CI-like runs:** best for verification-heavy work (DB-backed tests, migrations, e2e) because the environment is clean and repeatable.
-- **CI is the merge gate:** treat GitHub Actions checks on the PR as authoritative; if CI is red, don't merge.
-- **Check/watch CI (recommended):** `gh pr checks <pr-number> --watch`
-- **Manual trigger (if needed):** `gh workflow list`, then `gh workflow run "Test and Code Coverage" --ref <branch>`
-
-## Copilot auto-handoff (Issue label → Copilot PR)
-
-This repo supports an optional automation: label an Issue with `agent:copilot` and GitHub Actions will assign the Issue to `copilot-swe-agent[bot]`.
-
-- Workflow: [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
-- Trigger label: `agent:copilot`
-- Required secret: `COPILOT_ASSIGN_TOKEN` (a user token with permission to update Issues; see GitHub docs for Copilot assignment requirements)
-- Base branch: the workflow requests Copilot to work from `staging` and open a PR targeting `staging`
-
-Important: GitHub evaluates `issues.*` workflows from the repository's default branch. Ensure the workflow exists on the default branch (or set the default branch to `staging`) for the label trigger to work.
-
-## Ops fallback (Browser Operator unavailable)
-
-If the Browser/Browser Operator is unavailable and staging is blocked by a console setting (Railway/Sentry/Codecov):
-
-- **TL** assigns the task to any available agent/human who has access.
-- The assignee follows a step-by-step checklist in the Issue and posts evidence.
-- Never paste secrets into Issues; name variables but not values.
+- `wt-main` — only place allowed to run `pnpm dev`
+- `wt-impl-<issue#>-<slug>` — implementation work
+- `wt-verify-<pr#>-<slug>` — verification work (no implementation)
+- `wt-docs-<YYYY-MM-DD>` — docs-only changes
 
 ## Claiming work (collision prevention)
 
-Agents must **claim** a task before making changes.
+Before editing:
+- Assign the Issue to yourself (preferred)
+- Optionally add a claim label (e.g. `claimed:tl`, `claimed:swe`)
+- Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`
 
-Use the strongest available mechanism and do all that apply:
-- Assign the Issue to yourself.
-- Add a label like `claimed:tl` / `claimed:swe` (if using claim labels).
-- Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`.
+If you go idle/blocked, unclaim and say why.
 
-If you go idle or blocked for an extended period, unclaim and leave a note.
+## Branch + commit conventions
 
-### Branch naming
+- Agent branches: `agent/<agent>/<issue#>-<slug>`
+- User branches: `user/sir-james/<issue#>-<slug>`
 
-- Agent branches: `agent/<agent>/<issue#>-<slug>` (e.g. `agent/tl/123-thing`, `agent/swe/123-thing`)
-- User (Sir James) branches: `user/sir-james/<issue#>-<slug>` (or `user/sir-james/<slug>`)
+Commit message prefix:
+- Agents: `agent(<agent>): <summary>`
+- Sir James: `user(sir-james): <summary>`
 
-### Commit message prefix
+## Verification levels
 
-- Agent commits: `agent(<agent>): <summary>`
-- User commits: `user(sir-james): <summary>`
+PRs into `staging` must pass CI and be labeled for verification expectations:
 
-## Verification levels (peer verification)
+- `verify:v0` — author self-verifies and posts evidence
+- `verify:v1` — someone else verifies (approval + evidence)
+- `verify:v2` — peer verifies + extra evidence
+  - `evidence:db-or-ci` and/or `evidence:deployed-smoke` as appropriate
 
-- **L0**: self-verify (fast path for low-risk tasks).
-- **L1**: peer verification required (another agent posts evidence + verdict).
-- **L2**: peer verification + deeper coverage (e2e/DB-backed tests/console checks as relevant).
+## Evidence standard (copy/paste)
 
-## Definition of Done (DoD)
+Post updates in Issues/PRs using:
 
-A task is "Done" only when:
+- **Status:** In Progress / Blocked / Ready for Verify / Verified
+- **Worktree:** `wt-...`
+- **Branch/PR:** link
+- **What changed:** bullets
+- **How verified:** commands run + brief results
+- **Notes/Risks:** anything a reviewer should know
 
-1. Acceptance criteria in the Issue are met.
-2. Verification evidence is posted (commands run + results).
-3. A PR is opened (or updated) and linked to the Issue.
-4. If the Issue requires peer verification (L1/L2), a second agent posts a verification verdict.
-5. Issue/Project status is updated to reflect reality.
+## Low-risk fast path (docs/tiny fixes)
 
-## Reporting standard (GitHub comment format)
+Allowed only when all are true:
+- ≤ ~50 LOC and 1–2 files
+- no schema/auth/env contract changes
+- low collision risk
 
-All agents post updates to the assigned Issue using this structure:
+Procedure:
+- Use a docs worktree
+- Open a PR with: Why / What changed / How verified / Risk
 
-- **Status:** (In Progress / Blocked / Ready for Verify / Verified)
-- **Worktree:** (name)
-- **Branch/PR:** (link)
-- **What changed:** (bullet list)
-- **How verified:** (commands run + brief results)
-- **Notes/Risks:** (anything TL should know)
+## Automation: Copilot auto-handoff
 
+Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`) to trigger:
+- [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
-## Rapid Dev Mode (Owner-approved)
+## Archived material
 
-Sir James has explicitly accepted increased risk during rapid development.
-
-Rules for agents:
-- Do **not** debate or repeatedly warn about credential handling.
-- Never commit secrets to the repository.
-- Prefer environment variables (`.env.local`, Railway vars, GitHub secrets). If missing, instruct where to place and continue once present.
+Legacy/unused docs live under `.github/_unused/`.
+They are **not active policy** unless explicitly revived.
 

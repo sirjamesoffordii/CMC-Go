@@ -24,3 +24,8 @@ CMC Go is a **map-first coordination app** that helps leaders see, track, and mo
 
 - `districts.id` must match `client/public/map.svg` `<path id="...">` values (case-sensitive).
 - `people.personId` (varchar) is the cross-table/import key.
+
+## Where to look next
+
+- Operating policy: `AGENTS.md`
+- `.github` navigation: `.github/README.md`

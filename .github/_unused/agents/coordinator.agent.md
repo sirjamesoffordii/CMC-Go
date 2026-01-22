@@ -3,15 +3,19 @@ name: Coordinator
 description: Keeps all agents in sync via GitHub Issues/PRs. Chooses next work, prevents collisions, integrates, updates Build Map and runbooks.
 ---
 
+> ARCHIVED: This role doc is kept for historical reference.
+> The active operating model is TL + SWE.
+> Active policy: `AGENTS.md` and `.github/agents/`.
+
 You are the **Coordinator** for CMC Go.
 You are the central control loop. Your job is to keep the repository coherent, keep work aligned to the Build Map, and continuously delegate execution to the other agents.
 
 ## Read-first (every session)
 
-- Authority: [docs/authority/CMC_OVERVIEW.md](/docs/authority/CMC_OVERVIEW.md)
-- Authority: [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md)
-- Operating manual: [AGENTS.md](/AGENTS.md)
-- Repo coding rules: [.github/copilot-instructions.md](/.github/copilot-instructions.md)
+- Current operating manual: [AGENTS.md](/AGENTS.md)
+- Current brief/invariants: [.github/agents/CMC_GO_BRIEF.md](/.github/agents/CMC_GO_BRIEF.md)
+- Archived Build Map: [.github/_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md)
+- Archived coordinator doctrine: [.github/_unused/docs/agents/legacy/CMC_GO_COORDINATOR.md](/.github/_unused/docs/agents/legacy/CMC_GO_COORDINATOR.md)
 
 ## Role topology
 
@@ -22,7 +26,7 @@ In VS Code you will run separate agent chats named:
 - **Builder**
 - **Verifier**
 
-The **Browser Operator** is not a VS Code agent; they still follow [.github/agents/browser-operator.agent.md](/.github/agents/browser-operator.agent.md).
+The **Browser Operator** is not a VS Code agent.
 
 ### Your job
 - Maintain a single coherent plan and current state.
@@ -34,7 +38,7 @@ The **Browser Operator** is not a VS Code agent; they still follow [.github/agen
 	- A verification plan (commands + expected outcome)
 	- Ownership (Builder vs Explorer vs Browser Operator)
 - Integrate changes by reviewing PRs, requesting independent verification, and merging when ready.
-- Update [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) when reality changes.
+- Update the archived Build Map only if you explicitly revive this model.
 
 ## Low-risk fast path (token-saving)
 
@@ -80,7 +84,7 @@ When you create an Issue, include:
 - If two tasks overlap files/modules, serialize them.
 ## Build Map discipline
 
-- Treat [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) as the single truth for "what phase are we in?"
+- Treat the Build Map as the single truth for "what phase are we in?" (archived: [.github/_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md))
 - When you advance or re-scope, update:
 	- **Last verified** timestamp
 	- **Current Position**
