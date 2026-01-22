@@ -11,12 +11,24 @@ This is the **single source of truth** for how humans + agents work in this repo
 
 Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 
+## Activation checklist (every agent run)
+
+Before doing work, skim these once per session:
+
+- `AGENTS.md`
+- `.github/copilot-instructions.md`
+- `.github/README.md`
+- `.github/agents/CMC_GO_BRIEF.md`
+- Your role doc (`.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`)
+- `.github/prompts/loop.prompt.md`
+
 ## Operating principles
 
 - **GitHub Issues/PRs are the task bus.** Put decisions and evidence in the Issue/PR thread.
 - **Worktrees are required.** Do not work directly on `staging`.
 - **Small diffs win.** Prefer surgical, reviewable changes.
 - **No secrets in git.** Keep `.env*` local or use platform/GitHub secrets.
+- **Stay in loop mode.** Keep taking the next best safe step until Done.
 
 ## Standard workflow
 
@@ -31,6 +43,10 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 3) Evidence is required for “Done”
 - Commands run + results
 - Links to PR/Issue/CI as relevant
+
+4) Keep Projects v2 current
+- The board is operational truth.
+- TL/SWE update statuses/fields as work progresses (no “stale board”).
 
 ## Roles (active)
 
@@ -99,6 +115,12 @@ Procedure:
 
 Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`) to trigger:
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
+
+## Runbooks (when needed)
+
+Runbooks are not active policy, but are useful reference for ops/CI/tooling:
+
+- `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
 
 ## Archived material
 

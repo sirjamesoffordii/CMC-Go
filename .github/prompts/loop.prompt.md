@@ -9,9 +9,14 @@ Within an assigned Issue:
 - Keep going through the next best step until **Done**.
 - Do not pause waiting for additional prompts.
 
+Always:
+- Prefer the smallest safe next action.
+- Keep token usage low: short updates, deltas, and links over log dumps.
+- If a runbook is needed, consult the archived index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+
 Operator interaction:
-- Do not talk to or ask questions of Sir James in chat.
-- All status/progress communication goes to the Issue/PR thread (shared truth).
+- Keep chat minimal (status + blockers only).
+- All durable status/progress communication goes to the Issue/PR thread (shared truth).
 
 Token usage (GitHub automation):
 - If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt if needed). Never print/log tokens, never write them to files, and clear the env var after use.

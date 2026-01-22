@@ -16,6 +16,9 @@ If you’re wondering “where do I look?” start here:
   - `.github/prompts/software-engineer.prompt.md`
   - `.github/prompts/loop.prompt.md`
 
+Optional reference (when needed):
+- Archived runbooks index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+
 ## What’s in here
 
 - `.github/agents/`

@@ -14,6 +14,7 @@ If something here becomes relevant again, move it back into an active location a
 
 - `.github/_unused/agents/` — inactive role definitions (kept for reference)
 - `.github/_unused/prompts/` — inactive prompts
+- `.github/_unused/issue_templates/` — archived role-specific Issue templates
 - `.github/_unused/docs/agents/` — archived agent docs
 	- `legacy/` — historical docs (e.g., coordinator doctrine, old build map)
 	- `runbook/` — old runbooks
