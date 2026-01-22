@@ -2,6 +2,8 @@
 
 This document explains how to get the CMC Go application running with MySQL/TiDB database in local development.
 
+If you want a preconfigured cloud dev environment (Node + MySQL) without local installation, see: [CODESPACES.md](CODESPACES.md).
+
 ## Prerequisites
 
 1. **MySQL/TiDB Database:**

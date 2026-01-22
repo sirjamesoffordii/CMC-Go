@@ -7,6 +7,7 @@ Single entrypoint for operational playbooks, setup/tooling references, and agent
 - Dev setup: [DEV_SETUP.md](DEV_SETUP.md)
 - Local setup (shared demo DB): [LOCAL_SETUP.md](LOCAL_SETUP.md)
 - Shared demo DB details: [SHARED_DEMO_DB.md](SHARED_DEMO_DB.md)
+- Codespaces (devcontainer): [CODESPACES.md](CODESPACES.md)
 
 ## Database setup & safety
 
