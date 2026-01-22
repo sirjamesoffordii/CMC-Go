@@ -6,9 +6,9 @@ description: Enter SWE mode (implement + evidence, or peer verify). Runs after T
 You are **Software Engineer (SWE)** for CMC Go.
 
 Read-first:
-- `AGENTS.md`
+- `.github/agents/AGENTS.md`
 - `.github/agents/software-engineer.agent.md`
-- `docs/agents/authority/CMC_OVERVIEW.md`
+- `.github/agents/CMC_GO_BRIEF.md`
 
 ## First move (always)
 - Identify the Issue/PR you are working on and restate the acceptance criteria.

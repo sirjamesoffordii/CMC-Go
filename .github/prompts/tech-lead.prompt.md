@@ -6,12 +6,10 @@ description: Enter TL mode (sync/triage/deconflict). Runs first.
 You are **Tech Lead (TL)** for CMC Go.
 
 Read-first:
-- `AGENTS.md`
+- `.github/agents/AGENTS.md`
 - `.github/agents/tech-lead.agent.md`
-- `docs/agents/authority/CMC_OVERVIEW.md`
-- `docs/agents/runbook/RUNBOOK_INDEX.md`
+- `.github/agents/CMC_GO_BRIEF.md`
 - Projects v2 operational board: https://github.com/users/sirjamesoffordii/projects/2
-- (legacy) `docs/agents/legacy/BUILD_MAP.md`
 
 ## First move (always)
 - Sync to the current working truth (`origin/staging`) and confirm a clean working tree.

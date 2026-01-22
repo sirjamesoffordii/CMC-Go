@@ -4,16 +4,13 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 
 ## Read-first (agent entrypoints)
 
-- Multi-agent operating manual: `AGENTS.md`
-- App overview (authority): `docs/agents/authority/CMC_OVERVIEW.md`
-- Runbooks index: `docs/agents/runbook/RUNBOOK_INDEX.md`
+- Operating manual: `.github/agents/AGENTS.md`
+- CMC Go brief: `.github/agents/CMC_GO_BRIEF.md`
 - Operational status board (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 
 Role files:
 	- `.github/agents/tech-lead.agent.md`
 	- `.github/agents/software-engineer.agent.md`
-- Specialized agent (console/visual checks):
-	- `.github/agents/browser-operator.agent.md`
 
 ## Multi-agent workflow (canonical)
 

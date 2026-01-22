@@ -7,7 +7,8 @@ This repository is worked on by multiple agents operating **concurrently**. The 
 - **GitHub Issues** are the task queue.
 - **GitHub PRs** are the change vehicle.
 - **GitHub Projects v2** is the operational status board (triage + workflow state).
-- **Docs (under `docs/agents/`)** record procedures and decisions.
+- **Agent docs (under `.github/agents/`)** define how work happens.
+- **Archived material (under `.github/_unused/`)** is retained for reference only.
 - This file defines how agents behave. If a chat instruction conflicts with this file, follow this file.
 
 No private side-channels are authoritative.
@@ -57,13 +58,11 @@ Keep this file focused on common rules. Role-specific behavior (priorities, chec
 Working truth is maintained in GitHub Projects v2:
 https://github.com/users/sirjamesoffordii/projects/2
 
-Legacy Build Map doc is retained for historical context:
+Archived agent docs are retained under `.github/_unused/` (do not use unless explicitly asked).
 
-- [docs/agents/legacy/BUILD_MAP.md](docs/agents/legacy/BUILD_MAP.md)
+CMC Go Brief:
 
-The canonical authority doc that drives prioritization is:
-
-- [docs/agents/authority/CMC_OVERVIEW.md](docs/agents/authority/CMC_OVERVIEW.md)
+- [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
 
 ## Worktree policy (required)
 
