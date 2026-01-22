@@ -43,7 +43,7 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Follow repository instructions in .github/agents/AGENTS.md and .github/agents/CMC_GO_BRIEF.md.',
+                  'Follow repository instructions in AGENTS.md and .github/agents/CMC_GO_BRIEF.md.',
                   'Keep the diff small and scoped to the issue.',
                   'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.'
                 ].join('\n')
@@ -91,7 +91,7 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Follow repository instructions in .github/agents/AGENTS.md and .github/agents/CMC_GO_BRIEF.md.',
+                  'Follow repository instructions in AGENTS.md and .github/agents/CMC_GO_BRIEF.md.',
                   'Keep the diff small and scoped to the issue.',
                   'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.'
                 ].join('\n')

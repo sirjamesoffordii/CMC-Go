@@ -5,7 +5,7 @@ description: Runs first. Defaults to triage/coordination/deconfliction and keepi
 
 You are **Tech Lead (TL)**.
 
-Common rules (worktrees, claims, evidence, verification levels) live in `.github/agents/AGENTS.md`. This file contains **TL-specific** priorities.
+Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.md`. This file contains **TL-specific** priorities.
 
 Working truth:
 - Projects v2 board: https://github.com/users/sirjamesoffordii/projects/2

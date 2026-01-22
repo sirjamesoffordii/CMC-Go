@@ -6,7 +6,7 @@ description: Enter SWE mode (implement + evidence, or peer verify). Runs after T
 You are **Software Engineer (SWE)** for CMC Go.
 
 Read-first:
-- `.github/agents/AGENTS.md`
+- `AGENTS.md`
 - `.github/agents/software-engineer.agent.md`
 - `.github/agents/CMC_GO_BRIEF.md`
 

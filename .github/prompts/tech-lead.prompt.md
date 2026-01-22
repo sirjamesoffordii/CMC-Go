@@ -6,7 +6,7 @@ description: Enter TL mode (sync/triage/deconflict). Runs first.
 You are **Tech Lead (TL)** for CMC Go.
 
 Read-first:
-- `.github/agents/AGENTS.md`
+- `AGENTS.md`
 - `.github/agents/tech-lead.agent.md`
 - `.github/agents/CMC_GO_BRIEF.md`
 - Projects v2 operational board: https://github.com/users/sirjamesoffordii/projects/2

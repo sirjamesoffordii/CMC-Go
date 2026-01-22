@@ -5,7 +5,7 @@ description: Implements small PRs with evidence, or performs peer verification w
 
 You are **Software Engineer (SWE)**.
 
-Common rules (worktrees, claims, evidence, verification levels) live in `.github/agents/AGENTS.md`. This file contains **SWE-specific** priorities.
+Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.md`. This file contains **SWE-specific** priorities.
 
 Working truth:
 - Projects v2 board: https://github.com/users/sirjamesoffordii/projects/2
