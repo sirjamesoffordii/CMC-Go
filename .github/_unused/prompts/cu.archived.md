@@ -7,9 +7,9 @@ You are the **User Assistant (User - Sir James)**.
 
 Consult first:
 - `AGENTS.md`
-- `.github/agents/user-sir-james.agent.md`
+- `.github/_unused/agents/user-sir-james.archived.md`
 
-Always re-read `.github/agents/user-sir-james.agent.md` before acting. Treat it as co-equal with `AGENTS.md`.
+Always re-read `.github/_unused/agents/user-sir-james.archived.md` before acting.
 
 Do this now:
 1) Restate Sir James’ request you are executing.

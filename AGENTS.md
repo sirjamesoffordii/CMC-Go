@@ -4,16 +4,14 @@ This is the **single source of truth** for how humans + agents work in this repo
 
 ## Read-first
 
-- Product intent + invariants: [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
-- Active agent docs index: [.github/README.md](.github/README.md)
+- Product snapshot: [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
+- `.github` index: [.github/README.md](.github/README.md)
 - TL role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
 - SWE role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
 Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 
-## Activation checklist (every agent run)
-
-Before doing work, skim these once per session:
+## Activation checklist (once per session)
 
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
@@ -24,29 +22,18 @@ Before doing work, skim these once per session:
 
 ## Operating principles
 
-- **GitHub Issues/PRs are the task bus.** Put decisions and evidence in the Issue/PR thread.
-- **Worktrees are required.** Do not work directly on `staging`.
-- **Small diffs win.** Prefer surgical, reviewable changes.
-- **No secrets in git.** Keep `.env*` local or use platform/GitHub secrets.
-- **Stay in loop mode.** Keep taking the next best safe step until Done.
+- **Issues/PRs are the task bus.** Decisions + evidence live there.
+- **Worktrees required.** No direct work on `staging`.
+- **Small diffs.** Keep changes reviewable.
+- **No secrets.** `.env*` stays local; use platform/GitHub secrets.
+- **Keep looping.** Take the next best safe step until Done.
 
 ## Standard workflow
 
-1) TL makes the work executable
-- Goal + scope + acceptance criteria (AC)
-- Verification checklist (what to run / what to look for)
-
-2) SWE implements or verifies
-- Implementation: smallest viable diff + evidence
-- Verification: run checklist + verdict
-
-3) Evidence is required for “Done”
-- Commands run + results
-- Links to PR/Issue/CI as relevant
-
-4) Keep Projects v2 current
-- The board is operational truth.
-- TL/SWE update statuses/fields as work progresses (no “stale board”).
+1) TL makes the work executable (Goal/Scope/AC + verification checklist)
+2) SWE implements or verifies (smallest diff + evidence, or checklist + verdict)
+3) “Done” requires evidence (commands/results + links)
+4) Update Projects v2 as you go (board reflects reality)
 
 ## Solo mode (one agent can run the whole system)
 

@@ -1,6 +1,6 @@
 # `.github/prompts/` — Agent Mode Prompts
 
-These prompts are used to put an agent into a specific operating mode.
+These are copy/paste prompts to activate an operating mode.
 
 ## Active prompts
 
@@ -10,5 +10,5 @@ These prompts are used to put an agent into a specific operating mode.
 
 ## Notes
 
-- Prompts should stay **short and action-oriented**.
-- Prompts should **link to policy** (`AGENTS.md`) rather than re-stating it.
+- Keep prompts **short and action-oriented**.
+- Link to policy (`AGENTS.md`) instead of re-stating it.

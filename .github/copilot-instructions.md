@@ -2,23 +2,19 @@
 
 CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Express server in `server/`, MySQL via Drizzle in `drizzle/`.
 
-## Read-first
+## Read-first (once per session)
 
-- Operating manual (policy): `AGENTS.md`
-- Product intent + invariants: `.github/agents/CMC_GO_BRIEF.md`
-- `.github` navigation: `.github/README.md`
-- Your role doc: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
-- Loop mode: `.github/prompts/loop.prompt.md`
-- Projects v2 (working truth): https://github.com/users/sirjamesoffordii/projects/2
+- Policy: `AGENTS.md`
+- Product snapshot: `.github/agents/CMC_GO_BRIEF.md`
+- `.github` index: `.github/README.md`
+- Your role: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
+- Loop: `.github/prompts/loop.prompt.md`
+- Projects v2 (truth): https://github.com/users/sirjamesoffordii/projects/2
 
-If you need ops/CI/tooling procedures, consult the archived runbook index as-needed:
+Ops/CI/tooling reference (as-needed):
 - `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
 
-Role files:
-	- `.github/agents/tech-lead.agent.md`
-	- `.github/agents/software-engineer.agent.md`
-
-## Guardrails (non-negotiable)
+## Guardrails
 
 - Use GitHub Issues/PRs as the task bus.
 - Worktrees are required; do not work directly on `staging`.
@@ -37,11 +33,12 @@ Role files:
 - API surface: `server/routers.ts` (tRPC `publicProcedure`/`protectedProcedure`; scope enforced by `server/_core/authorization.ts`).
 - Schema: `drizzle/schema.ts` (authoritative; used by scripts and server/db helpers).
 
-## Commands (most used)
+## Commands
 
 - Dev: `pnpm dev`
-- Typecheck/tests: `pnpm check`, `pnpm test`, `pnpm test:coverage`, `pnpm e2e`
-- DB: `pnpm db:push:yes` (dev sync), `pnpm db:seed`, `pnpm db:check`, `pnpm db:reset`
+- Checks: `pnpm check`, `pnpm test`
+- E2E (smoke): `pnpm e2e`
+- DB (dev): `pnpm db:push:yes`, `pnpm db:seed`, `pnpm db:reset`
 
 If you touch schema or auth/scope logic, keep the change surgical and expect CI to run MySQL-backed tests (see `.github/workflows/test-and-coverage.yml`).
 
