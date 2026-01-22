@@ -32,7 +32,7 @@ You are Tech Lead (TL).
 Goal: produce a 10-minute execution-ready coordination pass.
 
 Do this:
-1) Read docs/agents/legacy/CMC_GO_COORDINATOR.md + docs/agents/authority/CMC_OVERVIEW.md quickly.
+1) Read docs/agents/legacy/CMC_GO_COORDINATOR.md + /.github/agents/CMC_GO_BRIEF.md quickly.
 2) Identify current risk surfaces (auth/roles/visibility, schema/migrations, map state).
 3) Propose 3-7 Issues to create/update with:
    - acceptance criteria
@@ -177,7 +177,7 @@ EVIDENCE:
 Locate the authoritative source for <topic>.
 Return:
 - the primary file(s)
-- any related invariants from docs/agents/authority/CMC_OVERVIEW.md
+- any related invariants from /.github/agents/CMC_GO_BRIEF.md
 - where tests live (if any)
 - the smallest safe edit point
 """

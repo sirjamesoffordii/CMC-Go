@@ -1,3 +1,9 @@
+# ARCHIVED: Superseded by CMC Go Brief
+
+This document is retained for historical context only.
+
+Use: [CMC Go Brief](/.github/agents/CMC_GO_BRIEF.md)
+
 # CMC Go — Overview
 
 ## What is CMC Go?

@@ -1,5 +1,8 @@
 # CMC Go — Build Map
 
+> ARCHIVED: Kept for historical reference.
+> Active operating policy is `AGENTS.md` + `.github/agents/CMC_GO_BRIEF.md`.
+
 **Owner:** Coordinator  
 **Last verified:** Jan 19, 2026 · 2:50 AM CT
 
@@ -107,7 +110,7 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 - 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
   - Automated AI review of pull requests  
-  - Documentation: `docs/agents/runbook/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+  - Documentation (archived): `.github/_unused/docs/agents/runbook/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
 
 ---
 

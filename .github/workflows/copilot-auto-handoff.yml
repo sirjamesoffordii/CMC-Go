@@ -43,9 +43,11 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Follow repository instructions in AGENTS.md and docs/agents/authority/CMC_OVERVIEW.md.',
+                  'Read first: AGENTS.md, .github/copilot-instructions.md, .github/README.md, .github/agents/CMC_GO_BRIEF.md, .github/agents/software-engineer.agent.md, .github/prompts/loop.prompt.md.',
+                  'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
                   'Keep the diff small and scoped to the issue.',
-                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.'
+                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',
+                  'Keep Projects v2 and the Issue/PR thread up to date with status + evidence; consult `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md` only when needed.'
                 ].join('\n')
               },
               headers: {
@@ -91,9 +93,11 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Follow repository instructions in AGENTS.md and docs/agents/authority/CMC_OVERVIEW.md.',
+                  'Read first: AGENTS.md, .github/copilot-instructions.md, .github/README.md, .github/agents/CMC_GO_BRIEF.md, .github/agents/software-engineer.agent.md, .github/prompts/loop.prompt.md.',
+                  'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
                   'Keep the diff small and scoped to the issue.',
-                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.'
+                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',
+                  'Keep Projects v2 and the Issue/PR thread up to date with status + evidence; consult `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md` only when needed.'
                 ].join('\n')
               },
               headers: {
