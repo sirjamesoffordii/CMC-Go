@@ -130,6 +130,11 @@ These rules exist to reduce repeated context and long transcripts.
 
 Codespaces is optional. It is best used as a **clean, DB-backed dev environment** when local setup is slow or inconsistent.
 
+Decision checklist:
+- If the task touches schema/migrations/seeding/imports or needs a DB repro → use Codespaces (or CI).
+- If you cannot reproduce locally and want a CI-like Linux environment → use Codespaces.
+- If it’s docs-only or a small UI tweak and local dev is stable → prefer local worktrees.
+
 Use Codespaces when one or more are true:
 - DB-backed work (migrations, seeds/imports, DB debugging, health-check failures)
 - Need a clean repro closer to CI-like Linux behavior

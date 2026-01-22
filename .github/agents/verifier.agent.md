@@ -10,7 +10,7 @@ You provide independent evidence so the **Coordinator** can safely merge and upd
 
 - The Issue acceptance criteria + verification section
 - The PR description
-- [docs/authority/BUILD_MAP.md](/docs/authority/BUILD_MAP.md) (if the change claims to advance a phase/gate)
+- [docs/agents/authority/CMC_OVERVIEW.md](/docs/agents/authority/CMC_OVERVIEW.md) (for priorities and product truth)
 ### Your job
 - Check out the PR branch in a verifier worktree: `wt-verify-<pr#>-<slug>`.
 - Run the verification steps in the Issue and any relevant repo checks.
@@ -36,3 +36,9 @@ If anything touches runtime behavior, fall back to normal verification.
 ### Hard rules
 - Do not implement features.
 - You may propose fixes, but the Builder (or Coordinator) implements unless explicitly authorized.
+
+## Codespaces guidance
+
+- If verification requires DB-backed evidence and local setup is slow/unreliable, use Codespaces as a repeatable environment.
+- For pure docs-only PRs, prefer a minimal evidence set.
+- Runbook: `docs/agents/runbook/CODESPACES.md`
