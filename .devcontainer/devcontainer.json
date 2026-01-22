@@ -19,7 +19,11 @@
         "GitHub.copilot-chat",
         "ms-azuretools.vscode-docker",
         "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "redhat.vscode-yaml",
+        "streetsidesoftware.code-spell-checker",
+        "ms-playwright.playwright"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash"
