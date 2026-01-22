@@ -1,6 +1,6 @@
 # Local Database Sync with Railway Staging
 
-This runbook explains how to keep your local development database in sync with the Railway staging database in a safe, deterministic way.
+This operational procedure explains how to keep your local development database in sync with the Railway staging database in a safe, deterministic way.
 
 ## Philosophy
 

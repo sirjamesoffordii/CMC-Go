@@ -9,8 +9,8 @@ Operational rules (how to operate day-to-day, not the authority layer): [AGENTS.
 - **Only TL pings Sir James** by default; everyone else escalates via an Issue comment.
 - **Priority:** clear the review/verify queue first (`status:verify`), otherwise implement.
 
-If you need judgment doctrine: see [docs/agents/runbook/COHERENCE_ENGINE.md](../../runbook/COHERENCE_ENGINE.md).
-If you need exact procedures: see [docs/agents/runbook/RUNBOOK_INDEX.md](../../runbook/RUNBOOK_INDEX.md).
+If you need judgment doctrine: see [docs/agents/legacy/doctrine/COHERENCE_ENGINE.md](../doctrine/COHERENCE_ENGINE.md).
+If you need exact procedures: see [docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md](../../operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md).
 
 Activation prompt files (recommended):
 - [.github/prompts/tech-lead.prompt.md](../../../.github/prompts/tech-lead.prompt.md)

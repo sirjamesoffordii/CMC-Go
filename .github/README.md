@@ -16,7 +16,7 @@ These docs are written for agents. In a hands-off workflow the operator primaril
 
 
 When needed:
- Archived operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+ Archived operational procedures index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Contents
 

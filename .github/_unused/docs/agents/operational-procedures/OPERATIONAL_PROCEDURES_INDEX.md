@@ -12,10 +12,13 @@ Single entrypoint for operational playbooks, setup/tooling references, and agent
 ## Database setup & safety
 
 - Verify schema + writes: [DB_SETUP_VERIFICATION.md](DB_SETUP_VERIFICATION.md)
-- Database tooling summary: [DATABASE_TOOLING_SUMMARY.md](DATABASE_TOOLING_SUMMARY.md)
 - Reset DB (dev): [DB_RESET_GUIDE.md](DB_RESET_GUIDE.md)
 - Local DB sync notes: [LOCAL_DB_SYNC.md](LOCAL_DB_SYNC.md)
 - DB health guardrails: [DB_HEALTH_GUARDRAILS.md](DB_HEALTH_GUARDRAILS.md)
+
+Related reference (archived):
+
+- Database tooling summary: [../legacy/reference/DATABASE_TOOLING_SUMMARY.md](../legacy/reference/DATABASE_TOOLING_SUMMARY.md)
 
 ## Migrations & seeding
 
@@ -30,16 +33,16 @@ Single entrypoint for operational playbooks, setup/tooling references, and agent
 
 ## Coherence
 
-- Coherence Engine: [COHERENCE_ENGINE.md](COHERENCE_ENGINE.md)
+- Coherence Engine (doctrine): [../legacy/doctrine/COHERENCE_ENGINE.md](../legacy/doctrine/COHERENCE_ENGINE.md)
 
 ## Ops log
 
-- Ops change log: [ops-change-log.md](ops-change-log.md)
+- Ops change log (template): [../legacy/ops-change-log.md](../legacy/ops-change-log.md)
 
 ## Agent operational procedures
 
 Agent-specific operational procedures:
 
-- Evidence standard: [AGENT_EVIDENCE_STANDARD.md](AGENT_EVIDENCE_STANDARD.md)
-- Quick commands: [AGENT_QUICK_COMMANDS.md](AGENT_QUICK_COMMANDS.md)
+- Evidence standard: [../legacy/agent-reference/AGENT_EVIDENCE_STANDARD.md](../legacy/agent-reference/AGENT_EVIDENCE_STANDARD.md)
+- Quick commands: [../legacy/agent-reference/AGENT_QUICK_COMMANDS.md](../legacy/agent-reference/AGENT_QUICK_COMMANDS.md)
 - GitHub auth notes: [GITHUB_AUTH.md](GITHUB_AUTH.md)

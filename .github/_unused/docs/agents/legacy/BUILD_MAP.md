@@ -110,7 +110,7 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 - 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
   - Automated AI review of pull requests  
-  - Documentation (archived): `.github/_unused/docs/agents/runbook/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
+  - Documentation (archived): `.github/_unused/docs/agents/operational-procedures/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
 
 ---
 
