@@ -20,6 +20,8 @@ Working truth:
 - Prefer surgical fixes over refactors.
 - Always include evidence (commands run + results) in the PR.
 
+Use the PR description + verdict templates in `AGENTS.md`.
+
 3) Keep momentum
 - If you’re working solo or the work item is missing structure, tighten the Issue (AC/verification), update the Project status, and then proceed.
 
@@ -34,3 +36,4 @@ Working truth:
 - Confirm you’re in the right worktree (`wt-impl-*` or `wt-verify-*`)
 - Keep the diff minimal and scoped
 - Post evidence (commands + results) and a clear verdict when verifying
+- If blocked: post one A/B/C escalation comment (see `AGENTS.md`), then continue parallel-safe work

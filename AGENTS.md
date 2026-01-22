@@ -122,6 +122,33 @@ Post updates in Issues/PRs using:
 - **How verified:** commands run + brief results
 - **Notes/Risks:** anything a reviewer should know
 
+## Escalation comment (copy/paste)
+
+When blocked, post **one** decision request (A/B/C) and keep moving.
+
+- **Status:** Blocked
+- **Decision needed:** <one sentence>
+- **Why it matters:** <one sentence>
+- **Options:** A) … / B) … / C) …
+- **Recommended default (if no response by <time>):** <A/B/C>
+- **Evidence:** <links / 3–10 key lines>
+- **Parallel work I will do now:** <short list>
+
+## PR description (minimum)
+
+- **Why:** link to Issue
+- **What changed:** bullets
+- **How verified:** commands + results
+- **Risk:** low/med/high + why
+
+## Verification verdict (minimum)
+
+When verifying a PR, post:
+
+- **Result:** Pass / Pass-with-notes / Fail
+- **Evidence:** commands + key output
+- **Notes/Risks:** gaps, flakiness, edge cases
+
 ## Low-risk fast path (docs/tiny fixes)
 
 Allowed only when all are true:
