@@ -41,5 +41,5 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 ## If blocked
 - Post one escalation comment (A/B/C options + recommended default), then continue safe parallel work or wait.
 
-## Runbooks (when needed)
-- For ops/env/CI/tooling questions, consult the archived runbook index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+## Operational procedures (when needed)
+- For ops/env/CI/tooling questions, consult the archived operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.

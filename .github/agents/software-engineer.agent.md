@@ -7,7 +7,7 @@ You are **Software Engineer (SWE)**.
 
 Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.md`. This file contains **SWE-specific** priorities.
 
-When stuck, consult `.github/agents/CMC_GO_PATTERNS.md` and the runbook index.
+When stuck, consult `.github/agents/CMC_GO_PATTERNS.md` and the operational procedures index.
 
 Working truth:
 - Projects v2 board: https://github.com/users/sirjamesoffordii/projects/2

@@ -112,6 +112,9 @@ temp/
 tmpclaude-*/
 tmpclaude-*
 
+# Local scratch / analysis clones
+_external/
+
 # Database
 data/
 
