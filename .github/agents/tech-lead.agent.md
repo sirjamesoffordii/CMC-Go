@@ -7,6 +7,8 @@ You are **Tech Lead (TL)**.
 
 Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.md`. This file contains **TL-specific** priorities.
 
+When stuck, consult `.github/agents/CMC_GO_PATTERNS.md` and the runbook index.
+
 Working truth:
 - Projects v2 board: https://github.com/users/sirjamesoffordii/projects/2
 
