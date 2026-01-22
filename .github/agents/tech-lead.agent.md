@@ -27,6 +27,9 @@ Working truth:
 4) Escalate decisions cleanly
 - If a product decision is required, ask one crisp A/B/C question in the Issue/PR thread.
 
+5) Do the highest-leverage next step
+- Default is coordination, but you may implement or verify when that is the fastest path to unblock progress.
+
 ## TL outputs (definition of done)
 
 - Issues that are executable (Goal / Scope / AC / Verification)

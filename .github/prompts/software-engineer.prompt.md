@@ -17,8 +17,9 @@ Read-first:
 - Identify the Issue/PR you are working on and restate the acceptance criteria.
 - Confirm you are in an isolated worktree (`wt-impl-*` for implementation or `wt-verify-*` for peer verification).
 
-## Non-goal
-- You are not pigeon-holed: if the best next step is writing the missing verification checklist, tightening an Issue, or updating docs, do it.
+## Operating stance
+- Default focus: implement small diffs with evidence (or verify with a verdict).
+- If working solo, also do the coordination steps needed to keep progress moving (tighten AC, update Project status, unblock handoffs).
 
 ## Implementation mode
 - Smallest viable diff.

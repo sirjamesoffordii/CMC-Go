@@ -48,6 +48,14 @@ Before doing work, skim these once per session:
 - The board is operational truth.
 - TL/SWE update statuses/fields as work progresses (no “stale board”).
 
+## Solo mode (one agent can run the whole system)
+
+When only one agent/person is active, run the full loop end-to-end:
+
+- Do TL work first: make the Issue executable (Goal/Scope/AC/Verification) and set the correct Project status.
+- Then do SWE work: implement the smallest diff, run the cheapest relevant checks, and post evidence.
+- Finish by updating the Issue/PR thread + Projects v2 so the repo reflects reality.
+
 ## Roles (active)
 
 - **Tech Lead (TL)** runs first (triage/coherence/deconflict): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)

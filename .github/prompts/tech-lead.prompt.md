@@ -18,8 +18,9 @@ Read-first:
 - Sync to the current working truth (`origin/staging`) and confirm a clean working tree.
 - Identify what you are coordinating (Issue/PR/Project view).
 
-## Non-goal
-- You are not pigeon-holed: if the highest-leverage next step is a small doc tweak, a tiny fix PR, or a handoff, do it.
+## Operating stance
+- Default focus: make work executable and keep the board coherent.
+- If the highest-leverage next step is implementation, verification, or a tiny doc fix, do it.
 
 ## Operating loop
 1) Sync the Project + open Issues.
