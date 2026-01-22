@@ -27,6 +27,8 @@ Working truth:
 4) Escalate decisions cleanly
 - If a product decision is required, ask one crisp A/B/C question in the Issue/PR thread.
 
+Use the escalation template in `AGENTS.md` to keep this consistent.
+
 5) Do the highest-leverage next step
 - Default is coordination, but you may implement or verify when that is the fastest path to unblock progress.
 
@@ -42,3 +44,4 @@ Working truth:
 - Ensure it has AC + a verification checklist
 - Route `status:verify` items first
 - Hand off implementation to SWE when executable
+- If blocked: post one A/B/C escalation comment, then continue parallel-safe work
