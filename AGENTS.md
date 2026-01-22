@@ -1,6 +1,6 @@
 # CMC Go — Agent Operating Manual
 
-This is the **single source of truth** for how humans + agents work in this repo.
+This is the **single source of truth** for how agents operate in this repo, and what the operator does (label/approve/merge) in a hands-off workflow.
 
 ## Read-first
 
@@ -23,10 +23,35 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 ## Operating principles
 
 - **Issues/PRs are the task bus.** Decisions + evidence live there.
-- **Worktrees required.** No direct work on `staging`.
+- **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
 - **Small diffs.** Keep changes reviewable.
 - **No secrets.** `.env*` stays local; use platform/GitHub secrets.
 - **Keep looping.** Take the next best safe step until Done.
+
+## Execution modes (critical)
+
+Agents may run in one of two execution modes. All instructions below apply, but the repo hygiene mechanics differ.
+
+### Mode A — Local VS Code agent (runs on the operator machine)
+
+- **Worktrees are required.** Never work directly on `staging`.
+- Use worktrees to isolate implementation and verification.
+- Only `wt-main` is allowed to run `pnpm dev`.
+
+### Mode B — GitHub-hosted Copilot coding agent (cloud)
+
+- **Worktrees do not exist.** Operate branch-only.
+- Always base work on `staging` and open PRs targeting `staging`.
+- Do not run long-lived servers.
+
+## Operator role (hands-off)
+
+The operator is not expected to write code.
+
+- Creates Issues using templates.
+- Applies labels to route work (e.g. `agent:copilot-swe`, `verify:v1`).
+- Approves/merges PRs when the verification gate passes.
+- Performs console-only steps when 2FA/login blocks automation (Sentry/Railway/etc.).
 
 ## Standard workflow
 
@@ -56,6 +81,8 @@ Work happens in isolated worktrees to prevent collisions.
 - `wt-impl-<issue#>-<slug>` — implementation work
 - `wt-verify-<pr#>-<slug>` — verification work (no implementation)
 - `wt-docs-<YYYY-MM-DD>` — docs-only changes
+
+Note: this policy applies to **Mode A (local)** only. In **Mode B (cloud)** the equivalent is simply “one branch per task; never commit on `staging`.”
 
 ## Claiming work (collision prevention)
 

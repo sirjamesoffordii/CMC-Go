@@ -19,7 +19,9 @@ Skim in this order:
 Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
 
 ## First move (always)
-1) Sync to `origin/staging` and confirm a clean tree.
+1) Confirm execution mode:
+	- Mode A (local VS Code agent): sync to `origin/staging` and confirm a clean tree.
+	- Mode B (GitHub-hosted agent): operate branch-only; ensure the PR targets `staging`.
 2) Pick the active work item (Issue/PR/Project card).
 
 ## Default priorities (flexible)
