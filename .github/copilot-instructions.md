@@ -12,7 +12,7 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 - Projects v2 (truth): https://github.com/users/sirjamesoffordii/projects/2
 
 Ops/CI/tooling reference (as-needed):
-- `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+- `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Guardrails
 

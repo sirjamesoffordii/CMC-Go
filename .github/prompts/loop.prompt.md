@@ -12,13 +12,13 @@ Within an assigned Issue:
 Always:
 - Prefer the smallest safe next action.
 - Keep token usage low: short updates, deltas, and links over log dumps.
-- If operational procedures are needed, consult the archived index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+- If operational procedures are needed, consult the archived index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.
 
 When uncertain or stuck, consult repo knowledge in this order:
 1) `AGENTS.md` (workflow + constraints)
 2) `.github/agents/CMC_GO_BRIEF.md` (product snapshot)
 3) `.github/agents/CMC_GO_PATTERNS.md` (curated pitfalls/patterns)
-4) `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md` (operational procedures)
+4) `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` (operational procedures)
 
 Operator interaction:
 - Keep chat minimal (status + blockers only).

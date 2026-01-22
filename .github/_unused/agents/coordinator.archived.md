@@ -1,6 +1,6 @@
 ---
 name: Coordinator
-description: Keeps all agents in sync via GitHub Issues/PRs. Chooses next work, prevents collisions, integrates, updates Build Map and runbooks.
+description: Keeps all agents in sync via GitHub Issues/PRs. Chooses next work, prevents collisions, integrates, updates Build Map and operational procedures.
 ---
 
 > ARCHIVED: This role doc is kept for historical reference.

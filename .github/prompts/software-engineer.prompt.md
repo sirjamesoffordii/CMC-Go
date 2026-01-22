@@ -42,4 +42,4 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 - Post one escalation comment (A/B/C options + recommended default), then continue safe parallel work or wait.
 
 ## Operational procedures (when needed)
-- For ops/env/CI/tooling questions, consult the archived operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+- For ops/env/CI/tooling questions, consult the archived operational procedures index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.

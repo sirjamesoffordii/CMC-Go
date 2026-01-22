@@ -13,7 +13,7 @@ Use this when you are:
 - blocked on a repo-specific invariant (schema keys, map ids)
 - about to make a wide change and want known hazards
 
-If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consult the operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consult the operational procedures index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.
 
 ## Patterns
 

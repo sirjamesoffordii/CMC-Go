@@ -33,7 +33,7 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 - **Policy + workflow:** `AGENTS.md` (this file)
 - **Product snapshot:** `.github/agents/CMC_GO_BRIEF.md`
 - **Curated learnings (pitfalls/patterns):** `.github/agents/CMC_GO_PATTERNS.md`
-- **Operational procedures (as-needed):** `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+- **Operational procedures (as-needed):** `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Execution modes (critical)
 
@@ -177,7 +177,7 @@ Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`)
 
 Operational procedures are archived (not active policy), but are useful reference for ops/CI/tooling:
 
-- `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+- `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Archived material
 
