@@ -127,6 +127,7 @@ Post updates in Issues/PRs using:
 - **Branch/PR:** link
 - **What changed:** bullets
 - **How verified:** commands run + brief results
+- **Learning (optional):** one reusable takeaway to avoid repeating work
 - **Notes/Risks:** anything a reviewer should know
 
 ## Escalation comment (copy/paste)
@@ -172,9 +173,9 @@ Procedure:
 Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`) to trigger:
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
-## Runbooks (when needed)
+## Operational procedures (when needed)
 
-Runbooks are not active policy, but are useful reference for ops/CI/tooling:
+Operational procedures are archived (not active policy), but are useful reference for ops/CI/tooling:
 
 - `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
 

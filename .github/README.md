@@ -14,19 +14,9 @@ These docs are written for agents. In a hands-off workflow the operator primaril
 
 ## Read-first (fast)
 
-- Policy: `AGENTS.md`
-- Product snapshot: `.github/agents/CMC_GO_BRIEF.md`
-- Role docs: `.github/agents/tech-lead.agent.md`, `.github/agents/software-engineer.agent.md`
-- Prompts: `.github/prompts/tech-lead.prompt.md`, `.github/prompts/software-engineer.prompt.md`, `.github/prompts/loop.prompt.md`
 
 When needed:
-- Archived runbooks index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+ Archived operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
 
 ## Contents
 
-- `.github/agents/` — active role + brief docs
-- `.github/prompts/` — activation prompts (TL/SWE/loop)
-- `.github/workflows/` — GitHub Actions
-- `.github/ISSUE_TEMPLATE/` — Issue templates
-- `.github/copilot-instructions.md` — extra Copilot guidance (kept short)
-- `.github/_unused/` — archived artifacts (not active policy)

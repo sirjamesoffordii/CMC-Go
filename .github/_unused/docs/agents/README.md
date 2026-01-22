@@ -11,7 +11,7 @@ This folder contains **legacy** agent documentation that is not part of the acti
 ## What’s inside
 
 - `legacy/` — historical doctrine (Coordinator, Build Map, old toolkits)
-- `runbook/` — old runbooks and operational notes
+- `runbook/` — old operational procedures and notes
 - `old-brief/` — previous “overview/authority” style docs
 
 If you want to revive any of this, move it into an active location and update links to match the current structure.

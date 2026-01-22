@@ -2,7 +2,7 @@
 
 Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and humans.
 
-- This is not a runbook.
+- This is not an operational procedure.
 - Keep this short: if it grows past ~20 items, prune or consolidate.
 - Prefer linking to the canonical source of truth (Issue/PR, code, schema) when possible.
 
@@ -13,7 +13,7 @@ Use this when you are:
 - blocked on a repo-specific invariant (schema keys, map ids)
 - about to make a wide change and want known hazards
 
-If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consult the runbook index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consult the operational procedures index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
 
 ## Patterns
 

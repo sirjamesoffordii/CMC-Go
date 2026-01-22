@@ -12,7 +12,7 @@ Within an assigned Issue:
 Always:
 - Prefer the smallest safe next action.
 - Keep token usage low: short updates, deltas, and links over log dumps.
-- If a runbook is needed, consult the archived index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
+- If operational procedures are needed, consult the archived index: `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`.
 
 When uncertain or stuck, consult repo knowledge in this order:
 1) `AGENTS.md` (workflow + constraints)

@@ -1,6 +1,6 @@
-# Runbooks Index
+# Operational Procedures Index
 
-Single entrypoint for operational playbooks, setup/tooling references, and agent runbooks.
+Single entrypoint for operational playbooks, setup/tooling references, and agent operational procedures.
 
 ## Setup & workflow
 
@@ -36,9 +36,9 @@ Single entrypoint for operational playbooks, setup/tooling references, and agent
 
 - Ops change log: [ops-change-log.md](ops-change-log.md)
 
-## Agent runbooks
+## Agent operational procedures
 
-Agent-specific runbooks:
+Agent-specific operational procedures:
 
 - Evidence standard: [AGENT_EVIDENCE_STANDARD.md](AGENT_EVIDENCE_STANDARD.md)
 - Quick commands: [AGENT_QUICK_COMMANDS.md](AGENT_QUICK_COMMANDS.md)
