@@ -5,8 +5,8 @@
     "sentry.enabled": true,
     "sentry.organization": "sir-james-offord-ii",
     "sentry.projects": ["cmc-go-client"],
-    "sentry.serverUrl": "https://sentry.io",
-    "sentryAutoFix.sentryUrl": "https://sentry.io",
+    "sentry.serverUrl": "https://sir-james-offord-ii.sentry.io",
+    "sentryAutoFix.sentryUrl": "https://sir-james-offord-ii.sentry.io",
     "sentryAutoFix.projectSlugs": ["sir-james-offord-ii/cmc-go-client"],
     // Embedded preview: prefer Microsoft Edge Tools (not Simple Browser).
     "vscode-edge-devtools.defaultUrl": "http://127.0.0.1:3000",
