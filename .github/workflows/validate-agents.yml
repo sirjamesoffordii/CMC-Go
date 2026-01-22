@@ -1,0 +1,28 @@
+name: Validate Agent Files
+
+on:
+  pull_request:
+    paths:
+      - ".github/agents/**"
+      - ".github/prompts/**"
+      - "scripts/validate-agents.mjs"
+  push:
+    branches: [staging]
+    paths:
+      - ".github/agents/**"
+      - ".github/prompts/**"
+      - "scripts/validate-agents.mjs"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate agent files
+        run: node scripts/validate-agents.mjs

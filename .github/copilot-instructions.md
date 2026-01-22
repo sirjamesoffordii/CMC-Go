@@ -39,6 +39,7 @@ Ops/CI/tooling reference (as-needed):
 - Checks: `pnpm check`, `pnpm test`
 - E2E (smoke): `pnpm e2e`
 - DB (dev): `pnpm db:push:yes`, `pnpm db:seed`, `pnpm db:reset`
+- Validation: `pnpm validate:agents`
 
 If you touch schema or auth/scope logic, keep the change surgical and expect CI to run MySQL-backed tests (see `.github/workflows/test-and-coverage.yml`).
 

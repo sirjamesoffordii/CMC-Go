@@ -28,7 +28,8 @@
     "db:verify": "node scripts/verify-write.mjs",
     "db:reset": "node scripts/reset-db.mjs",
     "db:reset:drop": "node scripts/reset-db.mjs --drop-db",
-    "db:reset:local": "node scripts/reset-local-db.mjs"
+    "db:reset:local": "node scripts/reset-local-db.mjs",
+    "validate:agents": "node scripts/validate-agents.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

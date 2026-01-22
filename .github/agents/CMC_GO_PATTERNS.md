@@ -1,3 +1,9 @@
+---
+name: CMC_GO_PATTERNS
+description: Curated patterns and pitfalls for agents and humans working on CMC Go.
+applyTo: "**"
+---
+
 # CMC Go — Learned Patterns (Curated)
 
 Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and humans.

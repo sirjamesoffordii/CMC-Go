@@ -1,3 +1,9 @@
+---
+name: CMC_GO_BRIEF
+description: Product intent, technical shape, and hard invariants for CMC Go.
+applyTo: "**"
+---
+
 # CMC Go Brief
 
 CMC Go is a **map-first coordination app** that helps leaders see, track, and mobilize people toward the Campus Missions Conference (CMC).
