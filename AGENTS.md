@@ -28,6 +28,13 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 - **No secrets.** `.env*` stays local; use platform/GitHub secrets.
 - **Keep looping.** Take the next best safe step until Done.
 
+## Knowledge surfaces (when to consult what)
+
+- **Policy + workflow:** `AGENTS.md` (this file)
+- **Product snapshot:** `.github/agents/CMC_GO_BRIEF.md`
+- **Curated learnings (pitfalls/patterns):** `.github/agents/CMC_GO_PATTERNS.md`
+- **Operational procedures (as-needed):** `.github/_unused/docs/agents/runbook/RUNBOOK_INDEX.md`
+
 ## Execution modes (critical)
 
 Agents may run in one of two execution modes. All instructions below apply, but the repo hygiene mechanics differ.
