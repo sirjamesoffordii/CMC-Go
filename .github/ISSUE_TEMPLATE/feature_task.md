@@ -19,7 +19,24 @@ labels: ["status:ready"]
 
 ## Verify Level
 
-- L0 (self) | L1 (peer) | L2 (deep)
+Set PR labels (these are enforced by CI):
+
+- `verify:v0` (self)
+- `verify:v1` (peer approval required)
+- `verify:v2` (peer approval + evidence labels required)
+
+For `verify:v2`, also add evidence labels:
+
+- `evidence:db-or-ci`
+- `evidence:deployed-smoke`
+
+## Agent routing (optional)
+
+To trigger the GitHub-hosted Copilot agent, add one label:
+
+- `agent:copilot-swe` (implementation)
+- `agent:copilot-tl` (triage/coordination)
+- `agent:copilot` (defaults to TL token)
 
 ## Verification Steps
 Commands to run:

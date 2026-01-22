@@ -2,6 +2,8 @@
 
 This folder contains (1) GitHub automation and (2) the **active** agent docs.
 
+These docs are written for agents. In a hands-off workflow the operator primarily labels Issues to route work and approves/merges PRs when gates pass.
+
 ## Mental model
 
 - Issue templates define *work intake*

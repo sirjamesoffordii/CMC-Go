@@ -20,7 +20,9 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## First move (always)
 1) Identify the Issue/PR and restate acceptance criteria.
-2) Confirm correct worktree (`wt-impl-*` or `wt-verify-*`).
+2) Confirm execution mode:
+	- Mode A (local VS Code agent): use a correct worktree (`wt-impl-*` or `wt-verify-*`).
+	- Mode B (GitHub-hosted agent): branch-only; no worktrees.
 
 ## Operating stance
 - Default: implement small diffs with evidence (or verify with a verdict).
