@@ -14,6 +14,7 @@ import Approvals from "./pages/Approvals";
 import Import from "./pages/Import";
 import Needs from "./pages/Needs";
 import FollowUpView from "./pages/FollowUpView";
+import { Login } from "./pages/Login";
 import { useEffect } from "react";
 
 function Router() {
@@ -46,6 +47,7 @@ function Router() {
           }
         }}
       </Route>
+      <Route path="/login" component={Login} />
       <Route path="/people" component={People} />
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />
