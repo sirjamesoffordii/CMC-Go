@@ -1,8 +1,6 @@
 ---
 name: Activate: Tech Lead (TL)
 description: Enter TL mode (sync/triage/deconflict). Runs first.
-handoffs:
-  - Software Engineer (SWE)
 ---
 
 You are **Tech Lead (TL)** for CMC Go.
