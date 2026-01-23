@@ -1012,7 +1012,15 @@ export async function getScopedMetrics(scope: PeopleScope) {
 
 export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
-  if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+  if (!db)
+    return {
+      going: 0,
+      maybe: 0,
+      notGoing: 0,
+      notInvited: 0,
+      total: 0,
+      needsCount: 0,
+    };
 
   // Include people assigned to the district either directly (primaryDistrictId)
   // OR indirectly via their primaryCampusId's district.
@@ -1038,6 +1046,18 @@ export async function getDistrictMetrics(districtId: string) {
     .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
     .where(districtWhere)
     .groupBy(people.status);
+
+  // Get active needs count for this district
+  const needsCountResult = await db
+    .select({
+      needsCount: sql<number>`COUNT(DISTINCT ${needs.id})`.as("needsCount"),
+    })
+    .from(needs)
+    .innerJoin(people, eq(needs.personId, people.personId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(and(eq(needs.isActive, true), districtWhere));
+
+  const needsCount = Number(needsCountResult[0]?.needsCount) || 0;
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
     string,
@@ -1074,7 +1094,7 @@ export async function getDistrictMetrics(districtId: string) {
     counts.notInvited += total - countedTotal;
   }
 
-  return { ...counts, total };
+  return { ...counts, total, needsCount };
 }
 
 export async function getRegionMetrics(region: string) {
@@ -1156,6 +1176,20 @@ export async function getAllDistrictMetrics() {
     .where(sql`${effectiveDistrictId} IS NOT NULL`)
     .groupBy(effectiveDistrictId, people.status);
 
+  // Get active needs count per district
+  const needsResult = await db
+    .select({
+      districtId: effectiveDistrictId.as("districtId"),
+      needsCount: sql<number>`COUNT(DISTINCT ${needs.id})`.as("needsCount"),
+    })
+    .from(needs)
+    .innerJoin(people, eq(needs.personId, people.personId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(
+      and(eq(needs.isActive, true), sql`${effectiveDistrictId} IS NOT NULL`)
+    )
+    .groupBy(effectiveDistrictId);
+
   // Group by district and aggregate status counts
   const districtMap = new Map<
     string,
@@ -1165,6 +1199,7 @@ export async function getAllDistrictMetrics() {
       notGoing: number;
       notInvited: number;
       total: number;
+      needsCount: number;
     }
   >();
 
@@ -1179,6 +1214,7 @@ export async function getAllDistrictMetrics() {
         notGoing: 0,
         notInvited: 0,
         total: 0,
+        needsCount: 0,
       });
     }
 
@@ -1201,6 +1237,26 @@ export async function getAllDistrictMetrics() {
         counts.notInvited += count;
         break;
     }
+  }
+
+  // Add needs counts
+  for (const row of needsResult) {
+    const districtId = row.districtId;
+    if (!districtId) continue;
+
+    if (!districtMap.has(districtId)) {
+      districtMap.set(districtId, {
+        going: 0,
+        maybe: 0,
+        notGoing: 0,
+        notInvited: 0,
+        total: 0,
+        needsCount: 0,
+      });
+    }
+
+    const counts = districtMap.get(districtId)!;
+    counts.needsCount = Number(row.needsCount) || 0;
   }
 
   return Array.from(districtMap.entries()).map(([districtId, counts]) => ({

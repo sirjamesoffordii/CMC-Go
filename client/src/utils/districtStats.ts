@@ -6,6 +6,7 @@ export interface DistrictStats {
   no: number;
   notInvited: number;
   total: number;
+  needsCount?: number; // Optional to maintain backward compatibility
 }
 
 /**

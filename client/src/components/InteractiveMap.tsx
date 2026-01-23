@@ -477,6 +477,11 @@ export function InteractiveMap({
     null
   );
 
+  // District positions for needs badges (calculated from SVG paths)
+  const [districtPositions, setDistrictPositions] = useState<
+    Record<string, { x: number; y: number }>
+  >({});
+
   // Protected queries: only run when authenticated (public map uses aggregate endpoints)
   const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -760,6 +765,7 @@ export function InteractiveMap({
           no: metric.notGoing,
           notInvited: metric.notInvited,
           total: metric.total,
+          needsCount: metric.needsCount,
         };
       }
     } else if (isAuthenticated) {
@@ -1202,6 +1208,43 @@ export function InteractiveMap({
     onNationalClick,
   ]);
 
+  // Calculate district positions for needs badges
+  useEffect(() => {
+    if (!visualContainerRef.current || !svgContent) return;
+
+    const visualSvg = visualContainerRef.current.querySelector("svg");
+    if (!visualSvg) return;
+
+    const paths = visualSvg.querySelectorAll("path");
+    const positions: Record<string, { x: number; y: number }> = {};
+
+    paths.forEach(path => {
+      const pathId =
+        path.getAttribute("inkscape:label") ||
+        path.getAttributeNS(
+          "http://www.inkscape.org/namespaces/inkscape",
+          "label"
+        ) ||
+        path.getAttribute("id");
+
+      if (!pathId) return;
+
+      try {
+        const bbox = path.getBBox();
+        // Position badge in the top-right corner of each district
+        positions[pathId] = {
+          x: bbox.x + bbox.width - 15, // 15px from right edge
+          y: bbox.y + 15, // 15px from top edge
+        };
+      } catch (error) {
+        // getBBox() can fail for some paths, ignore errors
+        console.debug(`Could not get bbox for ${pathId}`, error);
+      }
+    });
+
+    setDistrictPositions(positions);
+  }, [svgContent]);
+
   // Generate pie chart SVG
   const generatePieChart = (stats: DistrictStats, size: number = 40) => {
     const { yes, maybe, no, notInvited, total } = stats;
@@ -1414,6 +1457,23 @@ export function InteractiveMap({
                 {stats.notInvited}
               </span>
             </div>
+            {/* Active Needs Count */}
+            {stats.needsCount !== undefined && stats.needsCount > 0 && (
+              <div className="flex items-center justify-between gap-4 py-0.5 mt-1 pt-1 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#dc2626]"></div>
+                  <span className="text-gray-600 whitespace-nowrap">
+                    Active Needs:
+                  </span>
+                </div>
+                <span
+                  className="text-gray-800"
+                  style={{ fontWeight: 500, fontSize: "15px" }}
+                >
+                  {stats.needsCount}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1990,6 +2050,66 @@ export function InteractiveMap({
                   );
                 });
               })()}
+          </svg>
+        </div>
+
+        {/* District Needs Badges - Shows count of active needs per district */}
+        <div className="absolute inset-0 flex items-center justify-center z-36 pointer-events-none">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 960 600"
+            preserveAspectRatio="xMidYMid meet"
+            style={{
+              transform: selectedDistrictId
+                ? "scale(1.05) translateX(0px)"
+                : "scale(1.03) translateX(-50px)",
+              transformOrigin: "center",
+            }}
+          >
+            {districts.map(district => {
+              const stats = districtStats[district.id];
+              const needsCount = stats?.needsCount || 0;
+              const position = districtPositions[district.id];
+
+              // Only show badge if there are active needs and we have a position
+              if (needsCount === 0 || !position) return null;
+
+              return (
+                <g key={district.id}>
+                  {/* Badge background circle */}
+                  <circle
+                    cx={position.x}
+                    cy={position.y}
+                    r={12}
+                    fill="#dc2626"
+                    stroke="white"
+                    strokeWidth="2"
+                    className="select-none"
+                    style={{
+                      filter:
+                        "drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 1px 2px rgba(0,0,0,0.2))",
+                    }}
+                  />
+                  {/* Needs count text */}
+                  <text
+                    x={position.x}
+                    y={position.y}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="white"
+                    fontSize="12px"
+                    fontWeight="700"
+                    className="select-none"
+                    style={{
+                      fontFamily: "system-ui, -apple-system, sans-serif",
+                    }}
+                  >
+                    {needsCount}
+                  </text>
+                </g>
+              );
+            })}
           </svg>
         </div>
       </div>
