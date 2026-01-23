@@ -846,11 +846,15 @@ export function DistrictPanel({
   const [swipeOffset, setSwipeOffset] = useState(0);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  // Swipe gesture configuration
+  const SWIPE_THRESHOLD = 50; // pixels
+  const SWIPE_OPACITY_FADE_DISTANCE = 300; // pixels for full opacity fade
+
   // Swipe gesture handlers
   const swipeGesture = useSwipeGesture({
     onSwipeRight: () => {
-      // Close panel on swipe right
-      if (isMobile && swipeOffset > 50) {
+      // Close panel on swipe right (threshold already enforced by hook)
+      if (isMobile) {
         onClose();
       }
     },
@@ -864,7 +868,7 @@ export function DistrictPanel({
       // Reset offset if swipe didn't trigger close
       setSwipeOffset(0);
     },
-    threshold: 50,
+    threshold: SWIPE_THRESHOLD,
   });
 
   // Attach touch event listeners to panel
@@ -3039,7 +3043,7 @@ export function DistrictPanel({
       ref={panelRef}
       initial={{ opacity: 0 }}
       animate={{
-        opacity: 1 - Math.min(swipeOffset / 300, 0.5),
+        opacity: 1 - Math.min(swipeOffset / SWIPE_OPACITY_FADE_DISTANCE, 0.5),
         x: swipeOffset,
       }}
       exit={{ opacity: 0 }}
