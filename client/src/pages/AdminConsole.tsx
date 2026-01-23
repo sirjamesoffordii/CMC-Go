@@ -1,9 +1,32 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Upload, Download, Database, FileText, FileJson, Loader2, AlertCircle, Users, MapPin, Building2, Heart, Activity, CheckCircle2, Clock, Bug } from "lucide-react";
+import {
+  Shield,
+  Upload,
+  Download,
+  Database,
+  FileText,
+  FileJson,
+  Loader2,
+  AlertCircle,
+  Users,
+  MapPin,
+  Building2,
+  Heart,
+  Activity,
+  CheckCircle2,
+  Clock,
+  Bug,
+} from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
@@ -48,9 +71,12 @@ export default function AdminConsole() {
   });
 
   // Fetch data
-  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery();
-  const { data: districts = [], isLoading: districtsLoading } = trpc.districts.list.useQuery();
-  const { data: campuses = [], isLoading: campusesLoading } = trpc.campuses.list.useQuery();
+  const { data: allPeople = [], isLoading: peopleLoading } =
+    trpc.people.list.useQuery();
+  const { data: districts = [], isLoading: districtsLoading } =
+    trpc.districts.list.useQuery();
+  const { data: campuses = [], isLoading: campusesLoading } =
+    trpc.campuses.list.useQuery();
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
 
@@ -65,7 +91,8 @@ export default function AdminConsole() {
     const notGoing = metrics?.notGoing || 0;
     const notInvited = metrics?.notInvited || 0;
     const totalInvited = going + maybe + notGoing;
-    const inviteRate = totalPeople > 0 ? Math.round((totalInvited / totalPeople) * 100) : 0;
+    const inviteRate =
+      totalPeople > 0 ? Math.round((totalInvited / totalPeople) * 100) : 0;
 
     // Get recent edits (last 10 people edited, sorted by lastEdited desc)
     const recentEdits = allPeople
@@ -97,7 +124,7 @@ export default function AdminConsole() {
     const checkDbHealth = async () => {
       try {
         setDbHealth({ connected: false, status: "checking" });
-        
+
         // Only available in development
         if (NODE_ENV === "development") {
           const response = await fetch(`${getApiBaseUrl()}/debug/db-health`);
@@ -106,7 +133,9 @@ export default function AdminConsole() {
             setDbHealth({
               connected: data.success && data.connected,
               status: data.success && data.connected ? "connected" : "error",
-              message: data.success ? "Database is healthy" : data.error || "Database check failed",
+              message: data.success
+                ? "Database is healthy"
+                : data.error || "Database check failed",
             });
           } else {
             setDbHealth({
@@ -173,17 +202,16 @@ export default function AdminConsole() {
       lines.push(headers.join(","));
 
       for (const p of allPeople as any[]) {
-        lines.push(
-          headers
-            .map((h) => csvEscape(p?.[h]))
-            .join(",")
-        );
+        lines.push(headers.map(h => csvEscape(p?.[h])).join(","));
       }
 
       // Add UTF-8 BOM to help Excel open correctly
       const csv = "\uFEFF" + lines.join("\r\n");
       const dateStamp = new Date().toISOString().slice(0, 10);
-      downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `contacts-${dateStamp}.csv`);
+      downloadBlob(
+        new Blob([csv], { type: "text/csv;charset=utf-8" }),
+        `contacts-${dateStamp}.csv`
+      );
       toast.success(`Exported ${allPeople.length.toLocaleString()} contacts`);
     } catch (e) {
       toast.error("Failed to export contacts CSV");
@@ -200,7 +228,10 @@ export default function AdminConsole() {
         return;
       }
 
-      const campusesByDistrictId = new Map<string, Array<{ id: number; name: string; districtId: string }>>();
+      const campusesByDistrictId = new Map<
+        string,
+        Array<{ id: number; name: string; districtId: string }>
+      >();
       for (const c of campuses as any[]) {
         if (!c?.districtId) continue;
         const arr = campusesByDistrictId.get(c.districtId) ?? [];
@@ -208,7 +239,10 @@ export default function AdminConsole() {
         campusesByDistrictId.set(c.districtId, arr);
       }
 
-      const regionMap = new Map<string, Array<{ id: string; name: string; region: string }>>();
+      const regionMap = new Map<
+        string,
+        Array<{ id: string; name: string; region: string }>
+      >();
       for (const d of districts as any[]) {
         const region = d?.region ?? "Unknown";
         const arr = regionMap.get(region) ?? [];
@@ -222,12 +256,12 @@ export default function AdminConsole() {
           region,
           districts: regionDistricts
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map((d) => ({
+            .map(d => ({
               id: d.id,
               name: d.name,
               campuses: (campusesByDistrictId.get(d.id) ?? [])
                 .sort((a, b) => a.name.localeCompare(b.name))
-                .map((c) => ({ id: c.id, name: c.name })),
+                .map(c => ({ id: c.id, name: c.name })),
             })),
         }));
 
@@ -238,7 +272,10 @@ export default function AdminConsole() {
 
       const json = JSON.stringify(payload, null, 2);
       const dateStamp = new Date().toISOString().slice(0, 10);
-      downloadBlob(new Blob([json], { type: "application/json;charset=utf-8" }), `regions-${dateStamp}.json`);
+      downloadBlob(
+        new Blob([json], { type: "application/json;charset=utf-8" }),
+        `regions-${dateStamp}.json`
+      );
       toast.success("Exported regions JSON");
     } catch (e) {
       toast.error("Failed to export regions JSON");
@@ -261,7 +298,11 @@ export default function AdminConsole() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return then.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return then.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   };
 
   const statCards = [
@@ -318,14 +359,15 @@ export default function AdminConsole() {
             <div className="flex items-center gap-3">
               <Shield className="w-8 h-8 text-slate-700" />
               <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">Admin Console</h1>
-                <p className="text-sm text-slate-500 mt-1">System administration and data management</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+                  Admin Console
+                </h1>
+                <p className="text-sm text-slate-500 mt-1">
+                  System administration and data management
+                </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/")}
-            >
+            <Button variant="outline" onClick={() => setLocation("/")}>
               Back to Home
             </Button>
           </div>
@@ -336,15 +378,21 @@ export default function AdminConsole() {
       <div className="container max-w-7xl mx-auto px-4 py-8 space-y-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {statCards.map((stat) => (
+          {statCards.map(stat => (
             <Card key={stat.title} className="transition-all hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">{stat.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                <div className="text-2xl font-semibold tracking-tight">
+                  {stat.value}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stat.description}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -359,7 +407,9 @@ export default function AdminConsole() {
                 <Upload className="w-5 h-5" />
                 Imports
               </CardTitle>
-              <CardDescription>Import data from external sources</CardDescription>
+              <CardDescription>
+                Import data from external sources
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -372,7 +422,8 @@ export default function AdminConsole() {
                   Import Contacts (CSV/XLSX)
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Accepted formats: CSV, XLSX. Columns: Name, Email, Phone, District, Campus, Role
+                  Accepted formats: CSV, XLSX. Columns: Name, Email, Phone,
+                  District, Campus, Role
                 </p>
               </div>
             </CardContent>
@@ -419,20 +470,28 @@ export default function AdminConsole() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">App Version</span>
+                  <span className="text-sm text-muted-foreground">
+                    App Version
+                  </span>
                   <Badge variant="secondary">{APP_VERSION}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Environment</span>
-                  <Badge variant={NODE_ENV === "production" ? "default" : "outline"}>
+                  <span className="text-sm text-muted-foreground">
+                    Environment
+                  </span>
+                  <Badge
+                    variant={NODE_ENV === "production" ? "default" : "outline"}
+                  >
                     {NODE_ENV}
                   </Badge>
                 </div>
               </div>
-              
+
               <div className="pt-2 border-t">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">Database</span>
+                  <span className="text-sm text-muted-foreground">
+                    Database
+                  </span>
                   {dbHealth.status === "checking" ? (
                     <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
                   ) : dbHealth.status === "connected" ? (
@@ -456,12 +515,14 @@ export default function AdminConsole() {
                   </p>
                 )}
               </div>
-              
+
               {/* Sentry Test Error Button */}
               <div className="pt-2 border-t">
                 <Button
                   onClick={() => {
-                    throw new Error("This is your test error - Sentry error tracking verification");
+                    throw new Error(
+                      "This is your test error - Sentry error tracking verification"
+                    );
                   }}
                   variant="destructive"
                   className="w-full"
@@ -471,7 +532,8 @@ export default function AdminConsole() {
                   Test Sentry Error
                 </Button>
                 <p className="text-xs text-muted-foreground mt-2">
-                  Click to trigger a test error and verify Sentry is capturing errors correctly.
+                  Click to trigger a test error and verify Sentry is capturing
+                  errors correctly.
                 </p>
               </div>
             </CardContent>
@@ -485,7 +547,9 @@ export default function AdminConsole() {
               <Clock className="w-5 h-5" />
               Recent Activity
             </CardTitle>
-            <CardDescription>Last edited people and recent changes</CardDescription>
+            <CardDescription>
+              Last edited people and recent changes
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {peopleLoading ? (
@@ -499,16 +563,21 @@ export default function AdminConsole() {
               </div>
             ) : (
               <div className="space-y-3">
-                {stats.recentEdits.map((person) => (
+                {stats.recentEdits.map(person => (
                   <div
                     key={person.personId}
                     className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">{person.name}</p>
+                        <p className="text-sm font-medium truncate">
+                          {person.name}
+                        </p>
                         {person.primaryRole && (
-                          <Badge variant="secondary" className="h-5 text-xs shrink-0">
+                          <Badge
+                            variant="secondary"
+                            className="h-5 text-xs shrink-0"
+                          >
                             {person.primaryRole}
                           </Badge>
                         )}
@@ -516,7 +585,9 @@ export default function AdminConsole() {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         {person.primaryDistrictId && (
                           <>
-                            <span className="truncate">{person.primaryDistrictId}</span>
+                            <span className="truncate">
+                              {person.primaryDistrictId}
+                            </span>
                             {person.primaryCampusId && <span>•</span>}
                           </>
                         )}
@@ -545,13 +616,17 @@ export default function AdminConsole() {
               <Activity className="w-5 h-5" />
               System Health
             </CardTitle>
-            <CardDescription>Overall application status and performance</CardDescription>
+            <CardDescription>
+              Overall application status and performance
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="flex flex-col gap-2 p-4 rounded-lg border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Database</span>
+                  <span className="text-sm text-muted-foreground">
+                    Database
+                  </span>
                   {dbHealth.status === "connected" ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   ) : (
@@ -564,7 +639,9 @@ export default function AdminConsole() {
               </div>
               <div className="flex flex-col gap-2 p-4 rounded-lg border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Data Load</span>
+                  <span className="text-sm text-muted-foreground">
+                    Data Load
+                  </span>
                   {!peopleLoading && !districtsLoading && !campusesLoading ? (
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   ) : (
@@ -572,12 +649,16 @@ export default function AdminConsole() {
                   )}
                 </div>
                 <p className="text-lg font-semibold">
-                  {!peopleLoading && !districtsLoading && !campusesLoading ? "Complete" : "Loading..."}
+                  {!peopleLoading && !districtsLoading && !campusesLoading
+                    ? "Complete"
+                    : "Loading..."}
                 </p>
               </div>
               <div className="flex flex-col gap-2 p-4 rounded-lg border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Response Time</span>
+                  <span className="text-sm text-muted-foreground">
+                    Response Time
+                  </span>
                   <Activity className="w-4 h-4 text-blue-600" />
                 </div>
                 <p className="text-lg font-semibold">Good</p>

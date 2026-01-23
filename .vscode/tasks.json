@@ -1,0 +1,126 @@
+﻿{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: Start server",
+      "type": "shell",
+      "command": "pnpm dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: Full build",
+      "type": "shell",
+      "command": "pnpm build",
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Check: TypeScript",
+      "type": "shell",
+      "command": "pnpm check",
+      "group": "test",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Test: Unit tests",
+      "type": "shell",
+      "command": "pnpm test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: E2E smoke",
+      "type": "shell",
+      "command": "pnpm e2e",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Format: Prettier",
+      "type": "shell",
+      "command": "pnpm format",
+      "problemMatcher": []
+    },
+    {
+      "label": "DB: Push schema",
+      "type": "shell",
+      "command": "pnpm db:push:yes",
+      "problemMatcher": []
+    },
+    {
+      "label": "DB: Seed database",
+      "type": "shell",
+      "command": "pnpm db:seed",
+      "problemMatcher": []
+    },
+    {
+      "label": "DB: Reset database",
+      "type": "shell",
+      "command": "pnpm db:reset",
+      "problemMatcher": []
+    },
+    {
+      "label": "DB: Full setup",
+      "type": "shell",
+      "command": "pnpm db:setup",
+      "problemMatcher": []
+    },
+    {
+      "label": "Validate: Agent docs",
+      "type": "shell",
+      "command": "pnpm validate:agents",
+      "problemMatcher": []
+    },
+    {
+      "label": "Railway: View logs (100 lines)",
+      "type": "shell",
+      "command": "railway logs --limit 100",
+      "problemMatcher": []
+    },
+    {
+      "label": "Railway: Stream logs (live)",
+      "type": "shell",
+      "command": "railway logs --follow",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Railway: Check status",
+      "type": "shell",
+      "command": "railway status",
+      "problemMatcher": []
+    },
+    {
+      "label": "Railway: View deployments",
+      "type": "shell",
+      "command": "railway deployments",
+      "problemMatcher": []
+    },
+    {
+      "label": "Railway: Search logs for errors",
+      "type": "shell",
+      "command": "railway logs --limit 200 | Select-String -Pattern 'error|Error|ERROR|failed|Failed|exception|Exception'",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Status",
+      "type": "shell",
+      "command": "git status -sb",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Fetch and status",
+      "type": "shell",
+      "command": "git fetch --prune origin; git status -sb",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Hard reset to staging",
+      "type": "shell",
+      "command": "git fetch --prune origin; git checkout -f staging; git reset --hard origin/staging; git clean -fd; git status -sb",
+      "problemMatcher": []
+    }
+  ]
+}

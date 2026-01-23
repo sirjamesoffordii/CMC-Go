@@ -55,7 +55,7 @@ export function QueryHistorySidebar({
           </div>
         ) : (
           <div className="p-2 space-y-2">
-            {history.map((item) => (
+            {history.map(item => (
               <button
                 key={item.id}
                 onClick={() => onSelectQuery(item.query)}
@@ -63,7 +63,9 @@ export function QueryHistorySidebar({
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <Badge
-                    variant={item.status === "success" ? "default" : "destructive"}
+                    variant={
+                      item.status === "success" ? "default" : "destructive"
+                    }
                     className="text-xs"
                   >
                     {item.status}

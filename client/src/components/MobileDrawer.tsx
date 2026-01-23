@@ -8,16 +8,21 @@ interface MobileDrawerProps {
   title?: string;
 }
 
-export function MobileDrawer({ isOpen, onClose, children, title }: MobileDrawerProps) {
+export function MobileDrawer({
+  isOpen,
+  onClose,
+  children,
+  title,
+}: MobileDrawerProps) {
   // Prevent body scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [isOpen]);
 
@@ -30,7 +35,7 @@ export function MobileDrawer({ isOpen, onClose, children, title }: MobileDrawerP
         className="fixed inset-0 bg-black/50 z-40 md:hidden"
         onClick={onClose}
       />
-      
+
       {/* Drawer */}
       <div className="fixed inset-x-0 bottom-0 top-16 bg-white z-50 md:hidden overflow-y-auto">
         {/* Header */}
@@ -43,11 +48,9 @@ export function MobileDrawer({ isOpen, onClose, children, title }: MobileDrawerP
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Content */}
-        <div className="p-4">
-          {children}
-        </div>
+        <div className="p-4">{children}</div>
       </div>
     </>
   );

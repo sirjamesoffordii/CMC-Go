@@ -9,9 +9,11 @@ Once `gh` is installed and authenticated, scripts can use your OS-stored auth an
 ### Install (Windows)
 
 Using winget:
+
 - `winget install --id GitHub.cli -e`
 
 If winget isn’t available, install from:
+
 - https://cli.github.com/
 
 ### Login
@@ -19,6 +21,7 @@ If winget isn’t available, install from:
 - `gh auth login`
 
 Verify:
+
 - `gh auth status -h github.com`
 
 ## Script behavior
@@ -33,5 +36,6 @@ Verify:
 ## Token fallback (ephemeral)
 
 If you must use a PAT, keep it ephemeral:
+
 - Prefer setting it only for the current terminal session (e.g. `$env:GITHUB_TOKEN`) and then clearing it.
 - Never commit tokens to the repo.

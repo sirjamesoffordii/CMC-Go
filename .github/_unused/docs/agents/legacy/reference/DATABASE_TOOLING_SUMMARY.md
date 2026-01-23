@@ -33,7 +33,3 @@ pnpm db:verify
 - Dev DB health endpoint: `GET /api/debug/db-health`
 
 All scripts are production-safe, well-documented, and include proper error handling and safety checks.
-
-
-
-

@@ -9,7 +9,7 @@ config();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('❌ DATABASE_URL environment variable is required');
+  console.error("❌ DATABASE_URL environment variable is required");
   process.exit(1);
 }
 
@@ -21,12 +21,20 @@ async function checkData() {
     // Check districts
     const allDistricts = await db.select().from(districts);
     console.log(`\n📊 Districts in database: ${allDistricts.length}`);
-    console.log(`   First 5: ${allDistricts.slice(0, 5).map(d => d.id).join(', ')}`);
+    console.log(
+      `   First 5: ${allDistricts
+        .slice(0, 5)
+        .map(d => d.id)
+        .join(", ")}`
+    );
 
     // Check people with districts
-    const peopleWithDistricts = await db.select().from(people).where(sql`primaryDistrictId IS NOT NULL`);
+    const peopleWithDistricts = await db
+      .select()
+      .from(people)
+      .where(sql`primaryDistrictId IS NOT NULL`);
     console.log(`\n👥 People with districts: ${peopleWithDistricts.length}`);
-    
+
     // Check people by district
     const peopleByDistrict = await db.execute(sql`
       SELECT primaryDistrictId, COUNT(*) as count 
@@ -44,7 +52,7 @@ async function checkData() {
     // Check campuses
     const allCampuses = await db.select().from(campuses);
     console.log(`\n🏫 Campuses in database: ${allCampuses.length}`);
-    
+
     // Check campuses by district
     const campusesByDistrict = await db.execute(sql`
       SELECT districtId, COUNT(*) as count 
@@ -64,9 +72,8 @@ async function checkData() {
     sampleDistricts.forEach(d => {
       console.log(`     ${d.id} - ${d.name} (${d.region})`);
     });
-
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error("❌ Error:", error.message);
   } finally {
     await connection.end();
   }

@@ -17,6 +17,7 @@ Guardrails to prevent silent schema drift by:
 The server now performs a database health check **before starting**. If critical issues are detected, the server will **not start** and will print clear error messages.
 
 **What it checks:**
+
 - ✅ Database connection
 - ✅ `drizzle_migrations` table exists
 - ✅ All critical tables exist: `districts`, `campuses`, `people`, `needs`, `notes`, `assignments`, `settings`
@@ -30,6 +31,7 @@ The server now performs a database health check **before starting**. If critical
   - `settings`: `key`, `value`
 
 **If issues are found:**
+
 ```
 [DB Health] ❌ CRITICAL: Schema drift detected!
 [DB Health] Errors: Table 'people' is missing required columns: personId, status
@@ -48,6 +50,7 @@ The server now performs a database health check **before starting**. If critical
 **Availability:** Only in development (`NODE_ENV !== "production"`)
 
 **What it returns:**
+
 - Connection status
 - Whether `drizzle_migrations` table exists
 - Detailed info for each critical table:
@@ -72,6 +75,7 @@ pnpm dev
 ```
 
 **Example output (success):**
+
 ```
 [DB Health] Performing startup database health check...
 [DB Health] ✅ Database health check passed
@@ -82,10 +86,11 @@ Server running on http://localhost:3000/
 ```
 
 **Example output (failure):**
+
 ```
 [DB Health] Performing startup database health check...
 [DB Health] ❌ CRITICAL: Schema drift detected!
-[DB Health] Errors: 
+[DB Health] Errors:
   - Critical table 'people' does not exist
   - Table 'districts' is missing required columns: region
 [Startup] Database health check failed. Server will not start.
@@ -95,6 +100,7 @@ Server running on http://localhost:3000/
 ### Debug Endpoint (Manual Check)
 
 **Call the endpoint:**
+
 ```bash
 # In development mode
 curl http://localhost:3000/api/debug/db-health
@@ -104,6 +110,7 @@ http://localhost:3000/api/debug/db-health
 ```
 
 **Example JSON Response (Success):**
+
 ```json
 {
   "success": true,
@@ -175,6 +182,7 @@ http://localhost:3000/api/debug/db-health
 ```
 
 **Example JSON Response (With Issues):**
+
 ```json
 {
   "success": true,
@@ -208,6 +216,7 @@ http://localhost:3000/api/debug/db-health
 ```
 
 **Example JSON Response (Connection Failed):**
+
 ```json
 {
   "success": false,
@@ -278,9 +287,11 @@ http://localhost:3000/api/debug/db-health
 ## 📁 Files Changed
 
 ### Created:
+
 - ✅ `server/_core/db-health.ts` - Health check functions
 
 ### Modified:
+
 - ✅ `server/_core/index.ts` - Added startup check and debug endpoint
 
 ---
@@ -310,18 +321,21 @@ http://localhost:3000/api/debug/db-health
 ### Test the Startup Check:
 
 1. **Start with good schema:**
+
    ```bash
    pnpm db:push
    pnpm dev  # Should start successfully
    ```
 
 2. **Break the schema (for testing):**
+
    ```sql
    -- Connect to database and drop a column
    ALTER TABLE people DROP COLUMN personId;
    ```
 
 3. **Restart server:**
+
    ```bash
    pnpm dev  # Should fail with clear error
    ```
@@ -348,7 +362,3 @@ open http://localhost:3000/api/debug/db-health
 ---
 
 **Schema drift will no longer go unnoticed!** 🎉
-
-
-
-

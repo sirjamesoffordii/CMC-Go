@@ -1,8 +1,6 @@
 {
   "name": "CMC Go (Codespaces)",
-  "dockerComposeFile": [
-    "docker-compose.yml"
-  ],
+  "dockerComposeFile": ["docker-compose.yml"],
   "service": "app",
   "workspaceFolder": "/workspaces/cmc-go",
   "features": {
@@ -30,11 +28,7 @@
       }
     }
   },
-  "forwardPorts": [
-    5173,
-    3000,
-    3001
-  ],
+  "forwardPorts": [5173, 3000, 3001],
   "portsAttributes": {
     "5173": {
       "label": "Vite dev server",

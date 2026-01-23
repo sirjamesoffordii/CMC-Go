@@ -62,10 +62,10 @@ The operator is not expected to write code.
 
 ## Standard workflow
 
-1) TL makes the work executable (Goal/Scope/AC + verification checklist)
-2) SWE implements or verifies (smallest diff + evidence, or checklist + verdict)
-3) “Done” requires evidence (commands/results + links)
-4) Update Projects v2 as you go (board reflects reality)
+1. TL makes the work executable (Goal/Scope/AC + verification checklist)
+2. SWE implements or verifies (smallest diff + evidence, or checklist + verdict)
+3. “Done” requires evidence (commands/results + links)
+4. Update Projects v2 as you go (board reflects reality)
 
 ## Solo mode (one agent can run the whole system)
 
@@ -94,6 +94,7 @@ Note: this policy applies to **Mode A (local)** only. In **Mode B (cloud)** the 
 ## Claiming work (collision prevention)
 
 Before editing:
+
 - Assign the Issue to yourself (preferred)
 - Optionally add a claim label (e.g. `claimed:tl`, `claimed:swe`)
 - Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`
@@ -106,6 +107,7 @@ If you go idle/blocked, unclaim and say why.
 - User branches: `user/sir-james/<issue#>-<slug>`
 
 Commit message prefix:
+
 - Agents: `agent(<agent>): <summary>`
 - Sir James: `user(sir-james): <summary>`
 
@@ -160,17 +162,20 @@ When verifying a PR, post:
 ## Low-risk fast path (docs/tiny fixes)
 
 Allowed only when all are true:
+
 - ≤ ~50 LOC and 1–2 files
 - no schema/auth/env contract changes
 - low collision risk
 
 Procedure:
+
 - Use a docs worktree
 - Open a PR with: Why / What changed / How verified / Risk
 
 ## Automation: Copilot auto-handoff
 
 Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`) to trigger:
+
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
 ## Operational procedures (when needed)
@@ -183,4 +188,3 @@ Operational procedures are archived (not active policy), but are useful referenc
 
 Legacy/unused docs live under `.github/_unused/`.
 They are **not active policy** unless explicitly revived.
-

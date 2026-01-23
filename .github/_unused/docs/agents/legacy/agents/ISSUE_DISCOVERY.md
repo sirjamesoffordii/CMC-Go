@@ -42,7 +42,6 @@ The script `scripts/create-agent-issues.ps1` is legacy/bootstrap tooling; use it
   - Install + login: [docs/agents/operational-procedures/GITHUB_AUTH.md](../../operational-procedures/GITHUB_AUTH.md)
   - Then run: `powershell -NoProfile -File scripts/create-agent-issues.ps1 -Mode gh`
 
-
   If you want the terminal to prompt you each time (no env vars):
   - `powershell -NoProfile -File scripts/run-create-agent-issues-rest.ps1`
 

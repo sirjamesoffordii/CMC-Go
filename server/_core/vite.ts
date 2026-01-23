@@ -60,17 +60,26 @@ export function serveStatic(app: Express) {
     // if server is started from dist/
     path.resolve(process.cwd(), "public"),
     // fallback: resolve relative to compiled server file location
-    path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..", "dist", "public"),
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../..",
+      "dist",
+      "public"
+    ),
   ];
 
-  const distPath = candidates.find((p) => fs.existsSync(path.join(p, "index.html")))
-    ?? path.resolve(process.cwd(), "dist", "public");
+  const distPath =
+    candidates.find(p => fs.existsSync(path.join(p, "index.html"))) ??
+    path.resolve(process.cwd(), "dist", "public");
 
   if (process.env.NODE_ENV !== "production") {
     console.log("[static] cwd:", process.cwd());
     console.log("[static] candidates:", candidates);
     console.log("[static] chosen distPath:", distPath);
-    console.log("[static] index exists:", fs.existsSync(path.join(distPath, "index.html")));
+    console.log(
+      "[static] index exists:",
+      fs.existsSync(path.join(distPath, "index.html"))
+    );
   }
 
   if (!fs.existsSync(distPath)) {

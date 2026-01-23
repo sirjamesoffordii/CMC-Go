@@ -9,7 +9,10 @@ import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 interface PersonRowProps {
   person: Person;
-  onStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
+  onStatusChange: (
+    personId: string,
+    newStatus: "Yes" | "Maybe" | "No" | "Not Invited"
+  ) => void;
   onClick: (person: Person) => void;
   hasNotes?: boolean;
   hasNeeds?: boolean;
@@ -18,9 +21,9 @@ interface PersonRowProps {
 
 // Universal response language for editing
 const STATUS_COLORS = {
-  "Yes": "bg-emerald-700",
-  "Maybe": "bg-yellow-600",
-  "No": "bg-red-700",
+  Yes: "bg-emerald-700",
+  Maybe: "bg-yellow-600",
+  No: "bg-red-700",
   "Not Invited": "bg-slate-500",
 };
 
@@ -31,12 +34,19 @@ const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
   "No",
 ];
 
-export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds, onPersonUpdate }: PersonRowProps) {
+export function PersonRow({
+  person,
+  onStatusChange,
+  onClick,
+  hasNotes,
+  hasNeeds,
+  onPersonUpdate,
+}: PersonRowProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const utils = trpc.useUtils();
-  
+
   const updatePersonName = trpc.people.updateName.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
@@ -44,7 +54,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
       onPersonUpdate();
     },
   });
-  
+
   const {
     attributes,
     listeners,
@@ -53,13 +63,13 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     transition,
     isDragging,
   } = useSortable({ id: person.personId });
-  
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
-  
+
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
@@ -67,7 +77,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
     const nextStatus = STATUS_CYCLE[nextIndex];
     onStatusChange(person.personId, nextStatus);
   };
-  
+
   // Authentication disabled - always show full person row
   if (false) {
     return (
@@ -96,7 +106,7 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
       />
 
       {/* Person Info - Compact - Draggable area */}
-      <div 
+      <div
         className="flex-1 py-1.5 pr-2 min-w-0"
         onClick={() => onClick(person)}
         {...attributes}
@@ -107,8 +117,11 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
             {person.name ? (
               <EditableText
                 value={person.name}
-                onSave={(newName) => {
-                  updatePersonName.mutate({ personId: person.personId, name: newName });
+                onSave={newName => {
+                  updatePersonName.mutate({
+                    personId: person.personId,
+                    name: newName,
+                  });
                 }}
                 className="text-xs font-medium text-slate-800"
                 inputClassName="text-xs font-medium text-slate-800 w-full"
@@ -118,15 +131,11 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
             )}
           </span>
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            {hasNotes && (
-              <StickyNote className="h-3 w-3 text-slate-600" />
-            )}
-            {hasNeeds && (
-              <DollarSign className="h-3 w-3 text-yellow-600" />
-            )}
+            {hasNotes && <StickyNote className="h-3 w-3 text-slate-600" />}
+            {hasNeeds && <DollarSign className="h-3 w-3 text-yellow-600" />}
             {isHovered && (
               <button
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   setIsEditingName(true);
                 }}
@@ -139,7 +148,9 @@ export function PersonRow({ person, onStatusChange, onClick, hasNotes, hasNeeds,
           </div>
         </div>
         {person.primaryRole && (
-          <span className="text-[10px] text-slate-500 leading-tight truncate">{person.primaryRole}</span>
+          <span className="text-[10px] text-slate-500 leading-tight truncate">
+            {person.primaryRole}
+          </span>
         )}
       </div>
     </div>

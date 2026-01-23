@@ -25,16 +25,16 @@ if (!connectionString) {
 // Normalize status values to match ENUM
 function normalizeStatus(status) {
   const statusMap = {
-    'Going': 'Yes',
-    'Not Going': 'No',
-    'Not invited yet': 'Not Invited'
+    Going: "Yes",
+    "Not Going": "No",
+    "Not invited yet": "Not Invited",
   };
   return statusMap[status] || status;
 }
 
 async function restoreStudentsAsStaff() {
   console.log("[Restore Students as Staff] Starting...");
-  
+
   let connection;
   let db;
 
@@ -47,14 +47,18 @@ async function restoreStudentsAsStaff() {
 
     // Read seed-people.json
     console.log("📖 Reading seed-people.json...");
-    const allPeople = JSON.parse(readFileSync(join(__dirname, "seed-people.json"), "utf-8"));
-    
+    const allPeople = JSON.parse(
+      readFileSync(join(__dirname, "seed-people.json"), "utf-8")
+    );
+
     // Filter for students
     const students = allPeople.filter(p => p.role === "Student");
     console.log(`📋 Found ${students.length} students in seed file\n`);
 
     if (students.length === 0) {
-      console.log("[Restore Students as Staff] No students found in seed file.");
+      console.log(
+        "[Restore Students as Staff] No students found in seed file."
+      );
       await connection.end();
       return;
     }
@@ -86,7 +90,9 @@ async function restoreStudentsAsStaff() {
           primaryRole: "Staff", // Changed from "Student" to "Staff"
           status: normalizeStatus(student.status),
           createdAt: new Date(),
-          statusLastUpdated: student.lastUpdated ? new Date(student.lastUpdated) : new Date(),
+          statusLastUpdated: student.lastUpdated
+            ? new Date(student.lastUpdated)
+            : new Date(),
           depositPaid: false,
           spouseAttending: false,
           childrenCount: 0,
@@ -98,24 +104,30 @@ async function restoreStudentsAsStaff() {
         };
 
         // Insert or update (in case person already exists)
-        await db.insert(people).values(personData).onDuplicateKeyUpdate({
-          set: {
-            name: personData.name,
-            primaryRole: personData.primaryRole, // Ensure it's "Staff"
-            primaryCampusId: personData.primaryCampusId,
-            primaryDistrictId: personData.primaryDistrictId,
-            primaryRegion: personData.primaryRegion,
-            status: personData.status,
-            statusLastUpdated: personData.statusLastUpdated,
-          },
-        });
+        await db
+          .insert(people)
+          .values(personData)
+          .onDuplicateKeyUpdate({
+            set: {
+              name: personData.name,
+              primaryRole: personData.primaryRole, // Ensure it's "Staff"
+              primaryCampusId: personData.primaryCampusId,
+              primaryDistrictId: personData.primaryDistrictId,
+              primaryRegion: personData.primaryRegion,
+              status: personData.status,
+              statusLastUpdated: personData.statusLastUpdated,
+            },
+          });
 
         successCount++;
         if (successCount % 50 === 0) {
           console.log(`  Processed ${successCount}/${students.length}...`);
         }
       } catch (error) {
-        console.warn(`⚠️  Failed to restore ${student.name} (ID: ${student.id}):`, error.message);
+        console.warn(
+          `⚠️  Failed to restore ${student.name} (ID: ${student.id}):`,
+          error.message
+        );
         errorCount++;
       }
     }
@@ -125,12 +137,15 @@ async function restoreStudentsAsStaff() {
       console.log(`⚠️  ${errorCount} people failed to restore`);
     }
     console.log("[Restore Students as Staff] Done!");
-    
+
     await connection.end();
   } catch (error) {
     console.error("[Restore Students as Staff] Error:", error);
     if (error instanceof Error) {
-      console.error("[Restore Students as Staff] Error message:", error.message);
+      console.error(
+        "[Restore Students as Staff] Error message:",
+        error.message
+      );
     }
     if (connection) {
       await connection.end();

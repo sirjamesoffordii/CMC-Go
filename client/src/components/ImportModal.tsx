@@ -1,6 +1,12 @@
 // @ts-nocheck
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, AlertCircle, CheckCircle, X } from "lucide-react";
 import Papa from "papaparse";
@@ -33,7 +39,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   const utils = trpc.useUtils();
 
   const importMutation = trpc.people.importCSV.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       setResults(data);
       setImporting(false);
       // Refresh all data
@@ -46,7 +52,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
       utils.followUp.list.invalidate();
       utils.people.getNational.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       console.error("Import failed:", error);
       setImporting(false);
     },
@@ -63,20 +69,22 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
     Papa.parse(selectedFile, {
       header: true,
       skipEmptyLines: true,
-      complete: (result) => {
+      complete: result => {
         const rows = result.data as any[];
-        const mapped: CSVRow[] = rows.map((row) => ({
-          name: row.name || row.Name || "",
-          campus: row.campus || row.Campus || undefined,
-          district: row.district || row.District || undefined,
-          role: row.role || row.Role || undefined,
-          status: (row.status || row.Status) as CSVRow["status"],
-          notes: row.notes || row.Notes || undefined,
-        })).filter(row => row.name); // Filter out rows without names
+        const mapped: CSVRow[] = rows
+          .map(row => ({
+            name: row.name || row.Name || "",
+            campus: row.campus || row.Campus || undefined,
+            district: row.district || row.District || undefined,
+            role: row.role || row.Role || undefined,
+            status: (row.status || row.Status) as CSVRow["status"],
+            notes: row.notes || row.Notes || undefined,
+          }))
+          .filter(row => row.name); // Filter out rows without names
 
         setParsedData(mapped);
       },
-      error: (error) => {
+      error: error => {
         console.error("CSV parse error:", error);
       },
     });
@@ -101,13 +109,13 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
         <DialogHeader>
           <DialogTitle>Import Contacts</DialogTitle>
           <DialogDescription>
-            Upload a CSV file with contacts. Required: <strong>name</strong>. Optional: campus, district, role, status, notes.
-            <br />
-            • <strong>Campus + District:</strong> Campus-level assignment
-            <br />
-            • <strong>District only (no campus):</strong> District-level (appears in "No Campus Assigned" column)
-            <br />
-            • <strong>No district/campus:</strong> National-level assignment
+            Upload a CSV file with contacts. Required: <strong>name</strong>.
+            Optional: campus, district, role, status, notes.
+            <br />• <strong>Campus + District:</strong> Campus-level assignment
+            <br />• <strong>District only (no campus):</strong> District-level
+            (appears in "No Campus Assigned" column)
+            <br />• <strong>No district/campus:</strong> National-level
+            assignment
           </DialogDescription>
         </DialogHeader>
 
@@ -178,8 +186,12 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                           <td className="p-2 text-muted-foreground">
                             {row.district || <em>National</em>}
                           </td>
-                          <td className="p-2 text-muted-foreground">{row.role || "-"}</td>
-                          <td className="p-2 text-muted-foreground">{row.status || "Not Invited"}</td>
+                          <td className="p-2 text-muted-foreground">
+                            {row.role || "-"}
+                          </td>
+                          <td className="p-2 text-muted-foreground">
+                            {row.status || "Not Invited"}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -219,7 +231,9 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                 </div>
                 <div className="border rounded-lg p-4 text-center">
                   <X className="w-8 h-8 mx-auto mb-2 text-red-500" />
-                  <div className="text-2xl font-bold">{results.errors.length}</div>
+                  <div className="text-2xl font-bold">
+                    {results.errors.length}
+                  </div>
                   <div className="text-sm text-muted-foreground">Errors</div>
                 </div>
               </div>

@@ -40,7 +40,3 @@ pnpm db:push:yes
 pnpm db:check
 pnpm db:verify
 ```
-
-
-
-

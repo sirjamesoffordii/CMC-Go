@@ -15,16 +15,20 @@ Goal: preserve confidence while keeping Issue/PR comments short.
   - first failure location (if fail)
 
 ## Recommended “evidence blocks”
+
 ### Implementation PR description
+
 - **What changed:** 2-5 bullets
 - **How verified:** commands + short result
 - **Risk:** 1-2 lines
 
 ### Peer verification PR comment
+
 - **Result:** Pass / Fail / Pass-with-notes
 - **Evidence:** commands run + short result
 - **Notes/Risks:** brief
 
 ## Never do
+
 - Don't paste secrets.
 - Don't paste multi-page logs; link to CI/Railway/Sentry instead.

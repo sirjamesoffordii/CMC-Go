@@ -8,13 +8,25 @@ import type { User } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { people } from "../../drizzle/schema";
 
-export type UserRole = "STAFF" | "CO_DIRECTOR" | "CAMPUS_DIRECTOR" | "DISTRICT_DIRECTOR" | "REGION_DIRECTOR" | "ADMIN";
+export type UserRole =
+  | "STAFF"
+  | "CO_DIRECTOR"
+  | "CAMPUS_DIRECTOR"
+  | "DISTRICT_DIRECTOR"
+  | "REGION_DIRECTOR"
+  | "ADMIN";
 
 /**
  * Check if a role is a leader role (CO_DIRECTOR+)
  */
 export function isLeaderRole(role: UserRole): boolean {
-  return ["CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"].includes(role);
+  return [
+    "CO_DIRECTOR",
+    "CAMPUS_DIRECTOR",
+    "DISTRICT_DIRECTOR",
+    "REGION_DIRECTOR",
+    "ADMIN",
+  ].includes(role);
 }
 
 /**
@@ -122,7 +134,10 @@ export function canEditNational(user: User): boolean {
  * Check if approver can approve a District Director
  * Approver must be ACTIVE REGION_DIRECTOR in same region
  */
-export function canApproveDistrictDirector(approverUser: User, targetUser: User): boolean {
+export function canApproveDistrictDirector(
+  approverUser: User,
+  targetUser: User
+): boolean {
   if (!approverUser || approverUser.approvalStatus !== "ACTIVE") {
     return false;
   }
@@ -143,7 +158,10 @@ export function canApproveDistrictDirector(approverUser: User, targetUser: User)
  * Check if approver can approve a Region Director
  * Approver must be ADMIN
  */
-export function canApproveRegionDirector(approverUser: User, targetUser: User): boolean {
+export function canApproveRegionDirector(
+  approverUser: User,
+  targetUser: User
+): boolean {
   if (!approverUser || approverUser.approvalStatus !== "ACTIVE") {
     return false;
   }
@@ -159,7 +177,12 @@ export function canApproveRegionDirector(approverUser: User, targetUser: User): 
  * Check if user can view invite notes for a person
  * Based on editing scope - if they can edit the person's campus/district/region, they can view notes
  */
-export function canViewInviteNotes(user: User, personDistrictId: string | null, personCampusId: number | null, personRegion: string | null): boolean {
+export function canViewInviteNotes(
+  user: User,
+  personDistrictId: string | null,
+  personCampusId: number | null,
+  personRegion: string | null
+): boolean {
   if (!user || !isLeaderRole(user.role)) {
     return false; // Only leaders can view invite notes
   }
@@ -199,7 +222,11 @@ export function canViewInviteNotes(user: User, personDistrictId: string | null, 
 /**
  * Check if user can view a need based on visibility
  */
-export function canViewNeed(user: User | null, needVisibility: "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE", personDistrictId: string | null): boolean {
+export function canViewNeed(
+  user: User | null,
+  needVisibility: "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE",
+  personDistrictId: string | null
+): boolean {
   // Public users cannot view needs
   if (!user) {
     return false;
@@ -233,7 +260,8 @@ export type PeopleScope =
 
 function normalizeRole(role: string) {
   // Campus-level roles - all normalize to appropriate campus scope role
-  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR")
+    return "CAMPUS_DIRECTOR";
   if (role === "CAMPUS_VOLUNTEER" || role === "CAMPUS_INTERN") return "STAFF";
 
   // District-level roles
@@ -259,26 +287,44 @@ const FULL_ACCESS = new Set([
  * Get people scope for a user based on their role and assignments
  * Determines what people data the user can access
  */
-export function getPeopleScope(user: { role: string; campusId?: number | null; districtId?: string | null; regionId?: string | null }): PeopleScope {
+export function getPeopleScope(user: {
+  role: string;
+  campusId?: number | null;
+  districtId?: string | null;
+  regionId?: string | null;
+}): PeopleScope {
   const role = normalizeRole(user.role);
 
   if (FULL_ACCESS.has(role)) return { level: "ALL" };
 
   if (role === "DISTRICT_DIRECTOR") {
     if (user.regionId) return { level: "REGION", regionId: user.regionId };
-    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
-    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+    if (user.districtId)
+      return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId != null)
+      return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Access denied: no scope assigned",
+    });
   }
 
   if (role === "CAMPUS_DIRECTOR") {
-    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
-    if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
-    throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+    if (user.districtId)
+      return { level: "DISTRICT", districtId: user.districtId };
+    if (user.campusId != null)
+      return { level: "CAMPUS", campusId: user.campusId };
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Access denied: no scope assigned",
+    });
   }
 
   // STAFF default
-  if (user.campusId != null) return { level: "CAMPUS", campusId: user.campusId };
-  throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: no scope assigned" });
+  if (user.campusId != null)
+    return { level: "CAMPUS", campusId: user.campusId };
+  throw new TRPCError({
+    code: "FORBIDDEN",
+    message: "Access denied: no scope assigned",
+  });
 }
-

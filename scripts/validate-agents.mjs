@@ -60,7 +60,9 @@ function parseFrontmatter(content, filePath) {
     const inlineArrayMatch = line.match(/^(\w+):\s*\[(.+)\]$/);
     if (inlineArrayMatch) {
       const [, key, arrayContent] = inlineArrayMatch;
-      result[key] = arrayContent.split(",").map((s) => s.trim().replace(/['"]/g, ""));
+      result[key] = arrayContent
+        .split(",")
+        .map(s => s.trim().replace(/['"]/g, ""));
       currentKey = null;
       currentArray = null;
       continue;
@@ -178,7 +180,7 @@ function main() {
   // Validate agent files
   if (existsSync(AGENTS_DIR)) {
     const agentFiles = readdirSync(AGENTS_DIR).filter(
-      (f) => f.endsWith(".md") && f !== "README.md"
+      f => f.endsWith(".md") && f !== "README.md"
     );
 
     for (const file of agentFiles) {
@@ -195,7 +197,7 @@ function main() {
   // Validate prompt files
   if (existsSync(PROMPTS_DIR)) {
     const promptFiles = readdirSync(PROMPTS_DIR).filter(
-      (f) => f.endsWith(".md") && f !== "README.md"
+      f => f.endsWith(".md") && f !== "README.md"
     );
 
     for (const file of promptFiles) {

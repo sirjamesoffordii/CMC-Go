@@ -11,7 +11,7 @@ export interface DistrictStats {
 /**
  * Calculate district statistics from a list of people.
  * This ensures consistent stats calculation across tooltips, panels, and map metrics.
- * 
+ *
  * @param people - Array of people to calculate stats from
  * @param districtId - District ID to filter by (if null, uses all people)
  * @returns DistrictStats object with counts for each status
@@ -78,4 +78,3 @@ export function toDistrictPanelStats(stats: DistrictStats): DistrictPanelStats {
     notInvited: stats.notInvited,
   };
 }
-

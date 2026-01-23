@@ -5,11 +5,13 @@ This guide provides step-by-step verification that the database layer is working
 ## Prerequisites
 
 1. **DATABASE_URL** must be set in `.env` file:
+
    ```
    DATABASE_URL=mysql://user:password@host:port/database
    ```
 
 2. **Database must exist** (create manually if needed):
+
    ```sql
    CREATE DATABASE your_database_name;
    ```
@@ -28,6 +30,7 @@ pnpm db:setup
 ```
 
 **Expected Output:**
+
 ```
 ✓ Connected to MySQL database
 📄 Running 0000_initial_schema.sql...
@@ -38,6 +41,7 @@ pnpm db:setup
 ```
 
 **If you see errors:**
+
 - Check DATABASE_URL is correct
 - Verify database exists
 - Check user permissions
@@ -54,6 +58,7 @@ pnpm dev
 ```
 
 **Expected Output:**
+
 ```
 [DB Health] Performing startup database health check...
 [DB Health] ✅ Database health check passed
@@ -64,6 +69,7 @@ Server running on http://localhost:3000/
 ```
 
 **If health check fails:**
+
 - Run `pnpm db:check` to see detailed schema issues
 - Verify migrations ran: `pnpm db:migrate`
 - Check error messages for missing tables/columns
@@ -80,6 +86,7 @@ Invoke-WebRequest -Uri "http://localhost:3000/api/debug/db-health" | Select-Obje
 ```
 
 **Expected Response:**
+
 ```json
 {
   "success": true,
@@ -114,6 +121,7 @@ SELECT COUNT(*) as settings_count FROM settings;
 ```
 
 **Expected Results (after seed):**
+
 - `districts`: ~20 rows
 - `campuses`: ~40-60 rows
 - `people`: ~100-200 rows
@@ -151,6 +159,7 @@ SELECT COUNT(*) as settings_count FROM settings;
    Should show the newly created person with correct `personId`, `name`, `status`, etc.
 
 **If create operations fail:**
+
 - Check browser console for errors
 - Check server logs for database errors
 - Verify `createPerson` and `createCampus` return insertId correctly
@@ -167,6 +176,7 @@ pnpm db:check
 ```
 
 **Expected Output:**
+
 ```
 ✓ Connected to database
 
@@ -186,6 +196,7 @@ pnpm db:check
 ```
 
 **If columns are missing:**
+
 - Run `pnpm db:migrate` to apply migrations
 - Or run `pnpm db:push:yes` to push schema directly
 - Verify `drizzle/schema.ts` matches what you expect
@@ -195,25 +206,30 @@ pnpm db:check
 ## Troubleshooting
 
 ### Error: "DATABASE_URL environment variable is required"
+
 - Create `.env` file in project root
 - Add: `DATABASE_URL=mysql://user:password@host:port/database`
 
 ### Error: "Table 'X' does not exist"
+
 - Run: `pnpm db:migrate`
 - Or: `pnpm db:push:yes`
 - Verify migrations ran successfully
 
 ### Error: "Missing required columns"
+
 - Check `drizzle/schema.ts` for expected columns
 - Run: `pnpm db:generate` then `pnpm db:migrate`
 - Or: `pnpm db:push:yes` to sync schema
 
 ### Error: "Failed to get insert ID from database"
+
 - Check that `createPerson`/`createCampus` return `result[0].insertId`
 - Verify MySQL connection is working
 - Check server logs for detailed error messages
 
 ### Server won't start after health check fails
+
 - This is expected behavior - health check prevents starting with broken schema
 - Fix schema issues first, then server will start
 - Run `pnpm db:check` to see what's wrong
@@ -246,7 +262,6 @@ Invoke-WebRequest -Uri "http://localhost:3000/api/debug/db-health"
 ✅ Health endpoint returns `errors: []`  
 ✅ Can create campus from UI and see it in database  
 ✅ Can create person from UI and see it in database  
-✅ Table counts match expected values after seed  
+✅ Table counts match expected values after seed
 
 If all criteria pass, the database layer is correctly configured! 🎉
-

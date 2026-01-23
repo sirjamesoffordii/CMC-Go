@@ -21,7 +21,8 @@ playwright-report/
 .env.production.local
 
 # IDE and editor files
-.vscode/
+# Note: .vscode is committed for team consistency (tasks, extensions, settings)
+# Personal settings like launch.json should use !.vscode/ pattern if needed
 .idea/
 *.swp
 *.swo

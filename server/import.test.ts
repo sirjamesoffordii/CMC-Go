@@ -14,7 +14,7 @@ describe("CSV Import", () => {
     ];
 
     const result = await importPeople(testData);
-    
+
     expect(result.imported + result.skipped).toBeGreaterThan(0);
     expect(Array.isArray(result.errors)).toBe(true);
   });
@@ -29,7 +29,7 @@ describe("CSV Import", () => {
     ];
 
     const result = await importPeople(testData);
-    
+
     expect(result.imported).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(result.errors)).toBe(true);
   });
@@ -45,10 +45,10 @@ describe("CSV Import", () => {
 
     // Import once
     const result1 = await importPeople(testData);
-    
+
     // Import again - should skip
     const result2 = await importPeople(testData);
-    
+
     // Either skipped or both succeeded (if first one failed)
     expect(result2.skipped + result2.imported).toBeGreaterThan(0);
   });
@@ -63,7 +63,7 @@ describe("CSV Import", () => {
     ];
 
     const result = await importPeople(testData);
-    
+
     // Current importer does not validate campus/district values; it imports with null assignments.
     expect(result.imported + result.skipped).toBeGreaterThan(0);
     expect(Array.isArray(result.errors)).toBe(true);

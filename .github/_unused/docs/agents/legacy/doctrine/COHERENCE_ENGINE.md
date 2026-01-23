@@ -1,6 +1,6 @@
 **The Coherence Engine**
 
-*Governing AI-Driven Software Systems with Enforced Truth, Evidence, and Durability*
+_Governing AI-Driven Software Systems with Enforced Truth, Evidence, and Durability_
 
 Version: 1.0 (January 2026\)
 

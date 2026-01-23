@@ -1,12 +1,25 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, FileText, CheckCircle, XCircle, AlertCircle, Download } from "lucide-react";
+import {
+  Upload,
+  FileText,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
@@ -33,7 +46,15 @@ export default function Import() {
   const [result, setResult] = useState<ImportResult | null>(null);
 
   // Check if user is a leader
-  const isLeader = user && ["CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"].includes(user.role);
+  const isLeader =
+    user &&
+    [
+      "CO_DIRECTOR",
+      "CAMPUS_DIRECTOR",
+      "DISTRICT_DIRECTOR",
+      "REGION_DIRECTOR",
+      "ADMIN",
+    ].includes(user.role);
 
   if (loading) {
     return (
@@ -65,7 +86,7 @@ export default function Import() {
     if (selectedFile) {
       setFile(selectedFile);
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = event => {
         const text = event.target?.result as string;
         setCsvText(text);
       };
@@ -102,7 +123,9 @@ export default function Import() {
       setResult(data);
 
       if (data.errorCount === 0) {
-        toast.success(`Import completed: ${data.createdCount} created, ${data.updatedCount} updated`);
+        toast.success(
+          `Import completed: ${data.createdCount} created, ${data.updatedCount} updated`
+        );
       } else {
         toast.warning(`Import completed with ${data.errorCount} errors`);
       }
@@ -118,7 +141,7 @@ export default function Import() {
     if (!result || result.errors.length === 0) return;
 
     const errorsCsv = Papa.unparse(
-      result.errors.map((e) => ({
+      result.errors.map(e => ({
         Row: e.row,
         Error: e.message,
       }))
@@ -139,7 +162,8 @@ export default function Import() {
         <CardHeader>
           <CardTitle>Import People from CSV</CardTitle>
           <CardDescription>
-            Upload a CSV file to import or update people. The import is idempotent - re-importing the same file won't create duplicates.
+            Upload a CSV file to import or update people. The import is
+            idempotent - re-importing the same file won't create duplicates.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -202,20 +226,36 @@ export default function Import() {
                 <AlertDescription>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                     <div>
-                      <div className="text-2xl font-bold text-green-600">{result.createdCount}</div>
-                      <div className="text-sm text-muted-foreground">Created</div>
+                      <div className="text-2xl font-bold text-green-600">
+                        {result.createdCount}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Created
+                      </div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-blue-600">{result.updatedCount}</div>
-                      <div className="text-sm text-muted-foreground">Updated</div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {result.updatedCount}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Updated
+                      </div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-gray-600">{result.skippedCount}</div>
-                      <div className="text-sm text-muted-foreground">Skipped</div>
+                      <div className="text-2xl font-bold text-gray-600">
+                        {result.skippedCount}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Skipped
+                      </div>
                     </div>
                     <div>
-                      <div className="text-2xl font-bold text-red-600">{result.errorCount}</div>
-                      <div className="text-sm text-muted-foreground">Errors</div>
+                      <div className="text-2xl font-bold text-red-600">
+                        {result.errorCount}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Errors
+                      </div>
                     </div>
                   </div>
                 </AlertDescription>
@@ -239,15 +279,21 @@ export default function Import() {
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 sticky top-0">
                         <tr>
-                          <th className="px-4 py-2 text-left font-medium">Row</th>
-                          <th className="px-4 py-2 text-left font-medium">Error</th>
+                          <th className="px-4 py-2 text-left font-medium">
+                            Row
+                          </th>
+                          <th className="px-4 py-2 text-left font-medium">
+                            Error
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {result.errors.map((error, idx) => (
                           <tr key={idx} className="border-t">
                             <td className="px-4 py-2 font-mono">{error.row}</td>
-                            <td className="px-4 py-2 text-red-600">{error.message}</td>
+                            <td className="px-4 py-2 text-red-600">
+                              {error.message}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -264,19 +310,34 @@ export default function Import() {
             <div className="text-sm text-muted-foreground space-y-1">
               <p>Required columns:</p>
               <ul className="list-disc list-inside ml-2">
-                <li><code>name</code> - Person's full name (required)</li>
+                <li>
+                  <code>name</code> - Person's full name (required)
+                </li>
               </ul>
               <p className="mt-2">Optional columns:</p>
               <ul className="list-disc list-inside ml-2">
-                <li><code>email</code> - Email address (for matching)</li>
-                <li><code>phone</code> - Phone number (for matching)</li>
-                <li><code>campusId</code> - Campus ID (number)</li>
-                <li><code>districtId</code> - District ID (string)</li>
-                <li><code>regionId</code> - Region ID (string)</li>
-                <li><code>status</code> - Status: Yes, Maybe, No, or Not Invited</li>
+                <li>
+                  <code>email</code> - Email address (for matching)
+                </li>
+                <li>
+                  <code>phone</code> - Phone number (for matching)
+                </li>
+                <li>
+                  <code>campusId</code> - Campus ID (number)
+                </li>
+                <li>
+                  <code>districtId</code> - District ID (string)
+                </li>
+                <li>
+                  <code>regionId</code> - Region ID (string)
+                </li>
+                <li>
+                  <code>status</code> - Status: Yes, Maybe, No, or Not Invited
+                </li>
               </ul>
               <p className="mt-2 text-xs">
-                Note: Import respects your permission scope. You can only import people within your allowed campus/district/region.
+                Note: Import respects your permission scope. You can only import
+                people within your allowed campus/district/region.
               </p>
             </div>
           </div>
@@ -285,4 +346,3 @@ export default function Import() {
     </div>
   );
 }
-

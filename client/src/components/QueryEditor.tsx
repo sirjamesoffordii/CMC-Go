@@ -72,7 +72,7 @@ export function QueryEditor({
             className="bg-muted/50 border-r p-3 text-right text-xs text-muted-foreground font-mono select-none overflow-hidden"
             style={{ width: "50px" }}
           >
-            {lineNumbers.map((num) => (
+            {lineNumbers.map(num => (
               <div key={num} className="h-6 leading-6">
                 {num}
               </div>
@@ -83,7 +83,7 @@ export function QueryEditor({
             <textarea
               ref={textareaRef}
               value={value}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={e => onChange(e.target.value)}
               onKeyDown={handleKeyDown}
               onScroll={handleScroll}
               placeholder={placeholder}

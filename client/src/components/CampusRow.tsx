@@ -17,7 +17,10 @@ import {
 interface CampusRowProps {
   campus: Campus;
   people: Person[];
-  onPersonStatusChange: (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => void;
+  onPersonStatusChange: (
+    personId: string,
+    newStatus: "Yes" | "Maybe" | "No" | "Not Invited"
+  ) => void;
   onPersonAdd?: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onPersonEdit?: (person: Person) => void;
@@ -69,8 +72,10 @@ export function CampusRow({
 
     switch (sortBy) {
       case "status":
-        const statusOrder = { "Yes": 0, "Maybe": 1, "No": 2, "Not Invited": 3 };
-        return peopleCopy.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+        const statusOrder = { Yes: 0, Maybe: 1, No: 2, "Not Invited": 3 };
+        return peopleCopy.sort(
+          (a, b) => statusOrder[a.status] - statusOrder[b.status]
+        );
 
       case "name":
         return peopleCopy.sort((a, b) => a.name.localeCompare(b.name));
@@ -103,7 +108,13 @@ export function CampusRow({
         {!isVirtual && (
           <div className="relative">
             <button
-              onClick={() => setOpenMenuId(openMenuId === campus.id.toString() ? null : campus.id.toString())}
+              onClick={() =>
+                setOpenMenuId(
+                  openMenuId === campus.id.toString()
+                    ? null
+                    : campus.id.toString()
+                )
+              }
               className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
             >
               <MoreVertical className="w-4 h-4 text-gray-300 hover:text-gray-500" />
@@ -133,7 +144,9 @@ export function CampusRow({
                       </button>
                       <button
                         onClick={() => {
-                          const ok = window.confirm(`Delete campus "${campus.name}"? People on this campus will no longer be assigned to it.`);
+                          const ok = window.confirm(
+                            `Delete campus "${campus.name}"? People on this campus will no longer be assigned to it.`
+                          );
                           if (ok) {
                             deleteCampus.mutate({ id: campus.id });
                           }
@@ -147,7 +160,9 @@ export function CampusRow({
                       <div className="border-t border-gray-200 my-1"></div>
                     </>
                   )}
-                  <div className="px-4 py-1 text-xs text-gray-500 font-medium">Sort by</div>
+                  <div className="px-4 py-1 text-xs text-gray-500 font-medium">
+                    Sort by
+                  </div>
                   <button
                     onClick={() => {
                       setSortBy("status");
@@ -186,11 +201,13 @@ export function CampusRow({
 
         <h3 className="font-medium text-gray-900 truncate" title={campus.name}>
           {isVirtual ? (
-            <span className="font-medium text-gray-500 italic">{campus.name}</span>
+            <span className="font-medium text-gray-500 italic">
+              {campus.name}
+            </span>
           ) : (
             <EditableText
               value={campus.name}
-              onSave={(newName) => {
+              onSave={newName => {
                 updateCampusName.mutate({ id: campus.id, name: newName });
               }}
               className="font-medium text-gray-900"
@@ -203,7 +220,7 @@ export function CampusRow({
       {/* Person Icons */}
       <div className="flex-1 min-w-0 overflow-x-auto overflow-y-visible">
         <div className="flex items-center gap-2 min-h-[60px] min-w-max">
-          {sortedPeople.map((person) => (
+          {sortedPeople.map(person => (
             <PersonIcon
               key={person.personId}
               person={person}
@@ -220,29 +237,33 @@ export function CampusRow({
                 onClick={handleAddPerson}
                 className="flex flex-col items-center w-[50px]"
               >
-                <div className="h-[18px]"></div> {/* Spacer to match name label height */}
+                <div className="h-[18px]"></div>{" "}
+                {/* Spacer to match name label height */}
                 <div className="relative">
-                  <User 
-                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95" 
-                    strokeWidth={1} 
+                  <User
+                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                    strokeWidth={1}
                     fill="none"
                     stroke="currentColor"
                   />
-                  <User 
-                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                    strokeWidth={1} 
+                  <User
+                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                    strokeWidth={1}
                     fill="none"
                     stroke="currentColor"
                   />
-                  <User 
-                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none" 
-                    strokeWidth={0} 
+                  <User
+                    className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                    strokeWidth={0}
                     fill="currentColor"
                     style={{
-                      filter: 'drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))',
+                      filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
                     }}
                   />
-                  <Plus className="w-5 h-5 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 transition-opacity" strokeWidth={1.5} />
+                  <Plus
+                    className="w-5 h-5 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 transition-opacity"
+                    strokeWidth={1.5}
+                  />
                 </div>
               </button>
               {/* Label - Absolutely positioned, shown on hover */}
@@ -256,4 +277,3 @@ export function CampusRow({
     </div>
   );
 }
-

@@ -8,56 +8,59 @@ applyTo: "**"
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `pnpm dev` | Start dev server (wt-main only) |
-| `pnpm check` | TypeScript check |
-| `pnpm test` | Run unit tests |
-| `pnpm e2e` | Playwright smoke tests |
-| `pnpm db:push:yes` | Push schema to dev DB |
-| `pnpm db:seed` | Seed dev database |
-| `pnpm db:reset` | Reset database |
-| `pnpm validate:agents` | Validate agent files |
+| Command                | Purpose                         |
+| ---------------------- | ------------------------------- |
+| `pnpm dev`             | Start dev server (wt-main only) |
+| `pnpm check`           | TypeScript check                |
+| `pnpm lint`            | ESLint check                    |
+| `pnpm test`            | Run unit tests                  |
+| `pnpm e2e`             | Playwright smoke tests          |
+| `pnpm db:push:yes`     | Push schema to dev DB           |
+| `pnpm db:seed`         | Seed dev database               |
+| `pnpm db:reset`        | Reset database                  |
+| `pnpm validate:agents` | Validate agent files            |
+| `docker-compose up -d` | Start local MySQL (optional)    |
 
 ## Evidence gates
 
-| Change type | Minimum evidence |
-|-------------|------------------|
-| TypeScript only | `pnpm check` |
-| Server/client logic | `pnpm check` + `pnpm test` |
-| UI flow changed | Above + `pnpm e2e` |
-| Schema change | Above + `pnpm db:push:yes` |
+| Change type         | Minimum evidence                  |
+| ------------------- | --------------------------------- |
+| TypeScript only     | `pnpm check`                      |
+| Server/client logic | `pnpm check` + `pnpm test`        |
+| UI flow changed     | Above + `pnpm e2e`                |
+| Schema change       | Above + `pnpm db:push:yes`        |
+| Any code change     | `pnpm lint` (auto via pre-commit) |
 
 ## Verification levels
 
-| Label | Who verifies | Evidence |
-|-------|--------------|----------|
-| `verify:v0` | Author | Self-verify + evidence |
-| `verify:v1` | Peer | Approval + evidence |
-| `verify:v2` | Peer | Approval + `evidence:*` labels |
+| Label       | Who verifies | Evidence                       |
+| ----------- | ------------ | ------------------------------ |
+| `verify:v0` | Author       | Self-verify + evidence         |
+| `verify:v1` | Peer         | Approval + evidence            |
+| `verify:v2` | Peer         | Approval + `evidence:*` labels |
 
 ## Worktree naming (Mode A only)
 
-| Worktree | Purpose |
-|----------|---------|
-| `wt-main` | Dev server only |
-| `wt-impl-<issue#>-<slug>` | Implementation |
-| `wt-verify-<pr#>-<slug>` | Verification |
-| `wt-docs-<YYYY-MM-DD>` | Docs changes |
+| Worktree                  | Purpose         |
+| ------------------------- | --------------- |
+| `wt-main`                 | Dev server only |
+| `wt-impl-<issue#>-<slug>` | Implementation  |
+| `wt-verify-<pr#>-<slug>`  | Verification    |
+| `wt-docs-<YYYY-MM-DD>`    | Docs changes    |
 
 ## Branch naming
 
-| Actor | Pattern |
-|-------|---------|
-| Agent | `agent/<agent>/<issue#>-<slug>` |
-| User | `user/sir-james/<issue#>-<slug>` |
+| Actor | Pattern                          |
+| ----- | -------------------------------- |
+| Agent | `agent/<agent>/<issue#>-<slug>`  |
+| User  | `user/sir-james/<issue#>-<slug>` |
 
 ## Commit prefix
 
-| Actor | Prefix |
-|-------|--------|
-| Agent | `agent(<agent>): <summary>` |
-| User | `user(sir-james): <summary>` |
+| Actor | Prefix                       |
+| ----- | ---------------------------- |
+| Agent | `agent(<agent>): <summary>`  |
+| User  | `user(sir-james): <summary>` |
 
 ## Hard invariants (never break)
 
@@ -67,13 +70,13 @@ applyTo: "**"
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `AGENTS.md` | Operating policy |
-| `.github/agents/CMC_GO_BRIEF.md` | Product snapshot |
+| File                                | Purpose           |
+| ----------------------------------- | ----------------- |
+| `AGENTS.md`                         | Operating policy  |
+| `.github/agents/CMC_GO_BRIEF.md`    | Product snapshot  |
 | `.github/agents/CMC_GO_PATTERNS.md` | Pitfalls/patterns |
-| `drizzle/schema.ts` | Database schema |
-| `server/routers.ts` | API surface |
+| `drizzle/schema.ts`                 | Database schema   |
+| `server/routers.ts`                 | API surface       |
 
 ## Escalation template
 
@@ -94,7 +97,7 @@ applyTo: "**"
 Closes #<issue>
 
 ## What changed
-- 
+-
 
 ## How verified
 pnpm check

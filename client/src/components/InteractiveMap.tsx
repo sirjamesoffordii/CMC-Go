@@ -17,29 +17,32 @@ interface InteractiveMapProps {
 
 // Base region label positions - closest to map (for 1 metric active)
 // The map roughly occupies: x: 180-880, y: 120-500 in the 960x600 viewBox
-const baseRegionPositions: Record<string, { 
-  baseX: number; 
-  baseY: number;
-  labelDirection: 'above' | 'below' | 'left' | 'right';
-}> = {
+const baseRegionPositions: Record<
+  string,
+  {
+    baseX: number;
+    baseY: number;
+    labelDirection: "above" | "below" | "left" | "right";
+  }
+> = {
   // TOP ROW - pushed away from map edge to prevent overlap
-  "Northwest": { baseX: 200, baseY: 80, labelDirection: 'above' },
-  "Big Sky": { baseX: 380, baseY: 80, labelDirection: 'above' },
-  "Great Plains North": { baseX: 540, baseY: 80, labelDirection: 'above' },
-  "Great Plains South": { baseX: 680, baseY: 80, labelDirection: 'above' },
-  "Great Lakes": { baseX: 780, baseY: 100, labelDirection: 'above' },
-  
+  Northwest: { baseX: 200, baseY: 80, labelDirection: "above" },
+  "Big Sky": { baseX: 380, baseY: 80, labelDirection: "above" },
+  "Great Plains North": { baseX: 540, baseY: 80, labelDirection: "above" },
+  "Great Plains South": { baseX: 680, baseY: 80, labelDirection: "above" },
+  "Great Lakes": { baseX: 780, baseY: 100, labelDirection: "above" },
+
   // RIGHT SIDE - pushed away from map edge
-  "Northeast": { baseX: 900, baseY: 200, labelDirection: 'right' },
-  "Mid-Atlantic": { baseX: 900, baseY: 330, labelDirection: 'right' },
-  "Southeast": { baseX: 915, baseY: 470, labelDirection: 'right' },
-  
+  Northeast: { baseX: 900, baseY: 200, labelDirection: "right" },
+  "Mid-Atlantic": { baseX: 900, baseY: 330, labelDirection: "right" },
+  Southeast: { baseX: 915, baseY: 470, labelDirection: "right" },
+
   // LEFT SIDE - pushed away from map edge
-  "West Coast": { baseX: 100, baseY: 300, labelDirection: 'left' },
-  
+  "West Coast": { baseX: 100, baseY: 300, labelDirection: "left" },
+
   // BOTTOM ROW - closer to map edge
-  "Texico": { baseX: 420, baseY: 500, labelDirection: 'below' },
-  "South Central": { baseX: 640, baseY: 500, labelDirection: 'below' },
+  Texico: { baseX: 420, baseY: 500, labelDirection: "below" },
+  "South Central": { baseX: 640, baseY: 500, labelDirection: "below" },
 };
 
 // Map boundaries (from comment: x: 180-880, y: 120-500 in 960x600 viewBox)
@@ -48,7 +51,7 @@ const MAP_BOUNDS = {
   right: 880,
   top: 120,
   bottom: 500,
-  viewBoxHeight: 600
+  viewBoxHeight: 600,
 };
 
 // Metric label bounds for collision detection
@@ -58,7 +61,7 @@ interface MetricBounds {
   y: number;
   width: number;
   height: number;
-  direction: 'above' | 'below' | 'left' | 'right';
+  direction: "above" | "below" | "left" | "right";
 }
 
 // Check if two bounds overlap
@@ -78,55 +81,67 @@ const getMetricBounds = (
   labelX: number,
   labelY: number,
   totalHeight: number,
-  direction: 'above' | 'below' | 'left' | 'right'
+  direction: "above" | "below" | "left" | "right"
 ): MetricBounds => {
   const metricWidth = 80;
   const metricHeight = totalHeight;
-  
+
   let x = labelX - metricWidth / 2;
   let y = labelY - metricHeight / 2;
   let width = metricWidth;
   let height = metricHeight;
-  
+
   // Adjust based on direction to include the full label area
-  if (direction === 'above') {
+  if (direction === "above") {
     y = labelY - metricHeight;
     height = metricHeight;
-  } else if (direction === 'below') {
+  } else if (direction === "below") {
     y = labelY;
     height = metricHeight;
-  } else if (direction === 'left') {
+  } else if (direction === "left") {
     x = labelX - metricWidth;
     width = metricWidth;
-  } else if (direction === 'right') {
+  } else if (direction === "right") {
     x = labelX;
     width = metricWidth;
   }
-  
+
   return { region, x, y, width, height, direction };
 };
 
 // Resolve collisions by shifting positions intelligently
 const resolveCollisions = (
   bounds: MetricBounds[],
-  basePositions: Record<string, { baseX: number; baseY: number; labelDirection: 'above' | 'below' | 'left' | 'right' }>
+  basePositions: Record<
+    string,
+    {
+      baseX: number;
+      baseY: number;
+      labelDirection: "above" | "below" | "left" | "right";
+    }
+  >
 ): MetricBounds[] => {
   const resolved = bounds.map(b => ({ ...b }));
   const maxIterations = 30;
   const shiftStep = 3;
   const minSpacing = 10;
-  
+
   // Store center positions for easier manipulation
-  const centers: Array<{ x: number; y: number; region: string; direction: string }> = resolved.map(b => ({
+  const centers: Array<{
+    x: number;
+    y: number;
+    region: string;
+    direction: string;
+  }> = resolved.map(b => ({
     x: b.x + b.width / 2,
     y: b.y + b.height / 2,
     region: b.region,
-    direction: b.direction
+    direction: b.direction,
   }));
-  
+
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     let hasCollision = false;
-    
+
     for (let i = 0; i < resolved.length; i++) {
       for (let j = i + 1; j < resolved.length; j++) {
         if (boundsOverlap(resolved[i], resolved[j])) {
@@ -134,7 +149,7 @@ const resolveCollisions = (
           const baseI = basePositions[resolved[i].region];
           const baseJ = basePositions[resolved[j].region];
           if (!baseI || !baseJ) continue;
-          
+
           // Calculate overlap amount
           const overlapX = Math.min(
             resolved[i].x + resolved[i].width - resolved[j].x,
@@ -144,13 +159,19 @@ const resolveCollisions = (
             resolved[i].y + resolved[i].height - resolved[j].y,
             resolved[j].y + resolved[j].height - resolved[i].y
           );
-          
+
           // Determine shift direction based on label direction and overlap
-          let shiftIX = 0, shiftIY = 0, shiftJX = 0, shiftJY = 0;
-          
+          let shiftIX = 0,
+            shiftIY = 0,
+            shiftJX = 0,
+            shiftJY = 0;
+
           // For labels in same direction, shift them apart
           if (baseI.labelDirection === baseJ.labelDirection) {
-            if (baseI.labelDirection === 'above' || baseI.labelDirection === 'below') {
+            if (
+              baseI.labelDirection === "above" ||
+              baseI.labelDirection === "below"
+            ) {
               // Shift horizontally
               const dx = centers[j].x - centers[i].x;
               if (Math.abs(dx) < minSpacing) {
@@ -173,101 +194,130 @@ const resolveCollisions = (
             }
           } else {
             // Different directions - shift perpendicular to avoid map
-            if (baseI.labelDirection === 'above' || baseI.labelDirection === 'below') {
-              shiftIX = overlapX > overlapY ? (centers[j].x > centers[i].x ? -shiftStep : shiftStep) : 0;
-              shiftIY = overlapX <= overlapY ? (centers[j].y > centers[i].y ? -shiftStep : shiftStep) : 0;
+            if (
+              baseI.labelDirection === "above" ||
+              baseI.labelDirection === "below"
+            ) {
+              shiftIX =
+                overlapX > overlapY
+                  ? centers[j].x > centers[i].x
+                    ? -shiftStep
+                    : shiftStep
+                  : 0;
+              shiftIY =
+                overlapX <= overlapY
+                  ? centers[j].y > centers[i].y
+                    ? -shiftStep
+                    : shiftStep
+                  : 0;
             } else {
-              shiftIX = overlapX <= overlapY ? (centers[j].x > centers[i].x ? -shiftStep : shiftStep) : 0;
-              shiftIY = overlapX > overlapY ? (centers[j].y > centers[i].y ? -shiftStep : shiftStep) : 0;
+              shiftIX =
+                overlapX <= overlapY
+                  ? centers[j].x > centers[i].x
+                    ? -shiftStep
+                    : shiftStep
+                  : 0;
+              shiftIY =
+                overlapX > overlapY
+                  ? centers[j].y > centers[i].y
+                    ? -shiftStep
+                    : shiftStep
+                  : 0;
             }
           }
-          
+
           // Apply shifts
           centers[i].x += shiftIX;
           centers[i].y += shiftIY;
           centers[j].x += shiftJX;
           centers[j].y += shiftJY;
-          
+
           // Recalculate bounds from centers
           resolved[i] = getMetricBounds(
             resolved[i].region,
             centers[i].x,
             centers[i].y,
             resolved[i].height,
-            resolved[i].direction as 'above' | 'below' | 'left' | 'right'
+            resolved[i].direction as "above" | "below" | "left" | "right"
           );
           resolved[j] = getMetricBounds(
             resolved[j].region,
             centers[j].x,
             centers[j].y,
             resolved[j].height,
-            resolved[j].direction as 'above' | 'below' | 'left' | 'right'
+            resolved[j].direction as "above" | "below" | "left" | "right"
           );
         }
       }
     }
-    
+
     if (!hasCollision) break;
   }
-  
+
   return resolved;
 };
 
 // Dynamic positioning function with collision detection
 const getDynamicPosition = (
-  region: string, 
+  region: string,
   activeMetricCount: number,
   totalHeight: number,
   allRegions: string[],
   allTotalHeights: Record<string, number>
-): { labelX: number; labelY: number; labelDirection: 'above' | 'below' | 'left' | 'right' } => {
+): {
+  labelX: number;
+  labelY: number;
+  labelDirection: "above" | "below" | "left" | "right";
+} => {
   const base = baseRegionPositions[region];
-  if (!base) return { labelX: 0, labelY: 0, labelDirection: 'above' };
-  
+  if (!base) return { labelX: 0, labelY: 0, labelDirection: "above" };
+
   let labelX = base.baseX;
   let labelY = base.baseY;
-  
+
   // Calculate metric bounds
   const metricWidth = 80;
   const metricPadding = 15; // Minimum padding from map edge
   const textHeight = totalHeight;
-  
+
   // Check if metrics would overlap with map and calculate required offset
   let requiredOffset = 0;
-  
+
   switch (base.labelDirection) {
-    case 'above': {
-      const metricBottom = labelY + (textHeight / 2);
+    case "above": {
+      const metricBottom = labelY + textHeight / 2;
       if (metricBottom > MAP_BOUNDS.top - metricPadding) {
         requiredOffset = metricBottom - (MAP_BOUNDS.top - metricPadding);
       }
       labelY -= requiredOffset;
       break;
     }
-    case 'below': {
-      const metricTop = labelY - (textHeight / 2);
+    case "below": {
+      const metricTop = labelY - textHeight / 2;
       const wouldTouchMap = metricTop < MAP_BOUNDS.bottom + metricPadding;
-      const wouldGoOffScreen = labelY + (textHeight / 2) > MAP_BOUNDS.viewBoxHeight - 15;
-      
+      const wouldGoOffScreen =
+        labelY + textHeight / 2 > MAP_BOUNDS.viewBoxHeight - 15;
+
       if (wouldGoOffScreen) {
-        requiredOffset = (labelY + (textHeight / 2)) - (MAP_BOUNDS.viewBoxHeight - 15);
+        requiredOffset =
+          labelY + textHeight / 2 - (MAP_BOUNDS.viewBoxHeight - 15);
         labelY -= requiredOffset;
       } else if (wouldTouchMap) {
-        requiredOffset = (MAP_BOUNDS.bottom + metricPadding) - metricTop;
+        requiredOffset = MAP_BOUNDS.bottom + metricPadding - metricTop;
         labelY += requiredOffset;
       }
       break;
     }
-    case 'right': {
-      const metricLeft = labelX - (metricWidth / 2);
+    case "right": {
+      const metricLeft = labelX - metricWidth / 2;
       if (metricLeft < MAP_BOUNDS.right + metricPadding) {
-        requiredOffset = (MAP_BOUNDS.right + metricPadding) - metricLeft;
+        requiredOffset = MAP_BOUNDS.right + metricPadding - metricLeft;
       }
       labelX += requiredOffset;
       break;
     }
-    case 'left': {
-      const metricRight = labelX + (metricWidth / 2);
+    case "left": {
+      const metricRight = labelX + metricWidth / 2;
       if (metricRight > MAP_BOUNDS.left - metricPadding) {
         requiredOffset = metricRight - (MAP_BOUNDS.left - metricPadding);
       }
@@ -275,53 +325,54 @@ const getDynamicPosition = (
       break;
     }
   }
-  
+
   // Now check for collisions with other regions
   const allBounds: MetricBounds[] = [];
-  
+
   // First, calculate all initial positions
   allRegions.forEach(r => {
     const rBase = baseRegionPositions[r];
     if (!rBase) return;
-    
+
     let rX = rBase.baseX;
     let rY = rBase.baseY;
     const rHeight = allTotalHeights[r] || 0;
-    
+
     // Apply map boundary adjustments
     let rOffset = 0;
     switch (rBase.labelDirection) {
-      case 'above': {
-        const rMetricBottom = rY + (rHeight / 2);
+      case "above": {
+        const rMetricBottom = rY + rHeight / 2;
         if (rMetricBottom > MAP_BOUNDS.top - metricPadding) {
           rOffset = rMetricBottom - (MAP_BOUNDS.top - metricPadding);
         }
         rY -= rOffset;
         break;
       }
-      case 'below': {
-        const rMetricTop = rY - (rHeight / 2);
+      case "below": {
+        const rMetricTop = rY - rHeight / 2;
         const rWouldTouchMap = rMetricTop < MAP_BOUNDS.bottom + metricPadding;
-        const rWouldGoOffScreen = rY + (rHeight / 2) > MAP_BOUNDS.viewBoxHeight - 15;
+        const rWouldGoOffScreen =
+          rY + rHeight / 2 > MAP_BOUNDS.viewBoxHeight - 15;
         if (rWouldGoOffScreen) {
-          rOffset = (rY + (rHeight / 2)) - (MAP_BOUNDS.viewBoxHeight - 15);
+          rOffset = rY + rHeight / 2 - (MAP_BOUNDS.viewBoxHeight - 15);
           rY -= rOffset;
         } else if (rWouldTouchMap) {
-          rOffset = (MAP_BOUNDS.bottom + metricPadding) - rMetricTop;
+          rOffset = MAP_BOUNDS.bottom + metricPadding - rMetricTop;
           rY += rOffset;
         }
         break;
       }
-      case 'right': {
-        const rMetricLeft = rX - (metricWidth / 2);
+      case "right": {
+        const rMetricLeft = rX - metricWidth / 2;
         if (rMetricLeft < MAP_BOUNDS.right + metricPadding) {
-          rOffset = (MAP_BOUNDS.right + metricPadding) - rMetricLeft;
+          rOffset = MAP_BOUNDS.right + metricPadding - rMetricLeft;
         }
         rX += rOffset;
         break;
       }
-      case 'left': {
-        const rMetricRight = rX + (metricWidth / 2);
+      case "left": {
+        const rMetricRight = rX + metricWidth / 2;
         if (rMetricRight > MAP_BOUNDS.left - metricPadding) {
           rOffset = rMetricRight - (MAP_BOUNDS.left - metricPadding);
         }
@@ -329,77 +380,84 @@ const getDynamicPosition = (
         break;
       }
     }
-    
+
     allBounds.push(getMetricBounds(r, rX, rY, rHeight, rBase.labelDirection));
   });
-  
+
   // Resolve collisions
   const resolvedBounds = resolveCollisions(allBounds, baseRegionPositions);
-  
+
   // Find the resolved position for this region
   const resolved = resolvedBounds.find(b => b.region === region);
   if (resolved) {
     labelX = resolved.x + resolved.width / 2;
     labelY = resolved.y + resolved.height / 2;
   }
-  
+
   return { labelX, labelY, labelDirection: base.labelDirection };
 };
 
 // District centroids for pie chart positioning (based on new SVG)
 const districtCentroids: Record<string, { x: number; y: number }> = {
-  "Alabama": { x: 646, y: 376 },
-  "Alaska": { x: 110, y: 92 },
-  "Appalachian": { x: 707, y: 266 },
-  "Arizona": { x: 284, y: 330 },
-  "Arkansas": { x: 577, y: 333 },
-  "Colorado": { x: 406, y: 274 },
-  "Georgia": { x: 698, y: 363 },
-  "Hawaii": { x: 122, y: 380 },
-  "Illinois": { x: 600, y: 254 },
-  "Indiana": { x: 638, y: 257 },
-  "Iowa": { x: 560, y: 216 },
-  "Kansas": { x: 498, y: 274 },
-  "Kentucky": { x: 645, y: 279 },
-  "Louisiana": { x: 585, y: 408 },
-  "Michigan": { x: 649, y: 166 },
-  "Minnesota": { x: 543, y: 133 },
-  "Mississippi": { x: 602, y: 373 },
-  "Montana": { x: 322, y: 134 },
-  "Nebraska": { x: 475, y: 223 },
-  "NewJersey": { x: 781, y: 223 },
-  "NewMexico": { x: 370, y: 353 },
-  "NewYork": { x: 762, y: 178 },
-  "NorthCarolina": { x: 742, y: 302 },
-  "NorthDakota": { x: 478, y: 126 },
+  Alabama: { x: 646, y: 376 },
+  Alaska: { x: 110, y: 92 },
+  Appalachian: { x: 707, y: 266 },
+  Arizona: { x: 284, y: 330 },
+  Arkansas: { x: 577, y: 333 },
+  Colorado: { x: 406, y: 274 },
+  Georgia: { x: 698, y: 363 },
+  Hawaii: { x: 122, y: 380 },
+  Illinois: { x: 600, y: 254 },
+  Indiana: { x: 638, y: 257 },
+  Iowa: { x: 560, y: 216 },
+  Kansas: { x: 498, y: 274 },
+  Kentucky: { x: 645, y: 279 },
+  Louisiana: { x: 585, y: 408 },
+  Michigan: { x: 649, y: 166 },
+  Minnesota: { x: 543, y: 133 },
+  Mississippi: { x: 602, y: 373 },
+  Montana: { x: 322, y: 134 },
+  Nebraska: { x: 475, y: 223 },
+  NewJersey: { x: 781, y: 223 },
+  NewMexico: { x: 370, y: 353 },
+  NewYork: { x: 762, y: 178 },
+  NorthCarolina: { x: 742, y: 302 },
+  NorthDakota: { x: 478, y: 126 },
   "NorthernCal-Nevada": { x: 199, y: 246 },
-  "NorthernNewEnglend": { x: 818, y: 122 },
-  "NorthernNewEngland": { x: 818, y: 122 },
-  "NorthernMissouri": { x: 557, y: 262 },
-  "NorthTexas": { x: 501, y: 367 },
-  "Ohio": { x: 686, y: 235 },
-  "Oklahoma": { x: 494, y: 335 },
-  "Oregon": { x: 230, y: 139 },
-  "PeninsularFlorida": { x: 725, y: 428 },
+  NorthernNewEnglend: { x: 818, y: 122 },
+  NorthernNewEngland: { x: 818, y: 122 },
+  NorthernMissouri: { x: 557, y: 262 },
+  NorthTexas: { x: 501, y: 367 },
+  Ohio: { x: 686, y: 235 },
+  Oklahoma: { x: 494, y: 335 },
+  Oregon: { x: 230, y: 139 },
+  PeninsularFlorida: { x: 725, y: 428 },
   "Penn-Del": { x: 750, y: 207 },
-  "Potomac": { x: 757, y: 254 },
-  "SouthCarolina": { x: 719, y: 337 },
-  "SouthDakota": { x: 480, y: 185 },
-  "SouthernCalifornia": { x: 228, y: 313 },
-  "SouthernNewEngland": { x: 806, y: 180 },
-  "SouthIdaho": { x: 299, y: 156 },
-  "SouthernMissouri": { x: 581, y: 291 },
-  "SouthTexas": { x: 503, y: 430 },
-  "Tennessee": { x: 650, y: 312 },
-  "Utah": { x: 323, y: 239 },
-  "Washington": { x: 238, y: 100 },
-  "WestFlorida": { x: 666, y: 401 },
-  "WestTexas": { x: 422, y: 390 },
+  Potomac: { x: 757, y: 254 },
+  SouthCarolina: { x: 719, y: 337 },
+  SouthDakota: { x: 480, y: 185 },
+  SouthernCalifornia: { x: 228, y: 313 },
+  SouthernNewEngland: { x: 806, y: 180 },
+  SouthIdaho: { x: 299, y: 156 },
+  SouthernMissouri: { x: 581, y: 291 },
+  SouthTexas: { x: 503, y: 430 },
+  Tennessee: { x: 650, y: 312 },
+  Utah: { x: 323, y: 239 },
+  Washington: { x: 238, y: 100 },
+  WestFlorida: { x: 666, y: 401 },
+  WestTexas: { x: 422, y: 390 },
   "Wisconsin-NorthMichigan": { x: 597, y: 154 },
-  "Wyoming": { x: 377, y: 195 },
+  Wyoming: { x: 377, y: 195 },
 };
 
-export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect, onBackgroundClick, onNationalClick, viewState }: InteractiveMapProps) {
+export function InteractiveMap({
+  districts,
+  selectedDistrictId,
+  onDistrictSelect,
+  onBackgroundClick,
+  onNationalClick,
+  viewState,
+}: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
@@ -407,34 +465,39 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   const [svgContent, setSvgContent] = useState<string>("");
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
-  
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
+    null
+  );
+
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
-  
+
   // Hovered region for metric labels (shows region name on hover)
-  const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(null);
-  
+  const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(
+    null
+  );
+
   // Protected queries: only run when authenticated (public map uses aggregate endpoints)
   const { data: allPeople = [] } = trpc.people.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false,
   });
-  
+
   // Fetch all campuses to count campuses per district
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery(undefined, {
     enabled: isAuthenticated,
     retry: false,
   });
-  
+
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
-  
+
   // Fetch aggregate district and region metrics (public - everyone can see these)
   // These must be declared BEFORE useMemo hooks that use them
-  const { data: allDistrictMetrics = [] } = trpc.metrics.allDistricts.useQuery();
+  const { data: allDistrictMetrics = [] } =
+    trpc.metrics.allDistricts.useQuery();
   const { data: allRegionMetrics = [] } = trpc.metrics.allRegions.useQuery();
-  
+
   // Calculate national totals - ensure all people are counted accurately
   // Total should be the sum of all statuses (each person belongs to exactly one status)
   const nationalTotals = useMemo(() => {
@@ -498,7 +561,9 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
     // Verify totals match allPeople.length (should always be true)
     if (total !== allPeople.length) {
-      console.warn(`[Metrics] Total mismatch: sum of statuses ${total}, actual people count ${allPeople.length}.`);
+      console.warn(
+        `[Metrics] Total mismatch: sum of statuses ${total}, actual people count ${allPeople.length}.`
+      );
     }
 
     // Use server metrics if available and totals match
@@ -532,23 +597,28 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       invited,
     };
   }, [allPeople, serverMetrics, allRegionMetrics]);
-  
-  const showPublicPlaceholder = !isAuthenticated && allRegionMetrics.length === 0;
-  const showOverlayPlaceholder = !isAuthenticated && allDistrictMetrics.length === 0;
-  const invitedPercent = nationalTotals.total > 0 
-    ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
-    : 0;
-  
+
+  const showPublicPlaceholder =
+    !isAuthenticated && allRegionMetrics.length === 0;
+  const showOverlayPlaceholder =
+    !isAuthenticated && allDistrictMetrics.length === 0;
+  const invitedPercent =
+    nationalTotals.total > 0
+      ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
+      : 0;
+
   // Calculate days until CMC
-  const cmcDate = new Date('2026-07-06');
+  const cmcDate = new Date("2026-07-06");
   const today = new Date();
-  const daysUntilCMC = Math.abs(Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
-  
+  const daysUntilCMC = Math.abs(
+    Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  );
+
   // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
   // Everyone can see regional aggregate numbers
   const regionalTotals = useMemo(() => {
     const totals: Record<string, typeof nationalTotals> = {};
-    
+
     // Use aggregate region metrics if available (works for everyone)
     if (allRegionMetrics.length > 0) {
       for (const metric of allRegionMetrics) {
@@ -566,17 +636,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       // Initialize all regions from districts in database
       districts.forEach(district => {
         if (district.region && !totals[district.region]) {
-          totals[district.region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+          totals[district.region] = {
+            yes: 0,
+            maybe: 0,
+            no: 0,
+            notInvited: 0,
+            total: 0,
+            invited: 0,
+          };
         }
       });
-      
+
       // Also initialize regions from the constant DISTRICT_REGION_MAP (for districts not yet in database)
       Object.values(DISTRICT_REGION_MAP).forEach(region => {
         if (!totals[region]) {
-          totals[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0, invited: 0 };
+          totals[region] = {
+            yes: 0,
+            maybe: 0,
+            no: 0,
+            notInvited: 0,
+            total: 0,
+            invited: 0,
+          };
         }
       });
-      
+
       // Group people by region using district lookup
       // Use both database districts and the constant mapping
       const DISTRICT_REGION_MAPLocal = new Map<string, string>();
@@ -591,15 +675,15 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           DISTRICT_REGION_MAPLocal.set(districtId, region);
         }
       });
-      
+
       // Count people by region and status
       allPeople.forEach(person => {
         const districtId = person.primaryDistrictId;
         if (!districtId) return; // Skip people without a district
-        
+
         const region = DISTRICT_REGION_MAPLocal.get(districtId);
         if (!region || !totals[region]) return; // Skip if no region or region not initialized
-        
+
         // Count this person in the appropriate status bucket
         const status = person.status || "Not Invited";
         switch (status) {
@@ -623,24 +707,30 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         }
         totals[region].total++;
       });
-      
+
       // Recalculate totals as sum of statuses for each region to ensure accuracy
       Object.keys(totals).forEach(region => {
         const regionTotals = totals[region];
-        regionTotals.total = regionTotals.yes + regionTotals.maybe + regionTotals.no + regionTotals.notInvited;
-        regionTotals.invited = regionTotals.yes + regionTotals.maybe + regionTotals.no;
+        regionTotals.total =
+          regionTotals.yes +
+          regionTotals.maybe +
+          regionTotals.no +
+          regionTotals.notInvited;
+        regionTotals.invited =
+          regionTotals.yes + regionTotals.maybe + regionTotals.no;
       });
     }
-    
+
     return totals;
   }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
-  
+
   // Get displayed totals (regional if hovering, otherwise national)
-  const displayedTotals = hoveredRegion && regionalTotals[hoveredRegion] 
-    ? regionalTotals[hoveredRegion] 
-    : nationalTotals;
+  const displayedTotals =
+    hoveredRegion && regionalTotals[hoveredRegion]
+      ? regionalTotals[hoveredRegion]
+      : nationalTotals;
   const displayedLabel = hoveredRegion || "Chi Alpha";
-  
+
   const toggleMetric = (metric: string) => {
     setActiveMetrics(prev => {
       const next = new Set(prev);
@@ -652,7 +742,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       return next;
     });
   };
-  
+
   const clearAllMetrics = () => {
     setActiveMetrics(new Set());
   };
@@ -660,7 +750,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
     const stats: Record<string, DistrictStats> = {};
-    
+
     // Use aggregate metrics if available (works for everyone, even without people.list access)
     if (allDistrictMetrics.length > 0) {
       for (const metric of allDistrictMetrics) {
@@ -678,7 +768,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         stats[district.id] = calculateDistrictStats(allPeople, district.id);
       });
     }
-    
+
     return stats;
   }, [districts, allPeople, allDistrictMetrics, isAuthenticated]);
 
@@ -691,12 +781,13 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   }, []);
 
   useEffect(() => {
-    if (!svgContent || !svgContainerRef.current || !visualContainerRef.current) return;
+    if (!svgContent || !svgContainerRef.current || !visualContainerRef.current)
+      return;
 
     // Setup click layer (invisible)
     const clickContainer = svgContainerRef.current;
     clickContainer.innerHTML = svgContent;
-    
+
     // Setup visual layer (what user sees)
     const visualContainer = visualContainerRef.current;
     visualContainer.innerHTML = svgContent;
@@ -719,29 +810,31 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     // Regional color mapping – deeper, richer palette with slight brightness
     // Goal: refined colors with more depth and richness, slightly brighter
     const regionColors: Record<string, string> = {
-      "Northwest": "#6295AA",                 // slightly brighter coastal blue
-      "Big Sky": "#8F8257",                   // slightly brighter warm stone
-      "Great Plains North": "#645978",        // slightly brighter purple
-      "Great Lakes": "#56819B",               // slightly brighter steel blue
-      "Great Plains South": "#B0944E",        // slightly brighter golden wheat
-      "Mid-Atlantic": "#A8705C",              // slightly brighter terracotta clay
-      "Northeast": "#AB5470",                 // slightly brighter rose
-      "South Central": "#9F5A57",             // slightly brighter brick
-      "Southeast": "#568969",                 // slightly brighter sage
-      "Texico": "#9F588A",                    // slightly brighter pink-purple magenta
-      "West Coast": "#A77649",                // slightly brighter warm amber
+      Northwest: "#6295AA", // slightly brighter coastal blue
+      "Big Sky": "#8F8257", // slightly brighter warm stone
+      "Great Plains North": "#645978", // slightly brighter purple
+      "Great Lakes": "#56819B", // slightly brighter steel blue
+      "Great Plains South": "#B0944E", // slightly brighter golden wheat
+      "Mid-Atlantic": "#A8705C", // slightly brighter terracotta clay
+      Northeast: "#AB5470", // slightly brighter rose
+      "South Central": "#9F5A57", // slightly brighter brick
+      Southeast: "#568969", // slightly brighter sage
+      Texico: "#9F588A", // slightly brighter pink-purple magenta
+      "West Coast": "#A77649", // slightly brighter warm amber
     };
 
     // Premium map styling constants - vibrant, pop style
-    const BORDER_COLOR = "rgba(255,255,255,0.85)";  // brighter white borders for more contrast
-    const BORDER_WIDTH = "0.2";          // thinner borders for cleaner look
-    const BORDER_WIDTH_HOVER = "0.45";      // more prominent on hover
+    const BORDER_COLOR = "rgba(255,255,255,0.85)"; // brighter white borders for more contrast
+    const BORDER_WIDTH = "0.2"; // thinner borders for cleaner look
+    const BORDER_WIDTH_HOVER = "0.45"; // more prominent on hover
     const BORDER_WIDTH_SELECTED = "0.55"; // strong prominence for selected
     const TRANSITION = "all 300ms cubic-bezier(0.4, 0, 0.2, 1)"; // smooth, consistent transitions
-    const DIM_OPACITY = "0.95";            // shadow overlay on hover (reduced for brighter map)
+    const DIM_OPACITY = "0.95"; // shadow overlay on hover (reduced for brighter map)
     const DIM_FILTER = "brightness(0.92)"; // Slight shadow-like darkening on hover (reduced for brighter map)
-    const LIFT_FILTER = "saturate(1.1) brightness(1.06) drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))"; // Smooth, professional raised effect - very slightly brighter
-    const SELECTED_FILTER = "saturate(1.15) brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
+    const LIFT_FILTER =
+      "saturate(1.1) brightness(1.06) drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))"; // Smooth, professional raised effect - very slightly brighter
+    const SELECTED_FILTER =
+      "saturate(1.15) brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
     const GREYED_OUT_FILTER = "saturate(0.85) brightness(0.9)"; // More noticeable dimming for contrast
     const GREYED_OUT_OPACITY = "0.85"; // More visible opacity reduction
 
@@ -750,17 +843,21 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const activeRegionId = viewState?.regionId || null;
     const activeDistrictId = viewState?.districtId || selectedDistrictId;
     const activeCampusId = viewState?.campusId || null;
-    
+
     // For campus mode, find the district containing the active campus
     let activeDistrictForCampus: string | null = null;
     if (viewState?.mode === "campus" && activeCampusId) {
       const campus = allCampuses.find(c => c.id === activeCampusId);
       activeDistrictForCampus = campus?.districtId || null;
     }
-    
+
     // Get selected district's region for greyed out effect (fallback to legacy behavior)
     const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
-    const selectedRegion = selectedDistrict?.region || (selectedDistrictId ? DISTRICT_REGION_MAP[selectedDistrictId] : undefined);
+    const selectedRegion =
+      selectedDistrict?.region ||
+      (selectedDistrictId
+        ? DISTRICT_REGION_MAP[selectedDistrictId]
+        : undefined);
 
     // Create district lookup map for performance
     const districtMap = new Map(districts.map(d => [d.id, d]));
@@ -769,14 +866,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     visualPaths.forEach(path => {
       const pathId =
         path.getAttribute("inkscape:label") ||
-        path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+        path.getAttributeNS(
+          "http://www.inkscape.org/namespaces/inkscape",
+          "label"
+        ) ||
         path.getAttribute("id");
       if (!pathId) return;
 
       const district = districtMap.get(pathId);
       // Get region from district in database, or from mapping if not in database yet
       const region = district?.region || DISTRICT_REGION_MAP[pathId];
-      const baseColor = region ? (regionColors[region] || "#e5e7eb") : "#e5e7eb";
+      const baseColor = region ? regionColors[region] || "#e5e7eb" : "#e5e7eb";
 
       path.style.fill = baseColor;
       path.style.stroke = BORDER_COLOR;
@@ -791,17 +891,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       if (pathId === "Alaska") {
         path.style.transform = "scale(1) translateY(5px)";
       } else {
-      path.style.transform = "scale(1) translateY(0)";
+        path.style.transform = "scale(1) translateY(0)";
       }
 
       // View mode dimming logic
       let shouldDim = false;
       let isSelected = false;
-      
+
       if (viewState) {
         const pathDistrict = districtMap.get(pathId);
         const pathRegion = pathDistrict?.region || DISTRICT_REGION_MAP[pathId];
-        
+
         switch (viewState.mode) {
           case "region":
             // Region mode: only active region fully visible
@@ -814,7 +914,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               shouldDim = false;
             }
             break;
-            
+
           case "district":
             // District mode: only districts in active region fully visible
             if (activeRegionId) {
@@ -823,7 +923,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             } else if (activeDistrictId) {
               // Fallback: use selected district's region
               const activeDistrict = districtMap.get(activeDistrictId);
-              const activeRegion = activeDistrict?.region || DISTRICT_REGION_MAP[activeDistrictId];
+              const activeRegion =
+                activeDistrict?.region || DISTRICT_REGION_MAP[activeDistrictId];
               isSelected = pathId === activeDistrictId;
               shouldDim = pathRegion !== activeRegion;
             } else {
@@ -831,7 +932,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               shouldDim = false;
             }
             break;
-            
+
           case "campus":
             // Campus mode: only district containing active campus fully visible
             if (activeDistrictForCampus) {
@@ -855,7 +956,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           shouldDim = false;
         }
       }
-      
+
       // Apply styling based on dimming logic
       if (isSelected) {
         path.style.filter = SELECTED_FILTER;
@@ -873,7 +974,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     clickPaths.forEach(path => {
       const pathId =
         path.getAttribute("inkscape:label") ||
-        path.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+        path.getAttributeNS(
+          "http://www.inkscape.org/namespaces/inkscape",
+          "label"
+        ) ||
         path.getAttribute("id");
       if (!pathId) return;
 
@@ -881,7 +985,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const district = districtMap.get(pathId);
 
       path.style.cursor = "pointer";
-      
+
       // Click handler - allow clicking even if district not in database
       const clickHandler = (e: MouseEvent) => {
         e.stopPropagation();
@@ -892,44 +996,59 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       // Get region once for this path
       const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
 
-       // Hover behavior: focus district, highlight region, dim others
+      // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
         setHoveredDistrict(pathId);
         if (pathRegion) {
           setHoveredRegion(pathRegion);
         }
         setTooltipPos({ x: e.clientX, y: e.clientY });
-        
+
         visualPaths.forEach(vPath => {
           const vPathId =
             vPath.getAttribute("inkscape:label") ||
-            vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+            vPath.getAttributeNS(
+              "http://www.inkscape.org/namespaces/inkscape",
+              "label"
+            ) ||
             vPath.getAttribute("id");
           if (!vPathId) return;
-          
+
           const vDistrict = districtMap.get(vPathId);
           const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
-          const isInSameRegion = vRegion && pathRegion && vRegion === pathRegion;
+          const isInSameRegion =
+            vRegion && pathRegion && vRegion === pathRegion;
 
           if (vPathId === pathId) {
             // Hovered district - enhanced raised effect
             vPath.style.opacity = "1";
-            vPath.style.filter = selectedDistrictId === pathId ? SELECTED_FILTER : LIFT_FILTER;
-            vPath.style.strokeWidth = selectedDistrictId === pathId ? BORDER_WIDTH_SELECTED : BORDER_WIDTH_HOVER;
+            vPath.style.filter =
+              selectedDistrictId === pathId ? SELECTED_FILTER : LIFT_FILTER;
+            vPath.style.strokeWidth =
+              selectedDistrictId === pathId
+                ? BORDER_WIDTH_SELECTED
+                : BORDER_WIDTH_HOVER;
             // Enhanced transform for raised effect - consistent 3D bottom-side perspective for all
             if (vPathId === "Alaska") {
-              vPath.style.transform = "scale(1.02) translateY(7.3px) scaleY(0.99)";
+              vPath.style.transform =
+                "scale(1.02) translateY(7.3px) scaleY(0.99)";
             } else if (vPathId === "Hawaii") {
-              vPath.style.transform = "scale(1.02) translateY(-0.8px) scaleY(0.99)";
+              vPath.style.transform =
+                "scale(1.02) translateY(-0.8px) scaleY(0.99)";
             } else {
               // Default balanced 3D effect for all districts - consistent with edge districts
-              vPath.style.transform = "scale(1.02) translateY(-0.8px) scaleY(0.99)";
+              vPath.style.transform =
+                "scale(1.02) translateY(-0.8px) scaleY(0.99)";
             }
             vPath.style.transformOrigin = "center";
           } else if (isInSameRegion) {
             // Same region - lighting effect (brighten)
             // BUT: if this is the selected district and we're hovering over a different district, dim it
-            if (selectedDistrictId && vPathId === selectedDistrictId && vPathId !== pathId) {
+            if (
+              selectedDistrictId &&
+              vPathId === selectedDistrictId &&
+              vPathId !== pathId
+            ) {
               // Selected district being hovered over by different district - dim it
               vPath.style.opacity = DIM_OPACITY;
               vPath.style.filter = DIM_FILTER;
@@ -946,7 +1065,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             if (vPathId === "Alaska") {
               vPath.style.transform = "scale(1) translateY(5px)";
             } else {
-            vPath.style.transform = "scale(1) translateY(0)";
+              vPath.style.transform = "scale(1) translateY(0)";
             }
           } else {
             // Other regions - dimmed (but respect selected district greyed out effect)
@@ -954,11 +1073,11 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               const vDistrict = districtMap.get(vPathId);
               const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
               const isInSelectedRegion = vRegion && vRegion === selectedRegion;
-              
+
               if (!isInSelectedRegion) {
                 // Different region from selected - shadow effect (darken)
-            vPath.style.opacity = DIM_OPACITY;
-            vPath.style.filter = DIM_FILTER;
+                vPath.style.opacity = DIM_OPACITY;
+                vPath.style.filter = DIM_FILTER;
               } else {
                 // Same region as selected - but if this IS the selected district and we're hovering a different one, dim it
                 if (vPathId === selectedDistrictId && vPathId !== pathId) {
@@ -981,8 +1100,8 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             if (vPathId === "Alaska") {
               vPath.style.transform = "scale(1) translateY(5px)";
             } else {
-            vPath.style.transform = "scale(1) translateY(0)";
-          }
+              vPath.style.transform = "scale(1) translateY(0)";
+            }
           }
         });
       };
@@ -993,7 +1112,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
       const mouseMoveHandler = (e: MouseEvent) => {
         if (mousemoveTimeout) return;
         mousemoveTimeout = window.setTimeout(() => {
-        setTooltipPos({ x: e.clientX, y: e.clientY });
+          setTooltipPos({ x: e.clientX, y: e.clientY });
           mousemoveTimeout = null;
         }, 16); // ~60fps
       };
@@ -1011,13 +1130,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         visualPaths.forEach(vPath => {
           const vPathId =
             vPath.getAttribute("inkscape:label") ||
-            vPath.getAttributeNS("http://www.inkscape.org/namespaces/inkscape", "label") ||
+            vPath.getAttributeNS(
+              "http://www.inkscape.org/namespaces/inkscape",
+              "label"
+            ) ||
             vPath.getAttribute("id");
           if (!vPathId) return;
 
           const vDistrict = districtMap.get(vPathId);
           const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
-          const isInSelectedRegion = selectedRegion && vRegion && vRegion === selectedRegion;
+          const isInSelectedRegion =
+            selectedRegion && vRegion && vRegion === selectedRegion;
 
           // Restore to selected state styling (with shadow and lighting effects if applicable)
           if (selectedDistrictId && selectedRegion) {
@@ -1034,10 +1157,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
               vPath.style.opacity = DIM_OPACITY;
             }
           } else {
-          if (selectedDistrictId === vPathId) {
-            vPath.style.filter = SELECTED_FILTER;
-          } else {
-            vPath.style.filter = "brightness(1.04)"; // Slightly brighter default
+            if (selectedDistrictId === vPathId) {
+              vPath.style.filter = SELECTED_FILTER;
+            } else {
+              vPath.style.filter = "brightness(1.04)"; // Slightly brighter default
             }
             vPath.style.opacity = "1";
           }
@@ -1047,7 +1170,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           if (vPathId === "Alaska") {
             vPath.style.transform = "scale(1) translateY(5px)";
           } else {
-          vPath.style.transform = "scale(1) translateY(0)";
+            vPath.style.transform = "scale(1) translateY(0)";
           }
         });
       };
@@ -1071,15 +1194,21 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         }
       });
     };
-  }, [svgContent, districts, selectedDistrictId, onDistrictSelect, onNationalClick]);
+  }, [
+    svgContent,
+    districts,
+    selectedDistrictId,
+    onDistrictSelect,
+    onNationalClick,
+  ]);
 
   // Generate pie chart SVG
   const generatePieChart = (stats: DistrictStats, size: number = 40) => {
     const { yes, maybe, no, notInvited, total } = stats;
-    
+
     const radius = size / 2;
     const center = size / 2;
-    
+
     // If no people, show empty gray circle with "No Data" text
     if (total === 0) {
       return `
@@ -1090,7 +1219,7 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
         </svg>
       `;
     }
-    
+
     // Calculate percentages
     const yesPercent = yes / total;
     const maybePercent = maybe / total;
@@ -1099,10 +1228,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
     // Professional status colors - muted, sophisticated palette
     const colors = {
-      yes: "#047857",      // emerald-700 - professional green
-      maybe: "#ca8a04",    // yellow-600 - more yellow tone
-      no: "#b91c1c",       // red-700 - professional red
-      notInvited: "#64748b" // slate-500 - professional gray
+      yes: "#047857", // emerald-700 - professional green
+      maybe: "#ca8a04", // yellow-600 - more yellow tone
+      no: "#b91c1c", // red-700 - professional red
+      notInvited: "#64748b", // slate-500 - professional gray
     };
 
     let currentAngle = -90; // Start at top
@@ -1110,14 +1239,14 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     const createArc = (startAngle: number, endAngle: number, color: string) => {
       const start = (startAngle * Math.PI) / 180;
       const end = (endAngle * Math.PI) / 180;
-      
+
       const x1 = center + radius * Math.cos(start);
       const y1 = center + radius * Math.sin(start);
       const x2 = center + radius * Math.cos(end);
       const y2 = center + radius * Math.sin(end);
-      
+
       const largeArc = endAngle - startAngle > 180 ? 1 : 0;
-      
+
       return `
         <path d="M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z"
               fill="${color}" stroke="white" stroke-width="1" />
@@ -1125,25 +1254,25 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     };
 
     let arcs = "";
-    
+
     if (yesPercent > 0) {
       const angle = yesPercent * 360;
       arcs += createArc(currentAngle, currentAngle + angle, colors.yes);
       currentAngle += angle;
     }
-    
+
     if (maybePercent > 0) {
       const angle = maybePercent * 360;
       arcs += createArc(currentAngle, currentAngle + angle, colors.maybe);
       currentAngle += angle;
     }
-    
+
     if (noPercent > 0) {
       const angle = noPercent * 360;
       arcs += createArc(currentAngle, currentAngle + angle, colors.no);
       currentAngle += angle;
     }
-    
+
     if (notInvitedPercent > 0) {
       const angle = notInvitedPercent * 360;
       arcs += createArc(currentAngle, currentAngle + angle, colors.notInvited);
@@ -1163,10 +1292,10 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
     // Convert ID to display name (e.g., "SouthTexas" -> "South Texas")
     // Handle hyphens: add spaces on both sides
     return districtId
-      .replace(/-/g, ' - ') // Add spaces around hyphens
-      .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between lowercase and uppercase
-      .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2') // Add space between two capitals followed by lowercase
-      .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+      .replace(/-/g, " - ") // Add spaces around hyphens
+      .replace(/([a-z])([A-Z])/g, "$1 $2") // Add space between lowercase and uppercase
+      .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2") // Add space between two capitals followed by lowercase
+      .replace(/\s+/g, " ") // Normalize multiple spaces to single space
       .trim()
       .replace(/^./, str => str.toUpperCase());
   };
@@ -1174,14 +1303,16 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
   // Render tooltip
   const renderTooltip = () => {
     if (!hoveredDistrict || !tooltipPos) return null;
-    
+
     const district = districts.find(d => d.id === hoveredDistrict);
     // Calculate stats using shared utility to ensure consistency with DistrictPanel
     // This handles both districts in the database and districts created on-the-fly
-    const stats = districtStats[hoveredDistrict] || calculateDistrictStats(allPeople, hoveredDistrict);
+    const stats =
+      districtStats[hoveredDistrict] ||
+      calculateDistrictStats(allPeople, hoveredDistrict);
     const invited = stats.yes + stats.maybe + stats.no;
     const pieChartSvg = generatePieChart(stats, 80); // Larger pie chart for tooltip
-    
+
     return (
       <div
         className="fixed z-50 bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
@@ -1190,58 +1321,98 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
           top: tooltipPos.y + 15,
         }}
       >
-          <div className="text-gray-800 mb-3" style={{ fontSize: '18px', fontWeight: 500, letterSpacing: '-0.01em' }}>
+        <div
+          className="text-gray-800 mb-3"
+          style={{
+            fontSize: "18px",
+            fontWeight: 500,
+            letterSpacing: "-0.01em",
+          }}
+        >
           {(() => {
-            const campusCount = allCampuses.filter(c => c.districtId === hoveredDistrict).length;
+            const campusCount = allCampuses.filter(
+              c => c.districtId === hoveredDistrict
+            ).length;
             return (
               <>
                 {getDistrictDisplayName(hoveredDistrict)}
                 {campusCount > 0 && (
-                  <span className="text-gray-600 ml-1" style={{ fontSize: '18px', fontWeight: 400 }}>
-                    ({campusCount} {campusCount === 1 ? 'campus' : 'campuses'})
+                  <span
+                    className="text-gray-600 ml-1"
+                    style={{ fontSize: "18px", fontWeight: 400 }}
+                  >
+                    ({campusCount} {campusCount === 1 ? "campus" : "campuses"})
                   </span>
                 )}
               </>
             );
           })()}
         </div>
-        
+
         {/* Pie Chart and Stats Side by Side */}
         <div className="flex gap-4 items-center">
           {/* Pie Chart */}
           {pieChartSvg && (
-            <div className="flex-shrink-0" dangerouslySetInnerHTML={{ __html: pieChartSvg }} />
+            <div
+              className="flex-shrink-0"
+              dangerouslySetInnerHTML={{ __html: pieChartSvg }}
+            />
           )}
-          
+
           {/* Stats */}
-            <div className="flex-1" style={{ fontSize: '15px', lineHeight: '1.6' }}>
+          <div
+            className="flex-1"
+            style={{ fontSize: "15px", lineHeight: "1.6" }}
+          >
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#047857]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#047857]"></div>
                 <span className="text-gray-600">Going:</span>
               </div>
-                <span className="text-gray-800" style={{ fontWeight: 500, fontSize: '15px' }}>{stats.yes}</span>
+              <span
+                className="text-gray-800"
+                style={{ fontWeight: 500, fontSize: "15px" }}
+              >
+                {stats.yes}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ca8a04]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ca8a04]"></div>
                 <span className="text-gray-600">Maybe:</span>
               </div>
-                <span className="text-gray-800" style={{ fontWeight: 500, fontSize: '15px' }}>{stats.maybe}</span>
+              <span
+                className="text-gray-800"
+                style={{ fontWeight: 500, fontSize: "15px" }}
+              >
+                {stats.maybe}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#b91c1c]"></div>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#b91c1c]"></div>
                 <span className="text-gray-600">Not Going:</span>
               </div>
-                <span className="text-gray-800" style={{ fontWeight: 500, fontSize: '15px' }}>{stats.no}</span>
+              <span
+                className="text-gray-800"
+                style={{ fontWeight: 500, fontSize: "15px" }}
+              >
+                {stats.no}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></div>
-                <span className="text-gray-600 whitespace-nowrap">Not Invited Yet:</span>
+                <div className="w-2.5 h-2.5 rounded-full bg-[#64748b]"></div>
+                <span className="text-gray-600 whitespace-nowrap">
+                  Not Invited Yet:
+                </span>
               </div>
-                <span className="text-gray-800" style={{ fontWeight: 500, fontSize: '15px' }}>{stats.notInvited}</span>
+              <span
+                className="text-gray-800"
+                style={{ fontWeight: 500, fontSize: "15px" }}
+              >
+                {stats.notInvited}
+              </span>
             </div>
           </div>
         </div>
@@ -1251,41 +1422,59 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
 
   return (
     <div className="w-full">
-      <div 
+      <div
         className="relative w-full h-full min-h-[720px]"
         style={{
           // Enhanced elevation effect - stronger shadow for more depth
-          filter: 'drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))',
+          filter:
+            "drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))",
         }}
       >
         {/* Not Yet Invited Count */}
-        <div className="absolute left-6 z-40 flex flex-col gap-1" style={{ top: '16px' }}>
+        <div
+          className="absolute left-6 z-40 flex flex-col gap-1"
+          style={{ top: "16px" }}
+        >
           <div className="flex items-center gap-3">
             {/* Not Invited Toggle */}
             <button
-              onClick={() => toggleMetric('notInvited')}
+              onClick={() => toggleMetric("notInvited")}
               className="flex items-center transition-all duration-200 hover:scale-110"
             >
-              <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 ${
-                activeMetrics.has('notInvited') 
-                  ? 'bg-slate-500 border-slate-500' 
-                  : 'border-slate-300 hover:border-slate-400 bg-white'
-              }`}
-              style={{
-                boxShadow: activeMetrics.has('notInvited') 
-                  ? '0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)' 
-                  : '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)'
-              }}>
-                {activeMetrics.has('notInvited') && (
-                  <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              <div
+                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 ${
+                  activeMetrics.has("notInvited")
+                    ? "bg-slate-500 border-slate-500"
+                    : "border-slate-300 hover:border-slate-400 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("notInvited")
+                    ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                {activeMetrics.has("notInvited") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </div>
             </button>
             <div className="flex flex-col items-start transition-transform duration-200 hover:scale-105 origin-left">
               <span className="text-4xl text-slate-800">
-                <span className="font-semibold">{showPublicPlaceholder ? "—" : displayedTotals.notInvited}</span>{" "}
+                <span className="font-semibold">
+                  {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+                </span>{" "}
                 <span className="font-medium">Not Invited Yet</span>
               </span>
               <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">
@@ -1294,213 +1483,309 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
             </div>
           </div>
         </div>
-        
+
         {/* Top Right Content - Right Aligned */}
         <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2">
           {/* Label above metrics - right aligned */}
           <div className="flex items-center justify-end">
-          <span 
+            <span
               className="text-4xl font-semibold text-slate-800 transition-opacity duration-300 tracking-tight"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-          >
-            {displayedLabel}
-          </span>
-        </div>
-        
+              style={{ fontFamily: "Inter, sans-serif" }}
+            >
+              {displayedLabel}
+            </span>
+          </div>
+
           {/* Metrics section - moved down with more spacing */}
-          <div className="flex flex-col items-end gap-3" style={{ marginTop: '1.75rem' }}>
-        {/* Going */}
-        <button
-          onClick={() => toggleMetric('yes')}
-            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-          style={{ 
-              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
-          }}
-        >
-            <span className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Going</span>
-            <span className="text-4xl font-semibold text-slate-900" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
-              {showPublicPlaceholder ? "—" : displayedTotals.yes}
-            </span>
-            <div className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-            activeMetrics.has('yes') 
-                ? 'bg-emerald-700 border-emerald-700' 
-                : 'border-slate-300 hover:border-emerald-600 bg-white'
-          }`}
-          style={{
-            boxShadow: activeMetrics.has('yes') 
-                ? '0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)'
-          }}>
-            {activeMetrics.has('yes') && (
-              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </div>
-        </button>
-        
-        {/* Maybe */}
-        <button
-          onClick={() => toggleMetric('maybe')}
-            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-          style={{ 
-              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
-          }}
-        >
-            <span className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Maybe</span>
-            <span className="text-3xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
-              {showPublicPlaceholder ? "—" : displayedTotals.maybe}
-            </span>
-            <div className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-            activeMetrics.has('maybe') 
-                ? 'bg-yellow-600 border-yellow-600' 
-                : 'border-slate-300 hover:border-yellow-600 bg-white'
-          }`}
-          style={{
-            boxShadow: activeMetrics.has('maybe') 
-                ? '0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)'
-          }}>
-            {activeMetrics.has('maybe') && (
-              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </div>
-        </button>
-        
-        {/* Not Going */}
-        <button
-          onClick={() => toggleMetric('no')}
-            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-          style={{ 
-              filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))'
-          }}
-        >
-            <span className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight" style={{ lineHeight: '1', minWidth: '6.5rem', textAlign: 'right' }}>Not Going</span>
-            <span className="text-2xl font-semibold text-slate-900 tracking-tight" style={{ lineHeight: '1', minWidth: '4rem', textAlign: 'center' }}>
-              {showPublicPlaceholder ? "—" : displayedTotals.no}
-            </span>
-            <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-            activeMetrics.has('no') 
-                ? 'bg-red-700 border-red-700' 
-                : 'border-slate-300 hover:border-red-700 bg-white'
-          }`}
-          style={{
-            boxShadow: activeMetrics.has('no') 
-                ? '0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)'
-          }}>
-            {activeMetrics.has('no') && (
-              <svg className="w-full h-full text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-          </div>
-        </button>
+          <div
+            className="flex flex-col items-end gap-3"
+            style={{ marginTop: "1.75rem" }}
+          >
+            {/* Going */}
+            <button
+              onClick={() => toggleMetric("yes")}
+              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+              style={{
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+              }}
+            >
+              <span
+                className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "6.5rem",
+                  textAlign: "right",
+                }}
+              >
+                Going
+              </span>
+              <span
+                className="text-4xl font-semibold text-slate-900"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "4rem",
+                  textAlign: "center",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.yes}
+              </span>
+              <div
+                className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                  activeMetrics.has("yes")
+                    ? "bg-emerald-700 border-emerald-700"
+                    : "border-slate-300 hover:border-emerald-600 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("yes")
+                    ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                {activeMetrics.has("yes") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </button>
+
+            {/* Maybe */}
+            <button
+              onClick={() => toggleMetric("maybe")}
+              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+              style={{
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+              }}
+            >
+              <span
+                className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "6.5rem",
+                  textAlign: "right",
+                }}
+              >
+                Maybe
+              </span>
+              <span
+                className="text-3xl font-semibold text-slate-900 tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "4rem",
+                  textAlign: "center",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+              </span>
+              <div
+                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                  activeMetrics.has("maybe")
+                    ? "bg-yellow-600 border-yellow-600"
+                    : "border-slate-300 hover:border-yellow-600 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("maybe")
+                    ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                {activeMetrics.has("maybe") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </button>
+
+            {/* Not Going */}
+            <button
+              onClick={() => toggleMetric("no")}
+              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+              style={{
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+              }}
+            >
+              <span
+                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "6.5rem",
+                  textAlign: "right",
+                }}
+              >
+                Not Going
+              </span>
+              <span
+                className="text-2xl font-semibold text-slate-900 tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "4rem",
+                  textAlign: "center",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.no}
+              </span>
+              <div
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                  activeMetrics.has("no")
+                    ? "bg-red-700 border-red-700"
+                    : "border-slate-300 hover:border-red-700 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("no")
+                    ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                {activeMetrics.has("no") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </button>
           </div>
         </div>
-        
+
         {/* Background click layer - captures clicks on empty space */}
-        <div 
+        <div
           className="absolute inset-0 z-0"
-          onClick={(e) => {
+          onClick={e => {
             // Trigger background click when clicking on empty space
             if (onBackgroundClick) {
               onBackgroundClick();
             }
           }}
         />
-        
+
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
-        <div 
+        <div
           ref={visualContainerRef}
           className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
           style={{
-            filter: 'blur(0.3px)', // Minimal blur to fill tiny gaps while preserving sharp edges
-            transform: selectedDistrictId 
-              ? 'scale(1.05) translateX(0px)' // Larger scale, centered when panel open
-              : 'scale(1.03) translateX(-50px)', // Make map just a tiny bit bigger and shift left
-            transformOrigin: 'center',
+            filter: "blur(0.3px)", // Minimal blur to fill tiny gaps while preserving sharp edges
+            transform: selectedDistrictId
+              ? "scale(1.05) translateX(0px)" // Larger scale, centered when panel open
+              : "scale(1.03) translateX(-50px)", // Make map just a tiny bit bigger and shift left
+            transformOrigin: "center",
           }}
         />
-        
+
         {/* Pie charts layer - removed per user request */}
-        
+
         {/* XAN National Button - Positioned absolutely, transforms with map */}
         {!selectedDistrictId && (
-        <div 
-          className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
-          style={{
-            transform: selectedDistrictId 
-              ? 'scale(1.05) translateX(0px)'
-              : 'scale(1.03) translateX(-50px)',
-            transformOrigin: 'center',
-          }}
-        >
-          <button
-            type="button"
-            aria-label="Open XAN (Chi Alpha National)"
-            className="absolute cursor-pointer pointer-events-auto"
+          <div
+            className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
             style={{
-              left: '12%', // Moved to the left a little
-              bottom: '5%', // Moved up a little
-              transform: 'translate(-50%, 50%)',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onNationalClick?.();
-            }}
-            onMouseEnter={(e) => {
-              const circle = e.currentTarget.querySelector('div');
-              if (circle) circle.style.backgroundColor = '#b91c1c';
-            }}
-            onMouseLeave={(e) => {
-              const circle = e.currentTarget.querySelector('div');
-              if (circle) circle.style.backgroundColor = '#334155';
+              transform: selectedDistrictId
+                ? "scale(1.05) translateX(0px)"
+                : "scale(1.03) translateX(-50px)",
+              transformOrigin: "center",
             }}
           >
-            <div
-              className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+            <button
+              type="button"
+              aria-label="Open XAN (Chi Alpha National)"
+              className="absolute cursor-pointer pointer-events-auto"
               style={{
-                width: '3.5vw', // Larger default size, scales with viewport
-                height: '3.5vw',
-                minWidth: '40px', // Minimum size
-                minHeight: '40px',
+                left: "12%", // Moved to the left a little
+                bottom: "5%", // Moved up a little
+                transform: "translate(-50%, 50%)",
+              }}
+              onClick={e => {
+                e.stopPropagation();
+                onNationalClick?.();
+              }}
+              onMouseEnter={e => {
+                const circle = e.currentTarget.querySelector("div");
+                if (circle) circle.style.backgroundColor = "#b91c1c";
+              }}
+              onMouseLeave={e => {
+                const circle = e.currentTarget.querySelector("div");
+                if (circle) circle.style.backgroundColor = "#334155";
               }}
             >
-              <span className="text-white text-sm font-semibold">XAN</span>
-            </div>
-          </button>
-        </div>
+              <div
+                className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+                style={{
+                  width: "3.5vw", // Larger default size, scales with viewport
+                  height: "3.5vw",
+                  minWidth: "40px", // Minimum size
+                  minHeight: "40px",
+                }}
+              >
+                <span className="text-white text-sm font-semibold">XAN</span>
+              </div>
+            </button>
+          </div>
         )}
-        
+
         {/* Invisible SVG click zones */}
-        <div 
-          ref={svgContainerRef} 
+        <div
+          ref={svgContainerRef}
           className="absolute inset-0 flex items-center justify-center z-30"
-          style={{ 
-            opacity: 0, 
-            pointerEvents: 'auto',
+          style={{
+            opacity: 0,
+            pointerEvents: "auto",
             transform: selectedDistrictId
-              ? 'scale(1.05) translateX(0px)' // Match visual layer when panel open
-              : 'scale(1.03) translateX(-50px)', // Match visual layer scale and shift left - FIXED: was -20px
-            transformOrigin: 'center',
+              ? "scale(1.05) translateX(0px)" // Match visual layer when panel open
+              : "scale(1.03) translateX(-50px)", // Match visual layer scale and shift left - FIXED: was -20px
+            transformOrigin: "center",
           }}
-          onClick={(e) => {
+          onClick={e => {
             // If clicking on the SVG container itself (not a path), close panels
-            if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'svg') {
+            if (
+              e.target === e.currentTarget ||
+              (e.target as HTMLElement).tagName === "svg"
+            ) {
               if (onBackgroundClick) {
                 onBackgroundClick();
               }
             }
           }}
         />
-        
+
         {/* Metric Overlays - Anchored to Region Labels around map edges */}
         <div className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none">
-          <svg width="100%" height="100%" viewBox="0 0 960 600" preserveAspectRatio="xMidYMid meet">
-            {activeMetrics.size > 0 && (() => {
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 960 600"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            {activeMetrics.size > 0 &&
+              (() => {
                 // Aggregate stats by region
                 const regionStats: Record<string, DistrictStats> = {};
                 const districtRegionLookup = new Map<string, string>();
@@ -1508,9 +1793,18 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                   if (d.region) districtRegionLookup.set(d.id, d.region);
                 });
                 Object.entries(districtStats).forEach(([districtId, stats]) => {
-                  const region = districtRegionLookup.get(districtId) || DISTRICT_REGION_MAP[districtId] || "Unknown";
+                  const region =
+                    districtRegionLookup.get(districtId) ||
+                    DISTRICT_REGION_MAP[districtId] ||
+                    "Unknown";
                   if (!regionStats[region]) {
-                    regionStats[region] = { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
+                    regionStats[region] = {
+                      yes: 0,
+                      maybe: 0,
+                      no: 0,
+                      notInvited: 0,
+                      total: 0,
+                    };
                   }
                   regionStats[region].yes += stats.yes;
                   regionStats[region].maybe += stats.maybe;
@@ -1518,20 +1812,37 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                   regionStats[region].notInvited += stats.notInvited;
                   regionStats[region].total += stats.total;
                 });
-                
+
                 // Pre-calculate all regions and their heights for collision detection
                 const allRegions: string[] = [];
                 const allTotalHeights: Record<string, number> = {};
-                const allMetricsToShow: Record<string, Array<{ label: string; value: number }>> = {};
-                
+                const allMetricsToShow: Record<
+                  string,
+                  Array<{ label: string; value: number }>
+                > = {};
+
                 Object.keys(baseRegionPositions).forEach(region => {
-                  const stats = regionStats[region] || { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
-                  const metricsToShow: Array<{ label: string; value: number }> = [];
-                  if (activeMetrics.has('yes')) metricsToShow.push({ label: 'Going', value: stats.yes });
-                  if (activeMetrics.has('maybe')) metricsToShow.push({ label: 'Maybe', value: stats.maybe });
-                  if (activeMetrics.has('no')) metricsToShow.push({ label: 'Not Going', value: stats.no });
-                  if (activeMetrics.has('notInvited')) metricsToShow.push({ label: 'Not Invited', value: stats.notInvited });
-                  
+                  const stats = regionStats[region] || {
+                    yes: 0,
+                    maybe: 0,
+                    no: 0,
+                    notInvited: 0,
+                    total: 0,
+                  };
+                  const metricsToShow: Array<{ label: string; value: number }> =
+                    [];
+                  if (activeMetrics.has("yes"))
+                    metricsToShow.push({ label: "Going", value: stats.yes });
+                  if (activeMetrics.has("maybe"))
+                    metricsToShow.push({ label: "Maybe", value: stats.maybe });
+                  if (activeMetrics.has("no"))
+                    metricsToShow.push({ label: "Not Going", value: stats.no });
+                  if (activeMetrics.has("notInvited"))
+                    metricsToShow.push({
+                      label: "Not Invited",
+                      value: stats.notInvited,
+                    });
+
                   if (metricsToShow.length > 0) {
                     allRegions.push(region);
                     allMetricsToShow[region] = metricsToShow;
@@ -1540,47 +1851,59 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                     allTotalHeights[region] = metricsToShow.length * lineHeight;
                   }
                 });
-                
-                return allRegions.map((region) => {
-                  const stats = regionStats[region] || { yes: 0, maybe: 0, no: 0, notInvited: 0, total: 0 };
+
+                return allRegions.map(region => {
+                  const stats = regionStats[region] || {
+                    yes: 0,
+                    maybe: 0,
+                    no: 0,
+                    notInvited: 0,
+                    total: 0,
+                  };
                   const metricsToShow = allMetricsToShow[region];
-                  
+
                   if (!metricsToShow || metricsToShow.length === 0) return null;
-                  
+
                   const isSingleMetric = metricsToShow.length === 1;
                   const lineHeight = isSingleMetric ? 26 : 22;
                   const isHovered = hoveredRegionLabel === region;
                   const totalHeight = allTotalHeights[region];
-                  
+
                   // Calculate position with collision detection
-                  const pos = getDynamicPosition(region, activeMetrics.size, totalHeight, allRegions, allTotalHeights);
+                  const pos = getDynamicPosition(
+                    region,
+                    activeMetrics.size,
+                    totalHeight,
+                    allRegions,
+                    allTotalHeights
+                  );
                   const direction = pos.labelDirection;
-                  
+
                   // Calculate region name position based on direction with more padding
                   let nameX = pos.labelX;
                   let nameY = pos.labelY;
-                  let nameAnchor: 'start' | 'middle' | 'end' = 'middle';
+                  let nameAnchor: "start" | "middle" | "end" = "middle";
                   const namePadding = 24; // Increased padding to avoid overlap with numbers
-                  
-                  if (direction === 'above') {
+
+                  if (direction === "above") {
                     nameY = pos.labelY - namePadding;
-                  } else if (direction === 'below') {
+                  } else if (direction === "below") {
                     nameY = pos.labelY + totalHeight + namePadding;
-                  } else if (direction === 'left') {
+                  } else if (direction === "left") {
                     nameX = pos.labelX - namePadding;
-                    nameY = pos.labelY - (totalHeight / 2) + 4;
-                    nameAnchor = 'end';
-                  } else if (direction === 'right') {
+                    nameY = pos.labelY - totalHeight / 2 + 4;
+                    nameAnchor = "end";
+                  } else if (direction === "right") {
                     nameX = pos.labelX + namePadding;
-                    nameY = pos.labelY - (totalHeight / 2) + 4;
-                    nameAnchor = 'start';
+                    nameY = pos.labelY - totalHeight / 2 + 4;
+                    nameAnchor = "start";
                   }
-                  
+
                   return (
-                    <g 
-                      key={region} 
+                    <g
+                      key={region}
                       className="metric-label-group cursor-pointer"
-                      style={{ pointerEvents: 'auto' }}
+                      style={{ pointerEvents: "auto" }}
                       onMouseEnter={() => setHoveredRegionLabel(region)}
                       onMouseLeave={() => setHoveredRegionLabel(null)}
                     >
@@ -1593,44 +1916,51 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                         fill="transparent"
                         rx="4"
                       />
-                      
+
                       {/* Region name - only visible on hover, bigger with more spacing */}
                       <text
                         x={nameX}
                         y={nameY}
                         textAnchor={nameAnchor}
                         fill="#64748b"
-                        fontSize={isSingleMetric ? '13px' : '12px'}
+                        fontSize={isSingleMetric ? "13px" : "12px"}
                         fontWeight="600"
                         letterSpacing="0.5px"
                         className="select-none"
-                        style={{ 
-                          textTransform: 'uppercase',
-                          fontFamily: 'system-ui, -apple-system, sans-serif',
+                        style={{
+                          textTransform: "uppercase",
+                          fontFamily: "system-ui, -apple-system, sans-serif",
                           opacity: isHovered ? 1 : 0,
-                          transition: 'opacity 0.15s ease'
+                          transition: "opacity 0.15s ease",
                         }}
                       >
                         {region}
                       </text>
-                      
+
                       {/* Metric values with colored dots */}
                       {metricsToShow.map((metric, index) => {
                         // Professional color mapping for each metric type
-                        const dotColor = 
-                          metric.label === 'Going' ? '#047857' :      // emerald-700
-                          metric.label === 'Maybe' ? '#ca8a04' :      // yellow-600
-                          metric.label === 'Not Going' ? '#b91c1c' :  // red-700
-                          '#64748b';                                   // slate-500 for Not Invited
-                        
+                        const dotColor =
+                          metric.label === "Going"
+                            ? "#047857" // emerald-700
+                            : metric.label === "Maybe"
+                              ? "#ca8a04" // yellow-600
+                              : metric.label === "Not Going"
+                                ? "#b91c1c" // red-700
+                                : "#64748b"; // slate-500 for Not Invited
+
                         const dotRadius = isSingleMetric ? 6 : 5;
-                        
+
                         return (
                           <g key={metric.label}>
                             {/* Colored dot */}
                             <circle
                               cx={pos.labelX - (isSingleMetric ? 26 : 18)}
-                              cy={pos.labelY + (index * lineHeight) - (isSingleMetric ? 6 : 4)}
+                              cy={
+                                pos.labelY +
+                                index * lineHeight -
+                                (isSingleMetric ? 6 : 4)
+                              }
                               r={dotRadius}
                               fill={dotColor}
                               className="select-none"
@@ -1638,16 +1968,17 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                             {/* Metric number */}
                             <text
                               x={pos.labelX}
-                              y={pos.labelY + (index * lineHeight)}
+                              y={pos.labelY + index * lineHeight}
                               textAnchor="middle"
-                              fill={isHovered ? '#0f172a' : '#334155'}
-                              fontSize={isSingleMetric ? '22px' : '15px'}
+                              fill={isHovered ? "#0f172a" : "#334155"}
+                              fontSize={isSingleMetric ? "22px" : "15px"}
                               fontWeight="700"
                               letterSpacing="-0.3px"
                               className="select-none"
-                              style={{ 
-                                transition: 'fill 0.15s ease',
-                                fontFamily: 'system-ui, -apple-system, sans-serif'
+                              style={{
+                                transition: "fill 0.15s ease",
+                                fontFamily:
+                                  "system-ui, -apple-system, sans-serif",
                               }}
                             >
                               {showOverlayPlaceholder ? "—" : metric.value}
@@ -1659,15 +1990,12 @@ export function InteractiveMap({ districts, selectedDistrictId, onDistrictSelect
                   );
                 });
               })()}
-            
           </svg>
         </div>
       </div>
-      
+
       {/* Tooltip */}
       {renderTooltip()}
-      
-
     </div>
   );
 }

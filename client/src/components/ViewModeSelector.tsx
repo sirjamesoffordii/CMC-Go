@@ -7,7 +7,10 @@ interface ViewModeSelectorProps {
   onViewStateChange: (viewState: ViewState) => void;
 }
 
-export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelectorProps) {
+export function ViewModeSelector({
+  viewState,
+  onViewStateChange,
+}: ViewModeSelectorProps) {
   const handleModeChange = (mode: ViewMode) => {
     // When switching modes, reset scope to appropriate level
     const newState: ViewState = {
@@ -30,9 +33,10 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         onClick={() => handleModeChange("nation")}
         className={`
           flex items-center gap-1.5
-          ${viewState.mode === "nation" 
-            ? "bg-black text-white hover:bg-red-600" 
-            : "text-black hover:bg-red-600 hover:text-white"
+          ${
+            viewState.mode === "nation"
+              ? "bg-black text-white hover:bg-red-600"
+              : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -45,9 +49,10 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         onClick={() => handleModeChange("region")}
         className={`
           flex items-center gap-1.5
-          ${viewState.mode === "region" 
-            ? "bg-black text-white hover:bg-red-600" 
-            : "text-black hover:bg-red-600 hover:text-white"
+          ${
+            viewState.mode === "region"
+              ? "bg-black text-white hover:bg-red-600"
+              : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -60,9 +65,10 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         onClick={() => handleModeChange("district")}
         className={`
           flex items-center gap-1.5
-          ${viewState.mode === "district" 
-            ? "bg-black text-white hover:bg-red-600" 
-            : "text-black hover:bg-red-600 hover:text-white"
+          ${
+            viewState.mode === "district"
+              ? "bg-black text-white hover:bg-red-600"
+              : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >
@@ -75,9 +81,10 @@ export function ViewModeSelector({ viewState, onViewStateChange }: ViewModeSelec
         onClick={() => handleModeChange("campus")}
         className={`
           flex items-center gap-1.5
-          ${viewState.mode === "campus" 
-            ? "bg-black text-white hover:bg-red-600" 
-            : "text-black hover:bg-red-600 hover:text-white"
+          ${
+            viewState.mode === "campus"
+              ? "bg-black text-white hover:bg-red-600"
+              : "text-black hover:bg-red-600 hover:text-white"
           }
         `}
       >

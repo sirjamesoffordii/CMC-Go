@@ -1,16 +1,19 @@
 ## Why
 
 <!-- Link to the Issue this PR addresses -->
+
 Closes #
 
 ## What changed
 
 <!-- Bullets describing the changes -->
-- 
+
+-
 
 ## How verified
 
 <!-- Commands run + brief results -->
+
 ```
 pnpm check
 pnpm test
@@ -19,6 +22,7 @@ pnpm test
 ## Risk
 
 <!-- low / med / high + brief explanation -->
+
 **Risk:** low
 
 ---

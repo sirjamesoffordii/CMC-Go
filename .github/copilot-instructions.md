@@ -12,6 +12,7 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 - Projects v2 (truth): https://github.com/users/sirjamesoffordii/projects/2
 
 Ops/CI/tooling reference (as-needed):
+
 - `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Guardrails
@@ -36,10 +37,14 @@ Ops/CI/tooling reference (as-needed):
 ## Commands
 
 - Dev: `pnpm dev`
-- Checks: `pnpm check`, `pnpm test`
+- Checks: `pnpm check`, `pnpm test`, `pnpm lint`
 - E2E (smoke): `pnpm e2e`
 - DB (dev): `pnpm db:push:yes`, `pnpm db:seed`, `pnpm db:reset`
 - Validation: `pnpm validate:agents`
+- Local DB (Docker): `docker-compose up -d` (MySQL 8.0, see `docker-compose.yml`)
+
+## Pre-commit hooks
+
+Husky + lint-staged automatically format staged files on commit. No manual action needed.
 
 If you touch schema or auth/scope logic, keep the change surgical and expect CI to run MySQL-backed tests (see `.github/workflows/test-and-coverage.yml`).
-

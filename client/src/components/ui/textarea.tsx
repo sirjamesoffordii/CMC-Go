@@ -19,16 +19,18 @@ function Textarea({
     onCompositionEnd: handleCompositionEnd,
     onKeyDown: handleKeyDown,
   } = useComposition<HTMLTextAreaElement>({
-    onKeyDown: (e) => {
+    onKeyDown: e => {
       // Allow arrow keys to work normally for cursor navigation
-      if (e.key.startsWith('Arrow')) {
+      if (e.key.startsWith("Arrow")) {
         // Don't prevent default or stop propagation for arrow keys
         onKeyDown?.(e);
         return;
       }
 
       // Check if this is an Enter key that should be blocked
-      const isComposing = (e.nativeEvent as any).isComposing || dialogComposition.justEndedComposing();
+      const isComposing =
+        (e.nativeEvent as any).isComposing ||
+        dialogComposition.justEndedComposing();
 
       // If Enter key is pressed while composing or just after composition ended,
       // don't call the user's onKeyDown (this blocks the business logic)

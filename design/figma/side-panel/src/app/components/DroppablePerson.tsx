@@ -1,14 +1,14 @@
-import { useDrag, useDrop } from 'react-dnd';
-import { motion } from 'motion/react';
-import { User, Edit2, Check } from 'lucide-react';
-import { useEffect } from 'react';
-import { getEmptyImage } from 'react-dnd-html5-backend';
+import { useDrag, useDrop } from "react-dnd";
+import { motion } from "motion/react";
+import { User, Edit2, Check } from "lucide-react";
+import { useEffect } from "react";
+import { getEmptyImage } from "react-dnd-html5-backend";
 
 interface Person {
   id: string;
   name: string;
   role: string;
-  status: 'director' | 'staff' | 'co-director' | 'not-invited';
+  status: "director" | "staff" | "co-director" | "not-invited";
   spouse?: string;
   kids?: string;
   need?: string;
@@ -16,10 +16,10 @@ interface Person {
 }
 
 const statusColors = {
-  director: 'text-green-500',
-  staff: 'text-yellow-500',
-  'co-director': 'text-red-500',
-  'not-invited': 'text-gray-400'
+  director: "text-green-500",
+  staff: "text-yellow-500",
+  "co-director": "text-red-500",
+  "not-invited": "text-gray-400",
 };
 
 interface DroppablePersonProps {
@@ -28,41 +28,60 @@ interface DroppablePersonProps {
   index: number;
   onEdit: (campusId: string, person: Person) => void;
   onClick: (campusId: string, person: Person) => void;
-  onMove: (draggedId: string, draggedCampusId: string, targetCampusId: string, targetIndex: number) => void;
+  onMove: (
+    draggedId: string,
+    draggedCampusId: string,
+    targetCampusId: string,
+    targetIndex: number
+  ) => void;
 }
 
-export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMove }: DroppablePersonProps) {
-  const [{ isDragging }, drag, preview] = useDrag(() => ({
-    type: 'person',
-    item: { personId: person.id, campusId, index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging()
-    })
-  }), [person.id, campusId, index]);
+export function DroppablePerson({
+  person,
+  campusId,
+  index,
+  onEdit,
+  onClick,
+  onMove,
+}: DroppablePersonProps) {
+  const [{ isDragging }, drag, preview] = useDrag(
+    () => ({
+      type: "person",
+      item: { personId: person.id, campusId, index },
+      collect: monitor => ({
+        isDragging: monitor.isDragging(),
+      }),
+    }),
+    [person.id, campusId, index]
+  );
 
   // Hide the default drag preview
   useEffect(() => {
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'person',
-    drop: (item: { personId: string; campusId: string; index: number }) => {
-      if (item.personId !== person.id) {
-        onMove(item.personId, item.campusId, campusId, index);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver()
-    })
-  }), [person.id, campusId, index, onMove]);
+  const [{ isOver }, drop] = useDrop(
+    () => ({
+      accept: "person",
+      drop: (item: { personId: string; campusId: string; index: number }) => {
+        if (item.personId !== person.id) {
+          onMove(item.personId, item.campusId, campusId, index);
+        }
+      },
+      collect: monitor => ({
+        isOver: monitor.isOver(),
+      }),
+    }),
+    [person.id, campusId, index, onMove]
+  );
 
-  const firstName = person.name.split(' ')[0];
-  const truncatedName = firstName.length > 7 ? firstName.slice(0, 7) + '.' : firstName;
+  const firstName = person.name.split(" ")[0];
+  const truncatedName =
+    firstName.length > 7 ? firstName.slice(0, 7) + "." : firstName;
 
   return (
     <motion.div
-      ref={(node) => drag(drop(node))}
+      ref={node => drag(drop(node))}
       key={person.id}
       layout
       initial={{ opacity: 0, scale: 0.8 }}
@@ -71,10 +90,10 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
       transition={{
         layout: { type: "spring", stiffness: 300, damping: 30 },
         opacity: { duration: 0.15 },
-        scale: { duration: 0.2 }
+        scale: { duration: 0.2 },
       }}
       className="relative group/person flex flex-col items-center w-[50px] cursor-grab active:cursor-grabbing"
-      style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+      style={{ cursor: isDragging ? "grabbing" : "grab" }}
     >
       {/* First Name Label with Edit Button */}
       <div className="relative flex items-center justify-center mb-1 group/name">
@@ -82,7 +101,7 @@ export function DroppablePerson({ person, campusId, index, onEdit, onClick, onMo
           {truncatedName}
         </div>
         <button
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             onEdit(campusId, person);
           }}

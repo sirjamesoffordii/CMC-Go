@@ -22,37 +22,53 @@ const districtsData = [
   { name: "Washington", svgPathId: "Washington", region: "Northwest" },
   { name: "Oregon", svgPathId: "Oregon", region: "Northwest" },
   { name: "Idaho", svgPathId: "Idaho", region: "Northwest" },
-  
+
   // West Coast
-  { name: "Northern California", svgPathId: "Northern California", region: "West Coast" },
-  { name: "Southern California", svgPathId: "Southern California", region: "West Coast" },
+  {
+    name: "Northern California",
+    svgPathId: "Northern California",
+    region: "West Coast",
+  },
+  {
+    name: "Southern California",
+    svgPathId: "Southern California",
+    region: "West Coast",
+  },
   { name: "Nevada", svgPathId: "Nevada", region: "West Coast" },
   { name: "Hawaii", svgPathId: "Hawaii", region: "West Coast" },
-  
+
   // Big Sky
   { name: "Montana", svgPathId: "Montana", region: "Big Sky" },
   { name: "Wyoming", svgPathId: "Wyoming", region: "Big Sky" },
   { name: "Utah", svgPathId: "Utah", region: "Big Sky" },
   { name: "Colorado", svgPathId: "Colorado", region: "Big Sky" },
-  
+
   // Great Plains North
-  { name: "North Dakota", svgPathId: "North Dakota", region: "Great Plains North" },
-  { name: "South Dakota", svgPathId: "South Dakota", region: "Great Plains North" },
+  {
+    name: "North Dakota",
+    svgPathId: "North Dakota",
+    region: "Great Plains North",
+  },
+  {
+    name: "South Dakota",
+    svgPathId: "South Dakota",
+    region: "Great Plains North",
+  },
   { name: "Nebraska", svgPathId: "Nebraska", region: "Great Plains North" },
   { name: "Minnesota", svgPathId: "Minnesota", region: "Great Plains North" },
   { name: "Wisconsin", svgPathId: "Wisconsin", region: "Great Plains North" },
-  
+
   // Great Plains South
   { name: "Kansas", svgPathId: "Kansas", region: "Great Plains South" },
   { name: "Iowa", svgPathId: "Iowa", region: "Great Plains South" },
   { name: "Missouri", svgPathId: "Missouri", region: "Great Plains South" },
-  
+
   // Great Lakes
   { name: "Michigan", svgPathId: "Michigan", region: "Great Lakes" },
   { name: "Illinois", svgPathId: "Illinois", region: "Great Lakes" },
   { name: "Indiana", svgPathId: "Indiana", region: "Great Lakes" },
   { name: "Ohio", svgPathId: "Ohio", region: "Great Lakes" },
-  
+
   // Northeast
   { name: "Maine", svgPathId: "Maine", region: "Northeast" },
   { name: "Vermont", svgPathId: "Vermont", region: "Northeast" },
@@ -61,7 +77,7 @@ const districtsData = [
   { name: "Rhode Island", svgPathId: "Rhode Island", region: "Northeast" },
   { name: "Connecticut", svgPathId: "Connecticut", region: "Northeast" },
   { name: "New York", svgPathId: "New York", region: "Northeast" },
-  
+
   // Mid-Atlantic
   { name: "Pennsylvania", svgPathId: "Pennsylvania", region: "Mid-Atlantic" },
   { name: "New Jersey", svgPathId: "New Jersey", region: "Mid-Atlantic" },
@@ -71,19 +87,23 @@ const districtsData = [
   { name: "Virginia", svgPathId: "Virginia", region: "Mid-Atlantic" },
   { name: "Kentucky", svgPathId: "Kentucky", region: "Mid-Atlantic" },
   { name: "Tennessee", svgPathId: "Tennessee", region: "Mid-Atlantic" },
-  { name: "North Carolina", svgPathId: "North Carolina", region: "Mid-Atlantic" },
-  
+  {
+    name: "North Carolina",
+    svgPathId: "North Carolina",
+    region: "Mid-Atlantic",
+  },
+
   // Southeast
   { name: "South Carolina", svgPathId: "South Carolina", region: "Southeast" },
   { name: "Georgia", svgPathId: "Georgia", region: "Southeast" },
   { name: "Florida", svgPathId: "Florida", region: "Southeast" },
   { name: "Alabama", svgPathId: "Alabama", region: "Southeast" },
   { name: "Mississippi", svgPathId: "Mississippi", region: "Southeast" },
-  
+
   // Texico
   { name: "New Mexico", svgPathId: "New Mexico", region: "Texico" },
   { name: "West Texas", svgPathId: "West Texas", region: "Texico" },
-  
+
   // South Central
   { name: "Oklahoma", svgPathId: "Oklahoma", region: "South Central" },
   { name: "Arkansas", svgPathId: "Arkansas", region: "South Central" },
@@ -97,7 +117,7 @@ async function seedRegionsAndDistricts() {
   const db = drizzle(connection);
 
   console.log("Seeding regions...");
-  
+
   // Insert regions
   const regionMap = {};
   for (const region of regionsData) {
@@ -115,15 +135,17 @@ async function seedRegionsAndDistricts() {
   }
 
   console.log("\nSeeding districts...");
-  
+
   // Insert districts
   for (const district of districtsData) {
     const regionId = regionMap[district.region];
     if (!regionId) {
-      console.error(`  ✗ ${district.name}: Region "${district.region}" not found`);
+      console.error(
+        `  ✗ ${district.name}: Region "${district.region}" not found`
+      );
       continue;
     }
-    
+
     await connection.execute(
       "INSERT INTO districts_new (name, svgPathId, regionId) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), regionId = VALUES(regionId)",
       [district.name, district.svgPathId, regionId]

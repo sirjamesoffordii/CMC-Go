@@ -22,7 +22,7 @@ if (!connectionString) {
 
 async function removeStudents() {
   console.log("[Remove Students] Starting...");
-  
+
   let connection;
   let db;
 
@@ -34,15 +34,18 @@ async function removeStudents() {
     console.log("✅ Database connection successful\n");
 
     // Find all people with "Student" in their primaryRole (case-insensitive)
-    const studentsToDelete = await db.select({
-      personId: people.personId,
-      name: people.name,
-      primaryRole: people.primaryRole,
-    }).from(people).where(
-      sql`LOWER(${people.primaryRole}) LIKE '%student%'`
-    );
+    const studentsToDelete = await db
+      .select({
+        personId: people.personId,
+        name: people.name,
+        primaryRole: people.primaryRole,
+      })
+      .from(people)
+      .where(sql`LOWER(${people.primaryRole}) LIKE '%student%'`);
 
-    console.log(`[Remove Students] Found ${studentsToDelete.length} people with "Student" role`);
+    console.log(
+      `[Remove Students] Found ${studentsToDelete.length} people with "Student" role`
+    );
 
     if (studentsToDelete.length === 0) {
       console.log("[Remove Students] No students found. Nothing to remove.");
@@ -60,13 +63,15 @@ async function removeStudents() {
     }
 
     // Delete all students
-    await db.delete(people).where(
-      sql`LOWER(${people.primaryRole}) LIKE '%student%'`
-    );
+    await db
+      .delete(people)
+      .where(sql`LOWER(${people.primaryRole}) LIKE '%student%'`);
 
-    console.log(`\n✅ Successfully removed ${studentsToDelete.length} people with "Student" role`);
+    console.log(
+      `\n✅ Successfully removed ${studentsToDelete.length} people with "Student" role`
+    );
     console.log("[Remove Students] Done!");
-    
+
     await connection.end();
   } catch (error) {
     console.error("[Remove Students] Error:", error);

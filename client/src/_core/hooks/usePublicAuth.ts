@@ -1,6 +1,6 @@
 /**
  * Authentication Hook - PR 2
- * 
+ *
  * Uses real authentication via tRPC
  */
 
@@ -9,8 +9,7 @@ import { trpc } from "@/lib/trpc";
 export function usePublicAuth() {
   // Dev-only bypass to avoid blocking local development on auth.
   // Enable with: VITE_DEV_BYPASS_AUTH=true
-  const devBypass =
-    (import.meta as any)?.env?.VITE_DEV_BYPASS_AUTH === "true";
+  const devBypass = (import.meta as any)?.env?.VITE_DEV_BYPASS_AUTH === "true";
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     enabled: !devBypass,
@@ -43,7 +42,7 @@ export function usePublicAuth() {
     : meQuery.data;
 
   const isAuthenticated = devBypass ? true : !!user;
-  
+
   return {
     isAuthenticated,
     user,
@@ -59,4 +58,3 @@ export function usePublicAuth() {
     },
   };
 }
-

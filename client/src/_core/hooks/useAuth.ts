@@ -45,10 +45,7 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "cmc-go-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    localStorage.setItem("cmc-go-user-info", JSON.stringify(meQuery.data));
     const devUser = devBypass
       ? ({
           id: 0,
@@ -74,9 +71,11 @@ export function useAuth(options?: UseAuthOptions) {
         } as any)
       : null;
     return {
-      user: devBypass ? devUser : meQuery.data ?? null,
-      loading: devBypass ? false : meQuery.isLoading || logoutMutation.isPending,
-      error: devBypass ? null : meQuery.error ?? logoutMutation.error ?? null,
+      user: devBypass ? devUser : (meQuery.data ?? null),
+      loading: devBypass
+        ? false
+        : meQuery.isLoading || logoutMutation.isPending,
+      error: devBypass ? null : (meQuery.error ?? logoutMutation.error ?? null),
       isAuthenticated: devBypass ? true : Boolean(meQuery.data),
     };
   }, [
@@ -96,7 +95,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,

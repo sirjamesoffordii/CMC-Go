@@ -27,6 +27,25 @@ function Read-TokenInteractive {
   )
 }
 
+function Get-TokenStorePath {
+  $dir = Join-Path $env:LOCALAPPDATA 'CMC-Go'
+  return (Join-Path $dir 'github_token.dpapi')
+}
+
+function Get-StoredTokenIfPresent {
+  $path = Get-TokenStorePath
+  if (-not (Test-Path -LiteralPath $path)) { return $null }
+  try {
+    $encoded = Get-Content -LiteralPath $path -Raw
+    $sec = $encoded | ConvertTo-SecureString
+    return [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+      [Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)
+    )
+  } catch {
+    return $null
+  }
+}
+
 function Escape-QueryValue {
   param([Parameter(Mandatory=$true)][string]$Value)
   return [System.Uri]::EscapeDataString($Value)
@@ -297,7 +316,7 @@ $allLabels = $allLabels | Select-Object -Unique
 if ($Mode -eq 'auto') {
   if (Get-Command gh -ErrorAction SilentlyContinue) {
     $Mode = 'gh'
-  } elseif ($Token) {
+  } elseif ($Token -or (Get-StoredTokenIfPresent)) {
     $Mode = 'rest'
   } else {
     $Mode = 'url'
@@ -318,6 +337,9 @@ if ($Mode -eq 'gh') {
   }
 }
 elseif ($Mode -eq 'rest') {
+  if (-not $Token) {
+    $Token = Get-StoredTokenIfPresent
+  }
   if (-not $Token) {
     $Token = Read-TokenInteractive
   }

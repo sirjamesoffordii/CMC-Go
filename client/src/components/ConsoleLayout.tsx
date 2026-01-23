@@ -35,7 +35,11 @@ const navItems: NavItem[] = [
   { label: "Configuration", href: "/console/config", icon: Settings },
 ];
 
-export default function ConsoleLayout({ children }: { children: React.ReactNode }) {
+export default function ConsoleLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, loading, isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -75,14 +79,18 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
             <Terminal className="h-6 w-6 text-primary-foreground" />
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold text-foreground">CMC Go</span>
-            <span className="text-xs text-muted-foreground">Developer Console</span>
+            <span className="text-sm font-semibold text-foreground">
+              CMC Go
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Developer Console
+            </span>
           </div>
         </div>
 
         <ScrollArea className="flex-1 px-3 py-4">
           <nav className="space-y-1">
-            {navItems.map((item) => {
+            {navItems.map(item => {
               const Icon = item.icon;
               const isActive = location === item.href;
               return (
@@ -111,8 +119,12 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
               {user?.name?.charAt(0).toUpperCase() || "A"}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="truncate text-sm font-medium text-foreground">{user?.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              <p className="truncate text-sm font-medium text-foreground">
+                {user?.name}
+              </p>
+              <p className="truncate text-xs text-muted-foreground">
+                {user?.email}
+              </p>
             </div>
           </div>
           <Button
@@ -144,7 +156,9 @@ export default function ConsoleLayout({ children }: { children: React.ReactNode 
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5">
               <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-              <span className="text-xs font-medium text-primary">System Online</span>
+              <span className="text-xs font-medium text-primary">
+                System Online
+              </span>
             </div>
           </div>
         </header>

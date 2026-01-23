@@ -7,28 +7,34 @@ applyTo: "**"
 Loop Mode
 
 Within an assigned Issue:
+
 - Keep going through the next best step until **Done**.
 - Do not pause waiting for additional prompts.
 
 Always:
+
 - Prefer the smallest safe next action.
 - Keep token usage low: short updates, deltas, and links over log dumps.
 - If operational procedures are needed, consult the archived index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.
 
 When uncertain or stuck, consult repo knowledge in this order:
-1) `AGENTS.md` (workflow + constraints)
-2) `.github/agents/CMC_GO_BRIEF.md` (product snapshot)
-3) `.github/agents/CMC_GO_PATTERNS.md` (curated pitfalls/patterns)
-4) `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` (operational procedures)
+
+1. `AGENTS.md` (workflow + constraints)
+2. `.github/agents/CMC_GO_BRIEF.md` (product snapshot)
+3. `.github/agents/CMC_GO_PATTERNS.md` (curated pitfalls/patterns)
+4. `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` (operational procedures)
 
 Operator interaction:
+
 - Keep chat minimal (status + blockers only).
 - All durable status/progress communication goes to the Issue/PR thread (shared truth).
 
 Token usage (GitHub automation):
+
 - If GitHub automation requires a token, use an operator-provided token ephemerally via `$env:GITHUB_TOKEN` (secure prompt if needed). Never print/log tokens, never write them to files, and clear the env var after use.
 
 If Blocked:
+
 - Post a single escalation comment with a concrete A/B/C decision request + evidence (use the template in `AGENTS.md`).
 - Immediately continue with the next best parallel work that does not require the decision.
 - If there is truly nothing safe to do in parallel, wait (stay in loop) and re-check the Issue thread for a Coordinator response.

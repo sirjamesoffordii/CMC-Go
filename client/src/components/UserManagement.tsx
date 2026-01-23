@@ -1,24 +1,37 @@
 // @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Users, Trash2, Shield, Activity, Ban } from "lucide-react";
 import { toast } from "sonner";
 
 export function UserManagement() {
   const utils = trpc.useUtils();
   const { data: users = [], isLoading } = trpc.admin.users.list.useQuery();
-  const { data: activeSessions = [] } = trpc.admin.sessions.listActive.useQuery();
+  const { data: activeSessions = [] } =
+    trpc.admin.sessions.listActive.useQuery();
 
   const updateRoleMutation = trpc.admin.users.updateRole.useMutation({
     onSuccess: () => {
       toast.success("User role updated");
       utils.admin.users.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update role: ${error.message}`);
     },
   });
@@ -28,7 +41,7 @@ export function UserManagement() {
       toast.success("User status updated");
       utils.admin.users.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update status: ${error.message}`);
     },
   });
@@ -38,13 +51,17 @@ export function UserManagement() {
       toast.success("User deleted");
       utils.admin.users.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to delete user: ${error.message}`);
     },
   });
 
   const handleDeleteUser = (userId: number, fullName: string) => {
-    if (window.confirm(`Are you sure you want to delete user "${fullName}"? This action cannot be undone.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to delete user "${fullName}"? This action cannot be undone.`
+      )
+    ) {
       deleteUserMutation.mutate({ userId });
     }
   };
@@ -52,7 +69,13 @@ export function UserManagement() {
   const handleRoleChange = (userId: number, role: string) => {
     updateRoleMutation.mutate({
       userId,
-      role: role as "STAFF" | "CO_DIRECTOR" | "CAMPUS_DIRECTOR" | "DISTRICT_DIRECTOR" | "REGION_DIRECTOR" | "ADMIN",
+      role: role as
+        | "STAFF"
+        | "CO_DIRECTOR"
+        | "CAMPUS_DIRECTOR"
+        | "DISTRICT_DIRECTOR"
+        | "REGION_DIRECTOR"
+        | "ADMIN",
     });
   };
 
@@ -65,7 +88,11 @@ export function UserManagement() {
   };
 
   const handleBanUser = (userId: number, fullName: string) => {
-    if (window.confirm(`Are you sure you want to ban user "${fullName}"? They will be disabled and unable to access the system.`)) {
+    if (
+      window.confirm(
+        `Are you sure you want to ban user "${fullName}"? They will be disabled and unable to access the system.`
+      )
+    ) {
       updateStatusMutation.mutate({
         userId,
         approvalStatus: "DISABLED",
@@ -98,17 +125,24 @@ export function UserManagement() {
             <Activity className="w-5 h-5" />
             Active Sessions ({activeSessions.length})
           </CardTitle>
-          <CardDescription>Users logged in within the last 30 minutes</CardDescription>
+          <CardDescription>
+            Users logged in within the last 30 minutes
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {activeSessions.length === 0 ? (
             <p className="text-gray-500 text-sm">No active sessions</p>
           ) : (
             <div className="space-y-2">
-              {activeSessions.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
+              {activeSessions.map(session => (
+                <div
+                  key={session.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
                   <div>
-                    <p className="font-medium">{session.user?.fullName || "Unknown"}</p>
+                    <p className="font-medium">
+                      {session.user?.fullName || "Unknown"}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {session.user?.email} • {session.user?.role}
                     </p>
@@ -116,7 +150,9 @@ export function UserManagement() {
                       Last seen: {new Date(session.lastSeenAt).toLocaleString()}
                     </p>
                   </div>
-                  <Badge variant="default" className="bg-green-500">Online</Badge>
+                  <Badge variant="default" className="bg-green-500">
+                    Online
+                  </Badge>
                 </div>
               ))}
             </div>
@@ -131,7 +167,9 @@ export function UserManagement() {
             <Users className="w-5 h-5" />
             All Users ({users.length})
           </CardTitle>
-          <CardDescription>Manage user roles, permissions, and accounts</CardDescription>
+          <CardDescription>
+            Manage user roles, permissions, and accounts
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -149,13 +187,16 @@ export function UserManagement() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {users.map(user => (
                   <tr key={user.id} className="border-b hover:bg-gray-50">
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         {user.fullName}
                         {user.isActiveSession && (
-                          <Badge variant="outline" className="text-xs bg-green-50 border-green-200">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-green-50 border-green-200"
+                          >
                             Online
                           </Badge>
                         )}
@@ -165,38 +206,58 @@ export function UserManagement() {
                     <td className="p-2">
                       <Select
                         value={user.role}
-                        onValueChange={(value) => handleRoleChange(user.id, value)}
+                        onValueChange={value =>
+                          handleRoleChange(user.id, value)
+                        }
                       >
                         <SelectTrigger className="w-40">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="STAFF">Staff</SelectItem>
-                          <SelectItem value="CO_DIRECTOR">Co-Director</SelectItem>
-                          <SelectItem value="CAMPUS_DIRECTOR">Campus Director</SelectItem>
-                          <SelectItem value="DISTRICT_DIRECTOR">District Director</SelectItem>
-                          <SelectItem value="REGION_DIRECTOR">Region Director</SelectItem>
+                          <SelectItem value="CO_DIRECTOR">
+                            Co-Director
+                          </SelectItem>
+                          <SelectItem value="CAMPUS_DIRECTOR">
+                            Campus Director
+                          </SelectItem>
+                          <SelectItem value="DISTRICT_DIRECTOR">
+                            District Director
+                          </SelectItem>
+                          <SelectItem value="REGION_DIRECTOR">
+                            Region Director
+                          </SelectItem>
                           <SelectItem value="ADMIN">Admin</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
                     <td className="p-2 text-sm">
                       {user.campusName && <div>{user.campusName}</div>}
-                      {user.districtName && <div className="text-gray-500">{user.districtName}</div>}
-                      {user.regionName && <div className="text-gray-400">{user.regionName}</div>}
-                      {!user.campusName && !user.districtName && !user.regionName && (
-                        <span className="text-gray-400">No assignment</span>
+                      {user.districtName && (
+                        <div className="text-gray-500">{user.districtName}</div>
                       )}
+                      {user.regionName && (
+                        <div className="text-gray-400">{user.regionName}</div>
+                      )}
+                      {!user.campusName &&
+                        !user.districtName &&
+                        !user.regionName && (
+                          <span className="text-gray-400">No assignment</span>
+                        )}
                     </td>
                     <td className="p-2">
                       <Badge
-                        variant={user.approvalStatus === "ACTIVE" ? "default" : "secondary"}
+                        variant={
+                          user.approvalStatus === "ACTIVE"
+                            ? "default"
+                            : "secondary"
+                        }
                         className={
                           user.approvalStatus === "ACTIVE"
                             ? "bg-green-500"
                             : user.approvalStatus === "DISABLED"
-                            ? "bg-red-500"
-                            : "bg-yellow-500"
+                              ? "bg-red-500"
+                              : "bg-yellow-500"
                         }
                       >
                         {user.approvalStatus}
@@ -210,8 +271,12 @@ export function UserManagement() {
                     <td className="p-2 text-sm text-gray-600">
                       {user.lastEdited && user.lastEditedBy ? (
                         <div>
-                          <div>{new Date(user.lastEdited).toLocaleDateString()}</div>
-                          <div className="text-xs text-gray-400">by {user.lastEditedBy}</div>
+                          <div>
+                            {new Date(user.lastEdited).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            by {user.lastEditedBy}
+                          </div>
                         </div>
                       ) : (
                         <span className="text-gray-400">Never</span>
@@ -221,10 +286,18 @@ export function UserManagement() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          variant={user.approvalStatus === "ACTIVE" ? "outline" : "default"}
-                          onClick={() => handleStatusToggle(user.id, user.approvalStatus)}
+                          variant={
+                            user.approvalStatus === "ACTIVE"
+                              ? "outline"
+                              : "default"
+                          }
+                          onClick={() =>
+                            handleStatusToggle(user.id, user.approvalStatus)
+                          }
                         >
-                          {user.approvalStatus === "ACTIVE" ? "Disable" : "Enable"}
+                          {user.approvalStatus === "ACTIVE"
+                            ? "Disable"
+                            : "Enable"}
                         </Button>
                         <Button
                           size="sm"
@@ -237,7 +310,9 @@ export function UserManagement() {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleDeleteUser(user.id, user.fullName)}
+                          onClick={() =>
+                            handleDeleteUser(user.id, user.fullName)
+                          }
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

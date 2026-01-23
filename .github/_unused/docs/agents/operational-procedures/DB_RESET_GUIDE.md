@@ -21,6 +21,7 @@ pnpm db:reset
 ```
 
 This will:
+
 1. ✅ Truncate all tables in proper order (respecting foreign keys)
 2. ✅ Run migrations (`pnpm db:push`)
 3. ✅ Run seed (`pnpm db:seed`)
@@ -36,6 +37,7 @@ pnpm db:reset --drop-db
 ```
 
 This will:
+
 1. ✅ Drop the entire database
 2. ✅ Recreate the database
 3. ✅ Run migrations (`pnpm db:push`)
@@ -50,6 +52,7 @@ This will:
 ## 📋 What Gets Reset
 
 ### Tables Truncated (in order):
+
 1. `notes` - References people
 2. `needs` - References people
 3. `assignments` - References people, campuses, districts
@@ -60,6 +63,7 @@ This will:
 8. `users` - No dependencies
 
 ### Tables Preserved:
+
 - `drizzle_migrations` - Migration history is kept
 
 ---
@@ -69,10 +73,12 @@ This will:
 ### Production Safety
 
 The script will **NOT run** if:
+
 - `NODE_ENV === "production"` OR
 - `APP_ENV === "production"`
 
 **Error message:**
+
 ```
 ❌ Cannot reset database in production environment!
 Set NODE_ENV and APP_ENV to something other than 'production' to proceed.
@@ -81,6 +87,7 @@ Set NODE_ENV and APP_ENV to something other than 'production' to proceed.
 ### Data Loss Warning
 
 The script will show a warning before proceeding:
+
 ```
 🔄 Starting database reset...
 
@@ -211,6 +218,7 @@ export APP_ENV=development
 ### Error: "DATABASE_URL environment variable is required"
 
 **Solution:** Set `DATABASE_URL` in your `.env` file:
+
 ```
 DATABASE_URL=mysql://user:password@host:port/database
 ```
@@ -218,6 +226,7 @@ DATABASE_URL=mysql://user:password@host:port/database
 ### Error: "Failed to truncate table X"
 
 **Solution:** This might happen if:
+
 - Table doesn't exist (this is okay, script will skip it)
 - Foreign key constraints are preventing truncation (script disables FK checks temporarily)
 
@@ -310,7 +319,3 @@ pnpm db:reset
 ---
 
 **Your database reset flow is ready!** 🎉
-
-
-
-

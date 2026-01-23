@@ -15,12 +15,14 @@ This guide explains how local development automatically connects to the **same R
 ## Environment Contract
 
 ### Production Behavior (Railway Staging Deployment)
+
 - **ONLY** `DATABASE_URL` is used in production
 - `DATABASE_URL` is used **exactly as provided** (no rewrites)
 - Railway staging deployment uses internal host: `mysql-uqki.railway.internal:3306`
 - `STAGING_DATABASE_URL` is **NEVER** checked in production (safety guarantee)
 
 ### Local Development (Cursor)
+
 - **Automatic rewrite**: If `DATABASE_URL` host includes `railway.internal`, it's automatically rewritten to public proxy
   - `mysql-uqki.railway.internal:3306` → `shortline.proxy.rlwy.net:56109`
   - Username, password, and database name are preserved
@@ -51,12 +53,14 @@ This guide explains how local development automatically connects to the **same R
 ### Example
 
 **Railway staging** (production):
+
 ```env
 DATABASE_URL=mysql://cmc_go:<password>@mysql-uqki.railway.internal:3306/railway
 # Used exactly as-is → connects via INTERNAL host
 ```
 
 **Local dev** (development) - **RECOMMENDED:**
+
 ```env
 DATABASE_URL=mysql://cmc_go:<password>@shortline.proxy.rlwy.net:56109/railway
 # Used as-is → connects via PUBLIC PROXY
@@ -64,6 +68,7 @@ DATABASE_URL=mysql://cmc_go:<password>@shortline.proxy.rlwy.net:56109/railway
 ```
 
 **Local dev** (development) - Alternative: With internal host (auto-rewritten):
+
 ```env
 DATABASE_URL=mysql://cmc_go:<password>@mysql-uqki.railway.internal:3306/railway
 # Automatically rewritten → connects via PUBLIC PROXY
@@ -71,6 +76,7 @@ DATABASE_URL=mysql://cmc_go:<password>@mysql-uqki.railway.internal:3306/railway
 ```
 
 **Local dev** (development) - Alternative: With root user (auto-swapped):
+
 ```env
 DATABASE_URL=mysql://root:<password>@shortline.proxy.rlwy.net:56109/railway
 # OR
@@ -84,6 +90,7 @@ DEMO_DB_PASSWORD=<cmc_go_password>  # Required when DATABASE_URL uses root
 ```
 
 **Important Notes:**
+
 - **Recommended:** Use `cmc_go` user directly in `DATABASE_URL` (Option 1 above)
 - Local dev via public proxy **must use `cmc_go` user, not `root`**
 - **Zero-friction setup:** If `DATABASE_URL` uses `root`, set `DEMO_DB_USER` and `DEMO_DB_PASSWORD` to auto-swap in dev
@@ -91,6 +98,7 @@ DEMO_DB_PASSWORD=<cmc_go_password>  # Required when DATABASE_URL uses root
 - If `DEMO_DB_PASSWORD` is missing when `DATABASE_URL` uses root, app fails fast with helpful error message including copy/paste lines
 
 **Quick Start (Recommended):**
+
 1. Copy `.env.example` to `.env`
 2. Update `DATABASE_URL` with your `cmc_go` password
 3. Run `pnpm dev`
@@ -128,6 +136,7 @@ Connection path: INTERNAL
 ```
 
 This banner:
+
 - Only appears in development (never in production)
 - Confirms you're using the shared database
 - Shows connection path (PUBLIC PROXY for local dev, INTERNAL for Railway staging)
@@ -143,6 +152,7 @@ This banner:
 - `pnpm db:seed:baseline` - ❌ Blocked
 
 These scripts will refuse to run if `DATABASE_URL` contains:
+
 - `railway.internal`
 - `proxy.rlwy.net`
 - `up.railway.app`
@@ -155,21 +165,25 @@ These scripts will refuse to run if `DATABASE_URL` contains:
 Use this checklist to verify the setup:
 
 ### ✅ Local Dev Starts
+
 - [ ] Run `pnpm dev`
 - [ ] Server starts without errors
 - [ ] Terminal shows: `[ENV] Database: railway @ ...`
 
 ### ✅ App Loads
+
 - [ ] Open browser to `http://localhost:3000` (or your dev port)
 - [ ] App loads successfully
 - [ ] Yellow banner appears: "CONNECTED TO RAILWAY STAGING DEMO DB"
 
 ### ✅ People List Matches Staging
+
 - [ ] Navigate to `/people` page
 - [ ] Compare people list with staging website
 - [ ] Lists should be **identical** (same database)
 
 ### ✅ Changes Are Shared
+
 - [ ] Change a person's status locally (e.g., "Yes" → "Maybe")
 - [ ] Refresh staging website
 - [ ] Status change is **immediately visible** on staging
@@ -186,11 +200,13 @@ Use this checklist to verify the setup:
 **Cause:** Your `DATABASE_URL` uses `root` user with public proxy, but `root` is not allowed via proxy.
 
 **Solution Option 1 (Recommended):** Update `DATABASE_URL` to use `cmc_go` directly:
+
 ```env
 DATABASE_URL=mysql://cmc_go:<password>@shortline.proxy.rlwy.net:56109/railway
 ```
 
 **Solution Option 2:** Add auto-swap credentials to `.env`:
+
 ```env
 DEMO_DB_USER=cmc_go
 DEMO_DB_PASSWORD=<password_for_cmc_go_user>
@@ -201,6 +217,7 @@ The error message includes exact copy/paste lines you can add to your `.env` fil
 ### "Cannot connect to database"
 
 **Check:**
+
 1. `DATABASE_URL` is set correctly in `.env`
 2. Password is correct (no extra spaces/quotes)
 3. Network can reach Railway (try `ping shortline.proxy.rlwy.net`)
@@ -210,6 +227,7 @@ The error message includes exact copy/paste lines you can add to your `.env` fil
 ### "Banner not showing"
 
 **Check:**
+
 1. `NODE_ENV` is not set to "production"
 2. Dev server was restarted after updating `.env`
 3. Browser console for errors (F12 → Console)
@@ -220,6 +238,7 @@ The error message includes exact copy/paste lines you can add to your `.env` fil
 **This is expected!** Destructive scripts are blocked to protect the shared database.
 
 **To use local database instead:**
+
 1. Set up local MySQL: `mysql -u root -p`
 2. Create database: `CREATE DATABASE cmc_go_local;`
 3. Update `.env`: `DATABASE_URL=mysql://root:password@localhost:3306/cmc_go_local`

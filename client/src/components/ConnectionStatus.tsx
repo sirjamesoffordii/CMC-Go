@@ -23,7 +23,10 @@ export function ConnectionStatus({
 
   if (isConnected) {
     return (
-      <Badge variant="outline" className="gap-2 border-green-500/30 bg-green-500/10">
+      <Badge
+        variant="outline"
+        className="gap-2 border-green-500/30 bg-green-500/10"
+      >
         <div className="w-2 h-2 rounded-full bg-green-500" />
         <Database className="w-3 h-3" />
         Connected

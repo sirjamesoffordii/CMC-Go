@@ -13,8 +13,10 @@ You provide independent evidence so the **Coordinator** can safely merge and upd
 
 - The Issue acceptance criteria + verification section
 - The PR description
-- Archived Build Map (only if needed): [.github/_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md)
+- Archived Build Map (only if needed): [.github/\_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md)
+
 ### Your job
+
 - Check out the PR branch in a verifier worktree: `wt-verify-<pr#>-<slug>`.
 - Run the verification steps in the Issue and any relevant repo checks.
 - Provide evidence (commands run + key output).
@@ -36,6 +38,8 @@ If anything touches runtime behavior, fall back to normal verification.
 - **Result**: Pass / Fail / Pass-with-notes
 - **Evidence**: commands run + key output
 - **Notes/Risks**: any gaps, flakiness, edge cases
+
 ### Hard rules
+
 - Do not implement features.
 - You may propose fixes, but the Builder (or Coordinator) implements unless explicitly authorized.

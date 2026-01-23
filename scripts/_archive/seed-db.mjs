@@ -9,15 +9,25 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Read JSON files
-const districts = JSON.parse(readFileSync(join(__dirname, "seed-districts.json"), "utf-8"));
-const campuses = JSON.parse(readFileSync(join(__dirname, "seed-campuses.json"), "utf-8"));
-const people = JSON.parse(readFileSync(join(__dirname, "seed-people.json"), "utf-8"));
-const needs = JSON.parse(readFileSync(join(__dirname, "seed-needs.json"), "utf-8"));
-const notes = JSON.parse(readFileSync(join(__dirname, "seed-notes.json"), "utf-8"));
+const districts = JSON.parse(
+  readFileSync(join(__dirname, "seed-districts.json"), "utf-8")
+);
+const campuses = JSON.parse(
+  readFileSync(join(__dirname, "seed-campuses.json"), "utf-8")
+);
+const people = JSON.parse(
+  readFileSync(join(__dirname, "seed-people.json"), "utf-8")
+);
+const needs = JSON.parse(
+  readFileSync(join(__dirname, "seed-needs.json"), "utf-8")
+);
+const notes = JSON.parse(
+  readFileSync(join(__dirname, "seed-notes.json"), "utf-8")
+);
 
 // Production safeguard
-if (process.env.APP_ENV === 'production') {
-  console.error('❌ Cannot run seed script in production environment!');
+if (process.env.APP_ENV === "production") {
+  console.error("❌ Cannot run seed script in production environment!");
   console.error('Set APP_ENV to something other than "production" to proceed.');
   process.exit(1);
 }
@@ -29,9 +39,9 @@ const db = drizzle(connection);
 // Normalize status values to match ENUM
 function normalizeStatus(status) {
   const statusMap = {
-    'Going': 'Yes',
-    'Not Going': 'No',
-    'Not invited yet': 'Not Invited'
+    Going: "Yes",
+    "Not Going": "No",
+    "Not invited yet": "Not Invited",
   };
   return statusMap[status] || status;
 }
@@ -73,7 +83,14 @@ async function seed() {
          primaryDistrictId = VALUES(primaryDistrictId),
          status = VALUES(status),
          primaryRole = VALUES(primaryRole)`,
-      [person.id, person.name, person.campusId, person.districtId, normalizeStatus(person.status), person.role]
+      [
+        person.id,
+        person.name,
+        person.campusId,
+        person.districtId,
+        normalizeStatus(person.status),
+        person.role,
+      ]
     );
   }
 
@@ -89,7 +106,14 @@ async function seed() {
          amount = VALUES(amount),
          description = VALUES(description),
          isActive = VALUES(isActive)`,
-      [need.id, need.personId, need.type, need.amount ?? null, (need.notes ?? need.description ?? ""), need.isActive]
+      [
+        need.id,
+        need.personId,
+        need.type,
+        need.amount ?? null,
+        need.notes ?? need.description ?? "",
+        need.isActive,
+      ]
     );
   }
 
@@ -111,7 +135,7 @@ async function seed() {
   process.exit(0);
 }
 
-seed().catch((error) => {
+seed().catch(error => {
   console.error("Seed failed:", error);
   process.exit(1);
 });

@@ -10,9 +10,9 @@ export function SentryTestRedirect() {
 
   useEffect(() => {
     // Only redirect in non-production environments
-    const isProduction = import.meta.env.MODE === "production" || 
-                        import.meta.env.PROD === true;
-    
+    const isProduction =
+      import.meta.env.MODE === "production" || import.meta.env.PROD === true;
+
     if (isProduction) {
       return; // Don't redirect in production
     }

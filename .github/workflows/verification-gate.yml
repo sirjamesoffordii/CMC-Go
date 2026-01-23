@@ -2,7 +2,7 @@ name: Verification Gate (v0/v1/v2)
 
 on:
   pull_request:
-    branches: [ staging ]
+    branches: [staging]
 
 # Principle: staging is the integration branch.
 # This gate encodes the repo's verification policy levels:

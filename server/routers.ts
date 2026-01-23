@@ -5,7 +5,11 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { storagePut } from "./storage";
-import { setSessionCookie, clearSessionCookie, getUserIdFromSession } from "./_core/session";
+import {
+  setSessionCookie,
+  clearSessionCookie,
+  getUserIdFromSession,
+} from "./_core/session";
 import { TRPCError } from "@trpc/server";
 import { getPeopleScope } from "./_core/authorization";
 
@@ -15,14 +19,18 @@ export const appRouter = router({
     // PR 2: Get current user with district/region/campus names
     me: publicProcedure.query(async ({ ctx }) => {
       if (!ctx.user) return null;
-      
+
       // Get campus, district, and region names
-      const campus = ctx.user.campusId ? await db.getCampusById(ctx.user.campusId) : null;
-      const district = ctx.user.districtId ? await db.getDistrictById(ctx.user.districtId) : null;
+      const campus = ctx.user.campusId
+        ? await db.getCampusById(ctx.user.campusId)
+        : null;
+      const district = ctx.user.districtId
+        ? await db.getDistrictById(ctx.user.districtId)
+        : null;
       const selectedPerson = ctx.user.personId
         ? await db.getPersonByPersonId(ctx.user.personId)
         : null;
-      
+
       return {
         ...ctx.user,
         campusName: campus?.name || null,
@@ -38,15 +46,25 @@ export const appRouter = router({
         const existing = await db.getUserByEmail(input.email);
         return { exists: Boolean(existing) } as const;
       }),
-    
+
     // PR 2: Start registration/login
     start: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-        fullName: z.string().min(1).optional(),
-        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]).optional(),
-        campusId: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          fullName: z.string().min(1).optional(),
+          role: z
+            .enum([
+              "STAFF",
+              "CO_DIRECTOR",
+              "CAMPUS_DIRECTOR",
+              "DISTRICT_DIRECTOR",
+              "REGION_DIRECTOR",
+            ])
+            .optional(),
+          campusId: z.number().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         let user = await db.getUserByEmail(input.email);
 
@@ -95,8 +113,12 @@ export const appRouter = router({
         await db.updateUserLastLoginAt(user.id);
         setSessionCookie(ctx.req, ctx.res, user.id);
 
-        const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
-        const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
+        const campus = user.campusId
+          ? await db.getCampusById(user.campusId)
+          : null;
+        const district = user.districtId
+          ? await db.getDistrictById(user.districtId)
+          : null;
 
         return {
           success: true,
@@ -121,18 +143,30 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -157,17 +191,27 @@ export const appRouter = router({
         await db.updateUserPersonId(ctx.user.id, personId);
         return { success: true, personId } as const;
       }),
-    
+
     // PR 2: Verify code and complete registration/login
     verify: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-        code: z.string().length(6),
-        // Registration data (only needed for new users)
-        fullName: z.string().min(1).optional(),
-        role: z.enum(["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR"]).optional(),
-        campusId: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          email: z.string().email(),
+          code: z.string().length(6),
+          // Registration data (only needed for new users)
+          fullName: z.string().min(1).optional(),
+          role: z
+            .enum([
+              "STAFF",
+              "CO_DIRECTOR",
+              "CAMPUS_DIRECTOR",
+              "DISTRICT_DIRECTOR",
+              "REGION_DIRECTOR",
+            ])
+            .optional(),
+          campusId: z.number().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // Verify code
         const token = await db.getAuthToken(input.code);
@@ -177,10 +221,10 @@ export const appRouter = router({
             message: "Invalid or expired verification code",
           });
         }
-        
+
         // Check if user exists
         let user = await db.getUserByEmail(input.email);
-        
+
         if (!user) {
           // New user - create account
           if (!input.fullName || !input.role || !input.campusId) {
@@ -189,14 +233,14 @@ export const appRouter = router({
               message: "Registration data required for new users",
             });
           }
-          
+
           const userId = await db.createUser({
             fullName: input.fullName,
             email: input.email,
             role: input.role,
             campusId: input.campusId,
           });
-          
+
           user = await db.getUserById(userId);
           if (!user) {
             throw new TRPCError({
@@ -205,20 +249,24 @@ export const appRouter = router({
             });
           }
         }
-        
+
         // Consume token
         await db.consumeAuthToken(input.code);
-        
+
         // Update last login
         await db.updateUserLastLoginAt(user.id);
-        
+
         // Create session
         setSessionCookie(ctx.req, ctx.res, user.id);
-        
+
         // Get campus, district, and region names
-        const campus = user.campusId ? await db.getCampusById(user.campusId) : null;
-        const district = user.districtId ? await db.getDistrictById(user.districtId) : null;
-        
+        const campus = user.campusId
+          ? await db.getCampusById(user.campusId)
+          : null;
+        const district = user.districtId
+          ? await db.getDistrictById(user.districtId)
+          : null;
+
         return {
           success: true,
           user: {
@@ -229,7 +277,7 @@ export const appRouter = router({
           },
         };
       }),
-    
+
     logout: publicProcedure.mutation(({ ctx }) => {
       clearSessionCookie(ctx.req, ctx.res);
       return {
@@ -243,11 +291,15 @@ export const appRouter = router({
       try {
         return await db.getAllDistricts();
       } catch (error) {
-        console.error("[districts.publicList] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[districts.publicList] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw error;
@@ -283,11 +335,15 @@ export const appRouter = router({
 
         return [];
       } catch (error) {
-        console.error("[districts.list] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[districts.list] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw error;
@@ -310,7 +366,10 @@ export const appRouter = router({
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(input.id);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -333,7 +392,10 @@ export const appRouter = router({
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(input.id);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -365,7 +427,9 @@ export const appRouter = router({
           const regionDistrictIds = allDistricts
             .filter(d => d.region === scope.regionId)
             .map(d => d.id);
-          return allCampuses.filter(c => regionDistrictIds.includes(c.districtId));
+          return allCampuses.filter(c =>
+            regionDistrictIds.includes(c.districtId)
+          );
         }
 
         if (scope.level === "DISTRICT") {
@@ -378,11 +442,15 @@ export const appRouter = router({
 
         return [];
       } catch (error) {
-        console.error("[campuses.list] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[campuses.list] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw error;
@@ -394,17 +462,35 @@ export const appRouter = router({
         return await db.getCampusesByDistrict(input.districtId);
       }),
     createPublic: publicProcedure
-      .input(z.object({
-        name: z.string().min(1),
-        districtId: z.string().min(1),
-      }))
+      .input(
+        z.object({
+          name: z.string().min(1),
+          districtId: z.string().min(1),
+        })
+      )
       .mutation(async ({ input }) => {
-        const existing = await db.getCampusByNameAndDistrict(input.name, input.districtId);
+        const existing = await db.getCampusByNameAndDistrict(
+          input.name,
+          input.districtId
+        );
         if (existing) {
-          return { id: existing.id, name: existing.name, districtId: existing.districtId, created: false };
+          return {
+            id: existing.id,
+            name: existing.name,
+            districtId: existing.districtId,
+            created: false,
+          };
         }
-        const insertId = await db.createCampus({ name: input.name, districtId: input.districtId });
-        return { id: insertId, name: input.name, districtId: input.districtId, created: true };
+        const insertId = await db.createCampus({
+          name: input.name,
+          districtId: input.districtId,
+        });
+        return {
+          id: insertId,
+          name: input.name,
+          districtId: input.districtId,
+          created: true,
+        };
       }),
     updateName: protectedProcedure
       .input(z.object({ id: z.number(), name: z.string() }))
@@ -412,20 +498,29 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
         const campus = await db.getCampusById(input.id);
         if (!campus) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Campus not found",
+          });
         }
 
         // Enforce scope: must be in-scope for this campus
         if (scope.level === "CAMPUS" && campus.id !== scope.campusId) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && campus.districtId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          campus.districtId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(campus.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -433,10 +528,12 @@ export const appRouter = router({
         return { success: true };
       }),
     create: protectedProcedure
-      .input(z.object({
-        name: z.string(),
-        districtId: z.string(),
-      }))
+      .input(
+        z.object({
+          name: z.string(),
+          districtId: z.string(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const scope = getPeopleScope(ctx.user);
 
@@ -444,13 +541,19 @@ export const appRouter = router({
         if (scope.level === "CAMPUS") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && input.districtId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          input.districtId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(input.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -463,21 +566,30 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
         const campus = await db.getCampusById(input.id);
         if (!campus) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Campus not found",
+          });
         }
 
         if (scope.level === "CAMPUS" && campus.id !== scope.campusId) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
-        if (scope.level === "DISTRICT" && campus.districtId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          campus.districtId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(campus.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -491,21 +603,30 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
         const campus = await db.getCampusById(input.id);
         if (!campus) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Campus not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Campus not found",
+          });
         }
 
         if (scope.level === "CAMPUS" && campus.id !== scope.campusId) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
-        if (scope.level === "DISTRICT" && campus.districtId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          campus.districtId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         if (scope.level === "REGION") {
           const district = await db.getDistrictById(campus.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -530,12 +651,16 @@ export const appRouter = router({
             return await db.getPeopleByCampusId(scope.campusId);
         }
       } catch (error) {
-        console.error("[people.list] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[people.list] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw error;
@@ -554,8 +679,10 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
 
         // Check if district is in scope
-        if (scope.level === "CAMPUS" ||
-            (scope.level === "DISTRICT" && scope.districtId !== input.districtId)) {
+        if (
+          scope.level === "CAMPUS" ||
+          (scope.level === "DISTRICT" && scope.districtId !== input.districtId)
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -563,7 +690,10 @@ export const appRouter = router({
           // Need to verify the district belongs to the user's region
           const district = await db.getDistrictById(input.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -583,7 +713,10 @@ export const appRouter = router({
           // Need to verify the campus belongs to the user's district
           const campus = await db.getCampusById(input.campusId);
           if (!campus || campus.districtId !== scope.districtId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
@@ -591,60 +724,91 @@ export const appRouter = router({
           // Need to verify the campus belongs to the user's region
           const campus = await db.getCampusById(input.campusId);
           if (!campus) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
           const district = await db.getDistrictById(campus.districtId);
           if (!district || district.region !== scope.regionId) {
-            throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
           }
         }
 
         return await db.getPeopleByCampusId(input.campusId);
       }),
     create: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        name: z.string(),
-        primaryCampusId: z.number().nullable().optional(),
-        primaryDistrictId: z.string().optional(),
-        primaryRegion: z.string().optional(),
-        primaryRole: z.string().optional(),
-        nationalCategory: z.string().optional(),
-        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited"),
-        depositPaid: z.boolean().optional(),
-        notes: z.string().optional(),
-        spouse: z.string().optional(),
-        kids: z.string().optional(),
-        guests: z.string().optional(),
-        childrenAges: z.string().optional(),
-        householdId: z.number().nullable().optional(),
-        householdRole: z.enum(["primary", "member"]).optional(),
-        spouseAttending: z.boolean().optional(),
-        childrenCount: z.number().min(0).max(10).optional(),
-        guestsCount: z.number().min(0).max(10).optional(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          name: z.string(),
+          primaryCampusId: z.number().nullable().optional(),
+          primaryDistrictId: z.string().optional(),
+          primaryRegion: z.string().optional(),
+          primaryRole: z.string().optional(),
+          nationalCategory: z.string().optional(),
+          status: z
+            .enum(["Yes", "Maybe", "No", "Not Invited"])
+            .default("Not Invited"),
+          depositPaid: z.boolean().optional(),
+          notes: z.string().optional(),
+          spouse: z.string().optional(),
+          kids: z.string().optional(),
+          guests: z.string().optional(),
+          childrenAges: z.string().optional(),
+          householdId: z.number().nullable().optional(),
+          householdRole: z.enum(["primary", "member"]).optional(),
+          spouseAttending: z.boolean().optional(),
+          childrenCount: z.number().min(0).max(10).optional(),
+          guestsCount: z.number().min(0).max(10).optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const scope = getPeopleScope(ctx.user);
 
         // Check if the person being created is in scope
-        if (scope.level === "CAMPUS" && input.primaryCampusId !== scope.campusId) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: can only create people in your campus" });
+        if (
+          scope.level === "CAMPUS" &&
+          input.primaryCampusId !== scope.campusId
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied: can only create people in your campus",
+          });
         }
-        if (scope.level === "DISTRICT" && input.primaryDistrictId !== scope.districtId) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: can only create people in your district" });
+        if (
+          scope.level === "DISTRICT" &&
+          input.primaryDistrictId !== scope.districtId
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied: can only create people in your district",
+          });
         }
-        if (scope.level === "REGION" && input.primaryRegion !== scope.regionId) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: can only create people in your region" });
+        if (
+          scope.level === "REGION" &&
+          input.primaryRegion !== scope.regionId
+        ) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied: can only create people in your region",
+          });
         }
 
         try {
-          console.log('[people.create] Received input:', JSON.stringify(input, null, 2));
+          console.log(
+            "[people.create] Received input:",
+            JSON.stringify(input, null, 2)
+          );
 
           // Build createData object, only including fields that have values
           const createData: any = {
             personId: input.personId,
             name: input.name,
-            status: input.status || 'Not Invited',
+            status: input.status || "Not Invited",
             depositPaid: input.depositPaid ?? false,
           };
 
@@ -658,7 +822,10 @@ export const appRouter = router({
           if (input.primaryRole) {
             createData.primaryRole = input.primaryRole;
           }
-          if (input.primaryCampusId !== undefined && input.primaryCampusId !== null) {
+          if (
+            input.primaryCampusId !== undefined &&
+            input.primaryCampusId !== null
+          ) {
             createData.primaryCampusId = input.primaryCampusId;
           }
           if (input.nationalCategory) {
@@ -699,40 +866,60 @@ export const appRouter = router({
 
           // Add last edited tracking
           createData.lastEdited = new Date();
-          createData.lastEditedBy = ctx.user?.fullName || ctx.user?.email || 'System';
+          createData.lastEditedBy =
+            ctx.user?.fullName || ctx.user?.email || "System";
 
           const result = await db.createPerson(createData);
 
           return { success: true, insertId: result };
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
-            console.error('[people.create] Error:', error instanceof Error ? error.message : String(error));
+            console.error(
+              "[people.create] Error:",
+              error instanceof Error ? error.message : String(error)
+            );
           }
-          throw new Error(`Failed to create person: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          throw new Error(
+            `Failed to create person: ${error instanceof Error ? error.message : "Unknown error"}`
+          );
         }
       }),
     updateStatus: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]),
-        note: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          status: z.enum(["Yes", "Maybe", "No", "Not Invited"]),
+          note: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -744,19 +931,31 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -767,19 +966,31 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -787,42 +998,56 @@ export const appRouter = router({
         return { success: true };
       }),
     update: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        name: z.string().optional(),
-        primaryRole: z.string().optional(),
-        primaryCampusId: z.number().nullable().optional(),
-        status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
-        depositPaid: z.boolean().optional(),
-        notes: z.string().optional(),
-        spouse: z.string().optional(),
-        kids: z.string().optional(),
-        guests: z.string().optional(),
-        childrenAges: z.string().optional(),
-        householdId: z.number().nullable().optional(),
-        householdRole: z.enum(["primary", "member"]).optional(),
-        spouseAttending: z.boolean().optional(),
-        childrenCount: z.number().min(0).max(10).optional(),
-        guestsCount: z.number().min(0).max(10).optional(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          name: z.string().optional(),
+          primaryRole: z.string().optional(),
+          primaryCampusId: z.number().nullable().optional(),
+          status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
+          depositPaid: z.boolean().optional(),
+          notes: z.string().optional(),
+          spouse: z.string().optional(),
+          kids: z.string().optional(),
+          guests: z.string().optional(),
+          childrenAges: z.string().optional(),
+          householdId: z.number().nullable().optional(),
+          householdRole: z.enum(["primary", "member"]).optional(),
+          spouseAttending: z.boolean().optional(),
+          childrenCount: z.number().min(0).max(10).optional(),
+          guestsCount: z.number().min(0).max(10).optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { personId, ...data } = input;
 
         const person = await db.getPersonByPersonId(personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -838,24 +1063,42 @@ export const appRouter = router({
 
         // Validation: spouseAttending or childrenCount > 0 requires householdId
         try {
-          const finalSpouseAttending = updateData.spouseAttending !== undefined ? updateData.spouseAttending : (person.spouseAttending ?? false);
-          const finalChildrenCount = updateData.childrenCount !== undefined ? updateData.childrenCount : (person.childrenCount ?? 0);
-          const finalHouseholdId = updateData.householdId !== undefined ? updateData.householdId : (person.householdId ?? null);
+          const finalSpouseAttending =
+            updateData.spouseAttending !== undefined
+              ? updateData.spouseAttending
+              : (person.spouseAttending ?? false);
+          const finalChildrenCount =
+            updateData.childrenCount !== undefined
+              ? updateData.childrenCount
+              : (person.childrenCount ?? 0);
+          const finalHouseholdId =
+            updateData.householdId !== undefined
+              ? updateData.householdId
+              : (person.householdId ?? null);
 
-          if ((finalSpouseAttending || finalChildrenCount > 0) && !finalHouseholdId) {
-            console.warn('Household required but not linked. Resetting spouseAttending and childrenCount.');
+          if (
+            (finalSpouseAttending || finalChildrenCount > 0) &&
+            !finalHouseholdId
+          ) {
+            console.warn(
+              "Household required but not linked. Resetting spouseAttending and childrenCount."
+            );
             updateData.spouseAttending = false;
             updateData.childrenCount = 0;
           }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
-            console.error('Error checking person data:', error instanceof Error ? error.message : String(error));
+            console.error(
+              "Error checking person data:",
+              error instanceof Error ? error.message : String(error)
+            );
           }
         }
 
         // Add last edited tracking
         updateData.lastEdited = new Date();
-        updateData.lastEditedBy = ctx.user?.fullName || ctx.user?.email || 'System';
+        updateData.lastEditedBy =
+          ctx.user?.fullName || ctx.user?.email || "System";
 
         await db.updatePerson(personId, updateData);
         return { success: true };
@@ -865,19 +1108,31 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -885,80 +1140,123 @@ export const appRouter = router({
         return { success: true };
       }),
     statusHistory: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        limit: z.number().min(1).max(100).optional().default(20),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          limit: z.number().min(1).max(100).optional().default(20),
+        })
+      )
       .query(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         return await db.getStatusHistory(input.personId, input.limit);
       }),
     revertStatusChange: protectedProcedure
-      .input(z.object({
-        statusChangeId: z.number(),
-      }))
+      .input(
+        z.object({
+          statusChangeId: z.number(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // Need to get the person associated with this status change
         const statusChanges = await db.getStatusHistory("", 1000); // Get many to find the one we need
-        const statusChange = statusChanges.find(sc => sc.id === input.statusChangeId);
+        const statusChange = statusChanges.find(
+          sc => sc.id === input.statusChangeId
+        );
         if (!statusChange) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Status change not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Status change not found",
+          });
         }
 
         const person = await db.getPersonByPersonId(statusChange.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
-        return await db.revertStatusChange(input.statusChangeId, ctx.user?.id || null);
+        return await db.revertStatusChange(
+          input.statusChangeId,
+          ctx.user?.id || null
+        );
       }),
     importCSV: protectedProcedure
-      .input(z.object({
-        rows: z.array(z.object({
-          name: z.string(),
-          campus: z.string().optional(),
-          district: z.string().optional(),
-          role: z.string().optional(),
-          status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
-          notes: z.string().optional(),
-        }))
-      }))
+      .input(
+        z.object({
+          rows: z.array(
+            z.object({
+              name: z.string(),
+              campus: z.string().optional(),
+              district: z.string().optional(),
+              role: z.string().optional(),
+              status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
+              notes: z.string().optional(),
+            })
+          ),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const scope = getPeopleScope(ctx.user);
 
         // Only allow ALL scope users to import (typically admins/directors)
         if (scope.level !== "ALL") {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied: bulk import requires full access" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied: bulk import requires full access",
+          });
         }
 
         return await db.importPeople(input.rows);
@@ -971,49 +1269,77 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         return await db.getNeedsByPersonId(input.personId);
       }),
     create: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
-        description: z.string(),
-        amount: z.number().optional(),
-        visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]).default("LEADERSHIP_ONLY"),
-        isActive: z.boolean().default(true),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
+          description: z.string(),
+          amount: z.number().optional(),
+          visibility: z
+            .enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
+            .default("LEADERSHIP_ONLY"),
+          isActive: z.boolean().default(true),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1026,30 +1352,46 @@ export const appRouter = router({
         return { success: true };
       }),
     updateOrCreate: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        type: z.enum(["Financial", "Transportation", "Housing", "Other"]).optional(),
-        description: z.string().optional(),
-        amount: z.number().optional(),
-        isActive: z.boolean().optional(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          type: z
+            .enum(["Financial", "Transportation", "Housing", "Other"])
+            .optional(),
+          description: z.string().optional(),
+          amount: z.number().optional(),
+          isActive: z.boolean().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const { personId, ...needData } = input;
         const person = await db.getPersonByPersonId(personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1075,19 +1417,31 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1095,10 +1449,12 @@ export const appRouter = router({
         return { success: true };
       }),
     toggleActive: protectedProcedure
-      .input(z.object({
-        needId: z.number(),
-        isActive: z.boolean(),
-      }))
+      .input(
+        z.object({
+          needId: z.number(),
+          isActive: z.boolean(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // Get the need to find the person (must work for active + inactive needs)
         const need = await db.getNeedById(input.needId);
@@ -1108,19 +1464,31 @@ export const appRouter = router({
 
         const person = await db.getPersonByPersonId(need.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1128,10 +1496,12 @@ export const appRouter = router({
         return { success: true };
       }),
     updateVisibility: protectedProcedure
-      .input(z.object({
-        needId: z.number(),
-        visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]),
-      }))
+      .input(
+        z.object({
+          needId: z.number(),
+          visibility: z.enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         // Get the need to find the person (must work for active + inactive needs)
         const need = await db.getNeedById(input.needId);
@@ -1141,19 +1511,31 @@ export const appRouter = router({
 
         const person = await db.getPersonByPersonId(need.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1174,22 +1556,35 @@ export const appRouter = router({
           // Check if person is in scope
           if (scope.level === "ALL") {
             filteredNeeds.push(need);
-          } else if (scope.level === "REGION" && person.primaryRegion === scope.regionId) {
+          } else if (
+            scope.level === "REGION" &&
+            person.primaryRegion === scope.regionId
+          ) {
             filteredNeeds.push(need);
-          } else if (scope.level === "DISTRICT" && person.primaryDistrictId === scope.districtId) {
+          } else if (
+            scope.level === "DISTRICT" &&
+            person.primaryDistrictId === scope.districtId
+          ) {
             filteredNeeds.push(need);
-          } else if (scope.level === "CAMPUS" && person.primaryCampusId === scope.campusId) {
+          } else if (
+            scope.level === "CAMPUS" &&
+            person.primaryCampusId === scope.campusId
+          ) {
             filteredNeeds.push(need);
           }
         }
 
         return filteredNeeds;
       } catch (error) {
-        console.error("[needs.listActive] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[needs.listActive] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw error;
@@ -1199,52 +1594,83 @@ export const appRouter = router({
 
   notes: router({
     byPerson: protectedProcedure
-      .input(z.object({ personId: z.string(), category: z.enum(["INVITE", "INTERNAL"]).optional() }))
+      .input(
+        z.object({
+          personId: z.string(),
+          category: z.enum(["INVITE", "INTERNAL"]).optional(),
+        })
+      )
       .query(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         return await db.getNotesByPersonId(input.personId, input.category);
       }),
     create: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        category: z.enum(["INVITE", "INTERNAL"]).default("INTERNAL"),
-        content: z.string(),
-        noteType: z.enum(["GENERAL", "NEED"]).optional(),
-        createdBy: z.string().optional(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          category: z.enum(["INVITE", "INTERNAL"]).default("INTERNAL"),
+          content: z.string(),
+          noteType: z.enum(["GENERAL", "NEED"]).optional(),
+          createdBy: z.string().optional(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1265,45 +1691,71 @@ export const appRouter = router({
       .query(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
         return await db.getInviteNotesByPersonId(input.personId);
       }),
     create: protectedProcedure
-      .input(z.object({
-        personId: z.string(),
-        content: z.string(),
-      }))
+      .input(
+        z.object({
+          personId: z.string(),
+          content: z.string(),
+        })
+      )
       .mutation(async ({ input, ctx }) => {
         const person = await db.getPersonByPersonId(input.personId);
         if (!person) {
-          throw new TRPCError({ code: "NOT_FOUND", message: "Person not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
         }
 
         const scope = getPeopleScope(ctx.user);
 
         // Check if person is in scope
-        if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) {
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) {
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
-        if (scope.level === "REGION" && person.primaryRegion !== scope.regionId) {
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -1331,7 +1783,7 @@ export const appRouter = router({
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
-        
+
         await db.approveUser(input.userId, ctx.user?.id || null);
         return { success: true };
       }),
@@ -1343,7 +1795,7 @@ export const appRouter = router({
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
-        
+
         await db.rejectUser(input.userId, ctx.user?.id || null);
         return { success: true };
       }),
@@ -1381,9 +1833,18 @@ export const appRouter = router({
       // Filter by scope
       return allFollowUpPeople.filter(person => {
         if (scope.level === "ALL") return true;
-        if (scope.level === "REGION" && person.primaryRegion === scope.regionId) return true;
-        if (scope.level === "DISTRICT" && person.primaryDistrictId === scope.districtId) return true;
-        if (scope.level === "CAMPUS" && person.primaryCampusId === scope.campusId) return true;
+        if (scope.level === "REGION" && person.primaryRegion === scope.regionId)
+          return true;
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId === scope.districtId
+        )
+          return true;
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId === scope.campusId
+        )
+          return true;
         return false;
       });
     }),
@@ -1402,43 +1863,51 @@ export const appRouter = router({
         return { success: true };
       }),
     uploadHeaderImage: publicProcedure
-      .input(z.object({ 
-        imageData: z.string(), // base64 encoded image
-        fileName: z.string(),
-        backgroundColor: z.string().optional(), // hex color for background
-      }))
+      .input(
+        z.object({
+          imageData: z.string(), // base64 encoded image
+          fileName: z.string(),
+          backgroundColor: z.string().optional(), // hex color for background
+        })
+      )
       .mutation(async ({ input }) => {
         try {
-          console.log('[uploadHeaderImage] Starting upload for:', input.fileName);
-          
+          console.log(
+            "[uploadHeaderImage] Starting upload for:",
+            input.fileName
+          );
+
           // Convert base64 to buffer
-          const base64Data = input.imageData.split(',')[1];
+          const base64Data = input.imageData.split(",")[1];
           if (!base64Data) {
-            throw new Error('Invalid base64 image data');
+            throw new Error("Invalid base64 image data");
           }
-          const buffer = Buffer.from(base64Data, 'base64');
-          console.log('[uploadHeaderImage] Buffer size:', buffer.length);
-          
+          const buffer = Buffer.from(base64Data, "base64");
+          console.log("[uploadHeaderImage] Buffer size:", buffer.length);
+
           // Upload to S3
           const fileKey = `header-images/${Date.now()}-${input.fileName}`;
-          console.log('[uploadHeaderImage] Uploading to S3 with key:', fileKey);
-          const { url } = await storagePut(fileKey, buffer, 'image/jpeg');
-          console.log('[uploadHeaderImage] S3 upload successful, URL:', url);
-          
+          console.log("[uploadHeaderImage] Uploading to S3 with key:", fileKey);
+          const { url } = await storagePut(fileKey, buffer, "image/jpeg");
+          console.log("[uploadHeaderImage] S3 upload successful, URL:", url);
+
           // Save to database
-          console.log('[uploadHeaderImage] Saving URL to database');
-          await db.setSetting('headerImageUrl', url);
-          
+          console.log("[uploadHeaderImage] Saving URL to database");
+          await db.setSetting("headerImageUrl", url);
+
           // Save background color if provided
           if (input.backgroundColor) {
-            console.log('[uploadHeaderImage] Saving background color:', input.backgroundColor);
-            await db.setSetting('headerBgColor', input.backgroundColor);
+            console.log(
+              "[uploadHeaderImage] Saving background color:",
+              input.backgroundColor
+            );
+            await db.setSetting("headerBgColor", input.backgroundColor);
           }
-          console.log('[uploadHeaderImage] Database save successful');
-          
+          console.log("[uploadHeaderImage] Database save successful");
+
           return { url, backgroundColor: input.backgroundColor };
         } catch (error) {
-          console.error('[uploadHeaderImage] Error:', error);
+          console.error("[uploadHeaderImage] Error:", error);
           throw error;
         }
       }),
@@ -1449,12 +1918,16 @@ export const appRouter = router({
       try {
         return await db.getAllHouseholds();
       } catch (error) {
-        console.error("[households.list] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[households.list] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         // Check if it's a database connection error
         if (error instanceof Error && error.message.includes("DATABASE_URL")) {
           throw new TRPCError({
             code: "INTERNAL_SERVER_ERROR",
-            message: "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            message:
+              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
           });
         }
         throw new TRPCError({
@@ -1479,22 +1952,26 @@ export const appRouter = router({
         return await db.searchHouseholds(input.query);
       }),
     create: publicProcedure
-      .input(z.object({
-        label: z.string().optional(),
-        childrenCount: z.number().default(0),
-        guestsCount: z.number().default(0),
-      }))
+      .input(
+        z.object({
+          label: z.string().optional(),
+          childrenCount: z.number().default(0),
+          guestsCount: z.number().default(0),
+        })
+      )
       .mutation(async ({ input }) => {
         const insertId = await db.createHousehold(input);
         return { id: insertId, ...input };
       }),
     update: publicProcedure
-      .input(z.object({
-        id: z.number(),
-        label: z.string().optional(),
-        childrenCount: z.number().optional(),
-        guestsCount: z.number().optional(),
-      }))
+      .input(
+        z.object({
+          id: z.number(),
+          label: z.string().optional(),
+          childrenCount: z.number().optional(),
+          guestsCount: z.number().optional(),
+        })
+      )
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
         await db.updateHousehold(id, data);

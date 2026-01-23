@@ -8,7 +8,13 @@ interface EditableTextProps {
   disabled?: boolean;
 }
 
-export function EditableText({ value, onSave, className = "", inputClassName = "", disabled = false }: EditableTextProps) {
+export function EditableText({
+  value,
+  onSave,
+  className = "",
+  inputClassName = "",
+  disabled = false,
+}: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -19,7 +25,7 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
       inputRef.current.select();
     }
   }, [isEditing]);
-  
+
   // Sync editValue when value prop changes
   useEffect(() => {
     setEditValue(value);
@@ -55,7 +61,7 @@ export function EditableText({ value, onSave, className = "", inputClassName = "
         ref={inputRef}
         type="text"
         value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
+        onChange={e => setEditValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
         className={`border border-blue-500 rounded px-1 outline-none ${inputClassName}`}

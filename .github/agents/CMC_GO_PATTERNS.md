@@ -15,6 +15,7 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ## When to use this
 
 Use this when you are:
+
 - repeating a failure pattern (tests, migrations, CI)
 - blocked on a repo-specific invariant (schema keys, map ids)
 - about to make a wide change and want known hazards
@@ -38,5 +39,6 @@ If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consu
 ### “Learning capture” rule
 
 If you solved a non-trivial problem, capture one reusable takeaway:
+
 - Add a short **Learning:** bullet to the Issue/PR comment alongside evidence.
 - If it’s general and likely to recur, distill it into this file (and keep it short).

@@ -13,8 +13,10 @@ Your output should be decision-ready for the **Coordinator**, and aligned to the
 
 - Current operating manual: [AGENTS.md](/AGENTS.md)
 - Current brief/invariants: [.github/agents/CMC_GO_BRIEF.md](/.github/agents/CMC_GO_BRIEF.md)
-- Archived Build Map: [.github/_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md)
+- Archived Build Map: [.github/\_unused/docs/agents/legacy/BUILD_MAP.md](/.github/_unused/docs/agents/legacy/BUILD_MAP.md)
+
 ### Your job
+
 - Read the assigned Issue and repo context.
 - Produce 2-3 viable approaches with tradeoffs.
 - Identify risks, dependencies, and test/verification needs.
@@ -33,6 +35,7 @@ If unsure, post an Issue comment with your recommended plan instead of coding.
 - Include one recommended option; keep alternatives brief.
 
 ### Hard rules
+
 - Do not open large PRs unless the Coordinator assigns you as Builder.
 - Prefer minimal change plans aligned with Phase 1 integrity.
 
@@ -41,7 +44,9 @@ If unsure, post an Issue comment with your recommended plan instead of coding.
 - A recommended approach the Coordinator can paste into the Issue
 - A file-level map of where changes likely land
 - A concrete verification plan (commands + what success looks like)
+
 ### Deliverable (post as a comment on the Issue)
+
 - Recommended approach
 - Alternatives + why rejected
 - Files/modules likely touched

@@ -20,35 +20,44 @@ If you want a preconfigured cloud dev environment (Node + MySQL) without local i
 ## Quick Start
 
 1. **Set DATABASE_URL in `.env` file:**
+
    ```
    DATABASE_URL=mysql://user:password@host:port/database
    ```
+
    ⚠️ **Important:** The URL must include the database name (e.g., `/cmc_go` at the end).
 
 2. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 3. **Reset and setup database (blank database):**
+
    ```bash
    pnpm db:reset
    ```
+
    This will:
    - Truncate all tables (or drop/recreate database if you have permissions)
    - Push schema to create all tables
    - Seed dev data (20 districts, ~40-60 campuses, ~100-200 people)
 
    **Alternative (if database already has schema):**
+
    ```bash
    pnpm db:setup
    ```
+
    This only runs migrations and seeds (doesn't reset).
 
 4. **Start the development server:**
+
    ```bash
    pnpm dev
    ```
+
    The server includes a startup health check that verifies the schema is correct.
 
 5. **Open in browser:**
@@ -69,26 +78,31 @@ The app uses MySQL/TiDB for all environments. The database schema is managed thr
 ### Manual Database Operations
 
 - **Initialize database connection (verify only):**
+
   ```bash
   pnpm db:init
   ```
 
 - **Run migrations (apply schema):**
+
   ```bash
   pnpm db:migrate
   ```
 
 - **Push schema directly (dev only, faster for fresh DB):**
+
   ```bash
   pnpm db:push:yes
   ```
 
 - **Seed dev data:**
+
   ```bash
   pnpm db:seed
   ```
 
 - **Check schema:**
+
   ```bash
   pnpm db:check
   ```
@@ -112,6 +126,7 @@ Both endpoints use `publicProcedure`, so they work without authentication. The "
 ### Server won't start - Health check fails
 
 If the server fails to start with schema errors:
+
 1. Check the error message - it will show which tables/columns are missing
 2. Run `pnpm db:migrate` to apply migrations
 3. Or run `pnpm db:push:yes` to sync schema directly
@@ -120,6 +135,7 @@ If the server fails to start with schema errors:
 ### Map shows no data
 
 1. Check that the database has data:
+
    ```bash
    pnpm db:check
    # Or connect to DB and run: SELECT COUNT(*) FROM districts;
@@ -133,12 +149,14 @@ If the server fails to start with schema errors:
 ### DATABASE_URL not set
 
 If you see "DATABASE_URL environment variable is required":
+
 - Create `.env` file in project root
 - Add: `DATABASE_URL=mysql://user:password@host:port/database`
 
 ### Connection errors
 
 If you see connection errors:
+
 - Verify MySQL/TiDB server is running
 - Check DATABASE_URL is correct
 - Verify user has CREATE, ALTER, DROP, INSERT, SELECT permissions
@@ -147,6 +165,7 @@ If you see connection errors:
 ### Schema mismatch errors
 
 If you see "no such column" or "table does not exist" errors:
+
 - Run `pnpm db:migrate` to apply migrations
 - Or run `pnpm db:push:yes` to sync schema
 - Verify with `pnpm db:check`
@@ -154,6 +173,7 @@ If you see "no such column" or "table does not exist" errors:
 ## Dev Seed Data
 
 The dev seed includes:
+
 - ~20 districts across all regions
 - ~40-60 campuses (2-3 per district)
 - ~100-200 people with various statuses (Yes, Maybe, No, Not Invited)
@@ -168,4 +188,3 @@ This provides enough data to test all features. For production data, use the imp
 
 - Verification guide: [DB_SETUP_VERIFICATION.md](DB_SETUP_VERIFICATION.md)
 - Schema source of truth: `drizzle/schema.ts`
-

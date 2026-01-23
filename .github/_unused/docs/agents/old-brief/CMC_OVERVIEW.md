@@ -29,11 +29,13 @@ CMC Go is intentionally built around the following principles:
 The map is the primary interface.
 
 Leaders understand momentum geographically. CMC Go makes progress visible by:
+
 - Region
 - District
 - Campus
 
 This allows leaders to immediately identify:
+
 - Areas of strength
 - Areas needing follow-up
 - Gaps in invitation or engagement
@@ -45,6 +47,7 @@ This allows leaders to immediately identify:
 CMC Go prioritizes **correctness and clarity over polish**.
 
 Before adding animations, mobile optimizations, or advanced UX, the system ensures:
+
 - Data is accurate
 - State is consistent
 - Behavior is predictable
@@ -58,6 +61,7 @@ A system that looks good but lies is worse than a system that is plain but trust
 CMC Go is designed to be the **authoritative record** for CMC readiness.
 
 That means:
+
 - One person equals one record
 - One status per person (Going / Maybe / Not Going / Not Invited)
 - Notes and needs are attached directly to people
@@ -72,24 +76,27 @@ If it’s not in CMC Go, it’s not considered real.
 CMC Go is not built for engineers or administrators — it is built for **busy leaders**.
 
 Design decisions prioritize:
+
 - Fast scanning
 - Obvious next actions
 - Minimal clicks
 - Clear defaults
 
-Every view should answer the question: *“What do I need to do next?”*
+Every view should answer the question: _“What do I need to do next?”_
 
 ---
 
 ## What CMC Go Is (and Is Not)
 
 ### CMC Go **IS**
+
 - A coordination and visibility tool
 - A follow-up and accountability aid
 - A real-time snapshot of readiness
 - A shared system across leadership layers
 
 ### CMC Go **IS NOT**
+
 - A CRM replacement
 - A registration system
 - A messaging platform

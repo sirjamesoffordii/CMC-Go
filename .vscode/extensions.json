@@ -1,0 +1,25 @@
+{
+    "recommendations": [
+        // Core development
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        
+        // Database tools
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql",
+        
+        // Debugging & preview
+        "ms-edgedevtools.vscode-edge-devtools",
+        
+        // Code quality
+        "streetsidesoftware.code-spell-checker",
+        
+        // GitHub integration
+        "github.vscode-pull-request-github",
+        "github.copilot",
+        "github.copilot-chat",
+        
+        // Error monitoring
+        "sentry.sentry-vscode"
+    ]
+}

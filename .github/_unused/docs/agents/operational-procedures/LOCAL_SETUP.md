@@ -23,6 +23,7 @@ pnpm dev
 ### Step 3: Verify connection
 
 Check terminal output for:
+
 ```
 [ENV] DB host: shortline.proxy.rlwy.net
 [ENV] Connection path: PUBLIC PROXY
@@ -31,6 +32,7 @@ Check terminal output for:
 ```
 
 You should also see a yellow banner in the browser:
+
 ```
 ⚠️ CONNECTED TO RAILWAY STAGING DEMO DB
 Connection path: PUBLIC PROXY
@@ -39,6 +41,7 @@ Connection path: PUBLIC PROXY
 ## That's It!
 
 With Option 1, you don't need any additional environment variables. The app will:
+
 - Connect directly to the Railway staging demo DB via public proxy
 - Use the `cmc_go` user (no credential replacement needed)
 - Share the same database as the staging website
@@ -46,12 +49,14 @@ With Option 1, you don't need any additional environment variables. The app will
 ## Alternative Options
 
 If you need to use a different setup, see [SHARED_DEMO_DB.md](./SHARED_DEMO_DB.md) for:
+
 - Option 2: Internal host (auto-rewrites to proxy)
 - Option 3: Root user (auto-replaced with cmc_go)
 
 ## Troubleshooting
 
 If you see connection errors, check:
+
 1. Password is correct in `DATABASE_URL`
 2. Network can reach Railway (try `ping shortline.proxy.rlwy.net`)
 3. You're using `cmc_go` user, not `root`

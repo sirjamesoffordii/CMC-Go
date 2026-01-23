@@ -5,6 +5,7 @@
 **Sir James** is the primary human authority for CMC Go.
 
 He provides:
+
 - Product intent and priorities
 - Domain truth (what “correct” means for CMC Go)
 - Approval/override decisions when tradeoffs are required
@@ -29,6 +30,7 @@ Humans contribute intent; agents contribute execution.
 ## Coordination Expectations
 
 The CMC Go coordination function must:
+
 - Treat Sir James’ inputs as authoritative for direction and scope.
 - Preserve human intent while translating it into actionable engineering tasks.
 - Require evidence before declaring work “done” (tests, builds, reproduction steps).

@@ -8,7 +8,10 @@ type CookieCall = {
   options: Record<string, unknown>;
 };
 
-function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
+function createAuthContext(): {
+  ctx: TrpcContext;
+  clearedCookies: CookieCall[];
+} {
   const clearedCookies: CookieCall[] = [];
 
   const user: NonNullable<TrpcContext["user"]> = {

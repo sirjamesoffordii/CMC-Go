@@ -2,9 +2,9 @@ name: Test and Code Coverage
 
 on:
   push:
-    branches: [ staging ]
+    branches: [staging]
   pull_request:
-    branches: [ staging ]
+    branches: [staging]
 
 jobs:
   test-and-coverage:
@@ -35,6 +35,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        run: pnpm check
+
+      - name: ESLint check
+        run: pnpm lint
 
       - name: Setup database schema + seed (MySQL)
         run: |

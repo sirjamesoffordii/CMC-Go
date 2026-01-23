@@ -16,8 +16,8 @@ If something here becomes relevant again, move it back into an active location a
 - `.github/_unused/prompts/` — inactive prompts
 - `.github/_unused/issue_templates/` — archived role-specific Issue templates
 - `.github/_unused/docs/agents/` — archived agent docs
-	- `legacy/` — historical docs (e.g., coordinator doctrine, old build map)
-	- `operational-procedures/` — archived operational procedures
-	- `old-brief/` — previous “overview/authority” style docs
+  - `legacy/` — historical docs (e.g., coordinator doctrine, old build map)
+  - `operational-procedures/` — archived operational procedures
+  - `old-brief/` — previous “overview/authority” style docs
 
 Note: archived docs may contain stale internal links; treat them as historical reference.

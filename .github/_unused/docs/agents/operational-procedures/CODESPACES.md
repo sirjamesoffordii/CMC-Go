@@ -52,20 +52,20 @@ To see your real usage/limits:
 
 ## Quickstart (inside the Codespace)
 
-1) Install deps (usually runs automatically on first create):
+1. Install deps (usually runs automatically on first create):
 
 - `pnpm install`
 
-2) Database setup (choose one):
+2. Database setup (choose one):
 
 - Fresh/blank dev DB: `pnpm db:reset`
 - Existing schema: `pnpm db:setup`
 
-3) Run the app:
+3. Run the app:
 
 - `pnpm dev`
 
-4) Optional verification:
+4. Optional verification:
 
 - `pnpm db:check`
 - `pnpm db:verify`

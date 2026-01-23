@@ -11,6 +11,7 @@ test("home page renders core navigation", async ({ page }) => {
 
 test("admin console loads", async ({ page }) => {
   await page.goto("/admin");
-  await expect(page.getByRole("heading", { name: "Admin Console" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Admin Console" })
+  ).toBeVisible();
 });
-

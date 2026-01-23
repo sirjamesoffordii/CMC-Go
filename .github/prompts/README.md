@@ -6,18 +6,18 @@ These are copy/paste prompts to activate an operating mode.
 
 All prompt files use YAML frontmatter:
 
-| Field | Required | Purpose |
-|-------|----------|--------|
-| `name` | ✓ | Prompt identifier |
-| `description` | ✓ | One-line purpose statement |
+| Field         | Required | Purpose                    |
+| ------------- | -------- | -------------------------- |
+| `name`        | ✓        | Prompt identifier          |
+| `description` | ✓        | One-line purpose statement |
 
 ## Active prompts
 
-| File | Purpose |
-|------|--------|
-| `tech-lead.prompt.md` | Coordination/triage/deconflict mode |
+| File                          | Purpose                                         |
+| ----------------------------- | ----------------------------------------------- |
+| `tech-lead.prompt.md`         | Coordination/triage/deconflict mode             |
 | `software-engineer.prompt.md` | Implementation + evidence, or peer verification |
-| `loop.prompt.md` | "Stay in loop mode until Done" |
+| `loop.prompt.md`              | "Stay in loop mode until Done"                  |
 
 ## Notes
 

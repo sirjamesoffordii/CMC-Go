@@ -1,0 +1,73 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/model-context-protocol/main/schema/mcp.schema.json",
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-playwright"],
+      "description": "Browser automation for E2E testing and web scraping"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@anthropic-ai/mcp-filesystem",
+        "${workspaceFolder}"
+      ],
+      "description": "File system operations with workspace scope"
+    },
+    "git": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-git", "${workspaceFolder}"],
+      "description": "Git operations for version control"
+    },
+    "fetch": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-fetch"],
+      "description": "HTTP requests for API testing and web content retrieval"
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-memory"],
+      "description": "Persistent memory for cross-session context"
+    }
+  },
+  "notes": {
+    "usage": "MCP servers extend agent capabilities beyond built-in tools",
+    "playwright": "Use for E2E test debugging, visual regression, scraping docs",
+    "filesystem": "Use when built-in file tools insufficient (bulk operations)",
+    "git": "Use for complex git operations not covered by run_in_terminal",
+    "fetch": "Use to retrieve documentation, API responses, external resources",
+    "memory": "Use to persist learnings across sessions (patterns, decisions)"
+  },
+  "optional-servers": {
+    "description": "Additional MCP servers that may be useful for specific tasks",
+    "database": {
+      "note": "Consider @anthropic-ai/mcp-postgres if direct DB access needed (CMC uses MySQL via Drizzle so not directly applicable)",
+      "alternative": "Use Drizzle Studio: pnpm drizzle-kit studio"
+    },
+    "github": {
+      "note": "Already integrated via VS Code GitHub Copilot extension tools",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-github"]
+    },
+    "sequential-thinking": {
+      "note": "For complex multi-step reasoning tasks",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-sequential-thinking"]
+    },
+    "puppeteer": {
+      "note": "Alternative to Playwright for browser automation",
+      "command": "npx", 
+      "args": ["-y", "@anthropic-ai/mcp-puppeteer"]
+    },
+    "sentry": {
+      "note": "For Sentry error tracking integration (CMC uses Sentry)",
+      "requires": "API token configuration"
+    },
+    "time": {
+      "note": "For time-based operations and scheduling",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/mcp-time"]
+    }
+  }
+}

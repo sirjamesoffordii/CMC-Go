@@ -23,6 +23,7 @@ Latest work has been focused on validating cross-view state behavior, with parti
 Recent friction has come from environment and deployment issues (Sentry env vars and lockfile mismatches), which temporarily slowed verification but did not change scope. No fundamental blockers are present; remaining work is primarily careful validation rather than new implementation.
 
 Recent coordination/doc stabilization work landed in `staging`:
+
 - Merge of `agent/docs/agent-playbook-nav` into `staging` (commit `3469e19`)
 - Fix GitHub Issue discovery link quoting for `role:coordinator` label (commit `5a1c844`)
 
@@ -38,87 +39,87 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 ### Data Model & Schema
 
-- 🟢 **Schema finalized and aligned** — Completed  
-- 🟢 **ENUM discipline enforced** — Completed  
-- 🟢 **Seed data normalized and stable** — Completed  
+- 🟢 **Schema finalized and aligned** — Completed
+- 🟢 **ENUM discipline enforced** — Completed
+- 🟢 **Seed data normalized and stable** — Completed
 
 ---
 
 ### Core Flows
 
-- 🟢 **District list renders correctly** — Completed  
-- 🟢 **Campus list renders correctly** — Completed  
-- 🟢 **People list renders correctly** — Completed  
-- 🟢 **Person detail view renders correctly** — Completed  
-- 🟢 **Edits persist to database and rehydrate on refresh** — Completed  
-- 🟢 **Notes flow functional** — Completed  
-- 🟢 **Needs flow functional** — Completed  
+- 🟢 **District list renders correctly** — Completed
+- 🟢 **Campus list renders correctly** — Completed
+- 🟢 **People list renders correctly** — Completed
+- 🟢 **Person detail view renders correctly** — Completed
+- 🟢 **Edits persist to database and rehydrate on refresh** — Completed
+- 🟢 **Notes flow functional** — Completed
+- 🟢 **Needs flow functional** — Completed
 
 ---
 
 ### State Management
 
-- 🟢 **URL filter state persistence** — Completed  
-  - PR #36  
+- 🟢 **URL filter state persistence** — Completed
+  - PR #36
   - Commit: `1089909`
 
-- 🟢 **Lazy initialization for URL filter params** — Completed  
-  - PR #39  
+- 🟢 **Lazy initialization for URL filter params** — Completed
+  - PR #39
   - Commit: `d600c31`
 
-- 🟢 **Optimized URL parsing** — Completed  
+- 🟢 **Optimized URL parsing** — Completed
   - Commit: `7342ada`
 
 ---
 
 ### Follow-Up & Visibility
 
-- 🟢 **Active needs surfaced in Follow-Up view** — Completed  
-  - PR #21  
+- 🟢 **Active needs surfaced in Follow-Up view** — Completed
+  - PR #21
   - Commit: `b3ecdc6`
 
-- 🟢 **Needs filter in People view** — Completed  
+- 🟢 **Needs filter in People view** — Completed
   - PR #31
 
-- 🟢 **Explicit "Active Need" definition** — Completed  
+- 🟢 **Explicit "Active Need" definition** — Completed
   - PR #30
 
-- 🟢 **Districts grouped by region in People filters** — Completed  
+- 🟢 **Districts grouped by region in People filters** — Completed
   - PR #33
 
 ---
 
 ### Observability
 
-- 🟢 **Sentry initialized in client entrypoint** — Completed  
-  - PR #40  
+- 🟢 **Sentry initialized in client entrypoint** — Completed
+  - PR #40
   - Commit: `a013d26`
 
-- 🟢 **Sentry test trigger wired in People view** — Completed  
-  - PR #42  
+- 🟢 **Sentry test trigger wired in People view** — Completed
+  - PR #42
   - Commit: `50f9616`
 
-- 🟢 **Promote Sentry test trigger to staging** — Completed  
+- 🟢 **Promote Sentry test trigger to staging** — Completed
   - PR #43
 
-- 🟢 **Upgrade to @sentry/react v8.0.0** — Completed  
+- 🟢 **Upgrade to @sentry/react v8.0.0** — Completed
   - PR #45
 
-- 🟢 **Code Coverage with Codecov configured** — Completed  
-  - GitHub Actions workflow: `.github/workflows/test-and-coverage.yml`  
+- 🟢 **Code Coverage with Codecov configured** — Completed
+  - GitHub Actions workflow: `.github/workflows/test-and-coverage.yml`
   - Commit: `12ca7b1`
 
-- 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed  
-  - Automated AI review of pull requests  
+- 🟢 **AI Code Review (Beta) enabled in Sentry** — Completed
+  - Automated AI review of pull requests
   - Documentation (archived): `.github/_unused/docs/agents/operational-procedures/CODE_COVERAGE_AND_AI_CODE_REVIEW.md`
 
 ---
 
 ### Cross-View State
 
-- 🔵 **Map ↔ Panel state synchronization** — In Progress  
-- 🟡 **Status updates propagate across all views** — Verification Needed  
-- 🟡 **Follow-Up view state consistency** — Verification Needed  
+- 🔵 **Map ↔ Panel state synchronization** — In Progress
+- 🟡 **Status updates propagate across all views** — Verification Needed
+- 🟡 **Follow-Up view state consistency** — Verification Needed
 
 ---
 
@@ -128,30 +129,30 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 ### Default Scope & View Modes
 
-- ⚪ **Default regional scope (TEXICO)** — Backlog  
-- ⚪ **Default district panel (South Texas)** — Backlog  
-- ⚪ **View mode selector** — Backlog  
-  - National  
-  - Regional  
-  - District  
+- ⚪ **Default regional scope (TEXICO)** — Backlog
+- ⚪ **Default district panel (South Texas)** — Backlog
+- ⚪ **View mode selector** — Backlog
+  - National
+  - Regional
+  - District
 
 ### Panel Behavior
 
-- 🟡 **Stable panel open/close behavior** — Verification Needed  
-- ⚪ **Smooth panel transitions** — Backlog  
-- ⚪ **Panel state persistence** — Backlog  
+- 🟡 **Stable panel open/close behavior** — Verification Needed
+- ⚪ **Smooth panel transitions** — Backlog
+- ⚪ **Panel state persistence** — Backlog
 
 ### Filters & Sorting
 
-- 🔵 **District-level needs visibility** — In Progress  
-- 🔵 **Filter logic clarity and predictability** — In Progress  
-- ⚪ **Status-based visibility rules** — Backlog  
+- 🔵 **District-level needs visibility** — In Progress
+- 🔵 **Filter logic clarity and predictability** — In Progress
+- ⚪ **Status-based visibility rules** — Backlog
 
 ### Navigation & Usability
 
-- 🟡 **Clear navigation patterns** — Verification Needed  
-- 🟡 **No blocking UX friction** — Verification Needed  
-- 🟡 **Leader-friendly primary flows** — Verification Needed  
+- 🟡 **Clear navigation patterns** — Verification Needed
+- 🟡 **No blocking UX friction** — Verification Needed
+- 🟡 **Leader-friendly primary flows** — Verification Needed
 
 ---
 
@@ -163,26 +164,26 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 ### Authentication
 
-- ⚪ **Login flow** — Backlog  
-- ⚪ **Session management** — Backlog  
-- ⚪ **Logout flow** — Backlog  
+- ⚪ **Login flow** — Backlog
+- ⚪ **Session management** — Backlog
+- ⚪ **Logout flow** — Backlog
 
 ### Role-Based Access
 
-- ⚪ **Role definitions** — Backlog  
-  - Campus Director  
-  - District Director  
-  - Region Director  
-  - Admin / National  
+- ⚪ **Role definitions** — Backlog
+  - Campus Director
+  - District Director
+  - Region Director
+  - Admin / National
 
-- ⚪ **Role-based view gating** — Backlog  
-- ⚪ **Permission enforcement** — Backlog  
+- ⚪ **Role-based view gating** — Backlog
+- ⚪ **Permission enforcement** — Backlog
 
 ### Authorized Views
 
-- ⚪ **View access control** — Backlog  
-- ⚪ **Data visibility scoped by role** — Backlog  
-- ⚪ **Authorization enforcement consistency** — Backlog  
+- ⚪ **View access control** — Backlog
+- ⚪ **Data visibility scoped by role** — Backlog
+- ⚪ **Authorization enforcement consistency** — Backlog
 
 ---
 
@@ -192,22 +193,22 @@ Recent coordination/doc stabilization work landed in `staging`:
 
 ### Mobile Layout
 
-- ⚪ **Responsive layout** — Backlog  
-- ⚪ **Mobile-specific panel behavior** — Backlog  
-- ⚪ **Touch-friendly spacing** — Backlog  
+- ⚪ **Responsive layout** — Backlog
+- ⚪ **Mobile-specific panel behavior** — Backlog
+- ⚪ **Touch-friendly spacing** — Backlog
 
 ### Touch Interactions
 
-- ⚪ **Minimum touch targets (44×44px)** — Backlog  
-- ⚪ **Swipe gestures** — Backlog  
-- ⚪ **Mobile-optimized controls** — Backlog  
+- ⚪ **Minimum touch targets (44×44px)** — Backlog
+- ⚪ **Swipe gestures** — Backlog
+- ⚪ **Mobile-optimized controls** — Backlog
 
 ### Core Mobile Flows
 
-- ⚪ **Status updates** — Backlog  
-- ⚪ **Notes entry** — Backlog  
-- ⚪ **Needs tracking** — Backlog  
-- ⚪ **Follow-Up view usability** — Backlog  
+- ⚪ **Status updates** — Backlog
+- ⚪ **Notes entry** — Backlog
+- ⚪ **Needs tracking** — Backlog
+- ⚪ **Follow-Up view usability** — Backlog
 
 ---
 
@@ -225,10 +226,11 @@ v1.0 is considered **build-complete** when:
 ## Progression Model
 
 ⚪ → 🔵 → 🟡 → 🟢
-        ↘
-         🔴
+↘
+🔴
 
 ## Status Legend
+
 - ⚪ **Backlog** — Approved scope, not started
 - 🔵 **In Progress** — Actively being worked
 - 🔴 **Blocked** — Waiting on dependency or decision

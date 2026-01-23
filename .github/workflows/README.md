@@ -4,12 +4,12 @@ This folder contains the repo’s GitHub Actions workflows.
 
 ## Workflows
 
-| Workflow | Purpose |
-|----------|--------|
-| `test-and-coverage.yml` | Runs unit tests and code coverage reporting |
-| `verification-gate.yml` | Enforces the repo's verification labeling/gate policy |
-| `copilot-auto-handoff.yml` | Assigns Issues to Copilot coding agent when labeled |
-| `validate-agents.yml` | Validates agent/prompt file frontmatter on PRs |
+| Workflow                   | Purpose                                               |
+| -------------------------- | ----------------------------------------------------- |
+| `test-and-coverage.yml`    | Runs unit tests and code coverage reporting           |
+| `verification-gate.yml`    | Enforces the repo's verification labeling/gate policy |
+| `copilot-auto-handoff.yml` | Assigns Issues to Copilot coding agent when labeled   |
+| `validate-agents.yml`      | Validates agent/prompt file frontmatter on PRs        |
 
 ## Editing rules
 

@@ -46,18 +46,21 @@ export function BottomSheet({
     }
   };
 
-  const handleDrag = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDrag = (
+    _: MouseEvent | TouchEvent | PointerEvent,
+    info: PanInfo
+  ) => {
     if (!sheetRef.current) return;
-    
+
     const deltaY = info.delta.y;
     const newHeight = startHeight.current - deltaY;
     const viewportHeight = window.innerHeight;
     const newPercentage = (newHeight / viewportHeight) * 100;
-    
+
     // Find closest snap point
     let closestSnap = currentSnap;
     let minDiff = Infinity;
-    
+
     snapPoints.forEach((snap, index) => {
       const diff = Math.abs(newPercentage - snap);
       if (diff < minDiff) {
@@ -65,7 +68,7 @@ export function BottomSheet({
         closestSnap = index;
       }
     });
-    
+
     setCurrentSnap(closestSnap);
   };
 
@@ -91,14 +94,14 @@ export function BottomSheet({
             onClick={() => onOpenChange(false)}
             className="fixed inset-0 bg-black/50 z-40 md:hidden"
           />
-          
+
           {/* Bottom Sheet */}
           <motion.div
             ref={sheetRef}
             initial={{ y: "100%" }}
-            animate={{ 
+            animate={{
               y: `${100 - currentHeight}%`,
-              transition: { type: "spring", damping: 30, stiffness: 300 }
+              transition: { type: "spring", damping: 30, stiffness: 300 },
             }}
             exit={{ y: "100%" }}
             drag="y"
@@ -125,9 +128,7 @@ export function BottomSheet({
             {/* Header */}
             {(title || onOpenChange) && (
               <div className="flex-shrink-0 flex items-center justify-between px-4 pb-2 border-b">
-                {title && (
-                  <h2 className="text-lg font-semibold">{title}</h2>
-                )}
+                {title && <h2 className="text-lg font-semibold">{title}</h2>}
                 {onOpenChange && (
                   <button
                     onClick={() => onOpenChange(false)}
@@ -148,7 +149,9 @@ export function BottomSheet({
                   onClick={() => snapTo(index)}
                   className={cn(
                     "h-1 rounded-full transition-all touch-target",
-                    index === currentSnap ? "w-8 bg-gray-400" : "w-1 bg-gray-300"
+                    index === currentSnap
+                      ? "w-8 bg-gray-400"
+                      : "w-1 bg-gray-300"
                   )}
                   aria-label={`Snap to ${snapPoints[index]}%`}
                 />
@@ -165,4 +168,3 @@ export function BottomSheet({
     </AnimatePresence>
   );
 }
-

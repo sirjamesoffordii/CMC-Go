@@ -9,10 +9,10 @@ describe("National Staff", () => {
 
   it("should fetch national staff", async () => {
     const nationalStaff = await db.getNationalStaff();
-    
+
     // Should return an array (might be empty if no national staff assigned yet)
     expect(Array.isArray(nationalStaff)).toBe(true);
-    
+
     // If there are national staff, they should have the correct structure
     if (nationalStaff.length > 0) {
       const firstPerson = nationalStaff[0];
@@ -26,7 +26,7 @@ describe("National Staff", () => {
 
   it("returns only people with no district/region assignment", async () => {
     const nationalStaff = await db.getNationalStaff();
-    
+
     nationalStaff.forEach(person => {
       expect(person.primaryDistrictId).toBeNull();
       expect(person.primaryRegion).toBeNull();
@@ -35,10 +35,12 @@ describe("National Staff", () => {
 
   it("includes role information when present", async () => {
     const nationalStaff = await db.getNationalStaff();
-    
+
     // Each person should have either a primaryRole string or null
     nationalStaff.forEach(person => {
-      expect(person.primaryRole === null || typeof person.primaryRole === "string").toBe(true);
+      expect(
+        person.primaryRole === null || typeof person.primaryRole === "string"
+      ).toBe(true);
     });
   });
 });

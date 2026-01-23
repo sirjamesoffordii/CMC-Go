@@ -17,5 +17,60 @@
         "3000": {
             "onAutoForward": "openBrowser"
         }
-    }
+    },
+
+    // SQLTools settings
+    "sqltools.connections": [
+        {
+            "name": "CMC Go Local Dev",
+            "driver": "MySQL",
+            "server": "localhost",
+            "port": 3306,
+            "database": "cmc_go",
+            "username": "root",
+            "askForPassword": true,
+            "connectionTimeout": 30
+        }
+    ],
+    "sqltools.autoOpenSessionFiles": false,
+    
+    // Prettier settings
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Code Spell Checker settings
+    "cSpell.words": [
+        "radix",
+        "shadcn",
+        "tanstack",
+        "trpc",
+        "tiptap",
+        "drizzle",
+        "nanoid",
+        "sonner",
+        "vaul",
+        "wouter",
+        "lucide",
+        "clsx",
+        "cmdk",
+        "tailwindcss",
+        "streetsidesoftware",
+        "esbenp",
+        "VITE"
+    ]
 }

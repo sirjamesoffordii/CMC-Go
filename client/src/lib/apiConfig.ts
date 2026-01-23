@@ -18,5 +18,3 @@ export const getApiBaseUrl = (): string => {
 export const getTrpcUrl = (): string => {
   return import.meta.env.VITE_API_URL || "/api/trpc";
 };
-
-

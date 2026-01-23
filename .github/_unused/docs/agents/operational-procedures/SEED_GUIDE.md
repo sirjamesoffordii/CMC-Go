@@ -35,7 +35,3 @@ SELECT status, COUNT(*) FROM people GROUP BY status;
 ## Safety
 
 - Seeding is blocked in production-like environments via `APP_ENV` safeguards.
-
-
-
-

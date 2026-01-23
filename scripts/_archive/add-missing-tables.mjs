@@ -1,14 +1,14 @@
-import mysql from 'mysql2/promise';
-import * as dotenv from 'dotenv';
+import mysql from "mysql2/promise";
+import * as dotenv from "dotenv";
 
 dotenv.config();
 
 async function addMissingTables() {
   const connection = await mysql.createConnection(process.env.DATABASE_URL);
-  
+
   try {
-    console.log('Adding missing tables...');
-    
+    console.log("Adding missing tables...");
+
     // Create settings table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS settings (
@@ -18,8 +18,8 @@ async function addMissingTables() {
         updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       )
     `);
-    console.log('✓ Created settings table');
-    
+    console.log("✓ Created settings table");
+
     // Create needs table
     await connection.query(`
       CREATE TABLE IF NOT EXISTS needs (
@@ -34,32 +34,31 @@ async function addMissingTables() {
         createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✓ Created needs table');
-    
+    console.log("✓ Created needs table");
+
     // Add svgPathId column to districts if it doesn't exist
     try {
       await connection.query(`
         ALTER TABLE districts ADD COLUMN svgPathId VARCHAR(64) AFTER name
       `);
-      console.log('✓ Added svgPathId column to districts');
-      
+      console.log("✓ Added svgPathId column to districts");
+
       // Update svgPathId to match name for existing districts
       await connection.query(`
         UPDATE districts SET svgPathId = name WHERE svgPathId IS NULL
       `);
-      console.log('✓ Updated svgPathId values');
+      console.log("✓ Updated svgPathId values");
     } catch (err) {
-      if (err.code === 'ER_DUP_FIELDNAME') {
-        console.log('  svgPathId column already exists');
+      if (err.code === "ER_DUP_FIELDNAME") {
+        console.log("  svgPathId column already exists");
       } else {
-        console.log('  Error adding svgPathId:', err.message);
+        console.log("  Error adding svgPathId:", err.message);
       }
     }
-    
-    console.log('\n✓ All missing tables added successfully!');
-    
+
+    console.log("\n✓ All missing tables added successfully!");
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error:", error);
   } finally {
     await connection.end();
   }

@@ -11,6 +11,7 @@ This repo already includes helper scripts in `scripts/`.
 - `powershell -NoProfile -File scripts/post-merge-evidence.ps1`
 
 ## Tip: keep comments short
+
 - Link PR/Issue, include <= 10 relevant lines, and follow `.github/_unused/docs/agents/legacy/agent-reference/AGENT_EVIDENCE_STANDARD.md`.
 
 ## CI is the gate (recommended commands)

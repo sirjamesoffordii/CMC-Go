@@ -13,12 +13,15 @@ labels: ["type:ops", "status:ready"]
 - Links (Railway/Sentry/Codecov):
 
 ## Checklist
+
 - [ ]
 
 ## Evidence Required
+
 - [ ] What changed (setting name only; no secret values)
 - [ ] Where (links or navigation path)
 - [ ] How to confirm (what proves it worked)
 
 ## Notes
+
 If login/2FA blocks progress, specify the smallest User action needed.

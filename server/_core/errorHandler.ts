@@ -37,11 +37,17 @@ export function sanitizeErrorForLogging(error: unknown): string {
     // Remove potential PII from error messages
     let message = error.message;
     // Remove email patterns
-    message = message.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[EMAIL]");
+    message = message.replace(
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      "[EMAIL]"
+    );
     // Remove phone patterns
     message = message.replace(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, "[PHONE]");
     // Remove person IDs that might be sensitive
-    message = message.replace(/personId["\s:=]+([a-zA-Z0-9_-]+)/gi, 'personId="[ID]"');
+    message = message.replace(
+      /personId["\s:=]+([a-zA-Z0-9_-]+)/gi,
+      'personId="[ID]"'
+    );
     return message;
   }
   return String(error);
@@ -50,7 +56,10 @@ export function sanitizeErrorForLogging(error: unknown): string {
 /**
  * Create user-friendly error response
  */
-export function createErrorResponse(error: unknown): { error: string; code?: string } {
+export function createErrorResponse(error: unknown): {
+  error: string;
+  code?: string;
+} {
   if (error instanceof StructuredError) {
     return {
       error: error.message,
@@ -82,7 +91,7 @@ export function createErrorResponse(error: unknown): { error: string; code?: str
 export function captureErrorToSentry(error: unknown): void {
   // Sanitize error before sending to Sentry
   const sanitizedMessage = sanitizeErrorForLogging(error);
-  
+
   if (error instanceof StructuredError) {
     // Send structured error with context
     Sentry.captureException(error, {
@@ -102,4 +111,3 @@ export function captureErrorToSentry(error: unknown): void {
     Sentry.captureMessage(sanitizedMessage, "error");
   }
 }
-

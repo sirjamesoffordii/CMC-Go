@@ -1,20 +1,20 @@
-import { useDragLayer } from 'react-dnd';
-import { User } from 'lucide-react';
+import { useDragLayer } from "react-dnd";
+import { User } from "lucide-react";
 
 interface Person {
   id: string;
   name: string;
   role: string;
-  status: 'director' | 'staff' | 'co-director' | 'not-invited';
+  status: "director" | "staff" | "co-director" | "not-invited";
   spouse?: string;
   kids?: string;
 }
 
 const statusColors = {
-  director: 'text-green-500',
-  staff: 'text-yellow-500',
-  'co-director': 'text-red-500',
-  'not-invited': 'text-gray-400'
+  director: "text-green-500",
+  staff: "text-yellow-500",
+  "co-director": "text-red-500",
+  "not-invited": "text-gray-400",
 };
 
 interface CustomDragLayerProps {
@@ -22,10 +22,10 @@ interface CustomDragLayerProps {
 }
 
 export function CustomDragLayer({ getPerson }: CustomDragLayerProps) {
-  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
+  const { isDragging, item, currentOffset } = useDragLayer(monitor => ({
     item: monitor.getItem(),
     isDragging: monitor.isDragging(),
-    currentOffset: monitor.getSourceClientOffset()
+    currentOffset: monitor.getSourceClientOffset(),
   }));
 
   if (!isDragging || !currentOffset || !item) {
@@ -35,14 +35,15 @@ export function CustomDragLayer({ getPerson }: CustomDragLayerProps) {
   const person = getPerson(item.personId, item.campusId);
   if (!person) return null;
 
-  const firstName = person.name.split(' ')[0];
-  const truncatedName = firstName.length > 7 ? firstName.slice(0, 7) + '.' : firstName;
+  const firstName = person.name.split(" ")[0];
+  const truncatedName =
+    firstName.length > 7 ? firstName.slice(0, 7) + "." : firstName;
 
   return (
     <div
       style={{
-        position: 'fixed',
-        pointerEvents: 'none',
+        position: "fixed",
+        pointerEvents: "none",
         zIndex: 100,
         left: 0,
         top: 0,
@@ -54,7 +55,7 @@ export function CustomDragLayer({ getPerson }: CustomDragLayerProps) {
         <div className="text-xs text-gray-600 font-medium text-center mb-1">
           {truncatedName}
         </div>
-        
+
         {/* Icon */}
         <div className="relative">
           {person.spouse && (

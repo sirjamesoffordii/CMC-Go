@@ -11,9 +11,14 @@ const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 // Production safeguard
-if (process.env.NODE_ENV === "production" || process.env.APP_ENV === "production") {
+if (
+  process.env.NODE_ENV === "production" ||
+  process.env.APP_ENV === "production"
+) {
   console.error("❌ Cannot reset database in production environment!");
-  console.error("Set NODE_ENV and APP_ENV to something other than 'production' to proceed.");
+  console.error(
+    "Set NODE_ENV and APP_ENV to something other than 'production' to proceed."
+  );
   process.exit(1);
 }
 
@@ -54,14 +59,14 @@ function getConnectionWithoutDb() {
 // Tables in order for truncation (respecting foreign keys)
 // Order: child tables first, parent tables last
 const TRUNCATE_ORDER = [
-  "notes",        // References people
-  "needs",        // References people
-  "assignments",  // References people, campuses, districts
-  "people",       // References campuses, districts
-  "campuses",     // References districts
-  "districts",    // No dependencies
-  "settings",     // No dependencies
-  "users",        // No dependencies
+  "notes", // References people
+  "needs", // References people
+  "assignments", // References people, campuses, districts
+  "people", // References campuses, districts
+  "campuses", // References districts
+  "districts", // No dependencies
+  "settings", // No dependencies
+  "users", // No dependencies
   // drizzle_migrations is NOT truncated (keep migration history)
 ];
 
@@ -70,14 +75,14 @@ const TRUNCATE_ORDER = [
  */
 async function truncateAllTables() {
   console.log("🗑️  Truncating all tables...");
-  
+
   let connection;
   try {
     connection = await mysql.createConnection(connectionString);
-    
+
     // Disable foreign key checks temporarily
     await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    
+
     for (const tableName of TRUNCATE_ORDER) {
       try {
         await connection.query(`TRUNCATE TABLE \`${tableName}\``);
@@ -87,14 +92,16 @@ async function truncateAllTables() {
         if (error.code === "ER_NO_SUCH_TABLE") {
           console.log(`  ⚠️  Table ${tableName} does not exist (skipping)`);
         } else {
-          console.warn(`  ⚠️  Failed to truncate ${tableName}: ${error.message}`);
+          console.warn(
+            `  ⚠️  Failed to truncate ${tableName}: ${error.message}`
+          );
         }
       }
     }
-    
+
     // Re-enable foreign key checks
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    
+
     console.log("✅ All tables truncated\n");
   } catch (error) {
     console.error("❌ Failed to truncate tables:", error.message);
@@ -111,27 +118,29 @@ async function truncateAllTables() {
  */
 async function dropAndRecreateDatabase() {
   console.log("🗑️  Dropping and recreating database...");
-  
+
   const connectionWithoutDb = getConnectionWithoutDb();
   if (!connectionWithoutDb) {
     throw new Error("Failed to create connection without database");
   }
-  
+
   let connection;
   try {
     connection = await mysql.createConnection(connectionWithoutDb);
-    
+
     // Drop database if it exists
     await connection.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
     console.log(`  ✓ Dropped database ${databaseName}`);
-    
+
     // Create database
     await connection.query(`CREATE DATABASE \`${databaseName}\``);
     console.log(`  ✓ Created database ${databaseName}\n`);
   } catch (error) {
     if (error.code === "ER_DBACCESS_DENIED_ERROR") {
       console.error("❌ Permission denied: Cannot drop/create database");
-      console.error("   Your user doesn't have DROP/CREATE DATABASE permissions.");
+      console.error(
+        "   Your user doesn't have DROP/CREATE DATABASE permissions."
+      );
       console.error("   Falling back to table truncation instead...\n");
       return false;
     }
@@ -141,7 +150,7 @@ async function dropAndRecreateDatabase() {
       await connection.end();
     }
   }
-  
+
   return true;
 }
 
@@ -198,32 +207,36 @@ async function runSeed() {
  */
 async function resetDatabase(options = {}) {
   const { dropDatabase = false } = options;
-  
+
   console.log("🔄 Starting database reset...\n");
   console.log("⚠️  WARNING: This will delete all data in the database!");
   console.log(`   Database: ${databaseName}\n`);
-  
+
   let dropped = false;
-  
+
   if (dropDatabase) {
     try {
       dropped = await dropAndRecreateDatabase();
     } catch (error) {
-      console.warn("⚠️  Could not drop/recreate database, falling back to truncation...\n");
+      console.warn(
+        "⚠️  Could not drop/recreate database, falling back to truncation...\n"
+      );
     }
   }
-  
+
   if (!dropped) {
     await truncateAllTables();
   }
-  
+
   await runMigrations();
   await runSeed();
-  
+
   console.log("✅ Database reset completed successfully!");
   console.log("\n📊 Summary:");
   console.log(`   - Database: ${databaseName}`);
-  console.log(`   - Method: ${dropped ? "Drop & Recreate" : "Truncate Tables"}`);
+  console.log(
+    `   - Method: ${dropped ? "Drop & Recreate" : "Truncate Tables"}`
+  );
   console.log(`   - Migrations: Applied`);
   console.log(`   - Seed: Completed`);
 }
@@ -237,8 +250,7 @@ resetDatabase({ dropDatabase })
   .then(() => {
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error("\n❌ Database reset failed:", error.message);
     process.exit(1);
   });
-

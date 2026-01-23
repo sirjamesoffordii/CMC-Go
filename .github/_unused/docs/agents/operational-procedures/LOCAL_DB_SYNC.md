@@ -41,6 +41,7 @@ pnpm db:reset:local --force
 ```
 
 **What it does:**
+
 1. **Safety checks**: Validates that `DATABASE_URL` points to localhost/127.0.0.1/docker mysql
 2. **Hard-fails** if:
    - `NODE_ENV=production` or `APP_ENV=production`
@@ -50,6 +51,7 @@ pnpm db:reset:local --force
 5. **Runs seed** to populate with dev data
 
 **Safety guarantees:**
+
 - Only works with local databases (localhost, 127.0.0.1, docker mysql)
 - Never executes on Railway/production hosts
 - Requires explicit `--force` flag
@@ -62,6 +64,7 @@ pnpm db:migrate
 ```
 
 **What it does:**
+
 - Reads migration files from `drizzle/migrations/`
 - Applies migrations in order
 - Tracks applied migrations in `drizzle_migrations` table
@@ -78,6 +81,7 @@ pnpm db:seed:baseline
 ```
 
 **What it does:**
+
 - `db:seed`: Populates database with comprehensive dev data
 - `db:seed:baseline`: Only seeds required baseline data (settings)
 - Both are **idempotent** (safe to run multiple times)
@@ -87,6 +91,7 @@ pnpm db:seed:baseline
 ### Initial Setup
 
 1. **Set up local MySQL database**
+
    ```bash
    # Create local database (if not exists)
    mysql -u root -p
@@ -94,10 +99,11 @@ pnpm db:seed:baseline
    ```
 
 2. **Configure `.env` file**
+
    ```env
    # Local development database
    DATABASE_URL=mysql://root:password@localhost:3306/cmc_go_local
-   
+
    # Optional: Railway staging (for reference, not used by default)
    STAGING_DATABASE_URL=mysql://user:pass@shortline.proxy.rlwy.net:56109/railway
    ```
@@ -112,11 +118,13 @@ pnpm db:seed:baseline
 When Railway staging has new migrations:
 
 1. **Pull latest code** (includes new migration files)
+
    ```bash
    git pull origin main
    ```
 
 2. **Reset local database** (to match Railway schema)
+
    ```bash
    pnpm db:reset:local --force
    ```
@@ -132,6 +140,7 @@ When Railway staging has new migrations:
 If you want to preserve local data:
 
 1. **Apply new migrations only**
+
    ```bash
    pnpm db:migrate
    ```
@@ -155,11 +164,13 @@ mysql -u root -p cmc_go_local -e "SELECT * FROM drizzle_migrations;"
 To verify that migrations fully describe the Railway schema:
 
 1. **Connect to Railway staging** (temporarily)
+
    ```env
    DATABASE_URL=mysql://user:pass@shortline.proxy.rlwy.net:56109/railway
    ```
 
 2. **Generate schema diff** (if using drizzle-kit)
+
    ```bash
    pnpm db:generate
    ```
@@ -187,12 +198,14 @@ These are automatically seeded by `db:seed:baseline` or `db:seed`.
 ### ⚠️ Verify Host Before Reset
 
 The reset script checks that the host is local:
+
 - ✅ Allowed: `localhost`, `127.0.0.1`, `mysql` (docker), `db` (docker)
 - ❌ Blocked: `railway`, `rlwy.net`, `amazonaws.com`, etc.
 
 ### ⚠️ Backup Before Reset
 
 If you have important local data:
+
 ```bash
 # Export local database
 mysqldump -u root -p cmc_go_local > backup.sql
@@ -211,6 +224,7 @@ mysql -u root -p cmc_go_local < backup.sql
 **Error**: `Host 'shortline.proxy.rlwy.net' is not a local database`
 
 **Solution**: Your `DATABASE_URL` points to Railway. Update `.env` to point to localhost:
+
 ```env
 DATABASE_URL=mysql://root:password@localhost:3306/cmc_go_local
 ```
@@ -220,6 +234,7 @@ DATABASE_URL=mysql://root:password@localhost:3306/cmc_go_local
 **Error**: `⚠️ No migration files found in drizzle/migrations/ directory`
 
 **Solution**: Migration files should be in `drizzle/migrations/`. If empty, you may need to:
+
 1. Generate migrations from schema: `pnpm db:generate`
 2. Or copy migrations from Railway if they exist there
 
@@ -232,6 +247,7 @@ DATABASE_URL=mysql://root:password@localhost:3306/cmc_go_local
 **Error**: Your MySQL user doesn't have `DROP DATABASE` or `CREATE DATABASE` permissions.
 
 **Solution**: Grant permissions or use a user with full privileges:
+
 ```sql
 GRANT ALL PRIVILEGES ON *.* TO 'your_user'@'localhost';
 FLUSH PRIVILEGES;

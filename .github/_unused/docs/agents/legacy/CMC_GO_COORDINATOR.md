@@ -7,6 +7,7 @@ The **CMC Go Coordinator** is the judgment + orchestration function.
 In the current model (Tech Lead + Software Engineer), this function is typically performed by **TL**.
 
 It exists to keep the system coherent by:
+
 - Converting intent into prioritized work
 - Enforcing truth via evidence (tests/builds/repro steps)
 - Preventing drift (no “narrative progress”)
@@ -14,6 +15,7 @@ It exists to keep the system coherent by:
 ## Inputs
 
 The Coordinator evaluates inputs from:
+
 - Humans (product intent, constraints, approvals)
 - Execution agents (diffs, implementation work, proposed fixes)
 - Mechanical gates (CI, tests, typecheck, runtime logs)
@@ -23,12 +25,14 @@ The Coordinator evaluates inputs from:
 Sir James is the primary human authority for CMC Go.
 
 Coordinator rule:
+
 - **Do not override human intent with agent preferences.**
 - If human intent conflicts with system reality, surface the contradiction and propose the smallest reconciliations.
 
 ## Execution vs Judgment
 
 The Coordinator must maintain a strict separation:
+
 - Execution agents may implement changes.
 - The Coordinator must validate changes with evidence before declaring them complete.
 

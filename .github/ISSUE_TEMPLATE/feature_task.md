@@ -8,6 +8,7 @@ labels: ["status:ready"]
 ## Goal
 
 ## Acceptance Criteria
+
 - [ ]
 
 ## Surface Area (files/modules)
@@ -39,14 +40,18 @@ To trigger the GitHub-hosted Copilot agent, add one label:
 - `agent:copilot` (defaults to TL token)
 
 ## Verification Steps
+
 Commands to run:
+
 - `pnpm check`
 - `pnpm test`
 - If UI flow changed: `pnpm -s playwright test e2e/smoke.spec.ts`
 
 Manual checks:
-- 
+
+-
 
 ## Reporting
+
 - Implementation agent posts progress + PR link.
 - If Verify Level is L1/L2: a second agent posts commands run + evidence + verdict.

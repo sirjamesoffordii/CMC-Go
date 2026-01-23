@@ -8,19 +8,19 @@ export function isDemoDatabase(connectionString) {
   if (!connectionString) {
     return false;
   }
-  
+
   try {
     const url = new URL(connectionString);
     const host = url.hostname.toLowerCase();
-    
+
     // Check for Railway demo DB patterns
     const demoDbPatterns = [
-      'railway.internal',
-      'proxy.rlwy.net',
-      'up.railway.app',
-      'railway.app',
+      "railway.internal",
+      "proxy.rlwy.net",
+      "up.railway.app",
+      "railway.app",
     ];
-    
+
     return demoDbPatterns.some(pattern => host.includes(pattern));
   } catch (error) {
     return false;
@@ -30,9 +30,13 @@ export function isDemoDatabase(connectionString) {
 export function checkNotDemoDatabase(connectionString, scriptName) {
   if (isDemoDatabase(connectionString)) {
     console.error(`❌ SAFETY CHECK FAILED`);
-    console.error(`   ${scriptName} cannot be run against the shared Railway staging demo DB.`);
+    console.error(
+      `   ${scriptName} cannot be run against the shared Railway staging demo DB.`
+    );
     console.error();
-    console.error(`   This script would modify the shared database used by the staging website.`);
+    console.error(
+      `   This script would modify the shared database used by the staging website.`
+    );
     console.error(`   Use a local database for development instead.`);
     console.error();
     console.error(`   To use a local database:`);

@@ -1,6 +1,12 @@
 import { useState, useCallback, useEffect } from "react";
 import Cropper, { Area, Point } from "react-easy-crop";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -8,7 +14,11 @@ import { cn } from "@/lib/utils";
 interface ImageCropModalProps {
   open: boolean;
   imageSrc: string;
-  onCropComplete: (croppedImageBlob: Blob, croppedImageUrl: string, backgroundColor: string) => void;
+  onCropComplete: (
+    croppedImageBlob: Blob,
+    croppedImageUrl: string,
+    backgroundColor: string
+  ) => void;
   onCancel: () => void;
 }
 
@@ -23,7 +33,7 @@ function extractEdgeColors(image: HTMLImageElement): string[] {
   const sampleHeight = Math.min(image.height, 200);
   canvas.width = sampleWidth;
   canvas.height = sampleHeight;
-  
+
   ctx.drawImage(image, 0, 0, sampleWidth, sampleHeight);
 
   const colorCounts: Record<string, number> = {};
@@ -40,7 +50,12 @@ function extractEdgeColors(image: HTMLImageElement): string[] {
   }
 
   // Sample right edge
-  const rightData = ctx.getImageData(sampleWidth - edgeWidth, 0, edgeWidth, sampleHeight).data;
+  const rightData = ctx.getImageData(
+    sampleWidth - edgeWidth,
+    0,
+    edgeWidth,
+    sampleHeight
+  ).data;
   for (let i = 0; i < rightData.length; i += 4) {
     const r = Math.round(rightData[i] / 16) * 16;
     const g = Math.round(rightData[i + 1] / 16) * 16;
@@ -60,7 +75,12 @@ function extractEdgeColors(image: HTMLImageElement): string[] {
   }
 
   // Sample bottom edge
-  const bottomData = ctx.getImageData(0, sampleHeight - edgeWidth, sampleWidth, edgeWidth).data;
+  const bottomData = ctx.getImageData(
+    0,
+    sampleHeight - edgeWidth,
+    sampleWidth,
+    edgeWidth
+  ).data;
   for (let i = 0; i < bottomData.length; i += 4) {
     const r = Math.round(bottomData[i] / 16) * 16;
     const g = Math.round(bottomData[i + 1] / 16) * 16;
@@ -79,21 +99,28 @@ function extractEdgeColors(image: HTMLImageElement): string[] {
   const hexColors = sortedColors.map(rgb => {
     const match = rgb.match(/rgb\((\d+),(\d+),(\d+)\)/);
     if (match) {
-      const r = parseInt(match[1]).toString(16).padStart(2, '0');
-      const g = parseInt(match[2]).toString(16).padStart(2, '0');
-      const b = parseInt(match[3]).toString(16).padStart(2, '0');
+      const r = parseInt(match[1]).toString(16).padStart(2, "0");
+      const g = parseInt(match[2]).toString(16).padStart(2, "0");
+      const b = parseInt(match[3]).toString(16).padStart(2, "0");
       return `#${r}${g}${b}`;
     }
     return "#FFFFFF";
   });
 
   // Add white and black as fallback options
-  const finalColors = Array.from(new Set([...hexColors, "#FFFFFF", "#000000"])).slice(0, 10);
-  
+  const finalColors = Array.from(
+    new Set([...hexColors, "#FFFFFF", "#000000"])
+  ).slice(0, 10);
+
   return finalColors;
 }
 
-export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: ImageCropModalProps) {
+export function ImageCropModal({
+  open,
+  imageSrc,
+  onCropComplete,
+  onCancel,
+}: ImageCropModalProps) {
   const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -142,10 +169,10 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
     try {
       const image = new Image();
       image.crossOrigin = "anonymous";
-      
+
       await new Promise<void>((resolve, reject) => {
         image.onload = () => resolve();
-        image.onerror = (e) => reject(e);
+        image.onerror = e => reject(e);
         image.src = imageSrc;
       });
 
@@ -175,7 +202,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
       );
 
       canvas.toBlob(
-        (blob) => {
+        blob => {
           if (blob) {
             const croppedImageUrl = URL.createObjectURL(blob);
             onCropComplete(blob, croppedImageUrl, selectedColor);
@@ -196,15 +223,17 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
   const headerAspectRatio = 1280 / 90; // Match default header height
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onCancel()}>
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && onCancel()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Crop Header Image</DialogTitle>
-          <p className="text-sm text-gray-500">Position the red box over the part you want to use as the header</p>
+          <p className="text-sm text-gray-500">
+            Position the red box over the part you want to use as the header
+          </p>
         </DialogHeader>
-        
-        <div 
-          className="relative rounded-lg overflow-hidden border border-gray-200" 
+
+        <div
+          className="relative rounded-lg overflow-hidden border border-gray-200"
           style={{ height: "400px", backgroundColor: selectedColor }}
         >
           {imageSrc && (
@@ -243,16 +272,22 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
               min={0.1}
               max={3}
               step={0.05}
-              onValueChange={(value) => setZoom(value[0])}
+              onValueChange={value => setZoom(value[0])}
               className="flex-1"
             />
-            <span className="text-sm text-gray-500 min-w-[40px]">{zoom.toFixed(2)}x</span>
+            <span className="text-sm text-gray-500 min-w-[40px]">
+              {zoom.toFixed(2)}x
+            </span>
           </div>
 
           {/* Background color picker */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Background Color (for gaps)</label>
-            <p className="text-xs text-gray-500">Colors extracted from your image edges:</p>
+            <label className="text-sm font-medium">
+              Background Color (for gaps)
+            </label>
+            <p className="text-xs text-gray-500">
+              Colors extracted from your image edges:
+            </p>
             <div className="flex flex-wrap gap-2">
               {extractedColors.map((color, index) => (
                 <button
@@ -260,8 +295,8 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
                   onClick={() => setSelectedColor(color)}
                   className={cn(
                     "w-8 h-8 rounded border-2 transition-all",
-                    selectedColor === color 
-                      ? "border-[#ED1C24] ring-2 ring-[#ED1C24] ring-offset-1" 
+                    selectedColor === color
+                      ? "border-[#ED1C24] ring-2 ring-[#ED1C24] ring-offset-1"
                       : "border-gray-300 hover:border-gray-400"
                   )}
                   style={{ backgroundColor: color }}
@@ -273,7 +308,7 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
                 <input
                   type="color"
                   value={selectedColor}
-                  onChange={(e) => setSelectedColor(e.target.value)}
+                  onChange={e => setSelectedColor(e.target.value)}
                   className="w-8 h-8 rounded border-2 border-gray-300 cursor-pointer"
                   title="Pick custom color"
                 />
@@ -287,8 +322,8 @@ export function ImageCropModal({ open, imageSrc, onCropComplete, onCancel }: Ima
           <Button variant="outline" onClick={onCancel} disabled={isProcessing}>
             Cancel
           </Button>
-          <Button 
-            onClick={createCroppedImage} 
+          <Button
+            onClick={createCroppedImage}
             className="bg-[#ED1C24] hover:bg-[#C91820]"
             disabled={isProcessing || !croppedAreaPixels}
           >
