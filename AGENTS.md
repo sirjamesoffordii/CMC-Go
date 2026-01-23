@@ -1,6 +1,6 @@
 # CMC Go — Agent Operating Manual
 
-This is the **single source of truth** for how agents operate in this repo, and what the operator does (label/approve/merge) in a hands-off workflow.
+This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead (TL) does (label/approve/merge) in a hands-off workflow.
 
 ## Read-first
 
@@ -19,16 +19,17 @@ This is the **single source of truth** for how agents operate in this repo, and 
 
 ## Operating principles
 
-- **Projects v2 is the command center.** All work flows through the project board. The operator sees status there.
+- **Projects v2 is the command center.** All work flows through the project board. The TL sees status there.
 - **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in Projects.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don’t block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
+- **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via TL + Projects/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 
 ## Projects v2 workflow (critical)
 
-The project board is how the operator knows what's happening: https://github.com/users/sirjamesoffordii/projects/2
+The project board is how the TL knows what's happening: https://github.com/users/sirjamesoffordii/projects/2
 
 ### Status field meanings
 
@@ -49,7 +50,7 @@ The board must always reflect reality. Update it immediately, not at end of sess
 3. **When implementation done:** Set Status → Verify, open PR
 4. **After merge:** Set Status → Done
 
-**If you skip this, the operator doesn't know what's happening.**
+**If you skip this, the TL doesn't know what's happening.**
 
 ### Project fields to set
 
@@ -76,7 +77,7 @@ Status option IDs: Todo=`689f8a74`, In Progress=`64fc3c51`, Blocked=`e3f651bf`, 
 
 This repo is designed for **hands-off, continuous agent execution**.
 
-- **Default to action.** Don’t ask the operator for permission to proceed with routine steps.
+- **Default to action.** Don’t ask the user for permission to proceed with routine steps; keep the TL informed via Projects v2 + Issue comments.
 - **Auto-accept routine choices.** Create worktrees/branches, install deps, run checks/tests, and retry transient failures once.
 - **Polling is OK.** If waiting for CI/deploys/logs, poll/stream for up to ~2 minutes without asking (and keep going with parallel work).
 - **Tooling is implicit.** Agents may use any tools available in their environment (VS Code tasks/terminal/CI/GitHub); don’t enumerate tool lists in docs.
@@ -94,7 +95,7 @@ This repo is designed for **hands-off, continuous agent execution**.
 
 Agents may run in one of two execution modes. All instructions below apply, but the repo hygiene mechanics differ.
 
-### Mode A — Local VS Code agent (runs on the operator machine)
+### Mode A — Local VS Code agent (runs on a human-operated machine)
 
 - **Worktrees are required** — except for low-risk work (see "Low-risk fast path" below).
 - Use worktrees to isolate implementation and verification.
@@ -107,9 +108,9 @@ Agents may run in one of two execution modes. All instructions below apply, but 
 - Always base work on `staging` and open PRs targeting `staging`.
 - Do not run long-lived servers.
 
-## Operator role (hands-off)
+## TL role (hands-off)
 
-The operator is not expected to write code.
+The TL is not expected to write code.
 
 - Creates Issues using templates.
 - Applies labels to route work (e.g. `agent:copilot-swe`, `verify:v1`).
@@ -205,13 +206,15 @@ When blocked, post **one** decision request (A/B/C) and keep moving.
 - Security-sensitive or destructive/irreversible choices
 - Changes to repo invariants/contracts
 
-## Operator input required (secrets/tokens/auth)
+## Human input required (secrets/tokens/auth)
 
-When agent needs the operator to provide a value (secret, token, auth code):
+When an agent needs a human to provide a value (secret, token, auth code):
 
 1. **Don't ask in chat** — secrets in chat are compromised
-2. **Run a hidden terminal prompt** — operator just pastes
+2. **Run a hidden terminal prompt** — human just pastes
 3. **Use immediately, then clear** — don't persist in env
+
+Assume the user is not available by default. If human input is required, set Projects v2 → **Blocked** and post the prompt command + what you need in the Issue so the TL can coordinate the handoff.
 
 See `CMC_GO_PATTERNS.md` → "Secrets & Tokens" for the exact commands.
 
@@ -298,7 +301,7 @@ When standard tools fail, use these fallbacks:
 **Fix:**
 
 1. Run VS Code task: `Agent: Recover terminal`
-2. Or ask operator to run command: `workbench.action.terminal.killAll`
+2. Or ask TL/human to run command: `workbench.action.terminal.killAll`
 3. Then run: `Agent: Health check` to verify recovery
 
 ### tasks.json corrupted
@@ -327,7 +330,7 @@ git checkout -- .vscode/tasks.json
 **Fix:**
 
 1. Run: `gh auth status` to diagnose
-2. Ask operator to run: `gh auth login`
+2. Ask TL/human to run: `gh auth login`
 
 ### Health check (run at session start)
 

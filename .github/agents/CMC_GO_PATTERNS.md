@@ -1,7 +1,6 @@
 ---
 name: CMC_GO_PATTERNS
 description: Curated patterns and pitfalls for agents and humans working on CMC Go.
-applyTo: "**"
 ---
 
 # CMC Go — Learned Patterns (Curated)
@@ -39,14 +38,14 @@ If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consu
 
 ### Projects v2 is the command center (non-negotiable)
 
-The operator watches the project board, not chat. **Update status immediately, not at end of session.**
+The TL watches the project board, not chat. **Update status immediately, not at end of session.**
 
 1. **Before starting:** Set Status → In Progress, assign yourself
 2. **When blocked:** Set Status → Blocked, post A/B/C decision in Issue
 3. **When PR opened:** Set Status → Verify
 4. **After merge:** Set Status → Done
 
-**If the board doesn't match reality, the operator doesn't know what's happening.**
+**If the board doesn't match reality, the TL doesn't know what's happening.**
 
 Project board: https://github.com/users/sirjamesoffordii/projects/2
 
@@ -108,7 +107,9 @@ If you solved a non-trivial problem, capture one reusable takeaway:
 1. **First:** Run VS Code task `Agent: Recover terminal` (resets pager env vars).
 2. **If still stuck:** Run VS Code task `Agent: Health check` to confirm terminal works.
 3. **If health check fails:** Use VS Code tasks exclusively (no `run_in_terminal`).
-4. **Last resort:** Escalate to operator only if all tasks also fail.
+4. **Last resort:** Escalate to TL/human only if all tasks also fail.
+
+Assume the user is not in the loop; only request user input when absolutely required.
 
 **Pattern: Prefer tasks over `run_in_terminal` for git/gh commands.**
 
@@ -144,7 +145,7 @@ The `Git: Rebase onto staging (no editor)` task already does this.
 
 - **Do NOT escalate** for terminal/pager issues — use tasks.
 - **Do NOT escalate** for stuck rebase — use `Git: Rebase abort` task.
-- **DO escalate** if: all recovery tasks fail, or operator login required (gh auth, Railway).
+- **DO escalate** if: all recovery tasks fail, or human login required (gh auth, Railway).
 
 ## Database / Schema Patterns
 
@@ -190,11 +191,13 @@ The `Git: Rebase onto staging (no editor)` task already does this.
    - CLI already authenticated (e.g., `gh auth status`, `railway status`)
    - Secure storage / credential manager
 
-2. **If not available: Prompt operator via terminal (hidden input)**
+2. **If not available: Prompt a human via terminal (hidden input)**
 
-### Terminal prompt pattern (operator just pastes)
+   If input is required, document exactly what’s needed in the Issue and set Projects v2 → **Blocked** so the TL can coordinate the handoff.
 
-Agent runs this command — operator only needs to paste the value:
+### Terminal prompt pattern (human just pastes)
+
+Agent runs this command — a human only needs to paste the value:
 
 ```powershell
 $sec = Read-Host "Paste SECRET_NAME (hidden)" -AsSecureString; $env:_SEC = [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)); Remove-Variable sec -ErrorAction SilentlyContinue; Write-Host "Ready - env var set (length: $($env:_SEC.Length))"
@@ -219,7 +222,7 @@ $env:SENTRY_AUTH_TOKEN = $null
 
 ### Key rules
 
-- **NEVER** ask operator to paste secrets into chat.
+- **NEVER** ask anyone to paste secrets into chat.
 - **NEVER** print/log/echo secret values.
 - **ALWAYS** clear env vars immediately after use.
 - **ALWAYS** use hidden input (`-AsSecureString`).
