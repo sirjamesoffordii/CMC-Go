@@ -946,7 +946,7 @@ export default function Home() {
                   className="fixed inset-0 z-40"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-48 md:w-48 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+                <div className="absolute right-0 top-full mt-2 w-56 md:w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
                   <button
                     onClick={e => {
                       e.stopPropagation();
