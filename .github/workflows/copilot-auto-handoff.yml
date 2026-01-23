@@ -8,9 +8,16 @@ permissions:
   contents: read
 
 jobs:
-  assign_to_copilot_tl:
-    name: Assign to Copilot (TL token)
-    if: github.event.label.name == 'agent:copilot' || github.event.label.name == 'agent:copilot-tl'
+  # Main workflow - uses Pro+ account token for Copilot agent access
+  # IMPORTANT: The token must be from a Copilot Pro/Pro+ account (sirjamesoffordii)
+  # Tokens from free accounts (Alpha-Tech-Lead, Software-Engineer-Agent) cannot
+  # access the agent_assignment API.
+  assign_to_copilot:
+    name: Assign to Copilot (Pro+ token)
+    if: |
+      github.event.label.name == 'agent:copilot' || 
+      github.event.label.name == 'agent:copilot-tl' || 
+      github.event.label.name == 'agent:copilot-swe'
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -19,11 +26,12 @@ jobs:
       - name: Assign issue to Copilot coding agent
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.COPILOT_ASSIGN_TOKEN_TL }}
+          github-token: ${{ secrets.COPILOT_ASSIGN_TOKEN_PRO }}
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const issue_number = context.payload.issue.number;
+            const label = context.payload.label.name;
 
             const assignees = (context.payload.issue.assignees ?? []).map(a => a.login);
             if (assignees.includes('copilot-swe-agent[bot]') || assignees.includes('copilot-swe-agent')) {
@@ -32,6 +40,16 @@ jobs:
             }
 
             const target_repo = `${owner}/${repo}`;
+            
+            // Customize instructions based on which label triggered
+            let roleInstructions = '';
+            if (label === 'agent:copilot-tl') {
+              roleInstructions = 'You are acting as Tech Lead (TL). Read `.github/agents/tech-lead.agent.md` for your role definition.';
+            } else if (label === 'agent:copilot-swe') {
+              roleInstructions = 'You are acting as Software Engineer (SWE). Read `.github/agents/software-engineer.agent.md` for your role definition.';
+            } else {
+              roleInstructions = 'Determine the appropriate role (TL or SWE) based on the issue requirements.';
+            }
 
             await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
               owner,
@@ -42,12 +60,24 @@ jobs:
                 target_repo,
                 base_branch: 'staging',
                 custom_instructions: [
+                  `## Role: ${label}`,
+                  roleInstructions,
+                  '',
+                  '## Setup',
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/4 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
+                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/4',
+                  'Then read: AGENTS.md, .github/copilot-instructions.md',
+                  '',
+                  '## Operating Mode',
                   'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
                   'Keep the diff small and scoped to the issue.',
+                  '',
+                  '## Verification',
                   'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',
-                  'Keep Projects v2 and the Issue/PR thread up to date with status + evidence; consult `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` only when needed.'
+                  'Keep Projects v2 and the Issue/PR thread up to date with status + evidence.',
+                  '',
+                  '## IMPORTANT: Report Your Model',
+                  'In your first message and in the PR description, state which AI model you are using.'
                 ].join('\n')
               },
               headers: {
@@ -56,54 +86,4 @@ jobs:
               }
             });
 
-            core.info('Assigned issue to copilot-swe-agent[bot].');
-
-  assign_to_copilot_swe:
-    name: Assign to Copilot (SWE token)
-    if: github.event.label.name == 'agent:copilot-swe'
-    runs-on: ubuntu-latest
-    permissions:
-      issues: write
-
-    steps:
-      - name: Assign issue to Copilot coding agent
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.COPILOT_ASSIGN_TOKEN_SWE }}
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const issue_number = context.payload.issue.number;
-
-            const assignees = (context.payload.issue.assignees ?? []).map(a => a.login);
-            if (assignees.includes('copilot-swe-agent[bot]') || assignees.includes('copilot-swe-agent')) {
-              core.info('Copilot is already assigned.');
-              return;
-            }
-
-            const target_repo = `${owner}/${repo}`;
-
-            await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', {
-              owner,
-              repo,
-              issue_number,
-              assignees: ['copilot-swe-agent[bot]'],
-              agent_assignment: {
-                target_repo,
-                base_branch: 'staging',
-                custom_instructions: [
-                  'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/4 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
-                  'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
-                  'Keep the diff small and scoped to the issue.',
-                  'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',
-                  'Keep Projects v2 and the Issue/PR thread up to date with status + evidence; consult `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` only when needed.'
-                ].join('\n')
-              },
-              headers: {
-                'Accept': 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28'
-              }
-            });
-
-            core.info('Assigned issue to copilot-swe-agent[bot].');
+            core.info(`Assigned issue to copilot-swe-agent[bot] with role: ${label}`);
