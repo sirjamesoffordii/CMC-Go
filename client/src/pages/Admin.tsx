@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useAuth } from "@/_core/hooks/useAuth";
+import { RoleGate } from "@/components/RoleGate";
 import {
   Card,
   CardContent,
@@ -22,7 +23,7 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 export default function Admin() {
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const [, setLocation] = useLocation();
 
   const allUsers = trpc.admin.getAllUsers.useQuery();
@@ -45,7 +46,27 @@ export default function Admin() {
     );
   }
 
-  // Temporarily allow all users to access admin console
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Access Restricted</h2>
+          <p className="text-muted-foreground">
+            This page is only accessible to administrators.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/")}
+            className="mt-4"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Home
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const adminStats = [
     {

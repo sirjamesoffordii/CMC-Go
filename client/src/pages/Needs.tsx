@@ -16,23 +16,21 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Person } from "../../../drizzle/schema";
 
 export default function Needs() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    loading,
+    isDistrictDirectorOrAbove,
+    isCampusDirectorOrAbove,
+  } = useAuth();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // Check if user is a leader
-  const isLeader =
-    user &&
-    [
-      "CO_DIRECTOR",
-      "CAMPUS_DIRECTOR",
-      "DISTRICT_DIRECTOR",
-      "REGION_DIRECTOR",
-      "ADMIN",
-    ].includes(user.role);
+  // Check if user is a leader (CO_DIRECTOR+)
+  const isLeader = isCampusDirectorOrAbove || user?.role === "CO_DIRECTOR";
 
   // Fetch DISTRICT_VISIBLE needs
   const { data: allNeeds = [], isLoading: needsLoading } =
@@ -85,8 +83,7 @@ export default function Needs() {
     );
   }
 
-  // Authentication disabled - allow all users to view needs
-  if (false) {
+  if (!user || !isAuthenticated) {
     return (
       <div className="container max-w-4xl py-8">
         <Card>
