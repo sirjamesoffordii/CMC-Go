@@ -14,11 +14,11 @@ export interface ViewState {
 }
 
 /**
- * Default view state - nation-level view (full map, no scope applied)
+ * Default view state - region-level view scoped to TEXICO
  */
 export const DEFAULT_VIEW_STATE: ViewState = {
-  mode: "nation",
-  regionId: null,
+  mode: "region",
+  regionId: "Texico",
   districtId: null,
   campusId: null,
   panelOpen: false,
@@ -41,8 +41,8 @@ export function initializeViewStateFromURL(): ViewState {
         ? (modeParam as ViewMode)
         : DEFAULT_VIEW_STATE.mode;
 
-    // Safely parse regionId (null if empty string)
-    const regionId = params.get("regionId") || null;
+    // Safely parse regionId (null if empty string, defaults to DEFAULT_VIEW_STATE.regionId if not provided)
+    const regionId = params.get("regionId") || DEFAULT_VIEW_STATE.regionId;
 
     // Safely parse districtId (null if empty string)
     const districtId = params.get("districtId") || null;
