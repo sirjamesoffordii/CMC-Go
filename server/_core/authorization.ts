@@ -328,3 +328,29 @@ export function getPeopleScope(user: {
     message: "Access denied: no scope assigned",
   });
 }
+
+/**
+ * Check if user is an admin (ADMIN role)
+ * Used for administrative operations like approvals and settings
+ */
+export function isAdmin(user: User): boolean {
+  return user.role === "ADMIN" && user.approvalStatus === "ACTIVE";
+}
+
+/**
+ * Enforce admin-only access - throws 403 if user is not an admin
+ */
+export function requireAdmin(user: User | null): void {
+  if (!user) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "Authentication required",
+    });
+  }
+  if (!isAdmin(user)) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Admin access required",
+    });
+  }
+}

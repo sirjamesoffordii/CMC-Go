@@ -11,7 +11,7 @@ import {
   getUserIdFromSession,
 } from "./_core/session";
 import { TRPCError } from "@trpc/server";
-import { getPeopleScope } from "./_core/authorization";
+import { getPeopleScope, requireAdmin } from "./_core/authorization";
 
 export const appRouter = router({
   system: systemRouter,
@@ -461,14 +461,36 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampusesByDistrict(input.districtId);
       }),
-    createPublic: publicProcedure
+    createPublic: protectedProcedure
       .input(
         z.object({
           name: z.string().min(1),
           districtId: z.string().min(1),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+
+        // Enforce scope: campus-scope users cannot create new campuses
+        if (scope.level === "CAMPUS") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (
+          scope.level === "DISTRICT" &&
+          input.districtId !== scope.districtId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (scope.level === "REGION") {
+          const district = await db.getDistrictById(input.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
+          }
+        }
+
         const existing = await db.getCampusByNameAndDistrict(
           input.name,
           input.districtId
@@ -1771,32 +1793,34 @@ export const appRouter = router({
 
   // PR 2: Approvals
   approvals: router({
-    list: publicProcedure.query(async ({ ctx }) => {
-      // Authentication disabled - allow all users to view approvals
+    list: protectedProcedure.query(async ({ ctx }) => {
+      requireAdmin(ctx.user);
       return await db.getPendingApprovals("ADMIN");
     }),
-    approve: publicProcedure
+    approve: protectedProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        // Authentication disabled - allow all users to approve
+        requireAdmin(ctx.user);
+
         const targetUser = await db.getUserById(input.userId);
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        await db.approveUser(input.userId, ctx.user?.id || null);
+        await db.approveUser(input.userId, ctx.user.id);
         return { success: true };
       }),
-    reject: publicProcedure
+    reject: protectedProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        // Authentication disabled - allow all users to reject
+        requireAdmin(ctx.user);
+
         const targetUser = await db.getUserById(input.userId);
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        await db.rejectUser(input.userId, ctx.user?.id || null);
+        await db.rejectUser(input.userId, ctx.user.id);
         return { success: true };
       }),
   }),
@@ -1856,13 +1880,14 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSetting(input.key);
       }),
-    set: publicProcedure
+    set: protectedProcedure
       .input(z.object({ key: z.string(), value: z.string() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        requireAdmin(ctx.user);
         await db.setSetting(input.key, input.value);
         return { success: true };
       }),
-    uploadHeaderImage: publicProcedure
+    uploadHeaderImage: protectedProcedure
       .input(
         z.object({
           imageData: z.string(), // base64 encoded image
@@ -1870,7 +1895,9 @@ export const appRouter = router({
           backgroundColor: z.string().optional(), // hex color for background
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        requireAdmin(ctx.user);
+
         try {
           console.log(
             "[uploadHeaderImage] Starting upload for:",
@@ -1951,7 +1978,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.searchHouseholds(input.query);
       }),
-    create: publicProcedure
+    create: protectedProcedure
       .input(
         z.object({
           label: z.string().optional(),
@@ -1959,11 +1986,13 @@ export const appRouter = router({
           guestsCount: z.number().default(0),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Users must be authenticated to create households
+        // Scope check not needed as households are shared across the system
         const insertId = await db.createHousehold(input);
         return { id: insertId, ...input };
       }),
-    update: publicProcedure
+    update: protectedProcedure
       .input(
         z.object({
           id: z.number(),
@@ -1972,14 +2001,18 @@ export const appRouter = router({
           guestsCount: z.number().optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Users must be authenticated to update households
+        // Scope check not needed as households are shared across the system
         const { id, ...data } = input;
         await db.updateHousehold(id, data);
         return { success: true };
       }),
-    delete: publicProcedure
+    delete: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Users must be authenticated to delete households
+        // Scope check not needed as households are shared across the system
         await db.deleteHousehold(input.id);
         return { success: true };
       }),
