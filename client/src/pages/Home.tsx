@@ -900,8 +900,8 @@ export default function Home() {
 
         {/* User info (authentication disabled) */}
         {user && (
-          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
-            <span>{user.fullName || user.email}</span>
+          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap md:max-w-none max-w-[200px]">
+            <span className="truncate">{user.fullName || user.email}</span>
             {/* PR 4: Editing badge - mobile only */}
             {isMobile && (
               <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
@@ -913,7 +913,7 @@ export default function Home() {
 
         {/* Right Side: Why Personal Invitations Matter Button and Hamburger Menu */}
         <div className="flex items-center gap-2 flex-shrink-0 z-10 ml-auto">
-          {/* Why Personal Invitations Matter Button */}
+          {/* Why Personal Invitations Matter Button - Hidden on mobile to prevent horizontal scroll */}
           <Button
             variant="ghost"
             size="sm"
@@ -921,7 +921,7 @@ export default function Home() {
               e.preventDefault();
               setLocation("/why-invitations-matter");
             }}
-            className="text-white/80 hover:text-white hover:bg-red-700"
+            className="hidden md:inline-flex text-white/80 hover:text-white hover:bg-red-700"
           >
             <span className="text-sm font-semibold tracking-wide">
               Why Personal Invitations Matter

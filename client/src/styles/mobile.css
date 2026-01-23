@@ -1,5 +1,10 @@
 /* Mobile-responsive overrides for CMC Go */
 
+/* Prevent horizontal scroll on all screen sizes */
+body {
+  overflow-x: hidden;
+}
+
 /* Main content area - stack vertically on mobile */
 @media (max-width: 768px) {
   .main-content-area {
@@ -58,6 +63,14 @@
     padding: 8px 12px !important;
   }
 
+  /* User info - make more compact on mobile */
+  .user-info-mobile {
+    font-size: 0.75rem !important;
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
   /* Search bar - full width on mobile */
   .search-mobile {
     max-width: 100% !important;
@@ -85,6 +98,24 @@
   button:not(.touch-target) {
     min-height: 44px;
     padding: 0.75rem 1rem;
+  }
+}
+
+/* Extra small screens (iPhone SE at 375px) */
+@media (max-width: 400px) {
+  /* Even more compact header on very small screens */
+  .header-mobile {
+    padding: 6px 8px !important;
+  }
+
+  /* Make editing badge wrap on very small screens */
+  .user-info-mobile {
+    max-width: 120px !important;
+  }
+
+  /* Ensure map is fully visible */
+  .map-container-mobile {
+    min-height: 300px !important;
   }
 }
 
