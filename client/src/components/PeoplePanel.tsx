@@ -37,10 +37,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
-  // Filter state
+  // Filter state - default shows Yes + Maybe (meaningful subset)
   const [statusFilter, setStatusFilter] = useState<
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
-  >(new Set());
+  >(new Set(["Yes", "Maybe"]));
   const [needFilter, setNeedFilter] = useState<
     Set<"Financial" | "Transportation" | "Housing" | "Other" | "Need Met">
   >(new Set());
@@ -634,6 +634,61 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9"
             />
+          </div>
+
+          {/* Filter Presets */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-gray-600 font-medium">
+              Quick filters:
+            </span>
+            <Button
+              size="sm"
+              variant={
+                statusFilter.size === 1 && statusFilter.has("Yes")
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => setStatusFilter(new Set(["Yes"]))}
+              className="h-8 text-xs"
+            >
+              Confirmed
+            </Button>
+            <Button
+              size="sm"
+              variant={
+                statusFilter.size === 2 &&
+                statusFilter.has("Maybe") &&
+                statusFilter.has("Not Invited")
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => setStatusFilter(new Set(["Maybe", "Not Invited"]))}
+              className="h-8 text-xs"
+            >
+              Follow-up Needed
+            </Button>
+            <Button
+              size="sm"
+              variant={
+                statusFilter.size === 2 &&
+                statusFilter.has("Yes") &&
+                statusFilter.has("Maybe")
+                  ? "default"
+                  : "outline"
+              }
+              onClick={() => setStatusFilter(new Set(["Yes", "Maybe"]))}
+              className="h-8 text-xs"
+            >
+              Default View
+            </Button>
+            <Button
+              size="sm"
+              variant={statusFilter.size === 0 ? "default" : "outline"}
+              onClick={() => setStatusFilter(new Set())}
+              className="h-8 text-xs"
+            >
+              All Statuses
+            </Button>
           </div>
 
           {/* Status Filter Dropdown */}
