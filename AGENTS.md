@@ -1,39 +1,43 @@
 # CMC Go — Agent Operating Manual
 
-This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead (TL) does (label/approve/merge) in a hands-off workflow.
+This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead does (label/approve/merge) in a hands-off workflow.
 
-## Agent GitHub Accounts
+## Agents
 
 Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
 
-| Role                        | GitHub Account            | Responsibility                             |
-| --------------------------- | ------------------------- | ------------------------------------------ |
-| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Coordination, board management, delegation |
-| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Implementation, verification               |
+| Agent                 | GitHub Account            | Default Model    | Responsibility                             |
+| --------------------- | ------------------------- | ---------------- | ------------------------------------------ |
+| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation |
+| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification               |
+| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only             |
 
 ## Read-first
 
 - **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/4
 - `.github` index: [.github/README.md](.github/README.md)
-- TL role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
-- SWE role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
+- Tech Lead role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- Software Engineer role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
 ## Activation checklist (once per session)
 
 - **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/4 (read README for product context)
 - `AGENTS.md` (this file)
 - `.github/copilot-instructions.md`
-- Your role doc (`.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`)
+- Your role doc:
+  - Tech Lead: `.github/agents/tech-lead.agent.md`
+  - Software Engineer: `.github/agents/software-engineer.agent.md`
 - `.github/prompts/loop.prompt.md`
 
 ## Operating principles
 
-- **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/4) tracks what happened, what's happening, and what's next. The TL keeps it current.
+- **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/4) tracks what happened, what's happening, and what's next. Tech Lead keeps it current.
 - **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in the Project.
-- **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
+- **Tech Lead coordinates, Software Engineer implements.** Tech Lead never gets locked into complex implementation — always delegate to Software Engineer to keep the project moving.
+- **Execution mode must be explicit.** Local agents use worktrees; cloud agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don't block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
-- **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via TL + Project/Issues.
+- **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via Tech Lead + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 - **Reflection is mandatory.** Every task ends with two checks: Workflow Improvement + Pattern Learning. See "End-of-Task Reflection".
 
@@ -67,7 +71,7 @@ The board must always reflect reality. Update it immediately, not at end of sess
 3. **When implementation done:** Set Status → Verify, open PR
 4. **After merge:** Set Status → Done
 
-**If you skip this, the TL doesn't know what's happening.**
+**If you skip this, Tech Lead doesn't know what's happening.**
 
 ### Project fields to set
 
@@ -94,7 +98,7 @@ Status option IDs: Todo=`689f8a74`, In Progress=`64fc3c51`, Blocked=`e3f651bf`, 
 
 This repo is designed for **hands-off, continuous agent execution**.
 
-- **Default to action.** Don’t ask the user for permission to proceed with routine steps; keep the TL informed via Projects v2 + Issue comments.
+- **Default to action.** Don't ask the user for permission to proceed with routine steps; keep Tech Lead informed via Projects v2 + Issue comments.
 - **Auto-accept routine choices.** Create worktrees/branches, install deps, run checks/tests, and retry transient failures once.
 - **Polling is OK.** If waiting for CI/deploys/logs, poll/stream for up to ~2 minutes without asking (and keep going with parallel work).
 - **Tooling is implicit.** Agents may use any tools available in their environment (VS Code tasks/terminal/CI/GitHub); don’t enumerate tool lists in docs.
@@ -125,34 +129,146 @@ Agents may run in one of two execution modes. All instructions below apply, but 
 - Always base work on `staging` and open PRs targeting `staging`.
 - Do not run long-lived servers.
 
-## TL role (hands-off)
+## Tech Lead role (coordination-first)
 
-The TL is not expected to write code.
+Tech Lead's **#1 priority is keeping the project on track** — not implementing complex features.
 
 - Creates Issues using templates.
+- Scores complexity and delegates to appropriate Software Engineer (local or cloud).
 - Applies labels to route work (e.g. `agent:copilot-swe`, `verify:v1`).
 - Approves/merges PRs when the verification gate passes.
+- Manages agent pool (max 4 concurrent agents per Tech Lead instance).
 - Performs console-only steps when 2FA/login blocks automation (Sentry/Railway/etc.).
+
+**Never get locked into complex implementation.** If a task would take Tech Lead away from coordination for extended time, delegate it to Software Engineer with Opus 4.5.
+
+## Agent Pool Management
+
+Tech Lead manages a pool of concurrent agents. This prevents resource exhaustion and ensures coordination doesn't fall behind.
+
+### Pool limits
+
+| Limit                        | Value     | Rationale                   |
+| ---------------------------- | --------- | --------------------------- |
+| **Max agents per Tech Lead** | 4         | Local CPU/memory constraint |
+| **Max cloud agents**         | Unlimited | No local resource impact    |
+
+### Tracking active agents
+
+Tech Lead maintains awareness of active agents via:
+
+1. **Agent Registry File** (`.github/agent-registry.json`) — authoritative source
+2. **Project board** — Issues with Status = "In Progress" + assignee
+3. **PR notifications** — Cloud agent completion triggers @Alpha-Tech-Lead mention
+
+#### Registry file format
+
+```json
+{
+  "lastUpdated": "2026-01-23T10:00:00Z",
+  "activeAgents": [
+    {
+      "id": "swe-1",
+      "type": "local",
+      "model": "GPT-5.2-Codex",
+      "issueNumber": 42,
+      "startedAt": "2026-01-23T09:30:00Z",
+      "worktree": "wt-impl-42-feature"
+    },
+    {
+      "id": "cloud-1",
+      "type": "cloud",
+      "issueNumber": 43,
+      "startedAt": "2026-01-23T09:45:00Z"
+    }
+  ]
+}
+```
+
+### Agent lifecycle
+
+**When starting an agent:**
+
+1. Check registry — if 4 local agents active, spawn another Tech Lead instead
+2. Add entry to registry with `startedAt` timestamp
+3. Update Project status → In Progress
+4. Delegate to agent
+
+**When agent completes:**
+
+1. Agent posts completion report to Issue/PR
+2. For local agents: Tech Lead removes from registry after verifying PR
+3. For cloud agents: `copilot-completion-notify.yml` triggers → Tech Lead reviews and removes
+
+**Auto-cleanup:** If an agent entry is >4 hours old without PR activity, Tech Lead should check status and clean up stale entries.
+
+### Scaling with multiple Tech Leads
+
+When work exceeds 4 concurrent agents:
+
+1. Tech Lead spawns a **secondary Tech Lead** via `runSubagent`
+2. Secondary Tech Lead gets its own pool of 4 agents
+3. Primary Tech Lead retains coordination oversight
+
+**Secondary Tech Lead spawn template:**
+
+```
+Prompt: You are a secondary Tech Lead instance. Primary TL has delegated these Issues to you:
+- Issue #X: [title]
+- Issue #Y: [title]
+
+You have a pool of 4 agents. Coordinate these issues to completion and report back when done.
+Do not create new Issues — only implement what's assigned.
+```
+
+## Model Selection
+
+Score issues to select the right model and execution path:
+
+| Factor    | 0 (Low)        | 1 (Med)       | 2 (High)                  |
+| --------- | -------------- | ------------- | ------------------------- |
+| Risk      | Docs, comments | Logic, tests  | Schema, auth, env         |
+| Scope     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
+| Ambiguity | Clear spec     | Some unknowns | Needs design/research     |
+
+**Total Score → Execution Path:**
+
+| Score | Executor                | Model            | Token Cost    |
+| ----- | ----------------------- | ---------------- | ------------- |
+| 0-2   | Cloud Agent             | (GitHub default) | Dedicated SKU |
+| 3-4   | Local Software Engineer | GPT-5.2-Codex    | 1×            |
+| 5-6   | Local Software Engineer | Claude Opus 4.5  | 3×            |
+
+**Role defaults:**
+
+- **Tech Lead:** Claude Opus 4.5 (coordination requires judgment)
+- **Software Engineer:** GPT-5.2-Codex (implementation is usually score 3-4)
+- **Cloud Agent:** GitHub default (simple issues only)
 
 ## Standard workflow
 
-1. TL makes the work executable (Goal/Scope/AC + verification checklist)
-2. SWE implements or verifies (smallest diff + evidence, or checklist + verdict)
-3. “Done” requires evidence (commands/results + links)
-4. Update Projects v2 as you go (board reflects reality)
+1. Tech Lead makes the work executable (Goal/Scope/AC + verification checklist)
+2. Tech Lead scores complexity and selects execution path:
+   - Score 0-2: Cloud Agent (label `agent:copilot-swe`)
+   - Score 3-4: Local Software Engineer with GPT-5.2-Codex
+   - Score 5-6: Local Software Engineer with Claude Opus 4.5
+3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
+4. "Done" requires evidence (commands/results + links)
+5. Update Projects v2 as you go (board reflects reality)
 
 ## Solo mode (one agent can run the whole system)
 
 When only one agent/person is active, run the full loop end-to-end:
 
-- Do TL work first: make the Issue executable (Goal/Scope/AC/Verification) and set the correct Project status.
-- Then do SWE work: implement the smallest diff, run the cheapest relevant checks, and post evidence.
+- Do Tech Lead work first: make the Issue executable (Goal/Scope/AC/Verification) and set the correct Project status.
+- Then do Software Engineer work: implement the smallest diff, run the cheapest relevant checks, and post evidence.
 - Finish by updating the Issue/PR thread + Projects v2 so the repo reflects reality.
 
 ## Roles (active)
 
-- **Tech Lead (TL)** runs first (triage/coherence/deconflict): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
-- **Software Engineer (SWE)** runs second (implement + evidence, or verify): see [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
+- **Tech Lead** runs first (triage/coherence/deconflict): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- **Software Engineer** runs second (implement + evidence, or verify): see [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
+- **Cloud Agent** handles simple issues (score 0-2) via `agent:copilot-swe` label
 
 ## Worktree policy
 
@@ -171,7 +287,7 @@ Before editing:
 
 - Assign the Issue to yourself (preferred)
 - Optionally add a claim label (e.g. `claimed:tl`, `claimed:swe`)
-- Leave a short Issue comment: `CLAIMED by <TL|SWE> — <worktree>/<branch> — ETA <time>`
+- Leave a short Issue comment: `CLAIMED by <Tech Lead|Software Engineer> — <worktree>/<branch> — ETA <time>`
 
 If you go idle/blocked, unclaim and say why.
 
@@ -349,21 +465,22 @@ Procedure:
 - Use a docs worktree
 - Open a PR with: Why / What changed / How verified / Risk
 
-## Automation: Copilot auto-handoff
+## Automation: Cloud Agent auto-handoff
 
-Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`) to trigger:
+Label an Issue with `agent:copilot-swe` to trigger cloud execution:
 
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
 Required secrets (repo Settings → Secrets and variables → Actions):
 
-- `COPILOT_ASSIGN_TOKEN_TL` — used for `agent:copilot` and `agent:copilot-tl`
-- `COPILOT_ASSIGN_TOKEN_SWE` — used for `agent:copilot-swe`
+- `COPILOT_ASSIGN_TOKEN_PRO` — Pro+ account token for cloud agent API access
 
 Notes:
 
-- The workflow requests Copilot to work from `staging` (`agent_assignment.base_branch = staging`) and open a PR targeting `staging`.
-- GitHub evaluates `issues.*` workflows from the repository's default branch. This repo's default branch is `staging`; if that ever changes, ensure this workflow exists on the new default branch or the label trigger will not fire.
+- Cloud agents are for **simple issues only** (complexity score 0-2)
+- The workflow requests Copilot to work from `staging` and open a PR targeting `staging`
+- Tech Lead is notified when cloud agent opens a PR (via `copilot-completion-notify.yml`)
+- GitHub evaluates `issues.*` workflows from the repository's default branch (`staging`)
 
 ## Operational procedures (when needed)
 
