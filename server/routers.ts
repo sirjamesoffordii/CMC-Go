@@ -1,7 +1,12 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import {
+  publicProcedure,
+  protectedProcedure,
+  adminProcedure,
+  router,
+} from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { storagePut } from "./storage";
@@ -11,7 +16,11 @@ import {
   getUserIdFromSession,
 } from "./_core/session";
 import { TRPCError } from "@trpc/server";
-import { getPeopleScope } from "./_core/authorization";
+import {
+  getPeopleScope,
+  canApproveDistrictDirector,
+  canApproveRegionDirector,
+} from "./_core/authorization";
 
 export const appRouter = router({
   system: systemRouter,
@@ -1771,32 +1780,89 @@ export const appRouter = router({
 
   // PR 2: Approvals
   approvals: router({
-    list: publicProcedure.query(async ({ ctx }) => {
-      // Authentication disabled - allow all users to view approvals
-      return await db.getPendingApprovals("ADMIN");
+    list: protectedProcedure.query(async ({ ctx }) => {
+      // Only ADMIN can view all pending approvals
+      // Other roles will be filtered by their scope
+      if (ctx.user.role === "ADMIN") {
+        return await db.getPendingApprovals("ADMIN");
+      } else if (ctx.user.role === "REGION_DIRECTOR") {
+        // REGION_DIRECTOR can see approvals in their region
+        return await db.getPendingApprovals("REGION_DIRECTOR");
+      } else {
+        // Other roles cannot view approvals
+        return [];
+      }
     }),
-    approve: publicProcedure
+    approve: protectedProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        // Authentication disabled - allow all users to approve
         const targetUser = await db.getUserById(input.userId);
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        await db.approveUser(input.userId, ctx.user?.id || null);
+        // Check if approver has permission to approve this user
+        if (targetUser.role === "DISTRICT_DIRECTOR") {
+          if (!canApproveDistrictDirector(ctx.user, targetUser)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to approve this user",
+            });
+          }
+        } else if (targetUser.role === "REGION_DIRECTOR") {
+          if (!canApproveRegionDirector(ctx.user, targetUser)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to approve this user",
+            });
+          }
+        } else {
+          // For other roles, only ADMIN can approve
+          if (ctx.user.role !== "ADMIN") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to approve this user",
+            });
+          }
+        }
+
+        await db.approveUser(input.userId, ctx.user.id);
         return { success: true };
       }),
-    reject: publicProcedure
+    reject: protectedProcedure
       .input(z.object({ userId: z.number() }))
       .mutation(async ({ input, ctx }) => {
-        // Authentication disabled - allow all users to reject
         const targetUser = await db.getUserById(input.userId);
         if (!targetUser) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        await db.rejectUser(input.userId, ctx.user?.id || null);
+        // Check if approver has permission to reject this user
+        if (targetUser.role === "DISTRICT_DIRECTOR") {
+          if (!canApproveDistrictDirector(ctx.user, targetUser)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to reject this user",
+            });
+          }
+        } else if (targetUser.role === "REGION_DIRECTOR") {
+          if (!canApproveRegionDirector(ctx.user, targetUser)) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to reject this user",
+            });
+          }
+        } else {
+          // For other roles, only ADMIN can reject
+          if (ctx.user.role !== "ADMIN") {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Not authorized to reject this user",
+            });
+          }
+        }
+
+        await db.rejectUser(input.userId, ctx.user.id);
         return { success: true };
       }),
   }),
@@ -1856,13 +1922,13 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSetting(input.key);
       }),
-    set: publicProcedure
+    set: adminProcedure
       .input(z.object({ key: z.string(), value: z.string() }))
       .mutation(async ({ input }) => {
         await db.setSetting(input.key, input.value);
         return { success: true };
       }),
-    uploadHeaderImage: publicProcedure
+    uploadHeaderImage: adminProcedure
       .input(
         z.object({
           imageData: z.string(), // base64 encoded image
@@ -1951,7 +2017,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.searchHouseholds(input.query);
       }),
-    create: publicProcedure
+    create: protectedProcedure
       .input(
         z.object({
           label: z.string().optional(),
@@ -1963,7 +2029,7 @@ export const appRouter = router({
         const insertId = await db.createHousehold(input);
         return { id: insertId, ...input };
       }),
-    update: publicProcedure
+    update: protectedProcedure
       .input(
         z.object({
           id: z.number(),
@@ -1977,7 +2043,7 @@ export const appRouter = router({
         await db.updateHousehold(id, data);
         return { success: true };
       }),
-    delete: publicProcedure
+    delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deleteHousehold(input.id);
