@@ -166,6 +166,8 @@ When errors occur: gather evidence → hypothesis → minimal fix → verify.
 
 When reviewing: check AC, invariants, security, tests. Verdict: Pass / Pass-with-notes / Fail.
 
+**Note:** SWE uses the same 4 modes (EXPLORE/IMPLEMENT/VERIFY/DEBUG) and flows between them without handoffs. TL defaults to coordination but can use any mode when it's the fastest path.
+
 ## Model Selection (Token Cost Guide)
 
 Score the task to select the right model:
