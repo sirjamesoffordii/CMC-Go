@@ -24,9 +24,20 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 - **Issues/PRs are the task bus.** Decisions + evidence live there.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
-- **Small diffs.** Keep changes reviewable.
+- **Prefer small diffs.** Optimize for reviewability, but don’t block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets.** `.env*` stays local; use platform/GitHub secrets.
 - **Keep looping.** Take the next best safe step until Done.
+
+## Continuous agent mode (speed defaults)
+
+This repo is designed for **hands-off, continuous agent execution**.
+
+- **Default to action.** Don’t ask the operator for permission to proceed with routine steps.
+- **Auto-accept routine choices.** Create worktrees/branches, install deps, run checks/tests, and retry transient failures once.
+- **Polling is OK.** If waiting for CI/deploys/logs, poll/stream for up to ~2 minutes without asking (and keep going with parallel work).
+- **Tooling is implicit.** Agents may use any tools available in their environment (VS Code tasks/terminal/CI/GitHub); don’t enumerate tool lists in docs.
+- **Only stop for critical decisions.** Escalate only when the choice is security-sensitive, destructive/irreversible, or changes repo invariants/contracts.
+- **Token discipline.** Keep messages short; post durable status/evidence to the Issue/PR; prefer links and deltas over log dumps.
 
 ## Knowledge surfaces (when to consult what)
 
