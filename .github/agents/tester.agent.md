@@ -2,15 +2,7 @@
 name: Test Engineer
 description: Writes and maintains tests (unit, integration, E2E) with focus on coverage, reliability, and test quality.
 model: GPT-4.1
-handoffs:
-  - label: Back to TL
-    agent: Tech Lead (TL)
-    prompt: "Test implementation complete. Review test coverage and merge when ready."
-    send: false
-  - label: Request SWE fix
-    agent: Software Engineer (SWE)
-    prompt: "Tests revealed issues. Please fix the failing assertions."
-    send: true
+handoffs: []
 applyTo: "**/*.test.ts,**/e2e/**"
 tools: ["vscode", "execute", "read", "edit", "search", "test", "todo"]
 ---

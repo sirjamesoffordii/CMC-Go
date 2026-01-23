@@ -2,27 +2,7 @@
 name: Tech Lead (TL)
 description: "Project coordinator for CMC Go. Use when scanning project status, creating/refining Issues, or delegating work. Leads with coordination/triage. Can also verify, implement, explore, document."
 model: GPT-5.2
-handoffs:
-  - label: Implement with SWE
-    agent: Software Engineer (SWE)
-    prompt: "Implement the scope outlined above following the AC and verification steps. Issue is ready for implementation."
-    send: true
-  - label: Delegate to Cloud SWE
-    agent: Software Engineer (SWE)
-    prompt: "Apply label agent:copilot-swe to delegate this Issue to the cloud SWE agent."
-    send: false
-  - label: Write Tests
-    agent: Test Engineer
-    prompt: "Write comprehensive tests for this feature. Follow the test standards in .github/instructions/playwright-tests.instructions.md."
-    send: true
-  - label: Create ADR
-    agent: ADR Generator
-    prompt: "Create an ADR documenting this architectural decision. Include context, options considered, and rationale."
-    send: true
-  - label: Verify PR
-    agent: Software Engineer (SWE)
-    prompt: "Verify this PR against the acceptance criteria. Post evidence and verdict (Pass/Pass-with-notes/Fail)."
-    send: true
+handoffs: []
 tools:
   [
     "vscode",

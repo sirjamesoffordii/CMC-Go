@@ -2,11 +2,7 @@
 name: ADR Generator
 description: Creates and maintains Architectural Decision Records (ADRs) following the MADR format with AI-friendly structure.
 model: GPT-4.1
-handoffs:
-  - label: Back to TL
-    agent: Tech Lead (TL)
-    prompt: "ADR draft complete. Please review and approve."
-    send: false
+handoffs: []
 applyTo: "docs/decisions/**"
 tools: ["vscode", "read", "edit", "search", "web"]
 ---

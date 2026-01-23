@@ -2,19 +2,7 @@
 name: Software Engineer (SWE)
 description: Implements small PRs with evidence, or performs peer verification with a clear verdict.
 model: GPT-5.2
-handoffs:
-  - label: Back to TL
-    agent: Tech Lead (TL)
-    prompt: "Implementation complete. Ready for review and merge."
-    send: true
-  - label: Request Tests
-    agent: Test Engineer
-    prompt: "Implementation needs test coverage. Please write tests for this feature."
-    send: true
-  - label: Escalate to TL
-    agent: Tech Lead (TL)
-    prompt: "Blocked on a decision. Need TL input on A/B/C options above."
-    send: false
+handoffs: []
 applyTo: "**"
 tools:
   [
