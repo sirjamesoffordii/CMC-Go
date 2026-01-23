@@ -4,19 +4,16 @@ This is the **single source of truth** for how agents operate in this repo, and 
 
 ## Read-first
 
-- Product snapshot: [.github/agents/CMC_GO_BRIEF.md](.github/agents/CMC_GO_BRIEF.md)
+- **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/2
 - `.github` index: [.github/README.md](.github/README.md)
 - TL role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
 - SWE role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
-Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
-
 ## Activation checklist (once per session)
 
-- `AGENTS.md`
+- **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/2 (read README for product context)
+- `AGENTS.md` (this file)
 - `.github/copilot-instructions.md`
-- `.github/README.md`
-- `.github/agents/CMC_GO_BRIEF.md`
 - Your role doc (`.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`)
 - `.github/prompts/loop.prompt.md`
 

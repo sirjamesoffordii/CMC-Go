@@ -6,6 +6,10 @@ applyTo: "**"
 
 # CMC Go Brief
 
+> **Note:** The canonical product info is in the **CMC Go Project README**: https://github.com/users/sirjamesoffordii/projects/2
+>
+> This file exists for quick reference when the project board isn't accessible.
+
 CMC Go is a **map-first coordination app** that helps leaders see, track, and mobilize people toward the Campus Missions Conference (CMC).
 
 ## What it does

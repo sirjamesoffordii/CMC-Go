@@ -4,12 +4,10 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 
 ## Read-first (once per session)
 
+- **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/2
 - Policy: `AGENTS.md`
-- Product snapshot: `.github/agents/CMC_GO_BRIEF.md`
-- `.github` index: `.github/README.md`
 - Your role: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
 - Loop: `.github/prompts/loop.prompt.md`
-- Projects v2 (truth): https://github.com/users/sirjamesoffordii/projects/2
 
 Ops/CI/tooling reference (as-needed):
 

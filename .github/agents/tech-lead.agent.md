@@ -131,7 +131,7 @@ When you solve a non-trivial problem:
 ## Reference docs
 
 - Policy: `AGENTS.md`
-- Product: `.github/agents/CMC_GO_BRIEF.md`
+- Product + Status: **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/2
 - Patterns: `.github/agents/CMC_GO_PATTERNS.md`
 
 ## Evidence template
