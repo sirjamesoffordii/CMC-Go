@@ -86,7 +86,7 @@ This repo is designed for **hands-off, continuous agent execution**.
 ## Knowledge surfaces (when to consult what)
 
 - **Policy + workflow:** `AGENTS.md` (this file)
-- **Product snapshot:** `.github/agents/CMC_GO_BRIEF.md`
+- **Product + status:** CMC Go Project — https://github.com/users/sirjamesoffordii/projects/2
 - **Curated learnings (pitfalls/patterns):** `.github/agents/CMC_GO_PATTERNS.md`
 - **Operational procedures (as-needed):** `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 

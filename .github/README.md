@@ -24,8 +24,8 @@ These docs are written for agents. In a hands-off workflow the operator primaril
 
 ## Read-first (fast)
 
-1. `AGENTS.md`
-2. `agents/CMC_GO_BRIEF.md`
+1. CMC Go Project: https://github.com/users/sirjamesoffordii/projects/2
+2. `AGENTS.md`
 3. Your role: `agents/tech-lead.agent.md` or `agents/software-engineer.agent.md`
 4. `prompts/loop.prompt.md`
 
