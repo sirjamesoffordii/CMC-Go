@@ -101,7 +101,7 @@ export function CampusRow({
   };
 
   return (
-    <div className="flex items-center gap-6 py-1 border-b last:border-b-0 group relative">
+    <div className="flex items-center gap-6 py-3 md:py-1 border-b last:border-b-0 group relative">
       {/* Campus Name with Kebab Menu */}
       <div className="w-60 flex-shrink-0 flex items-center gap-2">
         {/* Kebab Menu */}
@@ -137,7 +137,7 @@ export function CampusRow({
                           onCampusEdit(campus);
                           setOpenMenuId(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                       >
                         <Edit2 className="w-4 h-4" />
                         Edit Campus Name
@@ -152,7 +152,7 @@ export function CampusRow({
                           }
                           setOpenMenuId(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full px-4 py-3 md:py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
                         Delete Campus
@@ -168,7 +168,7 @@ export function CampusRow({
                       setSortBy("status");
                       setOpenMenuId(null);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
                   >
                     <span>Status</span>
                     {sortBy === "status" && <Check className="w-4 h-4" />}
@@ -178,7 +178,7 @@ export function CampusRow({
                       setSortBy("name");
                       setOpenMenuId(null);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
                   >
                     <span>Name</span>
                     {sortBy === "name" && <Check className="w-4 h-4" />}
@@ -188,7 +188,7 @@ export function CampusRow({
                       setSortBy("role");
                       setOpenMenuId(null);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center justify-between"
                   >
                     <span>Role</span>
                     {sortBy === "role" && <Check className="w-4 h-4" />}

@@ -182,13 +182,13 @@ export function PersonDetailsDialog({
 
         {/* PR 3: Status History */}
         {isAuthenticated && statusHistoryData.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3 md:space-y-2">
             <Label className="text-sm font-medium">Status History</Label>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-3 md:space-y-2 max-h-48 overflow-y-auto">
               {statusHistoryData.map(change => (
                 <div
                   key={change.id}
-                  className="p-2 bg-white border border-gray-200 rounded text-xs"
+                  className="p-3 md:p-2 bg-white border border-gray-200 rounded text-xs my-2 md:my-0"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -223,17 +223,19 @@ export function PersonDetailsDialog({
 
         {/* Invite Notes (Leaders Only) */}
         {isLeader && (
-          <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-4 md:space-y-3 p-4 bg-gray-50 rounded-lg">
             <Label>Invite Notes (Leaders Only)</Label>
             <Textarea
               placeholder="Enter invite note..."
               value={inviteNoteText}
               onChange={e => setInviteNoteText(e.target.value)}
               rows={3}
+              className="my-2 md:my-0"
             />
             <Button
               onClick={handleAddInviteNote}
               disabled={!inviteNoteText.trim()}
+              className="p-3"
             >
               Add Note
             </Button>
@@ -241,7 +243,7 @@ export function PersonDetailsDialog({
         )}
 
         {/* Invite Notes List */}
-        <div className="space-y-2">
+        <div className="space-y-3 md:space-y-2">
           <Label className="text-sm font-medium">Invite Notes</Label>
           {inviteNotes.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">
@@ -251,7 +253,7 @@ export function PersonDetailsDialog({
             inviteNotes.map(note => (
               <div
                 key={note.id}
-                className="p-3 bg-white border border-gray-200 rounded"
+                className="p-3 bg-white border border-gray-200 rounded my-2 md:my-0"
               >
                 <p className="text-sm text-gray-900">{note.content}</p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
@@ -272,9 +274,9 @@ export function PersonDetailsDialog({
 
         {/* Add Need Form (Leaders Only) */}
         {isLeader && (
-          <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
+          <div className="space-y-4 md:space-y-3 p-4 bg-gray-50 rounded-lg">
             <Label>Add Need (Leaders Only)</Label>
-            <div className="space-y-3">
+            <div className="space-y-4 md:space-y-3">
               <div>
                 <Label className="text-sm">Type</Label>
                 <Select
@@ -285,7 +287,7 @@ export function PersonDetailsDialog({
                     )
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="my-2 md:my-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -307,6 +309,7 @@ export function PersonDetailsDialog({
                     placeholder="0.00"
                     value={needAmount}
                     onChange={e => setNeedAmount(e.target.value)}
+                    className="my-2 md:my-0"
                   />
                 </div>
               )}
@@ -317,6 +320,7 @@ export function PersonDetailsDialog({
                   value={needDescription}
                   onChange={e => setNeedDescription(e.target.value)}
                   rows={2}
+                  className="my-2 md:my-0"
                 />
               </div>
               <div>
@@ -361,7 +365,7 @@ export function PersonDetailsDialog({
               </div>
               <Button
                 onClick={handleAddNeed}
-                className="w-full"
+                className="w-full p-3"
                 disabled={!needDescription.trim()}
               >
                 Add Need
@@ -371,7 +375,7 @@ export function PersonDetailsDialog({
         )}
 
         {/* Needs List */}
-        <div className="space-y-2">
+        <div className="space-y-3 md:space-y-2">
           <Label className="text-sm font-medium">Needs List</Label>
           {needs.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">
@@ -381,7 +385,7 @@ export function PersonDetailsDialog({
             needs.map(need => (
               <div
                 key={need.id}
-                className={`p-3 border rounded ${
+                className={`p-3 border rounded my-2 md:my-0 ${
                   need.isActive
                     ? "bg-white border-gray-200"
                     : "bg-gray-50 border-gray-300 opacity-60"

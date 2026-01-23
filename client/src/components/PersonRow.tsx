@@ -94,25 +94,25 @@ export function PersonRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
+      className="flex items-center gap-1.5 md:gap-3 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
+        className={`w-2 md:w-1.5 h-10 md:h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
         onClick={handleStatusClick}
         title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
       />
 
       {/* Person Info - Compact - Draggable area */}
       <div
-        className="flex-1 py-1.5 pr-2 min-w-0"
+        className="flex-1 py-3 md:py-1.5 pr-2 min-w-0"
         onClick={() => onClick(person)}
         {...attributes}
         {...listeners}
       >
-        <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center justify-between gap-3 md:gap-1.5">
           <span className="text-xs font-medium text-slate-800 truncate group-hover:text-slate-900 transition-colors">
             {person.name ? (
               <EditableText
