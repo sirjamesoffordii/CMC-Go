@@ -48,6 +48,7 @@ import {
 } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+import { toast } from "sonner";
 import { DroppablePerson } from "./DroppablePerson";
 import { CampusDropZone } from "./CampusDropZone";
 import { CampusNameDropZone } from "./CampusNameDropZone";
@@ -170,7 +171,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error creating campus:", error);
-      alert(
+      toast.error(
         `Failed to create ${entityName.toLowerCase()}: ${error.message || "Unknown error"}`
       );
     },
@@ -196,7 +197,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error updating person:", error);
-      alert(`Error updating person: ${error.message || "Unknown error"}`);
+      toast.error(`Error updating person: ${error.message || "Unknown error"}`);
     },
   });
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -251,7 +252,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error creating person:", error);
-      alert(`Error creating person: ${error.message || "Unknown error"}`);
+      toast.error(`Error creating person: ${error.message || "Unknown error"}`);
     },
   });
   const deletePerson = trpc.people.delete.useMutation({
@@ -286,6 +287,7 @@ export function DistrictPanel({
   });
   const deleteCampus = trpc.campuses.delete.useMutation({
     onSuccess: () => {
+      toast.success("Campus deleted successfully");
       utils.campuses.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: district!.id });
       utils.people.list.invalidate();
@@ -297,6 +299,9 @@ export function DistrictPanel({
       }
       utils.followUp.list.invalidate();
       onDistrictUpdate();
+    },
+    onError: error => {
+      toast.error(`Failed to delete campus: ${error.message}`);
     },
   });
   // Dialog states
@@ -1264,7 +1269,7 @@ export function DistrictPanel({
       },
       onError: error => {
         console.error("Error creating person:", error);
-        alert("Failed to create person: " + error.message);
+        toast.error("Failed to create person: " + error.message);
         setQuickAddMode(null);
         setQuickAddName("");
       },
@@ -1282,25 +1287,25 @@ export function DistrictPanel({
 
     if (!selectedCampusId) {
       console.error("No campus selected");
-      alert("Please select a campus or location first");
+      toast.error("Please select a campus or location first");
       return;
     }
 
     if (!personForm.name?.trim()) {
       console.error("Name is required");
-      alert("Name is required");
+      toast.error("Name is required");
       return;
     }
 
     if (!personForm.role?.trim()) {
       console.error("Role is required");
-      alert("Role is required");
+      toast.error("Role is required");
       return;
     }
 
     if (!district?.id) {
       console.error("District ID is missing");
-      alert("District information is missing");
+      toast.error("District information is missing");
       return;
     }
 
@@ -1398,7 +1403,7 @@ export function DistrictPanel({
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error("Failed to create household:", error);
-          alert("Failed to create household. Please try again.");
+          toast.error("Failed to create household. Please try again.");
           return;
         }
       }
@@ -2618,14 +2623,9 @@ export function DistrictPanel({
                                     </button>
                                     <button
                                       onClick={() => {
-                                        const ok = window.confirm(
-                                          `Delete ${entityName.toLowerCase()} "${campus.name}"? People in this ${entityName.toLowerCase()} will be removed from assignment.`
-                                        );
-                                        if (ok) {
-                                          deleteCampus.mutate({
-                                            id: campus.id,
-                                          });
-                                        }
+                                        deleteCampus.mutate({
+                                          id: campus.id,
+                                        });
                                         setOpenCampusMenuId(null);
                                       }}
                                       className="w-full px-5 py-2.5 text-left text-base text-red-600 hover:bg-red-50 flex items-center gap-3"

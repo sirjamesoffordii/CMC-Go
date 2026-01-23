@@ -2,7 +2,7 @@
 import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
+import { toast } from "sonner";
 
 interface NationalPanelProps {
   onClose: () => void;
@@ -147,13 +148,15 @@ export function NationalPanel({
     },
     onError: error => {
       console.error("Error creating national staff:", error);
-      alert(`Failed to create person: ${error.message || "Unknown error"}`);
+      toast.error(
+        `Failed to create person: ${error.message || "Unknown error"}`
+      );
     },
   });
 
   const handleAddPerson = () => {
     if (!personForm.name.trim()) {
-      alert("Please enter a name");
+      toast.error("Please enter a name");
       return;
     }
 

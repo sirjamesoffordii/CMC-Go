@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface CampusRowProps {
   campus: Campus;
@@ -54,6 +55,7 @@ export function CampusRow({
 
   const deleteCampus = trpc.campuses.delete.useMutation({
     onSuccess: () => {
+      toast.success("Campus deleted successfully");
       utils.campuses.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
       utils.people.list.invalidate();
@@ -63,6 +65,9 @@ export function CampusRow({
       utils.metrics.district.invalidate({ districtId: campus.districtId });
       utils.followUp.list.invalidate();
       onCampusUpdate();
+    },
+    onError: error => {
+      toast.error(`Failed to delete campus: ${error.message}`);
     },
   });
 
@@ -144,12 +149,7 @@ export function CampusRow({
                       </button>
                       <button
                         onClick={() => {
-                          const ok = window.confirm(
-                            `Delete campus "${campus.name}"? People on this campus will no longer be assigned to it.`
-                          );
-                          if (ok) {
-                            deleteCampus.mutate({ id: campus.id });
-                          }
+                          deleteCampus.mutate({ id: campus.id });
                           setOpenMenuId(null);
                         }}
                         className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"

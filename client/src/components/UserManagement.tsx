@@ -57,13 +57,7 @@ export function UserManagement() {
   });
 
   const handleDeleteUser = (userId: number, fullName: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete user "${fullName}"? This action cannot be undone.`
-      )
-    ) {
-      deleteUserMutation.mutate({ userId });
-    }
+    deleteUserMutation.mutate({ userId });
   };
 
   const handleRoleChange = (userId: number, role: string) => {
@@ -88,16 +82,10 @@ export function UserManagement() {
   };
 
   const handleBanUser = (userId: number, fullName: string) => {
-    if (
-      window.confirm(
-        `Are you sure you want to ban user "${fullName}"? They will be disabled and unable to access the system.`
-      )
-    ) {
-      updateStatusMutation.mutate({
-        userId,
-        approvalStatus: "DISABLED",
-      });
-    }
+    updateStatusMutation.mutate({
+      userId,
+      approvalStatus: "DISABLED",
+    });
   };
 
   if (isLoading) {
