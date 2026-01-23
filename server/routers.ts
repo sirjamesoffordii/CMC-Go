@@ -471,7 +471,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const scope = getPeopleScope(ctx.user);
 
-        // Enforce scope: campus-scope users cannot create new campuses
+        // Enforce scope: campus-level users cannot create new campuses
         if (scope.level === "CAMPUS") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -559,7 +559,7 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const scope = getPeopleScope(ctx.user);
 
-        // Enforce scope: campus-scope users cannot create new campuses
+        // Enforce scope: campus-level users cannot create new campuses
         if (scope.level === "CAMPUS") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
