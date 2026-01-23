@@ -55,6 +55,15 @@ page.locator(".btn-primary"); // ❌
 - Config lives in `playwright.config.ts`
 - Tests run with `pnpm e2e`
 - Smoke tests: `e2e/smoke.spec.ts`
+- Global setup (`e2e/global-setup.ts`) validates server connectivity before tests run
+
+## Server Connectivity
+
+- The `webServer` config in `playwright.config.ts` auto-starts the dev server
+- Global setup checks server availability before running tests
+- If server is not reachable, tests fail fast with a clear error message
+- In CI, `reuseExistingServer` is false, so server always starts fresh
+- Locally, `reuseExistingServer` is true, so an existing server can be used
 
 ## CI Considerations
 
