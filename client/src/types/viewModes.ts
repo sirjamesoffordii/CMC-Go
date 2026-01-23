@@ -75,7 +75,8 @@ export function initializeViewStateFromURL(): ViewState {
 }
 
 /**
- * Update URL with view state (non-navigating)
+ * Update URL with view state using browser history
+ * Uses pushState to enable browser back/forward navigation
  */
 export function updateURLWithViewState(viewState: ViewState) {
   const params = new URLSearchParams(window.location.search);
@@ -110,10 +111,14 @@ export function updateURLWithViewState(viewState: ViewState) {
     params.delete("panelOpen");
   }
 
-  // Update URL without triggering navigation
+  // Build new URL
   const newSearch = params.toString();
   const newUrl = newSearch
     ? `${window.location.pathname}?${newSearch}`
     : window.location.pathname;
-  window.history.replaceState({}, "", newUrl);
+
+  // Only update if URL actually changed to avoid creating unnecessary history entries
+  if (newUrl !== window.location.pathname + window.location.search) {
+    window.history.pushState({}, "", newUrl);
+  }
 }

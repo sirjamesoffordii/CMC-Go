@@ -2303,6 +2303,22 @@ export function DistrictPanel({
                 </div>
               </div>
             </div>
+
+            {/* Close button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 hover:bg-slate-100 rounded-md transition-colors text-slate-600 hover:text-slate-900 flex-shrink-0"
+                  aria-label="Close panel"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Close (Esc)</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0 && (
