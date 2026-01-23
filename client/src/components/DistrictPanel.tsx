@@ -24,7 +24,14 @@ import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
-import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -850,24 +857,34 @@ export function DistrictPanel({
   const SWIPE_THRESHOLD = 50; // pixels
   const SWIPE_OPACITY_FADE_DISTANCE = 300; // pixels for full opacity fade
 
-  // Swipe gesture handlers
-  const swipeGesture = useSwipeGesture({
-    onSwipeRight: () => {
-      // Close panel on swipe right (threshold already enforced by hook)
-      if (isMobile) {
-        onClose();
-      }
-    },
-    onSwipeMove: deltaX => {
+  // Swipe gesture handlers - memoized to prevent unnecessary re-renders
+  const handleSwipeRight = useCallback(() => {
+    // Close panel on swipe right (threshold already enforced by hook)
+    if (isMobile) {
+      onClose();
+    }
+  }, [isMobile, onClose]);
+
+  const handleSwipeMove = useCallback(
+    (deltaX: number) => {
       // Only allow swiping right (positive deltaX)
       if (isMobile && deltaX > 0) {
         setSwipeOffset(deltaX);
       }
     },
-    onSwipeEnd: () => {
-      // Reset offset if swipe didn't trigger close
-      setSwipeOffset(0);
-    },
+    [isMobile]
+  );
+
+  const handleSwipeEnd = useCallback(() => {
+    // Reset offset if swipe didn't trigger close
+    setSwipeOffset(0);
+  }, []);
+
+  // Swipe gesture hook with memoized handlers
+  const swipeGesture = useSwipeGesture({
+    onSwipeRight: handleSwipeRight,
+    onSwipeMove: handleSwipeMove,
+    onSwipeEnd: handleSwipeEnd,
     threshold: SWIPE_THRESHOLD,
   });
 
