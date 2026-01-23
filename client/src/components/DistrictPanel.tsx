@@ -64,6 +64,7 @@ import {
 import { deriveHouseholdLabel } from "@/lib/householdLabel";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -106,6 +107,7 @@ export function DistrictPanel({
   onPersonClick,
   onDistrictUpdate,
 }: DistrictPanelProps) {
+  const isMobile = useIsMobile();
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -2095,6 +2097,20 @@ export function DistrictPanel({
 
   const content = district ? (
     <div className="w-full h-full flex flex-col">
+      {/* Mobile Close Button Bar */}
+      {isMobile && (
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 p-3 flex items-center justify-between md:hidden">
+          <h2 className="text-lg font-semibold text-slate-900">{district.name}</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close panel"
+          >
+            <X className="w-6 h-6 text-slate-700" />
+          </button>
+        </div>
+      )}
+      
       <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
         {/* Header Section */}
         <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200 w-full">

@@ -2,6 +2,7 @@ import { trpc } from "@/lib/trpc";
 import { useState, useMemo } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   X,
   Download,
@@ -31,6 +32,7 @@ interface PeoplePanelProps {
 }
 
 export function PeoplePanel({ onClose }: PeoplePanelProps) {
+  const isMobile = useIsMobile();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { isAuthenticated } = usePublicAuth();
@@ -598,6 +600,20 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
   return (
     <div className="h-full bg-white border-l border-gray-300 flex flex-col">
+      {/* Mobile Close Button Bar */}
+      {isMobile && (
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 p-3 flex items-center justify-between md:hidden">
+          <h2 className="text-lg font-semibold text-slate-900">People</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close panel"
+          >
+            <X className="w-6 h-6 text-slate-700" />
+          </button>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200">
         <div>
@@ -612,12 +628,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           >
             <Download className="h-5 w-5 text-gray-500" />
           </button>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+          {!isMobile && (
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          )}
         </div>
       </div>
 

@@ -715,6 +715,21 @@ export default function Home() {
     setViewState,
   ]);
 
+  // Prevent body scroll when panels are open on mobile
+  useEffect(() => {
+    if (isMobile && (selectedDistrictId || nationalPanelOpen || peoplePanelOpen)) {
+      // Save original body overflow
+      const originalOverflow = document.body.style.overflow;
+      // Prevent scroll
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        // Restore original overflow when panel closes
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isMobile, selectedDistrictId, nationalPanelOpen, peoplePanelOpen]);
+
   // Handle district panel resize
   const handleDistrictMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();

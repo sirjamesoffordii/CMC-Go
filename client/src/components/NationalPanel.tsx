@@ -2,7 +2,8 @@
 import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ export function NationalPanel({
   onPersonClick,
   onPersonStatusChange,
 }: NationalPanelProps) {
+  const isMobile = useIsMobile();
   const { data: nationalStaffRaw = [], isLoading } =
     trpc.people.getNational.useQuery();
   const { data: allPeople = [] } = trpc.people.list.useQuery();
@@ -275,7 +277,21 @@ export function NationalPanel({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white">
+    <div className="w-full h-full flex flex-col bg-white">
+      {/* Mobile Close Button Bar */}
+      {isMobile && (
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 p-3 flex items-center justify-between md:hidden">
+          <h2 className="text-lg font-semibold text-slate-900">Chi Alpha National Team</h2>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label="Close panel"
+          >
+            <X className="w-6 h-6 text-slate-700" />
+          </button>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex-shrink-0 border-b border-slate-200 bg-gradient-to-r from-slate-700 to-slate-800 text-white p-5">
         <div className="flex items-center justify-between mb-4">
@@ -300,12 +316,14 @@ export function NationalPanel({
               <Plus className="w-4 h-4" />
               Add Person
             </button>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!isMobile && (
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -331,7 +349,7 @@ export function NationalPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 overflow-auto p-4">
         {isLoading ? (
           <div className="text-center py-8 text-slate-500">Loading...</div>
         ) : nationalStaff.length === 0 ? (
