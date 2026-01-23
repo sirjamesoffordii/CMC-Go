@@ -937,6 +937,79 @@ export async function getMetrics() {
   return { ...counts, total };
 }
 
+/**
+ * Get metrics scoped by user's access level
+ * Ensures users only see metrics for data they have access to
+ */
+export async function getScopedMetrics(scope: PeopleScope) {
+  const db = await getDb();
+  if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+
+  switch (scope.level) {
+    case "ALL":
+      return await getMetrics();
+    case "REGION":
+      return await getRegionMetrics(scope.regionId);
+    case "DISTRICT":
+      return await getDistrictMetrics(scope.districtId);
+    case "CAMPUS": {
+      // Get metrics for a specific campus
+      const campus = await getCampusById(scope.campusId);
+      if (!campus) {
+        return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
+      }
+      
+      // Count people at this campus
+      const totalResult = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(people)
+        .where(eq(people.primaryCampusId, scope.campusId));
+      const total = Number(totalResult[0]?.count) || 0;
+
+      const statusCounts = await db
+        .select({ status: people.status, count: sql<number>`COUNT(*)` })
+        .from(people)
+        .where(eq(people.primaryCampusId, scope.campusId))
+        .groupBy(people.status);
+
+      const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
+        string,
+        number
+      >;
+      let countedTotal = 0;
+
+      for (const row of statusCounts) {
+        const status = row.status;
+        const count = Number((row as any).count) || 0;
+        countedTotal += count;
+        switch (status) {
+          case "Yes":
+            counts.going = count;
+            break;
+          case "Maybe":
+            counts.maybe = count;
+            break;
+          case "No":
+            counts.notGoing = count;
+            break;
+          case "Not Invited":
+            counts.notInvited = count;
+            break;
+          default:
+            counts.notInvited += count;
+            break;
+        }
+      }
+
+      if (total > countedTotal) {
+        counts.notInvited += total - countedTotal;
+      }
+
+      return { ...counts, total };
+    }
+  }
+}
+
 export async function getDistrictMetrics(districtId: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
