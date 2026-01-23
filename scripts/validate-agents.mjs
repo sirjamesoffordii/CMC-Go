@@ -71,7 +71,7 @@ function parseFrontmatter(content, filePath) {
     }
 
     // Check for array item that starts an object (e.g., "  - label: ...")
-    const arrayObjectMatch = line.match(/^  - (\w+):\s*(.*)$/);
+    const arrayObjectMatch = line.match(/^ {2}- (\w+):\s*(.*)$/);
     if (arrayObjectMatch && currentArray) {
       const [, objKey, objValue] = arrayObjectMatch;
       currentObject = { [objKey]: objValue.replace(/^["']|["']$/g, "") };
@@ -89,7 +89,7 @@ function parseFrontmatter(content, filePath) {
     }
 
     // Check for nested object property (e.g., "    agent: ...")
-    const nestedPropMatch = line.match(/^    (\w+):\s*(.*)$/);
+    const nestedPropMatch = line.match(/^ {4}(\w+):\s*(.*)$/);
     if (nestedPropMatch && currentObject) {
       const [, propKey, propValue] = nestedPropMatch;
       currentObject[propKey] = propValue.replace(/^["']|["']$/g, "");
