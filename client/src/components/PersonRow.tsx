@@ -36,6 +36,13 @@ const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
   "No",
 ];
 
+const STATUS_ABBREVIATIONS = {
+  Yes: "Y",
+  Maybe: "M",
+  No: "N",
+  "Not Invited": "NI",
+};
+
 export function PersonRow({
   person,
   onStatusChange,
@@ -130,13 +137,7 @@ export function PersonRow({
               }}
               title={`Tap to change status (current: ${person.status || "Not Invited"})`}
             >
-              {person.status === "Not Invited"
-                ? "NI"
-                : person.status === "Maybe"
-                  ? "M"
-                  : person.status === "Yes"
-                    ? "Y"
-                    : "N"}
+              {STATUS_ABBREVIATIONS[person.status || "Not Invited"]}
             </div>
           )}
 

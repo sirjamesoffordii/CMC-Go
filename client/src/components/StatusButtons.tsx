@@ -17,13 +17,6 @@ const STATUS_COLORS = {
   "Not Invited": "bg-slate-500 hover:bg-slate-600 active:bg-slate-700",
 };
 
-const STATUS_LABELS = {
-  Yes: "Yes",
-  Maybe: "Maybe",
-  No: "No",
-  "Not Invited": "Not Invited",
-};
-
 export function StatusButtons({ person, onStatusChange }: StatusButtonsProps) {
   const currentStatus = person.status || "Not Invited";
 
@@ -38,7 +31,7 @@ export function StatusButtons({ person, onStatusChange }: StatusButtonsProps) {
     onStatusChange(person.personId, newStatus, previousStatus);
 
     // Show toast with undo option
-    toast.success(`Status updated to ${STATUS_LABELS[newStatus]}`, {
+    toast.success(`Status updated to ${newStatus}`, {
       action: {
         label: "Undo",
         onClick: () => {
@@ -68,9 +61,9 @@ export function StatusButtons({ person, onStatusChange }: StatusButtonsProps) {
                 : ""
             }
           `}
-          title={`Set status to ${STATUS_LABELS[status]}`}
+          title={`Set status to ${status}`}
         >
-          {STATUS_LABELS[status]}
+          {status}
         </button>
       ))}
     </div>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Status Updates - Visual Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .toast {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 p-8">
+    <div class="max-w-md mx-auto space-y-8">
+        <h1 class="text-2xl font-bold text-slate-800 mb-4">Mobile Status Updates - Visual Demo</h1>
+        
+        <!-- Desktop View -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Desktop View (Existing)</h2>
+            <p class="text-sm text-slate-600 mb-4">Thin status bar that cycles on click</p>
+            
+            <div class="flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 cursor-pointer">
+                <div class="w-1.5 h-8 rounded-l cursor-pointer bg-yellow-600 hover:brightness-110 transition-all flex-shrink-0"></div>
+                <div class="flex-1 py-1.5 pr-2 min-w-0">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <span class="text-xs font-medium text-slate-800">John Doe</span>
+                        <div class="flex items-center gap-0.5">
+                            <svg class="h-3 w-3 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M11 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-slate-500">Campus Director</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile View - Collapsed -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Mobile View - Collapsed</h2>
+            <p class="text-sm text-slate-600 mb-4">Wider status button with abbreviation</p>
+            
+            <div class="flex flex-col gap-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-12 h-8 rounded-l cursor-pointer flex items-center justify-center text-white text-xs font-medium bg-yellow-600">
+                        M
+                    </div>
+                    <div class="flex-1 py-1.5 pr-2 min-w-0">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-xs font-medium text-slate-800">John Doe</span>
+                            <div class="flex items-center gap-0.5">
+                                <svg class="h-3 w-3 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M11 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-500">Campus Director</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile View - Expanded -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Mobile View - Expanded</h2>
+            <p class="text-sm text-slate-600 mb-4">Large touch-friendly status buttons (44px+)</p>
+            
+            <div class="flex flex-col gap-1.5 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm">
+                <div class="flex items-center gap-1.5">
+                    <div class="w-12 h-8 rounded-l cursor-pointer flex items-center justify-center text-white text-xs font-medium bg-yellow-600">
+                        M
+                    </div>
+                    <div class="flex-1 py-1.5 pr-2 min-w-0">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-xs font-medium text-slate-800">John Doe</span>
+                            <div class="flex items-center gap-0.5">
+                                <svg class="h-3 w-3 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path d="M11 4h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-500">Campus Director</span>
+                    </div>
+                </div>
+                
+                <!-- Status Buttons Panel -->
+                <div class="px-3 pb-3">
+                    <div class="flex gap-1.5 flex-wrap">
+                        <button class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900">
+                            Yes
+                        </button>
+                        <button class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 bg-yellow-600 hover:bg-yellow-700 active:bg-yellow-800 ring-2 ring-offset-2 ring-slate-900">
+                            Maybe
+                        </button>
+                        <button class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 bg-red-700 hover:bg-red-800 active:bg-red-900">
+                            No
+                        </button>
+                        <button class="min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-200 bg-slate-500 hover:bg-slate-600 active:bg-slate-700">
+                            Not Invited
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Toast Notification</h2>
+            <p class="text-sm text-slate-600 mb-4">Appears after status change with undo option</p>
+            
+            <div class="toast bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-sm">Status updated to Yes</span>
+                </div>
+                <button class="px-3 py-1 bg-white text-slate-900 rounded text-xs font-medium hover:bg-slate-100 transition-colors">
+                    Undo
+                </button>
+            </div>
+        </div>
+
+        <!-- Features Summary -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Key Features</h2>
+            <ul class="space-y-2 text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                    <svg class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>44px+ touch targets</strong> - Meets WCAG 2.1 minimum size</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Color-coded statuses</strong> - Visual feedback with distinct colors</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Ring indicator</strong> - Shows current status at a glance</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Toast with undo</strong> - 5-second window to revert changes</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Responsive design</strong> - Desktop keeps compact view, mobile gets enhanced UX</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Status Color Reference -->
+        <div class="bg-white p-6 rounded-lg shadow">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">Status Colors</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-emerald-700"></div>
+                    <span class="text-sm text-slate-600">Yes</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-yellow-600"></div>
+                    <span class="text-sm text-slate-600">Maybe</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-red-700"></div>
+                    <span class="text-sm text-slate-600">No</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded bg-slate-500"></div>
+                    <span class="text-sm text-slate-600">Not Invited</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactive behavior
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Status button clicked:', button.textContent);
+            });
+        });
+    </script>
+</body>
+</html>
