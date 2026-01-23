@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Person, Note, Need } from "../../../drizzle/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -139,11 +139,58 @@ export function PersonDetailsDialog({
   // PR 2: Check if user can view needs (staff can see DISTRICT_VISIBLE needs)
   const canViewNeeds = isAuthenticated;
 
+  // PR: Status update mutation for keyboard shortcuts
+  const updateStatus = trpc.people.updateStatus.useMutation({
+    onSuccess: () => {
+      utils.people.list.invalidate();
+    },
+  });
+
   // CRITICAL: All hooks must be called before any conditional returns.
   // React requires hooks to be called in the same order on every render.
   // If we return early before calling useIsMobile(), the hook order changes
   // between renders, causing "Rendered more hooks than during the previous render" error.
   const isMobile = useIsMobile();
+
+  // PR: Keyboard shortcuts for quick status updates
+  useEffect(() => {
+    if (!open || !person || !isLeader) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle number keys 1-4 when not typing in an input/textarea
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
+        return;
+      }
+
+      let newStatus: "Yes" | "Maybe" | "No" | "Not Invited" | null = null;
+
+      switch (e.key) {
+        case "1":
+          newStatus = "Yes";
+          break;
+        case "2":
+          newStatus = "Maybe";
+          break;
+        case "3":
+          newStatus = "No";
+          break;
+        case "4":
+          newStatus = "Not Invited";
+          break;
+      }
+
+      if (newStatus) {
+        e.preventDefault();
+        updateStatus.mutate({ personId: person.personId, status: newStatus });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, person, isLeader, updateStatus]);
 
   // Early return guard - must be AFTER all hooks are declared
   if (!person) return null;
@@ -170,6 +217,11 @@ export function PersonDetailsDialog({
             <div>
               <span className="text-sm font-medium">Status: </span>
               <span className="text-sm font-semibold">{person.status}</span>
+              {isLeader && (
+                <span className="text-xs text-gray-500 ml-2">
+                  (Press 1-4: Yes/Maybe/No/Not Invited)
+                </span>
+              )}
             </div>
             {person.depositPaid && (
               <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
@@ -224,19 +276,30 @@ export function PersonDetailsDialog({
         {/* Invite Notes (Leaders Only) */}
         {isLeader && (
           <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Invite Notes (Leaders Only)</Label>
-            <Textarea
-              placeholder="Enter invite note..."
-              value={inviteNoteText}
-              onChange={e => setInviteNoteText(e.target.value)}
-              rows={3}
-            />
-            <Button
-              onClick={handleAddInviteNote}
-              disabled={!inviteNoteText.trim()}
-            >
-              Add Note
-            </Button>
+            <Label>Quick Note (Leaders Only)</Label>
+            <div className="flex gap-2">
+              <Textarea
+                placeholder="Enter invite note... (Press Ctrl+Enter to save)"
+                value={inviteNoteText}
+                onChange={e => setInviteNoteText(e.target.value)}
+                onKeyDown={e => {
+                  // Ctrl+Enter to quickly add note
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddInviteNote();
+                  }
+                }}
+                rows={2}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleAddInviteNote}
+                disabled={!inviteNoteText.trim()}
+                size="sm"
+              >
+                Add
+              </Button>
+            </div>
           </div>
         )}
 

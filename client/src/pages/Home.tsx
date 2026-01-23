@@ -26,6 +26,7 @@ import {
   Menu,
   LogIn,
   Shield,
+  ClipboardList,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
@@ -647,6 +648,13 @@ export default function Home() {
   // Keyboard shortcuts for district panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Shift+F to open Follow-Up view (global shortcut)
+      if (e.shiftKey && e.key === "F") {
+        e.preventDefault();
+        setLocation("/follow-up");
+        return;
+      }
+
       // Escape to close panels and modals (in priority order: modals first, then panels)
       if (e.key === "Escape") {
         // Close modals first (they're typically on top)
@@ -738,6 +746,7 @@ export default function Home() {
     menuOpen,
     districts,
     setViewState,
+    setLocation,
   ]);
 
   // Handle district panel resize
@@ -1016,6 +1025,17 @@ export default function Home() {
                   >
                     <Shield className="w-4 h-4" />
                     Admin Console
+                  </button>
+                  <button
+                    onClick={e => {
+                      e.preventDefault();
+                      setLocation("/follow-up");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    Follow-Up List
                   </button>
                   <button
                     onClick={e => {
@@ -1377,6 +1397,22 @@ export default function Home() {
       />
       <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
       <LoginModal open={loginModalOpen} onOpenChange={setLoginModalOpen} />
+
+      {/* Floating Action Button for Follow-Up (AC: one click from anywhere) */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={() => setLocation("/follow-up")}
+            className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-red-600 hover:bg-red-700 text-white z-40 flex items-center justify-center"
+            size="icon"
+          >
+            <ClipboardList className="h-6 w-6" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="left">
+          <p>Follow-Up List (Shift+F)</p>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }
