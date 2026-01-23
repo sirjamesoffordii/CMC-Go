@@ -19,17 +19,24 @@ This is the **single source of truth** for how agents operate in this repo, and 
 
 ## Operating principles
 
-- **Projects v2 is the command center.** All work flows through the project board. The TL sees status there.
-- **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in Projects.
+- **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/2) tracks what happened, what's happening, and what's next. The TL keeps it current.
+- **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in the Project.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
-- **Prefer small diffs.** Optimize for reviewability, but don’t block forward progress; split into multiple PRs only when it materially reduces risk.
+- **Prefer small diffs.** Optimize for reviewability, but don't block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
-- **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via TL + Projects/Issues.
+- **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via TL + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 
-## Projects v2 workflow (critical)
+## CMC Go Project workflow (critical)
 
-The project board is how the TL knows what's happening: https://github.com/users/sirjamesoffordii/projects/2
+The **CMC Go Project** is the authoritative truth: https://github.com/users/sirjamesoffordii/projects/2
+
+It tracks:
+
+- **What happened** — Done items with linked PRs and evidence
+- **What's happening** — In Progress items with assignees
+- **What's next** — Todo items prioritized by Phase
+- **What's blocked** — Blocked items with pending decisions
 
 ### Status field meanings
 
