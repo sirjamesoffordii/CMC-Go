@@ -14,23 +14,15 @@ test.describe("Login Page", () => {
     await expect(page.getByRole("button", { name: /Continue/i })).toBeVisible();
   });
 
-  test("should validate email format", async ({ page }) => {
+  test("should validate email presence", async ({ page }) => {
     await page.goto("/login");
 
-    const emailInput = page.getByLabel("Email");
     const submitButton = page.getByRole("button", { name: /Continue/i });
 
     // Try submitting with empty email
     await submitButton.click();
     await expect(
       page.getByText("Please enter your email address")
-    ).toBeVisible();
-
-    // Try submitting with invalid email format
-    await emailInput.fill("invalid-email");
-    await submitButton.click();
-    await expect(
-      page.getByText("Please enter a valid email address")
     ).toBeVisible();
   });
 
@@ -45,9 +37,9 @@ test.describe("Login Page", () => {
     await emailInput.fill(testEmail);
     await submitButton.click();
 
-    // Should show error message
+    // Should show error message from server
     await expect(
-      page.getByText(/No account found with this email/i)
+      page.getByText(/Registration data required|No account found/i)
     ).toBeVisible({ timeout: 10000 });
   });
 

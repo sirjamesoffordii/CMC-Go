@@ -33,17 +33,14 @@ function createPublicContext(): {
 }
 
 describe("auth.start - login flow", () => {
-  it("should successfully login existing user with email only", async () => {
-    const { ctx, setCookieCalls } = createPublicContext();
+  it("should validate email format via Zod schema", async () => {
+    const { ctx } = createPublicContext();
     const caller = appRouter.createCaller(ctx);
 
-    // First, verify email exists endpoint works
-    const testEmail = "existing-user@example.com";
-
-    // Check if user exists (this should work even if user doesn't exist in test DB)
-    const existsResult = await caller.auth.emailExists({ email: testEmail });
-    expect(existsResult).toHaveProperty("exists");
-    expect(typeof existsResult.exists).toBe("boolean");
+    // Invalid email should be rejected by Zod validation
+    await expect(
+      caller.auth.start({ email: "invalid-email" })
+    ).rejects.toThrow();
   });
 
   it("should reject login for non-existent user without registration data", async () => {
@@ -56,15 +53,5 @@ describe("auth.start - login flow", () => {
     await expect(
       caller.auth.start({ email: nonExistentEmail })
     ).rejects.toThrow("Registration data required for new users");
-  });
-
-  it("should validate email format", async () => {
-    const { ctx } = createPublicContext();
-    const caller = appRouter.createCaller(ctx);
-
-    // Invalid email should be rejected by Zod validation
-    await expect(
-      caller.auth.start({ email: "invalid-email" })
-    ).rejects.toThrow();
   });
 });

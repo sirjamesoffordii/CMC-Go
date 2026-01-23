@@ -33,29 +33,8 @@ export function Login() {
       return;
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    try {
-      // Check if user exists
-      const { exists } = await utils.auth.emailExists.fetch({
-        email: trimmedEmail,
-      });
-
-      if (!exists) {
-        setError("No account found with this email. Please register first.");
-        return;
-      }
-
-      // Login existing user
-      loginMutation.mutate({ email: trimmedEmail });
-    } catch {
-      setError("Unable to verify email. Please try again.");
-    }
+    // Let server handle validation and user existence check
+    loginMutation.mutate({ email: trimmedEmail });
   };
 
   return (
