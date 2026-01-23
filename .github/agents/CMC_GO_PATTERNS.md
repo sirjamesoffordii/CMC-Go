@@ -35,6 +35,24 @@ If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consu
 - Keep diffs small and scoped; prefer surgical fixes.
 - Use worktrees locally; never work directly on `staging`.
 - Put durable progress/evidence in the Issue/PR thread; chat is transient.
+- **Always update Projects v2 status** — this is how the operator knows what's happening.
+
+### Projects v2 is the command center
+
+The operator watches the project board, not chat. Always:
+
+1. **Before starting:** Set Status → In Progress, assign yourself
+2. **When blocked:** Set Status → Blocked, post A/B/C decision in Issue
+3. **When PR opened:** Set Status → Verify
+4. **After merge:** Set Status → Done
+
+Project board: https://github.com/users/sirjamesoffordii/projects/2
+
+If an issue isn't in the project, add it:
+
+```bash
+gh project item-add 2 --owner sirjamesoffordii --url <issue-url>
+```
 
 ### Issue quality (before handoff to agent)
 

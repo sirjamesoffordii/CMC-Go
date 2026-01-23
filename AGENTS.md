@@ -22,11 +22,54 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## Operating principles
 
-- **Issues/PRs are the task bus.** Decisions + evidence live there.
+- **Projects v2 is the command center.** All work flows through the project board. The operator sees status there.
+- **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in Projects.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don’t block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
 - **Keep looping.** Take the next best safe step until Done.
+
+## Projects v2 workflow (critical)
+
+The project board is how the operator knows what's happening: https://github.com/users/sirjamesoffordii/projects/2
+
+### Status field meanings
+
+| Status          | Meaning                                 |
+| --------------- | --------------------------------------- |
+| **Todo**        | Ready to start, not claimed             |
+| **In Progress** | Someone is actively working             |
+| **Blocked**     | Waiting on external input/decision      |
+| **Verify**      | Implementation done, needs verification |
+| **Done**        | Verified and merged                     |
+
+### Agent responsibilities
+
+1. **Before starting work:** Set Status → In Progress, assign yourself
+2. **When blocked:** Set Status → Blocked, post A/B/C decision in Issue
+3. **When implementation done:** Set Status → Verify, open PR
+4. **After merge:** Set Status → Done
+
+### Project fields to set
+
+- **Status** — always keep current
+- **Assignees** — who's working on it
+- **Phase** — which milestone (Phase 1, 1.2, 2, 3, 4)
+- **Workstream** — area (Map, Panel, Server, etc.)
+- **Verify Level** — L0/L1/L2
+- **Item Type** — Epic, Task, Verification, PR
+
+### Commands to update project status
+
+```bash
+# Add issue to project
+gh project item-add 2 --owner sirjamesoffordii --url <issue-url>
+
+# Update status (use field ID from gh project field-list)
+gh project item-edit --project-id PVT_kwHODqX6Qs4BNFTD --id <item-id> --field-id PVTSSF_lAHODqX6Qs4BNFTDzg8LjhE --single-select-option-id <status-option-id>
+```
+
+Status option IDs: Todo=`689f8a74`, In Progress=`64fc3c51`, Blocked=`e3f651bf`, Verify=`4b4ae83d`, Done=`4d7d0ccb`
 
 ## Speed-first defaults (default)
 

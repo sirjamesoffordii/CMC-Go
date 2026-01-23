@@ -60,20 +60,22 @@ Manual (if UI changed):
 1. <!-- Step -->
 2. <!-- Observe -->
 
+## Project Fields (set in Projects v2)
+
+<!-- Update these in the project board: https://github.com/users/sirjamesoffordii/projects/2 -->
+
+- **Status:** Todo → In Progress → Verify → Done
+- **Phase:** <!-- Phase 1 / 1.2 / 2 / 3 / 4 -->
+- **Workstream:** <!-- Map / Panel / Follow-Up / Server / DB / Docs/Workflow / Infra/Deploy -->
+- **Verify Level:** <!-- L0 (self) / L1 (peer) / L2 (peer + evidence) -->
+- **Item Type:** Task
+
 ## Claim / Owner
 
-- Claimed by: <!-- TL/SWE -->
+- Claimed by: <!-- TL/SWE — also assign yourself in Projects -->
 - Worktree/branch: <!-- wt-impl-XXX-slug or agent/swe/XXX-slug -->
 
-## Labels
-
-Set PR labels:
-
-- `verify:v0` — self-verify
-- `verify:v1` — peer approval required
-- `verify:v2` — peer approval + evidence labels
-
-Agent routing (optional):
+## Agent Routing (optional)
 
 - `agent:copilot-swe` — implementation
 - `agent:copilot-tl` — triage/coordination

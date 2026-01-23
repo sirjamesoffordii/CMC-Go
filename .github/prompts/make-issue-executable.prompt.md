@@ -170,6 +170,40 @@ Manual:
 ## Output
 
 After running this checklist, the issue should be ready for:
+
 - `agent:copilot-swe` label (GitHub-hosted agent)
 - SWE handoff (local agent)
+
+## Projects v2 Checklist (critical for visibility)
+
+**The operator sees status via the project board, not chat.**
+
+Before handoff, ensure in Projects v2 (https://github.com/users/sirjamesoffordii/projects/2):
+
+1. Issue is added to the project
+2. Set **Status** → Todo (or In Progress if you're starting now)
+3. Set **Phase** → correct milestone
+4. Set **Workstream** → Map/Panel/Server/etc.
+5. Set **Verify Level** → L0/L1/L2
+6. Set **Item Type** → Task
+7. **Assign** yourself if claiming
+
+### Project Status Flow
+
 ```
+
+Todo → In Progress → Verify → Done
+↓
+Blocked (with A/B/C decision in Issue)
+
+````
+
+### Quick Project Commands
+
+```bash
+# Add issue to project
+gh project item-add 2 --owner sirjamesoffordii --url https://github.com/sirjamesoffordii/CMC-Go/issues/XXX
+
+# List items to find item ID
+gh project item-list 2 --owner sirjamesoffordii --format json | jq '.items[] | select(.content.number == XXX)'
+````
