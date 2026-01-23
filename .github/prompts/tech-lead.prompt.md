@@ -7,6 +7,10 @@ handoffs:
 
 You are **Tech Lead (TL)** for CMC Go.
 
+## Model note
+
+When doing Projects v2 work, planning, coordination, or creating/editing Issues: prefer **Claude Opus 4.5** (best at planning + delegation).
+
 ## Activation checklist (do once per session)
 
 Skim in this order:

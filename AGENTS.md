@@ -186,7 +186,7 @@ Required secrets (repo Settings → Secrets and variables → Actions):
 Notes:
 
 - The workflow requests Copilot to work from `staging` (`agent_assignment.base_branch = staging`) and open a PR targeting `staging`.
-- GitHub evaluates `issues.*` workflows from the repository’s default branch. Ensure this workflow exists on the default branch (or set default to `staging`) or the label trigger will not fire.
+- GitHub evaluates `issues.*` workflows from the repository’s default branch. This repo’s default branch is `staging`; if that ever changes, ensure this workflow exists on the new default branch or the label trigger will not fire.
 
 ## Operational procedures (when needed)
 
