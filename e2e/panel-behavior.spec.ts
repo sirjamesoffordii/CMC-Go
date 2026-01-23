@@ -36,8 +36,8 @@ test.describe("District Panel Behavior", () => {
     if (await districtPath.isVisible()) {
       await districtPath.click();
 
-      // Wait for panel to open
-      await page.waitForTimeout(300);
+      // Wait for URL to contain the district (panel is open)
+      await page.waitForURL(/AKAL/, { timeout: 5000 });
 
       // Click on the map background/container (outside any district)
       // Click on the map container but not on a path
@@ -50,8 +50,12 @@ test.describe("District Panel Behavior", () => {
         // Click in a safe area that should be background (top-left corner)
         await page.mouse.click(box.x + 10, box.y + 10);
 
-        // Panel should close - verify by checking URL or panel visibility
-        await page.waitForTimeout(300);
+        // Panel should close - URL should no longer contain district
+        // Wait for URL to change (district removed from URL)
+        await page.waitForFunction(
+          () => !window.location.href.includes("AKAL"),
+          { timeout: 5000 }
+        );
       }
     }
   });
@@ -72,8 +76,8 @@ test.describe("District Panel Behavior", () => {
       const districtPath = page.locator(`svg path[id="${districtId}"]`).first();
       if (await districtPath.isVisible()) {
         await districtPath.click();
-        // Small wait to simulate user interaction, but not long enough for full animation
-        await page.waitForTimeout(100);
+        // Wait for URL to update with the new district
+        await page.waitForURL(new RegExp(districtId), { timeout: 5000 });
       }
     }
 
@@ -94,8 +98,8 @@ test.describe("District Panel Behavior", () => {
     if (await districtPath.isVisible()) {
       await districtPath.click();
 
-      // Wait for URL to update
-      await page.waitForTimeout(500);
+      // Wait for URL to update with the district
+      await page.waitForURL(/AKAL/, { timeout: 5000 });
 
       // URL should contain district parameter
       const url = page.url();
