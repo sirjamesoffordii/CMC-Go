@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [staging]
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   test-and-coverage:
     runs-on: ubuntu-latest
@@ -86,3 +90,10 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_RELEASE: ${{ github.sha }}
+
+      - name: Generate SLSA provenance (build attestation)
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: dist/
+          summary-title: "CMC Go build provenance"
