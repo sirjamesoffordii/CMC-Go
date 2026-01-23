@@ -23,7 +23,6 @@ handoffs:
     agent: Software Engineer (SWE)
     prompt: "Verify this PR against the acceptance criteria. Post evidence and verdict (Pass/Pass-with-notes/Fail)."
     send: true
-applyTo: "**"
 tools:
   [
     "vscode",
