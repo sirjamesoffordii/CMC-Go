@@ -32,17 +32,9 @@ export function PersonDetailsDialog({
   onOpenChange,
 }: PersonDetailsDialogProps) {
   const utils = trpc.useUtils();
-  const { user, isAuthenticated } = useAuth();
-  // PR 2: Check if user is a leader (CO_DIRECTOR+)
-  const isLeader =
-    user &&
-    [
-      "CO_DIRECTOR",
-      "CAMPUS_DIRECTOR",
-      "DISTRICT_DIRECTOR",
-      "REGION_DIRECTOR",
-      "ADMIN",
-    ].includes(user.role);
+  const { user, isAuthenticated, isCampusDirectorOrAbove } = useAuth();
+  // Check if user is a leader (CO_DIRECTOR+)
+  const isLeader = isCampusDirectorOrAbove || user?.role === "CO_DIRECTOR";
 
   // Invite Notes state
   const [inviteNoteText, setInviteNoteText] = useState("");

@@ -105,9 +105,56 @@ export function useAuth(options?: UseAuthOptions) {
     devBypass,
   ]);
 
+  // Role helper functions
+  const hasRole = useCallback(
+    (role: string | string[]) => {
+      if (!state.user) return false;
+      const roles = Array.isArray(role) ? role : [role];
+      return roles.includes(state.user.role);
+    },
+    [state.user]
+  );
+
+  const isAdmin = useMemo(() => {
+    return state.user?.role === "ADMIN";
+  }, [state.user]);
+
+  const isRegionDirectorOrAbove = useMemo(() => {
+    return (
+      state.user?.role === "REGION_DIRECTOR" || state.user?.role === "ADMIN"
+    );
+  }, [state.user]);
+
+  const isDistrictDirectorOrAbove = useMemo(() => {
+    return (
+      state.user?.role === "DISTRICT_DIRECTOR" ||
+      state.user?.role === "REGION_DIRECTOR" ||
+      state.user?.role === "ADMIN"
+    );
+  }, [state.user]);
+
+  const isCampusDirectorOrAbove = useMemo(() => {
+    return (
+      state.user?.role === "CAMPUS_DIRECTOR" ||
+      state.user?.role === "DISTRICT_DIRECTOR" ||
+      state.user?.role === "REGION_DIRECTOR" ||
+      state.user?.role === "ADMIN"
+    );
+  }, [state.user]);
+
+  const isActive = useMemo(() => {
+    return state.user?.approvalStatus === "ACTIVE";
+  }, [state.user]);
+
   return {
     ...state,
     refresh: () => meQuery.refetch(),
     logout,
+    hasRole,
+    isAdmin,
+    isRegionDirectorOrAbove,
+    isDistrictDirectorOrAbove,
+    isCampusDirectorOrAbove,
+    isActive,
   };
 }

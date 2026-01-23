@@ -6,7 +6,7 @@
  */
 
 import { trpc } from "@/lib/trpc";
-import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Card,
   CardContent,
@@ -21,7 +21,8 @@ import { useLocation } from "wouter";
 
 export default function Approvals() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = usePublicAuth();
+  const { user, isAuthenticated, isRegionDirectorOrAbove, isActive } =
+    useAuth();
   const utils = trpc.useUtils();
 
   const { data: pendingApprovals = [], isLoading } =
@@ -39,8 +40,7 @@ export default function Approvals() {
     },
   });
 
-  // Authentication disabled - allow all users to view approvals
-  if (false) {
+  if (!user || !isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Card className="max-w-md">
@@ -53,19 +53,14 @@ export default function Approvals() {
     );
   }
 
-  const canViewApprovals =
-    user &&
-    ((user.role === "REGION_DIRECTOR" && user.approvalStatus === "ACTIVE") ||
-      user.role === "ADMIN");
-
-  if (!canViewApprovals) {
+  if (!isRegionDirectorOrAbove || !isActive) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
             <CardDescription>
-              You don't have permission to view approvals
+              Only active Region Directors and Administrators can view approvals
             </CardDescription>
           </CardHeader>
         </Card>

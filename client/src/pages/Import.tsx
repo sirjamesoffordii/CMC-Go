@@ -39,22 +39,11 @@ interface ImportResult {
 }
 
 export default function Import() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated, loading, isRegionDirectorOrAbove } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
-
-  // Check if user is a leader
-  const isLeader =
-    user &&
-    [
-      "CO_DIRECTOR",
-      "CAMPUS_DIRECTOR",
-      "DISTRICT_DIRECTOR",
-      "REGION_DIRECTOR",
-      "ADMIN",
-    ].includes(user.role);
 
   if (loading) {
     return (
@@ -67,14 +56,16 @@ export default function Import() {
     );
   }
 
-  // Authentication disabled - allow all users to import
-  if (false) {
+  // Only Region Directors and Admins can import
+  if (!user || !isRegionDirectorOrAbove) {
     return (
       <div className="container max-w-4xl py-8">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Only leaders can import data.</CardDescription>
+            <CardDescription>
+              Only Region Directors and Administrators can import data.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
