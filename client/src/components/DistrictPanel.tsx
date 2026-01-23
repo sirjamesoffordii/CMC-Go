@@ -64,6 +64,8 @@ import {
 import { deriveHouseholdLabel } from "@/lib/householdLabel";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -838,6 +840,54 @@ export function DistrictPanel({
 
   // Campus order state - stores ordered campus IDs
   const [campusOrder, setCampusOrder] = useState<number[]>([]);
+
+  // Swipe gesture state
+  const isMobile = useIsMobile();
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Swipe gesture handlers
+  const swipeGesture = useSwipeGesture({
+    onSwipeRight: () => {
+      // Close panel on swipe right
+      if (isMobile && swipeOffset > 50) {
+        onClose();
+      }
+    },
+    onSwipeMove: deltaX => {
+      // Only allow swiping right (positive deltaX)
+      if (isMobile && deltaX > 0) {
+        setSwipeOffset(deltaX);
+      }
+    },
+    onSwipeEnd: () => {
+      // Reset offset if swipe didn't trigger close
+      setSwipeOffset(0);
+    },
+    threshold: 50,
+  });
+
+  // Attach touch event listeners to panel
+  useEffect(() => {
+    if (!isMobile || !panelRef.current) return;
+
+    const element = panelRef.current;
+    element.addEventListener("touchstart", swipeGesture.handleTouchStart, {
+      passive: true,
+    });
+    element.addEventListener("touchmove", swipeGesture.handleTouchMove, {
+      passive: false,
+    });
+    element.addEventListener("touchend", swipeGesture.handleTouchEnd, {
+      passive: true,
+    });
+
+    return () => {
+      element.removeEventListener("touchstart", swipeGesture.handleTouchStart);
+      element.removeEventListener("touchmove", swipeGesture.handleTouchMove);
+      element.removeEventListener("touchend", swipeGesture.handleTouchEnd);
+    };
+  }, [isMobile, swipeGesture]);
 
   // Initialize campus order when campuses change
   useEffect(() => {
@@ -2986,10 +3036,14 @@ export function DistrictPanel({
   // Always wrap in DndProvider so hooks have context, but disable drag/drop via canDrag/canDrop
   const mainContent = (
     <motion.div
+      ref={panelRef}
       initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      animate={{
+        opacity: 1 - Math.min(swipeOffset / 300, 0.5),
+        x: swipeOffset,
+      }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: swipeOffset > 0 ? 0 : 0.2 }}
       className="w-full h-full flex flex-col"
     >
       {content}
