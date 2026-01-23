@@ -272,11 +272,18 @@ export function PersonDetailsDialog({
 
         {/* Add Need Form (Leaders Only) */}
         {isLeader && (
-          <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Add Need (Leaders Only)</Label>
-            <div className="space-y-3">
+          <div className="space-y-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Label className="text-base font-semibold text-orange-900">
+                Add New Need
+              </Label>
+              <span className="text-xs px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full">
+                Leaders Only
+              </span>
+            </div>
+            <div className="space-y-4">
               <div>
-                <Label className="text-sm">Type</Label>
+                <Label className="text-sm font-medium">Type</Label>
                 <Select
                   value={needType}
                   onValueChange={v =>
@@ -285,42 +292,46 @@ export function PersonDetailsDialog({
                     )
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Financial">Financial</SelectItem>
+                    <SelectItem value="Financial">💰 Financial</SelectItem>
                     <SelectItem value="Transportation">
-                      Transportation
+                      🚗 Transportation
                     </SelectItem>
-                    <SelectItem value="Housing">Housing</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    <SelectItem value="Housing">🏠 Housing</SelectItem>
+                    <SelectItem value="Other">📋 Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               {needType === "Financial" && (
                 <div>
-                  <Label className="text-sm">Amount ($)</Label>
+                  <Label className="text-sm font-medium">Amount ($)</Label>
                   <Input
                     type="number"
                     step="0.01"
                     placeholder="0.00"
                     value={needAmount}
                     onChange={e => setNeedAmount(e.target.value)}
+                    className="h-11"
                   />
                 </div>
               )}
               <div>
-                <Label className="text-sm">Description *</Label>
+                <Label className="text-sm font-medium">Description *</Label>
                 <Textarea
                   placeholder="Describe the need..."
                   value={needDescription}
                   onChange={e => setNeedDescription(e.target.value)}
-                  rows={2}
+                  rows={3}
+                  className="resize-none"
                 />
               </div>
               <div>
-                <Label className="text-sm mb-2 block">Visibility</Label>
+                <Label className="text-sm font-medium mb-2 block">
+                  Visibility
+                </Label>
                 <RadioGroup
                   value={needVisibility}
                   onValueChange={v =>
@@ -328,40 +339,41 @@ export function PersonDetailsDialog({
                       v as "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE"
                     )
                   }
+                  className="space-y-2"
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-2 rounded hover:bg-white/50">
                     <RadioGroupItem
                       value="LEADERSHIP_ONLY"
                       id="leadership-only"
                     />
                     <Label
                       htmlFor="leadership-only"
-                      className="text-sm font-normal cursor-pointer"
+                      className="text-sm font-normal cursor-pointer flex-1"
                     >
                       Leadership only (default)
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 p-2 rounded hover:bg-white/50">
                     <RadioGroupItem
                       value="DISTRICT_VISIBLE"
                       id="district-visible"
                     />
                     <Label
                       htmlFor="district-visible"
-                      className="text-sm font-normal cursor-pointer"
+                      className="text-sm font-normal cursor-pointer flex-1"
                     >
                       District visible
                     </Label>
                   </div>
                 </RadioGroup>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-600 mt-2 pl-1">
                   Use district visible for logistics or practical help the
                   district can act on.
                 </p>
               </div>
               <Button
                 onClick={handleAddNeed}
-                className="w-full"
+                className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white font-semibold"
                 disabled={!needDescription.trim()}
               >
                 Add Need
@@ -381,28 +393,41 @@ export function PersonDetailsDialog({
             needs.map(need => (
               <div
                 key={need.id}
-                className={`p-3 border rounded ${
+                className={`p-4 border rounded-lg ${
                   need.isActive
-                    ? "bg-white border-gray-200"
-                    : "bg-gray-50 border-gray-300 opacity-60"
+                    ? "bg-orange-50 border-orange-200 shadow-sm"
+                    : "bg-gray-50 border-gray-200"
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{need.type}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`font-semibold text-sm ${need.isActive ? "text-orange-900" : "text-gray-700"}`}
+                      >
+                        {need.type}
+                      </span>
+                      {need.isActive && (
+                        <span className="text-xs px-2 py-0.5 bg-orange-200 text-orange-800 rounded-full font-medium">
+                          Active
+                        </span>
+                      )}
+                      {!need.isActive && (
+                        <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-medium">
+                          Resolved
+                        </span>
+                      )}
                       {need.amount && (
-                        <span className="text-sm text-gray-700">
+                        <span
+                          className={`text-sm font-medium ${need.isActive ? "text-orange-800" : "text-gray-600"}`}
+                        >
                           ${(need.amount / 100).toFixed(2)}
                         </span>
                       )}
-                      {need.visibility && (
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                          {need.visibility}
-                        </span>
-                      )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p
+                      className={`text-sm mt-2 ${need.isActive ? "text-gray-900" : "text-gray-600"}`}
+                    >
                       {need.description}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
@@ -414,9 +439,18 @@ export function PersonDetailsDialog({
                         </span>
                       )}
                     </p>
+                    {need.visibility && (
+                      <span className="inline-block text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded mt-2">
+                        {need.visibility === "DISTRICT_VISIBLE"
+                          ? "District Visible"
+                          : "Leadership Only"}
+                      </span>
+                    )}
                     {isLeader && need.visibility && (
-                      <div className="mt-2">
-                        <Label className="text-xs mb-1 block">Visibility</Label>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <Label className="text-xs mb-2 block text-gray-600">
+                          Change Visibility
+                        </Label>
                         <RadioGroup
                           value={need.visibility}
                           onValueChange={v =>
@@ -456,20 +490,20 @@ export function PersonDetailsDialog({
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toggleNeedActive.mutate({
-                          needId: need.id,
-                          isActive: !need.isActive,
-                        })
-                      }
-                    >
-                      {need.isActive ? "Resolve" : "Activate"}
-                    </Button>
-                  </div>
+                  {isLeader && (
+                    <div className="flex-shrink-0">
+                      <Switch
+                        checked={need.isActive}
+                        onCheckedChange={checked =>
+                          toggleNeedActive.mutate({
+                            needId: need.id,
+                            isActive: checked,
+                          })
+                        }
+                        className="data-[state=checked]:bg-orange-500"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             ))
