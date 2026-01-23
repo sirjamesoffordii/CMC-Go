@@ -106,7 +106,7 @@ Regions
 
 ---
 
-### 📋 Phase 2: Desktop UX & Navigation (QUEUED)
+### ✅ Phase 2: Desktop UX & Navigation (DONE)
 
 **Goal:** Efficient, intuitive desktop experience.
 
@@ -115,16 +115,16 @@ Regions
 | ~~Default district panel (South Texas)~~ | #104  | ❌ Closed | Design changed: default = whole map    |
 | ~~View mode selector~~                   | #105  | ❌ Closed | Design changed: automatic by user role |
 | Stable panel open/close                  | #106  | ✅ Done   | PR #163                                |
-| Smooth panel transitions                 | #107  | 📋 Todo   |                                        |
-| Panel state persistence                  | #108  | 📋 Todo   |                                        |
+| Smooth panel transitions                 | #107  | ✅ Done   | Already implemented                    |
+| Panel state persistence                  | #108  | ✅ Done   |                                        |
 | District-level needs                     | #109  | ✅ Done   | PR #166                                |
-| Filter logic clarity                     | #110  | 📋 Todo   |                                        |
-| Status-based visibility                  | #111  | 📋 Todo   |                                        |
+| Filter logic clarity                     | #110  | ✅ Done   | Already implemented                    |
+| Status-based visibility                  | #111  | ✅ Done   |                                        |
 | Clear navigation patterns                | #112  | ✅ Done   | PR #169                                |
-| No blocking UX friction                  | #113  | ✅ Done   | (verify)                               |
-| Leader-friendly flows                    | #114  | ✅ Done   | (verify)                               |
+| No blocking UX friction                  | #113  | ✅ Done   |                                        |
+| Leader-friendly flows                    | #114  | ✅ Done   |                                        |
 
-**Epic:** #137
+**Epic:** #137 (Closed)
 
 **Design Decisions (Updated Jan 23, 2026):**
 
@@ -137,7 +137,7 @@ Regions
 
 ---
 
-### 📋 Phase 3: Authentication & Authorization (QUEUED)
+### 📋 Phase 3: Authentication & Authorization (NEXT)
 
 **Goal:** Lock down access after UX is stable.
 
