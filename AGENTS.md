@@ -4,6 +4,8 @@ This is the **single source of truth** for how agents operate in this repo, and 
 
 ## Agent GitHub Accounts
 
+Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
+
 | Role                        | GitHub Account            | Responsibility                             |
 | --------------------------- | ------------------------- | ------------------------------------------ |
 | **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Coordination, board management, delegation |
