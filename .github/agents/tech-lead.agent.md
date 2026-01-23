@@ -8,7 +8,7 @@ handoffs:
     prompt: "Implement the scope outlined above following the AC and verification steps. Issue is ready for implementation."
     send: true
   - label: Delegate to Cloud SWE
-    agent: agent
+    agent: Software Engineer (SWE)
     prompt: "Apply label agent:copilot-swe to delegate this Issue to the cloud SWE agent."
     send: false
   - label: Write Tests

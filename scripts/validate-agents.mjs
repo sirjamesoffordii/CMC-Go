@@ -47,10 +47,11 @@ function parseFrontmatter(content, filePath) {
   const yaml = match[1];
   const result = {};
 
-  // Simple YAML parser for our use case
+  // Simple YAML parser for our use case (handles nested handoffs objects)
   const lines = yaml.split("\n");
   let currentKey = null;
   let currentArray = null;
+  let currentObject = null;
 
   for (const line of lines) {
     // Skip empty lines
@@ -65,14 +66,33 @@ function parseFrontmatter(content, filePath) {
         .map(s => s.trim().replace(/['"]/g, ""));
       currentKey = null;
       currentArray = null;
+      currentObject = null;
       continue;
     }
 
-    // Check for array item
-    if (line.startsWith("  - ")) {
+    // Check for array item that starts an object (e.g., "  - label: ...")
+    const arrayObjectMatch = line.match(/^  - (\w+):\s*(.*)$/);
+    if (arrayObjectMatch && currentArray) {
+      const [, objKey, objValue] = arrayObjectMatch;
+      currentObject = { [objKey]: objValue.replace(/^["']|["']$/g, "") };
+      currentArray.push(currentObject);
+      continue;
+    }
+
+    // Check for simple array item (e.g., "  - value")
+    if (line.startsWith("  - ") && !line.includes(":")) {
       if (currentArray) {
         currentArray.push(line.replace("  - ", "").trim());
+        currentObject = null;
       }
+      continue;
+    }
+
+    // Check for nested object property (e.g., "    agent: ...")
+    const nestedPropMatch = line.match(/^    (\w+):\s*(.*)$/);
+    if (nestedPropMatch && currentObject) {
+      const [, propKey, propValue] = nestedPropMatch;
+      currentObject[propKey] = propValue.replace(/^["']|["']$/g, "");
       continue;
     }
 
@@ -81,6 +101,7 @@ function parseFrontmatter(content, filePath) {
     if (kvMatch) {
       const [, key, value] = kvMatch;
       currentKey = key;
+      currentObject = null;
 
       if (value) {
         // Remove quotes from value
@@ -159,9 +180,12 @@ function validateHandoffs(allFiles) {
   for (const { path, frontmatter } of allFiles) {
     if (frontmatter?.handoffs && Array.isArray(frontmatter.handoffs)) {
       for (const handoff of frontmatter.handoffs) {
-        if (!validAgentNames.has(handoff)) {
+        // handoff can be a string or an object with an 'agent' property
+        const targetAgent =
+          typeof handoff === "object" ? handoff.agent : handoff;
+        if (targetAgent && !validAgentNames.has(targetAgent)) {
           warnings.push(
-            `${path.replace(ROOT, "")}: Handoff target '${handoff}' not found in agent files`
+            `${path.replace(ROOT, "")}: Handoff target '${targetAgent}' not found in agent files`
           );
         }
       }
