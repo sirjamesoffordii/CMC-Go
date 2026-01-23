@@ -178,6 +178,16 @@ Label an Issue with `agent:copilot` (or `agent:copilot-tl`, `agent:copilot-swe`)
 
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
+Required secrets (repo Settings → Secrets and variables → Actions):
+
+- `COPILOT_ASSIGN_TOKEN_TL` — used for `agent:copilot` and `agent:copilot-tl`
+- `COPILOT_ASSIGN_TOKEN_SWE` — used for `agent:copilot-swe`
+
+Notes:
+
+- The workflow requests Copilot to work from `staging` (`agent_assignment.base_branch = staging`) and open a PR targeting `staging`.
+- GitHub evaluates `issues.*` workflows from the repository’s default branch. Ensure this workflow exists on the default branch (or set default to `staging`) or the label trigger will not fire.
+
 ## Operational procedures (when needed)
 
 Operational procedures are archived (not active policy), but are useful reference for ops/CI/tooling:
