@@ -45,7 +45,9 @@ export function initializeViewStateFromURL(): ViewState {
     const regionId = params.get("regionId") || null;
 
     // Safely parse districtId (null if empty string)
-    const districtId = params.get("districtId") || null;
+    // Support both 'district' (new, shareable) and 'districtId' (legacy) parameters
+    const districtId =
+      params.get("district") || params.get("districtId") || null;
 
     // Safely parse campusId with validation
     let campusId: number | null = null;
@@ -92,9 +94,13 @@ export function updateURLWithViewState(viewState: ViewState) {
     params.delete("regionId");
   }
 
+  // Use 'district' parameter for cleaner, shareable URLs
   if (viewState.districtId) {
-    params.set("districtId", viewState.districtId);
+    params.set("district", viewState.districtId);
+    // Remove legacy parameter if present
+    params.delete("districtId");
   } else {
+    params.delete("district");
     params.delete("districtId");
   }
 

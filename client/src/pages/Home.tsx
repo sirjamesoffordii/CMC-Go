@@ -132,7 +132,11 @@ export default function Home() {
     const urlState = initializeViewStateFromURL();
     // If URL has view state, use it; otherwise default to district mode
     if (urlState.districtId || urlState.regionId || urlState.campusId) {
-      return urlState;
+      // Automatically open panel when district is in URL (for deep linking)
+      return {
+        ...urlState,
+        panelOpen: urlState.districtId ? true : urlState.panelOpen,
+      };
     }
     return DEFAULT_VIEW_STATE;
   };
