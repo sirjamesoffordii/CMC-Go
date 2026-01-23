@@ -39,24 +39,16 @@ test.describe("District Panel Behavior", () => {
       // Wait for URL to contain the district (panel is open)
       await page.waitForURL(/AKAL/, { timeout: 5000 });
 
-      // Click on the map background/container (outside any district)
-      // Click on the map container but not on a path
-      const mapContainer = page
-        .locator("div")
-        .filter({ hasText: /map/i })
-        .first();
-      const box = await mapContainer.boundingBox();
-      if (box) {
-        // Click in a safe area that should be background (top-left corner)
-        await page.mouse.click(box.x + 10, box.y + 10);
+      // Click on a safe empty area to trigger background click
+      // We click at the bottom-right of the viewport, which should be
+      // outside any district paths but within the map container
+      await page.mouse.click(100, 100);
 
-        // Panel should close - URL should no longer contain district
-        // Wait for URL to change (district removed from URL)
-        await page.waitForFunction(
-          () => !window.location.href.includes("AKAL"),
-          { timeout: 5000 }
-        );
-      }
+      // Panel should close - URL should no longer contain district
+      // Wait for URL to change (district removed from URL)
+      await page.waitForFunction(() => !window.location.href.includes("AKAL"), {
+        timeout: 5000,
+      });
     }
   });
 

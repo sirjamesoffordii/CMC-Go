@@ -520,14 +520,9 @@ export default function Home() {
   };
 
   // District selection: Updates selectedDistrictId and viewState.regionId
-  // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
   const handleDistrictSelect = (districtId: string) => {
-    const selectedDistrict = districts.find(d => d.id === districtId);
-    // Extract region: database first, then fallback map
-    const regionId =
-      selectedDistrict?.region ||
-      extractRegionForViewState(districtId, districts);
+    const regionId = extractRegionForViewState(districtId, districts);
 
     const newViewState: ViewState = {
       mode: "district",
