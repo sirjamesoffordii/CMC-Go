@@ -275,6 +275,22 @@ Before making any recommendation, review current state of:
 
 Purpose: avoid duplication, avoid contradictions, ensure alignment with current system intent.
 
+### Evaluation questions
+
+**Workflow Improvement Check — ask yourself:**
+
+- Did the current workflow slow execution?
+- Did agents hesitate, duplicate work, or require clarification?
+- Did board state or routing create friction?
+- Was there unnecessary back-and-forth or ambiguity?
+
+**Pattern Learning Check — ask yourself:**
+
+- Did this task reveal a new recurring pattern?
+- Did it expose an anti-pattern or failure mode?
+- Did it refine or contradict an existing pattern?
+- Would another agent benefit from knowing this?
+
 ### Required output format
 
 Every PR (or final task report) MUST include:

@@ -99,6 +99,27 @@ Stay in one session. No handoffs needed.
 - This file (`software-engineer.agent.md`)
 - `.github/agents/CMC_GO_PATTERNS.md`
 
+### Workflow Improvement Check
+
+Evaluate:
+
+- Did the Issue have enough context to execute without guessing?
+- Did the current workflow slow execution or cause mode-switching overhead?
+- Was there unnecessary ambiguity in scope, AC, or verification steps?
+
+Then declare: **"Changes recommended"** or **"No changes recommended"**
+
+### Pattern Learning Check
+
+Evaluate:
+
+- Did this task reveal a new recurring pattern?
+- Did it expose an anti-pattern or failure mode?
+- Did it refine or contradict an existing pattern?
+- Would another agent benefit from knowing this?
+
+Then declare: **"Changes recommended"** or **"No changes recommended"**
+
 ### Required output (in PR or task report):
 
 ```markdown

@@ -152,7 +152,29 @@ Before recommending changes, review:
 - This file (`tech-lead.agent.md`)
 - `.github/agents/CMC_GO_PATTERNS.md`
 
-Required output (in PR or task report):
+### Workflow Improvement Check
+
+Evaluate:
+
+- Did the current workflow slow execution?
+- Did agents hesitate, duplicate work, or require clarification?
+- Did board state or routing create friction?
+- Was there unnecessary back-and-forth or ambiguity?
+
+Then declare: **"Changes recommended"** or **"No changes recommended"**
+
+### Pattern Learning Check
+
+Evaluate:
+
+- Did this task reveal a new recurring pattern?
+- Did it expose an anti-pattern or failure mode?
+- Did it refine or contradict an existing pattern?
+- Would another agent benefit from knowing this?
+
+Then declare: **"Changes recommended"** or **"No changes recommended"**
+
+### Required output (in PR or task report):
 
 ```markdown
 ## End-of-Task Reflection (Required)
