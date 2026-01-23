@@ -15,6 +15,36 @@ test.describe("Navigation", () => {
     await page.goto("/follow-up");
     await expect(page).toHaveURL(/follow-up/);
   });
+
+  test("browser back button works after navigation", async ({ page }) => {
+    // Start at home
+    await page.goto("/");
+
+    // Navigate to a page
+    await page.goto("/people");
+    await expect(page).toHaveURL(/people/);
+
+    // Go back
+    await page.goBack();
+    await expect(page).toHaveURL(/^\/$|^\/\?/);
+  });
+
+  test("browser forward button works after going back", async ({ page }) => {
+    // Start at home
+    await page.goto("/");
+
+    // Navigate to a page
+    await page.goto("/people");
+    await expect(page).toHaveURL(/people/);
+
+    // Go back
+    await page.goBack();
+    await expect(page).toHaveURL(/^\/$|^\/\?/);
+
+    // Go forward
+    await page.goForward();
+    await expect(page).toHaveURL(/people/);
+  });
 });
 
 test.describe("Home Page Map", () => {

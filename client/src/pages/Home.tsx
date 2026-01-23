@@ -33,6 +33,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -43,7 +44,7 @@ import {
   DEFAULT_VIEW_STATE,
 } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
-import { District } from "../../../drizzle/schema";
+import { District, Campus } from "../../../drizzle/schema";
 import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
 
 /**
@@ -515,6 +516,30 @@ export default function Home() {
   useEffect(() => {
     updateURLWithViewState(viewState);
   }, [viewState]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      // Re-read the URL and update view state
+      const urlState = initializeViewStateFromURL();
+      setViewState(urlState);
+      setSelectedDistrictId(urlState.districtId);
+
+      // Update panel states based on URL
+      if (urlState.panelOpen && urlState.districtId) {
+        // Panel should be open
+        setPeoplePanelOpen(false);
+        setNationalPanelOpen(false);
+      } else {
+        // No panel open
+        setPeoplePanelOpen(false);
+        setNationalPanelOpen(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
   const handleViewStateChange = (newViewState: ViewState) => {
     setViewState(newViewState);
@@ -1014,6 +1039,27 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Breadcrumb Navigation */}
+      <Breadcrumb
+        viewState={viewState}
+        selectedDistrict={selectedDistrict}
+        selectedCampus={
+          viewState.campusId
+            ? allCampuses.find(c => c.id === viewState.campusId) || null
+            : null
+        }
+        selectedPerson={selectedPerson}
+        onHomeClick={() => {
+          setSelectedDistrictId(null);
+          setPeoplePanelOpen(false);
+          setNationalPanelOpen(false);
+          setViewState(DEFAULT_VIEW_STATE);
+        }}
+        onRegionClick={regionId => handleRegionSelect(regionId)}
+        onDistrictClick={districtId => handleDistrictSelect(districtId)}
+        onCampusClick={campusId => handleCampusSelect(campusId)}
+      />
 
       {/* Main Content Area Below Header */}
       <div
