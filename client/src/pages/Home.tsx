@@ -921,7 +921,7 @@ export default function Home() {
               e.preventDefault();
               setLocation("/why-invitations-matter");
             }}
-            className="text-white/80 hover:text-white hover:bg-red-700"
+            className="text-white/80 hover:text-white hover:bg-red-700 active:bg-red-800 hidden md:flex"
           >
             <span className="text-sm font-semibold tracking-wide">
               Why Personal Invitations Matter
@@ -932,11 +932,11 @@ export default function Home() {
           <div className="relative">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-white/80 hover:text-white hover:bg-red-700"
+              className="text-white/80 hover:text-white hover:bg-red-700 active:bg-red-800 touch-target"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 md:w-5 md:h-5" />
             </Button>
 
             {/* Dropdown Menu */}
@@ -946,14 +946,14 @@ export default function Home() {
                   className="fixed inset-0 z-40"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+                <div className="absolute right-0 top-full mt-2 w-48 md:w-48 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
                   <button
                     onClick={e => {
                       e.stopPropagation();
                       setLoginModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-2 font-semibold transition-colors touch-target"
                   >
                     <LogIn className="w-4 h-4" />
                     Login
@@ -965,7 +965,7 @@ export default function Home() {
                       setShareModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-2 transition-colors touch-target"
                   >
                     <Share2 className="w-4 h-4" />
                     Share
@@ -976,7 +976,7 @@ export default function Home() {
                       setImportModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-2 transition-colors touch-target"
                   >
                     <Upload className="w-4 h-4" />
                     Import
@@ -987,7 +987,7 @@ export default function Home() {
                       setLocation("/admin");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-2 transition-colors touch-target"
                   >
                     <Shield className="w-4 h-4" />
                     Admin Console
@@ -998,7 +998,7 @@ export default function Home() {
                       setLocation("/more-info");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 md:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-2 transition-colors touch-target"
                   >
                     <span className="text-sm font-semibold">CMC Info</span>
                   </button>

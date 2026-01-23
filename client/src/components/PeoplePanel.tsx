@@ -604,20 +604,24 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           <h2 className="text-2xl font-bold text-gray-900">People</h2>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleExport}
             disabled={filteredPeople.length === 0}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Export to CSV"
+            className="touch-target"
           >
-            <Download className="h-5 w-5 text-gray-500" />
-          </button>
-          <button
+            <Download className="h-5 w-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="touch-target"
           >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
+            <X className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
@@ -991,20 +995,15 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           {user?.campusId &&
             (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  variant={myCampusOnly ? "default" : "outline"}
+                  size="sm"
                   onClick={() => setMyCampusOnly(!myCampusOnly)}
-                  className={`
-                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                  ${
-                    myCampusOnly
-                      ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                      : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                  }
-                `}
+                  className="touch-target"
                 >
-                  <Filter className="w-4 h-4 inline mr-1" />
-                  My Campus Only
-                </button>
+                  <Filter className="w-4 h-4 md:mr-1" />
+                  <span className="hidden md:inline">My Campus Only</span>
+                </Button>
               </div>
             )}
         </div>
