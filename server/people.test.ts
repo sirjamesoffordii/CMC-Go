@@ -180,6 +180,43 @@ describe("metrics router", () => {
       allPeople.filter(p => p.status === "Not Invited").length
     );
   });
+
+  it("includes needs count in district metrics", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // Get all districts
+    const districts = await caller.districts.list();
+    expect(districts.length).toBeGreaterThan(0);
+
+    // Get metrics for first district
+    const testDistrict = districts[0];
+    const districtMetrics = await caller.metrics.district({
+      districtId: testDistrict.id,
+    });
+
+    // Verify needsCount is present and is a number
+    expect(districtMetrics).toHaveProperty("needsCount");
+    expect(typeof districtMetrics.needsCount).toBe("number");
+    expect(districtMetrics.needsCount).toBeGreaterThanOrEqual(0);
+  });
+
+  it("includes needs count in all districts metrics", async () => {
+    const ctx = createTestContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const allDistrictMetrics = await caller.metrics.allDistricts();
+
+    expect(Array.isArray(allDistrictMetrics)).toBe(true);
+
+    // Check each district metric includes needsCount
+    allDistrictMetrics.forEach(metric => {
+      expect(metric).toHaveProperty("districtId");
+      expect(metric).toHaveProperty("needsCount");
+      expect(typeof metric.needsCount).toBe("number");
+      expect(metric.needsCount).toBeGreaterThanOrEqual(0);
+    });
+  });
 });
 
 describe("districts router", () => {
