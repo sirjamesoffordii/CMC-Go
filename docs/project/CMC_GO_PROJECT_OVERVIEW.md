@@ -92,7 +92,7 @@ Regions
 
 ---
 
-### 🔄 Phase 1.2: Cross-View Consistency (IN PROGRESS)
+### ✅ Phase 1.2: Cross-View Consistency (DONE)
 
 **Goal:** All views stay in sync; no desync edge cases.
 
@@ -101,9 +101,8 @@ Regions
 | Map ↔ Panel state sync     | #102  | ✅ Done |
 | Status propagation tests    | #81   | ✅ Done |
 | Follow-Up consistency tests | #87   | ✅ Done |
-| Playwright smoke stability  | #85   | 🔄 Open |
 
-**Epic:** #136
+**Epic:** #136 (Closed)
 
 ---
 
@@ -188,9 +187,10 @@ Regions
 
 ## Current Open Issues (Non-Phase)
 
+## Current Open Issues (Non-Phase)
+
 | Issue | Title                          | Priority |
 | ----- | ------------------------------ | -------- |
-| #193  | Triage stale/conflicting PRs   | High     |
 | #192  | [Epic] Test Coverage Expansion | High     |
 | #85   | Reduce Playwright smoke flake  | Medium   |
 | #77   | Deployed staging smoke check   | Medium   |
@@ -217,6 +217,6 @@ Regions
 ## Links
 
 - **Project Board:** https://github.com/users/sirjamesoffordii/projects/2
-- **Staging URL:** (Railway deployment)
+- **Staging URL:** https://cmc-go-github-staging-staging.up.railway.app
 - **Agent Manual:** [AGENTS.md](../../AGENTS.md)
 - **Patterns:** [.github/agents/CMC_GO_PATTERNS.md](../../.github/agents/CMC_GO_PATTERNS.md)
