@@ -17,6 +17,19 @@ export type UserRole =
   | "ADMIN";
 
 /**
+ * Role hierarchy from lowest to highest
+ * Used for isAtLeast and canManage helpers
+ */
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  STAFF: 0,
+  CO_DIRECTOR: 1,
+  CAMPUS_DIRECTOR: 2,
+  DISTRICT_DIRECTOR: 3,
+  REGION_DIRECTOR: 4,
+  ADMIN: 5,
+};
+
+/**
  * Check if a role is a leader role (CO_DIRECTOR+)
  */
 export function isLeaderRole(role: UserRole): boolean {
@@ -27,6 +40,69 @@ export function isLeaderRole(role: UserRole): boolean {
     "REGION_DIRECTOR",
     "ADMIN",
   ].includes(role);
+}
+
+/**
+ * Check if user is an Admin
+ */
+export function isAdmin(role: UserRole): boolean {
+  return role === "ADMIN";
+}
+
+/**
+ * Check if user is a Region Director
+ */
+export function isRegionDirector(role: UserRole): boolean {
+  return role === "REGION_DIRECTOR";
+}
+
+/**
+ * Check if user is a District Director
+ */
+export function isDistrictDirector(role: UserRole): boolean {
+  return role === "DISTRICT_DIRECTOR";
+}
+
+/**
+ * Check if user is a Campus Director
+ */
+export function isCampusDirector(role: UserRole): boolean {
+  return role === "CAMPUS_DIRECTOR";
+}
+
+/**
+ * Check if a role is at least the specified minimum level
+ * @param role - The role to check
+ * @param minRole - The minimum role level required
+ * @returns true if role is at or above minRole in the hierarchy
+ *
+ * @example
+ * isAtLeast("ADMIN", "DISTRICT_DIRECTOR") // true
+ * isAtLeast("CAMPUS_DIRECTOR", "REGION_DIRECTOR") // false
+ * isAtLeast("DISTRICT_DIRECTOR", "DISTRICT_DIRECTOR") // true
+ */
+export function isAtLeast(role: UserRole, minRole: UserRole): boolean {
+  return ROLE_HIERARCHY[role] >= ROLE_HIERARCHY[minRole];
+}
+
+/**
+ * Check if a role can manage another role
+ * A role can manage any role below it in the hierarchy
+ * @param managerRole - The role attempting to manage
+ * @param targetRole - The role being managed
+ * @returns true if managerRole is higher than targetRole
+ *
+ * @example
+ * canManage("ADMIN", "REGION_DIRECTOR") // true
+ * canManage("DISTRICT_DIRECTOR", "CAMPUS_DIRECTOR") // true
+ * canManage("CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR") // false
+ * canManage("STAFF", "STAFF") // false (same level)
+ */
+export function canManage(
+  managerRole: UserRole,
+  targetRole: UserRole
+): boolean {
+  return ROLE_HIERARCHY[managerRole] > ROLE_HIERARCHY[targetRole];
 }
 
 /**
