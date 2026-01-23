@@ -40,12 +40,16 @@ The project board is how the operator knows what's happening: https://github.com
 | **Verify**      | Implementation done, needs verification |
 | **Done**        | Verified and merged                     |
 
-### Agent responsibilities
+### Agent responsibilities (non-negotiable)
+
+The board must always reflect reality. Update it immediately, not at end of session.
 
 1. **Before starting work:** Set Status → In Progress, assign yourself
 2. **When blocked:** Set Status → Blocked, post A/B/C decision in Issue
 3. **When implementation done:** Set Status → Verify, open PR
 4. **After merge:** Set Status → Done
+
+**If you skip this, the operator doesn't know what's happening.**
 
 ### Project fields to set
 
@@ -92,9 +96,10 @@ Agents may run in one of two execution modes. All instructions below apply, but 
 
 ### Mode A — Local VS Code agent (runs on the operator machine)
 
-- **Worktrees are required.** Never work directly on `staging`.
+- **Worktrees are required** — except for low-risk work (see "Low-risk fast path" below).
 - Use worktrees to isolate implementation and verification.
 - Only `wt-main` is allowed to run `pnpm dev`.
+- **Low-risk exception:** For docs-only or trivial fixes (≤50 LOC, 1–2 files, no schema/auth/env), you may work directly on `staging`.
 
 ### Mode B — GitHub-hosted Copilot coding agent (cloud)
 
@@ -197,9 +202,25 @@ When blocked, post **one** decision request (A/B/C) and keep moving.
 **DO escalate for these:**
 
 - All recovery tasks fail
-- Operator login required (gh auth, Railway, Sentry)
 - Security-sensitive or destructive/irreversible choices
 - Changes to repo invariants/contracts
+
+## Operator input required (secrets/tokens/auth)
+
+When agent needs the operator to provide a value (secret, token, auth code):
+
+1. **Don't ask in chat** — secrets in chat are compromised
+2. **Run a hidden terminal prompt** — operator just pastes
+3. **Use immediately, then clear** — don't persist in env
+
+See `CMC_GO_PATTERNS.md` → "Secrets & Tokens" for the exact commands.
+
+Common triggers:
+
+- `gh auth login` needed
+- Railway/Sentry CLI not authenticated
+- API key required for external service
+- 2FA code needed
 
 Escalation template:
 
