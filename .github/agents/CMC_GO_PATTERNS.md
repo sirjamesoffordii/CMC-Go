@@ -87,3 +87,39 @@ The `Git: Rebase onto staging (no editor)` task already does this.
 - **Do NOT escalate** for terminal/pager issues — use tasks.
 - **Do NOT escalate** for stuck rebase — use `Git: Rebase abort` task.
 - **DO escalate** if: all recovery tasks fail, or operator login required (gh auth, Railway).
+
+## Railway Secrets (Operator Handoff Pattern)
+
+**When agent needs to set a Railway secret (e.g., `SESSION_SECRET`):**
+
+1. Agent runs this command to prompt for the secret (hidden input):
+
+   ```powershell
+   $sec = Read-Host "Paste SECRET_NAME (hidden)" -AsSecureString; $env:_SS = [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)); Remove-Variable sec -ErrorAction SilentlyContinue; Write-Host "Ready - env var set (length: $($env:_SS.Length))"
+   ```
+
+2. Operator pastes the secret value (not visible).
+
+3. Agent immediately runs (same terminal session):
+
+   ```powershell
+   railway variables set SECRET_NAME="$env:_SS"; $env:_SS = $null
+   ```
+
+4. Agent redeploys:
+
+   ```powershell
+   railway up --detach
+   ```
+
+5. Agent verifies:
+   ```powershell
+   railway logs -n 50
+   ```
+
+**Key points:**
+
+- Secret never appears in chat or tool output.
+- Env var is cleared immediately after use.
+- Railway CLI must already be logged in (`railway status` to verify).
+- Use `railway up --detach` if `railway redeploy` fails.
