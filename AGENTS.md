@@ -2,6 +2,13 @@
 
 This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead (TL) does (label/approve/merge) in a hands-off workflow.
 
+## Agent GitHub Accounts
+
+| Role                        | GitHub Account            | Responsibility                             |
+| --------------------------- | ------------------------- | ------------------------------------------ |
+| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Coordination, board management, delegation |
+| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Implementation, verification               |
+
 ## Read-first
 
 - **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/2
