@@ -137,25 +137,27 @@ Regions
 
 ---
 
-### 📋 Phase 3: Authentication & Authorization (NEXT)
+### � Phase 3: Authentication & Authorization (IN PROGRESS)
 
 **Goal:** Lock down access after UX is stable.
 
-| Item                         | Issue | Status  |
-| ---------------------------- | ----- | ------- |
-| Login flow                   | #115  | 📋 Todo |
-| Session management           | #116  | 📋 Todo |
-| Logout flow                  | #117  | 📋 Todo |
-| Role definitions             | #118  | 📋 Todo |
-| Role-based view gating       | #119  | 📋 Todo |
-| Permission enforcement       | #120  | 📋 Todo |
-| View access control          | #121  | 📋 Todo |
-| Data visibility by role      | #122  | 📋 Todo |
-| Auth enforcement consistency | #123  | 📋 Todo |
+| Item                         | Issue | Status  | Notes       |
+| ---------------------------- | ----- | ------- | ----------- |
+| Login flow                   | #115  | ✅ Done | Implemented |
+| Session management           | #116  | ✅ Done | Implemented |
+| Logout flow                  | #117  | 📋 Todo | Remaining   |
+| Role definitions             | #118  | ✅ Done | Implemented |
+| Role-based view gating       | #119  | ✅ Done | Implemented |
+| Permission enforcement       | #120  | ✅ Done | Implemented |
+| View access control          | #121  | 📋 Todo | Remaining   |
+| Data visibility by role      | #122  | ✅ Done | Implemented |
+| Auth enforcement consistency | #123  | ✅ Done | Implemented |
+
+**Progress:** 7/9 tasks done (78%)
 
 **Epic:** #138
 
-**Roles (planned):**
+**Roles (implemented):**
 
 - Campus Director — sees their campus only
 - District Director — sees all campuses in their district
@@ -168,18 +170,20 @@ Regions
 
 **Goal:** Adapt to mobile after desktop is complete.
 
-| Item                       | Issue | Status  |
-| -------------------------- | ----- | ------- |
-| Responsive layout          | #124  | 📋 Todo |
-| Mobile panel behavior      | #125  | 📋 Todo |
-| Touch-friendly spacing     | #126  | 📋 Todo |
-| Min touch targets (44x44)  | #127  | 📋 Todo |
-| Swipe gestures             | #128  | 📋 Todo |
-| Mobile controls            | #129  | 📋 Todo |
-| Mobile status updates      | #130  | 📋 Todo |
-| Mobile notes entry         | #131  | 📋 Todo |
-| Mobile needs tracking      | #132  | 📋 Todo |
-| Mobile follow-up usability | #133  | 📋 Todo |
+| Item                       | Issue | Status  | Notes       |
+| -------------------------- | ----- | ------- | ----------- |
+| Responsive layout          | #124  | ✅ Done | Implemented |
+| Mobile panel behavior      | #125  | 📋 Todo | Remaining   |
+| Touch-friendly spacing     | #126  | 📋 Todo | Remaining   |
+| Min touch targets (44x44)  | #127  | 📋 Todo | Remaining   |
+| Swipe gestures             | #128  | 📋 Todo | Remaining   |
+| Mobile controls            | #129  | 📋 Todo | Remaining   |
+| Mobile status updates      | #130  | 📋 Todo | Remaining   |
+| Mobile notes entry         | #131  | 📋 Todo | Remaining   |
+| Mobile needs tracking      | #132  | 📋 Todo | Remaining   |
+| Mobile follow-up usability | #133  | 📋 Todo | Remaining   |
+
+**Progress:** 1/10 tasks done (10%)
 
 **Epic:** #139
 
@@ -195,6 +199,84 @@ Regions
 | #85   | Reduce Playwright smoke flake  | Medium   |
 | #77   | Deployed staging smoke check   | Medium   |
 | #76   | Post-merge verification gates  | Medium   |
+
+---
+
+## Complete Issue Index
+
+### Summary
+
+| Phase     | Epic | Done | Todo | Total | Progress |
+| --------- | ---- | ---- | ---- | ----- | -------- |
+| Phase 1   | #135 | ✅   | -    | -     | 100%     |
+| Phase 1.2 | #136 | 3    | 0    | 3     | 100%     |
+| Phase 2   | #137 | 12   | 0    | 12    | 100%     |
+| Phase 3   | #138 | 7    | 2    | 9     | 78%      |
+| Phase 4   | #139 | 1    | 9    | 10    | 10%      |
+| Infra     | #192 | 0    | 4    | 4     | 0%       |
+| **Total** |      | 23   | 15   | 38    | **61%**  |
+
+### All Issues by Phase
+
+| #       | Title                                  | Phase     | Type         | Status         | Milestone |
+| ------- | -------------------------------------- | --------- | ------------ | -------------- | --------- |
+| **135** | Epic: Phase 1 Core System Integrity    | Phase 1   | Epic         | ✅ Done        | -         |
+| **136** | Epic: Phase 1.2 Cross-View Consistency | Phase 1.2 | Epic         | ✅ Done        | -         |
+| 81      | Status propagation tests               | Phase 1.2 | Verification | ✅ Done        | Phase 1.2 |
+| 87      | Follow-Up consistency tests            | Phase 1.2 | Verification | ✅ Done        | Phase 1.2 |
+| 102     | Map ↔ Panel state sync                | Phase 1.2 | Task         | ✅ Done        | Phase 1.2 |
+| **137** | Epic: Phase 2 Desktop UX & Navigation  | Phase 2   | Epic         | ✅ Done        | -         |
+| 103     | Default regional scope (TEXICO)        | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 104     | ~~Default district panel~~             | Phase 2   | Task         | ❌ Closed      | Phase 2   |
+| 105     | ~~View mode selector~~                 | Phase 2   | Task         | ❌ Closed      | Phase 2   |
+| 106     | Stable panel open/close                | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 107     | Smooth panel transitions               | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 108     | Panel state persistence                | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 109     | District-level needs                   | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 110     | Filter logic clarity                   | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 111     | Status-based visibility                | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 112     | Clear navigation patterns              | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 113     | No blocking UX friction                | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| 114     | Leader-friendly flows                  | Phase 2   | Task         | ✅ Done        | Phase 2   |
+| **138** | Epic: Phase 3 Auth & Authorization     | Phase 3   | Epic         | 🔄 In Progress | -         |
+| 115     | Login flow                             | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 116     | Session management                     | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 117     | Logout flow                            | Phase 3   | Task         | 📋 Todo        | Phase 3   |
+| 118     | Role definitions                       | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 119     | Role-based view gating                 | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 120     | Permission enforcement                 | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 121     | View access control                    | Phase 3   | Task         | 📋 Todo        | Phase 3   |
+| 122     | Data visibility by role                | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| 123     | Auth enforcement consistency           | Phase 3   | Task         | ✅ Done        | Phase 3   |
+| **139** | Epic: Phase 4 Mobile Optimization      | Phase 4   | Epic         | 📋 Todo        | -         |
+| 124     | Responsive layout                      | Phase 4   | Task         | ✅ Done        | Phase 4   |
+| 125     | Mobile panel behavior                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 126     | Touch-friendly spacing                 | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 127     | Min touch targets (44x44)              | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 128     | Swipe gestures                         | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 129     | Mobile controls                        | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 130     | Mobile status updates                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 131     | Mobile notes entry                     | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 132     | Mobile needs tracking                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| 133     | Mobile follow-up usability             | Phase 4   | Task         | 📋 Todo        | Phase 4   |
+| **192** | Epic: Test Coverage Expansion          | Infra     | Epic         | 📋 Todo        | -         |
+| 76      | Post-merge verification gates          | Infra     | Task         | 📋 Todo        | -         |
+| 77      | Deployed staging smoke check           | Infra     | Task         | 📋 Todo        | -         |
+| 85      | Reduce Playwright smoke flake          | Infra     | Task         | 📋 Todo        | -         |
+
+---
+
+## Labels Reference
+
+| Label                                                       | Purpose                |
+| ----------------------------------------------------------- | ---------------------- |
+| `epic`                                                      | Groups related tasks   |
+| `build-map`                                                 | Build Map roadmap item |
+| `phase:1` / `phase:1.2` / `phase:2` / `phase:3` / `phase:4` | Phase assignment       |
+| `priority:high` / `priority:medium` / `priority:low`        | Priority level         |
+| `type:feature` / `type:fix` / `type:docs`                   | Issue type             |
+| `verify:v0` / `verify:v1` / `verify:v2`                     | Verification level     |
+| `role:builder` / `role:verifier` / `role:browser`           | Work type              |
 
 ---
 
