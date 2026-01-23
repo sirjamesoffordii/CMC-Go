@@ -2,6 +2,11 @@
     "githubPullRequests.ignoredPullRequestBranches": [
         "main"
     ],
+    
+    // Prevent terminal from stealing focus when agents run commands
+    "terminal.integrated.focusAfterRun": "none",
+    "terminal.integrated.showOnError": false,
+
     "sentry.enabled": true,
     "sentry.organization": "sir-james-offord-ii",
     "sentry.projects": ["cmc-go-client"],
