@@ -9,6 +9,7 @@ build/
 
 # Playwright artifacts
 test-results/
+!test-results/model-test-*.md
 playwright-report/
 
 # Environment variables
