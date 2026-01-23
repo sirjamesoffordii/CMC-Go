@@ -504,12 +504,9 @@ export default function Home() {
     [allPeople, selectedDistrictId]
   );
 
-  // Sync selectedDistrictId with viewState.districtId
-  useEffect(() => {
-    if (viewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(viewState.districtId);
-    }
-  }, [viewState.districtId, selectedDistrictId]);
+  // Removed: Sync selectedDistrictId with viewState.districtId
+  // This useEffect caused race conditions and unnecessary re-renders.
+  // Now we ensure atomic updates in event handlers instead.
 
   // Update URL when viewState changes
   useEffect(() => {
@@ -517,45 +514,32 @@ export default function Home() {
   }, [viewState]);
 
   const handleViewStateChange = (newViewState: ViewState) => {
+    // Atomic update: set both states together to prevent race conditions
+    setSelectedDistrictId(newViewState.districtId);
     setViewState(newViewState);
-    // Keep selectedDistrictId consistent with URL/view state
-    if (newViewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(newViewState.districtId);
-    }
   };
 
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
   const handleDistrictSelect = (districtId: string) => {
-    setSelectedDistrictId(districtId);
-
     const selectedDistrict = districts.find(d => d.id === districtId);
-    if (selectedDistrict) {
-      // Extract region: database first, then fallback map
-      const regionId =
-        selectedDistrict.region ||
-        extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-    } else {
-      // If district not in database, still update viewState but use fallback region
-      const regionId = extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-    }
+    // Extract region: database first, then fallback map
+    const regionId =
+      selectedDistrict?.region ||
+      extractRegionForViewState(districtId, districts);
+
+    const newViewState: ViewState = {
+      mode: "district",
+      districtId: districtId,
+      regionId: regionId,
+      campusId: null,
+      panelOpen: true,
+    };
+
+    // Atomic update: set both states together to prevent race conditions and flicker
+    setSelectedDistrictId(districtId);
+    setViewState(newViewState);
   };
 
   // Region selection: Sets ViewMode to "region", clears district/campus scope
@@ -568,8 +552,9 @@ export default function Home() {
       campusId: null,
       panelOpen: false,
     };
-    setViewState(newViewState);
+    // Atomic update: set both states together
     setSelectedDistrictId(null);
+    setViewState(newViewState);
   };
 
   // Campus selection: Updates viewState with campus, district, and region
@@ -586,8 +571,9 @@ export default function Home() {
         regionId: regionId,
         panelOpen: true,
       };
-      setViewState(newViewState);
+      // Atomic update: set both states together
       setSelectedDistrictId(campus.districtId);
+      setViewState(newViewState);
     }
   };
 
@@ -1063,7 +1049,7 @@ export default function Home() {
                   onMouseDown={handleDistrictMouseDown}
                 />
               )}
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 {selectedDistrictId && selectedDistrict && (
                   <DistrictPanel
                     key={selectedDistrict.id}
