@@ -7,7 +7,9 @@ import * as db from "./db";
 import { storagePut } from "./storage";
 import {
   setSessionCookie,
+  setUserSession,
   clearSessionCookie,
+  clearUserSession,
   getUserIdFromSession,
 } from "./_core/session";
 import { TRPCError } from "@trpc/server";
@@ -111,6 +113,9 @@ export const appRouter = router({
         }
 
         await db.updateUserLastLoginAt(user.id);
+        
+        // Set session (both express-session and legacy cookie for backward compatibility)
+        setUserSession(ctx.req, user.id);
         setSessionCookie(ctx.req, ctx.res, user.id);
 
         const campus = user.campusId
@@ -256,7 +261,8 @@ export const appRouter = router({
         // Update last login
         await db.updateUserLastLoginAt(user.id);
 
-        // Create session
+        // Set session (both express-session and legacy cookie for backward compatibility)
+        setUserSession(ctx.req, user.id);
         setSessionCookie(ctx.req, ctx.res, user.id);
 
         // Get campus, district, and region names
@@ -279,7 +285,8 @@ export const appRouter = router({
       }),
 
     logout: publicProcedure.mutation(({ ctx }) => {
-      clearSessionCookie(ctx.req, ctx.res);
+      // Clear session (both express-session and legacy cookie)
+      clearUserSession(ctx.req, ctx.res);
       return {
         success: true,
       } as const;

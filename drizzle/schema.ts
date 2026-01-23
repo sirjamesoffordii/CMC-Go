@@ -291,6 +291,32 @@ export const authTokens = mysqlTable("auth_tokens", {
 export type AuthToken = typeof authTokens.$inferSelect;
 export type InsertAuthToken = typeof authTokens.$inferInsert;
 
+/**
+ * User sessions table - for database-backed session management
+ * PR: Session management - track logged in users and maintain state
+ */
+export const userSessions = mysqlTable(
+  "user_sessions",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    userId: int("userId").notNull(),
+    sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
+    revokedAt: timestamp("revokedAt"), // Nullable - set when session is manually revoked
+    userAgent: varchar("userAgent", { length: 500 }),
+    ipAddress: varchar("ipAddress", { length: 45 }),
+  },
+  table => ({
+    userIdIdx: index("user_sessions_userId_idx").on(table.userId),
+    sessionIdIdx: index("user_sessions_sessionId_idx").on(table.sessionId),
+    lastSeenAtIdx: index("user_sessions_lastSeenAt_idx").on(table.lastSeenAt),
+  })
+);
+
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;
+
 export type Note = typeof notes.$inferSelect;
 export type InsertNote = typeof notes.$inferInsert;
 

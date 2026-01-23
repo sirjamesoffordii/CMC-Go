@@ -8,6 +8,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
+import session from "express-session";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -17,6 +18,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startupDbHealthCheck, checkDbHealth } from "./db-health";
 import { validateEnv, ENV } from "./env";
+import { createSessionStore, getSessionConfig } from "./sessionStore";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -178,6 +180,34 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // -----------------------------------------------------------------------
+  // Session management
+  //
+  // Configure express-session with database-backed storage for persistent
+  // sessions across server restarts. Sessions expire after 7 days of
+  // inactivity and are automatically cleaned up by the session store.
+  // Only initialize session management if DATABASE_URL is available.
+  if (ENV.DATABASE_URL) {
+    try {
+      const sessionStore = createSessionStore();
+      const sessionConfig = getSessionConfig(sessionStore);
+      app.use(session(sessionConfig));
+      console.log("[Session] Database-backed session management enabled");
+    } catch (error) {
+      if (!isDevelopment) {
+        console.error("[Session] Failed to initialize session store");
+        throw error;
+      }
+      console.warn(
+        "[Session] Failed to initialize session store (development). Continuing without sessions."
+      );
+    }
+  } else if (isDevelopment) {
+    console.warn(
+      "[Session] DATABASE_URL not available. Sessions disabled (development)."
+    );
+  }
 
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
