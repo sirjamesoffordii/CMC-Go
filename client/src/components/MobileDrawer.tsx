@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import { Button } from "./ui/button";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -41,12 +42,15 @@ export function MobileDrawer({
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           {title && <h2 className="text-lg font-semibold">{title}</h2>}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="ml-auto p-2 hover:bg-gray-100 rounded-full"
+            className="ml-auto touch-target"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Content */}

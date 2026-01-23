@@ -1,8 +1,8 @@
-// @ts-nocheck
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 interface BottomSheetProps {
   open: boolean;
@@ -126,20 +126,18 @@ export function BottomSheet({
             </div>
 
             {/* Header */}
-            {(title || onOpenChange) && (
-              <div className="flex-shrink-0 flex items-center justify-between px-4 pb-2 border-b">
-                {title && <h2 className="text-lg font-semibold">{title}</h2>}
-                {onOpenChange && (
-                  <button
-                    onClick={() => onOpenChange(false)}
-                    className="p-2 -mr-2 touch-target"
-                    aria-label="Close"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 pb-2 border-b">
+              {title && <h2 className="text-lg font-semibold">{title}</h2>}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => onOpenChange(false)}
+                className="touch-target -mr-2"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
 
             {/* Snap Point Indicators (optional) */}
             <div className="flex-shrink-0 flex items-center justify-center gap-1 px-4 py-1">
