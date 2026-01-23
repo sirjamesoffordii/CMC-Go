@@ -44,7 +44,12 @@ import {
 } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { District } from "../../../drizzle/schema";
-import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
+import {
+  isDistrictInScope,
+  isCampusInScope,
+  getPeopleScope,
+} from "@/lib/scopeCheck";
+import { AccessDenied } from "@/components/AccessDenied";
 
 /**
  * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
@@ -222,6 +227,70 @@ export default function Home() {
       district?.region || null
     );
   }, [viewState.campusId, campusesQuery.data, districtsQuery.data, user]);
+
+  // View access control - redirect users if they try to access views outside their scope
+  useEffect(() => {
+    if (!user || !isAuthenticated) return; // Skip if not logged in
+
+    const scope = getPeopleScope(user);
+    if (!scope) return; // Skip if no scope
+
+    // Check if user is trying to access a view outside their scope
+    if (viewState.mode === "region" && viewState.regionId) {
+      // Campus users can't access region views
+      if (scope.level === "CAMPUS") {
+        setLocation(`/?viewMode=campus&campusId=${user.campusId}`);
+        return;
+      }
+      // District users can't access region views
+      if (scope.level === "DISTRICT") {
+        setLocation(`/?viewMode=district&districtId=${user.districtId}`);
+        return;
+      }
+      // Region users can only access their own region
+      if (scope.level === "REGION" && scope.regionId !== viewState.regionId) {
+        setLocation(`/?viewMode=region&regionId=${scope.regionId}`);
+        return;
+      }
+    }
+
+    // Check district access
+    if (viewState.mode === "district" && viewState.districtId) {
+      if (!isSelectedDistrictInScope) {
+        // Redirect to user's appropriate view
+        if (scope.level === "CAMPUS" && user.campusId) {
+          setLocation(`/?viewMode=campus&campusId=${user.campusId}`);
+        } else if (scope.level === "DISTRICT" && user.districtId) {
+          setLocation(`/?viewMode=district&districtId=${user.districtId}`);
+        } else if (scope.level === "REGION" && user.regionId) {
+          setLocation(`/?viewMode=region&regionId=${user.regionId}`);
+        }
+        return;
+      }
+    }
+
+    // Check campus access
+    if (viewState.mode === "campus" && viewState.campusId) {
+      if (!isSelectedCampusInScope) {
+        // Redirect to user's appropriate view
+        if (scope.level === "CAMPUS" && user.campusId) {
+          setLocation(`/?viewMode=campus&campusId=${user.campusId}`);
+        } else if (scope.level === "DISTRICT" && user.districtId) {
+          setLocation(`/?viewMode=district&districtId=${user.districtId}`);
+        } else if (scope.level === "REGION" && user.regionId) {
+          setLocation(`/?viewMode=region&regionId=${user.regionId}`);
+        }
+        return;
+      }
+    }
+  }, [
+    user,
+    isAuthenticated,
+    viewState,
+    isSelectedDistrictInScope,
+    isSelectedCampusInScope,
+    setLocation,
+  ]);
 
   // Only fetch people when authenticated AND selected district/campus is in scope
   const shouldFetchPeople =
@@ -830,6 +899,15 @@ export default function Home() {
       console.log("[Home] Campuses loaded:", campusesQuery.data.length);
     }
   }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
+
+  // Check for access denied error in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const accessDeniedError = urlParams.get("error") === "access_denied";
+
+  // Show access denied message if error parameter is set
+  if (accessDeniedError && isAuthenticated) {
+    return <AccessDenied resource="the requested view" />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
