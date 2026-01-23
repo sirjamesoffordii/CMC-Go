@@ -100,7 +100,7 @@ export function PersonRow({
     >
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`min-w-11 min-h-11 w-2 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0 flex items-center justify-center`}
+        className={`min-w-11 min-h-11 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0 flex items-center justify-center`}
         onClick={handleStatusClick}
         title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
       />
