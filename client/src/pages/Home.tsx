@@ -577,6 +577,36 @@ export default function Home() {
     }
   };
 
+  // Helper to close the district panel atomically
+  const handleDistrictClose = () => {
+    const newViewState: ViewState = {
+      ...viewState,
+      districtId: null,
+      regionId: null,
+      campusId: null,
+      panelOpen: false,
+    };
+    // Atomic update: set both states together
+    setSelectedDistrictId(null);
+    setViewState(newViewState);
+  };
+
+  // Helper to close all panels atomically
+  const handleBackgroundClick = () => {
+    const newViewState: ViewState = {
+      ...viewState,
+      districtId: null,
+      regionId: null,
+      campusId: null,
+      panelOpen: false,
+    };
+    // Atomic update: set all states together
+    setSelectedDistrictId(null);
+    setPeoplePanelOpen(false);
+    setNationalPanelOpen(false);
+    setViewState(newViewState);
+  };
+
   const handlePersonStatusChange = (
     personId: string,
     newStatus: "Yes" | "Maybe" | "No" | "Not Invited"
@@ -1057,16 +1087,7 @@ export default function Home() {
                     campuses={selectedDistrictCampuses}
                     people={selectedDistrictPeople}
                     isOutOfScope={!isSelectedDistrictInScope}
-                    onClose={() => {
-                      setSelectedDistrictId(null);
-                      setViewState({
-                        ...viewState,
-                        districtId: null,
-                        regionId: null,
-                        campusId: null,
-                        panelOpen: false,
-                      });
-                    }}
+                    onClose={handleDistrictClose}
                     onPersonStatusChange={handlePersonStatusChange}
                     onPersonAdd={handlePersonAdd}
                     onPersonClick={handlePersonClick}
@@ -1134,18 +1155,7 @@ export default function Home() {
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
               viewState={viewState}
-              onBackgroundClick={() => {
-                setSelectedDistrictId(null);
-                setPeoplePanelOpen(false);
-                setNationalPanelOpen(false);
-                setViewState({
-                  ...viewState,
-                  districtId: null,
-                  regionId: null,
-                  campusId: null,
-                  panelOpen: false,
-                });
-              }}
+              onBackgroundClick={handleBackgroundClick}
               onNationalClick={() => {
                 // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
                 // Candidate for View Modes refactor: XAN hardcoded region "NATIONAL" may need
