@@ -147,7 +147,21 @@ Post updates in Issues/PRs using:
 
 When blocked, post **one** decision request (A/B/C) and keep moving.
 
-Do not escalate for routine waits/timeouts (e.g. CI pending, webServer startup, transient network): retry once, poll briefly, and continue with parallel-safe work.
+**Do NOT escalate for these — self-recover:**
+
+- Terminal/pager issues → use `Agent: Recover terminal` task
+- Stuck rebase → use `Git: Rebase abort` task
+- Dirty working tree → use `Git: Hard reset to staging` task
+- Routine waits/timeouts (CI, network) → retry once, poll briefly, continue parallel work
+
+**DO escalate for these:**
+
+- All recovery tasks fail
+- Operator login required (gh auth, Railway, Sentry)
+- Security-sensitive or destructive/irreversible choices
+- Changes to repo invariants/contracts
+
+Escalation template:
 
 - **Status:** Blocked
 - **Decision needed:** <one sentence>

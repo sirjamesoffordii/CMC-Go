@@ -42,3 +42,48 @@ If you solved a non-trivial problem, capture one reusable takeaway:
 
 - Add a short **Learning:** bullet to the Issue/PR comment alongside evidence.
 - If it’s general and likely to recur, distill it into this file (and keep it short).
+
+## Windows / Terminal Self-Recovery
+
+**When you hit "alternate buffer" or stuck terminal:**
+
+1. **First:** Run VS Code task `Agent: Recover terminal` (resets pager env vars).
+2. **If still stuck:** Run VS Code task `Agent: Health check` to confirm terminal works.
+3. **If health check fails:** Use VS Code tasks exclusively (no `run_in_terminal`).
+4. **Last resort:** Escalate to operator only if all tasks also fail.
+
+**Pattern: Prefer tasks over `run_in_terminal` for git/gh commands.**
+
+The workspace has pre-configured tasks that bypass pager issues:
+
+| Symptom                          | Use This Task                |
+| -------------------------------- | ---------------------------- |
+| `run_in_terminal` hangs on git   | `Git: Status`                |
+| Stuck rebase                     | `Git: Rebase abort`          |
+| Need to checkout a PR cleanly    | `GH: Checkout PR (clean)`    |
+| Need to start fresh on staging   | `Git: Hard reset to staging` |
+| Terminal completely unresponsive | `Agent: Recover terminal`    |
+
+**Pattern: When editing tasks.json, read the full file first.**
+
+Partial reads → corrupted JSON. Either:
+
+- Read entire file before editing
+- Or use `git checkout -- .vscode/tasks.json` to reset if corrupted
+
+**Pattern: Git operations that may open editors.**
+
+Always use `-c core.editor=true` to prevent hanging:
+
+```bash
+git -c core.editor=true rebase --abort
+git -c core.editor=true merge --abort
+```
+
+The `Git: Rebase onto staging (no editor)` task already does this.
+
+**Escalation threshold:**
+
+- **Do NOT escalate** for terminal/pager issues — use tasks.
+- **Do NOT escalate** for stuck rebase — use `Git: Rebase abort` task.
+- **DO escalate** if: all recovery tasks fail, or operator login required (gh auth, Railway).
