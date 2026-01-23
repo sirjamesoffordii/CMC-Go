@@ -155,7 +155,7 @@ export function PersonIcon({
                 e.stopPropagation();
                 e.preventDefault();
               }}
-              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
+              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity min-h-11 min-w-11 p-2 hover:bg-slate-100 rounded z-50 cursor-pointer flex items-center justify-center"
               title="Edit person"
               type="button"
               draggable={false}
@@ -173,7 +173,7 @@ export function PersonIcon({
             {/* Gray spouse icon behind - shown when person has spouse */}
             {person.spouse && (
               <User
-                className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
+                className="w-11 h-11 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
                 strokeWidth={1.5}
                 fill="currentColor"
               />
@@ -183,7 +183,7 @@ export function PersonIcon({
               className={`relative ${STATUS_COLORS[person.status]} ${person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
-                className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+                className={`w-11 h-11 transition-colors cursor-pointer relative z-10`}
                 strokeWidth={1.5}
                 fill="currentColor"
               />

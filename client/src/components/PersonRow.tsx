@@ -100,7 +100,7 @@ export function PersonRow({
     >
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
+        className={`min-w-11 min-h-11 w-2 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0 flex items-center justify-center`}
         onClick={handleStatusClick}
         title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
       />
@@ -139,7 +139,7 @@ export function PersonRow({
                   e.stopPropagation();
                   setIsEditingName(true);
                 }}
-                className="h-3.5 w-3.5 text-slate-400 hover:text-slate-600 transition-colors"
+                className="min-h-11 min-w-11 p-2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center"
                 title="Edit name"
               >
                 <Pencil className="h-3 w-3" />

@@ -43,7 +43,7 @@ export function MobileDrawer({
           {title && <h2 className="text-lg font-semibold">{title}</h2>}
           <button
             onClick={onClose}
-            className="ml-auto p-2 hover:bg-gray-100 rounded-full"
+            className="ml-auto min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-full flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>

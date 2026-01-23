@@ -29,7 +29,7 @@ describe("Button", () => {
 
   it("renders with different sizes", () => {
     render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole("button")).toHaveClass("h-8");
+    expect(screen.getByRole("button")).toHaveClass("h-11");
   });
 
   it("handles click events", async () => {

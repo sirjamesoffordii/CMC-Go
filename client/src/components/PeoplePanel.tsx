@@ -607,14 +607,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           <button
             onClick={handleExport}
             disabled={filteredPeople.length === 0}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             title="Export to CSV"
           >
             <Download className="h-5 w-5 text-gray-500" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded-lg transition-colors flex items-center justify-center"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>

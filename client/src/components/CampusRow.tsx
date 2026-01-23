@@ -115,7 +115,7 @@ export function CampusRow({
                     : campus.id.toString()
                 )
               }
-              className="p-1 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100"
+              className="min-h-11 min-w-11 p-2 hover:bg-gray-100 rounded transition-colors opacity-0 group-hover:opacity-100 flex items-center justify-center"
             >
               <MoreVertical className="w-4 h-4 text-gray-300 hover:text-gray-500" />
             </button>

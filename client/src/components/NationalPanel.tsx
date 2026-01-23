@@ -295,14 +295,14 @@ export function NationalPanel({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsAddPersonDialogOpen(true)}
-              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium flex items-center gap-1.5"
+              className="min-h-11 px-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               Add Person
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="min-h-11 min-w-11 p-2 hover:bg-white/20 rounded-lg transition-colors flex items-center justify-center"
             >
               <X className="w-5 h-5" />
             </button>
