@@ -86,7 +86,10 @@ export function updateURLWithViewState(viewState: ViewState) {
     params.delete("viewMode");
   }
 
-  if (viewState.regionId) {
+  if (
+    viewState.regionId &&
+    viewState.regionId !== DEFAULT_VIEW_STATE.regionId
+  ) {
     params.set("regionId", viewState.regionId);
   } else {
     params.delete("regionId");
