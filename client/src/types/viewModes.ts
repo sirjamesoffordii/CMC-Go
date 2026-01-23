@@ -14,14 +14,14 @@ export interface ViewState {
 }
 
 /**
- * Default view state - nation-level view (full map, no scope applied)
+ * Default view state - South Texas district panel open
  */
 export const DEFAULT_VIEW_STATE: ViewState = {
-  mode: "nation",
+  mode: "district",
   regionId: null,
-  districtId: null,
+  districtId: "SouthTexas",
   campusId: null,
-  panelOpen: false,
+  panelOpen: true,
 };
 
 /**
@@ -41,14 +41,15 @@ export function initializeViewStateFromURL(): ViewState {
         ? (modeParam as ViewMode)
         : DEFAULT_VIEW_STATE.mode;
 
-    // Safely parse regionId (null if empty string)
-    const regionId = params.get("regionId") || null;
+    // Safely parse regionId (use default if not in URL)
+    const regionId = params.get("regionId") || DEFAULT_VIEW_STATE.regionId;
 
-    // Safely parse districtId (null if empty string)
-    const districtId = params.get("districtId") || null;
+    // Safely parse districtId (use default if not in URL)
+    const districtId =
+      params.get("districtId") || DEFAULT_VIEW_STATE.districtId;
 
     // Safely parse campusId with validation
-    let campusId: number | null = null;
+    let campusId: number | null = DEFAULT_VIEW_STATE.campusId;
     const campusIdParam = params.get("campusId");
     if (campusIdParam) {
       const parsed = parseInt(campusIdParam, 10);
@@ -57,8 +58,12 @@ export function initializeViewStateFromURL(): ViewState {
       }
     }
 
-    // Safely parse panelOpen
-    const panelOpen = params.get("panelOpen") === "true";
+    // Safely parse panelOpen (use default if not in URL)
+    const panelOpenParam = params.get("panelOpen");
+    const panelOpen =
+      panelOpenParam !== null
+        ? panelOpenParam === "true"
+        : DEFAULT_VIEW_STATE.panelOpen;
 
     return {
       mode,
