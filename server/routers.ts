@@ -1779,6 +1779,9 @@ export const appRouter = router({
   }),
 
   // PR 2: Approvals
+  // AUTHORIZATION: Protected - requires authentication and role-based checks
+  // - list: ADMIN sees all, REGION_DIRECTOR sees their region, others see none
+  // - approve/reject: Uses canApproveDistrictDirector/canApproveRegionDirector helpers
   approvals: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       // Only ADMIN can view all pending approvals
@@ -1916,6 +1919,7 @@ export const appRouter = router({
     }),
   }),
 
+  // AUTHORIZATION: Settings - Admin-only for mutations, public for queries
   settings: router({
     get: publicProcedure
       .input(z.object({ key: z.string() }))
@@ -1979,6 +1983,8 @@ export const appRouter = router({
       }),
   }),
 
+  // AUTHORIZATION: Households - Public read, protected write
+  // Queries are public for data access, all mutations require authentication
   households: router({
     list: publicProcedure.query(async () => {
       try {
