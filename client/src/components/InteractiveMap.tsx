@@ -1457,6 +1457,23 @@ export function InteractiveMap({
                 {stats.notInvited}
               </span>
             </div>
+            {/* Active Needs Count */}
+            {stats.needsCount !== undefined && stats.needsCount > 0 && (
+              <div className="flex items-center justify-between gap-4 py-0.5 mt-1 pt-1 border-t border-gray-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-[#dc2626]"></div>
+                  <span className="text-gray-600 whitespace-nowrap">
+                    Active Needs:
+                  </span>
+                </div>
+                <span
+                  className="text-gray-800"
+                  style={{ fontWeight: 500, fontSize: "15px" }}
+                >
+                  {stats.needsCount}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
