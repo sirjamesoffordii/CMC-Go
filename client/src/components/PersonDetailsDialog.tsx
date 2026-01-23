@@ -47,6 +47,11 @@ export function PersonDetailsDialog({
   // Invite Notes state
   const [inviteNoteText, setInviteNoteText] = useState("");
 
+  // General Notes state
+  const [generalNoteText, setGeneralNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+
   // Needs state
   const [needType, setNeedType] = useState<
     "Financial" | "Transportation" | "Housing" | "Other"
@@ -66,6 +71,12 @@ export function PersonDetailsDialog({
   const { data: needs = [] } = trpc.needs.byPerson.useQuery(
     { personId: person?.personId ?? "" },
     { enabled: !!person }
+  );
+
+  // Fetch general notes
+  const { data: generalNotes = [] } = trpc.notes.byPerson.useQuery(
+    { personId: person?.personId ?? "", category: "INTERNAL" },
+    { enabled: !!person && isAuthenticated }
   );
 
   // PR 3: Fetch status history
@@ -98,6 +109,24 @@ export function PersonDetailsDialog({
     },
   });
 
+  const createGeneralNote = trpc.notes.create.useMutation({
+    onSuccess: () => {
+      utils.notes.byPerson.invalidate({
+        personId: person?.personId ?? "",
+        category: "INTERNAL",
+      });
+      utils.people.list.invalidate();
+      setGeneralNoteText("");
+      setIsSavingNote(false);
+      setShowSaveConfirmation(true);
+      // Hide confirmation after 2 seconds
+      setTimeout(() => setShowSaveConfirmation(false), 2000);
+    },
+    onError: () => {
+      setIsSavingNote(false);
+    },
+  });
+
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
       utils.needs.byPerson.invalidate({ personId: person?.personId ?? "" });
@@ -118,6 +147,17 @@ export function PersonDetailsDialog({
     createInviteNote.mutate({
       personId: person.personId,
       content: inviteNoteText.trim(),
+    });
+  };
+
+  const handleAddGeneralNote = () => {
+    if (!person || !generalNoteText.trim()) return;
+    setIsSavingNote(true);
+    createGeneralNote.mutate({
+      personId: person.personId,
+      category: "INTERNAL",
+      content: generalNoteText.trim(),
+      noteType: "GENERAL",
     });
   };
 
@@ -254,6 +294,66 @@ export function PersonDetailsDialog({
                 className="p-3 bg-white border border-gray-200 rounded"
               >
                 <p className="text-sm text-gray-900">{note.content}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
+                  {note.createdBy && <span>by {note.createdBy}</span>}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* General Notes Section */}
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 pb-2">
+          <h3 className="text-sm font-semibold text-slate-700">Notes</h3>
+        </div>
+
+        {/* Add Note Form - Mobile Optimized */}
+        {isAuthenticated && (
+          <div className="space-y-3 p-4 bg-gray-50 rounded-lg sticky top-0 z-10">
+            <Label>Add Note</Label>
+            <Textarea
+              placeholder="Add a note (e.g., follow-up needed, conversation highlights, prayer requests)..."
+              value={generalNoteText}
+              onChange={e => setGeneralNoteText(e.target.value)}
+              className="min-h-24 md:min-h-20 text-base resize-none"
+              autoFocus={isMobile}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                onClick={handleAddGeneralNote}
+                disabled={!generalNoteText.trim() || isSavingNote}
+                className="flex-1 md:flex-none touch-target"
+              >
+                {isSavingNote ? "Saving..." : "Add Note"}
+              </Button>
+              {showSaveConfirmation && (
+                <span className="text-sm text-green-600 font-medium">
+                  ✓ Saved
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Notes List */}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Recent Notes</Label>
+          {generalNotes.length === 0 ? (
+            <p className="text-sm text-gray-500 text-center py-4">
+              No notes yet
+            </p>
+          ) : (
+            generalNotes.map(note => (
+              <div
+                key={note.id}
+                className="p-3 bg-white border border-gray-200 rounded"
+              >
+                <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                  {note.content}
+                </p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                   <span>{new Date(note.createdAt).toLocaleDateString()}</span>
                   {note.createdBy && <span>by {note.createdBy}</span>}
