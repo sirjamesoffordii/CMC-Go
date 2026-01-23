@@ -1,9 +1,7 @@
 # CMC Go — Project Overview
 
-> **Last Updated:** January 23, 2026
+> **Last Updated:** January 23, 2026  
 > **Project Board:** https://github.com/users/sirjamesoffordii/projects/2
-
-This document provides a complete map of the CMC Go project — what it is, how it works, and what's left to build.
 
 ---
 
@@ -17,6 +15,35 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 - **Panel View** — Side panel shows people, campuses, and needs for selected district
 - **Follow-Up View** — Aggregated view of people with active needs requiring attention
 - **Role-Based Access** — Users see data scoped to their role (Campus → District → Region → National)
+
+---
+
+## How We Track Work
+
+### Two Concepts (Simple)
+
+| Concept       | Purpose                          | GitHub Feature |
+| ------------- | -------------------------------- | -------------- |
+| **Milestone** | When — delivery timeline         | Milestones     |
+| **Epic**      | What — multi-task feature groups | Issues + label |
+
+### Milestones (Sequential Releases)
+
+| Milestone            | Focus                                 | Status      |
+| -------------------- | ------------------------------------- | ----------- |
+| v1.0: Core System    | Schema, flows, state, observability   | ✅ Done     |
+| v1.1: Cross-View     | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done     |
+| v1.2: Desktop UX     | Navigation, filters, panel behavior   | ✅ Done     |
+| v1.3: Authentication | Login, sessions, roles, permissions   | 🔄 78% done |
+| v1.4: Mobile         | Responsive layout, touch optimization | 📋 10% done |
+
+### Epics (Feature Groups)
+
+Epics group related tasks that may span milestones:
+
+| Epic                          | Issue | Status  |
+| ----------------------------- | ----- | ------- |
+| Epic: Test Coverage Expansion | #192  | 📋 Open |
 
 ---
 
@@ -53,7 +80,7 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 
 ---
 
-## Data Model (Simplified)
+## Data Model
 
 ```
 Regions
@@ -64,141 +91,114 @@ Regions
                     └── Needs (active/resolved)
 ```
 
-### Key Tables
+---
 
-- **regions** — TEXICO, etc.
-- **districts** — South Texas, West Texas, etc. (ID = SVG path ID)
-- **campuses** — Universities within districts
-- **people** — Conference attendees/contacts
-- **notes** — Free-form notes on people
-- **needs** — Trackable follow-up items (active/resolved)
-- **users** — App users (for auth, coming in Phase 3)
+## Milestone Details
+
+### ✅ v1.0: Core System Integrity (COMPLETE)
+
+Foundation work — schema, core flows, state management, observability.
+
+| Area                          | Status  |
+| ----------------------------- | ------- |
+| Schema finalized              | ✅ Done |
+| Core flows (list/detail/edit) | ✅ Done |
+| State management (URL params) | ✅ Done |
+| Follow-up view                | ✅ Done |
+| Observability (Sentry)        | ✅ Done |
 
 ---
 
-## Build Phases
+### ✅ v1.1: Cross-View Consistency (COMPLETE)
 
-### ✅ Phase 1: Core System Integrity (DONE)
+All views stay in sync; no desync edge cases.
 
-**Goal:** System is correct, stable, and observable.
-
-| Area                            | Status  |
-| ------------------------------- | ------- |
-| Schema finalized                | ✅ Done |
-| Core flows (list/detail/edit)   | ✅ Done |
-| State management (URL params)   | ✅ Done |
-| Follow-up view                  | ✅ Done |
-| Observability (Sentry, Codecov) | ✅ Done |
-
----
-
-### ✅ Phase 1.2: Cross-View Consistency (DONE)
-
-**Goal:** All views stay in sync; no desync edge cases.
-
-| Item                        | Issue | Status  |
+| Task                        | Issue | Status  |
 | --------------------------- | ----- | ------- |
 | Map ↔ Panel state sync     | #102  | ✅ Done |
 | Status propagation tests    | #81   | ✅ Done |
 | Follow-Up consistency tests | #87   | ✅ Done |
 
-**Epic:** #136 (Closed)
-
 ---
 
-### ✅ Phase 2: Desktop UX & Navigation (DONE)
+### ✅ v1.2: Desktop UX (COMPLETE)
 
-**Goal:** Efficient, intuitive desktop experience.
+Efficient, intuitive desktop experience.
 
-| Item                                     | Issue | Status    | Notes                                  |
-| ---------------------------------------- | ----- | --------- | -------------------------------------- |
-| ~~Default district panel (South Texas)~~ | #104  | ❌ Closed | Design changed: default = whole map    |
-| ~~View mode selector~~                   | #105  | ❌ Closed | Design changed: automatic by user role |
-| Stable panel open/close                  | #106  | ✅ Done   | PR #163                                |
-| Smooth panel transitions                 | #107  | ✅ Done   | Already implemented                    |
-| Panel state persistence                  | #108  | ✅ Done   |                                        |
-| District-level needs                     | #109  | ✅ Done   | PR #166                                |
-| Filter logic clarity                     | #110  | ✅ Done   | Already implemented                    |
-| Status-based visibility                  | #111  | ✅ Done   |                                        |
-| Clear navigation patterns                | #112  | ✅ Done   | PR #169                                |
-| No blocking UX friction                  | #113  | ✅ Done   |                                        |
-| Leader-friendly flows                    | #114  | ✅ Done   |                                        |
+| Task                            | Issue | Status    | Notes                          |
+| ------------------------------- | ----- | --------- | ------------------------------ |
+| Default regional scope (TEXICO) | #103  | ✅ Done   | PR #160                        |
+| ~~Default district panel~~      | #104  | ❌ Closed | Design: default = whole map    |
+| ~~View mode selector~~          | #105  | ❌ Closed | Design: automatic by user role |
+| Stable panel open/close         | #106  | ✅ Done   |                                |
+| Smooth panel transitions        | #107  | ✅ Done   |                                |
+| Panel state persistence         | #108  | ✅ Done   |                                |
+| District-level needs            | #109  | ✅ Done   |                                |
+| Filter logic clarity            | #110  | ✅ Done   |                                |
+| Status-based visibility         | #111  | ✅ Done   |                                |
+| Clear navigation patterns       | #112  | ✅ Done   |                                |
+| No blocking UX friction         | #113  | ✅ Done   |                                |
+| Leader-friendly flows           | #114  | ✅ Done   |                                |
 
-**Epic:** #137 (Closed)
-
-**Design Decisions (Updated Jan 23, 2026):**
+**Design Decisions:**
 
 - **No default district** — App opens to full map view
-- **No view mode selector** — View scope is automatic based on signed-in user's role:
-  - Campus user → sees their campus
-  - District user → sees their district
-  - Regional user → sees their region
-  - National/Admin → sees everything
+- **No view mode selector** — View scope automatic based on user role
 
 ---
 
-### � Phase 3: Authentication & Authorization (IN PROGRESS)
+### 🔄 v1.3: Authentication (IN PROGRESS — 78%)
 
-**Goal:** Lock down access after UX is stable.
+Lock down access after UX is stable.
 
-| Item                         | Issue | Status  | Notes       |
-| ---------------------------- | ----- | ------- | ----------- |
-| Login flow                   | #115  | ✅ Done | Implemented |
-| Session management           | #116  | ✅ Done | Implemented |
-| Logout flow                  | #117  | 📋 Todo | Remaining   |
-| Role definitions             | #118  | ✅ Done | Implemented |
-| Role-based view gating       | #119  | ✅ Done | Implemented |
-| Permission enforcement       | #120  | ✅ Done | Implemented |
-| View access control          | #121  | 📋 Todo | Remaining   |
-| Data visibility by role      | #122  | ✅ Done | Implemented |
-| Auth enforcement consistency | #123  | ✅ Done | Implemented |
+| Task                         | Issue | Status  |
+| ---------------------------- | ----- | ------- |
+| Login flow                   | #115  | ✅ Done |
+| Session management           | #116  | ✅ Done |
+| Logout flow                  | #117  | 📋 Todo |
+| Role definitions             | #118  | ✅ Done |
+| Role-based view gating       | #119  | ✅ Done |
+| Permission enforcement       | #120  | ✅ Done |
+| View access control          | #121  | 📋 Todo |
+| Data visibility by role      | #122  | ✅ Done |
+| Auth enforcement consistency | #123  | ✅ Done |
 
-**Progress:** 7/9 tasks done (78%)
+**Roles:**
 
-**Epic:** #138
-
-**Roles (implemented):**
-
-- Campus Director — sees their campus only
-- District Director — sees all campuses in their district
-- Region Director — sees all districts in their region
-- Admin / National — sees everything
+- Campus Director → sees their campus only
+- District Director → sees all campuses in their district
+- Region Director → sees all districts in their region
+- Admin / National → sees everything
 
 ---
 
-### 📋 Phase 4: Mobile Optimization (QUEUED)
+### 📋 v1.4: Mobile (QUEUED — 10%)
 
-**Goal:** Adapt to mobile after desktop is complete.
+Responsive layout, touch optimization.
 
-| Item                       | Issue | Status  | Notes       |
-| -------------------------- | ----- | ------- | ----------- |
-| Responsive layout          | #124  | ✅ Done | Implemented |
-| Mobile panel behavior      | #125  | 📋 Todo | Remaining   |
-| Touch-friendly spacing     | #126  | 📋 Todo | Remaining   |
-| Min touch targets (44x44)  | #127  | 📋 Todo | Remaining   |
-| Swipe gestures             | #128  | 📋 Todo | Remaining   |
-| Mobile controls            | #129  | 📋 Todo | Remaining   |
-| Mobile status updates      | #130  | 📋 Todo | Remaining   |
-| Mobile notes entry         | #131  | 📋 Todo | Remaining   |
-| Mobile needs tracking      | #132  | 📋 Todo | Remaining   |
-| Mobile follow-up usability | #133  | 📋 Todo | Remaining   |
-
-**Progress:** 1/10 tasks done (10%)
-
-**Epic:** #139
+| Task                       | Issue | Status  |
+| -------------------------- | ----- | ------- |
+| Responsive layout          | #124  | ✅ Done |
+| Mobile panel behavior      | #125  | 📋 Todo |
+| Touch-friendly spacing     | #126  | 📋 Todo |
+| Min touch targets (44x44)  | #127  | 📋 Todo |
+| Swipe gestures             | #128  | 📋 Todo |
+| Mobile controls            | #129  | 📋 Todo |
+| Mobile status updates      | #130  | 📋 Todo |
+| Mobile notes entry         | #131  | 📋 Todo |
+| Mobile needs tracking      | #132  | 📋 Todo |
+| Mobile follow-up usability | #133  | 📋 Todo |
 
 ---
 
-## Current Open Issues (Non-Phase)
+## Infrastructure Tasks (No Milestone)
 
-## Current Open Issues (Non-Phase)
-
-| Issue | Title                          | Priority |
-| ----- | ------------------------------ | -------- |
-| #192  | [Epic] Test Coverage Expansion | High     |
-| #85   | Reduce Playwright smoke flake  | Medium   |
-| #77   | Deployed staging smoke check   | Medium   |
-| #76   | Post-merge verification gates  | Medium   |
+| Task                          | Issue | Status  |
+| ----------------------------- | ----- | ------- |
+| Post-merge verification gates | #76   | 📋 Todo |
+| Deployed staging smoke check  | #77   | 📋 Todo |
+| Reduce Playwright smoke flake | #85   | 📋 Todo |
+| Epic: Test Coverage Expansion | #192  | 📋 Open |
 
 ---
 
@@ -206,77 +206,58 @@ Regions
 
 ### Summary
 
-| Phase     | Epic | Done | Todo | Total | Progress |
-| --------- | ---- | ---- | ---- | ----- | -------- |
-| Phase 1   | #135 | ✅   | -    | -     | 100%     |
-| Phase 1.2 | #136 | 3    | 0    | 3     | 100%     |
-| Phase 2   | #137 | 12   | 0    | 12    | 100%     |
-| Phase 3   | #138 | 7    | 2    | 9     | 78%      |
-| Phase 4   | #139 | 1    | 9    | 10    | 10%      |
-| Infra     | #192 | 0    | 4    | 4     | 0%       |
-| **Total** |      | 23   | 15   | 38    | **61%**  |
+| Milestone            | Done | Open | Total | Progress |
+| -------------------- | ---- | ---- | ----- | -------- |
+| v1.0: Core System    | ✅   | -    | -     | 100%     |
+| v1.1: Cross-View     | 3    | 0    | 3     | 100%     |
+| v1.2: Desktop UX     | 12   | 0    | 12    | 100%     |
+| v1.3: Authentication | 7    | 2    | 9     | 78%      |
+| v1.4: Mobile         | 1    | 9    | 10    | 10%      |
+| Infrastructure       | 0    | 4    | 4     | 0%       |
+| **Total**            | 23   | 15   | 38    | **61%**  |
 
-### All Issues by Phase
+### All Tasks
 
-| #       | Title                                  | Phase     | Type         | Status         | Milestone |
-| ------- | -------------------------------------- | --------- | ------------ | -------------- | --------- |
-| **135** | Epic: Phase 1 Core System Integrity    | Phase 1   | Epic         | ✅ Done        | -         |
-| **136** | Epic: Phase 1.2 Cross-View Consistency | Phase 1.2 | Epic         | ✅ Done        | -         |
-| 81      | Status propagation tests               | Phase 1.2 | Verification | ✅ Done        | Phase 1.2 |
-| 87      | Follow-Up consistency tests            | Phase 1.2 | Verification | ✅ Done        | Phase 1.2 |
-| 102     | Map ↔ Panel state sync                | Phase 1.2 | Task         | ✅ Done        | Phase 1.2 |
-| **137** | Epic: Phase 2 Desktop UX & Navigation  | Phase 2   | Epic         | ✅ Done        | -         |
-| 103     | Default regional scope (TEXICO)        | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 104     | ~~Default district panel~~             | Phase 2   | Task         | ❌ Closed      | Phase 2   |
-| 105     | ~~View mode selector~~                 | Phase 2   | Task         | ❌ Closed      | Phase 2   |
-| 106     | Stable panel open/close                | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 107     | Smooth panel transitions               | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 108     | Panel state persistence                | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 109     | District-level needs                   | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 110     | Filter logic clarity                   | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 111     | Status-based visibility                | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 112     | Clear navigation patterns              | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 113     | No blocking UX friction                | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| 114     | Leader-friendly flows                  | Phase 2   | Task         | ✅ Done        | Phase 2   |
-| **138** | Epic: Phase 3 Auth & Authorization     | Phase 3   | Epic         | 🔄 In Progress | -         |
-| 115     | Login flow                             | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 116     | Session management                     | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 117     | Logout flow                            | Phase 3   | Task         | 📋 Todo        | Phase 3   |
-| 118     | Role definitions                       | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 119     | Role-based view gating                 | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 120     | Permission enforcement                 | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 121     | View access control                    | Phase 3   | Task         | 📋 Todo        | Phase 3   |
-| 122     | Data visibility by role                | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| 123     | Auth enforcement consistency           | Phase 3   | Task         | ✅ Done        | Phase 3   |
-| **139** | Epic: Phase 4 Mobile Optimization      | Phase 4   | Epic         | 📋 Todo        | -         |
-| 124     | Responsive layout                      | Phase 4   | Task         | ✅ Done        | Phase 4   |
-| 125     | Mobile panel behavior                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 126     | Touch-friendly spacing                 | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 127     | Min touch targets (44x44)              | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 128     | Swipe gestures                         | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 129     | Mobile controls                        | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 130     | Mobile status updates                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 131     | Mobile notes entry                     | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 132     | Mobile needs tracking                  | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| 133     | Mobile follow-up usability             | Phase 4   | Task         | 📋 Todo        | Phase 4   |
-| **192** | Epic: Test Coverage Expansion          | Infra     | Epic         | 📋 Todo        | -         |
-| 76      | Post-merge verification gates          | Infra     | Task         | 📋 Todo        | -         |
-| 77      | Deployed staging smoke check           | Infra     | Task         | 📋 Todo        | -         |
-| 85      | Reduce Playwright smoke flake          | Infra     | Task         | 📋 Todo        | -         |
-
----
-
-## Labels Reference
-
-| Label                                                       | Purpose                |
-| ----------------------------------------------------------- | ---------------------- |
-| `epic`                                                      | Groups related tasks   |
-| `build-map`                                                 | Build Map roadmap item |
-| `phase:1` / `phase:1.2` / `phase:2` / `phase:3` / `phase:4` | Phase assignment       |
-| `priority:high` / `priority:medium` / `priority:low`        | Priority level         |
-| `type:feature` / `type:fix` / `type:docs`                   | Issue type             |
-| `verify:v0` / `verify:v1` / `verify:v2`                     | Verification level     |
-| `role:builder` / `role:verifier` / `role:browser`           | Work type              |
+| #   | Task                            | Milestone | Status  |
+| --- | ------------------------------- | --------- | ------- |
+| 81  | Status propagation tests        | v1.1      | ✅ Done |
+| 87  | Follow-Up consistency tests     | v1.1      | ✅ Done |
+| 102 | Map ↔ Panel state sync         | v1.1      | ✅ Done |
+| 103 | Default regional scope (TEXICO) | v1.2      | ✅ Done |
+| 104 | ~~Default district panel~~      | v1.2      | ❌      |
+| 105 | ~~View mode selector~~          | v1.2      | ❌      |
+| 106 | Stable panel open/close         | v1.2      | ✅ Done |
+| 107 | Smooth panel transitions        | v1.2      | ✅ Done |
+| 108 | Panel state persistence         | v1.2      | ✅ Done |
+| 109 | District-level needs            | v1.2      | ✅ Done |
+| 110 | Filter logic clarity            | v1.2      | ✅ Done |
+| 111 | Status-based visibility         | v1.2      | ✅ Done |
+| 112 | Clear navigation patterns       | v1.2      | ✅ Done |
+| 113 | No blocking UX friction         | v1.2      | ✅ Done |
+| 114 | Leader-friendly flows           | v1.2      | ✅ Done |
+| 115 | Login flow                      | v1.3      | ✅ Done |
+| 116 | Session management              | v1.3      | ✅ Done |
+| 117 | Logout flow                     | v1.3      | 📋 Todo |
+| 118 | Role definitions                | v1.3      | ✅ Done |
+| 119 | Role-based view gating          | v1.3      | ✅ Done |
+| 120 | Permission enforcement          | v1.3      | ✅ Done |
+| 121 | View access control             | v1.3      | 📋 Todo |
+| 122 | Data visibility by role         | v1.3      | ✅ Done |
+| 123 | Auth enforcement consistency    | v1.3      | ✅ Done |
+| 124 | Responsive layout               | v1.4      | ✅ Done |
+| 125 | Mobile panel behavior           | v1.4      | 📋 Todo |
+| 126 | Touch-friendly spacing          | v1.4      | 📋 Todo |
+| 127 | Min touch targets (44x44)       | v1.4      | 📋 Todo |
+| 128 | Swipe gestures                  | v1.4      | 📋 Todo |
+| 129 | Mobile controls                 | v1.4      | 📋 Todo |
+| 130 | Mobile status updates           | v1.4      | 📋 Todo |
+| 131 | Mobile notes entry              | v1.4      | 📋 Todo |
+| 132 | Mobile needs tracking           | v1.4      | 📋 Todo |
+| 133 | Mobile follow-up usability      | v1.4      | 📋 Todo |
+| 76  | Post-merge verification gates   | Infra     | 📋 Todo |
+| 77  | Deployed staging smoke check    | Infra     | 📋 Todo |
+| 85  | Reduce Playwright smoke flake   | Infra     | 📋 Todo |
+| 192 | Epic: Test Coverage Expansion   | Infra     | 📋 Open |
 
 ---
 
@@ -301,4 +282,3 @@ Regions
 - **Project Board:** https://github.com/users/sirjamesoffordii/projects/2
 - **Staging URL:** https://cmc-go-github-staging-staging.up.railway.app
 - **Agent Manual:** [AGENTS.md](../../AGENTS.md)
-- **Patterns:** [.github/agents/CMC_GO_PATTERNS.md](../../.github/agents/CMC_GO_PATTERNS.md)
