@@ -211,3 +211,70 @@ Operational procedures are archived (not active policy), but are useful referenc
 
 Legacy/unused docs live under `.github/_unused/`.
 They are **not active policy** unless explicitly revived.
+
+## Agent Troubleshooting & Escape Hatches
+
+When standard tools fail, use these fallbacks:
+
+### Terminal stuck / "alternate buffer" hang
+
+**Symptoms:** `run_in_terminal` returns "The command opened the alternate buffer" repeatedly.
+
+**Fix:**
+
+1. Run VS Code task: `Agent: Recover terminal`
+2. Or ask operator to run command: `workbench.action.terminal.killAll`
+3. Then run: `Agent: Health check` to verify recovery
+
+### tasks.json corrupted
+
+**Symptoms:** Tasks won't run, JSON parse errors.
+
+**Fix:**
+
+```bash
+git checkout -- .vscode/tasks.json
+```
+
+### Git rebase stuck in editor
+
+**Symptoms:** Rebase hangs waiting for editor input.
+
+**Fix:**
+
+1. Run task: `Git: Rebase abort`
+2. Or: `git -c core.editor=true rebase --abort`
+
+### GitHub CLI auth issues
+
+**Symptoms:** `gh` commands fail with auth errors.
+
+**Fix:**
+
+1. Run: `gh auth status` to diagnose
+2. Ask operator to run: `gh auth login`
+
+### Health check (run at session start)
+
+Run VS Code task: `Agent: Health check`
+
+This verifies:
+
+- Terminal output works
+- Git is functional
+- GitHub CLI is authenticated
+- Node/pnpm versions
+- Repo state (branch, clean/dirty)
+
+### Available agent-safe tasks
+
+| Task                         | Purpose                           |
+| ---------------------------- | --------------------------------- |
+| `Agent: Health check`        | Verify all systems working        |
+| `Agent: Recover terminal`    | Reset pager environment           |
+| `Git: Status`                | Safe status check                 |
+| `Git: Hard reset to staging` | Nuclear option: discard all local |
+| `Git: Rebase abort`          | Escape stuck rebase               |
+| `GH: PR status (by number)`  | Check PR mergeability             |
+| `GH: Checkout PR (clean)`    | Safely checkout a PR              |
+| `GH: Merge PR (squash)`      | Merge and delete branch           |

@@ -137,6 +137,66 @@
       "problemMatcher": []
     },
     {
+      "label": "Agent: Health check",
+      "type": "shell",
+      "command": "Write-Host '=== Agent Health Check ==='; Write-Host ''; Write-Host '[Terminal]' -ForegroundColor Cyan; Write-Host \"  echo: $(if ('ok' -eq 'ok') { 'PASS' } else { 'FAIL' })\"; Write-Host ''; Write-Host '[Git]' -ForegroundColor Cyan; $gitStatus = git status -sb 2>&1; if ($LASTEXITCODE -eq 0) { Write-Host \"  git status: PASS ($gitStatus)\" } else { Write-Host '  git status: FAIL' -ForegroundColor Red }; Write-Host ''; Write-Host '[GitHub CLI]' -ForegroundColor Cyan; $ghAuth = gh auth status 2>&1; if ($LASTEXITCODE -eq 0) { Write-Host '  gh auth: PASS' } else { Write-Host '  gh auth: FAIL' -ForegroundColor Red }; Write-Host ''; Write-Host '[Node/pnpm]' -ForegroundColor Cyan; $nodeVer = node --version 2>&1; $pnpmVer = pnpm --version 2>&1; Write-Host \"  node: $nodeVer\"; Write-Host \"  pnpm: $pnpmVer\"; Write-Host ''; Write-Host '[Repo State]' -ForegroundColor Cyan; $branch = git branch --show-current; $clean = git status --porcelain; Write-Host \"  branch: $branch\"; if ([string]::IsNullOrEmpty($clean)) { Write-Host '  working tree: clean' } else { Write-Host \"  working tree: dirty ($($clean.Split([Environment]::NewLine).Count) files)\" -ForegroundColor Yellow }; Write-Host ''; Write-Host '=== Done ===' -ForegroundColor Green",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Recover terminal",
+      "type": "shell",
+      "command": "Write-Host 'Resetting terminal environment...'; $env:GIT_PAGER='cat'; $env:GH_PAGER='cat'; $env:PAGER='cat'; git config --global core.pager cat; Write-Host 'Pager settings reset. Terminal should be usable now.' -ForegroundColor Green",
+      "problemMatcher": []
+    },
+    {
+      "label": "GH: PR status (by number)",
+      "type": "shell",
+      "command": "gh pr view ${input:prNumber} --json url,state,isDraft,title,baseRefName,headRefName,mergeable,mergeStateStatus",
+      "problemMatcher": []
+    },
+    {
+      "label": "GH: Checkout PR (clean)",
+      "type": "shell",
+      "command": "git reset --hard; git clean -fd; gh pr checkout ${input:prNumber}; git status -sb",
+      "problemMatcher": []
+    },
+    {
+      "label": "GH: Merge PR (squash)",
+      "type": "shell",
+      "command": "gh pr merge ${input:prNumber} --squash --delete-branch",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Rebase onto staging (no editor)",
+      "type": "shell",
+      "command": "git fetch --prune origin; git -c core.editor=true rebase origin/staging",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Rebase continue",
+      "type": "shell",
+      "command": "git -c core.editor=true rebase --continue",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Rebase abort",
+      "type": "shell",
+      "command": "git rebase --abort; git status -sb",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Push force-with-lease",
+      "type": "shell",
+      "command": "git push --force-with-lease",
+      "problemMatcher": []
+    },
+    {
+      "label": "Git: Commit (message prompt)",
+      "type": "shell",
+      "command": "git add -A; git commit -m '${input:commitMessage}' --no-verify",
+      "problemMatcher": []
+    },
+    {
       "label": "Port: List handoff commits",
       "type": "shell",
       "command": "git fetch --prune origin; git --no-pager log --oneline origin/staging..origin/agent/tl/142-copilot-handoff-docs",
@@ -147,6 +207,18 @@
       "type": "shell",
       "command": "gh pr create --base staging --head agent/tl/142-copilot-handoff-docs --title \"Port auth/session UI work to staging\" --body \"This PR ports changes that were accidentally merged into agent/tl/142-copilot-handoff-docs (not staging).\n\nIncludes: session management (#173), role-based view gating (#176), and related docs.\n\nVerification: run pnpm check and pnpm test.\"",
       "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "prNumber",
+      "type": "promptString",
+      "description": "PR number to operate on"
+    },
+    {
+      "id": "commitMessage",
+      "type": "promptString",
+      "description": "Commit message"
     }
   ]
 }
