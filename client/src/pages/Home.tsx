@@ -514,7 +514,7 @@ export default function Home() {
   }, [viewState]);
 
   const handleViewStateChange = (newViewState: ViewState) => {
-    // Atomic update: set both states together to prevent race conditions
+    // Batched update: React batches these setState calls together
     setSelectedDistrictId(newViewState.districtId);
     setViewState(newViewState);
   };
@@ -526,13 +526,13 @@ export default function Home() {
 
     const newViewState: ViewState = {
       mode: "district",
-      districtId: districtId,
-      regionId: regionId,
+      districtId,
+      regionId,
       campusId: null,
       panelOpen: true,
     };
 
-    // Atomic update: set both states together to prevent race conditions and flicker
+    // Batched update: React batches these setState calls together
     setSelectedDistrictId(districtId);
     setViewState(newViewState);
   };
@@ -547,7 +547,7 @@ export default function Home() {
       campusId: null,
       panelOpen: false,
     };
-    // Atomic update: set both states together
+    // Batched update: React batches these setState calls together
     setSelectedDistrictId(null);
     setViewState(newViewState);
   };
@@ -566,7 +566,7 @@ export default function Home() {
         regionId: regionId,
         panelOpen: true,
       };
-      // Atomic update: set both states together
+      // Batched update: React batches these setState calls together
       setSelectedDistrictId(campus.districtId);
       setViewState(newViewState);
     }
@@ -581,7 +581,7 @@ export default function Home() {
       campusId: null,
       panelOpen: false,
     };
-    // Atomic update: set both states together
+    // Batched update: React batches these setState calls together
     setSelectedDistrictId(null);
     setViewState(newViewState);
   };
@@ -595,7 +595,7 @@ export default function Home() {
       campusId: null,
       panelOpen: false,
     };
-    // Atomic update: set all states together
+    // Batched update: React batches all setState calls together
     setSelectedDistrictId(null);
     setPeoplePanelOpen(false);
     setNationalPanelOpen(false);

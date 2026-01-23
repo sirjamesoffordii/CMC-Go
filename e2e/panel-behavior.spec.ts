@@ -40,8 +40,8 @@ test.describe("District Panel Behavior", () => {
       await page.waitForURL(/AKAL/, { timeout: 5000 });
 
       // Click on a safe empty area to trigger background click
-      // We click at the bottom-right of the viewport, which should be
-      // outside any district paths but within the map container
+      // We click at coordinates (100, 100) which should be in the
+      // top-left area, outside any district paths but within the map container
       await page.mouse.click(100, 100);
 
       // Panel should close - URL should no longer contain district
