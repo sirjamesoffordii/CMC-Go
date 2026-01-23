@@ -196,17 +196,6 @@
       "command": "git add -A; git commit -m '${input:commitMessage}' --no-verify",
       "problemMatcher": []
     },
-    {
-      "label": "Port: List handoff commits",
-      "type": "shell",
-      "command": "git fetch --prune origin; git --no-pager log --oneline origin/staging..origin/agent/tl/142-copilot-handoff-docs",
-      "problemMatcher": []
-    },
-    {
-      "label": "Port: Create PR handoff->staging",
-      "type": "shell",
-      "command": "gh pr create --base staging --head agent/tl/142-copilot-handoff-docs --title \"Port auth/session UI work to staging\" --body \"This PR ports changes that were accidentally merged into agent/tl/142-copilot-handoff-docs (not staging).\n\nIncludes: session management (#173), role-based view gating (#176), and related docs.\n\nVerification: run pnpm check and pnpm test.\"",
-      "problemMatcher": []
     }
   ],
   "inputs": [

@@ -126,38 +126,102 @@ The `Git: Rebase onto staging (no editor)` task already does this.
 - **Do NOT escalate** for stuck rebase — use `Git: Rebase abort` task.
 - **DO escalate** if: all recovery tasks fail, or operator login required (gh auth, Railway).
 
-## Railway Secrets (Operator Handoff Pattern)
+## Database / Schema Patterns
 
-**When agent needs to set a Railway secret (e.g., `SESSION_SECRET`):**
+**Schema file is authoritative:** `drizzle/schema.ts` is the single source of truth for database structure.
 
-1. Agent runs this command to prompt for the secret (hidden input):
+**Safe schema changes:**
 
-   ```powershell
-   $sec = Read-Host "Paste SECRET_NAME (hidden)" -AsSecureString; $env:_SS = [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)); Remove-Variable sec -ErrorAction SilentlyContinue; Write-Host "Ready - env var set (length: $($env:_SS.Length))"
-   ```
+1. Add columns as nullable or with defaults first
+2. Run `pnpm db:push:yes` (dev) or migrations (prod)
+3. Update application code
+4. (Optional) make columns non-nullable in a follow-up migration
 
-2. Operator pastes the secret value (not visible).
+**Test data patterns:**
 
-3. Agent immediately runs (same terminal session):
+- Use `pnpm db:seed` for consistent local test data
+- Test files can import from `drizzle/schema.ts` directly
+- Mock `db` calls in unit tests; use real DB only in integration tests
 
-   ```powershell
-   railway variables set SECRET_NAME="$env:_SS"; $env:_SS = $null
-   ```
+**Common pitfalls:**
 
-4. Agent redeploys:
+- Don't rename `people.personId` — it's the cross-table import key
+- Don't change enum values (`Yes`, `Maybe`, `No`, `Not Invited`) — they're stored as strings
+- Don't delete/rename `districts.id` values — they must match `map.svg` path IDs
 
-   ```powershell
-   railway up --detach
-   ```
+**Quick reference:**
 
-5. Agent verifies:
-   ```powershell
-   railway logs -n 50
-   ```
+| Task                     | Command            |
+| ------------------------ | ------------------ |
+| Push schema changes      | `pnpm db:push:yes` |
+| Seed fresh data          | `pnpm db:seed`     |
+| Full reset (destructive) | `pnpm db:reset`    |
+| Check schema consistency | `pnpm db:check`    |
+| Verify write permissions | `pnpm db:verify`   |
 
-**Key points:**
+## Secrets & Tokens (Universal Pattern)
 
-- Secret never appears in chat or tool output.
-- Env var is cleared immediately after use.
-- Railway CLI must already be logged in (`railway status` to verify).
-- Use `railway up --detach` if `railway redeploy` fails.
+**This is the default pattern for ALL secrets/tokens (Railway, GitHub, Sentry, API keys, etc.).**
+
+### Priority order
+
+1. **First: Try to retrieve automatically** — check if the secret is already available:
+   - Environment variable (e.g., `$env:GITHUB_TOKEN`, `$env:SENTRY_AUTH_TOKEN`)
+   - CLI already authenticated (e.g., `gh auth status`, `railway status`)
+   - Secure storage / credential manager
+
+2. **If not available: Prompt operator via terminal (hidden input)**
+
+### Terminal prompt pattern (operator just pastes)
+
+Agent runs this command — operator only needs to paste the value:
+
+```powershell
+$sec = Read-Host "Paste SECRET_NAME (hidden)" -AsSecureString; $env:_SEC = [Runtime.InteropServices.Marshal]::PtrToStringUni([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)); Remove-Variable sec -ErrorAction SilentlyContinue; Write-Host "Ready - env var set (length: $($env:_SEC.Length))"
+```
+
+Agent then uses `$env:_SEC` immediately in the same terminal session, then clears it:
+
+```powershell
+# Example: Railway
+railway variables set SESSION_SECRET="$env:_SEC"; $env:_SEC = $null
+
+# Example: GitHub token (ephemeral)
+$env:GITHUB_TOKEN = $env:_SEC; $env:_SEC = $null
+# ... run gh commands ...
+$env:GITHUB_TOKEN = $null
+
+# Example: Sentry
+$env:SENTRY_AUTH_TOKEN = $env:_SEC; $env:_SEC = $null
+# ... run sentry-cli commands ...
+$env:SENTRY_AUTH_TOKEN = $null
+```
+
+### Key rules
+
+- **NEVER** ask operator to paste secrets into chat.
+- **NEVER** print/log/echo secret values.
+- **ALWAYS** clear env vars immediately after use.
+- **ALWAYS** use hidden input (`-AsSecureString`).
+- **SAME terminal session** — env vars don't persist across terminals.
+
+### Common services
+
+| Service    | Check if authenticated | Set secret for                           |
+| ---------- | ---------------------- | ---------------------------------------- |
+| Railway    | `railway status`       | `railway variables set NAME="$env:_SEC"` |
+| GitHub CLI | `gh auth status`       | `$env:GITHUB_TOKEN = $env:_SEC`          |
+| Sentry CLI | `sentry-cli info`      | `$env:SENTRY_AUTH_TOKEN = $env:_SEC`     |
+| npm/pnpm   | `npm whoami`           | `$env:NPM_TOKEN = $env:_SEC`             |
+
+### Railway-specific notes
+
+After setting a Railway variable, redeploy:
+
+```powershell
+railway up --detach   # preferred
+# or
+railway redeploy      # if up fails
+```
+
+Then verify with `railway logs -n 50`.
