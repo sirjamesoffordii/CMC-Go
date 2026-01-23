@@ -83,11 +83,7 @@ test.describe("Panel State Persistence", () => {
     const panel = page.locator('[class*="left-panel"]');
     await expect(panel).toBeVisible({ timeout: 10000 });
 
-    // After the component processes the URL, it should update to use 'district'
-    // Give it a moment to update
-    await page.waitForTimeout(1000);
-
-    // The URL should now use 'district' instead of 'districtId'
+    // The URL should contain either 'district' or 'districtId' parameter
     const url = page.url();
     // Either it has been updated to 'district' or still has 'districtId' (both are acceptable)
     expect(

@@ -135,7 +135,7 @@ export default function Home() {
       // Automatically open panel when district is in URL (for deep linking)
       return {
         ...urlState,
-        panelOpen: urlState.districtId ? true : urlState.panelOpen,
+        panelOpen: urlState.panelOpen || !!urlState.districtId,
       };
     }
     return DEFAULT_VIEW_STATE;
