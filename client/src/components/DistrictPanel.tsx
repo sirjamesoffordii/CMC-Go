@@ -2760,7 +2760,7 @@ export function DistrictPanel({
                                   {/* Icon - solid */}
                                   <div className="relative">
                                     <User
-                                      className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                                      className="w-11 h-11 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
                                       strokeWidth={1.5}
                                       fill="currentColor"
                                     />
@@ -2840,7 +2840,7 @@ export function DistrictPanel({
                                   {/* Icon */}
                                   <div className="relative">
                                     <User
-                                      className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                                      className="w-11 h-11 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
                                       strokeWidth={1.5}
                                       fill="none"
                                       stroke="currentColor"
