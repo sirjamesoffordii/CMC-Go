@@ -1,7 +1,7 @@
 # CMC Go — Project Overview
 
 > **Last Updated:** January 23, 2026  
-> **Project Board:** https://github.com/users/sirjamesoffordii/projects/2
+> **Project Board:** https://github.com/users/sirjamesoffordii/projects/4
 
 ---
 
@@ -279,6 +279,6 @@ Responsive layout, touch optimization.
 
 ## Links
 
-- **Project Board:** https://github.com/users/sirjamesoffordii/projects/2
+- **Project Board:** https://github.com/users/sirjamesoffordii/projects/4
 - **Staging URL:** https://cmc-go-github-staging-staging.up.railway.app
 - **Agent Manual:** [AGENTS.md](../../AGENTS.md)

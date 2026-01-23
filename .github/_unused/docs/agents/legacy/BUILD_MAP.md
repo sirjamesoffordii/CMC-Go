@@ -6,7 +6,7 @@
 **Owner:** Coordinator  
 **Last verified:** Jan 19, 2026 · 2:50 AM CT
 
-**Operational board (Projects v2):** https://github.com/users/sirjamesoffordii/projects/2
+**Operational board (Projects v2):** https://github.com/users/sirjamesoffordii/projects/4
 
 This document governs **build progression and verification** for CMC Go. Phase definitions and advancement rules live here; day-to-day execution tracking lives in the **Operational board** above.
 

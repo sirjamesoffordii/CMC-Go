@@ -62,7 +62,7 @@ Manual (if UI changed):
 
 ## Project Fields (set in Projects v2)
 
-<!-- Update these in the project board: https://github.com/users/sirjamesoffordii/projects/2 -->
+<!-- Update these in the project board: https://github.com/users/sirjamesoffordii/projects/4 -->
 
 - **Status:** Todo → In Progress → Verify → Done
 - **Phase:** <!-- Phase 1 / 1.2 / 2 / 3 / 4 -->

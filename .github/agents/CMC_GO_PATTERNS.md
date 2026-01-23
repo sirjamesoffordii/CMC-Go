@@ -47,7 +47,7 @@ The TL watches the project board, not chat. **Update status immediately, not at 
 
 **If the board doesn't match reality, the TL doesn't know what's happening.**
 
-Project board: https://github.com/users/sirjamesoffordii/projects/2
+Project board: https://github.com/users/sirjamesoffordii/projects/4
 
 If an issue isn't in the project, add it:
 

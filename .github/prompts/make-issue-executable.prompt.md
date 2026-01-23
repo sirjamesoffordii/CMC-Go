@@ -178,7 +178,7 @@ After running this checklist, the issue should be ready for:
 
 **The operator sees status via the project board, not chat.**
 
-Before handoff, ensure in Projects v2 (https://github.com/users/sirjamesoffordii/projects/2):
+Before handoff, ensure in Projects v2 (https://github.com/users/sirjamesoffordii/projects/4):
 
 1. Issue is added to the project
 2. Set **Status** → Todo (or In Progress if you're starting now)

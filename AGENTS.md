@@ -13,14 +13,14 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 
 ## Read-first
 
-- **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/2
+- **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/4
 - `.github` index: [.github/README.md](.github/README.md)
 - TL role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
 - SWE role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
 
 ## Activation checklist (once per session)
 
-- **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/2 (read README for product context)
+- **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/4 (read README for product context)
 - `AGENTS.md` (this file)
 - `.github/copilot-instructions.md`
 - Your role doc (`.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`)
@@ -28,7 +28,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 
 ## Operating principles
 
-- **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/2) tracks what happened, what's happening, and what's next. The TL keeps it current.
+- **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/4) tracks what happened, what's happening, and what's next. The TL keeps it current.
 - **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in the Project.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don't block forward progress; split into multiple PRs only when it materially reduces risk.
@@ -38,7 +38,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 
 ## CMC Go Project workflow (critical)
 
-The **CMC Go Project** is the authoritative truth: https://github.com/users/sirjamesoffordii/projects/2
+The **CMC Go Project** is the authoritative truth: https://github.com/users/sirjamesoffordii/projects/4
 
 It tracks:
 
@@ -103,7 +103,7 @@ This repo is designed for **hands-off, continuous agent execution**.
 ## Knowledge surfaces (when to consult what)
 
 - **Policy + workflow:** `AGENTS.md` (this file)
-- **Product + status:** CMC Go Project — https://github.com/users/sirjamesoffordii/projects/2
+- **Product + status:** CMC Go Project — https://github.com/users/sirjamesoffordii/projects/4
 - **Curated learnings (pitfalls/patterns):** `.github/agents/CMC_GO_PATTERNS.md`
 - **Operational procedures (as-needed):** `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 

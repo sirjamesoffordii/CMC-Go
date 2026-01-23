@@ -17,7 +17,7 @@ Skim in this order:
 5. `.github/agents/software-engineer.agent.md`
 6. `.github/prompts/loop.prompt.md`
 
-Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/2
+Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/4
 
 ## First move (always)
 

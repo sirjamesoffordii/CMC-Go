@@ -43,7 +43,7 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/2 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
+                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/4 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
                   'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
                   'Keep the diff small and scoped to the issue.',
                   'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',
@@ -93,7 +93,7 @@ jobs:
                 base_branch: 'staging',
                 custom_instructions: [
                   'Work from the `staging` branch and open a PR targeting `staging`.',
-                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/2 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
+                  'Read the CMC Go Project README first: https://github.com/users/sirjamesoffordii/projects/4 Then read: AGENTS.md, .github/copilot-instructions.md, .github/agents/software-engineer.agent.md.',
                   'Operate in loop mode: keep taking the next best safe step until Done; do not wait for extra prompts.',
                   'Keep the diff small and scoped to the issue.',
                   'Run the cheapest relevant checks (e.g. `pnpm check`, `pnpm test`) and report evidence in the PR.',

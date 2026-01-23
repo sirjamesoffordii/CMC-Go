@@ -94,7 +94,7 @@ Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.
 
 When stuck, consult `.github/agents/CMC_GO_PATTERNS.md`.
 
-**CMC Go Project (authoritative truth):** https://github.com/users/sirjamesoffordii/projects/2
+**CMC Go Project (authoritative truth):** https://github.com/users/sirjamesoffordii/projects/4
 
 The TL keeps the board current. Check it to see what's ready to work on.
 

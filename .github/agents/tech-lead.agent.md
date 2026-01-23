@@ -48,7 +48,7 @@ Always ask: "What does the board say?" before acting.
 
 ## CMC Go Project is the authoritative truth
 
-The **CMC Go Project** (https://github.com/users/sirjamesoffordii/projects/2) is the single source of truth for:
+The **CMC Go Project** (https://github.com/users/sirjamesoffordii/projects/4) is the single source of truth for:
 
 - **What happened** — Done items with evidence
 - **What's happening now** — In Progress items with assignees
@@ -202,7 +202,7 @@ When you solve a non-trivial problem:
 ## Reference docs
 
 - Policy: `AGENTS.md`
-- Product + Status: **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/2
+- Product + Status: **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/4
 - Patterns: `.github/agents/CMC_GO_PATTERNS.md`
 
 ## Evidence template

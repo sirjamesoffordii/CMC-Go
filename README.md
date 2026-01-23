@@ -4,7 +4,7 @@ CMC Go is a map-first coordination app for CMC conference attendance management.
 
 ## Docs
 
-- CMC Go Project (command center): https://github.com/users/sirjamesoffordii/projects/2
+- CMC Go Project (command center): https://github.com/users/sirjamesoffordii/projects/4
 - `.github` navigation: [.github/README.md](.github/README.md)
 - Agent operating manual: [AGENTS.md](AGENTS.md)
 - Archived/legacy agent docs: [.github/\_unused/README.md](.github/_unused/README.md)
