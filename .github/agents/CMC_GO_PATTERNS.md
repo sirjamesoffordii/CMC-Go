@@ -36,6 +36,44 @@ If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consu
 - Use worktrees locally; never work directly on `staging`.
 - Put durable progress/evidence in the Issue/PR thread; chat is transient.
 
+### Issue quality (before handoff to agent)
+
+An issue is **not executable** if it has:
+
+- "Implement scope as described in BUILD_MAP" (BUILD_MAP is archived)
+- Generic acceptance criteria (same checkboxes on every issue)
+- No file pointers (agent must search entire codebase)
+- No behavioral spec (ambiguous what "default" or "improved" means)
+
+Before assigning an issue to an agent, ensure it has:
+
+1. **Goal** — one sentence, user-visible outcome
+2. **Behavioral spec** — trigger → before → after → edge cases
+3. **Surface area** — files to change + patterns to follow
+4. **Constraints** — what must NOT break
+5. **Verification** — exact commands + manual steps
+
+Use `.github/prompts/make-issue-executable.prompt.md` to retrofit issues.
+
+**Example of a bad issue:**
+
+```
+Build Map: Phase 2 -- Default district panel
+Acceptance: Implement scope as described in BUILD_MAP
+```
+
+**Example of a good issue:**
+
+```
+Goal: When app loads at `/` with no `?district=` param, show South Texas panel.
+Trigger: App loads at root URL
+Before: No district selected
+After: South Texas panel visible
+Files: client/src/pages/Home.tsx — modify getSelectedDistrictIdInitial()
+Constraint: URL param `?district=xyz` must still take precedence
+Verify: pnpm check && pnpm test; manual: open localhost:5173, observe panel
+```
+
 ### “Learning capture” rule
 
 If you solved a non-trivial problem, capture one reusable takeaway:

@@ -7,51 +7,73 @@ labels: ["status:ready"]
 
 ## Goal
 
+<!-- One sentence: what user-visible or system behavior changes -->
+
+## Behavioral Spec
+
+<!-- Delete this section for trivial changes -->
+
+- **Trigger:** <!-- What causes this behavior (route, click, API call) -->
+- **Before:** <!-- Current behavior (or "does not exist") -->
+- **After:** <!-- Expected behavior with specific values/states -->
+- **Edge cases:** <!-- What takes precedence, error states -->
+
+## Surface Area
+
+<!-- Files likely to change — helps agent find the right code -->
+
+Files:
+
+- `path/to/file.tsx` — <!-- what changes -->
+
+Pattern to follow:
+
+- <!-- Reference similar existing code, e.g., "see selectedDistrictId in Home.tsx" -->
+
+Existing tests:
+
+- `server/foo.test.ts` — <!-- add case for X, or "no changes needed" -->
+
+## Constraints
+
+<!-- What must NOT break -->
+
+- <!-- Existing behavior X must continue working -->
+- `pnpm check` must pass
+- `pnpm test` must pass (56 tests currently)
+
 ## Acceptance Criteria
 
-- [ ]
+- [ ] <!-- Specific observable outcome 1 -->
+- [ ] <!-- Specific observable outcome 2 -->
+- [ ] `pnpm check` passes
+- [ ] `pnpm test` passes
 
-## Surface Area (files/modules)
+## Verification
+
+```bash
+pnpm check && pnpm test
+```
+
+Manual (if UI changed):
+
+1. <!-- Step -->
+2. <!-- Observe -->
 
 ## Claim / Owner
 
-- Claimed by: (TL/SWE)
-- Worktree/branch:
+- Claimed by: <!-- TL/SWE -->
+- Worktree/branch: <!-- wt-impl-XXX-slug or agent/swe/XXX-slug -->
 
-## Verify Level
+## Labels
 
-Set PR labels (these are enforced by CI):
+Set PR labels:
 
-- `verify:v0` (self)
-- `verify:v1` (peer approval required)
-- `verify:v2` (peer approval + evidence labels required)
+- `verify:v0` — self-verify
+- `verify:v1` — peer approval required
+- `verify:v2` — peer approval + evidence labels
 
-For `verify:v2`, also add evidence labels:
+Agent routing (optional):
 
-- `evidence:db-or-ci`
-- `evidence:deployed-smoke`
-
-## Agent routing (optional)
-
-To trigger the GitHub-hosted Copilot agent, add one label:
-
-- `agent:copilot-swe` (implementation)
-- `agent:copilot-tl` (triage/coordination)
-- `agent:copilot` (defaults to TL token)
-
-## Verification Steps
-
-Commands to run:
-
-- `pnpm check`
-- `pnpm test`
-- If UI flow changed: `pnpm -s playwright test e2e/smoke.spec.ts`
-
-Manual checks:
-
--
-
-## Reporting
-
-- Implementation agent posts progress + PR link.
-- If Verify Level is L1/L2: a second agent posts commands run + evidence + verdict.
+- `agent:copilot-swe` — implementation
+- `agent:copilot-tl` — triage/coordination
