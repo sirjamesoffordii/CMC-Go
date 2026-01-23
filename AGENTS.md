@@ -25,7 +25,7 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 - **Issues/PRs are the task bus.** Decisions + evidence live there.
 - **Execution mode must be explicit.** Local agents use worktrees; GitHub-hosted agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don’t block forward progress; split into multiple PRs only when it materially reduces risk.
-- **No secrets.** `.env*` stays local; use platform/GitHub secrets.
+- **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
 - **Keep looping.** Take the next best safe step until Done.
 
 ## Speed-first defaults (default)
