@@ -2500,7 +2500,7 @@ export function DistrictPanel({
                     campusId={campus.id}
                     canInteract={canInteract}
                   >
-                    <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
+                    <div className="flex items-center gap-4 py-2 md:py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
                       {/* Campus Name with Kebab Menu */}
                       <CampusNameDropZone
                         campusId={campus.id}
@@ -2560,7 +2560,7 @@ export function DistrictPanel({
                                         );
                                         setOpenCampusMenuId(null);
                                       }}
-                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                      className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                                     >
                                       {(campusSorts[campus.id] === "status" ||
                                         (!campusSorts[campus.id] &&
@@ -2581,7 +2581,7 @@ export function DistrictPanel({
                                         });
                                         setOpenCampusMenuId(null);
                                       }}
-                                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                      className="w-full px-4 py-3 md:py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                                     >
                                       {preserveOrder &&
                                         !campusSorts[campus.id] && (
@@ -2595,7 +2595,7 @@ export function DistrictPanel({
                                         handleEditCampus(campus.id);
                                         setOpenCampusMenuId(null);
                                       }}
-                                      className="w-full px-5 py-2.5 text-left text-base text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                                      className="w-full px-5 py-3 md:py-2.5 text-left text-base text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                                     >
                                       <Edit2 className="w-5 h-5" />
                                       Edit Campus Name
@@ -2612,7 +2612,7 @@ export function DistrictPanel({
                                         }
                                         setOpenCampusMenuId(null);
                                       }}
-                                      className="w-full px-5 py-2.5 text-left text-base text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                      className="w-full px-5 py-3 md:py-2.5 text-left text-base text-red-600 hover:bg-red-50 flex items-center gap-3"
                                     >
                                       <Trash2 className="w-5 h-5" />
                                       Delete {entityName}
@@ -2943,7 +2943,7 @@ export function DistrictPanel({
 
             {/* Unassigned Row - show presence in public-safe mode */}
             {isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0 && (
-              <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
+              <div className="flex items-center gap-4 py-2 md:py-0.5 border-b last:border-b-0 group relative">
                 {/* Unassigned Label */}
                 <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
                   <h3 className="font-medium text-slate-500 italic text-xl">
