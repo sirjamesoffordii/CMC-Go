@@ -1802,26 +1802,111 @@ export const appRouter = router({
   }),
 
   metrics: router({
-    get: publicProcedure.query(async () => {
-      return await db.getMetrics();
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const scope = getPeopleScope(ctx.user);
+      return await db.getScopedMetrics(scope);
     }),
-    district: publicProcedure
+    district: protectedProcedure
       .input(z.object({ districtId: z.string() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+
+        // Validate user has access to this district
+        if (scope.level === "CAMPUS") {
+          const campus = await db.getCampusById(scope.campusId);
+          if (!campus || campus.districtId !== input.districtId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
+          }
+        } else if (scope.level === "DISTRICT" && scope.districtId !== input.districtId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied",
+          });
+        } else if (scope.level === "REGION") {
+          const district = await db.getDistrictById(input.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
+          }
+        }
+
         return await db.getDistrictMetrics(input.districtId);
       }),
-    allDistricts: publicProcedure.query(async () => {
-      // Public aggregate endpoint - everyone can see district counts
-      return await db.getAllDistrictMetrics();
+    allDistricts: protectedProcedure.query(async ({ ctx }) => {
+      const scope = getPeopleScope(ctx.user);
+      const allMetrics = await db.getAllDistrictMetrics();
+
+      // Filter metrics by scope
+      if (scope.level === "ALL") {
+        return allMetrics;
+      }
+
+      if (scope.level === "REGION") {
+        const districts = await db.getAllDistricts();
+        const regionDistricts = districts
+          .filter(d => d.region === scope.regionId)
+          .map(d => d.id);
+        return allMetrics.filter(m => regionDistricts.includes(m.districtId));
+      }
+
+      if (scope.level === "DISTRICT") {
+        return allMetrics.filter(m => m.districtId === scope.districtId);
+      }
+
+      if (scope.level === "CAMPUS") {
+        const campus = await db.getCampusById(scope.campusId);
+        if (campus) {
+          return allMetrics.filter(m => m.districtId === campus.districtId);
+        }
+      }
+
+      return [];
     }),
-    region: publicProcedure
+    region: protectedProcedure
       .input(z.object({ region: z.string() }))
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+
+        // Validate user has access to this region
+        if (scope.level === "CAMPUS" || scope.level === "DISTRICT") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied",
+          });
+        }
+
+        if (scope.level === "REGION" && scope.regionId !== input.region) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied",
+          });
+        }
+
         return await db.getRegionMetrics(input.region);
       }),
-    allRegions: publicProcedure.query(async () => {
-      // Public aggregate endpoint - everyone can see region counts
-      return await db.getAllRegionMetrics();
+    allRegions: protectedProcedure.query(async ({ ctx }) => {
+      const scope = getPeopleScope(ctx.user);
+      const allMetrics = await db.getAllRegionMetrics();
+
+      // Filter metrics by scope
+      if (scope.level === "ALL") {
+        return allMetrics;
+      }
+
+      if (scope.level === "REGION") {
+        return allMetrics.filter(m => m.region === scope.regionId);
+      }
+
+      // District and campus users cannot see region-level aggregates
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Access denied",
+      });
     }),
   }),
 

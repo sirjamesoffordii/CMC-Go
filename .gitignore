@@ -131,3 +131,4 @@ temp_setup_user.sql
 
 # Historical snapshot folder (do not re-add)
 cmc-go updates/
+package-lock.json
