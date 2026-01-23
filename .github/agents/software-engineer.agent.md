@@ -81,12 +81,43 @@ When: Something is broken.
 A typical task flows:
 
 ```
-EXPLORE (understand) → IMPLEMENT (build) → VERIFY (test) → Done
+EXPLORE (understand) → IMPLEMENT (build) → VERIFY (test) → REFLECT → Done
                                 ↓
                         DEBUG (if errors) → back to IMPLEMENT
 ```
 
 Stay in one session. No handoffs needed.
+
+## End-of-Task Reflection (mandatory)
+
+**Every task ends with two checks. Both are required, even if no changes are made.**
+
+### Before recommending changes, review:
+
+- `AGENTS.md`
+- `.github/copilot-instructions.md`
+- This file (`software-engineer.agent.md`)
+- `.github/agents/CMC_GO_PATTERNS.md`
+
+### Required output (in PR or task report):
+
+```markdown
+## End-of-Task Reflection (Required)
+
+### Workflow Improvement Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+
+### Pattern Learning Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+```
+
+**If "Changes recommended":** Implement the edits directly. Explain what you experienced, why it was suboptimal, why the change helps, and any tradeoffs.
+
+See `AGENTS.md` → "End-of-Task Reflection" for full details.
 
 ---
 

@@ -21,6 +21,31 @@ Use this when you are:
 
 If you need step-by-step operational procedures (Railway/Sentry/CI, etc.), consult the operational procedures index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.
 
+## When to add a pattern (End-of-Task Reflection)
+
+Every task ends with a **Pattern Learning Check**. Add a pattern here when:
+
+- You solved a non-trivial problem that others will face
+- You discovered a pitfall that wasted time
+- You found a workaround for a repo-specific constraint
+- The solution isn't obvious from reading the code
+
+**Keep it short:** If this file grows past ~20 items, prune or consolidate.
+
+**Format:**
+
+```markdown
+### Category (existing or new)
+
+- **Pattern name:** Brief description of what to do/avoid.
+```
+
+**Don't add:**
+
+- Generic best practices (those belong in role files)
+- One-off fixes that won't recur
+- Duplicates of existing patterns (check first!)
+
 ## Patterns
 
 ### Invariants

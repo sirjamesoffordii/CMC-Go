@@ -35,6 +35,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
 - **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via TL + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
+- **Reflection is mandatory.** Every task ends with two checks: Workflow Improvement + Pattern Learning. See "End-of-Task Reflection".
 
 ## CMC Go Project workflow (critical)
 
@@ -257,6 +258,59 @@ Escalation template:
 - **What changed:** bullets
 - **How verified:** commands + results
 - **Risk:** low/med/high + why
+- **End-of-Task Reflection:** (required section, see below)
+
+## End-of-Task Reflection (mandatory)
+
+**Every task ends with two checks. Both are required, even if no changes are made.**
+
+### Pre-check (before recommending changes)
+
+Before making any recommendation, review current state of:
+
+- `AGENTS.md`
+- `.github/copilot-instructions.md`
+- Your active role file (`.github/agents/*.agent.md`)
+- `.github/agents/CMC_GO_PATTERNS.md`
+
+Purpose: avoid duplication, avoid contradictions, ensure alignment with current system intent.
+
+### Required output format
+
+Every PR (or final task report) MUST include:
+
+```markdown
+## End-of-Task Reflection (Required)
+
+### Workflow Improvement Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+- If changes recommended: files edited + summary + tradeoffs/risks
+
+### Pattern Learning Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+- If changes recommended: files edited + summary + tradeoffs/risks
+```
+
+### When "Changes recommended"
+
+1. **Implement the changes** — actual file edits, not just suggestions
+2. **Changes may be large** — additions, removals, or rewrites are all valid
+3. **Ensure coherence** — no contradictions across: AGENTS.md, copilot-instructions.md, role files, CMC_GO_PATTERNS.md
+4. **Explain briefly:**
+   - What you experienced
+   - Why the current approach was suboptimal
+   - Why the proposed change improves future execution
+   - Tradeoffs / risks
+
+### Authority
+
+- No files are untouchable — agents may edit AGENTS.md, copilot-instructions.md, role files, and patterns directly
+- Tech Lead (TL) remains the final arbiter through PR approval/rejection
+- Priority is coherence, clarity, and long-term system effectiveness
 
 ## Verification verdict (minimum)
 

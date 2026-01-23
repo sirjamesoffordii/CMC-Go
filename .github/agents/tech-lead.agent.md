@@ -141,6 +141,37 @@ When an Issue is executable:
 - Use the **"Implement with SWE"** handoff (auto-submits with `send: true`)
 - Or apply label `agent:copilot-swe` → triggers cloud SWE
 
+### 8. End-of-Task Reflection (mandatory)
+
+**Every task ends with two checks. Both are required, even if no changes are made.**
+
+Before recommending changes, review:
+
+- `AGENTS.md`
+- `.github/copilot-instructions.md`
+- This file (`tech-lead.agent.md`)
+- `.github/agents/CMC_GO_PATTERNS.md`
+
+Required output (in PR or task report):
+
+```markdown
+## End-of-Task Reflection (Required)
+
+### Workflow Improvement Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+
+### Pattern Learning Check
+
+- Recommendation: Changes recommended / No changes recommended
+- Rationale: (brief)
+```
+
+**If "Changes recommended":** Implement the edits directly. Explain what you experienced, why it was suboptimal, why the change helps, and any tradeoffs.
+
+See `AGENTS.md` → "End-of-Task Reflection" for full details.
+
 ## What you also do (when fastest)
 
 | Task          | When to do it yourself                            |
@@ -191,13 +222,6 @@ Score the task to select the right model:
 - Fix typo in README → Score 0 → GPT-4.1 (free)
 - Add new API endpoint → Score 3 → GPT-5.2 (1 token)
 - Redesign auth flow → Score 6 → Claude Opus 4.5 (3 tokens)
-
-## Auto-learning
-
-When you solve a non-trivial problem:
-
-1. Add `**Learning:**` to the Issue/PR comment
-2. If general, append to `.github/agents/CMC_GO_PATTERNS.md`
 
 ## Reference docs
 
