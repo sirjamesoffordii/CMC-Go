@@ -94,7 +94,7 @@ export function PersonRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 md:gap-3 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
+      className="flex items-center gap-3 md:gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
