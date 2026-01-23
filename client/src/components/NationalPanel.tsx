@@ -364,6 +364,7 @@ export function NationalPanel({
                         utils.people.getNational.invalidate();
                         utils.people.list.invalidate();
                       }}
+                      showStatusButtons={true}
                     />
                   ))}
                 </div>

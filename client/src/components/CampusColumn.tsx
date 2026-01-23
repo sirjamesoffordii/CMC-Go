@@ -246,6 +246,7 @@ export function CampusColumn({
               onStatusChange={onPersonStatusChange}
               onClick={onPersonClick}
               onPersonUpdate={onCampusUpdate}
+              showStatusButtons={true}
             />
           ))}
         </div>
