@@ -1,34 +1,6 @@
 {
   "$schema": "vscode://schemas/mcp.json",
   "servers": {
-    "playwright": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-playwright"],
-      "description": "Browser automation for E2E testing and web scraping"
-    },
-    "filesystem": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@anthropic-ai/mcp-filesystem",
-        "${workspaceFolder}"
-      ],
-      "description": "File system operations with workspace scope"
-    },
-    "git": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-git", "${workspaceFolder}"],
-      "description": "Git operations for version control"
-    },
-    "fetch": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-fetch"],
-      "description": "HTTP requests for API testing and web content retrieval"
-    },
     "memory": {
       "type": "stdio",
       "command": "npx",
@@ -38,11 +10,23 @@
     "railway": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@railway/mcp-server"],
+      "args": ["-y", "@anthropic-ai/railway-mcp"],
       "env": {
         "RAILWAY_TOKEN": "${env:RAILWAY_TOKEN}"
       },
       "description": "Railway deployments, services, and logs"
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-fetch"],
+      "description": "HTTP requests for API testing"
+    },
+    "sequential-thinking": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Chain-of-thought reasoning for complex problems"
     }
   }
 }

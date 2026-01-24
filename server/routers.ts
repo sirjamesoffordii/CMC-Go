@@ -1,5 +1,3 @@
-import { COOKIE_NAME } from "@shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import {
   publicProcedure,
@@ -10,11 +8,7 @@ import {
 import { z } from "zod";
 import * as db from "./db";
 import { storagePut } from "./storage";
-import {
-  setSessionCookie,
-  clearSessionCookie,
-  getUserIdFromSession,
-} from "./_core/session";
+import { setSessionCookie, clearSessionCookie } from "./_core/session";
 import { TRPCError } from "@trpc/server";
 import {
   getPeopleScope,

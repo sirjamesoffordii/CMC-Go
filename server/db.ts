@@ -1,4 +1,4 @@
-import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import {
@@ -20,12 +20,10 @@ import {
   InsertPerson,
   InsertNeed,
   InsertNote,
-  InsertSetting,
   InsertAssignment,
   InsertHousehold,
   InsertAuthToken,
   InsertInviteNote,
-  InsertStatusChange,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import type { PeopleScope } from "./_core/authorization";

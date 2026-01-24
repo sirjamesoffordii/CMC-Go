@@ -1,10 +1,13 @@
 import { execSync } from "node:child_process";
 
-const stagedFiles = execSync("git diff --cached --name-only --diff-filter=ACM", {
-  encoding: "utf8",
-})
+const stagedFiles = execSync(
+  "git diff --cached --name-only --diff-filter=ACM",
+  {
+    encoding: "utf8",
+  }
+)
   .split("\n")
-  .map((file) => file.trim())
+  .map(file => file.trim())
   .filter(Boolean);
 
 if (stagedFiles.length === 0) {
