@@ -97,39 +97,80 @@ Before delegating, score the task:
 - 3-4: Local SWE with GPT-5.2-Codex
 - 5-6: Local SWE with Claude Opus 4.5
 
-## Execution Model (critical to understand)
+## Execution Model
+
+### Cloud agents (primary async method)
+
+Use `github-pull-request_copilot-coding-agent` tool or apply `agent:copilot-swe` label:
+
+- **Non-blocking** — TL continues working immediately
+- Agent creates branch, implements, opens PR
+- TL finds out via PR notification or board polling
+- Best for simple issues (score 0-2)
 
 ### Local agents (runSubagent)
 
 When you call `runSubagent`:
 
-- **You are BLOCKED** until the agent finishes
+- **Blocking** — you wait for the result
 - Agent executes, then returns ONE message
-- You receive the response immediately
-- No mid-task communication possible
+- Use for verification or quick tasks where you need the answer
 
-**Implications:**
+**When to use local SWE:**
 
-- Use for sequential work where you need the result
-- You cannot do other work while waiting
-- If SWE gets blocked, they return with a question — you answer and call again
+- Need result immediately (e.g., "what does this code do?")
+- Verification tasks (need verdict before proceeding)
+- Quick fixes where waiting is faster than polling later
 
-### Cloud agents (fire-and-forget)
+### Scaling strategy
 
-When you apply `agent:copilot-swe` label:
+| Need                             | Solution                                   |
+| -------------------------------- | ------------------------------------------ |
+| Simple parallel work (0-2)       | Cloud Agent (non-blocking)                 |
+| Complex work, need result now    | Local SWE via runSubagent (blocking is OK) |
+| Too much work for one TL         | Spawn secondary TL via runSubagent         |
+| Need judgment on complex problem | Do it yourself (TL has best model)         |
 
-- Workflow triggers, cloud agent starts
-- **You are NOT blocked** — continue with other work
-- Notification comes when PR opens
-- Use for parallel execution of simple tasks
+## Polling Strategy (critical)
 
-### Parallel scaling strategy
+**Poll the board after every coordination action.**
 
-| Need                               | Solution                                |
-| ---------------------------------- | --------------------------------------- |
-| Must have result before continuing | Local SWE (blocks you)                  |
-| Can proceed without result         | Cloud Agent (parallel)                  |
-| Too much work for one TL           | Spawn secondary TL with batch of issues |
+TL's work rhythm:
+
+```
+Do task → Poll board → Do next task → Poll board → ...
+```
+
+### What to poll (one query)
+
+Check for issues where Status = "Blocked" OR "Verify":
+
+- **Blocked** = Agent needs input or decision
+- **Verify** = PR ready for review
+
+### How to poll
+
+```bash
+# Quick board check
+gh project item-list 4 --owner sirjamesoffordii --format json | jq '.items[] | select(.status == "Blocked" or .status == "Verify")'
+```
+
+Or visually scan: https://github.com/users/sirjamesoffordii/projects/4
+
+### When SWE is blocked
+
+SWE sets Status → Blocked and comments with question. TL finds it during next poll.
+
+**TL response:**
+
+1. Read the comment
+2. Answer in Issue comment
+3. Set Status → In Progress (SWE can resume)
+4. Continue with other work
+
+### @Mentions
+
+SWE should @mention `@Alpha-Tech-Lead` in blocked comments — this creates GitHub notification and audit trail. But TL relies on **board polling**, not notifications (no push notifications to agents).
 
 ## Board-First Rule (critical)
 

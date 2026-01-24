@@ -49,65 +49,52 @@ When activated, you receive:
 
 **If any of these are missing, ask Tech Lead to make the Issue executable before proceeding.**
 
-## Communication with Tech Lead
+## Communication (single source of truth)
 
-**How `runSubagent` works:**
+**Board status is the signal.** Don't over-communicate — just update status and let TL poll.
 
-- Tech Lead calls you with a prompt containing the task
-- You execute the task
-- You return a **single final message** (completion report OR blocked status)
-- Tech Lead receives your response
+### When you complete
 
-**You cannot send messages mid-task.** Your response is your only communication back.
+1. Open PR targeting `staging`
+2. Set Project status → **Verify**
+3. Comment on Issue with completion report
 
-### When you complete successfully
+TL will find it when polling.
 
-Return a completion report (see Completion Protocol below).
+### When you're blocked
 
-### When you get stuck or need clarification
+1. Set Project status → **Blocked**
+2. Comment on Issue with question (include @Alpha-Tech-Lead)
 
-Return a **blocked status** with your question:
+TL will find it when polling, answer, and set status back to In Progress.
+
+### Blocked comment template
 
 ```markdown
-## SWE Status: Blocked
-
-**Issue:** #[number]
-**Question:** [specific question]
+**Status:** Blocked
+**Question:** [one specific question]
 **Options:**
-A) [option]
-B) [option]
-C) [option]
 
-**What I've done so far:** [bullets]
-**Recommendation:** [A/B/C with rationale]
+- A) [option]
+- B) [option]
+- C) [option recommended]
+
+**Context:** [what you tried, what you learned]
+
+@Alpha-Tech-Lead
 ```
 
-Tech Lead will receive this, answer, and call you again with the clarification.
-
-### For cloud agents (not local)
-
-If blocked, comment on the Issue with the question and set status to Blocked. Tech Lead will see it when scanning the board.
-
-## Completion Protocol (critical)
-
-When you finish a task:
-
-1. **Open PR** targeting `staging` with evidence in description
-2. **Update Project status** → Verify
-3. **Return completion report** to Tech Lead (if local) or comment on Issue (if cloud):
+### Completion report template
 
 ```markdown
 ## SWE Completion Report
 
 - **Issue:** #[number]
 - **PR:** #[pr-number]
-- **Status:** Ready for Verify
 - **What changed:** [bullets]
 - **How verified:** [commands + results]
 - **Blockers/Notes:** [if any]
 ```
-
-This report tells Tech Lead that the work is done and ready for review.
 
 ## The 4 Modes
 
