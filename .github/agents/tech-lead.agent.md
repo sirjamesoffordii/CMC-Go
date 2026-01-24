@@ -108,6 +108,7 @@ Before delegating, score the task:
 ### Subagents (`runSubagent`) — When You NEED the Answer
 
 Use subagents for:
+
 - Research/analysis before delegating
 - Quick verification ("does this PR look right?")
 - Design decisions where you need synthesis
@@ -116,6 +117,7 @@ Use subagents for:
 **Subagents do NOT count toward your 4-item capacity.** They're internal help, not parallel work.
 
 **Model selection by task:**
+
 - Trivial (score 0-1): `runSubagent("SWE Basic")` — GPT 4.1 (free)
 - Standard (score 2-4): `runSubagent("Software Engineer (SWE)")` — GPT-5.2
 - Complex (score 5-6): `runSubagent("SWE Opus")` — Opus 4.5
@@ -137,6 +139,7 @@ runSubagent([
 ### Delegated Sessions — When You Want to Continue Working
 
 Use delegated sessions for:
+
 - Implementation work you don't need to wait for
 - Scaling to multiple parallel tasks
 - Bulk work (5+ issues)

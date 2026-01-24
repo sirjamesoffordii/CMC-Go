@@ -41,6 +41,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 | **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (score 0-2)                  |
 
 **Key distinctions:**
+
 - **Tech Lead always uses Opus 4.5** — coordination requires judgment, never compromise on TL model.
 - **SWE Basic / SWE / SWE Opus** are the same role with different models. Select via agent name based on complexity.
 - **Cloud Agent** is for async fire-and-forget work; TL continues while cloud agent works.
@@ -336,21 +337,21 @@ Score tasks before selecting an agent:
 
 ### Score → Agent Selection
 
-| Score | Agent Name              | Model            | Token Cost | When to Use                                |
-| ----- | ----------------------- | ---------------- | ---------- | ------------------------------------------ |
-| 0-1   | SWE Basic               | GPT 4.1          | 0×         | Docs, comments, lint fixes, typos          |
-| 0-2   | Cloud Agent             | (GitHub default) | Dedicated  | Simple async tasks (TL wants to continue)  |
-| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | Standard implementation, tests, refactors  |
-| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | Complex, cross-cutting, design ambiguity   |
+| Score | Agent Name              | Model            | Token Cost | When to Use                               |
+| ----- | ----------------------- | ---------------- | ---------- | ----------------------------------------- |
+| 0-1   | SWE Basic               | GPT 4.1          | 0×         | Docs, comments, lint fixes, typos         |
+| 0-2   | Cloud Agent             | (GitHub default) | Dedicated  | Simple async tasks (TL wants to continue) |
+| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | Standard implementation, tests, refactors |
+| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | Complex, cross-cutting, design ambiguity  |
 
 ### Role Model Requirements
 
-| Role           | Required Model  | Why                                             |
-| -------------- | --------------- | ----------------------------------------------- |
-| **Tech Lead**  | Claude Opus 4.5 | Coordination requires judgment — never downgrade |
-| **SWE Basic**  | GPT 4.1         | Trivial tasks don't need premium models         |
-| **SWE**        | GPT-5.2-Codex   | Good balance of capability and cost             |
-| **SWE Opus**   | Claude Opus 4.5 | Complex tasks need premium reasoning            |
+| Role          | Required Model  | Why                                              |
+| ------------- | --------------- | ------------------------------------------------ |
+| **Tech Lead** | Claude Opus 4.5 | Coordination requires judgment — never downgrade |
+| **SWE Basic** | GPT 4.1         | Trivial tasks don't need premium models          |
+| **SWE**       | GPT-5.2-Codex   | Good balance of capability and cost              |
+| **SWE Opus**  | Claude Opus 4.5 | Complex tasks need premium reasoning             |
 
 **Agent name must be exact.** Use `"SWE Basic"`, `"Software Engineer (SWE)"`, or `"SWE Opus"` — partial names fall back to default.
 
@@ -366,25 +367,70 @@ There are two fundamentally different ways to get help from other agents:
 - **Internal** — result comes back in the same session
 - **Free** — does NOT consume premium requests
 - **Unlimited** — spawn as many as needed (tested: 6+ in parallel)
-- **Best for:** Research, analysis, verification, planning, getting answers
+- **Full powers** — subagents can do REAL WORK (edit files, run commands, commit, push)
+- **Best for:** Research, analysis, verification, implementation with tight coordination
+
+**Subagents do REAL WORK, not just research:**
+- ✅ Edit and create files
+- ✅ Run terminal commands
+- ✅ Commit and push to git
+- ✅ Create PRs and Issues
+- ❌ Cannot spawn their own subagents (but CAN spawn cloud agents)
 
 **When TL uses subagents:**
+
 - Need to understand something before delegating
 - Parallel research across multiple topics
 - Quick verification ("does this PR look right?")
 - Design decisions where you need synthesis
+- Implementation where you need the result before continuing
+- Tightly coordinated work across multiple areas
+
+### Subagent Execution Model (critical to understand)
+
+**Parallel batches are all-or-nothing:**
+```
+TL sends: [Agent1, Agent2, Agent3]  // All start in parallel
+         ↓
+TL is BLOCKED waiting for ALL THREE
+         ↓
+Agent1 finishes → result held
+Agent2 finishes → result held
+Agent3 finishes → result held
+         ↓
+ALL results return to TL at once
+         ↓
+NOW TL can send another batch
+```
+
+**You cannot peel off partial results.** But after a batch completes, TL can immediately send another batch without user intervention.
+
+**TL can loop autonomously:**
+```
+TL Session (no user prompts needed between batches):
+  1. Send batch 1: [Research-Agent1, Research-Agent2]
+  2. WAIT → both return with findings
+  3. TL synthesizes, decides next action
+  4. Send batch 2: [Impl-Agent1, Impl-Agent2] based on findings
+  5. WAIT → both return with changes
+  6. TL reviews, decides: send verification batch or done?
+  7. Continue until project complete
+```
+
+**Conflict prevention:** Give parallel subagents non-overlapping scopes (different folders/files).
 
 ### Delegated Sessions — External Work
 
 **What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
 
-| Method                 | Blocking | Communication        | Best For                    |
-| ---------------------- | -------- | -------------------- | --------------------------- |
-| Cloud Agent            | ❌ No    | GitHub PR/comments   | Simple async implementation |
-| `gh agent-task create` | ❌ No    | GitHub PR/comments   | CLI-based async spawning    |
-| `code chat -n`         | ❌ No    | GitHub PR/comments   | Local parallel sessions     |
+| Method                 | Blocking | Communication      | Best For                    |
+| ---------------------- | -------- | ------------------ | --------------------------- |
+| Cloud Agent            | ❌ No    | GitHub PR/comments | Simple async implementation |
+| `gh agent-task create` | ❌ No    | GitHub PR/comments | CLI-based async spawning    |
+| `code chat -n`         | ❌ No    | GitHub PR/comments | Local parallel sessions     |
 
 **When TL uses delegated sessions:**
+
 - Implementation work you don't need to wait for
 - Scaling to multiple parallel tasks
 - Want to continue coordinating while work happens
@@ -393,6 +439,48 @@ There are two fundamentally different ways to get help from other agents:
 
 > **Use subagents when you NEED the answer NOW.**
 > **Use delegated sessions when you want work done WHILE you continue.**
+
+### Recommended Autonomous Workflow Pattern
+
+For fully autonomous project execution, use a **hybrid approach**:
+
+```
+TL Session (Opus 4.5, runs autonomously)
+│
+├── PHASE 1: Research/Planning (SUBAGENTS)
+│   └── Spawn 2-4 SWE subagents to analyze different areas
+│   └── All return → TL synthesizes findings
+│   └── TL creates executable Issues
+│
+├── PHASE 2: Implementation (CHOICE based on needs)
+│   ├── Option A: Subagents (tight coordination)
+│   │   └── Spawn SWE subagents with non-overlapping scopes
+│   │   └── Results return → TL reviews immediately
+│   │   └── Send next batch based on results
+│   │
+│   └── Option B: Delegated sessions (parallel independence)
+│       └── Fire off cloud agents for independent issues
+│       └── TL continues other coordination work
+│       └── Poll for completion, review PRs
+│
+├── PHASE 3: Verification (SUBAGENTS)
+│   └── Spawn SWE subagent to verify each PR
+│   └── Results return → TL merges or requests fixes
+│
+└── LOOP until project complete (no user intervention)
+```
+
+**When to prefer subagents for implementation:**
+- Tasks depend on each other (need to sequence)
+- Need to synthesize results across tasks
+- Want tighter quality control
+- Complex coordination required
+
+**When to prefer delegated sessions:**
+- Tasks are truly independent
+- High volume of simple tasks
+- TL has other coordination work to do
+- Want maximum parallelism
 
 ### TL Capacity: 4 Delegated Items (not subagents)
 
@@ -418,15 +506,15 @@ There are two fundamentally different ways to get help from other agents:
 
 ### When TL Should Use Subagents vs Delegated Sessions
 
-| Situation                                  | Use Subagent          | Use Delegated Session  |
-| ------------------------------------------ | --------------------- | ---------------------- |
-| Need answer before deciding next step      | ✅ Yes                | ❌ No                  |
-| Research/analysis across multiple topics   | ✅ Yes (parallel)     | ❌ No                  |
-| Quick verification of a PR                 | ✅ Yes                | ❌ No                  |
-| Simple implementation, don't need to wait  | ❌ No                 | ✅ Cloud Agent         |
-| Multiple parallel implementations          | ❌ No                 | ✅ Multiple Cloud      |
-| Complex implementation, need result        | ✅ SWE Opus subagent  | ❌ No                  |
-| Bulk tasks (5+ issues)                     | ❌ No                 | ✅ Multiple Cloud      |
+| Situation                                 | Use Subagent         | Use Delegated Session |
+| ----------------------------------------- | -------------------- | --------------------- |
+| Need answer before deciding next step     | ✅ Yes               | ❌ No                 |
+| Research/analysis across multiple topics  | ✅ Yes (parallel)    | ❌ No                 |
+| Quick verification of a PR                | ✅ Yes               | ❌ No                 |
+| Simple implementation, don't need to wait | ❌ No                | ✅ Cloud Agent        |
+| Multiple parallel implementations         | ❌ No                | ✅ Multiple Cloud     |
+| Complex implementation, need result       | ✅ SWE Opus subagent | ❌ No                 |
+| Bulk tasks (5+ issues)                    | ❌ No                | ✅ Multiple Cloud     |
 
 ## Agent Spawning Behavior (tested)
 
@@ -486,14 +574,14 @@ code chat -n -m agent "Your task description"
 
 ### Quick Decision
 
-| Need                      | Method                   | Blocking?         | Model           |
-| ------------------------- | ------------------------ | ----------------- | --------------- |
-| Trivial task (0-1)        | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
-| Research/analysis         | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need  |
-| Simple async task (0-2)   | `gh agent-task create`   | ❌ No             | GitHub default  |
-| Standard task (2-4)       | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)    |
-| Complex task (5-6)        | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)   |
-| Bulk tasks (10+)          | Multiple `gh agent-task` | ❌ No             | GitHub default  |
+| Need                    | Method                   | Blocking?         | Model          |
+| ----------------------- | ------------------------ | ----------------- | -------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
 
 ### The Pattern
 
@@ -588,14 +676,14 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Quick Decision
 
-| Need                      | Method                   | Blocking?         | Model           |
-| ------------------------- | ------------------------ | ----------------- | --------------- |
-| Trivial task (0-1)        | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
-| Research/analysis         | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need  |
-| Simple async task (0-2)   | `gh agent-task create`   | ❌ No             | GitHub default  |
-| Standard task (2-4)       | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)    |
-| Complex task (5-6)        | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)   |
-| Bulk tasks (10+)          | Multiple `gh agent-task` | ❌ No             | GitHub default  |
+| Need                    | Method                   | Blocking?         | Model          |
+| ----------------------- | ------------------------ | ----------------- | -------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
 
 ### The Pattern
 
