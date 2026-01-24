@@ -10,17 +10,11 @@
     "railway": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/railway-mcp"],
+      "args": ["-y", "@railway/mcp-server"],
       "env": {
         "RAILWAY_TOKEN": "${env:RAILWAY_TOKEN}"
       },
       "description": "Railway deployments, services, and logs"
-    },
-    "fetch": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch"],
-      "description": "HTTP requests for API testing"
     },
     "sequential-thinking": {
       "type": "stdio",
