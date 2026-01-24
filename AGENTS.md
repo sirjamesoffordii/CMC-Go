@@ -32,15 +32,16 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 **GitHub Copilot Pro includes 1,500 premium requests/month.** Each model has a different "weight":
 
-| Model | Approximate Cost | Use Case |
-|-------|------------------|----------|
-| GPT 4.1 | 0× (included) | Trivial tasks, no premium cost |
-| GPT-5.2-Codex | 1× | Code implementation |
-| GPT-5.2 | 1× | General reasoning |
-| Claude Opus 4.5 | 3× | Complex thinking, coordination |
-| Cloud Agent | Dedicated SKU | Async work (separate quota) |
+| Model           | Approximate Cost | Use Case                       |
+| --------------- | ---------------- | ------------------------------ |
+| GPT 4.1         | 0× (included)    | Trivial tasks, no premium cost |
+| GPT-5.2-Codex   | 1×               | Code implementation            |
+| GPT-5.2         | 1×               | General reasoning              |
+| Claude Opus 4.5 | 3×               | Complex thinking, coordination |
+| Cloud Agent     | Dedicated SKU    | Async work (separate quota)    |
 
 **Where to check usage:**
+
 - **Authoritative:** https://github.com/settings/billing → Premium request analytics
 - **VS Code sidebar:** May show cached/session-specific values (less reliable)
 
@@ -366,21 +367,27 @@ Score tasks before selecting an agent:
 
 Beyond complexity score, consider **what type of work** the agent is doing:
 
-| Task Type | Recommended Model | Why |
-|-----------|-------------------|-----|
-| **Implementation** (writing code) | GPT-5.2-Codex (1×) | Optimized for code generation |
-| **Thinking/Planning** (score 1-3) | GPT-5.2-Codex (1×) | Good enough for moderate complexity |
-| **Thinking/Planning** (score 4-6) | Claude Opus 4.5 (3×) | Complex reasoning needs premium |
-| **Exploration/Research** | GPT-5.2-Codex (1×) | Code-aware, cost-effective |
-| **Verification/Review** | Claude Opus 4.5 (3×) | Judgment calls need premium |
-| **Trivial tasks** | GPT 4.1 (0×) | Free, good for docs/comments |
+| Task Type                              | Recommended Model    | Why                                 |
+| -------------------------------------- | -------------------- | ----------------------------------- |
+| **Implementation** (writing code)      | GPT-5.2-Codex (1×)   | Optimized for code generation       |
+| **Thinking/Planning** (score 1-3)      | GPT-5.2-Codex (1×)   | Good enough for moderate complexity |
+| **Thinking/Planning** (score 4-6)      | Claude Opus 4.5 (3×) | Complex reasoning needs premium     |
+| **Exploration/Research**               | GPT-5.2-Codex (1×)   | Code-aware, cost-effective          |
+| **Verification/Review** (score 1-3)    | GPT-5.2-Codex (1×)   | Simple verification is affordable   |
+| **Verification/Review** (score 4-6)    | Claude Opus 4.5 (3×) | Complex judgment needs premium      |
+| **Trivial tasks**                      | GPT 4.1 (0×)         | Free, good for docs/comments        |
 
 **TL subagent model selection:**
+
 - Subagent doing **implementation** → GPT-5.2-Codex
 - Subagent doing **research/exploration** → GPT-5.2-Codex
-- Subagent doing **verification/review** → Claude Opus 4.5
-- Subagent doing **planning/coordination** (score 4+) → Claude Opus 4.5
+- Subagent doing **verification** (score 1-3) → GPT-5.2-Codex
+- Subagent doing **verification** (score 4-6) → Claude Opus 4.5
+- Subagent doing **planning/coordination** (score 1-3) → GPT-5.2-Codex
+- Subagent doing **planning/coordination** (score 4-6) → Claude Opus 4.5
 - Subagent doing **trivial work** → GPT 4.1
+
+**Why be conservative with subagents:** Main agents run once and stay active. Subagents are spawned constantly throughout execution — that's where real quota consumption happens. Default to GPT-5.2-Codex (1×) and only use Opus (3×) when complexity score is 4+.
 
 ### Role Model Requirements
 
@@ -409,6 +416,7 @@ There are two fundamentally different ways to get help from other agents:
 - **Best for:** Research, analysis, verification, implementation with tight coordination
 
 **Choose subagent model wisely to manage costs:**
+
 - GPT 4.1 (0×) — trivial tasks
 - GPT-5.2-Codex (1×) — implementation, research
 - Claude Opus 4.5 (3×) — complex thinking, verification
@@ -622,14 +630,14 @@ code chat -n -m agent "Your task description"
 
 ### Quick Decision
 
-| Need                    | Method                   | Blocking?         | Model           |
-| ----------------------- | ------------------------ | ----------------- | --------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need  |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default  |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)    |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)   |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default  |
+| Need                    | Method                   | Blocking?         | Model          |
+| ----------------------- | ------------------------ | ----------------- | -------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
 
 ### The Pattern
 
@@ -724,14 +732,14 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Quick Decision
 
-| Need                    | Method                   | Blocking?         | Model           |
-| ----------------------- | ------------------------ | ----------------- | --------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need  |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default  |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)    |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)   |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default  |
+| Need                    | Method                   | Blocking?         | Model          |
+| ----------------------- | ------------------------ | ----------------- | -------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
 
 ### The Pattern
 
