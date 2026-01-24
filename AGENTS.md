@@ -257,6 +257,25 @@ Score issues to select the right agent:
 
 These behaviors were empirically verified:
 
+### Blocking vs Non-Blocking (critical)
+
+| Spawn Method | Blocking? | How It Works | When to Use |
+|--------------|-----------|--------------|-------------|
+| `runSubagent` | ✅ BLOCKING | TL waits for result | Need answer before continuing |
+| Parallel `runSubagent` | ✅ BLOCKING (all) | TL waits for ALL to complete | Independent tasks, need all results |
+| Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING | Returns immediately, agent works async | Fire-and-forget tasks, scaling |
+
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents.
+
+### Scaling Strategy
+
+| Need | Solution |
+|------|----------|
+| Simple parallel work (score 0-2) | Cloud Agents (non-blocking, truly async) |
+| Complex work, need result now | Local SWE via `runSubagent` (blocking is OK) |
+| Too much work for one TL | Spawn multiple Cloud Agents OR secondary TL |
+| Maximum throughput | Spawn multiple Cloud Agents (no limit) |
+
 ### Premium requests
 
 **Spawning subagents does NOT consume premium requests.** Premium request % only increases when the main session user sends a message. You can safely spawn as many premium subagents (Tech Lead, SWE Opus) as needed without burning premium quota.
@@ -265,26 +284,42 @@ These behaviors were empirically verified:
 
 ```
 PRIMARY TL (has runSubagent tool)
-├── Can spawn local SWE ✅
-├── Can spawn local TL ✅
-├── Can spawn cloud agents ✅
+├── Can spawn local SWE ✅ (blocking)
+├── Can spawn local TL ✅ (blocking)
+├── Can spawn cloud agents ✅ (non-blocking)
 │
 └── SPAWNED agents (no runSubagent tool)
     ├── Cannot spawn local agents ❌
-    └── CAN spawn cloud agents ✅
+    └── CAN spawn cloud agents ✅ (non-blocking)
 ```
 
 Only the **primary agent session** has access to `runSubagent`. Spawned agents can only delegate via cloud agents.
 
-### Parallel spawning
+### Parallel spawning (local agents)
 
-TL can spawn **multiple agents in parallel** in a single call:
+TL can spawn **multiple local agents in parallel** in a single call:
 
 ```
 runSubagent([SWE-1, SWE-2, SWE-3, SWE-4])  // All run in parallel
 ```
 
-TL is blocked until all return, but they execute concurrently. No hard limit found (tested up to 6).
+TL is blocked until ALL return, but they execute concurrently. No hard limit found (tested up to 6).
+
+### Async spawning (cloud agents)
+
+TL can dispatch **multiple cloud agents** and continue working:
+
+```
+// Non-blocking: TL continues immediately
+copilot-coding-agent(Issue #1)  // Returns immediately
+copilot-coding-agent(Issue #2)  // Returns immediately
+// TL can do other work while agents execute in parallel
+```
+
+Cloud agents:
+- Create branches automatically
+- Open PRs when complete
+- TL discovers completion via board polling or PR notifications
 
 ### Context inheritance
 
