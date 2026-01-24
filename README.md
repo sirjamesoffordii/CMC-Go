@@ -1,5 +1,6 @@
 # CMC Go
 
+<!-- This is a coordination app designed for efficient conference attendance management -->
 CMC Go is a map-first coordination app for CMC conference attendance management.
 
 ## Docs
