@@ -61,7 +61,9 @@ Status Field ID: PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA
 Status Options:
   - Todo: f75ad846
   - In Progress: 47fc9ee4
+  - Verify: 5351d827
   - Done: 98236657
+  - Blocked: 652442a1
 ```
 
 To verify IDs (if you suspect mismatch):

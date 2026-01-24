@@ -59,7 +59,7 @@ body:
         - Pros/cons of each
         - Recommended approach
         - Estimated complexity if we proceed
-        
+
         **NOT code** (unless a prototype helps the decision)
 
   - type: dropdown

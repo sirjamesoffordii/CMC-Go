@@ -47,10 +47,10 @@ body:
         ```bash
         # Checkout the PR
         gh pr checkout <PR#>
-        
+
         # Run checks
         pnpm check && pnpm test
-        
+
         # Manual verification (if UI)
         pnpm dev
         # Then test specific flows
@@ -86,11 +86,11 @@ body:
       description: "To be filled when verification is complete"
       value: |
         **Result:** Pass / Pass-with-notes / Fail
-        
+
         **Evidence:**
         ```
         (paste command output)
         ```
-        
+
         **Notes/Risks:**
         (any gaps, flakiness, edge cases)

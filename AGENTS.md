@@ -126,9 +126,7 @@ gh project item-add 4 --owner sirjamesoffordii --url <issue-url>
 gh project item-edit --project-id PVT_kwHODqX6Qs4BNUfu --id <item-id> --field-id PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA --single-select-option-id <status-option-id>
 ```
 
-Status option IDs: Todo=`f75ad846`, In Progress=`47fc9ee4`, Done=`98236657`
-
-> **Note:** Blocked and Verify statuses need to be added to the Project via GitHub UI (Settings → Status field → Add option)
+Status option IDs: Todo=`f75ad846`, In Progress=`47fc9ee4`, Verify=`5351d827`, Done=`98236657`, Blocked=`652442a1`
 
 ## Speed-first defaults (default)
 

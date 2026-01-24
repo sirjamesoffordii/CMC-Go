@@ -81,7 +81,7 @@ body:
         ```bash
         pnpm check && pnpm test
         ```
-        
+
         Manual (if UI changed):
         1. Navigate to map
         2. Click a district

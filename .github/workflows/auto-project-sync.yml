@@ -21,11 +21,9 @@ env:
   # Status option IDs for Project 4
   STATUS_TODO: "f75ad846"
   STATUS_IN_PROGRESS: "47fc9ee4"
+  STATUS_VERIFY: "5351d827"
   STATUS_DONE: "98236657"
-  # Note: Blocked and Verify need to be added via GitHub UI first
-  # Then update these values:
-  # STATUS_BLOCKED: "<add-when-created>"
-  # STATUS_VERIFY: "<add-when-created>"
+  STATUS_BLOCKED: "652442a1"
 
 jobs:
   # Add new Issues to Project 4
@@ -125,10 +123,9 @@ jobs:
               statusOptionId = process.env.STATUS_IN_PROGRESS;
               statusName = 'In Progress';
             } else {
-              // Ready for review - ideally would be "Verify" but that status
-              // doesn't exist yet. Using In Progress for now.
-              statusOptionId = process.env.STATUS_IN_PROGRESS;
-              statusName = 'In Progress (Verify pending)';
+              // Ready for review → Verify status
+              statusOptionId = process.env.STATUS_VERIFY;
+              statusName = 'Verify';
             }
 
             // Update status
