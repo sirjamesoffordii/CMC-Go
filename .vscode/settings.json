@@ -6,6 +6,7 @@
     // Prevent terminal from stealing focus when agents run commands
     "terminal.integrated.focusAfterRun": "none",
     "terminal.integrated.showOnError": false,
+    "chat.agent.terminal.focusOnExecution": false,
     
     // Auto-close task terminals without "press any key" prompt
     "task.showDecorations": false,
