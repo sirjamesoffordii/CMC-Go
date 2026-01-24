@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   id-token: write
+  attestations: write
 
 jobs:
   test-and-coverage:
@@ -93,10 +94,9 @@ jobs:
 
       - name: Generate SLSA provenance (build attestation)
         if: github.event_name == 'push'
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: dist/
-          summary-title: "CMC Go build provenance"
 
   e2e-tests:
     runs-on: ubuntu-latest

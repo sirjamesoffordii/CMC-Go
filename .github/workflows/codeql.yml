@@ -45,6 +45,8 @@ jobs:
 
       - name: Build
         run: pnpm build
+        env:
+          VITE_SENTRY_RELEASE: ${{ github.sha }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
