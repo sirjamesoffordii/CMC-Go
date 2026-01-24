@@ -209,6 +209,34 @@
       "problemMatcher": []
     },
     {
+      "label": "Worktree: Create for Issue",
+      "type": "shell",
+      "command": "git fetch --prune origin; $wtPath = '..\\wt-impl-${input:issueNumber}-${input:slug}'; $branch = 'agent/swe/${input:issueNumber}-${input:slug}'; Write-Host \"Creating worktree at $wtPath with branch $branch based on origin/staging...\" -ForegroundColor Cyan; git worktree add -b $branch $wtPath origin/staging; if ($LASTEXITCODE -eq 0) { Write-Host \"Worktree created successfully!\" -ForegroundColor Green; Write-Host \"  Path: $wtPath\"; Write-Host \"  Branch: $branch\"; Write-Host ''; Write-Host 'To open: code ' + $wtPath -ForegroundColor Yellow } else { Write-Host 'Failed to create worktree' -ForegroundColor Red }",
+      "problemMatcher": [],
+      "detail": "Create implementation worktree: wt-impl-<issue>-<slug> with branch agent/swe/<issue>-<slug>"
+    },
+    {
+      "label": "Worktree: List all",
+      "type": "shell",
+      "command": "Write-Host '=== Git Worktrees ===' -ForegroundColor Cyan; git worktree list; Write-Host ''",
+      "problemMatcher": [],
+      "detail": "List all existing git worktrees"
+    },
+    {
+      "label": "Worktree: Remove by name",
+      "type": "shell",
+      "command": "$wtPath = '..\\${input:worktreeName}'; Write-Host \"Removing worktree at $wtPath...\" -ForegroundColor Cyan; git worktree remove --force $wtPath; if ($LASTEXITCODE -eq 0) { Write-Host 'Worktree removed successfully!' -ForegroundColor Green } else { Write-Host 'Failed to remove worktree (may not exist or have uncommitted changes)' -ForegroundColor Red }",
+      "problemMatcher": [],
+      "detail": "Remove a worktree by folder name (e.g., wt-impl-123-fix-bug)"
+    },
+    {
+      "label": "Worktree: Prune stale",
+      "type": "shell",
+      "command": "Write-Host 'Pruning stale worktree references...' -ForegroundColor Cyan; git worktree prune -v; Write-Host 'Done!' -ForegroundColor Green",
+      "problemMatcher": [],
+      "detail": "Remove stale worktree references (for deleted folders)"
+    },
+    {
       "label": "Agent: List worktrees",
       "type": "shell",
       "command": "git worktree list",
@@ -269,6 +297,16 @@
       "id": "agentPrompt",
       "type": "promptString",
       "description": "Prompt for the cloud agent"
+    },
+    {
+      "id": "slug",
+      "type": "promptString",
+      "description": "Short slug/description (e.g., fix-login, add-filter)"
+    },
+    {
+      "id": "worktreeName",
+      "type": "promptString",
+      "description": "Worktree folder name (e.g., wt-impl-123-fix-bug)"
     }
   ]
 }
