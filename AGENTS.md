@@ -259,22 +259,61 @@ These behaviors were empirically verified:
 
 ### Blocking vs Non-Blocking (critical)
 
-| Spawn Method | Blocking? | How It Works | When to Use |
-|--------------|-----------|--------------|-------------|
-| `runSubagent` | ✅ BLOCKING | TL waits for result | Need answer before continuing |
-| Parallel `runSubagent` | ✅ BLOCKING (all) | TL waits for ALL to complete | Independent tasks, need all results |
-| Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING | Returns immediately, agent works async | Fire-and-forget tasks, scaling |
+| Spawn Method                         | Blocking?         | How It Works                           | When to Use                         |
+| ------------------------------------ | ----------------- | -------------------------------------- | ----------------------------------- |
+| `runSubagent`                        | ✅ BLOCKING       | TL waits for result                    | Need answer before continuing       |
+| Parallel `runSubagent`               | ✅ BLOCKING (all) | TL waits for ALL to complete           | Independent tasks, need all results |
+| Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING   | Returns immediately, agent works async | Fire-and-forget tasks, scaling      |
+| `gh agent-task create`               | ❌ NON-BLOCKING   | CLI spawns cloud agent, returns URL    | Scripted/terminal agent spawning    |
+| `code chat -n -m agent`              | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
 
-**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents.
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows.
+
+### Non-Blocking Spawn Methods (NEW)
+
+#### 1. `gh agent-task create` (CLI - Recommended)
+
+Spawn cloud agents from terminal without VS Code tools:
+
+```powershell
+# Non-blocking task creation (returns URL immediately)
+gh agent-task create "Fix the login bug" --base staging
+
+# With custom agent definition
+gh agent-task create "Implement feature X" --custom-agent software-engineer
+
+# List active agent tasks
+gh agent-task list -L 10
+```
+
+**Tested:** Spawned 6 agents in parallel, all worked concurrently (PRs #209-214).
+
+#### 2. `code chat` (Local Agent in New Window)
+
+Spawn local agent sessions in separate VS Code windows:
+
+```powershell
+# Open new VS Code window with agent chat
+code chat -n -m agent "Your task description"
+
+# Options:
+#   -n, --new-window    Force new window (non-blocking)
+#   -r, --reuse-window  Use last active window
+#   -m, --mode agent    Agent mode (default)
+#   -a, --add-file      Add file context
+```
+
+**Note:** Shares Copilot subscription with primary session.
 
 ### Scaling Strategy
 
-| Need | Solution |
-|------|----------|
-| Simple parallel work (score 0-2) | Cloud Agents (non-blocking, truly async) |
-| Complex work, need result now | Local SWE via `runSubagent` (blocking is OK) |
-| Too much work for one TL | Spawn multiple Cloud Agents OR secondary TL |
-| Maximum throughput | Spawn multiple Cloud Agents (no limit) |
+| Need                             | Solution                                     |
+| -------------------------------- | -------------------------------------------- |
+| Simple parallel work (score 0-2) | `gh agent-task create` (cloud, truly async)  |
+| Complex work, need result now    | Local SWE via `runSubagent` (blocking is OK) |
+| Too much work for one TL         | Spawn multiple cloud agents via CLI          |
+| Maximum throughput               | Spawn 10+ cloud agents (no practical limit)  |
+| Local parallel sessions          | `code chat -n` in separate windows           |
 
 ### Premium requests
 
@@ -287,13 +326,16 @@ PRIMARY TL (has runSubagent tool)
 ├── Can spawn local SWE ✅ (blocking)
 ├── Can spawn local TL ✅ (blocking)
 ├── Can spawn cloud agents ✅ (non-blocking)
+├── Can run `gh agent-task create` ✅ (non-blocking)
+├── Can run `code chat -n` ✅ (non-blocking, new window)
 │
 └── SPAWNED agents (no runSubagent tool)
     ├── Cannot spawn local agents ❌
-    └── CAN spawn cloud agents ✅ (non-blocking)
+    ├── CAN spawn cloud agents ✅ (non-blocking)
+    └── CAN run `gh agent-task create` ✅ (terminal access)
 ```
 
-Only the **primary agent session** has access to `runSubagent`. Spawned agents can only delegate via cloud agents.
+Only the **primary agent session** has access to `runSubagent`. Spawned agents can delegate via cloud agents or CLI.
 
 ### Parallel spawning (local agents)
 
@@ -309,17 +351,23 @@ TL is blocked until ALL return, but they execute concurrently. No hard limit fou
 
 TL can dispatch **multiple cloud agents** and continue working:
 
-```
-// Non-blocking: TL continues immediately
-copilot-coding-agent(Issue #1)  // Returns immediately
-copilot-coding-agent(Issue #2)  // Returns immediately
-// TL can do other work while agents execute in parallel
+```powershell
+# Via tool (in chat):
+copilot-coding-agent(Issue #1)  # Returns immediately
+copilot-coding-agent(Issue #2)  # Returns immediately
+
+# Via CLI (from terminal):
+gh agent-task create "Task 1" --base staging  # Returns URL immediately
+gh agent-task create "Task 2" --base staging  # Returns URL immediately
+gh agent-task create "Task 3" --base staging  # Returns URL immediately
+# TL continues working while all 3 agents execute in parallel
 ```
 
 Cloud agents:
+
 - Create branches automatically
 - Open PRs when complete
-- TL discovers completion via board polling or PR notifications
+- TL discovers completion via `gh agent-task list` or board polling
 
 ### Context inheritance
 

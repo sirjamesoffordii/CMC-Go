@@ -196,6 +196,57 @@
       "command": "git add -A; git commit -m '${input:commitMessage}' --no-verify",
       "problemMatcher": []
     },
+    {
+      "label": "Agent: Spawn worktree agent",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1 -IssueNumber ${input:issueNumber}",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Spawn worktree agent (dry run)",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1 -IssueNumber ${input:issueNumber} -DryRun",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: List worktrees",
+      "type": "shell",
+      "command": "git worktree list",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Clean worktree",
+      "type": "shell",
+      "command": "git worktree remove --force C:\\Dev\\CMC-Go-Worktrees\\wt-impl-${input:issueNumber}; Write-Host 'Worktree removed' -ForegroundColor Green",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Spawn cloud agent (issue)",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-cloud-agent.ps1 -IssueNumber ${input:issueNumber}",
+      "problemMatcher": [],
+      "detail": "Spawn a GitHub cloud agent for an issue (non-blocking)"
+    },
+    {
+      "label": "Agent: Spawn cloud agent (prompt)",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-cloud-agent.ps1 -Prompt '${input:agentPrompt}'",
+      "problemMatcher": [],
+      "detail": "Spawn a GitHub cloud agent with custom prompt (non-blocking)"
+    },
+    {
+      "label": "Agent: List cloud agent tasks",
+      "type": "shell",
+      "command": "gh agent-task list",
+      "problemMatcher": [],
+      "detail": "List recent GitHub Copilot coding agent tasks"
+    },
+    {
+      "label": "Agent: View cloud agent task",
+      "type": "shell",
+      "command": "gh agent-task view ${input:prNumber}",
+      "problemMatcher": [],
+      "detail": "View a specific cloud agent task by PR number"
     }
   ],
   "inputs": [
@@ -208,6 +259,16 @@
       "id": "commitMessage",
       "type": "promptString",
       "description": "Commit message"
+    },
+    {
+      "id": "issueNumber",
+      "type": "promptString",
+      "description": "GitHub Issue number"
+    },
+    {
+      "id": "agentPrompt",
+      "type": "promptString",
+      "description": "Prompt for the cloud agent"
     }
   ]
 }
