@@ -32,14 +32,18 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
 
-| Agent                 | GitHub Account            | Default Model    | Responsibility                                                |
-| --------------------- | ------------------------- | ---------------- | ------------------------------------------------------------- |
-| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation                    |
-| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification                                  |
-| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | Complex implementation (score 5-6) — same role, premium model |
-| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only                                |
+| Agent                 | GitHub Account            | Model            | Token Cost | Responsibility                                   |
+| --------------------- | ------------------------- | ---------------- | ---------- | ------------------------------------------------ |
+| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | 3×         | Coordination, board management, delegation       |
+| **SWE Basic**         | `Software-Engineer-Agent` | GPT 4.1          | 0×         | Trivial tasks (score 0-1) — docs, comments, lint |
+| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | 1×         | Standard implementation (score 2-4)              |
+| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | 3×         | Complex implementation (score 5-6)               |
+| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (score 0-2)                  |
 
-**Note:** SWE and SWE Opus are the same role with different models. Tech Lead selects via agent name.
+**Key distinctions:**
+- **Tech Lead always uses Opus 4.5** — coordination requires judgment, never compromise on TL model.
+- **SWE Basic / SWE / SWE Opus** are the same role with different models. Select via agent name based on complexity.
+- **Cloud Agent** is for async fire-and-forget work; TL continues while cloud agent works.
 
 ## Session Start (once per session)
 
@@ -320,56 +324,109 @@ Do not create new Issues — only implement what's assigned.
 
 **Model is set by agent variant.** You cannot override at runtime — choose the agent name to select the model.
 
-Score issues to select the right agent:
+### Complexity Scoring
 
-| Factor    | 0 (Low)        | 1 (Med)       | 2 (High)                  |
-| --------- | -------------- | ------------- | ------------------------- |
-| Risk      | Docs, comments | Logic, tests  | Schema, auth, env         |
-| Scope     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
-| Ambiguity | Clear spec     | Some unknowns | Needs design/research     |
+Score tasks before selecting an agent:
 
-**Total Score → Agent Selection:**
+| Factor        | 0 (Low)        | 1 (Med)       | 2 (High)                  |
+| ------------- | -------------- | ------------- | ------------------------- |
+| **Risk**      | Docs, comments | Logic, tests  | Schema, auth, env         |
+| **Scope**     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
+| **Ambiguity** | Clear spec     | Some unknowns | Needs design/research     |
 
-| Score | Agent Name              | Model            | Token Cost    |
-| ----- | ----------------------- | ---------------- | ------------- |
-| 0-2   | Cloud Agent             | (GitHub default) | Dedicated SKU |
-| 3-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×            |
-| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×            |
+### Score → Agent Selection
 
-**Role defaults:**
+| Score | Agent Name              | Model            | Token Cost | When to Use                                |
+| ----- | ----------------------- | ---------------- | ---------- | ------------------------------------------ |
+| 0-1   | SWE Basic               | GPT 4.1          | 0×         | Docs, comments, lint fixes, typos          |
+| 0-2   | Cloud Agent             | (GitHub default) | Dedicated  | Simple async tasks (TL wants to continue)  |
+| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | Standard implementation, tests, refactors  |
+| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | Complex, cross-cutting, design ambiguity   |
 
-- **Tech Lead:** Claude Opus 4.5 (coordination requires judgment)
-- **Software Engineer:** GPT-5.2-Codex (score 3-4)
-- **SWE Opus:** Claude Opus 4.5 (score 5-6)
-- **Cloud Agent:** GitHub default (simple issues only)
+### Role Model Requirements
 
-**Agent name must be exact.** Use `"Software Engineer (SWE)"` or `"SWE Opus"` — partial names fall back to default model.
+| Role           | Required Model  | Why                                             |
+| -------------- | --------------- | ----------------------------------------------- |
+| **Tech Lead**  | Claude Opus 4.5 | Coordination requires judgment — never downgrade |
+| **SWE Basic**  | GPT 4.1         | Trivial tasks don't need premium models         |
+| **SWE**        | GPT-5.2-Codex   | Good balance of capability and cost             |
+| **SWE Opus**   | Claude Opus 4.5 | Complex tasks need premium reasoning            |
 
-## What is `runSubagent`?
+**Agent name must be exact.** Use `"SWE Basic"`, `"Software Engineer (SWE)"`, or `"SWE Opus"` — partial names fall back to default.
 
-`runSubagent` is a **VS Code Agent Mode tool** available to the primary agent session. It spawns a sub-agent that executes in the same VS Code instance.
+## Subagents vs Delegated Sessions (critical distinction)
 
-**Key facts:**
+There are two fundamentally different ways to get help from other agents:
 
-- **Blocks the caller** until the sub-agent completes and returns a single message
-- **Does NOT consume premium requests** — safe to spawn many
-- **Only available to the primary agent** — spawned agents cannot use `runSubagent`
-- **Passes workspace context** — sub-agent has access to files, terminal, tools
+### Subagents (`runSubagent`) — Internal Help
 
-**Syntax:** When calling from an agent, invoke the `runSubagent` tool with `agentName` and `prompt` parameters.
+**What:** Spawn a helper that reports back directly to you.
+
+- **Blocking** — you wait for the result
+- **Internal** — result comes back in the same session
+- **Free** — does NOT consume premium requests
+- **Unlimited** — spawn as many as needed (tested: 6+ in parallel)
+- **Best for:** Research, analysis, verification, planning, getting answers
+
+**When TL uses subagents:**
+- Need to understand something before delegating
+- Parallel research across multiple topics
+- Quick verification ("does this PR look right?")
+- Design decisions where you need synthesis
+
+### Delegated Sessions — External Work
+
+**What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
+
+| Method                 | Blocking | Communication        | Best For                    |
+| ---------------------- | -------- | -------------------- | --------------------------- |
+| Cloud Agent            | ❌ No    | GitHub PR/comments   | Simple async implementation |
+| `gh agent-task create` | ❌ No    | GitHub PR/comments   | CLI-based async spawning    |
+| `code chat -n`         | ❌ No    | GitHub PR/comments   | Local parallel sessions     |
+
+**When TL uses delegated sessions:**
+- Implementation work you don't need to wait for
+- Scaling to multiple parallel tasks
+- Want to continue coordinating while work happens
+
+### The Golden Rule
+
+> **Use subagents when you NEED the answer NOW.**
+> **Use delegated sessions when you want work done WHILE you continue.**
+
+### TL Capacity: 4 Delegated Items (not subagents)
+
+- **Subagents don't count** toward TL capacity (they're internal help)
+- **Delegated sessions count** toward the 4-item limit (they require TL polling/review)
+- If you need more than 4 parallel delegated items, spawn a secondary TL
+
+**Syntax:** Invoke the `runSubagent` tool with `agentName` and `prompt` parameters.
 
 **If you don't have access to `runSubagent`,** you're a spawned agent. Use cloud agents (`gh agent-task create`) or terminal commands instead.
 
 ## Standard workflow
 
 1. Tech Lead makes the work executable (Goal/Scope/AC + verification checklist)
-2. Tech Lead scores complexity and selects agent:
-   - Score 0-2: Cloud Agent (label `agent:copilot-swe` or `copilot-coding-agent` tool)
-   - Score 3-4: `runSubagent("Software Engineer (SWE)")` — GPT-5.2-Codex
-   - Score 5-6: `runSubagent("SWE Opus")` — Claude Opus 4.5
+2. Tech Lead scores complexity and selects delegation method:
+   - **Score 0-1 (trivial):** `runSubagent("SWE Basic")` for docs/comments/lint — OR cloud agent if async preferred
+   - **Score 0-2 (simple async):** Cloud Agent (label `agent:copilot-swe` or `gh agent-task create`) — TL continues working
+   - **Score 2-4 (standard):** `runSubagent("Software Engineer (SWE)")` — GPT-5.2-Codex
+   - **Score 5-6 (complex):** `runSubagent("SWE Opus")` — Claude Opus 4.5
 3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
 4. "Done" requires evidence (commands/results + links)
 5. Update Projects v2 as you go (board reflects reality)
+
+### When TL Should Use Subagents vs Delegated Sessions
+
+| Situation                                  | Use Subagent          | Use Delegated Session  |
+| ------------------------------------------ | --------------------- | ---------------------- |
+| Need answer before deciding next step      | ✅ Yes                | ❌ No                  |
+| Research/analysis across multiple topics   | ✅ Yes (parallel)     | ❌ No                  |
+| Quick verification of a PR                 | ✅ Yes                | ❌ No                  |
+| Simple implementation, don't need to wait  | ❌ No                 | ✅ Cloud Agent         |
+| Multiple parallel implementations          | ❌ No                 | ✅ Multiple Cloud      |
+| Complex implementation, need result        | ✅ SWE Opus subagent  | ❌ No                  |
+| Bulk tasks (5+ issues)                     | ❌ No                 | ✅ Multiple Cloud      |
 
 ## Agent Spawning Behavior (tested)
 
@@ -423,15 +480,36 @@ code chat -n -m agent "Your task description"
 
 **Note:** Shares Copilot subscription with primary session.
 
-### Scaling Strategy
+## Scalable Workflow Summary
 
-| Need                             | Solution                                     |
-| -------------------------------- | -------------------------------------------- |
-| Simple parallel work (score 0-2) | `gh agent-task create` (cloud, truly async)  |
-| Complex work, need result now    | Local SWE via `runSubagent` (blocking is OK) |
-| Too much work for one TL         | Spawn multiple cloud agents via CLI          |
-| Maximum throughput               | Spawn 10+ cloud agents (no practical limit)  |
-| Local parallel sessions          | `code chat -n` in separate windows           |
+**The Golden Rule:** Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.
+
+### Quick Decision
+
+| Need                      | Method                   | Blocking?         | Model           |
+| ------------------------- | ------------------------ | ----------------- | --------------- |
+| Trivial task (0-1)        | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
+| Research/analysis         | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need  |
+| Simple async task (0-2)   | `gh agent-task create`   | ❌ No             | GitHub default  |
+| Standard task (2-4)       | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)    |
+| Complex task (5-6)        | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)   |
+| Bulk tasks (10+)          | Multiple `gh agent-task` | ❌ No             | GitHub default  |
+
+### The Pattern
+
+```
+1. RESEARCH (if needed) → runSubagent (blocking, parallel OK)
+2. DISPATCH → gh agent-task create (non-blocking, fire-and-forget)
+3. CONTINUE → TL keeps coordinating while agents work
+4. HARVEST → Poll `gh agent-task list`, review PRs, merge
+```
+
+### Tested Limits
+
+- Parallel `runSubagent`: 6+ (all return, no premium cost)
+- Parallel cloud agents: 50+ (no practical limit)
+- Local sessions via `code chat -n`: 5-10 (system resources)
+- Subagents do NOT count toward TL's 4-item capacity
 
 ### Premium requests
 
@@ -510,12 +588,14 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Quick Decision
 
-| Need               | Method                   | Blocking?         |
-| ------------------ | ------------------------ | ----------------- |
-| Research/analysis  | `runSubagent` (parallel) | ✅ Yes (but free) |
-| Simple task (0-2)  | `gh agent-task create`   | ❌ No             |
-| Complex task (3-6) | `runSubagent`            | ✅ Yes (but free) |
-| Bulk tasks (10+)   | Multiple `gh agent-task` | ❌ No             |
+| Need                      | Method                   | Blocking?         | Model           |
+| ------------------------- | ------------------------ | ----------------- | --------------- |
+| Trivial task (0-1)        | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
+| Research/analysis         | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need  |
+| Simple async task (0-2)   | `gh agent-task create`   | ❌ No             | GitHub default  |
+| Standard task (2-4)       | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)    |
+| Complex task (5-6)        | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)   |
+| Bulk tasks (10+)          | Multiple `gh agent-task` | ❌ No             | GitHub default  |
 
 ### The Pattern
 
@@ -528,9 +608,10 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Tested Limits
 
-- Parallel `runSubagent`: 6+ (all return)
+- Parallel `runSubagent`: 6+ (all return, no premium cost)
 - Parallel cloud agents: 50+ (no practical limit)
 - Local sessions via `code chat -n`: 5-10 (system resources)
+- Subagents do NOT count toward TL's 4-item capacity
 
 ## Solo mode (one agent can run the whole system)
 

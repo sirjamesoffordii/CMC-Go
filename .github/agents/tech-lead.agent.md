@@ -92,13 +92,56 @@ Before delegating, score the task:
 
 **Complexity-based agent routing:**
 
-- 0-2: Cloud Agent (copilot-coding-agent tool, GitHub default model)
-- 3-4: Software Engineer (SWE) agent (GPT-5.2-Codex)
-- 5-6: SWE Opus agent (Claude Opus 4.5)
+- 0-1: SWE Basic (GPT 4.1, 0× cost) — trivial tasks
+- 0-2: Cloud Agent (GitHub default) — simple async tasks
+- 2-4: Software Engineer (SWE) agent (GPT-5.2-Codex, 1× cost)
+- 5-6: SWE Opus agent (Claude Opus 4.5, 3× cost)
 
 **Model is set by agent variant.** To select a model, choose the agent name. You cannot override the model at runtime.
 
+**TL always uses Opus 4.5** — your job is coordination/judgment, never downgrade your model.
+
 ## Execution Model
+
+**The key insight:** Subagents report back directly to you (blocking); delegated sessions communicate via GitHub (non-blocking).
+
+### Subagents (`runSubagent`) — When You NEED the Answer
+
+Use subagents for:
+- Research/analysis before delegating
+- Quick verification ("does this PR look right?")
+- Design decisions where you need synthesis
+- Complex implementation where you need the result before continuing
+
+**Subagents do NOT count toward your 4-item capacity.** They're internal help, not parallel work.
+
+**Model selection by task:**
+- Trivial (score 0-1): `runSubagent("SWE Basic")` — GPT 4.1 (free)
+- Standard (score 2-4): `runSubagent("Software Engineer (SWE)")` — GPT-5.2
+- Complex (score 5-6): `runSubagent("SWE Opus")` — Opus 4.5
+
+**Parallel research pattern (tested):**
+
+```
+# Spawn 4 agents in parallel for research
+runSubagent([
+  "SWE Opus: Research architecture for Issue #1-3",
+  "SWE Opus: Research testing for Issue #4-6",
+  "SWE Basic: Check docs consistency",
+  "SWE: Analyze test coverage gaps"
+])
+# TL blocked, but all 4 run concurrently
+# All findings return → TL synthesizes and acts
+```
+
+### Delegated Sessions — When You Want to Continue Working
+
+Use delegated sessions for:
+- Implementation work you don't need to wait for
+- Scaling to multiple parallel tasks
+- Bulk work (5+ issues)
+
+**Delegated sessions COUNT toward your 4-item capacity.** They require polling/review.
 
 ### Cloud agents (primary async method)
 
@@ -116,36 +159,6 @@ gh agent-task create "Implement Issue #42" --base staging
 gh agent-task list -L 10  # Check status
 ```
 
-### Local agents (runSubagent)
-
-When you call `runSubagent`:
-
-- **Blocking** — you wait for the result
-- Agent executes, then returns ONE message
-- **Does NOT consume premium requests** — safe to spawn many
-- Use for research, verification, or tasks where you NEED the answer
-
-**Parallel research pattern (tested):**
-
-```
-# Spawn 4 Opus agents in parallel for research
-runSubagent([
-  "SWE Opus: Research architecture for Issue #1-3",
-  "SWE Opus: Research testing for Issue #4-6",
-  "SWE Opus: Research security for Issue #7-10",
-  "SWE Opus: Research performance implications"
-])
-# TL blocked, but all 4 run concurrently
-# All findings return → TL synthesizes and acts
-```
-
-**When to use local agents:**
-
-- Need result immediately (e.g., "what does this code do?")
-- Research/analysis where you need to combine findings
-- Verification tasks (need verdict before proceeding)
-- Complex judgment calls requiring premium models
-
 ### Scaling strategy
 
 | Need                             | Solution                                   |
@@ -156,7 +169,7 @@ runSubagent([
 | Bulk tasks (10+ issues)          | Multiple `gh agent-task` (fire and forget) |
 | Need judgment on complex problem | Do it yourself (TL has best model)         |
 
-### Terminal-based spawning (NEW)
+### Terminal-based spawning
 
 TL can spawn agents via terminal commands that don't block:
 
