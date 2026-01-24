@@ -7,6 +7,10 @@
     "terminal.integrated.focusAfterRun": "none",
     "terminal.integrated.showOnError": false,
     "chat.agent.terminal.focusOnExecution": false,
+
+    // MCP servers (Copilot tools)
+    "chat.mcp.gallery.enabled": true,
+    "chat.mcp.autostart": true,
     
     // Auto-close task terminals without "press any key" prompt
     "task.showDecorations": false,

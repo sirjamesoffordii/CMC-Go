@@ -3,13 +3,16 @@
 > **Note:** These hooks apply to **Claude Code** (bash-based hook system). **VS Code Copilot agents do not support Claude Code hooks**, so these configurations are not active in Copilot sessions. Use them only in Claude Code environments.
 
 ## Overview
+
 This guide documents practical hooks for the CMC Go workflow, based on reference patterns from:
+
 - `_external/everything-claude-code/hooks/hooks.json`
 - `_external/everything-claude-code/skills/continuous-learning/evaluate-session.sh`
 
 Hooks are configured in Claude Code settings (typically `~/.claude/settings.json`) and are driven by hook **events** plus **matchers**.
 
 ## Available Hook Events (common)
+
 Claude Code supports these primary events:
 
 - **SessionStart** — runs at the start of a session
@@ -23,6 +26,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ## Hooks Patterns for CMC Go
 
 ### 1) Pre-push review pauses
+
 **What it does:** Pauses before `git push` so you can review changes.
 
 **Trigger:** `PreToolUse` with Bash commands that include `git push`.
@@ -30,6 +34,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 **Why it’s useful:** Prevents accidental pushes and encourages a quick review.
 
 **Configuration:**
+
 ```json
 {
   "matcher": "tool == \"Bash\" && tool_input.command matches \"git push\"",
@@ -48,6 +53,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ---
 
 ### 2) Auto-format after edits (Prettier)
+
 **What it does:** Runs Prettier on `.ts/.tsx/.js/.jsx` files after edits.
 
 **Trigger:** `PostToolUse` on `Edit` tool when file extension matches JS/TS.
@@ -55,6 +61,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 **Why it’s useful:** Keeps formatting consistent without manual steps.
 
 **Configuration:**
+
 ```json
 {
   "matcher": "tool == \"Edit\" && tool_input.file_path matches \\\"\\\\.(ts|tsx|js|jsx)$\\\"",
@@ -73,15 +80,18 @@ Other events may exist depending on Claude Code version, but these are the commo
 ---
 
 ### 3) Console.log warnings
+
 **What it does:** Warns when `console.log` is present in edited files and again at session end for modified files.
 
 **Triggers:**
+
 - `PostToolUse` for individual edits
 - `Stop` for a final audit of modified files
 
 **Why it’s useful:** Prevents debug noise from shipping.
 
 **Configuration (PostToolUse):**
+
 ```json
 {
   "matcher": "tool == \"Edit\" && tool_input.file_path matches \\\"\\\\.(ts|tsx|js|jsx)$\\\"",
@@ -96,6 +106,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ```
 
 **Configuration (Stop):**
+
 ```json
 {
   "matcher": "*",
@@ -114,9 +125,11 @@ Other events may exist depending on Claude Code version, but these are the commo
 ---
 
 ### 4) Session state persistence
+
 **What it does:** Saves session state before compaction and restores it on new sessions.
 
 **Triggers:**
+
 - `PreCompact` — save state
 - `SessionStart` — load state
 - `Stop` — persist state on end
@@ -124,13 +137,17 @@ Other events may exist depending on Claude Code version, but these are the commo
 **Why it’s useful:** Preserves context across long sessions.
 
 **Configuration:**
+
 ```json
 {
   "PreCompact": [
     {
       "matcher": "*",
       "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/memory-persistence/pre-compact.sh" }
+        {
+          "type": "command",
+          "command": "~/.claude/hooks/memory-persistence/pre-compact.sh"
+        }
       ],
       "description": "Save state before context compaction"
     }
@@ -139,7 +156,10 @@ Other events may exist depending on Claude Code version, but these are the commo
     {
       "matcher": "*",
       "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/memory-persistence/session-start.sh" }
+        {
+          "type": "command",
+          "command": "~/.claude/hooks/memory-persistence/session-start.sh"
+        }
       ],
       "description": "Load previous context on new session"
     }
@@ -148,7 +168,10 @@ Other events may exist depending on Claude Code version, but these are the commo
     {
       "matcher": "*",
       "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/memory-persistence/session-end.sh" }
+        {
+          "type": "command",
+          "command": "~/.claude/hooks/memory-persistence/session-end.sh"
+        }
       ],
       "description": "Persist session state on end"
     }
@@ -161,6 +184,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ---
 
 ### 5) Continuous learning skill extraction
+
 **What it does:** Evaluates sessions at end and signals which patterns are reusable.
 
 **Trigger:** `Stop`
@@ -170,6 +194,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 **Reference logic:** `_external/everything-claude-code/skills/continuous-learning/evaluate-session.sh` uses `CLAUDE_TRANSCRIPT_PATH`, requires a minimum session length, and writes learned skills under `~/.claude/skills/learned/`.
 
 **Configuration:**
+
 ```json
 {
   "matcher": "*",
@@ -188,6 +213,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ---
 
 ## Example Full Hooks Configuration (Claude Code)
+
 ```json
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
@@ -230,7 +256,10 @@ Other events may exist depending on Claude Code version, but these are the commo
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "~/.claude/hooks/memory-persistence/pre-compact.sh" }
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/memory-persistence/pre-compact.sh"
+          }
         ],
         "description": "Save state before context compaction"
       }
@@ -239,7 +268,10 @@ Other events may exist depending on Claude Code version, but these are the commo
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "~/.claude/hooks/memory-persistence/session-start.sh" }
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/memory-persistence/session-start.sh"
+          }
         ],
         "description": "Load previous context on new session"
       }
@@ -248,14 +280,20 @@ Other events may exist depending on Claude Code version, but these are the commo
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "~/.claude/hooks/memory-persistence/session-end.sh" }
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/memory-persistence/session-end.sh"
+          }
         ],
         "description": "Persist session state on end"
       },
       {
         "matcher": "*",
         "hooks": [
-          { "type": "command", "command": "~/.claude/skills/continuous-learning/evaluate-session.sh" }
+          {
+            "type": "command",
+            "command": "~/.claude/skills/continuous-learning/evaluate-session.sh"
+          }
         ],
         "description": "Evaluate session for extractable patterns"
       }
@@ -265,6 +303,7 @@ Other events may exist depending on Claude Code version, but these are the commo
 ```
 
 ## Practical Notes for CMC Go
+
 - **Copilot limitation:** These hooks do not run in VS Code Copilot agent sessions.
 - **Prettier path:** Prefer `pnpm exec prettier` if you want the repo-local Prettier version.
 - **Git state checks:** The Stop hook assumes a git repo; if running outside, it silently no-ops.
