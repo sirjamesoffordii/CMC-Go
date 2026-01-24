@@ -91,11 +91,13 @@ Before delegating, score the task:
 | **Scope**     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
 | **Ambiguity** | Clear spec     | Some unknowns | Needs exploration         |
 
-**Sum → Execution path:**
+**Complexity-based agent routing:**
 
-- 0-2: Cloud Agent (simple, fire-and-forget)
-- 3-4: Local SWE with GPT-5.2-Codex
-- 5-6: Local SWE with Claude Opus 4.5
+- 0-2: Cloud Agent (copilot-coding-agent tool, GitHub default model)
+- 3-4: Software Engineer (SWE) agent (GPT-5.2-Codex)
+- 5-6: SWE Opus agent (Claude Opus 4.5)
+
+**Model is set by agent variant.** To select a model, choose the agent name. You cannot override the model at runtime.
 
 ## Execution Model
 
@@ -342,7 +344,6 @@ The cloud agent will:
 - Set Project status → In Progress
 - For local: You're blocked until SWE finishes
 - For cloud: Continue with other coordination work
-- Continue with other coordination work (don't wait)
 
 ### 8. End-of-Task Reflection (mandatory)
 
@@ -436,13 +437,13 @@ Score the task to select the right executor and model for Software Engineer:
 | Scope     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
 | Ambiguity | Clear spec     | Some unknowns | Needs design/research     |
 
-**Total Score → Execution Path:**
+**Total Score → Agent Selection:**
 
-| Score | Executor                | Model            | Token Cost    |
+| Score | Agent Name              | Model            | Token Cost    |
 | ----- | ----------------------- | ---------------- | ------------- |
-| 0–2   | Cloud Agent             | (GitHub default) | Dedicated SKU |
-| 3–4   | Local Software Engineer | GPT-5.2-Codex    | 1 token       |
-| 5–6   | Local Software Engineer | Claude Opus 4.5  | 3 tokens      |
+| 0-2   | Cloud Agent             | (GitHub default) | Dedicated SKU |
+| 3-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×            |
+| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×            |
 
 **Tech Lead never implements complex features.** Always delegate score 5-6 work to Software Engineer with Opus 4.5.
 

@@ -11,6 +11,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 | **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation |
 | **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification               |
 | **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only             |
+| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | Complex implementation (score 5-6)         |
 
 ## Read-first
 
@@ -214,7 +215,9 @@ Do not create new Issues — only implement what's assigned.
 
 ## Model Selection
 
-Score issues to select the right model and execution path:
+**Model is set by agent variant.** You cannot override at runtime — choose the agent name to select the model.
+
+Score issues to select the right agent:
 
 | Factor    | 0 (Low)        | 1 (Med)       | 2 (High)                  |
 | --------- | -------------- | ------------- | ------------------------- |
@@ -222,30 +225,70 @@ Score issues to select the right model and execution path:
 | Scope     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
 | Ambiguity | Clear spec     | Some unknowns | Needs design/research     |
 
-**Total Score → Execution Path:**
+**Total Score → Agent Selection:**
 
-| Score | Executor                | Model            | Token Cost    |
+| Score | Agent Name              | Model            | Token Cost    |
 | ----- | ----------------------- | ---------------- | ------------- |
 | 0-2   | Cloud Agent             | (GitHub default) | Dedicated SKU |
-| 3-4   | Local Software Engineer | GPT-5.2-Codex    | 1×            |
-| 5-6   | Local Software Engineer | Claude Opus 4.5  | 3×            |
+| 3-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×            |
+| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×            |
 
 **Role defaults:**
 
 - **Tech Lead:** Claude Opus 4.5 (coordination requires judgment)
-- **Software Engineer:** GPT-5.2-Codex (implementation is usually score 3-4)
+- **Software Engineer:** GPT-5.2-Codex (score 3-4)
+- **SWE Opus:** Claude Opus 4.5 (score 5-6)
 - **Cloud Agent:** GitHub default (simple issues only)
+
+**Agent name must be exact.** Use `"Software Engineer (SWE)"` or `"SWE Opus"` — partial names fall back to default model.
 
 ## Standard workflow
 
 1. Tech Lead makes the work executable (Goal/Scope/AC + verification checklist)
-2. Tech Lead scores complexity and selects execution path:
-   - Score 0-2: Cloud Agent (label `agent:copilot-swe`)
-   - Score 3-4: Local Software Engineer with GPT-5.2-Codex
-   - Score 5-6: Local Software Engineer with Claude Opus 4.5
+2. Tech Lead scores complexity and selects agent:
+   - Score 0-2: Cloud Agent (label `agent:copilot-swe` or `copilot-coding-agent` tool)
+   - Score 3-4: `runSubagent("Software Engineer (SWE)")` — GPT-5.2-Codex
+   - Score 5-6: `runSubagent("SWE Opus")` — Claude Opus 4.5
 3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
 4. "Done" requires evidence (commands/results + links)
 5. Update Projects v2 as you go (board reflects reality)
+
+## Agent Spawning Behavior (tested)
+
+These behaviors were empirically verified:
+
+### Premium requests
+
+**Spawning subagents does NOT consume premium requests.** Premium request % only increases when the main session user sends a message. You can safely spawn as many premium subagents (Tech Lead, SWE Opus) as needed without burning premium quota.
+
+### Spawning hierarchy
+
+```
+PRIMARY TL (has runSubagent tool)
+├── Can spawn local SWE ✅
+├── Can spawn local TL ✅
+├── Can spawn cloud agents ✅
+│
+└── SPAWNED agents (no runSubagent tool)
+    ├── Cannot spawn local agents ❌
+    └── CAN spawn cloud agents ✅
+```
+
+Only the **primary agent session** has access to `runSubagent`. Spawned agents can only delegate via cloud agents.
+
+### Parallel spawning
+
+TL can spawn **multiple agents in parallel** in a single call:
+
+```
+runSubagent([SWE-1, SWE-2, SWE-3, SWE-4])  // All run in parallel
+```
+
+TL is blocked until all return, but they execute concurrently. No hard limit found (tested up to 6).
+
+### Context inheritance
+
+Spawned agents inherit workspace context (repo name, branch, project structure). They can answer questions about the codebase without reading files first.
 
 ## Solo mode (one agent can run the whole system)
 
