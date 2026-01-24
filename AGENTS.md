@@ -28,6 +28,24 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ---
 
+## Premium Request Quotas (how billing works)
+
+**GitHub Copilot Pro includes 1,500 premium requests/month.** Each model has a different "weight":
+
+| Model | Approximate Cost | Use Case |
+|-------|------------------|----------|
+| GPT 4.1 | 0× (included) | Trivial tasks, no premium cost |
+| GPT-5.2-Codex | 1× | Code implementation |
+| GPT-5.2 | 1× | General reasoning |
+| Claude Opus 4.5 | 3× | Complex thinking, coordination |
+| Cloud Agent | Dedicated SKU | Async work (separate quota) |
+
+**Where to check usage:**
+- **Authoritative:** https://github.com/settings/billing → Premium request analytics
+- **VS Code sidebar:** May show cached/session-specific values (less reliable)
+
+**Subagents DO consume premium requests.** Each `runSubagent` call uses the selected model's quota. Choose models wisely.
+
 ## Agents
 
 Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
@@ -344,6 +362,26 @@ Score tasks before selecting an agent:
 | 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | Standard implementation, tests, refactors |
 | 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | Complex, cross-cutting, design ambiguity  |
 
+### Task Type → Model Selection
+
+Beyond complexity score, consider **what type of work** the agent is doing:
+
+| Task Type | Recommended Model | Why |
+|-----------|-------------------|-----|
+| **Implementation** (writing code) | GPT-5.2-Codex (1×) | Optimized for code generation |
+| **Thinking/Planning** (score 1-3) | GPT-5.2-Codex (1×) | Good enough for moderate complexity |
+| **Thinking/Planning** (score 4-6) | Claude Opus 4.5 (3×) | Complex reasoning needs premium |
+| **Exploration/Research** | GPT-5.2-Codex (1×) | Code-aware, cost-effective |
+| **Verification/Review** | Claude Opus 4.5 (3×) | Judgment calls need premium |
+| **Trivial tasks** | GPT 4.1 (0×) | Free, good for docs/comments |
+
+**TL subagent model selection:**
+- Subagent doing **implementation** → GPT-5.2-Codex
+- Subagent doing **research/exploration** → GPT-5.2-Codex
+- Subagent doing **verification/review** → Claude Opus 4.5
+- Subagent doing **planning/coordination** (score 4+) → Claude Opus 4.5
+- Subagent doing **trivial work** → GPT 4.1
+
 ### Role Model Requirements
 
 | Role          | Required Model  | Why                                              |
@@ -365,12 +403,18 @@ There are two fundamentally different ways to get help from other agents:
 
 - **Blocking** — you wait for the result
 - **Internal** — result comes back in the same session
-- **Free** — does NOT consume premium requests
-- **Unlimited** — spawn as many as needed (tested: 6+ in parallel)
+- **Uses quota** — each subagent call consumes premium requests based on model
+- **Unlimited count** — spawn as many as needed (tested: 6+ in parallel)
 - **Full powers** — subagents can do REAL WORK (edit files, run commands, commit, push)
 - **Best for:** Research, analysis, verification, implementation with tight coordination
 
+**Choose subagent model wisely to manage costs:**
+- GPT 4.1 (0×) — trivial tasks
+- GPT-5.2-Codex (1×) — implementation, research
+- Claude Opus 4.5 (3×) — complex thinking, verification
+
 **Subagents do REAL WORK, not just research:**
+
 - ✅ Edit and create files
 - ✅ Run terminal commands
 - ✅ Commit and push to git
@@ -389,6 +433,7 @@ There are two fundamentally different ways to get help from other agents:
 ### Subagent Execution Model (critical to understand)
 
 **Parallel batches are all-or-nothing:**
+
 ```
 TL sends: [Agent1, Agent2, Agent3]  // All start in parallel
          ↓
@@ -406,6 +451,7 @@ NOW TL can send another batch
 **You cannot peel off partial results.** But after a batch completes, TL can immediately send another batch without user intervention.
 
 **TL can loop autonomously:**
+
 ```
 TL Session (no user prompts needed between batches):
   1. Send batch 1: [Research-Agent1, Research-Agent2]
@@ -471,12 +517,14 @@ TL Session (Opus 4.5, runs autonomously)
 ```
 
 **When to prefer subagents for implementation:**
+
 - Tasks depend on each other (need to sequence)
 - Need to synthesize results across tasks
 - Want tighter quality control
 - Complex coordination required
 
 **When to prefer delegated sessions:**
+
 - Tasks are truly independent
 - High volume of simple tasks
 - TL has other coordination work to do
@@ -574,14 +622,14 @@ code chat -n -m agent "Your task description"
 
 ### Quick Decision
 
-| Need                    | Method                   | Blocking?         | Model          |
-| ----------------------- | ------------------------ | ----------------- | -------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)   |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)  |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
+| Need                    | Method                   | Blocking?         | Model           |
+| ----------------------- | ------------------------ | ----------------- | --------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need  |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default  |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)    |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)   |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default  |
 
 ### The Pattern
 
@@ -594,7 +642,7 @@ code chat -n -m agent "Your task description"
 
 ### Tested Limits
 
-- Parallel `runSubagent`: 6+ (all return, no premium cost)
+- Parallel `runSubagent`: 6+ (all return)
 - Parallel cloud agents: 50+ (no practical limit)
 - Local sessions via `code chat -n`: 5-10 (system resources)
 - Subagents do NOT count toward TL's 4-item capacity
@@ -676,14 +724,14 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Quick Decision
 
-| Need                    | Method                   | Blocking?         | Model          |
-| ----------------------- | ------------------------ | ----------------- | -------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes (but free) | Varies by need |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes (but free) | GPT-5.2 (1×)   |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes (but free) | Opus 4.5 (3×)  |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
+| Need                    | Method                   | Blocking?         | Model           |
+| ----------------------- | ------------------------ | ----------------- | --------------- |
+| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)    |
+| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need  |
+| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default  |
+| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)    |
+| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)   |
+| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default  |
 
 ### The Pattern
 
@@ -696,7 +744,7 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Tested Limits
 
-- Parallel `runSubagent`: 6+ (all return, no premium cost)
+- Parallel `runSubagent`: 6+ (all return)
 - Parallel cloud agents: 50+ (no practical limit)
 - Local sessions via `code chat -n`: 5-10 (system resources)
 - Subagents do NOT count toward TL's 4-item capacity
