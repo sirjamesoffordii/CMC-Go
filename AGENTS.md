@@ -317,7 +317,20 @@ code chat -n -m agent "Your task description"
 
 ### Premium requests
 
-**Spawning subagents does NOT consume premium requests.** Premium request % only increases when the main session user sends a message. You can safely spawn as many premium subagents (Tech Lead, SWE Opus) as needed without burning premium quota.
+**Local subagents (`runSubagent`) do NOT consume premium requests.** Premium request % only increases when the main session user sends a message. You can safely spawn as many local subagents (Tech Lead, SWE Opus) as needed without burning premium quota.
+
+**Cloud agents (`gh agent-task`, `copilot-coding-agent`) use dedicated infrastructure.** These run on GitHub's cloud and may have separate quotas/billing. They don't affect your local premium request count.
+
+### Use Cases by Agent Type
+
+| Use Case | Best Method | Why |
+|----------|-------------|-----|
+| **Research/Analysis** | `runSubagent` (parallel) | Get results back, combine findings |
+| **Quick verification** | `runSubagent` (single) | Need verdict before proceeding |
+| **Simple implementation** | Cloud agent | Fire-and-forget, don't wait |
+| **Bulk simple tasks** | Multiple cloud agents | Scale to 50+ in parallel |
+| **Complex implementation** | `runSubagent` (SWE Opus) | Need premium model, get result |
+| **Local parallel work** | `code chat -n` | Multiple VS Code windows |
 
 ### Spawning hierarchy
 
@@ -372,6 +385,107 @@ Cloud agents:
 ### Context inheritance
 
 Spawned agents inherit workspace context (repo name, branch, project structure). They can answer questions about the codebase without reading files first.
+
+## Ultimate Scalable Workflow (tested)
+
+This workflow enables **50+ parallel agents** while Tech Lead continues coordinating.
+
+### The Pattern: Dispatch → Continue → Poll
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         TECH LEAD                               │
+│                                                                 │
+│  1. RESEARCH PHASE (blocking but parallel)                      │
+│     └── Spawn 4 Opus agents via runSubagent (parallel)          │
+│         └── All return findings → TL synthesizes                │
+│                                                                 │
+│  2. DISPATCH PHASE (non-blocking)                               │
+│     └── For each task:                                          │
+│         ├── Score 0-2: gh agent-task create (cloud)             │
+│         ├── Score 3-4: gh agent-task create --custom-agent swe  │
+│         └── Score 5-6: runSubagent (need result) OR cloud       │
+│                                                                 │
+│  3. CONTINUE PHASE (TL keeps working)                           │
+│     └── While agents work:                                      │
+│         ├── Coordinate other work                               │
+│         ├── Answer blocked agents                               │
+│         └── Poll: gh agent-task list                            │
+│                                                                 │
+│  4. HARVEST PHASE (gather results)                              │
+│     └── Review PRs, merge, update board                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Example: Processing 10 Issues in Parallel
+
+```powershell
+# Step 1: Research (if needed) - parallel blocking
+runSubagent([
+  "SWE Opus: Analyze Issue #1-3 architecture impact",
+  "SWE Opus: Analyze Issue #4-6 test coverage needs", 
+  "SWE Opus: Analyze Issue #7-10 security implications"
+])
+# → TL blocked, but all 3 run concurrently, return findings
+
+# Step 2: Dispatch (non-blocking) - fire and forget
+gh agent-task create "Implement Issue #1" --base staging
+gh agent-task create "Implement Issue #2" --base staging
+gh agent-task create "Implement Issue #3" --base staging
+# ... up to 10+
+# → Each returns immediately, TL continues
+
+# Step 3: TL continues with coordination
+# - Update project board
+# - Create more issues
+# - Answer questions from blocked agents
+
+# Step 4: Poll for completion
+gh agent-task list -L 20
+# → Review completed PRs, merge, repeat
+```
+
+### Scaling Limits (tested)
+
+| Resource | Limit | Notes |
+|----------|-------|-------|
+| Parallel `runSubagent` | 6+ | Blocked until all return |
+| Parallel cloud agents | 50+ | No practical limit found |
+| `code chat` windows | ~5-10 | Limited by system resources |
+| PRs from cloud agents | Unlimited | Each agent creates 1 PR |
+
+### Scripts for Automation
+
+```powershell
+# Spawn single cloud agent
+.\scripts\spawn-cloud-agent.ps1 -Prompt "Fix bug X" -BaseBranch staging
+
+# Spawn multiple cloud agents in parallel
+.\scripts\spawn-cloud-agents-parallel.ps1 -IssueNumbers 42,43,44,45
+
+# Spawn local agent in worktree
+.\scripts\spawn-worktree-agent.ps1 -Worktree wt-impl-42 -Prompt "Implement feature"
+```
+
+### When to Use What
+
+| Scenario | Method | Blocking? | Token Cost |
+|----------|--------|-----------|------------|
+| **Need answer now** | `runSubagent` | ✅ Yes | Local (free) |
+| **Research/analysis** | `runSubagent` (parallel) | ✅ Yes | Local (free) |
+| **Simple implementation** | `gh agent-task create` | ❌ No | Cloud SKU |
+| **Bulk tasks (10+)** | Multiple `gh agent-task` | ❌ No | Cloud SKU |
+| **Complex, need result** | `runSubagent` (SWE Opus) | ✅ Yes | Local (free) |
+| **Local parallel** | `code chat -n` | ❌ No | Shared sub |
+
+### The Golden Rule
+
+**Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.**
+
+- Research before acting? → `runSubagent` (get findings back)
+- Fire-and-forget implementation? → Cloud agent (don't wait)
+- Need judgment call? → Do it yourself (TL has best model)
+- Scale to 50 tasks? → Cloud agents (no blocking)
 
 ## Solo mode (one agent can run the whole system)
 

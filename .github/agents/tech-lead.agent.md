@@ -103,12 +103,18 @@ Before delegating, score the task:
 
 ### Cloud agents (primary async method)
 
-Use `github-pull-request_copilot-coding-agent` tool or apply `agent:copilot-swe` label:
+Use `github-pull-request_copilot-coding-agent` tool, `gh agent-task create`, or apply `agent:copilot-swe` label:
 
 - **Non-blocking** — TL continues working immediately
 - Agent creates branch, implements, opens PR
-- TL finds out via PR notification or board polling
+- TL finds out via `gh agent-task list` or board polling
 - Best for simple issues (score 0-2)
+
+**CLI spawning (recommended for scaling):**
+```powershell
+gh agent-task create "Implement Issue #42" --base staging
+gh agent-task list -L 10  # Check status
+```
 
 ### Local agents (runSubagent)
 
@@ -116,22 +122,50 @@ When you call `runSubagent`:
 
 - **Blocking** — you wait for the result
 - Agent executes, then returns ONE message
-- Use for verification or quick tasks where you need the answer
+- **Does NOT consume premium requests** — safe to spawn many
+- Use for research, verification, or tasks where you NEED the answer
 
-**When to use local SWE:**
+**Parallel research pattern (tested):**
+```
+# Spawn 4 Opus agents in parallel for research
+runSubagent([
+  "SWE Opus: Research architecture for Issue #1-3",
+  "SWE Opus: Research testing for Issue #4-6",
+  "SWE Opus: Research security for Issue #7-10",
+  "SWE Opus: Research performance implications"
+])
+# TL blocked, but all 4 run concurrently
+# All findings return → TL synthesizes and acts
+```
+
+**When to use local agents:**
 
 - Need result immediately (e.g., "what does this code do?")
+- Research/analysis where you need to combine findings
 - Verification tasks (need verdict before proceeding)
-- Quick fixes where waiting is faster than polling later
+- Complex judgment calls requiring premium models
 
 ### Scaling strategy
 
 | Need                             | Solution                                   |
 | -------------------------------- | ------------------------------------------ |
-| Simple parallel work (0-2)       | Cloud Agent (non-blocking)                 |
+| Research/analysis                | Parallel `runSubagent` (get results back)  |
+| Simple parallel work (0-2)       | `gh agent-task create` (non-blocking)      |
 | Complex work, need result now    | Local SWE via runSubagent (blocking is OK) |
-| Too much work for one TL         | Spawn secondary TL via runSubagent         |
+| Bulk tasks (10+ issues)          | Multiple `gh agent-task` (fire and forget) |
 | Need judgment on complex problem | Do it yourself (TL has best model)         |
+
+### Terminal-based spawning (NEW)
+
+TL can spawn agents via terminal commands that don't block:
+
+```powershell
+# Spawn cloud agent (returns immediately)
+gh agent-task create "Task description" --base staging
+
+# Spawn local agent in new VS Code window
+code chat -n -m agent "Task description"
+```
 
 ## Polling Strategy (critical)
 
@@ -149,6 +183,11 @@ Check for issues where Status = "Blocked" OR "Verify":
 
 - **Blocked** = Agent needs input or decision
 - **Verify** = PR ready for review
+
+Also check cloud agent status:
+```powershell
+gh agent-task list -L 10  # See all agent tasks
+```
 
 ### How to poll
 
