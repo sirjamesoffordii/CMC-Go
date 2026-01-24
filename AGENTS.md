@@ -2,6 +2,32 @@
 
 This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead does (label/approve/merge) in a hands-off workflow.
 
+## Quick Start (30 seconds to working)
+
+**Run these immediately at session start:**
+
+```powershell
+# 1. Verify environment (run VS Code task)
+#    Task: "Agent: Health check"
+
+# 2. Check board state
+gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | ConvertFrom-Json | Select-Object -ExpandProperty items | Format-Table number, title, status
+
+# 3. Find your work
+#    - If Status = "In Progress" assigned to you → continue it
+#    - If Status = "Todo" → pick highest priority, set to In Progress
+#    - If board empty → see "Cold Start" section below
+```
+
+**Then execute your role:**
+
+- **Tech Lead:** Coordinate → delegate → poll board
+- **Software Engineer:** EXPLORE → IMPLEMENT → VERIFY → reflect
+
+**That's it. Start working.**
+
+---
+
 ## Agents
 
 Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
@@ -612,75 +638,33 @@ Escalation template:
 - **What changed:** bullets
 - **How verified:** commands + results
 - **Risk:** low/med/high + why
-- **End-of-Task Reflection:** (required section, see below)
 
-## End-of-Task Reflection (mandatory)
+## End-of-Task Reflection (10 seconds)
 
-**Every task ends with two checks. Both are required, even if no changes are made.**
-
-### Pre-check (before recommending changes)
-
-Before making any recommendation, review current state of:
-
-- `AGENTS.md`
-- `.github/copilot-instructions.md`
-- Your active role file (`.github/agents/*.agent.md`)
-- `.github/agents/reference/CMC_GO_PATTERNS.md`
-
-Purpose: avoid duplication, avoid contradictions, ensure alignment with current system intent.
-
-### Evaluation questions
-
-**Workflow Improvement Check — ask yourself:**
-
-- Did the current workflow slow execution?
-- Did agents hesitate, duplicate work, or require clarification?
-- Did board state or routing create friction?
-- Was there unnecessary back-and-forth or ambiguity?
-
-**Pattern Learning Check — ask yourself:**
-
-- Did this task reveal a new recurring pattern?
-- Did it expose an anti-pattern or failure mode?
-- Did it refine or contradict an existing pattern?
-- Would another agent benefit from knowing this?
-
-### Required output format
-
-Every PR (or final task report) MUST include:
+**Every PR includes two lines. That's it.**
 
 ```markdown
-## End-of-Task Reflection (Required)
+## End-of-Task Reflection
 
-### Workflow Improvement Check
-
-- Recommendation: Changes recommended / No changes recommended
-- Rationale: (brief)
-- If changes recommended: files edited + summary + tradeoffs/risks
-
-### Pattern Learning Check
-
-- Recommendation: Changes recommended / No changes recommended
-- Rationale: (brief)
-- If changes recommended: files edited + summary + tradeoffs/risks
+- **Workflow:** No changes / [file] — [change]
+- **Patterns:** No changes / [file] — [change]
 ```
 
-### When "Changes recommended"
+### Decision tree (think, don't write)
 
-1. **Implement the changes** — actual file edits, not just suggestions
-2. **Changes may be large** — additions, removals, or rewrites are all valid
-3. **Ensure coherence** — no contradictions across: AGENTS.md, copilot-instructions.md, role files, CMC_GO_PATTERNS.md
-4. **Explain briefly:**
-   - What you experienced
-   - Why the current approach was suboptimal
-   - Why the proposed change improves future execution
-   - Tradeoffs / risks
+1. Did something waste your time that docs could have prevented? → Edit the doc
+2. Did you solve a non-obvious problem others will hit? → Add to CMC_GO_PATTERNS.md
+3. Neither? → Write "No changes" and move on
 
-### Authority
+**Don't grep, don't explain, don't ask permission.** If you have something to add, add it. If not, write "No changes" and you're done.
 
-- No files are untouchable — agents may edit AGENTS.md, copilot-instructions.md, role files, and patterns directly
-- Tech Lead (TL) remains the final arbiter through PR approval/rejection
-- Priority is coherence, clarity, and long-term system effectiveness
+### If adding a pattern
+
+Add directly to `CMC_GO_PATTERNS.md` under the right category. Keep it to 2-3 lines max.
+
+### If editing workflow docs
+
+Make surgical edits. Avoid contradictions. TL reviews via PR approval.
 
 ## Verification verdict (minimum)
 

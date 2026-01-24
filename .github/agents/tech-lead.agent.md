@@ -389,56 +389,20 @@ The cloud agent will:
 
 ### 8. End-of-Task Reflection (mandatory)
 
-**Every task ends with two checks. Both are required, even if no changes are made.**
-
-Before recommending changes, review:
-
-- `AGENTS.md`
-- `.github/copilot-instructions.md`
-- This file (`tech-lead.agent.md`)
-- `.github/agents/reference/CMC_GO_PATTERNS.md`
-
-### Workflow Improvement Check
-
-Evaluate:
-
-- Did the current workflow slow execution?
-- Did agents hesitate, duplicate work, or require clarification?
-- Did board state or routing create friction?
-- Was there unnecessary back-and-forth or ambiguity?
-
-Then declare: **"Changes recommended"** or **"No changes recommended"**
-
-### Pattern Learning Check
-
-Evaluate:
-
-- Did this task reveal a new recurring pattern?
-- Did it expose an anti-pattern or failure mode?
-- Did it refine or contradict an existing pattern?
-- Would another agent benefit from knowing this?
-
-Then declare: **"Changes recommended"** or **"No changes recommended"**
-
-### Required output (in PR or task report):
+**Every task ends with two lines.** See `AGENTS.md` → "End-of-Task Reflection".
 
 ```markdown
-## End-of-Task Reflection (Required)
+## End-of-Task Reflection
 
-### Workflow Improvement Check
-
-- Recommendation: Changes recommended / No changes recommended
-- Rationale: (brief)
-
-### Pattern Learning Check
-
-- Recommendation: Changes recommended / No changes recommended
-- Rationale: (brief)
+- **Workflow:** No changes / [file] — [change]
+- **Patterns:** No changes / [file] — [change]
 ```
 
-**If "Changes recommended":** Implement the edits directly. Explain what you experienced, why it was suboptimal, why the change helps, and any tradeoffs.
+**Decision tree:**
 
-See `AGENTS.md` → "End-of-Task Reflection" for full details.
+1. Did docs waste your time? → Fix the doc
+2. Did you solve something non-obvious? → Add to CMC_GO_PATTERNS.md
+3. Neither? → Write "No changes" and move on
 
 ## Reference docs
 

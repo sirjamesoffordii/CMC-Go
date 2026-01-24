@@ -108,6 +108,7 @@ Before opening PR:
 - [ ] Keep the diff minimal and scoped
 - [ ] Run evidence commands and include results
 - [ ] If verification task: include clear verdict (Pass / Pass-with-notes / Fail)
+- [ ] Include End-of-Task Reflection (even if "No changes")
 
 ## Completion Report
 

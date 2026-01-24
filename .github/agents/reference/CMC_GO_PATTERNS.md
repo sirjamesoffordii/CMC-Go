@@ -11,6 +11,18 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 - Keep this short: if it grows past ~20 items, prune or consolidate.
 - Prefer linking to the canonical source of truth (Issue/PR, code, schema) when possible.
 
+## Quick Index (ctrl+f friendly)
+
+| Keyword                                      | Jump to                                                              |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| `projects`, `board`, `status`                | [Projects v2 IDs](#github-projects-v2-ids-critical)                  |
+| `districts`, `map`, `svg`, `invariants`      | [Invariants](#invariants)                                            |
+| `worktree`, `diff`, `small`                  | [Workflow / hygiene](#workflow--hygiene)                             |
+| `terminal`, `stuck`, `pager`, `buffer`       | [Windows / Terminal Self-Recovery](#windows--terminal-self-recovery) |
+| `schema`, `drizzle`, `database`, `migration` | [Database / Schema Patterns](#database--schema-patterns)             |
+| `secret`, `token`, `auth`, `railway`         | [Secrets & Tokens](#secrets--tokens-universal-pattern)               |
+| `issue`, `executable`, `AC`                  | [Issue quality](#issue-quality-before-handoff-to-agent)              |
+
 ## When to use this
 
 Use this when you are:
@@ -298,3 +310,15 @@ railway redeploy      # if up fails
 ```
 
 Then verify with `railway logs -n 50`.
+
+## Session Start Checklist
+
+**First 30 seconds of any agent session:**
+
+1. Run VS Code task: `Agent: Health check` — confirms terminal, git, gh, node all work
+2. Check board: `gh project item-list 4 --owner sirjamesoffordii --limit 10`
+3. Find your work (In Progress > Todo > Cold Start)
+
+**If health check fails:** See "Windows / Terminal Self-Recovery" section above.
+
+**Pattern: Always run health check first.** It catches auth issues, terminal pager problems, and repo state issues before you waste time debugging mid-task.
