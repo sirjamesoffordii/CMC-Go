@@ -49,6 +49,45 @@ When activated, you receive:
 
 **If any of these are missing, ask Tech Lead to make the Issue executable before proceeding.**
 
+## Communication with Tech Lead
+
+**How `runSubagent` works:**
+
+- Tech Lead calls you with a prompt containing the task
+- You execute the task
+- You return a **single final message** (completion report OR blocked status)
+- Tech Lead receives your response
+
+**You cannot send messages mid-task.** Your response is your only communication back.
+
+### When you complete successfully
+
+Return a completion report (see Completion Protocol below).
+
+### When you get stuck or need clarification
+
+Return a **blocked status** with your question:
+
+```markdown
+## SWE Status: Blocked
+
+**Issue:** #[number]
+**Question:** [specific question]
+**Options:**
+A) [option]
+B) [option]
+C) [option]
+
+**What I've done so far:** [bullets]
+**Recommendation:** [A/B/C with rationale]
+```
+
+Tech Lead will receive this, answer, and call you again with the clarification.
+
+### For cloud agents (not local)
+
+If blocked, comment on the Issue with the question and set status to Blocked. Tech Lead will see it when scanning the board.
+
 ## Completion Protocol (critical)
 
 When you finish a task:

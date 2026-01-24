@@ -166,14 +166,32 @@ If count < 4 → delegate new work
 
 ### Handling stale/interrupted work
 
-If an Issue is "In Progress" for >4 hours without PR activity:
+**Time-based stale detection (complexity × 3 minutes):**
 
-1. Check Issue comments and linked PRs for status
-2. If agent was interrupted (VS Code closed, crash, etc.):
-   - Re-assign to new agent, OR
-   - Mark as Blocked with note, OR
-   - Move back to Todo if needs re-scoping
-3. Continue with other work
+| Complexity Score | Expected Max Time | If Exceeded |
+| ---------------- | ----------------- | ----------- |
+| 1                | 3 min             | Investigate |
+| 2                | 6 min             | Investigate |
+| 3                | 9 min             | Investigate |
+| 4                | 12 min            | Investigate |
+| 5                | 15 min            | Investigate |
+| 6                | 18 min            | Investigate |
+
+**When an agent exceeds expected time:**
+
+1. Check if agent is still producing output (for local agents)
+2. Check Issue comments for recent activity
+3. Check if PR exists and has recent commits
+4. For cloud agents: Check if bot is still assigned
+
+**Recovery actions:**
+
+- **Still working:** Let it continue
+- **Silent (no activity):** Re-assign to new agent
+- **Stuck on question:** Answer and re-delegate
+- **Session died:** Mark as Blocked or move back to Todo
+
+**On session start:** Tech Lead scans board for stale items (In Progress > expected time based on complexity) and recovers them.
 
 ### Scaling with multiple Tech Leads
 
