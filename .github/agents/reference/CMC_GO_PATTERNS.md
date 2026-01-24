@@ -15,6 +15,7 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 
 ```markdown
 ### [Short Title]
+
 **Tags:** database, auth
 **Problem:** What went wrong
 **Solution:** What fixed it
@@ -37,24 +38,28 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### database
 
 ### Schema is the source of truth
+
 **Tags:** database
 **Problem:** Drift between code and DB definitions.
 **Solution:** Treat `drizzle/schema.ts` as authoritative.
 **Prevention:** Update schema first, then application code.
 
 ### Safe schema changes
+
 **Tags:** database
 **Problem:** Breaking migrations.
 **Solution:** Add nullable/default columns first; push schema; update code; harden later.
 **Prevention:** Avoid immediate non-nullable changes in one step.
 
 ### Data invariants must not change
+
 **Tags:** database
 **Problem:** Map/import break when keys or enums change.
 **Solution:** Keep `districts.id`, `people.personId`, and status enums unchanged.
 **Prevention:** Validate against `client/public/map.svg` before edits.
 
 ### Seed/reset for consistent data
+
 **Tags:** database, testing
 **Problem:** Flaky local data.
 **Solution:** Use `pnpm db:seed` or `pnpm db:reset` for clean state.
@@ -63,12 +68,14 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### auth
 
 ### Secrets/tokens handling (universal)
+
 **Tags:** auth, terminal
 **Problem:** Need a secret without exposing it.
 **Solution:** Check env/CLI auth first; otherwise prompt via hidden terminal input; use immediately; clear.
 **Prevention:** Never paste secrets in chat; never log secret values.
 
 ### Railway vars require redeploy
+
 **Tags:** auth, deployment
 **Problem:** New secrets not picked up.
 **Solution:** Run `railway up --detach` (or `railway redeploy`) after setting vars.
@@ -77,12 +84,14 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### terminal
 
 ### Terminal recovery over escalation
+
 **Tags:** terminal
 **Problem:** Pager/alternate buffer hangs.
 **Solution:** Use tasks: `Agent: Recover terminal`, then `Agent: Health check`.
 **Prevention:** Prefer VS Code tasks for git/gh commands.
 
 ### Avoid editor hangs in git
+
 **Tags:** terminal, git
 **Problem:** Git commands open a blocking editor.
 **Solution:** Use `-c core.editor=true` or the provided tasks.
@@ -91,12 +100,14 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### worktree
 
 ### Use worktrees for implementation
+
 **Tags:** worktree
 **Problem:** Collisions on shared branches.
 **Solution:** Use `wt-impl-*` worktrees; keep changes isolated.
 **Prevention:** Only skip worktrees for ≤50 LOC, 1–2 files, no schema/auth/env.
 
 ### Keep diffs small
+
 **Tags:** worktree
 **Problem:** Large diffs slow review and increase risk.
 **Solution:** Make surgical changes; split work if needed.
@@ -105,6 +116,7 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### ci
 
 ### Evidence belongs in Issues/PRs
+
 **Tags:** ci, git
 **Problem:** Verification evidence gets lost in chat.
 **Solution:** Post commands/results in the Issue/PR thread.
@@ -113,6 +125,7 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 ### git
 
 ### Projects v2 IDs are repo-specific
+
 **Tags:** git
 **Problem:** Wrong IDs break project updates.
 **Solution:** Use the CMC Go Project 4 IDs below.
@@ -131,18 +144,21 @@ Status Options:
 ```
 
 ### Projects v2 status must match reality
+
 **Tags:** git
 **Problem:** TL loses track of actual progress.
 **Solution:** Update status at each milestone (In Progress → Blocked/Verify → Done).
 **Prevention:** Treat the board as the command center, not chat.
 
 ### Issues must be executable before handoff
+
 **Tags:** git
 **Problem:** Ambiguous issues slow or block agents.
 **Solution:** Provide Goal, behavior, files, constraints, and verification steps.
 **Prevention:** Use `.github/prompts/make-issue-executable.prompt.md`.
 
 ### Capture a reusable learning
+
 **Tags:** git
 **Problem:** The same pitfall repeats.
 **Solution:** Add a short Learning note in the Issue/PR; promote to this file if reusable.
@@ -151,6 +167,7 @@ Status Options:
 ### testing
 
 ### Use schema + seeds for tests
+
 **Tags:** testing, database
 **Problem:** Tests drift from real schema.
 **Solution:** Import from `drizzle/schema.ts` and seed as needed.
@@ -159,6 +176,7 @@ Status Options:
 ### deployment
 
 ### Verify after deploy
+
 **Tags:** deployment
 **Problem:** Changes land but behavior is unknown.
 **Solution:** Check logs (e.g., `railway logs -n 50`) after deploys.

@@ -137,13 +137,13 @@ After **10 total failures** in one session:
 
 Use these defaults to reduce blocking and keep momentum. Post A/B/C only when the "Override when" condition applies.
 
-| Situation | Default | Override when |
-| --------- | ------- | ------------- |
-| Retry vs rollback on failure | Retry once | Same error 3x |
-| Local vs cloud agent (score 2-3) | Local SWE | Queue > 4 items |
-| Fix lint warning vs ignore | Ignore if <10 LOC impact | Breaks build |
-| Create worktree vs direct edit | Direct if docs-only | Any code change |
-| Escalate vs decide | Decide with A/B/C comment | Security/irreversible |
+| Situation                        | Default                   | Override when         |
+| -------------------------------- | ------------------------- | --------------------- |
+| Retry vs rollback on failure     | Retry once                | Same error 3x         |
+| Local vs cloud agent (score 2-3) | Local SWE                 | Queue > 4 items       |
+| Fix lint warning vs ignore       | Ignore if <10 LOC impact  | Breaks build          |
+| Create worktree vs direct edit   | Direct if docs-only       | Any code change       |
+| Escalate vs decide               | Decide with A/B/C comment | Security/irreversible |
 
 ## CMC Go Project workflow (critical)
 

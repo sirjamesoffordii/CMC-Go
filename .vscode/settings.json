@@ -105,6 +105,13 @@
         "tailwindcss",
         "streetsidesoftware",
         "esbenp",
-        "VITE"
-    ]
+        "VITE",
+        "modelcontextprotocol",
+        "mcp",
+        "cmc",
+        "sirjamesoffordii"
+    ],
+
+    // Edge DevTools - disable CSS inline style warnings (common in React)
+    "vscode-edge-devtools.webhint": false
 }
