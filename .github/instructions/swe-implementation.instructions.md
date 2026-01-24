@@ -1,6 +1,6 @@
 ---
 applyTo: "**"
-excludeAgent: "code-review"
+excludeAgent: ["code-review"]
 ---
 
 # Software Engineer (SWE) Implementation Instructions

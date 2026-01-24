@@ -2,7 +2,6 @@
 name: Tech Lead (TL)
 description: "Project coordinator for CMC Go. Scans project status, creates/refines Issues, delegates work. Leads with coordination/triage."
 model: Claude Opus 4.5
-githubAccount: Alpha-Tech-Lead
 handoffs: []
 tools:
   [

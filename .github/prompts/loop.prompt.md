@@ -1,7 +1,6 @@
 ---
-name: Activate: Loop
+name: Activate Loop
 description: Never stop; use Issues/PRs as the shared log.
-applyTo: "**"
 ---
 
 Loop Mode

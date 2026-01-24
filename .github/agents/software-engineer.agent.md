@@ -2,9 +2,7 @@
 name: Software Engineer (SWE)
 description: Implements small PRs with evidence, or performs peer verification with a clear verdict.
 model: GPT-5.2-Codex
-githubAccount: Software-Engineer-Agent
 handoffs: []
-applyTo: "**"
 tools:
   [
     "vscode",
@@ -21,7 +19,6 @@ tools:
     "github.vscode-pull-request-github/activePullRequest",
     "github.vscode-pull-request-github/openPullRequest",
     "todo",
-    "test",
   ]
 ---
 
