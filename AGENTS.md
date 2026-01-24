@@ -1,5 +1,7 @@
 # CMC Go — Agent Operating Manual
 
+<!-- Test comment added for parallel execution verification -->
+
 This is the **single source of truth** for how agents operate in this repo, and what the Tech Lead does (label/approve/merge) in a hands-off workflow.
 
 ## Agents
