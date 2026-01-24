@@ -47,16 +47,48 @@ Ops/CI/tooling reference (as-needed):
 
 If the CMC Go Project board has **zero items** (or you're starting fresh):
 
-1. **Scan the codebase** — look for TODOs, FIXMEs, failing tests, TypeScript errors
-2. **Check external sources** — Sentry errors, Railway logs, GitHub Actions failures
-3. **Create bootstrapping Issues** — Document what you find, create actionable Issues with Goal/Scope/AC
-4. **Report to operator** — Post a snapshot: "Board was empty. Created N issues from scan."
+### Concrete Steps
+
+```bash
+# 1. Find TODOs and FIXMEs
+grep -rn "TODO\|FIXME" --include="*.ts" --include="*.tsx" | head -50
+
+# 2. Check TypeScript errors
+pnpm check
+
+# 3. Check test failures
+pnpm test
+
+# 4. Check recent CI failures
+gh run list --limit 5 --status failure
+
+# 5. Check for stale PRs
+gh pr list --state open
+```
+
+### Then:
+
+1. For each finding, create an Issue with Goal/Scope/AC
+2. Add Issues to Project 4: `gh project item-add 4 --owner sirjamesoffordii --url <issue-url>`
+3. Report to operator: "Board was empty. Created N issues from scan."
 
 **Never wait indefinitely for work.** If truly nothing to do, post: "Board empty, codebase healthy, awaiting operator direction."
 
 ## Circuit Breaker (mandatory)
 
 **Prevents infinite loops and wasted effort.**
+
+### What counts as a failure?
+
+- Command exits with non-zero code
+- Test suite has any failing tests
+- `pnpm check` reports TypeScript errors
+- Same error occurs 3 times in a row
+
+**NOT failures (retry once):**
+
+- Network timeout
+- Terminal pager issue (use `Agent: Recover terminal` task)
 
 ### Task-level circuit breaker
 
@@ -274,6 +306,21 @@ Score issues to select the right agent:
 - **Cloud Agent:** GitHub default (simple issues only)
 
 **Agent name must be exact.** Use `"Software Engineer (SWE)"` or `"SWE Opus"` — partial names fall back to default model.
+
+## What is `runSubagent`?
+
+`runSubagent` is a **VS Code Agent Mode tool** available to the primary agent session. It spawns a sub-agent that executes in the same VS Code instance.
+
+**Key facts:**
+
+- **Blocks the caller** until the sub-agent completes and returns a single message
+- **Does NOT consume premium requests** — safe to spawn many
+- **Only available to the primary agent** — spawned agents cannot use `runSubagent`
+- **Passes workspace context** — sub-agent has access to files, terminal, tools
+
+**Syntax:** When calling from an agent, invoke the `runSubagent` tool with `agentName` and `prompt` parameters.
+
+**If you don't have access to `runSubagent`,** you're a spawned agent. Use cloud agents (`gh agent-task create`) or terminal commands instead.
 
 ## Standard workflow
 
