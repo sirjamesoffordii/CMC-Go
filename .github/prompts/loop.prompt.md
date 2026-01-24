@@ -11,6 +11,12 @@ Within an assigned Issue:
 - Keep going through the next best step until **Done**.
 - Do not pause waiting for additional prompts.
 
+## Circuit Breaker (mandatory)
+
+- After **3 consecutive failures** on the same task → Set status to Blocked, move to next item
+- After **10 total failures** in session → Stop and report to operator
+- **Never loop infinitely on a broken path**
+
 Always:
 
 - Prefer the smallest safe next action.

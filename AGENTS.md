@@ -10,25 +10,25 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 | --------------------- | ------------------------- | ---------------- | ------------------------------------------ |
 | **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation |
 | **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification               |
+| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | Complex implementation (score 5-6) — same role, premium model |
 | **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only             |
-| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | Complex implementation (score 5-6)         |
 
-## Read-first
+**Note:** SWE and SWE Opus are the same role with different models. Tech Lead selects via agent name.
 
-- **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/4
-- `.github` index: [.github/README.md](.github/README.md)
-- Tech Lead role: [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
-- Software Engineer role: [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
+## Session Start (once per session)
 
-## Activation checklist (once per session)
+**Read in this order (token-efficient):**
 
-- **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/4 (read README for product context)
-- `AGENTS.md` (this file)
-- `.github/copilot-instructions.md`
-- Your role doc:
-  - Tech Lead: `.github/agents/tech-lead.agent.md`
-  - Software Engineer: `.github/agents/software-engineer.agent.md`
-- `.github/prompts/loop.prompt.md`
+1. `AGENTS.md` (this file) — workflow + constraints
+2. Your role file: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
+3. **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/4 (check board state)
+4. `.github/prompts/loop.prompt.md` (loop behavior)
+5. `.github/agents/CMC_GO_PATTERNS.md` (only if you hit a known pitfall)
+
+**Target ~400 lines read max before starting work.** Don't read everything.
+
+Ops/CI/tooling reference (as-needed):
+- `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Operating principles
 
@@ -41,6 +41,36 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 - **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via Tech Lead + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 - **Reflection is mandatory.** Every task ends with two checks: Workflow Improvement + Pattern Learning. See "End-of-Task Reflection".
+
+## Cold Start (Empty Board)
+
+If the CMC Go Project board has **zero items** (or you're starting fresh):
+
+1. **Scan the codebase** — look for TODOs, FIXMEs, failing tests, TypeScript errors
+2. **Check external sources** — Sentry errors, Railway logs, GitHub Actions failures
+3. **Create bootstrapping Issues** — Document what you find, create actionable Issues with Goal/Scope/AC
+4. **Report to operator** — Post a snapshot: "Board was empty. Created N issues from scan."
+
+**Never wait indefinitely for work.** If truly nothing to do, post: "Board empty, codebase healthy, awaiting operator direction."
+
+## Circuit Breaker (mandatory)
+
+**Prevents infinite loops and wasted effort.**
+
+### Task-level circuit breaker
+
+After **3 consecutive failures** on the same task:
+1. Set status → **Blocked**
+2. Post failure summary with all evidence
+3. Move to next item (do not retry indefinitely)
+
+### Session-level circuit breaker
+
+After **10 total failures** in one session:
+1. Post session summary with all failures
+2. Stop and await operator review
+
+**Never loop infinitely on a broken path.**
 
 ## CMC Go Project workflow (critical)
 
@@ -323,14 +353,14 @@ code chat -n -m agent "Your task description"
 
 ### Use Cases by Agent Type
 
-| Use Case | Best Method | Why |
-|----------|-------------|-----|
-| **Research/Analysis** | `runSubagent` (parallel) | Get results back, combine findings |
-| **Quick verification** | `runSubagent` (single) | Need verdict before proceeding |
-| **Simple implementation** | Cloud agent | Fire-and-forget, don't wait |
-| **Bulk simple tasks** | Multiple cloud agents | Scale to 50+ in parallel |
-| **Complex implementation** | `runSubagent` (SWE Opus) | Need premium model, get result |
-| **Local parallel work** | `code chat -n` | Multiple VS Code windows |
+| Use Case                   | Best Method              | Why                                |
+| -------------------------- | ------------------------ | ---------------------------------- |
+| **Research/Analysis**      | `runSubagent` (parallel) | Get results back, combine findings |
+| **Quick verification**     | `runSubagent` (single)   | Need verdict before proceeding     |
+| **Simple implementation**  | Cloud agent              | Fire-and-forget, don't wait        |
+| **Bulk simple tasks**      | Multiple cloud agents    | Scale to 50+ in parallel           |
+| **Complex implementation** | `runSubagent` (SWE Opus) | Need premium model, get result     |
+| **Local parallel work**    | `code chat -n`           | Multiple VS Code windows           |
 
 ### Spawning hierarchy
 
@@ -386,106 +416,33 @@ Cloud agents:
 
 Spawned agents inherit workspace context (repo name, branch, project structure). They can answer questions about the codebase without reading files first.
 
-## Ultimate Scalable Workflow (tested)
+## Scalable Workflow Summary
 
-This workflow enables **50+ parallel agents** while Tech Lead continues coordinating.
+**The Golden Rule:** Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.
 
-### The Pattern: Dispatch → Continue → Poll
+### Quick Decision
+
+| Need | Method | Blocking? |
+|------|--------|----------|
+| Research/analysis | `runSubagent` (parallel) | ✅ Yes (but free) |
+| Simple task (0-2) | `gh agent-task create` | ❌ No |
+| Complex task (3-6) | `runSubagent` | ✅ Yes (but free) |
+| Bulk tasks (10+) | Multiple `gh agent-task` | ❌ No |
+
+### The Pattern
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         TECH LEAD                               │
-│                                                                 │
-│  1. RESEARCH PHASE (blocking but parallel)                      │
-│     └── Spawn 4 Opus agents via runSubagent (parallel)          │
-│         └── All return findings → TL synthesizes                │
-│                                                                 │
-│  2. DISPATCH PHASE (non-blocking)                               │
-│     └── For each task:                                          │
-│         ├── Score 0-2: gh agent-task create (cloud)             │
-│         ├── Score 3-4: gh agent-task create --custom-agent swe  │
-│         └── Score 5-6: runSubagent (need result) OR cloud       │
-│                                                                 │
-│  3. CONTINUE PHASE (TL keeps working)                           │
-│     └── While agents work:                                      │
-│         ├── Coordinate other work                               │
-│         ├── Answer blocked agents                               │
-│         └── Poll: gh agent-task list                            │
-│                                                                 │
-│  4. HARVEST PHASE (gather results)                              │
-│     └── Review PRs, merge, update board                         │
-└─────────────────────────────────────────────────────────────────┘
+1. RESEARCH (if needed) → runSubagent (blocking, parallel OK)
+2. DISPATCH → gh agent-task create (non-blocking, fire-and-forget)
+3. CONTINUE → TL keeps coordinating while agents work
+4. HARVEST → Poll `gh agent-task list`, review PRs, merge
 ```
 
-### Example: Processing 10 Issues in Parallel
+### Tested Limits
 
-```powershell
-# Step 1: Research (if needed) - parallel blocking
-runSubagent([
-  "SWE Opus: Analyze Issue #1-3 architecture impact",
-  "SWE Opus: Analyze Issue #4-6 test coverage needs", 
-  "SWE Opus: Analyze Issue #7-10 security implications"
-])
-# → TL blocked, but all 3 run concurrently, return findings
-
-# Step 2: Dispatch (non-blocking) - fire and forget
-gh agent-task create "Implement Issue #1" --base staging
-gh agent-task create "Implement Issue #2" --base staging
-gh agent-task create "Implement Issue #3" --base staging
-# ... up to 10+
-# → Each returns immediately, TL continues
-
-# Step 3: TL continues with coordination
-# - Update project board
-# - Create more issues
-# - Answer questions from blocked agents
-
-# Step 4: Poll for completion
-gh agent-task list -L 20
-# → Review completed PRs, merge, repeat
-```
-
-### Scaling Limits (tested)
-
-| Resource | Limit | Notes |
-|----------|-------|-------|
-| Parallel `runSubagent` | 6+ | Blocked until all return |
-| Parallel cloud agents | 50+ | No practical limit found |
-| `code chat` windows | ~5-10 | Limited by system resources |
-| PRs from cloud agents | Unlimited | Each agent creates 1 PR |
-
-### Scripts for Automation
-
-```powershell
-# Spawn single cloud agent
-.\scripts\spawn-cloud-agent.ps1 -Prompt "Fix bug X" -BaseBranch staging
-
-# Spawn multiple cloud agents in parallel
-.\scripts\spawn-cloud-agents-parallel.ps1 -IssueNumbers 42,43,44,45
-
-# Spawn local agent in worktree
-.\scripts\spawn-worktree-agent.ps1 -Worktree wt-impl-42 -Prompt "Implement feature"
-```
-
-### When to Use What
-
-| Scenario | Method | Blocking? | Token Cost |
-|----------|--------|-----------|------------|
-| **Need answer now** | `runSubagent` | ✅ Yes | Local (free) |
-| **Research/analysis** | `runSubagent` (parallel) | ✅ Yes | Local (free) |
-| **Simple implementation** | `gh agent-task create` | ❌ No | Cloud SKU |
-| **Bulk tasks (10+)** | Multiple `gh agent-task` | ❌ No | Cloud SKU |
-| **Complex, need result** | `runSubagent` (SWE Opus) | ✅ Yes | Local (free) |
-| **Local parallel** | `code chat -n` | ❌ No | Shared sub |
-
-### The Golden Rule
-
-**Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.**
-
-- Research before acting? → `runSubagent` (get findings back)
-- Fire-and-forget implementation? → Cloud agent (don't wait)
-- Need judgment call? → Do it yourself (TL has best model)
-- Scale to 50 tasks? → Cloud agents (no blocking)
+- Parallel `runSubagent`: 6+ (all return)
+- Parallel cloud agents: 50+ (no practical limit)
+- Local sessions via `code chat -n`: 5-10 (system resources)
 
 ## Solo mode (one agent can run the whole system)
 

@@ -141,6 +141,15 @@ When: Something is broken.
 - Verify the fix worked
 - Output: Fix + explanation of root cause
 
+### Schema Change Rollback
+
+If a schema change breaks something:
+
+1. **Don't commit** the broken migration
+2. Revert to previous state: `git checkout -- drizzle/`
+3. Report to TL with evidence of what failed
+4. Wait for guidance before retrying
+
 ## Flow Between Modes
 
 A typical task flows:
@@ -247,10 +256,36 @@ Use the PR description + verdict templates in `AGENTS.md`.
 - Post evidence (commands + results) and a clear verdict when verifying
 - If blocked: post one A/B/C escalation comment (see `AGENTS.md`), then continue parallel-safe work
 
-## Model Selection
+## Model Variants
 
-Default: **GPT-5.2-Codex** for standard implementation work (score 3-4).
+This agent can be spawned with different models:
 
-Tech Lead may spawn you with **Claude Opus 4.5** for complex work (score 5-6).
+| Variant | Model | Use For |
+|---------|-------|--------|
+| **Software Engineer (SWE)** | GPT-5.2-Codex | Score 3-4 tasks (standard implementation) |
+| **SWE Opus** | Claude Opus 4.5 | Score 5-6 tasks (schema, auth, cross-cutting) |
 
-Refer to the Model Selection grid in `AGENTS.md` for details.
+Tech Lead selects the variant via agent name when calling `runSubagent`.
+
+## Blocked Timeout (30 minutes)
+
+**Don't stall indefinitely waiting for TL.**
+
+If TL doesn't respond within 30 minutes:
+
+1. Re-comment on Issue with `@Alpha-Tech-Lead` (creates notification)
+2. If still no response after another 15 minutes: Pick another executable Issue from board
+3. Update board status accordingly
+
+**Never wait forever.** The system must keep moving.
+
+## Auth & Secrets Handling
+
+If you need a secret (API key, token, auth code):
+
+1. **Don't ask in chat** — secrets in chat are compromised
+2. Set status → **Blocked**
+3. Post in Issue what you need (not the value, just what type)
+4. Wait for TL/human to provide via secure channel
+
+See `AGENTS.md` → "Human input required" and `CMC_GO_PATTERNS.md` → "Secrets & Tokens" for details.

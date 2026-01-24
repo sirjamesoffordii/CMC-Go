@@ -2,6 +2,22 @@
 
 CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Express server in `server/`, MySQL via Drizzle in `drizzle/`.
 
+## 5-Second Decision Tree
+
+```
+START
+  │
+  ├─ Am I Tech Lead?
+  │   ├─ YES → Check board → Delegate or coordinate
+  │   └─ NO → Am I assigned an Issue?
+  │           ├─ YES → EXPLORE → IMPLEMENT → VERIFY → Done
+  │           └─ NO → Wait for assignment (check Issue mentions)
+  │
+  └─ Is the board empty?
+      ├─ YES → Run Cold Start Procedure (see AGENTS.md)
+      └─ NO → Pick highest-priority Todo item
+```
+
 ## Read-first (once per session)
 
 - **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/4
