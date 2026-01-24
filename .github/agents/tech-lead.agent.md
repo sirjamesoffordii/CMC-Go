@@ -396,7 +396,7 @@ Before recommending changes, review:
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
 - This file (`tech-lead.agent.md`)
-- `.github/agents/CMC_GO_PATTERNS.md`
+- `.github/agents/reference/CMC_GO_PATTERNS.md`
 
 ### Workflow Improvement Check
 
@@ -444,7 +444,7 @@ See `AGENTS.md` → "End-of-Task Reflection" for full details.
 
 - Policy: `AGENTS.md`
 - Product + Status: **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/4
-- Patterns: `.github/agents/CMC_GO_PATTERNS.md`
+- Patterns: `.github/agents/reference/CMC_GO_PATTERNS.md`
 
 ## Evidence template
 

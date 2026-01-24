@@ -48,6 +48,29 @@ Every task ends with a **Pattern Learning Check**. Add a pattern here when:
 
 ## Patterns
 
+### GitHub Projects v2 IDs (critical)
+
+**Project IDs are repo-specific and easy to misconfigure.** Always verify before using in commands.
+
+**CMC Go Project 4 — Authoritative IDs:**
+
+```
+Project Number: 4
+Project ID: PVT_kwHODqX6Qs4BNUfu
+Status Field ID: PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA
+Status Options:
+  - Todo: f75ad846
+  - In Progress: 47fc9ee4
+  - Done: 98236657
+```
+
+To verify IDs (if you suspect mismatch):
+
+```bash
+gh project view 4 --owner sirjamesoffordii --format json | jq '.id'
+gh project field-list 4 --owner sirjamesoffordii --format json
+```
+
 ### Invariants
 
 - `districts.id` (DistrictSlug) must match `client/public/map.svg` `<path id="...">` values (case-sensitive).
@@ -77,7 +100,7 @@ Project board: https://github.com/users/sirjamesoffordii/projects/4
 If an issue isn't in the project, add it:
 
 ```bash
-gh project item-add 2 --owner sirjamesoffordii --url <issue-url>
+gh project item-add 4 --owner sirjamesoffordii --url <issue-url>
 ```
 
 ### Issue quality (before handoff to agent)

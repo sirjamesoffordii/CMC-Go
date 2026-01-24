@@ -171,7 +171,7 @@ Stay in one session. No handoffs needed.
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
 - This file (`software-engineer.agent.md`)
-- `.github/agents/CMC_GO_PATTERNS.md`
+- `.github/agents/reference/CMC_GO_PATTERNS.md`
 
 ### Workflow Improvement Check
 
@@ -218,7 +218,7 @@ See `AGENTS.md` → "End-of-Task Reflection" for full details.
 
 Common rules (worktrees, claims, evidence, verification levels) live in `AGENTS.md`.
 
-When stuck, consult `.github/agents/CMC_GO_PATTERNS.md`.
+When stuck, consult `.github/agents/reference/CMC_GO_PATTERNS.md`.
 
 **CMC Go Project (authoritative truth):** https://github.com/users/sirjamesoffordii/projects/4
 

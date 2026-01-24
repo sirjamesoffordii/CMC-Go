@@ -27,7 +27,7 @@ When uncertain or stuck, consult repo knowledge in this order:
 
 1. `AGENTS.md` (workflow + constraints)
 2. **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/4 (product status)
-3. `.github/agents/CMC_GO_PATTERNS.md` (curated pitfalls/patterns)
+3. `.github/agents/reference/CMC_GO_PATTERNS.md` (curated pitfalls/patterns)
 4. `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md` (operational procedures)
 
 Operator interaction:

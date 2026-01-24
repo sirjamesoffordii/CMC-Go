@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "📖 Read AGENTS.md First"
+    url: https://github.com/sirjamesoffordii/CMC-Go/blob/staging/AGENTS.md
+    about: "Review the agent operating manual before creating issues"
+  - name: "📋 CMC Go Project Board"
+    url: https://github.com/users/sirjamesoffordii/projects/4
+    about: "Check the project board for current status and priorities"

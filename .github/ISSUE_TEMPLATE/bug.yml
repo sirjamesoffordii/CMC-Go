@@ -1,0 +1,125 @@
+name: "🐛 Bug Report"
+description: "Report a bug or unexpected behavior"
+title: "[Bug] "
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Please provide as much detail as possible to help reproduce and fix the issue.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: "Summary"
+      description: "One sentence describing the bug"
+      placeholder: "Map colors don't update when status changes"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: "Severity"
+      description: "How severe is this bug?"
+      options:
+        - "Critical (app unusable, data loss)"
+        - "High (major feature broken)"
+        - "Medium (feature impaired but workaround exists)"
+        - "Low (minor annoyance)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: "Steps to Reproduce"
+      description: "Numbered steps to reproduce the bug"
+      placeholder: |
+        1. Login as admin
+        2. Navigate to /map
+        3. Click on a district
+        4. Change a person's status
+        5. Observe map color doesn't update
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "Expected Behavior"
+      description: "What should happen"
+      placeholder: "Map district color should update to reflect new status distribution"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "Actual Behavior"
+      description: "What actually happens"
+      placeholder: "Map color stays the same until page refresh"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Where does this occur?"
+      placeholder: |
+        - Branch/commit: staging @ abc1234
+        - Browser: Chrome 120
+        - Node version: 20.x
+        - Production or local?
+
+  - type: textarea
+    id: screenshots-logs
+    attributes:
+      label: "Screenshots / Error Logs"
+      description: "If applicable, add screenshots or paste error messages"
+      placeholder: |
+        ```
+        Error: Cannot read property 'status' of undefined
+            at MapView.tsx:45
+        ```
+
+  - type: textarea
+    id: possible-cause
+    attributes:
+      label: "Possible Cause (optional)"
+      description: "If you have an idea what might be causing this"
+      placeholder: "Might be a cache invalidation issue in the tRPC query"
+
+  - type: textarea
+    id: surface-area
+    attributes:
+      label: "Likely Files Involved"
+      description: "Where do you think the bug lives?"
+      placeholder: |
+        - `client/src/components/MapView.tsx`
+        - `server/routers.ts` → people.updateStatus
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: "Estimated Complexity"
+      description: "How hard is this to fix?"
+      options:
+        - "0-2 (Simple → Cloud Agent)"
+        - "3-4 (Medium → SWE GPT-5.2-Codex)"
+        - "5-6 (Complex → SWE Opus)"
+        - "Unknown (needs investigation)"
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: "Verification"
+      description: "How to verify the fix"
+      value: |
+        After fix:
+        - [ ] Bug no longer reproducible
+        - [ ] `pnpm check` passes
+        - [ ] `pnpm test` passes
+        - [ ] No regression in related functionality

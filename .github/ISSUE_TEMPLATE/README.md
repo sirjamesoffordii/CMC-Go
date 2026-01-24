@@ -2,15 +2,47 @@
 
 These templates keep Issues consistent so TL can make them executable and SWE can implement with evidence.
 
-## What’s here
+## Template Selection Guide
 
-- `feature_task.md` — default TL/SWE work item (Goal/Scope/AC/Verification)
-- `ops_task.md` — ops/deployment/console tasks (Railway/Sentry/Codecov)
+| Template                                 | When to Use                            | Complexity |
+| ---------------------------------------- | -------------------------------------- | ---------- |
+| **🚀 Feature / Task** (`feature.yml`)    | New functionality, significant changes | 3-6        |
+| **🐛 Bug Report** (`bug.yml`)            | Something broken, errors, regressions  | Varies     |
+| **✅ Quick Task** (`task.yml`)           | Simple, well-defined work              | 0-2        |
+| **🔍 Verification** (`verification.yml`) | Review/verify a PR                     | N/A        |
+| **🔬 Spike / Research** (`spike.yml`)    | Time-boxed exploration                 | N/A        |
+| **⚙️ Ops Task** (`ops_task.md`)          | Railway/Sentry/Codecov console tasks   | 0-2        |
 
-## Guideline
+## Required Sections (for implementation issues)
 
-If you’re not sure which template to pick: start with `feature_task.md`.
+Every implementation Issue must have:
 
-## Archived templates
+- **Goal** — One sentence describing the change
+- **Surface Area** — Specific files to modify
+- **Acceptance Criteria** — Observable outcomes
+- **Verification** — Commands to run
+- **Complexity Score** — For agent routing (0-6)
 
-Role-specific templates (Builder/Verifier/Explorer/Coordinator/Browser) are archived under `.github/_unused/issue_templates/` to keep the active repo aligned to the TL/SWE operating model.
+## YAML vs Markdown Templates
+
+- **YAML templates** (`.yml`) — New format with forms, validation, dropdowns (preferred)
+- **Markdown templates** (`.md`) — Legacy format (feature_task.md, bug_report.md, ops_task.md)
+
+## Complexity Scoring → Agent Routing
+
+| Score | Calculation                                 | Agent                             |
+| ----- | ------------------------------------------- | --------------------------------- |
+| 0-2   | Low risk + 1 file + clear spec              | Cloud Agent (`agent:copilot-swe`) |
+| 3-4   | Medium risk/scope/ambiguity                 | SWE (GPT-5.2-Codex)               |
+| 5-6   | High risk + many files + exploration needed | SWE Opus (Claude Opus 4.5)        |
+
+See AGENTS.md for full scoring criteria.
+
+## Archived Templates
+
+Role-specific templates (Builder/Verifier/Explorer/Coordinator/Browser) are archived under `.github/_unused/issue_templates/` — superseded by TL/SWE model.
+
+## See Also
+
+- [AGENTS.md](/AGENTS.md) — Agent operating manual
+- [tech-lead.agent.md](/.github/agents/tech-lead.agent.md) — TL Issue creation guidance

@@ -23,7 +23,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 2. Your role file: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
 3. **CMC Go Project:** https://github.com/users/sirjamesoffordii/projects/4 (check board state)
 4. `.github/prompts/loop.prompt.md` (loop behavior)
-5. `.github/agents/CMC_GO_PATTERNS.md` (only if you hit a known pitfall)
+5. `.github/agents/reference/CMC_GO_PATTERNS.md` (only if you hit a known pitfall)
 
 **Target ~400 lines read max before starting work.** Don't read everything.
 
@@ -119,14 +119,16 @@ The board must always reflect reality. Update it immediately, not at end of sess
 ### Commands to update project status
 
 ```bash
-# Add issue to project
-gh project item-add 2 --owner sirjamesoffordii --url <issue-url>
+# Add issue to project (Project 4 = CMC Go v1.0 Roadmap)
+gh project item-add 4 --owner sirjamesoffordii --url <issue-url>
 
 # Update status (use field ID from gh project field-list)
-gh project item-edit --project-id PVT_kwHODqX6Qs4BNFTD --id <item-id> --field-id PVTSSF_lAHODqX6Qs4BNFTDzg8LjhE --single-select-option-id <status-option-id>
+gh project item-edit --project-id PVT_kwHODqX6Qs4BNUfu --id <item-id> --field-id PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA --single-select-option-id <status-option-id>
 ```
 
-Status option IDs: Todo=`689f8a74`, In Progress=`64fc3c51`, Blocked=`e3f651bf`, Verify=`4b4ae83d`, Done=`4d7d0ccb`
+Status option IDs: Todo=`f75ad846`, In Progress=`47fc9ee4`, Done=`98236657`
+
+> **Note:** Blocked and Verify statuses need to be added to the Project via GitHub UI (Settings → Status field → Add option)
 
 ## Speed-first defaults (default)
 
@@ -143,7 +145,7 @@ This repo is designed for **hands-off, continuous agent execution**.
 
 - **Policy + workflow:** `AGENTS.md` (this file)
 - **Product + status:** CMC Go Project — https://github.com/users/sirjamesoffordii/projects/4
-- **Curated learnings (pitfalls/patterns):** `.github/agents/CMC_GO_PATTERNS.md`
+- **Curated learnings (pitfalls/patterns):** `.github/agents/reference/CMC_GO_PATTERNS.md`
 - **Operational procedures (as-needed):** `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Execution modes (critical)
@@ -578,7 +580,7 @@ Before making any recommendation, review current state of:
 - `AGENTS.md`
 - `.github/copilot-instructions.md`
 - Your active role file (`.github/agents/*.agent.md`)
-- `.github/agents/CMC_GO_PATTERNS.md`
+- `.github/agents/reference/CMC_GO_PATTERNS.md`
 
 Purpose: avoid duplication, avoid contradictions, ensure alignment with current system intent.
 
