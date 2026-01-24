@@ -1,12 +1,6 @@
 {
   "$schema": "vscode://schemas/mcp.json",
   "servers": {
-    "memory": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "description": "Session persistence across chat sessions"
-    },
     "railway": {
       "type": "stdio",
       "command": "npx",
@@ -15,12 +9,6 @@
         "RAILWAY_TOKEN": "${env:RAILWAY_TOKEN}"
       },
       "description": "Railway deployments, services, and logs"
-    },
-    "sequential-thinking": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
-      "description": "Chain-of-thought reasoning for complex problems"
     }
   }
 }

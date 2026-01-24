@@ -3,13 +3,11 @@
         // Core development
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
+        "usernamehw.errorlens",
         
         // Database tools
         "mtxr.sqltools",
         "mtxr.sqltools-driver-mysql",
-        
-        // Debugging & preview
-        "ms-edgedevtools.vscode-edge-devtools",
         
         // Code quality
         "streetsidesoftware.code-spell-checker",
@@ -20,6 +18,6 @@
         "github.copilot-chat",
         
         // Error monitoring
-        "sentry.sentry-vscode"
+        "bacebu4.sentry-issues"
     ]
 }
