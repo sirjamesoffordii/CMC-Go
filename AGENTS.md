@@ -6,12 +6,12 @@ This is the **single source of truth** for how agents operate in this repo, and 
 
 Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
 
-| Agent                 | GitHub Account            | Default Model    | Responsibility                             |
-| --------------------- | ------------------------- | ---------------- | ------------------------------------------ |
-| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation |
-| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification               |
+| Agent                 | GitHub Account            | Default Model    | Responsibility                                                |
+| --------------------- | ------------------------- | ---------------- | ------------------------------------------------------------- |
+| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | Coordination, board management, delegation                    |
+| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | Implementation, verification                                  |
 | **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | Complex implementation (score 5-6) — same role, premium model |
-| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only             |
+| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Simple issues (score 0-2) only                                |
 
 **Note:** SWE and SWE Opus are the same role with different models. Tech Lead selects via agent name.
 
@@ -28,6 +28,7 @@ Agents use these accounts for all GitHub activity (Issues, PRs, comments). This 
 **Target ~400 lines read max before starting work.** Don't read everything.
 
 Ops/CI/tooling reference (as-needed):
+
 - `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
 ## Operating principles
@@ -60,6 +61,7 @@ If the CMC Go Project board has **zero items** (or you're starting fresh):
 ### Task-level circuit breaker
 
 After **3 consecutive failures** on the same task:
+
 1. Set status → **Blocked**
 2. Post failure summary with all evidence
 3. Move to next item (do not retry indefinitely)
@@ -67,6 +69,7 @@ After **3 consecutive failures** on the same task:
 ### Session-level circuit breaker
 
 After **10 total failures** in one session:
+
 1. Post session summary with all failures
 2. Stop and await operator review
 
@@ -422,12 +425,12 @@ Spawned agents inherit workspace context (repo name, branch, project structure).
 
 ### Quick Decision
 
-| Need | Method | Blocking? |
-|------|--------|----------|
-| Research/analysis | `runSubagent` (parallel) | ✅ Yes (but free) |
-| Simple task (0-2) | `gh agent-task create` | ❌ No |
-| Complex task (3-6) | `runSubagent` | ✅ Yes (but free) |
-| Bulk tasks (10+) | Multiple `gh agent-task` | ❌ No |
+| Need               | Method                   | Blocking?         |
+| ------------------ | ------------------------ | ----------------- |
+| Research/analysis  | `runSubagent` (parallel) | ✅ Yes (but free) |
+| Simple task (0-2)  | `gh agent-task create`   | ❌ No             |
+| Complex task (3-6) | `runSubagent`            | ✅ Yes (but free) |
+| Bulk tasks (10+)   | Multiple `gh agent-task` | ❌ No             |
 
 ### The Pattern
 

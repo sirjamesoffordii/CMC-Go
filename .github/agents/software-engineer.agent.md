@@ -260,24 +260,24 @@ Use the PR description + verdict templates in `AGENTS.md`.
 
 This agent can be spawned with different models:
 
-| Variant | Model | Use For |
-|---------|-------|--------|
-| **Software Engineer (SWE)** | GPT-5.2-Codex | Score 3-4 tasks (standard implementation) |
-| **SWE Opus** | Claude Opus 4.5 | Score 5-6 tasks (schema, auth, cross-cutting) |
+| Variant                     | Model           | Use For                                       |
+| --------------------------- | --------------- | --------------------------------------------- |
+| **Software Engineer (SWE)** | GPT-5.2-Codex   | Score 3-4 tasks (standard implementation)     |
+| **SWE Opus**                | Claude Opus 4.5 | Score 5-6 tasks (schema, auth, cross-cutting) |
 
 Tech Lead selects the variant via agent name when calling `runSubagent`.
 
-## Blocked Timeout (30 minutes)
+## Blocked Timeout (5 minutes)
 
-**Don't stall indefinitely waiting for TL.**
+**Don't stall waiting for TL.** TL should be polling after every task — if they're active, they'll see your question within minutes.
 
-If TL doesn't respond within 30 minutes:
+If TL doesn't respond within 5 minutes:
 
 1. Re-comment on Issue with `@Alpha-Tech-Lead` (creates notification)
-2. If still no response after another 15 minutes: Pick another executable Issue from board
+2. If still no response after another 5 minutes: Pick another executable Issue from board
 3. Update board status accordingly
 
-**Never wait forever.** The system must keep moving.
+**10 minutes max wait.** TL is a coordinator, not an implementer — they shouldn't be locked into any task long enough to miss your question.
 
 ## Auth & Secrets Handling
 
