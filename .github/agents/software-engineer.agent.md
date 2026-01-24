@@ -55,8 +55,7 @@ When you finish a task:
 
 1. **Open PR** targeting `staging` with evidence in description
 2. **Update Project status** → Verify
-3. **Remove yourself from agent registry** (if local): Update `.github/agent-registry.json`
-4. **Return completion report** to Tech Lead (if local) or comment on Issue (if cloud):
+3. **Return completion report** to Tech Lead (if local) or comment on Issue (if cloud):
 
 ```markdown
 ## SWE Completion Report

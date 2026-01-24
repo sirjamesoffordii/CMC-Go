@@ -137,87 +137,60 @@ Tech Lead's **#1 priority is keeping the project on track** — not implementing
 - Scores complexity and delegates to appropriate Software Engineer (local or cloud).
 - Applies labels to route work (e.g. `agent:copilot-swe`, `verify:v1`).
 - Approves/merges PRs when the verification gate passes.
-- Manages agent pool (max 4 concurrent agents per Tech Lead instance).
+- Manages workload (max 4 active items per Tech Lead instance).
 - Performs console-only steps when 2FA/login blocks automation (Sentry/Railway/etc.).
 
 **Never get locked into complex implementation.** If a task would take Tech Lead away from coordination for extended time, delegate it to Software Engineer with Opus 4.5.
 
-## Agent Pool Management
+## Workload Management
 
-Tech Lead manages a pool of concurrent agents. This prevents resource exhaustion and ensures coordination doesn't fall behind.
+Tech Lead manages concurrent work to prevent review backlog. The **Project board is the source of truth** — no separate tracking needed.
 
-### Pool limits
+### Capacity limit
 
-| Limit                        | Value     | Rationale                   |
-| ---------------------------- | --------- | --------------------------- |
-| **Max agents per Tech Lead** | 4         | Local CPU/memory constraint |
-| **Max cloud agents**         | Unlimited | No local resource impact    |
+| Limit                              | Value | Rationale                       |
+| ---------------------------------- | ----- | ------------------------------- |
+| **Max active items per Tech Lead** | 4     | TL review/coordination capacity |
 
-### Tracking active agents
+**Active items** = Issues with Status "In Progress" OR "Verify" (includes both local Software Engineer and Cloud Agent work).
 
-Tech Lead maintains awareness of active agents via:
+### How to check capacity
 
-1. **Agent Registry File** (`.github/agent-registry.json`) — authoritative source
-2. **Project board** — Issues with Status = "In Progress" + assignee
-3. **PR notifications** — Cloud agent completion triggers @Alpha-Tech-Lead mention
+Before delegating new work:
 
-#### Registry file format
-
-```json
-{
-  "lastUpdated": "2026-01-23T10:00:00Z",
-  "activeAgents": [
-    {
-      "id": "swe-1",
-      "type": "local",
-      "model": "GPT-5.2-Codex",
-      "issueNumber": 42,
-      "startedAt": "2026-01-23T09:30:00Z",
-      "worktree": "wt-impl-42-feature"
-    },
-    {
-      "id": "cloud-1",
-      "type": "cloud",
-      "issueNumber": 43,
-      "startedAt": "2026-01-23T09:45:00Z"
-    }
-  ]
-}
+```
+Count: Issues where Status = "In Progress" OR "Verify"
+If count >= 4 → spawn secondary Tech Lead OR wait for completion
+If count < 4 → delegate new work
 ```
 
-### Agent lifecycle
+### Handling stale/interrupted work
 
-**When starting an agent:**
+If an Issue is "In Progress" for >4 hours without PR activity:
 
-1. Check registry — if 4 local agents active, spawn another Tech Lead instead
-2. Add entry to registry with `startedAt` timestamp
-3. Update Project status → In Progress
-4. Delegate to agent
-
-**When agent completes:**
-
-1. Agent posts completion report to Issue/PR
-2. For local agents: Tech Lead removes from registry after verifying PR
-3. For cloud agents: `copilot-completion-notify.yml` triggers → Tech Lead reviews and removes
-
-**Auto-cleanup:** If an agent entry is >4 hours old without PR activity, Tech Lead should check status and clean up stale entries.
+1. Check Issue comments and linked PRs for status
+2. If agent was interrupted (VS Code closed, crash, etc.):
+   - Re-assign to new agent, OR
+   - Mark as Blocked with note, OR
+   - Move back to Todo if needs re-scoping
+3. Continue with other work
 
 ### Scaling with multiple Tech Leads
 
-When work exceeds 4 concurrent agents:
+When workload exceeds 4 active items:
 
 1. Tech Lead spawns a **secondary Tech Lead** via `runSubagent`
-2. Secondary Tech Lead gets its own pool of 4 agents
+2. Secondary Tech Lead gets its own capacity of 4 items
 3. Primary Tech Lead retains coordination oversight
 
 **Secondary Tech Lead spawn template:**
 
 ```
-Prompt: You are a secondary Tech Lead instance. Primary TL has delegated these Issues to you:
+Prompt: You are a secondary Tech Lead instance. Primary has delegated these Issues to you:
 - Issue #X: [title]
 - Issue #Y: [title]
 
-You have a pool of 4 agents. Coordinate these issues to completion and report back when done.
+You have capacity for 4 active items. Coordinate these issues to completion and report back when done.
 Do not create new Issues — only implement what's assigned.
 ```
 

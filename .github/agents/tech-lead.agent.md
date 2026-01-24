@@ -152,11 +152,12 @@ Prevent collisions. Re-sequence or narrow scope if overlap.
 
 When an Issue is executable:
 
-**First, check agent pool capacity:**
+**First, check capacity:**
 
-- Read `.github/agent-registry.json` to count active local agents
-- If 4 local agents already active → spawn secondary Tech Lead instead
-- If <4 agents → proceed with delegation
+Count Issues with Status = "In Progress" OR "Verify" on the Project board.
+
+- If count >= 4 → spawn secondary Tech Lead instead
+- If count < 4 → proceed with delegation
 
 **Option A — Local Software Engineer (same VS Code session):**
 
@@ -178,8 +179,6 @@ When done: Update Project status to Verify, open PR, and report back.
 
 - Score 3-4: Use GPT-5.2-Codex (default)
 - Score 5-6: Use Claude Opus 4.5 for complex work
-
-After spawning, add entry to `.github/agent-registry.json`.
 
 **Option B — Cloud Agent (GitHub Copilot coding agent):**
 
@@ -307,7 +306,6 @@ Score the task to select the right executor and model for Software Engineer:
 - Policy: `AGENTS.md`
 - Product + Status: **CMC Go Project** — https://github.com/users/sirjamesoffordii/projects/4
 - Patterns: `.github/agents/CMC_GO_PATTERNS.md`
-- Agent Registry: `.github/agent-registry.json`
 
 ## Evidence template
 
