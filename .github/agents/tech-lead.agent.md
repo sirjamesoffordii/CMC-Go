@@ -178,8 +178,8 @@ TL can spawn agents via terminal commands that don't block:
 # Spawn cloud agent (returns immediately)
 gh agent-task create "Task description" --base staging
 
-# Spawn local agent in new VS Code window (shares workspace)
-code chat -n -m agent "Task description"
+# Spawn local SWE agent in new VS Code window (shares workspace)
+code chat -n -m "Software Engineer (SWE)" "Task description"
 ```
 
 Local agents spawned via `code chat -n` share the workspace and coordinate through PRs like cloud agents.

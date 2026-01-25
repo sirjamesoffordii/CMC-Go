@@ -283,7 +283,7 @@ Tech Lead manages concurrent work to prevent review backlog. The **Project board
 **Active items** = Issues with Status "In Progress" OR "Verify". This includes:
 
 - Cloud Agent work (Issues delegated via `agent:copilot-swe` label or `gh agent-task create`)
-- Local delegated sessions (via `code chat -n`)
+- Local delegated sessions (via `code chat -m "Software Engineer (SWE)"`)
 
 **NOT counted:** Subagents via `runSubagent` — these are internal/blocking and don't require polling.
 
@@ -482,11 +482,11 @@ TL Session (no user prompts needed between batches):
 
 **What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
 
-| Method                                   | Blocking | Communication          | Best For                    |
-| ---------------------------------------- | -------- | ---------------------- | --------------------------- |
-| Cloud Agent                              | ❌ No    | GitHub PR/comments     | Simple async implementation |
-| `gh agent-task create`                   | ❌ No    | GitHub PR/comments     | CLI-based async spawning    |
-| `code chat -m "Software Engineer (SWE)"` | ❌ No    | GitHub + workspace     | Local parallel sessions     |
+| Method                                   | Blocking | Communication      | Best For                    |
+| ---------------------------------------- | -------- | ------------------ | --------------------------- |
+| Cloud Agent                              | ❌ No    | GitHub PR/comments | Simple async implementation |
+| `gh agent-task create`                   | ❌ No    | GitHub PR/comments | CLI-based async spawning    |
+| `code chat -m "Software Engineer (SWE)"` | ❌ No    | GitHub + workspace | Local parallel sessions     |
 
 **Custom agent CLI syntax:**
 
@@ -505,12 +505,12 @@ The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `
 
 **What TL can and cannot do with spawned sessions:**
 
-| TL Can Do | TL Cannot Do |
-|-----------|--------------|
-| Spawn with initial task prompt | See spawned agent's chat UI |
-| Poll GitHub for comments/PRs | Post follow-up prompts |
-| Read workspace file changes | Get real-time responses |
-| Check board status changes | Directly restart a stuck chat |
+| TL Can Do                      | TL Cannot Do                  |
+| ------------------------------ | ----------------------------- |
+| Spawn with initial task prompt | See spawned agent's chat UI   |
+| Poll GitHub for comments/PRs   | Post follow-up prompts        |
+| Read workspace file changes    | Get real-time responses       |
+| Check board status changes     | Directly restart a stuck chat |
 
 **When TL uses delegated sessions:**
 
@@ -533,13 +533,13 @@ Since TL cannot see spawned SWE chat sessions, communication happens through Git
 
 **Signal markers (SWE posts these as GitHub comments):**
 
-| Marker | Meaning | TL Action |
-|--------|---------|-----------|
-| `SWE-HEARTBEAT: <timestamp>` | Agent alive | None (monitoring) |
-| `SWE-CLAIMED: Issue #X` | Working on issue | Track in board |
-| `SWE-BLOCKED: Issue #X - <reason>` | Needs help | Answer on issue |
-| `SWE-COMPLETE: Issue #X, PR #Y` | Ready for review | Review PR |
-| `SWE-IDLE: No work found` | Board empty | Create more work |
+| Marker                             | Meaning          | TL Action         |
+| ---------------------------------- | ---------------- | ----------------- |
+| `SWE-HEARTBEAT: <timestamp>`       | Agent alive      | None (monitoring) |
+| `SWE-CLAIMED: Issue #X`            | Working on issue | Track in board    |
+| `SWE-BLOCKED: Issue #X - <reason>` | Needs help       | Answer on issue   |
+| `SWE-COMPLETE: Issue #X, PR #Y`    | Ready for review | Review PR         |
+| `SWE-IDLE: No work found`          | Board empty      | Create more work  |
 
 **TL polling loop:**
 
@@ -552,6 +552,7 @@ $comments = gh api repos/sirjamesoffordii/CMC-Go/issues/<coordination-issue>/com
 **Restarting a stuck SWE:**
 
 If no heartbeat for 5+ minutes:
+
 1. Check if SWE chat tab is still open (manual)
 2. Spawn a new SWE session: `code chat -m "Software Engineer (SWE)" "Continue work..."`
 
@@ -652,7 +653,7 @@ These behaviors were empirically verified:
 | `gh agent-task create`               | ❌ NON-BLOCKING   | CLI spawns cloud agent, returns URL    | Scripted/terminal agent spawning    |
 | `code chat -n -m "<agent>"`          | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
 
-**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "software-engineer"`.
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "Software Engineer (SWE)"`.
 
 ### Non-Blocking Spawn Methods
 
@@ -663,9 +664,6 @@ Spawn cloud agents from terminal without VS Code tools:
 ```powershell
 # Non-blocking task creation (returns URL immediately)
 gh agent-task create "Fix the login bug" --base staging
-
-# With custom agent definition
-gh agent-task create "Implement feature X" --custom-agent software-engineer
 
 # List active agent tasks
 gh agent-task list -L 10
@@ -726,7 +724,7 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 
 - Parallel `runSubagent`: 6+ (all return)
 - Parallel cloud agents: 50+ (no practical limit)
-- Local sessions via `code chat -n`: 5-10 (system resources)
+- Local sessions via `code chat -m`: 5-10 (system resources)
 - Subagents do NOT count toward TL's 4-item capacity
 
 ### Premium requests
@@ -754,7 +752,7 @@ PRIMARY TL (has runSubagent tool)
 ├── Can spawn local TL ✅ (blocking)
 ├── Can spawn cloud agents ✅ (non-blocking)
 ├── Can run `gh agent-task create` ✅ (non-blocking)
-├── Can run `code chat -n` ✅ (non-blocking, new window)
+├── Can run `code chat -m "<agent>"` ✅ (non-blocking, new window)
 │
 └── SPAWNED agents (no runSubagent tool)
     ├── Cannot spawn local agents ❌
@@ -799,37 +797,6 @@ Cloud agents:
 ### Context inheritance
 
 Spawned agents inherit workspace context (repo name, branch, project structure). They can answer questions about the codebase without reading files first.
-
-## Scalable Workflow Summary
-
-**The Golden Rule:** Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.
-
-### Quick Decision
-
-| Need                    | Method                   | Blocking?         | Model          |
-| ----------------------- | ------------------------ | ----------------- | -------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)   |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)  |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
-
-### The Pattern
-
-```
-1. RESEARCH (if needed) → runSubagent (blocking, parallel OK)
-2. DISPATCH → gh agent-task create (non-blocking, fire-and-forget)
-3. CONTINUE → TL keeps coordinating while agents work
-4. HARVEST → Poll `gh agent-task list`, review PRs, merge
-```
-
-### Tested Limits
-
-- Parallel `runSubagent`: 6+ (all return)
-- Parallel cloud agents: 50+ (no practical limit)
-- Local sessions via `code chat -n`: 5-10 (system resources)
-- Subagents do NOT count toward TL's 4-item capacity
 
 ## Solo mode (one agent can run the whole system)
 

@@ -221,9 +221,9 @@ Status Options:
 
 **Tags:** agent-spawning
 **Problem:** Need to spawn SWE/TL agents programmatically without manual selection.
-**Solution:** Use `-m` flag with agent filename stem: `code chat -n -m "software-engineer" "Your task"`
-**Example:** `code chat -n -m "tech-lead" "Check board and delegate"` spawns TL in new window.
-**Key insight:** The mode identifier matches the filename stem (e.g., `software-engineer.agent.md` → `software-engineer`).
+**Solution:** Use `-m` flag with the exact `name:` field from the agent file: `code chat -m "Software Engineer (SWE)" "Your task"`
+**Example:** `code chat -m "Tech Lead (TL)" "Check board and delegate"` spawns TL.
+**Key insight:** The mode identifier is the exact `name:` field (e.g., `"Software Engineer (SWE)"`, not the filename stem).
 
 ### TL must not block on subagents for implementation
 

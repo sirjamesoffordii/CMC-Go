@@ -65,7 +65,7 @@ When activated with a specific task, you receive:
 START (no task given)
   │
   ├── 1. Signal alive (heartbeat)
-  │     gh issue comment <heartbeat-issue> --body "SWE-HEARTBEAT: $(Get-Date -Format o)"
+  │     Post heartbeat on the Issue you're about to claim (or a coordination issue if idle)
   │
   ├── 2. Check CMC Go Project board
   │     gh project item-list 4 --owner sirjamesoffordii --format json
@@ -107,22 +107,22 @@ START (no task given)
 
 ### How TL monitors you:
 
-| TL observes via | You signal by |
-|-----------------|---------------|
-| `gh api` polling | GitHub issue comments |
-| Board status | Project status updates |
-| PR list | Opening PRs |
-| Workspace files | Creating/editing files |
+| TL observes via  | You signal by          |
+| ---------------- | ---------------------- |
+| `gh api` polling | GitHub issue comments  |
+| Board status     | Project status updates |
+| PR list          | Opening PRs            |
+| Workspace files  | Creating/editing files |
 
 ### Signal markers (use these exact strings):
 
-| Marker | Meaning | When to use |
-|--------|---------|-------------|
-| `SWE-HEARTBEAT: <timestamp>` | "I'm alive" | Every 5 minutes or at loop start |
-| `SWE-CLAIMED: Issue #X` | "Working on this" | After claiming an issue |
-| `SWE-BLOCKED: Issue #X - <reason>` | "Need help" | When stuck |
-| `SWE-COMPLETE: Issue #X, PR #Y` | "Done, ready for review" | After opening PR |
-| `SWE-IDLE: No work found` | "Board empty" | When no Todo items |
+| Marker                             | Meaning                  | When to use                      |
+| ---------------------------------- | ------------------------ | -------------------------------- |
+| `SWE-HEARTBEAT: <timestamp>`       | "I'm alive"              | Every 5 minutes or at loop start |
+| `SWE-CLAIMED: Issue #X`            | "Working on this"        | After claiming an issue          |
+| `SWE-BLOCKED: Issue #X - <reason>` | "Need help"              | When stuck                       |
+| `SWE-COMPLETE: Issue #X, PR #Y`    | "Done, ready for review" | After opening PR                 |
+| `SWE-IDLE: No work found`          | "Board empty"            | When no Todo items               |
 
 ### Where to post signals:
 
@@ -139,6 +139,7 @@ SWE loops → "SWE-HEARTBEAT: 2026-01-24T21:15:00Z"
 ```
 
 **TL polls every ~60 seconds** and can:
+
 - See your progress
 - Answer blocked questions
 - Restart you if heartbeat stops
