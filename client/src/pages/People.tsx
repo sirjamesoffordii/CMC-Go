@@ -15,6 +15,7 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -67,6 +68,7 @@ export default function People() {
     return params.get("search") || "";
   };
   const [searchQuery, setSearchQuery] = useState(getSearchQueryInitial());
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -209,9 +211,9 @@ export default function People() {
       filtered = filtered.filter(p => statusFilter.has(p.status));
     }
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Search filter (uses debounced query)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(p => {
         const needs = needsByPersonId.get(p.personId) ?? [];
         const needsText = needs
@@ -263,7 +265,7 @@ export default function People() {
   }, [
     allPeople,
     statusFilter,
-    searchQuery,
+    debouncedSearchQuery,
     myCampus,
     user?.campusId,
     needTypeFilter,
@@ -728,7 +730,41 @@ export default function People() {
         {/* Hierarchical List */}
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
-            {regionsWithDistricts.length === 0 ? (
+            {filteredPeople.length === 0 ? (
+              <div className="px-6 py-8 text-center text-gray-500">
+                {debouncedSearchQuery.trim() ? (
+                  <>
+                    <Search className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+                    <p className="font-medium">No results found</p>
+                    <p className="text-sm mt-1">
+                      No people match "{debouncedSearchQuery}"
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSearchQuery("")}
+                      className="mt-3"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear search
+                    </Button>
+                  </>
+                ) : statusFilter.size > 0 ||
+                  hasActiveNeeds ||
+                  needTypeFilter !== "All" ||
+                  myCampus ? (
+                  <>
+                    <Filter className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+                    <p className="font-medium">No results found</p>
+                    <p className="text-sm mt-1">
+                      No people match the current filters
+                    </p>
+                  </>
+                ) : (
+                  <p>No people found</p>
+                )}
+              </div>
+            ) : regionsWithDistricts.length === 0 ? (
               <div className="px-6 py-8 text-center text-gray-500">
                 No districts found
               </div>
