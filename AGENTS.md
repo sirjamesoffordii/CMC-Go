@@ -482,13 +482,35 @@ TL Session (no user prompts needed between batches):
 
 **What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
 
-| Method                 | Blocking | Communication          | Best For                    |
-| ---------------------- | -------- | ---------------------- | --------------------------- |
-| Cloud Agent            | ❌ No    | GitHub PR/comments     | Simple async implementation |
-| `gh agent-task create` | ❌ No    | GitHub PR/comments     | CLI-based async spawning    |
-| `code chat -n`         | ❌ No    | Shared workspace + PRs | Local parallel sessions     |
+| Method                                   | Blocking | Communication          | Best For                    |
+| ---------------------------------------- | -------- | ---------------------- | --------------------------- |
+| Cloud Agent                              | ❌ No    | GitHub PR/comments     | Simple async implementation |
+| `gh agent-task create`                   | ❌ No    | GitHub PR/comments     | CLI-based async spawning    |
+| `code chat -m "Software Engineer (SWE)"` | ❌ No    | GitHub + workspace     | Local parallel sessions     |
 
-**Known limitation:** `code chat -n` opens a new VS Code window but does NOT apply custom agents (SWE/TL). The new window defaults to "Agent" mode with whatever model is selected in UI. **User must manually select the custom agent** from the dropdown in the new window.
+**Custom agent CLI syntax:**
+
+```powershell
+# Spawn SWE agent (opens new chat tab in current window)
+code chat -m "Software Engineer (SWE)" "Your task here"
+
+# Spawn SWE agent in new window (fully non-blocking)
+code chat -n -m "Software Engineer (SWE)" "Your task here"
+
+# Spawn Tech Lead agent
+code chat -m "Tech Lead (TL)" "Your task here"
+```
+
+The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SWE)"`).
+
+**What TL can and cannot do with spawned sessions:**
+
+| TL Can Do | TL Cannot Do |
+|-----------|--------------|
+| Spawn with initial task prompt | See spawned agent's chat UI |
+| Poll GitHub for comments/PRs | Post follow-up prompts |
+| Read workspace file changes | Get real-time responses |
+| Check board status changes | Directly restart a stuck chat |
 
 **When TL uses delegated sessions:**
 
@@ -497,12 +519,41 @@ TL Session (no user prompts needed between batches):
 - Want to continue coordinating while work happens
 
 **CRITICAL: TL must not block on implementation.** When TL uses `runSubagent` for implementation, TL cannot:
+
 - Poll the board for blocked/completed work
 - Answer questions from blocked agents
 - Review PRs from completed agents
 - Spawn more work as capacity allows
 
 Use `runSubagent` only for quick research/verification. Use delegated sessions for implementation.
+
+### TL-SWE Communication Protocol
+
+Since TL cannot see spawned SWE chat sessions, communication happens through GitHub:
+
+**Signal markers (SWE posts these as GitHub comments):**
+
+| Marker | Meaning | TL Action |
+|--------|---------|-----------|
+| `SWE-HEARTBEAT: <timestamp>` | Agent alive | None (monitoring) |
+| `SWE-CLAIMED: Issue #X` | Working on issue | Track in board |
+| `SWE-BLOCKED: Issue #X - <reason>` | Needs help | Answer on issue |
+| `SWE-COMPLETE: Issue #X, PR #Y` | Ready for review | Review PR |
+| `SWE-IDLE: No work found` | Board empty | Create more work |
+
+**TL polling loop:**
+
+```powershell
+# Check for SWE signals every 60 seconds
+$comments = gh api repos/sirjamesoffordii/CMC-Go/issues/<coordination-issue>/comments --jq '.[].body'
+# Look for SWE-HEARTBEAT, SWE-BLOCKED, SWE-COMPLETE markers
+```
+
+**Restarting a stuck SWE:**
+
+If no heartbeat for 5+ minutes:
+1. Check if SWE chat tab is still open (manual)
+2. Spawn a new SWE session: `code chat -m "Software Engineer (SWE)" "Continue work..."`
 
 ### The Golden Rule
 
@@ -599,13 +650,13 @@ These behaviors were empirically verified:
 | Parallel `runSubagent`               | ✅ BLOCKING (all) | TL waits for ALL to complete           | Independent tasks, need all results |
 | Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING   | Returns immediately, agent works async | Fire-and-forget tasks, scaling      |
 | `gh agent-task create`               | ❌ NON-BLOCKING   | CLI spawns cloud agent, returns URL    | Scripted/terminal agent spawning    |
-| `code chat -n -m agent`              | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
+| `code chat -n -m "<agent>"`          | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
 
-**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows.
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "software-engineer"`.
 
-### Non-Blocking Spawn Methods (NEW)
+### Non-Blocking Spawn Methods
 
-#### 1. `gh agent-task create` (CLI - Recommended)
+#### 1. `gh agent-task create` (CLI - Recommended for simple tasks)
 
 Spawn cloud agents from terminal without VS Code tools:
 
@@ -622,20 +673,28 @@ gh agent-task list -L 10
 
 **Tested:** Spawned 6 agents in parallel, all worked concurrently (PRs #209-214).
 
-#### 2. `code chat` (Local Agent in New Window)
+#### 2. `code chat` (Local Agent with Custom Mode)
 
-Spawn local agent sessions in separate VS Code windows:
+Spawn local agent sessions with custom agents:
 
 ```powershell
-# Open new VS Code window with agent chat
-code chat -n -m agent "Your task description"
+# Spawn SWE agent in current window
+code chat -m "Software Engineer (SWE)" "Implement Issue #42"
+
+# Spawn SWE agent in new window (non-blocking)
+code chat -n -m "Software Engineer (SWE)" "Implement Issue #42"
+
+# Spawn Tech Lead agent
+code chat -m "Tech Lead (TL)" "Review project board and delegate"
 
 # Options:
-#   -n, --new-window    Force new window (non-blocking)
-#   -r, --reuse-window  Use last active window
-#   -m, --mode agent    Agent mode (default)
-#   -a, --add-file      Add file context
+#   -n, --new-window      Force new window (non-blocking)
+#   -r, --reuse-window    Use last active window
+#   -m, --mode <id>       Mode: 'ask', 'edit', 'agent', or custom agent name
+#   -a, --add-file        Add file context
 ```
+
+**Custom agent identifiers** use the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SWE)"`).
 
 **Note:** Shares Copilot subscription with primary session.
 
@@ -678,14 +737,14 @@ code chat -n -m agent "Your task description"
 
 ### Use Cases by Agent Type
 
-| Use Case                   | Best Method              | Why                                |
-| -------------------------- | ------------------------ | ---------------------------------- |
-| **Research/Analysis**      | `runSubagent` (parallel) | Get results back, combine findings |
-| **Quick verification**     | `runSubagent` (single)   | Need verdict before proceeding     |
-| **Simple implementation**  | Cloud agent              | Fire-and-forget, don't wait        |
-| **Bulk simple tasks**      | Multiple cloud agents    | Scale to 50+ in parallel           |
-| **Complex implementation** | `runSubagent` (SWE Opus) | Need premium model, get result     |
-| **Local parallel work**    | `code chat -n`           | Multiple VS Code windows           |
+| Use Case                   | Best Method                 | Why                                |
+| -------------------------- | --------------------------- | ---------------------------------- |
+| **Research/Analysis**      | `runSubagent` (parallel)    | Get results back, combine findings |
+| **Quick verification**     | `runSubagent` (single)      | Need verdict before proceeding     |
+| **Simple implementation**  | Cloud agent                 | Fire-and-forget, don't wait        |
+| **Bulk simple tasks**      | Multiple cloud agents       | Scale to 50+ in parallel           |
+| **Complex implementation** | `runSubagent` (SWE Opus)    | Need premium model, get result     |
+| **Local parallel work**    | `code chat -n -m "<agent>"` | Multiple VS Code windows           |
 
 ### Spawning hierarchy
 

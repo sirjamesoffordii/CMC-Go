@@ -217,17 +217,17 @@ Status Options:
 
 ### agent-spawning
 
-### code chat -n doesn't apply custom agents
+### Spawning chat with custom agent via CLI
 
 **Tags:** agent-spawning
-**Problem:** `code chat -n` opens new VS Code window but doesn't select custom agent (SWE/TL), defaults to "Agent" with UI model.
-**Solution:** Manual step required: user must select custom agent in new window dropdown.
-**Workaround:** Use cloud agents (`gh agent-task create`) for non-blocking work that doesn't need custom agent.
-**Prevention:** For continuous SWE sessions, user must manually start with correct agent selected.
+**Problem:** Need to spawn SWE/TL agents programmatically without manual selection.
+**Solution:** Use `-m` flag with agent filename stem: `code chat -n -m "software-engineer" "Your task"`
+**Example:** `code chat -n -m "tech-lead" "Check board and delegate"` spawns TL in new window.
+**Key insight:** The mode identifier matches the filename stem (e.g., `software-engineer.agent.md` → `software-engineer`).
 
 ### TL must not block on subagents for implementation
 
 **Tags:** agent-spawning
 **Problem:** When TL uses blocking `runSubagent` for implementation, TL cannot poll board, answer blocked agents, or manage parallel work.
-**Solution:** TL should delegate via cloud agents (`gh agent-task create`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
-**Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → cloud agent instead.
+**Solution:** TL should delegate via cloud agents (`gh agent-task create`) or local windows (`code chat -n -m "software-engineer"`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
+**Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → non-blocking spawn instead.

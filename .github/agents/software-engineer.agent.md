@@ -43,8 +43,9 @@ You are activated by:
 1. **Tech Lead handoff** — Tech Lead runs you via `runSubagent` with a prompt containing Issue details
 2. **Label trigger** — `agent:copilot-swe` label triggers cloud execution
 3. **Direct user request** — User asks you to implement something
+4. **Autonomous start** — Started with no specific task (see "Continuous Loop" below)
 
-When activated, you receive:
+When activated with a specific task, you receive:
 
 - Issue number and URL
 - Goal (one sentence)
@@ -55,6 +56,92 @@ When activated, you receive:
 **If any of these are missing, ask Tech Lead to make the Issue executable before proceeding.**
 
 **Before starting work:** Set Project status → **In Progress** and assign yourself. This is non-negotiable — the board must reflect reality.
+
+## Continuous Loop (when no task given)
+
+**If started without a specific task**, run autonomously:
+
+```
+START (no task given)
+  │
+  ├── 1. Signal alive (heartbeat)
+  │     gh issue comment <heartbeat-issue> --body "SWE-HEARTBEAT: $(Get-Date -Format o)"
+  │
+  ├── 2. Check CMC Go Project board
+  │     gh project item-list 4 --owner sirjamesoffordii --format json
+  │
+  ├── 3. Find highest priority unclaimed item
+  │     Status = "Todo" AND no assignee
+  │
+  ├── 4. Claim it
+  │     Set Status → In Progress, assign yourself
+  │     Post GitHub comment: "SWE-CLAIMED: Issue #X"
+  │
+  ├── 5. Execute (EXPLORE → IMPLEMENT → VERIFY)
+  │
+  ├── 6. Complete
+  │     Open PR, set Status → Verify
+  │     Post GitHub comment: "SWE-COMPLETE: Issue #X, PR #Y"
+  │
+  └── 7. LOOP → Go back to step 1
+```
+
+**Keep looping** until:
+
+- No more Todo items on the board
+- You hit 3 consecutive failures (circuit breaker)
+- User explicitly stops you
+
+**If board is empty:**
+
+1. Run cold start scan (see AGENTS.md)
+2. Create Issues from findings
+3. Add to project board
+4. Continue loop
+
+**This makes SWE a continuous, autonomous worker** — you don't wait for TL to delegate. You pull work from the board yourself.
+
+## TL-SWE Communication Protocol
+
+**TL cannot see your chat UI.** TL spawns you with `code chat -m "Software Engineer (SWE)" "task"` and can only observe your work through GitHub.
+
+### How TL monitors you:
+
+| TL observes via | You signal by |
+|-----------------|---------------|
+| `gh api` polling | GitHub issue comments |
+| Board status | Project status updates |
+| PR list | Opening PRs |
+| Workspace files | Creating/editing files |
+
+### Signal markers (use these exact strings):
+
+| Marker | Meaning | When to use |
+|--------|---------|-------------|
+| `SWE-HEARTBEAT: <timestamp>` | "I'm alive" | Every 5 minutes or at loop start |
+| `SWE-CLAIMED: Issue #X` | "Working on this" | After claiming an issue |
+| `SWE-BLOCKED: Issue #X - <reason>` | "Need help" | When stuck |
+| `SWE-COMPLETE: Issue #X, PR #Y` | "Done, ready for review" | After opening PR |
+| `SWE-IDLE: No work found` | "Board empty" | When no Todo items |
+
+### Where to post signals:
+
+1. **Primary:** Comment on the Issue you're working on
+2. **Fallback:** Comment on a dedicated coordination issue (TL will create one)
+
+### Example signal flow:
+
+```
+SWE starts → "SWE-HEARTBEAT: 2026-01-24T21:00:00Z"
+SWE claims Issue #42 → "SWE-CLAIMED: Issue #42"
+SWE finishes → "SWE-COMPLETE: Issue #42, PR #215"
+SWE loops → "SWE-HEARTBEAT: 2026-01-24T21:15:00Z"
+```
+
+**TL polls every ~60 seconds** and can:
+- See your progress
+- Answer blocked questions
+- Restart you if heartbeat stops
 
 ## Using Subagents (when you're the primary agent)
 
