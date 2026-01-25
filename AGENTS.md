@@ -488,13 +488,21 @@ TL Session (no user prompts needed between batches):
 | `gh agent-task create` | ❌ No    | GitHub PR/comments     | CLI-based async spawning    |
 | `code chat -n`         | ❌ No    | Shared workspace + PRs | Local parallel sessions     |
 
-**Note:** `code chat -n` opens a new VS Code window that shares the workspace. Agents in separate windows can work on different branches simultaneously but coordinate through PRs like any other agent.
+**Known limitation:** `code chat -n` opens a new VS Code window but does NOT apply custom agents (SWE/TL). The new window defaults to "Agent" mode with whatever model is selected in UI. **User must manually select the custom agent** from the dropdown in the new window.
 
 **When TL uses delegated sessions:**
 
 - Implementation work you don't need to wait for
 - Scaling to multiple parallel tasks
 - Want to continue coordinating while work happens
+
+**CRITICAL: TL must not block on implementation.** When TL uses `runSubagent` for implementation, TL cannot:
+- Poll the board for blocked/completed work
+- Answer questions from blocked agents
+- Review PRs from completed agents
+- Spawn more work as capacity allows
+
+Use `runSubagent` only for quick research/verification. Use delegated sessions for implementation.
 
 ### The Golden Rule
 

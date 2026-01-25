@@ -51,7 +51,7 @@ function getConnectionWithoutDb() {
     const url = new URL(connectionString);
     url.pathname = ""; // Remove database name
     return url.toString();
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -217,7 +217,7 @@ async function resetDatabase(options = {}) {
   if (dropDatabase) {
     try {
       dropped = await dropAndRecreateDatabase();
-    } catch (error) {
+    } catch (_error) {
       console.warn(
         "⚠️  Could not drop/recreate database, falling back to truncation...\n"
       );

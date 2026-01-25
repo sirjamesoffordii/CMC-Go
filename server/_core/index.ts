@@ -75,7 +75,7 @@ async function startServer() {
   if (ENV.DATABASE_URL) {
     try {
       await startupDbHealthCheck();
-    } catch (error) {
+    } catch (_error) {
       if (!isDevelopment) {
         console.error(
           "[Startup] Database health check failed. Server will not start."

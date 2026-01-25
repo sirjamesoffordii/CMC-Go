@@ -214,3 +214,20 @@ Status Options:
 **Problem:** Changes land but behavior is unknown.
 **Solution:** Check logs (e.g., `railway logs -n 50`) after deploys.
 **Prevention:** Make log checks part of deploy routine.
+
+### agent-spawning
+
+### code chat -n doesn't apply custom agents
+
+**Tags:** agent-spawning
+**Problem:** `code chat -n` opens new VS Code window but doesn't select custom agent (SWE/TL), defaults to "Agent" with UI model.
+**Solution:** Manual step required: user must select custom agent in new window dropdown.
+**Workaround:** Use cloud agents (`gh agent-task create`) for non-blocking work that doesn't need custom agent.
+**Prevention:** For continuous SWE sessions, user must manually start with correct agent selected.
+
+### TL must not block on subagents for implementation
+
+**Tags:** agent-spawning
+**Problem:** When TL uses blocking `runSubagent` for implementation, TL cannot poll board, answer blocked agents, or manage parallel work.
+**Solution:** TL should delegate via cloud agents (`gh agent-task create`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
+**Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → cloud agent instead.
