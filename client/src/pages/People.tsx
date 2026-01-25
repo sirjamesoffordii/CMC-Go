@@ -123,6 +123,9 @@ export default function People() {
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [campusForm, setCampusForm] = useState({ name: "" });
+  const [campusSortBy, setCampusSortBy] = useState<
+    Record<number, "status" | "name" | "role">
+  >({});
 
   // Data queries - ONLY run when authenticated
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -315,11 +318,58 @@ export default function People() {
       }
     });
 
-    // Sort campuses within each district
+    const statusSortOrder: Record<
+      "Yes" | "Maybe" | "No" | "Not Invited",
+      number
+    > = {
+      Yes: 0,
+      Maybe: 1,
+      No: 2,
+      "Not Invited": 3,
+    };
+
+    const comparePeople = (
+      a: Person,
+      b: Person,
+      sortBy: "status" | "name" | "role"
+    ) => {
+      if (sortBy === "name") {
+        const aName = a.name?.trim() || a.personId;
+        const bName = b.name?.trim() || b.personId;
+        return aName.localeCompare(bName);
+      }
+
+      if (sortBy === "role") {
+        const aRole = a.primaryRole?.trim() || "";
+        const bRole = b.primaryRole?.trim() || "";
+        const roleCompare = aRole.localeCompare(bRole);
+        if (roleCompare !== 0) return roleCompare;
+        const aName = a.name?.trim() || a.personId;
+        const bName = b.name?.trim() || b.personId;
+        return aName.localeCompare(bName);
+      }
+
+      const statusCompare =
+        statusSortOrder[a.status] - statusSortOrder[b.status];
+      if (statusCompare !== 0) return statusCompare;
+      const aName = a.name?.trim() || a.personId;
+      const bName = b.name?.trim() || b.personId;
+      return aName.localeCompare(bName);
+    };
+
+    // Sort people within each campus and sort campuses within each district
     districtMap.forEach((data, districtId) => {
-      const sortedCampuses = Array.from(data.campuses.values()).sort((a, b) =>
-        a.campus.name.localeCompare(b.campus.name)
-      );
+      const sortedCampuses = Array.from(data.campuses.values())
+        .map(item => {
+          const sortBy = campusSortBy[item.campus.id] ?? "status";
+          return {
+            ...item,
+            people: [...item.people].sort((a, b) =>
+              comparePeople(a, b, sortBy)
+            ),
+          };
+        })
+        .sort((a, b) => a.campus.name.localeCompare(b.campus.name));
       const newMap = new Map<number, { campus: Campus; people: Person[] }>();
       sortedCampuses.forEach(item => {
         newMap.set(item.campus.id, item);
@@ -348,7 +398,7 @@ export default function People() {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses, campusById]);
+  }, [filteredPeople, allDistricts, allCampuses, campusById, campusSortBy]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -404,8 +454,10 @@ export default function People() {
     campusId: number,
     sortBy: "status" | "name" | "role"
   ) => {
-    // TODO: Implement campus sorting
-    console.log(`Sort campus ${campusId} by ${sortBy}`);
+    setCampusSortBy(prev => ({
+      ...prev,
+      [campusId]: sortBy,
+    }));
   };
 
   // Sync filter state to URL query parameters
@@ -741,6 +793,8 @@ export default function People() {
                                 const isCampusExpanded = expandedCampuses.has(
                                   campus.id
                                 );
+                                const campusSort =
+                                  campusSortBy[campus.id] ?? "status";
                                 const campusNeeds = allNeeds.filter(n =>
                                   people.some(
                                     p => p.personId === n.personId && n.isActive
@@ -836,7 +890,10 @@ export default function People() {
                                                     className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                                   >
                                                     <span>Status</span>
-                                                    <Check className="w-4 h-4" />
+                                                    {campusSort ===
+                                                      "status" && (
+                                                      <Check className="w-4 h-4" />
+                                                    )}
                                                   </button>
                                                   <button
                                                     onClick={() => {
@@ -849,6 +906,9 @@ export default function People() {
                                                     className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                                   >
                                                     <span>Name</span>
+                                                    {campusSort === "name" && (
+                                                      <Check className="w-4 h-4" />
+                                                    )}
                                                   </button>
                                                   <button
                                                     onClick={() => {
@@ -861,6 +921,9 @@ export default function People() {
                                                     className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
                                                   >
                                                     <span>Role</span>
+                                                    {campusSort === "role" && (
+                                                      <Check className="w-4 h-4" />
+                                                    )}
                                                   </button>
                                                 </div>
                                               </>
