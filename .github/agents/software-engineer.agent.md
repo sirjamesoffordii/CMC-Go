@@ -426,13 +426,27 @@ You're running in one of two modes:
 
 This agent can be spawned with different models:
 
-| Variant                     | Model           | Token Cost | Use For                                       |
-| --------------------------- | --------------- | ---------- | --------------------------------------------- |
-| **SWE Basic**               | GPT 4.1         | 0×         | Score 0-1 tasks (docs, comments, lint)        |
-| **Software Engineer (SWE)** | GPT-5.2-Codex   | 1×         | Score 2-4 tasks (standard implementation)     |
-| **SWE Opus**                | Claude Opus 4.5 | 3×         | Score 5-6 tasks (schema, auth, cross-cutting) |
+| Variant                     | Model           | Token Cost | Use For                                          |
+| --------------------------- | --------------- | ---------- | ------------------------------------------------ |
+| **SWE Basic**               | GPT 4.1         | 0×         | Score 0-1 tasks (docs, comments, lint)           |
+| **Software Engineer (SWE)** | GPT-5.2-Codex   | 1×         | Single-task delegation via `runSubagent`         |
+| **SWE Opus**                | Claude Opus 4.5 | 3×         | **Continuous autonomous sessions** (recommended) |
 
-Tech Lead selects the variant via agent name when calling `runSubagent`.
+### Choosing the right variant:
+
+**For single tasks** (TL calls `runSubagent` with specific issue):
+- Use **Software Engineer (SWE)** (GPT-5.2-Codex) — task-focused, returns result
+
+**For continuous autonomous work** (spawned to keep working through the board):
+- Use **SWE Opus** (Claude Opus 4.5) — has judgment to loop, decide, claim new work
+- The 3× cost is efficient because one session handles many issues
+
+**Why Codex stops after one task:**
+GPT-5.2-Codex is optimized for code generation — complete task, return. It's not designed for autonomous judgment loops. Opus 4.5 has the reasoning capabilities to continuously evaluate "what should I do next?"
+
+Tech Lead selects the variant via agent name when spawning:
+- `code chat -m "Software Engineer (SWE)"` — single task
+- `code chat -m "SWE Opus"` — continuous session
 
 ## Blocked Timeout (5 minutes)
 

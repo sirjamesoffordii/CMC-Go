@@ -38,6 +38,7 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  console.log(`[Startup] Timestamp: ${new Date().toISOString()}`);
   // Validate required environment variables before anything else. If
   // validation fails, an exception is thrown and the process will
   // terminate. Doing this check here prevents the server from

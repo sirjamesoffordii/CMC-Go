@@ -365,12 +365,32 @@ Score tasks before selecting an agent:
 | ----- | ----------------------- | ---------------- | ---------- | ----------------------------------------- |
 | 0-1   | SWE Basic               | GPT 4.1          | 0×         | Docs, comments, lint fixes, typos         |
 | 0-2   | Cloud Agent             | (GitHub default) | Dedicated  | Simple async tasks (TL wants to continue) |
-| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | Standard implementation, tests, refactors |
-| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | Complex, cross-cutting, design ambiguity  |
+| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | **Single-task** via `runSubagent`         |
+| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | **Continuous sessions** OR complex tasks  |
+
+### Work Pattern → Model Selection (critical)
+
+**Different models are optimized for different work patterns:**
+
+| Work Pattern                            | Best Model           | Why                                         |
+| --------------------------------------- | -------------------- | ------------------------------------------- |
+| **Single task** (`runSubagent`)         | GPT-5.2-Codex (1×)   | Task-focused, returns result                |
+| **Continuous autonomous session**       | Claude Opus 4.5 (3×) | Has judgment to loop, decide, claim work    |
+| **Bulk simple tasks** (cloud agents)    | GitHub default       | Fire-and-forget, separate quota             |
+
+**Why GPT-5.2-Codex stops after one task:**
+Codex models are optimized for code generation — complete the coding task and return. They're not designed for autonomous judgment loops ("what should I do next?").
+
+**Why Opus 4.5 for continuous sessions:**
+Opus has reasoning capabilities to continuously evaluate the board, decide what to work on, and keep looping. The 3× cost is efficient because **one session handles many issues**.
+
+**TL spawning pattern:**
+- `runSubagent("Software Engineer (SWE)")` — single task, get result back
+- `code chat -m "SWE Opus"` — spawn continuous worker
 
 ### Task Type → Model Selection
 
-Beyond complexity score, consider **what type of work** the agent is doing:
+Beyond work pattern, consider **what type of work** the agent is doing:
 
 | Task Type                           | Recommended Model    | Why                                 |
 | ----------------------------------- | -------------------- | ----------------------------------- |
