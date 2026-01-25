@@ -47,7 +47,6 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
-import { Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { DroppablePerson } from "./DroppablePerson";
 import { CampusDropZone } from "./CampusDropZone";
 import { CampusNameDropZone } from "./CampusNameDropZone";
@@ -2316,7 +2315,7 @@ export function DistrictPanel({
                 }).map((_, idx) => (
                   <User
                     key={`presence-${idx}`}
-                    className="w-5 h-5 text-slate-300"
+                    className="w-5 h-5 text-zinc-400"
                     strokeWidth={1.5}
                   />
                 ))}

@@ -271,7 +271,7 @@ export function DistrictDirectorDropZone({
             className="relative transition-all hover:scale-110 active:scale-95"
           >
             {/* Gray spouse icon behind - shown when person has a spouse */}
-            {person.spouse && (
+            {!maskIdentity && person.spouse && (
               <User
                 className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
                 strokeWidth={1.5}
