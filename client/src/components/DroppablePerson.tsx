@@ -8,6 +8,7 @@ import { Person } from "../../../drizzle/schema";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { StatusChangeConfirmationDialog } from "./StatusChangeConfirmationDialog";
 
 // Map Figma status to database status
 const statusMap = {
@@ -82,6 +83,12 @@ export function DroppablePerson({
   const nameRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
+  // State for status change confirmation
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingStatus, setPendingStatus] = useState<
+    "Yes" | "Maybe" | "No" | "Not Invited" | null
+  >(null);
+
   // Fetch all needs (including inactive) to show met needs with checkmark
   const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
@@ -115,13 +122,26 @@ export function DroppablePerson({
       const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
       const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
       const nextStatus = STATUS_CYCLE[nextIndex];
-      // Call the status change handler if available
-      if (onPersonStatusChange) {
-        onPersonStatusChange(person.personId, nextStatus);
-      }
+
+      // Show confirmation dialog instead of immediately changing status
+      setPendingStatus(nextStatus);
+      setShowConfirmDialog(true);
     },
-    [person.status, person.personId, onPersonStatusChange, canInteract]
+    [person.status, canInteract]
   );
+
+  // Handle confirmation of status change
+  const handleConfirmStatusChange = useCallback(() => {
+    if (pendingStatus && onPersonStatusChange) {
+      onPersonStatusChange(person.personId, pendingStatus);
+    }
+    setPendingStatus(null);
+  }, [pendingStatus, person.personId, onPersonStatusChange]);
+
+  // Handle cancellation of status change
+  const handleCancelStatusChange = useCallback(() => {
+    setPendingStatus(null);
+  }, []);
 
   const [{ isDragging }, drag, preview] = useDrag(
     () => ({
@@ -344,6 +364,18 @@ export function DroppablePerson({
               : null
           }
           position={tooltipPos}
+        />
+      )}
+      {/* Status Change Confirmation Dialog */}
+      {pendingStatus && (
+        <StatusChangeConfirmationDialog
+          open={showConfirmDialog}
+          onOpenChange={setShowConfirmDialog}
+          currentStatus={person.status || "Not Invited"}
+          newStatus={pendingStatus}
+          personName={person.name || undefined}
+          onConfirm={handleConfirmStatusChange}
+          onCancel={handleCancelStatusChange}
         />
       )}
     </>
