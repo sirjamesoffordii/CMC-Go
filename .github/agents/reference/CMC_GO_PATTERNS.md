@@ -97,6 +97,13 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Use `-c core.editor=true` or the provided tasks.
 **Prevention:** Run tasks like `Git: Rebase onto staging (no editor)`.
 
+### Long-running commands need isBackground: true
+
+**Tags:** terminal
+**Problem:** Agent stalls indefinitely waiting for commands that never exit (dev servers, watch modes, streaming logs).
+**Solution:** Use `isBackground: true` for any command that runs continuously. Check output later via `get_terminal_output`.
+**Prevention:** Before running a command, ask: "Does this ever exit?" If no → background. Examples: `pnpm dev`, `railway logs --follow`, any watch command.
+
 ### worktree
 
 ### Use worktrees for implementation

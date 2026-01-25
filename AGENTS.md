@@ -280,7 +280,12 @@ Tech Lead manages concurrent work to prevent review backlog. The **Project board
 | ---------------------------------- | ----- | ------------------------------- |
 | **Max active items per Tech Lead** | 4     | TL review/coordination capacity |
 
-**Active items** = Issues with Status "In Progress" OR "Verify" (includes both local Software Engineer and Cloud Agent work).
+**Active items** = Issues with Status "In Progress" OR "Verify". This includes:
+
+- Cloud Agent work (Issues delegated via `agent:copilot-swe` label or `gh agent-task create`)
+- Local delegated sessions (via `code chat -n`)
+
+**NOT counted:** Subagents via `runSubagent` — these are internal/blocking and don't require polling.
 
 ### How to check capacity
 
@@ -367,15 +372,15 @@ Score tasks before selecting an agent:
 
 Beyond complexity score, consider **what type of work** the agent is doing:
 
-| Task Type                              | Recommended Model    | Why                                 |
-| -------------------------------------- | -------------------- | ----------------------------------- |
-| **Implementation** (writing code)      | GPT-5.2-Codex (1×)   | Optimized for code generation       |
-| **Thinking/Planning** (score 1-3)      | GPT-5.2-Codex (1×)   | Good enough for moderate complexity |
-| **Thinking/Planning** (score 4-6)      | Claude Opus 4.5 (3×) | Complex reasoning needs premium     |
-| **Exploration/Research**               | GPT-5.2-Codex (1×)   | Code-aware, cost-effective          |
-| **Verification/Review** (score 1-3)    | GPT-5.2-Codex (1×)   | Simple verification is affordable   |
-| **Verification/Review** (score 4-6)    | Claude Opus 4.5 (3×) | Complex judgment needs premium      |
-| **Trivial tasks**                      | GPT 4.1 (0×)         | Free, good for docs/comments        |
+| Task Type                           | Recommended Model    | Why                                 |
+| ----------------------------------- | -------------------- | ----------------------------------- |
+| **Implementation** (writing code)   | GPT-5.2-Codex (1×)   | Optimized for code generation       |
+| **Thinking/Planning** (score 1-3)   | GPT-5.2-Codex (1×)   | Good enough for moderate complexity |
+| **Thinking/Planning** (score 4-6)   | Claude Opus 4.5 (3×) | Complex reasoning needs premium     |
+| **Exploration/Research**            | GPT-5.2-Codex (1×)   | Code-aware, cost-effective          |
+| **Verification/Review** (score 1-3) | GPT-5.2-Codex (1×)   | Simple verification is affordable   |
+| **Verification/Review** (score 4-6) | Claude Opus 4.5 (3×) | Complex judgment needs premium      |
+| **Trivial tasks**                   | GPT 4.1 (0×)         | Free, good for docs/comments        |
 
 **TL subagent model selection:**
 
@@ -477,11 +482,13 @@ TL Session (no user prompts needed between batches):
 
 **What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
 
-| Method                 | Blocking | Communication      | Best For                    |
-| ---------------------- | -------- | ------------------ | --------------------------- |
-| Cloud Agent            | ❌ No    | GitHub PR/comments | Simple async implementation |
-| `gh agent-task create` | ❌ No    | GitHub PR/comments | CLI-based async spawning    |
-| `code chat -n`         | ❌ No    | GitHub PR/comments | Local parallel sessions     |
+| Method                 | Blocking | Communication          | Best For                    |
+| ---------------------- | -------- | ---------------------- | --------------------------- |
+| Cloud Agent            | ❌ No    | GitHub PR/comments     | Simple async implementation |
+| `gh agent-task create` | ❌ No    | GitHub PR/comments     | CLI-based async spawning    |
+| `code chat -n`         | ❌ No    | Shared workspace + PRs | Local parallel sessions     |
+
+**Note:** `code chat -n` opens a new VS Code window that shares the workspace. Agents in separate windows can work on different branches simultaneously but coordinate through PRs like any other agent.
 
 **When TL uses delegated sessions:**
 
@@ -657,9 +664,9 @@ code chat -n -m agent "Your task description"
 
 ### Premium requests
 
-**Local subagents (`runSubagent`) do NOT consume premium requests.** Premium request % only increases when the main session user sends a message. You can safely spawn as many local subagents (Tech Lead, SWE Opus) as needed without burning premium quota.
+**Subagents DO consume premium requests.** Each `runSubagent` call uses the selected model's quota — GPT 4.1 (0×), GPT-5.2-Codex (1×), or Opus 4.5 (3×). Since subagents spawn frequently, choose models wisely. Default to GPT-5.2-Codex (1×) and reserve Opus (3×) for complexity score 4+.
 
-**Cloud agents (`gh agent-task`, `copilot-coding-agent`) use dedicated infrastructure.** These run on GitHub's cloud and may have separate quotas/billing. They don't affect your local premium request count.
+**Cloud agents** (`gh agent-task`, `copilot-coding-agent`) use a dedicated SKU (separate billing). They don't count against your premium request quota.
 
 ### Use Cases by Agent Type
 

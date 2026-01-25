@@ -54,6 +54,8 @@ When activated, you receive:
 
 **If any of these are missing, ask Tech Lead to make the Issue executable before proceeding.**
 
+**Before starting work:** Set Project status → **In Progress** and assign yourself. This is non-negotiable — the board must reflect reality.
+
 ## Using Subagents (when you're the primary agent)
 
 If you're the **primary agent session** (not spawned by TL), you have access to `runSubagent` and should use it when useful:
@@ -64,9 +66,11 @@ If you're the **primary agent session** (not spawned by TL), you have access to 
 
 **Model selection for your subagents:**
 
-- Trivial tasks: `runSubagent("SWE Basic")` — GPT 4.1 (free)
-- Standard tasks: `runSubagent("Software Engineer (SWE)")` — GPT-5.2
-- Complex tasks: `runSubagent("SWE Opus")` — Opus 4.5
+- Trivial tasks: `runSubagent("SWE Basic")` — GPT 4.1 (0× cost)
+- Standard tasks: `runSubagent("Software Engineer (SWE)")` — GPT-5.2-Codex (1× cost)
+- Complex tasks: `runSubagent("SWE Opus")` — Opus 4.5 (3× cost)
+
+**Cost warning:** Subagents DO consume premium requests. Be conservative — default to GPT-5.2-Codex (1×) and only use Opus (3×) for complexity score 4+.
 
 **If you don't have `runSubagent`,** you're a spawned agent. Focus on your assigned task.
 
@@ -83,6 +87,15 @@ If you're the **primary agent session** (not spawned by TL), you have access to 
 TL will find it when polling.
 
 ### When you're blocked
+
+**Do NOT escalate for these — self-recover first:**
+
+- Terminal/pager issues → use `Agent: Recover terminal` task
+- Stuck rebase → use `Git: Rebase abort` task
+- Dirty working tree → use `Git: Hard reset to staging` task
+- Routine waits/timeouts (CI, network) → retry once, poll briefly, continue parallel work
+
+**DO escalate for these:**
 
 1. Set Project status → **Blocked**
 2. Comment on Issue with question (include @Alpha-Tech-Lead)
@@ -112,8 +125,10 @@ TL will find it when polling, answer, and set status back to In Progress.
 
 - **Issue:** #[number]
 - **PR:** #[pr-number]
+- **Status:** Ready for Verify
 - **What changed:** [bullets]
 - **How verified:** [commands + results]
+- **Risk:** [low/med/high] — [why]
 - **Blockers/Notes:** [if any]
 ```
 
@@ -239,19 +254,36 @@ Use the PR description + verdict templates in `AGENTS.md`.
 ## SWE checklist (quick)
 
 - Restate AC in the Issue/PR thread
-- Confirm you're in the right worktree (`wt-impl-*` or `wt-verify-*`)
+- Confirm you're in the right worktree (`wt-impl-*` or `wt-verify-*`) if using Mode A (local)
 - Keep the diff minimal and scoped
 - Post evidence (commands + results) and a clear verdict when verifying
-- If blocked: post one A/B/C escalation comment (see `AGENTS.md`), then continue parallel-safe work
+- If blocked: self-recover first (see "When you're blocked"), then escalate if needed
+
+## Execution Mode
+
+You're running in one of two modes:
+
+**Mode A (Local VS Code):**
+
+- Use worktrees: `wt-impl-<issue#>-<slug>` for implementation, `wt-verify-<pr#>-<slug>` for verification
+- Only `wt-main` runs `pnpm dev`
+- Low-risk docs/config (≤50 LOC, 1-2 files) can work directly on `staging`
+- Claim work: Assign Issue to yourself, leave claim comment
+
+**Mode B (Cloud Agent):**
+
+- Worktrees don't exist — operate branch-only
+- Always base on `staging`, PRs target `staging`
 
 ## Model Variants
 
 This agent can be spawned with different models:
 
-| Variant                     | Model           | Use For                                       |
-| --------------------------- | --------------- | --------------------------------------------- |
-| **Software Engineer (SWE)** | GPT-5.2-Codex   | Score 3-4 tasks (standard implementation)     |
-| **SWE Opus**                | Claude Opus 4.5 | Score 5-6 tasks (schema, auth, cross-cutting) |
+| Variant                     | Model           | Token Cost | Use For                                       |
+| --------------------------- | --------------- | ---------- | --------------------------------------------- |
+| **SWE Basic**               | GPT 4.1         | 0×         | Score 0-1 tasks (docs, comments, lint)        |
+| **Software Engineer (SWE)** | GPT-5.2-Codex   | 1×         | Score 2-4 tasks (standard implementation)     |
+| **SWE Opus**                | Claude Opus 4.5 | 3×         | Score 5-6 tasks (schema, auth, cross-cutting) |
 
 Tech Lead selects the variant via agent name when calling `runSubagent`.
 

@@ -124,17 +124,15 @@ Use subagents for:
 
 **Parallel research pattern (tested):**
 
+Spawn multiple subagents in a single tool call (all run concurrently, TL waits for all to return):
+
 ```
-# Spawn 4 agents in parallel for research
-runSubagent([
-  "SWE Opus: Research architecture for Issue #1-3",
-  "SWE Opus: Research testing for Issue #4-6",
-  "SWE Basic: Check docs consistency",
-  "SWE: Analyze test coverage gaps"
-])
-# TL blocked, but all 4 run concurrently
-# All findings return → TL synthesizes and acts
+runSubagent(agentName="Software Engineer (SWE)", prompt="Research architecture for Issues #1-3")
+runSubagent(agentName="SWE Basic", prompt="Check docs consistency")
+runSubagent(agentName="Software Engineer (SWE)", prompt="Analyze test coverage gaps")
 ```
+
+**Note:** Subagents DO consume premium requests based on model (GPT 4.1 = 0×, GPT-5.2-Codex = 1×, Opus 4.5 = 3×). Be conservative with model selection since subagents spawn frequently.
 
 ### Delegated Sessions — When You Want to Continue Working
 
@@ -180,9 +178,11 @@ TL can spawn agents via terminal commands that don't block:
 # Spawn cloud agent (returns immediately)
 gh agent-task create "Task description" --base staging
 
-# Spawn local agent in new VS Code window
+# Spawn local agent in new VS Code window (shares workspace)
 code chat -n -m agent "Task description"
 ```
+
+Local agents spawned via `code chat -n` share the workspace and coordinate through PRs like cloud agents.
 
 ## Polling Strategy (critical)
 
@@ -418,6 +418,23 @@ The cloud agent will:
 1. Did docs waste your time? → Fix the doc
 2. Did you solve something non-obvious? → Add to CMC_GO_PATTERNS.md
 3. Neither? → Write "No changes" and move on
+
+## Execution Mode
+
+You're running in one of two modes:
+
+**Mode A (Local VS Code):**
+
+- Use worktrees (`wt-impl-*`, `wt-verify-*`) for implementation
+- Only `wt-main` runs `pnpm dev`
+- Low-risk docs/config (≤50 LOC, 1-2 files) can work directly on `staging`
+
+**Mode B (Cloud Agent):**
+
+- Worktrees don't exist — operate branch-only
+- Always base on `staging`, PRs target `staging`
+
+See `AGENTS.md` → "Execution modes" for details.
 
 ## Reference docs
 
