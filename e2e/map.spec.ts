@@ -18,14 +18,12 @@ test.describe("map interactions", () => {
     await expect(page.getByText("Going:").first()).toBeVisible();
   });
 
-  test("people page prompts login and navigates back home", async ({ page }) => {
+  test("people page redirects to login when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/people");
 
-    await expect(
-      page.getByText("Please log in to view people.")
-    ).toBeVisible();
-
-    await page.getByRole("button", { name: "Go to Home" }).click();
-    await expect(page).toHaveURL(/\/$/);
+    // Should redirect to login page
+    await expect(page).toHaveURL(/\/login/);
   });
 });

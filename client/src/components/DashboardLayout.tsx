@@ -32,6 +32,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -165,19 +166,37 @@ function DashboardLayoutContent({
             <SidebarMenu className="px-2 py-1">
               {menuItems.map(item => {
                 const isActive = location === item.path;
+                const requiresLogin = item.path === "/people" && !user;
+                const menuButton = (
+                  <SidebarMenuButton
+                    isActive={isActive}
+                    onClick={() =>
+                      setLocation(requiresLogin ? "/login" : item.path)
+                    }
+                    tooltip={item.label}
+                    className={`h-10 transition-all font-normal ${
+                      requiresLogin ? "opacity-50" : ""
+                    }`}
+                  >
+                    <item.icon
+                      className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                    />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                );
+
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={isActive}
-                      onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
-                      className={`h-10 transition-all font-normal`}
-                    >
-                      <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                      />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
+                    {requiresLogin ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
+                        <TooltipContent side="right" align="center">
+                          Please log in to view people
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      menuButton
+                    )}
                   </SidebarMenuItem>
                 );
               })}

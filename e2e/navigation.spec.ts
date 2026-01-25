@@ -1,12 +1,12 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Navigation", () => {
-  test("can navigate to People page", async ({ page }) => {
+  test("can navigate to People page - redirects to login when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/people");
-    await expect(
-      page.getByText("Please log in to view people.")
-    ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Go to Home" })).toBeVisible();
+    // People page requires authentication and redirects to /login
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test("can navigate to Needs page", async ({ page }) => {
