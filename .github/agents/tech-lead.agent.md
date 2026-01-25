@@ -169,6 +169,50 @@ code chat -n -m "Software Engineer (SWE)" "Task description"
 
 Local agents spawned via `code chat -n` share the workspace and coordinate through PRs like cloud agents.
 
+### Session Tracking (naming SWE sessions)
+
+**Track active SWE sessions by number.** VS Code doesn't support naming chat sessions, so track manually:
+
+```
+SWE-1: Issue #233 (spawned 21:00, In Progress)
+SWE-2: Issue #234 (spawned 21:05, Verify)
+SWE-3: Idle (spawned 21:10, checking board)
+```
+
+**When spawning, include session ID in the prompt:**
+
+```powershell
+code chat -n -m "Software Engineer (SWE)" "You are SWE-1. Start. Implement Issue #233."
+code chat -n -m "Software Engineer (SWE)" "You are SWE-2. Start. Implement Issue #234."
+```
+
+**SWE should include session ID in signals:**
+
+```
+SWE-1-CLAIMED: Issue #233
+SWE-1-COMPLETE: Issue #233, PR #240
+```
+
+This helps TL track which session did what when multiple SWEs are running.
+
+### Ensuring SWE uses correct GitHub account
+
+**SWE must authenticate as `Software-Engineer-Agent`.** Before spawning, ensure the account is available:
+
+```powershell
+# Check available accounts
+gh auth status
+
+# If Software-Engineer-Agent not listed, add it
+gh auth login --hostname github.com --web
+```
+
+**In the SWE spawn prompt, remind it:**
+
+```powershell
+code chat -n -m "Software Engineer (SWE)" "You are SWE-1. Verify you're authenticated as Software-Engineer-Agent (gh auth switch if needed). Start. Implement Issue #233."
+```
+
 ## Polling Strategy (critical)
 
 **Poll the board after every coordination action.**
