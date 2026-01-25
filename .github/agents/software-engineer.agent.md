@@ -30,12 +30,18 @@ You are **Software Engineer**.
 
 **TL will give you a session number when spawning you** (e.g., "You are SWE-1"). Use this identity everywhere:
 
+- **Chat naming:** Rename your VS Code chat tab to "Software Engineer 1" (right-click tab → Rename)
 - **GitHub comments:** `SWE-1-CLAIMED: Issue #42`
 - **Branch names:** `agent/swe-1/42-fix-bug`
 - **Commit messages:** `agent(swe-1): Fix bug in handler`
 - **PR descriptions:** Include "Implemented by SWE-1"
 
 If TL didn't give you a number, use just `SWE` (no number).
+
+**At session start, rename your chat tab** so Sir James can track all agent sessions:
+1. Right-click your chat tab in VS Code
+2. Select "Rename"
+3. Enter: "Software Engineer 1" (or your assigned number)
 
 **Before doing any GitHub operations, verify you're authenticated as the correct account:**
 ```powershell
@@ -368,7 +374,7 @@ Stay in one session. No handoffs needed.
 
 ## End-of-Task Reflection (mandatory)
 
-**Every task ends with two lines.** See `AGENTS.md` → "End-of-Task Reflection".
+**You are doing the actual work — your insights matter.** Every completed task ends with reflection that improves the workflow for everyone.
 
 ```markdown
 ## End-of-Task Reflection
@@ -377,13 +383,34 @@ Stay in one session. No handoffs needed.
 - **Patterns:** No changes / [file] — [change]
 ```
 
-**Decision tree:**
+### Workflow Improvement Check
 
-1. Did docs waste your time? → Fix the doc
-2. Did you solve something non-obvious? → Add to CMC_GO_PATTERNS.md
-3. Neither? → Write "No changes" and move on
+Ask yourself:
+- Did the docs waste my time? (missing info, wrong commands, outdated)
+- Did I have to figure out something that should have been documented?
+- Did the agent instructions miss something important?
 
-Don't grep, don't explain. Just decide and act.
+**If yes:** Edit the doc directly. Files to consider:
+- `AGENTS.md` — workflow rules, process
+- `.github/agents/software-engineer.agent.md` — SWE-specific instructions
+- `.github/agents/tech-lead.agent.md` — TL-specific instructions
+
+### Pattern Learning Check
+
+Ask yourself:
+- Did I solve a non-obvious problem others will hit?
+- Did I discover a gotcha or edge case?
+- Did I find a better way to do something?
+
+**If yes:** Add to `.github/agents/reference/CMC_GO_PATTERNS.md` under the right category. Keep it to 2-3 lines max.
+
+### Decision tree (quick version)
+
+1. Docs wasted time → Fix the doc
+2. Solved non-obvious problem → Add to CMC_GO_PATTERNS.md
+3. Neither → Write "No changes" and move on
+
+**Don't skip this.** Your implementation experience is valuable data for improving the system.
 
 ---
 

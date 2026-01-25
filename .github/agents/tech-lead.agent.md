@@ -29,6 +29,21 @@ You are **Tech Lead**.
 
 **GitHub Account:** `Alpha-Tech-Lead`
 
+## Session Identity (critical)
+
+**You may be given a session number** (e.g., "You are TL-1"). If so, use this identity everywhere:
+
+- **GitHub comments:** Include `TL-1` in your comments
+- **Chat naming:** Rename your VS Code chat tab to "Tech Lead 1" (right-click tab → Rename)
+- **When spawning other TLs:** Assign them TL-2, TL-3, etc.
+
+If no session number given, you're the primary TL — use just `TL`.
+
+**At session start, rename your chat tab** so Sir James can track all agent sessions:
+1. Right-click your chat tab in VS Code
+2. Select "Rename"
+3. Enter: "Tech Lead 1" (or your assigned number)
+
 **Before doing any GitHub operations, verify you're authenticated as the correct account:**
 ```powershell
 gh auth status  # Should show: Alpha-Tech-Lead
@@ -179,29 +194,36 @@ code chat -n -m "Software Engineer (SWE)" "You are SWE-1. Start."
 
 **Note:** TL (as Alpha-Tech-Lead) cannot directly spawn cloud agents. Use the `agent:copilot-swe` label instead, which triggers a workflow using the Plus account token.
 
-### Session Tracking (naming SWE sessions)
+### Session Tracking (naming sessions)
 
-**Assign each SWE a unique session number.** Track active sessions:
+**Assign each agent a unique session number.** Track active sessions:
 
 ```
+TL-1: Primary coordinator (spawned 20:00)
+TL-2: Secondary TL for overflow (spawned 21:30)
 SWE-1: Issue #233 (spawned 21:00, In Progress)
 SWE-2: Issue #234 (spawned 21:05, Verify)
 SWE-3: Idle (spawned 21:10, checking board)
 ```
 
-**Standard SWE spawn command:**
+**Standard spawn commands:**
 
 ```powershell
-code chat -n -m "Software Engineer (SWE)" "You are SWE-1. Verify auth as Software-Engineer-Agent. Start. Implement Issue #233."
+# Spawn SWE with session ID
+code chat -n -m "Software Engineer (SWE)" "You are SWE-1. Rename your chat tab to 'Software Engineer 1'. Verify auth as Software-Engineer-Agent. Start."
+
+# Spawn secondary TL (when needed for scaling)
+code chat -n -m "Tech Lead (TL)" "You are TL-2. Rename your chat tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
 ```
 
-**What SWE does with the session ID:**
+**What agents do with session ID:**
 
-- Uses `SWE-1-CLAIMED`, `SWE-1-COMPLETE` in GitHub comments
-- Creates branches like `agent/swe-1/233-health-timing`
-- Includes "Implemented by SWE-1" in PR descriptions
+- **Rename chat tab** — Right-click → Rename → "Software Engineer 1" or "Tech Lead 2"
+- **GitHub comments** — `SWE-1-CLAIMED`, `TL-2-DELEGATED`
+- **Branches** — `agent/swe-1/233-health-timing`
+- **PRs** — "Implemented by SWE-1"
 
-This makes it easy to track which session did what when multiple SWEs are running.
+**Sir James can see all chat sessions** and track who is doing what.
 
 ### GitHub Account Requirements
 
