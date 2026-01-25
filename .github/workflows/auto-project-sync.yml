@@ -5,7 +5,7 @@ name: Auto Project Sync
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened, reopened, labeled]
   pull_request:
     types: [opened, ready_for_review, closed]
 
@@ -29,7 +29,12 @@ jobs:
   # Add new Issues to Project 4
   add-issue-to-project:
     name: Add Issue to Project
-    if: github.event_name == 'issues'
+    if: |
+      github.event_name == 'issues' && (
+        github.event.action == 'opened' ||
+        github.event.action == 'reopened' ||
+        (github.event.action == 'labeled' && github.event.label.name == 'agent:copilot-swe')
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Add Issue to Project 4
