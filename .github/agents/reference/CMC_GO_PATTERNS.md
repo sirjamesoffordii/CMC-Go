@@ -111,6 +111,13 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Use the `Dev: Start server` VS Code task instead of `pnpm dev` directly.
 **Prevention:** For any long-running process you need to survive, prefer VS Code tasks over direct terminal commands.
 
+### Commands that look blocking but aren't
+
+**Tags:** terminal
+**Problem:** Some commands that SHOULD complete quickly get stuck waiting for user input (pagers, confirmations, interactive prompts).
+**Solution:** Pre-configure to avoid prompts. For git: `GIT_PAGER=cat`. For commands that prompt: add `-y` or `--yes` flags. For commands that open editors: use `-c core.editor=true`.
+**Prevention:** Use the provided VS Code tasks which have these settings. If running directly, set env vars first: `$env:GIT_PAGER='cat'; $env:GH_PAGER='cat'`
+
 ### worktree
 
 ### Use worktrees for implementation
