@@ -1680,7 +1680,7 @@ export function InteractiveMap({
         {/* Background click layer - captures clicks on empty space */}
         <div
           className="absolute inset-0 z-0"
-          onClick={e => {
+          onClick={_e => {
             // Trigger background click when clicking on empty space
             if (onBackgroundClick) {
               onBackgroundClick();

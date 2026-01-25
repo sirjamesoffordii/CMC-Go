@@ -76,7 +76,7 @@ export function PersonIcon({
   const capitalizedFirstName =
     firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-  const handleNameMouseEnter = (e: React.MouseEvent) => {
+  const handleNameMouseEnter = (_e: React.MouseEvent) => {
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -89,7 +89,7 @@ export function PersonIcon({
     setTooltipPos(null);
   };
 
-  const handleNameMouseMove = (e: React.MouseEvent) => {
+  const handleNameMouseMove = (_e: React.MouseEvent) => {
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
