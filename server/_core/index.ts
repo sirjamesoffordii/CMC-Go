@@ -192,17 +192,22 @@ async function startServer() {
   // returns minimal information to avoid leaking internal state. It is
   // available in all environments.
   app.get("/healthz", async (req, res) => {
+    const start = Date.now();
     try {
       // Try a simple database query to ensure the connection pool is working
       // Reuse the existing database health check to verify that the
       // connection and critical tables are present. If any errors are
       // returned the call will throw and be caught below.
       await checkDbHealth();
+      const duration = Date.now() - start;
+      console.log(`[Health] /healthz responded OK in ${duration}ms`);
       res.status(200).send("OK");
-    } catch (err) {
+    } catch (_err) {
       // If the DB connection fails or health check throws, return a
       // 503 to signal that the service is unhealthy. We do not include
       // error details for security reasons.
+      const duration = Date.now() - start;
+      console.log(`[Health] /healthz responded Unhealthy in ${duration}ms`);
       res.status(503).send("Unhealthy");
     }
   });
@@ -297,6 +302,9 @@ async function startServer() {
   // Readiness endpoint for tooling (e.g. Playwright webServer).
   // Must not depend on DB connectivity or Vite middleware.
   app.get("/readyz", (req, res) => {
+    const start = Date.now();
+    const duration = Date.now() - start;
+    console.log(`[Health] /readyz responded in ${duration}ms`);
     res.status(200).send("ok");
   });
 

@@ -196,7 +196,7 @@ export function DroppablePerson({
   const capitalizedFirstName =
     firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
-  const handleNameMouseEnter = (e: React.MouseEvent) => {
+  const handleNameMouseEnter = (_e: React.MouseEvent) => {
     // Only show tooltip if canInteract
     if (!canInteract || maskIdentity) return;
     setIsHovered(true);
@@ -213,7 +213,7 @@ export function DroppablePerson({
     setTooltipPos(null);
   };
 
-  const handleNameMouseMove = (e: React.MouseEvent) => {
+  const handleNameMouseMove = (_e: React.MouseEvent) => {
     // Only handle if canInteract
     if (!canInteract || maskIdentity) return;
     if (iconRef.current && isHovered) {
