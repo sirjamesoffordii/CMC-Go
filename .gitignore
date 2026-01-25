@@ -113,6 +113,9 @@ temp/
 tmpclaude-*/
 tmpclaude-*
 
+# Local agent memory (MCP persistence; keep local)
+.agent-memory/
+
 # Local scratch / analysis clones
 _external/
 
