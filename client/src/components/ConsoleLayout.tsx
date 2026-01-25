@@ -40,7 +40,7 @@ export default function ConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated: _isAuthenticated } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const logoutMutation = trpc.auth.logout.useMutation({

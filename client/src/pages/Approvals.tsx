@@ -21,7 +21,7 @@ import { useLocation } from "wouter";
 
 export default function Approvals() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = usePublicAuth();
+  const { user, isAuthenticated: _isAuthenticated } = usePublicAuth();
   const utils = trpc.useUtils();
 
   const { data: pendingApprovals = [], isLoading } =

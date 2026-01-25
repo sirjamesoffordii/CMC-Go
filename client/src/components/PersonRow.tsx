@@ -42,7 +42,7 @@ export function PersonRow({
   hasNeeds,
   onPersonUpdate,
 }: PersonRowProps) {
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const utils = trpc.useUtils();

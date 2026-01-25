@@ -40,7 +40,7 @@ export function PersonIcon({
   onClick,
   onEdit,
 }: PersonIconProps) {
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
