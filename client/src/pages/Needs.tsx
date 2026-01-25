@@ -16,7 +16,7 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Person } from "../../../drizzle/schema";
 
 export default function Needs() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated: _isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);

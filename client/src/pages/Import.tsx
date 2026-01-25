@@ -39,7 +39,7 @@ interface ImportResult {
 }
 
 export default function Import() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated: _isAuthenticated, loading } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState("");
   const [importing, setImporting] = useState(false);
