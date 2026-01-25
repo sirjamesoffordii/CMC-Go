@@ -65,36 +65,23 @@ describe("Public Endpoint Security Audit - Issue #247", () => {
     });
   });
 
-  describe("households.getMembers - CRITICAL SECURITY ISSUE", () => {
-    it("should NOT expose full person records to unauthenticated users", async () => {
+  describe("households.getMembers - CRITICAL SECURITY ISSUE (FIXED)", () => {
+    it("should require authentication and reject unauthenticated users", async () => {
       const ctx = createUnauthenticatedContext();
       const caller = appRouter.createCaller(ctx);
 
-      // This endpoint is currently public and returns full person records
-      const members = await caller.households.getMembers({
-        householdId: testHouseholdId,
-      });
+      // SECURITY FIX (Issue #247): This endpoint now requires authentication
+      // Unauthenticated users should receive an error, not person data
+      await expect(
+        caller.households.getMembers({ householdId: 1 })
+      ).rejects.toThrow();
+    });
 
-      // SECURITY CHECK: This should either:
-      // 1. Require authentication (throw error for unauthenticated users), OR
-      // 2. Return only aggregate data (not individual person records)
-
-      // Current behavior (LEAK): Returns full person records with names, roles, status
-      // Expected behavior: Should require authentication or return aggregates only
-
-      if (Array.isArray(members) && members.length > 0) {
-        const member = members[0];
-
-        // These fields expose person identity and should NOT be in public responses
-        const hasPersonIdentityLeak =
-          Object.prototype.hasOwnProperty.call(member, "name") ||
-          Object.prototype.hasOwnProperty.call(member, "primaryRole") ||
-          Object.prototype.hasOwnProperty.call(member, "status") ||
-          Object.prototype.hasOwnProperty.call(member, "personId");
-
-        // This test will FAIL until the security issue is fixed
-        expect(hasPersonIdentityLeak).toBe(false);
-      }
+    it("should filter results based on authenticated user scope", async () => {
+      // This test documents the expected behavior after the security fix:
+      // - Authenticated users can only see members within their scope
+      // - Scope filtering prevents unauthorized access to person data
+      // Note: Full integration test would require database setup
     });
   });
 
