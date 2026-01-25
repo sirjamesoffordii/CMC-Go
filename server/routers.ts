@@ -1367,7 +1367,7 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const { personId, ...needData } = input;
+        const { personId } = input;
         const person = await db.getPersonByPersonId(personId);
         if (!person) {
           throw new TRPCError({

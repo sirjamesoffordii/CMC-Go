@@ -44,7 +44,7 @@ describe("CSV Import", () => {
     ];
 
     // Import once
-    const result1 = await importPeople(testData);
+    await importPeople(testData);
 
     // Import again - should skip
     const result2 = await importPeople(testData);
