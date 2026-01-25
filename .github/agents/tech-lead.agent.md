@@ -44,11 +44,16 @@ If no session number given, you're the primary TL — use just `TL`.
 2. Select "Rename"
 3. Enter: "Tech Lead 1" (or your assigned number)
 
-**Before doing any GitHub operations, verify you're authenticated as the correct account:**
+**Before doing any GitHub operations, authenticate as TL:**
 ```powershell
-gh auth status  # Should show: Alpha-Tech-Lead
-gh auth switch --user Alpha-Tech-Lead  # If needed
+# Set TL identity for this terminal session
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+
+# Verify (should show Alpha-Tech-Lead)
+gh auth status
 ```
+
+**IMPORTANT:** You must set `GH_CONFIG_DIR` in EVERY new terminal session. Without it, you'll be using the human account (sirjamesoffordii).
 
 Your **#1 priority is coordination** — keeping the CMC Go Project on track and helping Software Engineers know what to do next.
 

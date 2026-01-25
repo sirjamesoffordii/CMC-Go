@@ -69,15 +69,20 @@ Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
 **Agents MUST authenticate as their designated account before any GitHub operations:**
 
 ```powershell
-# TL verifies
+# TL authenticates (set at start of EVERY terminal session)
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
 gh auth status  # Should show: Alpha-Tech-Lead
 
-# SWE verifies  
+# SWE authenticates (set at start of EVERY terminal session)
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
 gh auth status  # Should show: Software-Engineer-Agent
 
-# Switch if needed
-gh auth switch --user <account-name>
+# Human (default, no env var needed)
+$env:GH_CONFIG_DIR = $null
+gh auth status  # Should show: sirjamesoffordii
 ```
+
+**IMPORTANT:** The `GH_CONFIG_DIR` environment variable must be set in EACH new terminal. If you open a new terminal mid-session, set it again before running `gh` commands.
 
 ### Cloud Agent Access
 

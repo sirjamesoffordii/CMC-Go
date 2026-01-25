@@ -104,6 +104,24 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Use `isBackground: true` for any command that runs continuously. Check output later via `get_terminal_output`.
 **Prevention:** Before running a command, ask: "Does this ever exit?" If no → background. Examples: `pnpm dev`, `railway logs --follow`, any watch command.
 
+### Never run MCP servers manually
+
+**Tags:** terminal
+**Problem:** Running `npx @modelcontextprotocol/server-memory` in terminal makes it hang forever waiting for stdio JSON-RPC messages.
+**Solution:** MCP servers are managed by VS Code, not terminal. The `.vscode/mcp.json` config tells VS Code which servers to start automatically.
+**Prevention:** To test if an MCP server works, check if its tools appear in your available tools list. If not, reload VS Code (`Developer: Reload Window`).
+
+### Recognizing command hangs vs working
+
+**Tags:** terminal
+**Problem:** Agent thinks command is "working" when it's actually hung waiting for input.
+**Solution:** Most commands complete in <30 seconds. If no output for 60+ seconds, it's likely hung. Cancel and retry with flags/env vars to avoid prompts.
+**Prevention:** 
+- Add `| cat` suffix to avoid pagers
+- Add `--yes` or `--no-input` flags
+- Set `$env:GIT_PAGER='cat'` before git commands
+- Use VS Code tasks which have correct settings
+
 ### Use VS Code tasks for dev servers
 
 **Tags:** terminal

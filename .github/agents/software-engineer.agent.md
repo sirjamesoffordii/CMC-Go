@@ -43,10 +43,16 @@ If TL didn't give you a number, use just `SWE` (no number).
 2. Select "Rename"
 3. Enter: "Software Engineer 1" (or your assigned number)
 
-**Before doing any GitHub operations, verify you're authenticated as the correct account:**
+**Before doing any GitHub operations, authenticate as SWE:**
 ```powershell
-gh auth status  # Should show Software-Engineer-Agent
+# Set SWE identity for this terminal session
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+
+# Verify (should show Software-Engineer-Agent)
+gh auth status
 ```
+
+**IMPORTANT:** You must set `GH_CONFIG_DIR` in EVERY new terminal session. Without it, you'll be using the human account (sirjamesoffordii).
 
 If not authenticated correctly, run:
 ```powershell
@@ -268,6 +274,22 @@ TL will find it when polling.
 - Stuck rebase → use `Git: Rebase abort` task
 - Dirty working tree → use `Git: Hard reset to staging` task
 - Routine waits/timeouts (CI, network) → retry once, poll briefly, continue parallel work
+- Command hangs (no output for 60+ seconds) → cancel and retry with different approach
+
+**Common hang causes and fixes:**
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Terminal shows "alternate buffer" | Pager opened (less/more) | Run `Agent: Recover terminal` task, then retry with `| cat` suffix |
+| Command hangs forever | Interactive prompt waiting | Cancel, add `--yes` or `--no-input` flag |
+| `npx` command hangs | Package downloading slowly | Wait 2 min max, then cancel and try `pnpm exec` instead |
+| `gh` command hangs | Auth issue or rate limit | Run `gh auth status`, check for errors |
+| MCP server "running on stdio" | Started server manually | This is wrong — MCP servers are managed by VS Code, not terminal |
+
+**If you notice a recurring hang pattern:**
+1. Fix it for yourself using the techniques above
+2. Add the pattern to `CMC_GO_PATTERNS.md` under "Terminal & Commands"
+3. Include the fix in your PR reflection
 
 **DO escalate for these:**
 
@@ -389,11 +411,15 @@ Ask yourself:
 - Did the docs waste my time? (missing info, wrong commands, outdated)
 - Did I have to figure out something that should have been documented?
 - Did the agent instructions miss something important?
+- Did I hit a hang or error that could have been avoided with better docs?
 
-**If yes:** Edit the doc directly. Files to consider:
+**If yes:** Edit the doc directly **and include the edit in your PR.** Files to consider:
 - `AGENTS.md` — workflow rules, process
-- `.github/agents/software-engineer.agent.md` — SWE-specific instructions
+- `.github/agents/software-engineer.agent.md` — SWE-specific instructions  
 - `.github/agents/tech-lead.agent.md` — TL-specific instructions
+- `.github/agents/reference/CMC_GO_PATTERNS.md` — reusable patterns
+
+**Don't just note the improvement — make the change.** Your PR can include both the feature/fix AND the workflow improvement. This is how the system gets better.
 
 ### Pattern Learning Check
 
