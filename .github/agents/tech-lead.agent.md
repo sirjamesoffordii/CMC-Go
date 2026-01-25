@@ -1,7 +1,7 @@
 ---
 name: Tech Lead (TL)
 description: "Project coordinator for CMC Go. Scans project status, creates/refines Issues, delegates work. Leads with coordination/triage."
-model: Claude Opus 4.5
+model: GPT-5.2
 handoffs: []
 tools:
   [
@@ -153,7 +153,7 @@ Before delegating, score the task:
 - 0-2: Cloud Agent (GitHub default) — simple async tasks, TL continues working
 - 2-6: SWE (`code chat -m "Software Engineer (SWE)"`) — needs judgment, continuous work
 
-**Both TL and SWE use Opus 4.5** — coordination and continuous implementation both need judgment.
+**TL and SWE use GPT-5.2 by default.** Upgrade to Opus 4.5 (3×) for complexity 4+ tasks only.
 
 ## Execution Model
 
@@ -175,7 +175,7 @@ Use subagents for:
 runSubagent(agentName="Software Engineer (SWE)", prompt="Research how district filtering works")
 ```
 
-**Cost note:** Subagents inherit Opus 4.5 (3× tokens). Use them for parallelization, not trivial lookups.
+**Cost note:** Subagents use GPT-5.2 by default (1× tokens). Use Opus (3×) only for complexity 4+ tasks.
 
 ### Delegated Sessions — When You Want to Continue Working
 
@@ -189,29 +189,24 @@ Use delegated sessions for:
 
 ### Cloud agents (primary async method)
 
-Use `github-pull-request_copilot-coding-agent` tool, `gh agent-task create`, or apply `agent:copilot-swe` label:
+Apply `agent:copilot-swe` label to issues to trigger cloud execution:
 
 - **Non-blocking** — TL continues working immediately
 - Agent creates branch, implements, opens PR
-- TL finds out via `gh agent-task list` or board polling
+- TL finds out via board polling or PR notifications
 - Best for simple issues (score 0-2)
 
-**CLI spawning (recommended for scaling):**
-
-```powershell
-gh agent-task create "Implement Issue #42" --base staging
-gh agent-task list -L 10  # Check status
-```
+**Note:** As `Alpha-Tech-Lead`, you cannot use `gh agent-task create` directly. The `agent:copilot-swe` label triggers `.github/workflows/copilot-auto-handoff.yml` which uses `sirjamesoffordii`'s Plus account token.
 
 ### Scaling strategy
 
 | Need                             | Solution                                   |
 | -------------------------------- | ------------------------------------------ |
 | Research/analysis                | Parallel `runSubagent` (get results back)  |
-| Simple parallel work (0-2)       | `gh agent-task create` (non-blocking)      |
+| Simple parallel work (0-2)       | `agent:copilot-swe` label (non-blocking)   |
 | Complex work, need result now    | Local SWE via runSubagent (blocking is OK) |
-| Bulk tasks (10+ issues)          | Multiple `gh agent-task` (fire and forget) |
-| Need judgment on complex problem | Do it yourself (TL has best model)         |
+| Bulk tasks (10+ issues)          | Multiple `agent:copilot-swe` labels        |
+| Need judgment on complex problem | Upgrade to Opus model for this session     |
 
 ### Terminal-based spawning
 

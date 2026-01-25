@@ -49,14 +49,16 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ## Agents
 
-Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
+Two agent roles using GPT-5.2 by default (upgrade to Opus for complex tasks):
 
-| Agent                       | GitHub Account            | Model            | Token Cost | Responsibility                             |
-| --------------------------- | ------------------------- | ---------------- | ---------- | ------------------------------------------ |
-| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Claude Opus 4.5  | 3×         | Coordination, board management, delegation |
-| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5  | 3×         | Implementation, verification, continuous   |
-| **Cloud Agent**             | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
-| **Human (Sir James)**       | `sirjamesoffordii`        | —                | —          | Oversight, decisions, Plus account owner   |
+| Agent                       | GitHub Account            | Default Model  | Token Cost | Responsibility                             |
+| --------------------------- | ------------------------- | -------------- | ---------- | ------------------------------------------ |
+| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | GPT-5.2        | 1×         | Coordination, board management, delegation |
+| **Software Engineer (SWE)** | `Software-Engineer-Agent` | GPT-5.2        | 1×         | Implementation, verification, continuous   |
+| **Cloud Agent**             | `copilot-swe-agent[bot]`  | GitHub default | Dedicated  | Simple async issues (fire-and-forget)      |
+| **Human (Sir James)**       | `sirjamesoffordii`        | —              | —          | Oversight, decisions, Plus account owner   |
+
+**When to upgrade to Opus 4.5 (3×):** Complexity score 4+, deep reasoning required, or when GPT-5.2 fails.
 
 ### Identity Separation (critical)
 
@@ -336,7 +338,9 @@ Tech Lead's **#1 priority is keeping the project on track** — not implementing
 - Manages workload (max 4 active items per Tech Lead instance).
 - Performs console-only steps when 2FA/login blocks automation (Sentry/Railway/etc.).
 
-**Never get locked into complex implementation.** If a task would take Tech Lead away from coordination for extended time, delegate it to Software Engineer with Opus 4.5.
+**Never get locked into complex implementation.** If a task would take Tech Lead away from coordination for extended time, delegate it to Software Engineer.
+
+**Note:** TL (as `Alpha-Tech-Lead`) cannot directly spawn cloud agents via `gh agent-task create`. Use the `agent:copilot-swe` label on Issues instead — this triggers a workflow that uses `sirjamesoffordii`'s Plus account token.
 
 ## Workload Management
 
@@ -415,16 +419,20 @@ Do not create new Issues — only implement what's assigned.
 
 ## Model Selection
 
-**Both TL and SWE use Claude Opus 4.5.** This is intentional — both need judgment for continuous autonomous work.
+**Default model is GPT-5.2 (1× premium).** Reserve Opus 4.5 (3× premium) for complex tasks only (complexity score 4+).
 
-### Why Opus 4.5 for both agents
+### Model Defaults by Role
 
-| Agent | Why Opus 4.5                                                             |
-| ----- | ------------------------------------------------------------------------ |
-| TL    | Coordination requires judgment — deciding what to delegate, when to poll |
-| SWE   | Continuous work requires judgment — looping, claiming issues, deciding   |
+| Agent | Default Model | When to Upgrade to Opus          |
+| ----- | ------------- | -------------------------------- |
+| TL    | GPT-5.2       | Complex multi-agent coordination |
+| SWE   | GPT-5.2       | Complexity score 4+ tasks        |
 
-**Cost efficiency:** The 3× token cost is efficient because one agent session handles many issues. You're paying for judgment, not per-task overhead.
+**Cost efficiency:** GPT-5.2 handles most tasks well at 1/3 the cost of Opus. Opus is reserved for:
+
+- Complex reasoning across many files
+- Tasks requiring deep judgment
+- When GPT-5.2 fails on a task
 
 ### Complexity Scoring (for task routing)
 
@@ -447,7 +455,13 @@ Score tasks before deciding how to route them:
 
 ### Subagent Model Selection
 
-When TL or SWE spawns subagents via `runSubagent`, they inherit the caller's model (Opus 4.5).
+Subagents inherit the caller's model (GPT-5.2 by default). Choose model based on task complexity:
+
+| Complexity | Model             | Cost | Use Case                          |
+| ---------- | ----------------- | ---- | --------------------------------- |
+| 0-1        | GPT 4.1           | 0×   | Trivial: docs, comments, lookups  |
+| 2-4        | GPT-5.2 (default) | 1×   | Standard: most implementation     |
+| 5-6        | Claude Opus 4.5   | 3×   | Complex: deep reasoning, judgment |
 
 **Subagent use cases:**
 
@@ -456,16 +470,18 @@ When TL or SWE spawns subagents via `runSubagent`, they inherit the caller's mod
 | TL     | Research before delegating, verification |
 | SWE    | Parallel research, non-blocking tests    |
 
-**Cost note:** Subagents use 3× tokens (Opus). Use them for parallelization and non-blocking work, not trivial lookups.
+**Cost note:** Default to GPT-5.2 (1×). Only escalate to Opus (3×) for complexity 4+ or when lower models fail.
 
 ### Role Requirements
 
-| Role    | Model           | Spawned Via                              |
-| ------- | --------------- | ---------------------------------------- |
-| **TL**  | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`          |
-| **SWE** | Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
+| Role    | Default Model | Spawned Via                              |
+| ------- | ------------- | ---------------------------------------- |
+| **TL**  | GPT-5.2       | `code chat -m "Tech Lead (TL)"`          |
+| **SWE** | GPT-5.2       | `code chat -m "Software Engineer (SWE)"` |
 
 **Agent name must be exact.** Partial names fall back to default (which may be TL).
+
+**When to use Opus:** If a task repeatedly fails or requires deep judgment, upgrade to Opus via model selector.
 
 ## Subagents vs Delegated Sessions (critical distinction)
 
@@ -482,7 +498,7 @@ There are two fundamentally different ways to get help from other agents:
 - **Full powers** — subagents can do REAL WORK (edit files, run commands, commit, push)
 - **Best for:** Parallel research, non-blocking verification, implementation with tight coordination
 
-**Cost note:** All subagents use Opus 4.5 (3× tokens). Use them for parallelization and non-blocking work, not trivial lookups that you could do yourself.
+**Cost note:** Subagents use GPT-5.2 by default (1× tokens). Upgrade to Opus (3×) only for complexity 4+ tasks.
 
 **Subagents do REAL WORK, not just research:**
 
@@ -677,13 +693,15 @@ TL Session (Opus 4.5, runs autonomously)
 
 1. Tech Lead makes the work executable (Goal/Scope/AC + verification checklist)
 2. Tech Lead scores complexity and selects delegation method:
-   - **Score 0-1 (trivial):** `runSubagent("SWE Basic")` for docs/comments/lint — OR cloud agent if async preferred
-   - **Score 0-2 (simple async):** Cloud Agent (label `agent:copilot-swe` or `gh agent-task create`) — TL continues working
-   - **Score 2-4 (standard):** `runSubagent("Software Engineer (SWE)")` — GPT-5.2-Codex
-   - **Score 5-6 (complex):** `runSubagent("SWE Opus")` — Claude Opus 4.5
+   - **Score 0-1 (trivial):** Do it yourself or spawn GPT 4.1 subagent (0× cost)
+   - **Score 0-2 (simple async):** Cloud Agent via `agent:copilot-swe` label — TL continues working
+   - **Score 2-4 (standard):** `runSubagent("Software Engineer (SWE)")` — uses GPT-5.2 (1×)
+   - **Score 5-6 (complex):** `runSubagent("Software Engineer (SWE)")` with Opus model — (3×)
 3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
 4. "Done" requires evidence (commands/results + links)
 5. Update Projects v2 as you go (board reflects reality)
+
+**Note:** TL (as `Alpha-Tech-Lead`) cannot use `gh agent-task create` directly. Use the `agent:copilot-swe` label on Issues instead — this triggers a workflow that uses the Plus account token.
 
 ### When TL Should Use Subagents vs Delegated Sessions
 
@@ -760,14 +778,16 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 
 ### Quick Decision
 
-| Need                    | Method                   | Blocking?         | Model          |
-| ----------------------- | ------------------------ | ----------------- | -------------- |
-| Trivial task (0-1)      | `runSubagent` SWE Basic  | ✅ Yes (but free) | GPT 4.1 (0×)   |
-| Research/analysis       | `runSubagent` (parallel) | ✅ Yes            | Varies by need |
-| Simple async task (0-2) | `gh agent-task create`   | ❌ No             | GitHub default |
-| Standard task (2-4)     | `runSubagent` SWE        | ✅ Yes            | GPT-5.2 (1×)   |
-| Complex task (5-6)      | `runSubagent` SWE Opus   | ✅ Yes            | Opus 4.5 (3×)  |
-| Bulk tasks (10+)        | Multiple `gh agent-task` | ❌ No             | GitHub default |
+| Need                    | Method                              | Blocking? | Model          |
+| ----------------------- | ----------------------------------- | --------- | -------------- |
+| Trivial task (0-1)      | Do yourself or subagent             | ✅ Yes    | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel)            | ✅ Yes    | GPT-5.2 (1×)   |
+| Simple async task (0-2) | `agent:copilot-swe` label           | ❌ No     | GitHub default |
+| Standard task (2-4)     | `runSubagent` SWE                   | ✅ Yes    | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SWE + Opus            | ✅ Yes    | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `agent:copilot-swe` labels | ❌ No     | GitHub default |
+
+**Note:** TL (`Alpha-Tech-Lead`) uses `agent:copilot-swe` label, not `gh agent-task create`.
 
 ### The Pattern
 
@@ -787,9 +807,11 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 
 ### Premium requests
 
-**Subagents DO consume premium requests.** Each `runSubagent` call uses the selected model's quota — GPT 4.1 (0×), GPT-5.2-Codex (1×), or Opus 4.5 (3×). Since subagents spawn frequently, choose models wisely. Default to GPT-5.2-Codex (1×) and reserve Opus (3×) for complexity score 4+.
+**Subagents DO consume premium requests.** Each `runSubagent` call uses the selected model's quota — GPT 4.1 (0×), GPT-5.2 (1×), or Opus 4.5 (3×).
 
-**Cloud agents** (`gh agent-task`, `copilot-coding-agent`) use a dedicated SKU (separate billing). They don't count against your premium request quota.
+**Default to GPT-5.2 (1×).** Reserve Opus (3×) for complexity score 4+ only. Rate limits hit quickly with Opus — we've observed throttling when spawning multiple Opus subagents in parallel.
+
+**Cloud agents** (`agent:copilot-swe` label) use a dedicated SKU (separate billing). They don't count against your premium request quota.
 
 ### Use Cases by Agent Type
 
