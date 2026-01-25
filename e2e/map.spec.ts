@@ -13,7 +13,7 @@ test.describe("map interactions", () => {
 
     await expect(page).toHaveURL(/districtId=Colorado/);
     await expect(
-      page.getByRole("heading", { name: "Colorado" })
+      page.getByRole("heading", { name: "Colorado", exact: true })
     ).toBeVisible();
     await expect(page.getByText("Going:").first()).toBeVisible();
   });
