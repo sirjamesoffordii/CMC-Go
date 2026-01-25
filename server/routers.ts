@@ -1933,10 +1933,36 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getHouseholdById(input.id);
       }),
-    getMembers: publicProcedure
+    getMembers: protectedProcedure
       .input(z.object({ householdId: z.number() }))
-      .query(async ({ input }) => {
-        return await db.getHouseholdMembers(input.householdId);
+      .query(async ({ input, ctx }) => {
+        // SECURITY FIX (Issue #247): Require authentication to view household members
+        // Person records contain sensitive identity information (names, roles, status)
+        const scope = getPeopleScope(ctx.user);
+
+        // Get all members of the household
+        const members = await db.getHouseholdMembers(input.householdId);
+
+        // Filter members based on user's scope
+        return members.filter(person => {
+          if (scope.level === "ALL") return true;
+          if (
+            scope.level === "REGION" &&
+            person.primaryRegion === scope.regionId
+          )
+            return true;
+          if (
+            scope.level === "DISTRICT" &&
+            person.primaryDistrictId === scope.districtId
+          )
+            return true;
+          if (
+            scope.level === "CAMPUS" &&
+            person.primaryCampusId === scope.campusId
+          )
+            return true;
+          return false;
+        });
       }),
     search: publicProcedure
       .input(z.object({ query: z.string() }))
