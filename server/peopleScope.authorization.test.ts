@@ -206,5 +206,70 @@ describe("people visibility helpers", () => {
       expect(built.sql).toContain("primaryRegion");
       expect(built.params).toEqual(["R-42"]);
     });
+
+    it("normalizes campus-level aliases to CAMPUS scope", () => {
+      const aliases = [
+        "CAMPUS_VOLUNTEER",
+        "Campus Volunteer",
+        "CAMPUS_INTERN",
+        "Campus Intern",
+        "CAMPUS_CO_DIRECTOR",
+        "Campus Co-Director",
+      ];
+
+      for (const role of aliases) {
+        const built = toSql({
+          role,
+          campusId: 7,
+          districtId: "D-7",
+          regionId: "R-7",
+        });
+
+        expect(built.sql).toContain("primaryCampusId");
+        expect(built.params).toEqual([7]);
+      }
+    });
+
+    it("normalizes district-level aliases to DISTRICT_DIRECTOR scope", () => {
+      const aliases = ["DISTRICT_STAFF", "District Staff"];
+
+      for (const role of aliases) {
+        const built = toSql({
+          role,
+          campusId: 7,
+          districtId: "D-7",
+          regionId: "R-7",
+        });
+
+        expect(built.sql).toContain("primaryRegion");
+        expect(built.params).toEqual(["R-7"]);
+      }
+    });
+
+    it("normalizes regional/full-access aliases to ALL scope", () => {
+      const fullAccessRoles = [
+        "REGIONAL_STAFF",
+        "Regional Staff",
+        "REGION_DIRECTOR",
+        "REGIONAL_DIRECTOR",
+        "FIELD_DIRECTOR",
+        "NATIONAL_STAFF",
+        "NATIONAL_DIRECTOR",
+        "CMC_GO_ADMIN",
+        "ADMIN",
+      ];
+
+      for (const role of fullAccessRoles) {
+        const built = toSql({
+          role,
+          campusId: 7,
+          districtId: "D-7",
+          regionId: "R-7",
+        });
+
+        expect(built.sql).toContain("1=1");
+        expect(built.params).toEqual([]);
+      }
+    });
   });
 });
