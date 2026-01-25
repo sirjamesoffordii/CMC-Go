@@ -37,7 +37,7 @@ if (sentryDsn && sentryDsn.trim()) {
 
 const queryClient = new QueryClient();
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
+const redirectToLoginIfUnauthorized = (_error: unknown) => {
   // Authentication disabled - don't redirect to login
   return;
 };

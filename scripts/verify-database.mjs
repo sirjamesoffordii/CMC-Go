@@ -133,7 +133,7 @@ async function verifyDatabase() {
           console.log(`   Extra columns: ${extra.join(", ")}`);
         }
       }
-    } catch (error) {
+    } catch (_error) {
       allGood = false;
       console.log(`❌ ${tableName}: Table does not exist!`);
     }
@@ -153,7 +153,7 @@ async function verifyDatabase() {
         `SELECT COUNT(*) as count FROM ${tableName}`
       );
       console.log(`${tableName}: ${rows[0].count} rows`);
-    } catch (error) {
+    } catch (_error) {
       console.log(`${tableName}: Error counting rows`);
     }
   }

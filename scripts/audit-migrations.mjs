@@ -100,7 +100,7 @@ async function auditMigrations() {
       migrationFiles = readdirSync(migrationsDir)
         .filter(f => f.endsWith(".sql"))
         .sort();
-    } catch (error) {
+    } catch (_error) {
       console.warn(
         "⚠️  Migrations directory not found or empty:",
         migrationsDir
@@ -204,7 +204,7 @@ async function auditMigrations() {
               hasColumnIssues = true;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           // Table might not exist, skip
         }
       }
@@ -231,7 +231,7 @@ async function auditMigrations() {
       console.log("⚠️  Some discrepancies found - see details above");
     }
     console.log();
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Audit failed:", error.message);
     if (error.stack) {
       console.error(error.stack);

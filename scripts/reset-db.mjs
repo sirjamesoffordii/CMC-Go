@@ -37,7 +37,7 @@ function parseDatabaseName(connectionString) {
     // Format: mysql://user:password@host:port/database
     const url = new URL(connectionString);
     return url.pathname.slice(1); // Remove leading /
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Failed to parse DATABASE_URL:", error.message);
     process.exit(1);
   }
@@ -51,7 +51,7 @@ function getConnectionWithoutDb() {
     const url = new URL(connectionString);
     url.pathname = ""; // Remove database name
     return url.toString();
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -87,7 +87,7 @@ async function truncateAllTables() {
       try {
         await connection.query(`TRUNCATE TABLE \`${tableName}\``);
         console.log(`  ✓ Truncated ${tableName}`);
-      } catch (error) {
+      } catch (_error) {
         // Table might not exist, that's okay
         if (error.code === "ER_NO_SUCH_TABLE") {
           console.log(`  ⚠️  Table ${tableName} does not exist (skipping)`);
@@ -103,7 +103,7 @@ async function truncateAllTables() {
     await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
     console.log("✅ All tables truncated\n");
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Failed to truncate tables:", error.message);
     throw error;
   } finally {
@@ -135,7 +135,7 @@ async function dropAndRecreateDatabase() {
     // Create database
     await connection.query(`CREATE DATABASE \`${databaseName}\``);
     console.log(`  ✓ Created database ${databaseName}\n`);
-  } catch (error) {
+  } catch (_error) {
     if (error.code === "ER_DBACCESS_DENIED_ERROR") {
       console.error("❌ Permission denied: Cannot drop/create database");
       console.error(
@@ -167,7 +167,7 @@ async function runMigrations() {
       env: { ...process.env, CI: "true" }, // Ensure non-interactive
     });
     console.log("✅ Schema pushed successfully\n");
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Failed to push schema:", error.message);
     console.error("   Trying db:migrate as fallback...");
     try {
@@ -196,7 +196,7 @@ async function runSeed() {
       env: { ...process.env },
     });
     console.log("✅ Seed completed\n");
-  } catch (error) {
+  } catch (_error) {
     console.error("❌ Failed to run seed:", error.message);
     throw error;
   }
@@ -217,7 +217,7 @@ async function resetDatabase(options = {}) {
   if (dropDatabase) {
     try {
       dropped = await dropAndRecreateDatabase();
-    } catch (error) {
+    } catch (_error) {
       console.warn(
         "⚠️  Could not drop/recreate database, falling back to truncation...\n"
       );

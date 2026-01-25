@@ -184,7 +184,7 @@ async function tableExists(tableName: string): Promise<boolean> {
 
     const rows = asRows(result);
     return rows.length > 0 && (rows[0] as any).count > 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -251,7 +251,7 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       columns,
       sampleRow,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       exists: true,
       columnCount: undefined,
@@ -299,7 +299,7 @@ async function verifyCriticalColumns(
         missing.push(col);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // If we can't check, assume all are missing
     return requiredColumns;
   }

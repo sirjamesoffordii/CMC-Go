@@ -22,7 +22,7 @@ export function isDemoDatabase(connectionString) {
     ];
 
     return demoDbPatterns.some(pattern => host.includes(pattern));
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

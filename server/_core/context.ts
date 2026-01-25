@@ -31,7 +31,7 @@ export async function createContext(
   // Fallback to legacy OAuth authentication
   try {
     user = await sdk.authenticateRequest(opts.req);
-  } catch (error) {
+  } catch (_error) {
     // Authentication is optional for public procedures.
     user = null;
   }
