@@ -26,7 +26,11 @@ import {
   InsertInviteNote,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import type { PeopleScope } from "./_core/authorization";
+import {
+  peopleScopeWhereClause,
+  type PeopleScope,
+  type UserScopeAnchors,
+} from "./_core/authorization";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
@@ -409,6 +413,32 @@ export async function getPersonByPersonId(personId: string) {
     .select()
     .from(people)
     .where(eq(people.personId, personId))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function personExists(personId: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .select({ personId: people.personId })
+    .from(people)
+    .where(eq(people.personId, personId))
+    .limit(1);
+  return Boolean(result[0]);
+}
+
+export async function getPersonByPersonIdInScope(
+  personId: string,
+  user: UserScopeAnchors
+) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(people)
+    .where(and(eq(people.personId, personId), peopleScopeWhereClause(user)))
     .limit(1);
   return result[0] || null;
 }
