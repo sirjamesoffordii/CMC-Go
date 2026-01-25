@@ -117,7 +117,7 @@ describe("people visibility helpers", () => {
       ).toBe(false);
     });
 
-    it("falls back to DISTRICT scope when DISTRICT_DIRECTOR has no regionId", () => {
+    it("throws FORBIDDEN when DISTRICT_DIRECTOR has no regionId (fail-closed)", () => {
       const user: UserScopeAnchors = {
         role: "DISTRICT_DIRECTOR",
         campusId: 5,
@@ -125,21 +125,13 @@ describe("people visibility helpers", () => {
         regionId: null,
       };
 
-      expect(
+      expect(() =>
         canAccessPerson(user, {
           primaryCampusId: 999,
           primaryDistrictId: "D-1",
           primaryRegion: "R-999",
         })
-      ).toBe(true);
-
-      expect(
-        canAccessPerson(user, {
-          primaryCampusId: 5,
-          primaryDistrictId: "D-2",
-          primaryRegion: "R-1",
-        })
-      ).toBe(false);
+      ).toThrow("Access denied: missing regionId");
     });
   });
 

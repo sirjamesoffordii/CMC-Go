@@ -60,7 +60,9 @@ function createTestContext(
 
 describe("getPeopleScope fail-closed (missing anchors)", () => {
   it("STAFF without campusId -> FORBIDDEN", () => {
-    expectForbiddenSync(() => getPeopleScope({ role: "STAFF", campusId: null }));
+    expectForbiddenSync(() =>
+      getPeopleScope({ role: "STAFF", campusId: null })
+    );
   });
 
   it("CAMPUS_DIRECTOR without districtId -> FORBIDDEN (even if campusId present)", () => {
