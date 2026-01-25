@@ -90,16 +90,12 @@ Before delegating, score the task:
 | **Scope**     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
 | **Ambiguity** | Clear spec     | Some unknowns | Needs exploration         |
 
-**Complexity-based agent routing:**
+**Routing based on complexity:**
 
-- 0-1: SWE Basic (GPT 4.1, 0× cost) — trivial tasks
-- 0-2: Cloud Agent (GitHub default) — simple async tasks
-- 2-4: Software Engineer (SWE) agent (GPT-5.2-Codex, 1× cost)
-- 5-6: SWE Opus agent (Claude Opus 4.5, 3× cost)
+- 0-2: Cloud Agent (GitHub default) — simple async tasks, TL continues working
+- 2-6: SWE (`code chat -m "Software Engineer (SWE)"`) — needs judgment, continuous work
 
-**Model is set by agent variant.** To select a model, choose the agent name. You cannot override the model at runtime.
-
-**TL always uses Opus 4.5** — your job is coordination/judgment, never downgrade your model.
+**Both TL and SWE use Opus 4.5** — coordination and continuous implementation both need judgment.
 
 ## Execution Model
 
@@ -112,27 +108,16 @@ Use subagents for:
 - Research/analysis before delegating
 - Quick verification ("does this PR look right?")
 - Design decisions where you need synthesis
-- Complex implementation where you need the result before continuing
 
 **Subagents do NOT count toward your 4-item capacity.** They're internal help, not parallel work.
 
-**Model selection by task:**
-
-- Trivial (score 0-1): `runSubagent("SWE Basic")` — GPT 4.1 (free)
-- Standard (score 2-4): `runSubagent("Software Engineer (SWE)")` — GPT-5.2
-- Complex (score 5-6): `runSubagent("SWE Opus")` — Opus 4.5
-
-**Parallel research pattern (tested):**
-
-Spawn multiple subagents in a single tool call (all run concurrently, TL waits for all to return):
+**Subagent spawning:**
 
 ```
-runSubagent(agentName="Software Engineer (SWE)", prompt="Research architecture for Issues #1-3")
-runSubagent(agentName="SWE Basic", prompt="Check docs consistency")
-runSubagent(agentName="Software Engineer (SWE)", prompt="Analyze test coverage gaps")
+runSubagent(agentName="Software Engineer (SWE)", prompt="Research how district filtering works")
 ```
 
-**Note:** Subagents DO consume premium requests based on model (GPT 4.1 = 0×, GPT-5.2-Codex = 1×, Opus 4.5 = 3×). Be conservative with model selection since subagents spawn frequently.
+**Cost note:** Subagents inherit Opus 4.5 (3× tokens). Use them for parallelization, not trivial lookups.
 
 ### Delegated Sessions — When You Want to Continue Working
 

@@ -49,21 +49,25 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ## Agents
 
-Agents use these accounts for all GitHub activity (Issues, PRs, comments). This is how you identify which agent did what.
+Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
 
-| Agent                 | GitHub Account            | Model            | Token Cost | Responsibility                                   |
-| --------------------- | ------------------------- | ---------------- | ---------- | ------------------------------------------------ |
-| **Tech Lead**         | `Alpha-Tech-Lead`         | Claude Opus 4.5  | 3×         | Coordination, board management, delegation       |
-| **SWE Basic**         | `Software-Engineer-Agent` | GPT 4.1          | 0×         | Trivial tasks (score 0-1) — docs, comments, lint |
-| **Software Engineer** | `Software-Engineer-Agent` | GPT-5.2-Codex    | 1×         | Standard implementation (score 2-4)              |
-| **SWE Opus**          | `Software-Engineer-Agent` | Claude Opus 4.5  | 3×         | Complex implementation (score 5-6)               |
-| **Cloud Agent**       | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (score 0-2)                  |
+| Agent                     | GitHub Account            | Model           | Token Cost | Responsibility                             |
+| ------------------------- | ------------------------- | --------------- | ---------- | ------------------------------------------ |
+| **Tech Lead (TL)**        | `Alpha-Tech-Lead`         | Claude Opus 4.5 | 3×         | Coordination, board management, delegation |
+| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5 | 3×         | Implementation, verification, continuous   |
+| **Cloud Agent**           | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
 
 **Key distinctions:**
 
-- **Tech Lead always uses Opus 4.5** — coordination requires judgment, never compromise on TL model.
-- **SWE Basic / SWE / SWE Opus** are the same role with different models. Select via agent name based on complexity.
-- **Cloud Agent** is for async fire-and-forget work; TL continues while cloud agent works.
+- **Both TL and SWE use Opus 4.5** — both need judgment for continuous autonomous work.
+- **TL coordinates, SWE implements** — different responsibilities, same model capability.
+- **Cloud Agent** is for simple async work; uses dedicated quota (doesn't count against premium requests).
+
+**Spawning agents:**
+```powershell
+code chat -m "Tech Lead (TL)" "Start"           # Spawn TL
+code chat -m "Software Engineer (SWE)" "Start"  # Spawn SWE
+```
 
 ## Session Start (once per session)
 
@@ -347,11 +351,20 @@ Do not create new Issues — only implement what's assigned.
 
 ## Model Selection
 
-**Model is set by agent variant.** You cannot override at runtime — choose the agent name to select the model.
+**Both TL and SWE use Claude Opus 4.5.** This is intentional — both need judgment for continuous autonomous work.
 
-### Complexity Scoring
+### Why Opus 4.5 for both agents
 
-Score tasks before selecting an agent:
+| Agent | Why Opus 4.5                                                            |
+| ----- | ----------------------------------------------------------------------- |
+| TL    | Coordination requires judgment — deciding what to delegate, when to poll |
+| SWE   | Continuous work requires judgment — looping, claiming issues, deciding   |
+
+**Cost efficiency:** The 3× token cost is efficient because one agent session handles many issues. You're paying for judgment, not per-task overhead.
+
+### Complexity Scoring (for task routing)
+
+Score tasks before deciding how to route them:
 
 | Factor        | 0 (Low)        | 1 (Med)       | 2 (High)                  |
 | ------------- | -------------- | ------------- | ------------------------- |
@@ -359,71 +372,36 @@ Score tasks before selecting an agent:
 | **Scope**     | 1 file         | 2–5 files     | 6+ files or cross-cutting |
 | **Ambiguity** | Clear spec     | Some unknowns | Needs design/research     |
 
-### Score → Agent Selection
+### Score → Routing Decision
 
-| Score | Agent Name              | Model            | Token Cost | When to Use                               |
-| ----- | ----------------------- | ---------------- | ---------- | ----------------------------------------- |
-| 0-1   | SWE Basic               | GPT 4.1          | 0×         | Docs, comments, lint fixes, typos         |
-| 0-2   | Cloud Agent             | (GitHub default) | Dedicated  | Simple async tasks (TL wants to continue) |
-| 2-4   | Software Engineer (SWE) | GPT-5.2-Codex    | 1×         | **Single-task** via `runSubagent`         |
-| 5-6   | SWE Opus                | Claude Opus 4.5  | 3×         | **Continuous sessions** OR complex tasks  |
+| Score | Route To                            | Why                                          |
+| ----- | ----------------------------------- | -------------------------------------------- |
+| 0-2   | Cloud Agent (`agent:copilot-swe`)   | Simple async, TL continues working           |
+| 2-6   | SWE (`code chat -m "Software..."`)  | Needs judgment, continuous work              |
 
-### Work Pattern → Model Selection (critical)
+**Simple rule:** Cloud agents for fire-and-forget. Local SWE for anything that needs judgment or continuous work.
 
-**Different models are optimized for different work patterns:**
+### Subagent Model Selection
 
-| Work Pattern                            | Best Model           | Why                                         |
-| --------------------------------------- | -------------------- | ------------------------------------------- |
-| **Single task** (`runSubagent`)         | GPT-5.2-Codex (1×)   | Task-focused, returns result                |
-| **Continuous autonomous session**       | Claude Opus 4.5 (3×) | Has judgment to loop, decide, claim work    |
-| **Bulk simple tasks** (cloud agents)    | GitHub default       | Fire-and-forget, separate quota             |
+When TL or SWE spawns subagents via `runSubagent`, they inherit the caller's model (Opus 4.5).
 
-**Why GPT-5.2-Codex stops after one task:**
-Codex models are optimized for code generation — complete the coding task and return. They're not designed for autonomous judgment loops ("what should I do next?").
+**Subagent use cases:**
 
-**Why Opus 4.5 for continuous sessions:**
-Opus has reasoning capabilities to continuously evaluate the board, decide what to work on, and keep looping. The 3× cost is efficient because **one session handles many issues**.
+| Caller | Subagent Purpose                         |
+| ------ | ---------------------------------------- |
+| TL     | Research before delegating, verification |
+| SWE    | Parallel research, non-blocking tests    |
 
-**TL spawning pattern:**
-- `runSubagent("Software Engineer (SWE)")` — single task, get result back
-- `code chat -m "SWE Opus"` — spawn continuous worker
+**Cost note:** Subagents use 3× tokens (Opus). Use them for parallelization and non-blocking work, not trivial lookups.
 
-### Task Type → Model Selection
+### Role Requirements
 
-Beyond work pattern, consider **what type of work** the agent is doing:
+| Role   | Model           | Spawned Via                          |
+| ------ | --------------- | ------------------------------------ |
+| **TL** | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`      |
+| **SWE**| Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
 
-| Task Type                           | Recommended Model    | Why                                 |
-| ----------------------------------- | -------------------- | ----------------------------------- |
-| **Implementation** (writing code)   | GPT-5.2-Codex (1×)   | Optimized for code generation       |
-| **Thinking/Planning** (score 1-3)   | GPT-5.2-Codex (1×)   | Good enough for moderate complexity |
-| **Thinking/Planning** (score 4-6)   | Claude Opus 4.5 (3×) | Complex reasoning needs premium     |
-| **Exploration/Research**            | GPT-5.2-Codex (1×)   | Code-aware, cost-effective          |
-| **Verification/Review** (score 1-3) | GPT-5.2-Codex (1×)   | Simple verification is affordable   |
-| **Verification/Review** (score 4-6) | Claude Opus 4.5 (3×) | Complex judgment needs premium      |
-| **Trivial tasks**                   | GPT 4.1 (0×)         | Free, good for docs/comments        |
-
-**TL subagent model selection:**
-
-- Subagent doing **implementation** → GPT-5.2-Codex
-- Subagent doing **research/exploration** → GPT-5.2-Codex
-- Subagent doing **verification** (score 1-3) → GPT-5.2-Codex
-- Subagent doing **verification** (score 4-6) → Claude Opus 4.5
-- Subagent doing **planning/coordination** (score 1-3) → GPT-5.2-Codex
-- Subagent doing **planning/coordination** (score 4-6) → Claude Opus 4.5
-- Subagent doing **trivial work** → GPT 4.1
-
-**Why be conservative with subagents:** Main agents run once and stay active. Subagents are spawned constantly throughout execution — that's where real quota consumption happens. Default to GPT-5.2-Codex (1×) and only use Opus (3×) when complexity score is 4+.
-
-### Role Model Requirements
-
-| Role          | Required Model  | Why                                              |
-| ------------- | --------------- | ------------------------------------------------ |
-| **Tech Lead** | Claude Opus 4.5 | Coordination requires judgment — never downgrade |
-| **SWE Basic** | GPT 4.1         | Trivial tasks don't need premium models          |
-| **SWE**       | GPT-5.2-Codex   | Good balance of capability and cost              |
-| **SWE Opus**  | Claude Opus 4.5 | Complex tasks need premium reasoning             |
-
-**Agent name must be exact.** Use `"SWE Basic"`, `"Software Engineer (SWE)"`, or `"SWE Opus"` — partial names fall back to default.
+**Agent name must be exact.** Partial names fall back to default (which may be TL).
 
 ## Subagents vs Delegated Sessions (critical distinction)
 
@@ -435,16 +413,12 @@ There are two fundamentally different ways to get help from other agents:
 
 - **Blocking** — you wait for the result
 - **Internal** — result comes back in the same session
-- **Uses quota** — each subagent call consumes premium requests based on model
+- **Uses quota** — subagents inherit caller's model (Opus 4.5 = 3× tokens)
 - **Unlimited count** — spawn as many as needed (tested: 6+ in parallel)
 - **Full powers** — subagents can do REAL WORK (edit files, run commands, commit, push)
-- **Best for:** Research, analysis, verification, implementation with tight coordination
+- **Best for:** Parallel research, non-blocking verification, implementation with tight coordination
 
-**Choose subagent model wisely to manage costs:**
-
-- GPT 4.1 (0×) — trivial tasks
-- GPT-5.2-Codex (1×) — implementation, research
-- Claude Opus 4.5 (3×) — complex thinking, verification
+**Cost note:** All subagents use Opus 4.5 (3× tokens). Use them for parallelization and non-blocking work, not trivial lookups that you could do yourself.
 
 **Subagents do REAL WORK, not just research:**
 
@@ -454,14 +428,14 @@ There are two fundamentally different ways to get help from other agents:
 - ✅ Create PRs and Issues
 - ❌ Cannot spawn their own subagents (but CAN spawn cloud agents)
 
-**When TL uses subagents:**
+**When to use subagents:**
 
-- Need to understand something before delegating
-- Parallel research across multiple topics
-- Quick verification ("does this PR look right?")
-- Design decisions where you need synthesis
-- Implementation where you need the result before continuing
-- Tightly coordinated work across multiple areas
+| Agent | Subagent Use Cases                                               |
+| ----- | ---------------------------------------------------------------- |
+| TL    | Research before delegating, verification, design synthesis       |
+| SWE   | Parallel file analysis, non-blocking tests, quick lookups        |
+
+**SWE should use subagents more than TL.** SWE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat`.
 
 ### Subagent Execution Model (critical to understand)
 
