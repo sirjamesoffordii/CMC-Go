@@ -104,6 +104,13 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Use `isBackground: true` for any command that runs continuously. Check output later via `get_terminal_output`.
 **Prevention:** Before running a command, ask: "Does this ever exit?" If no → background. Examples: `pnpm dev`, `railway logs --follow`, any watch command.
 
+### Use VS Code tasks for dev servers
+
+**Tags:** terminal
+**Problem:** Background processes started via `run_in_terminal` can be killed when VS Code reuses that terminal for a new command.
+**Solution:** Use the `Dev: Start server` VS Code task instead of `pnpm dev` directly.
+**Prevention:** For any long-running process you need to survive, prefer VS Code tasks over direct terminal commands.
+
 ### worktree
 
 ### Use worktrees for implementation
