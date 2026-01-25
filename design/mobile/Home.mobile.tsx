@@ -251,7 +251,7 @@ export default function Home() {
           }
         );
         // Use a simple approach - just save via the mutation pattern
-      } catch (e) {
+      } catch (_e) {
         console.error("Failed to save header height");
       }
     };

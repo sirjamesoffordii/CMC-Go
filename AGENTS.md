@@ -51,11 +51,11 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
 
-| Agent                     | GitHub Account            | Model           | Token Cost | Responsibility                             |
-| ------------------------- | ------------------------- | --------------- | ---------- | ------------------------------------------ |
-| **Tech Lead (TL)**        | `Alpha-Tech-Lead`         | Claude Opus 4.5 | 3×         | Coordination, board management, delegation |
-| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5 | 3×         | Implementation, verification, continuous   |
-| **Cloud Agent**           | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
+| Agent                       | GitHub Account            | Model            | Token Cost | Responsibility                             |
+| --------------------------- | ------------------------- | ---------------- | ---------- | ------------------------------------------ |
+| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Claude Opus 4.5  | 3×         | Coordination, board management, delegation |
+| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5  | 3×         | Implementation, verification, continuous   |
+| **Cloud Agent**             | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
 
 **Key distinctions:**
 
@@ -64,6 +64,7 @@ Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
 - **Cloud Agent** is for simple async work; uses dedicated quota (doesn't count against premium requests).
 
 **Spawning agents:**
+
 ```powershell
 code chat -m "Tech Lead (TL)" "Start"           # Spawn TL
 code chat -m "Software Engineer (SWE)" "Start"  # Spawn SWE
@@ -355,8 +356,8 @@ Do not create new Issues — only implement what's assigned.
 
 ### Why Opus 4.5 for both agents
 
-| Agent | Why Opus 4.5                                                            |
-| ----- | ----------------------------------------------------------------------- |
+| Agent | Why Opus 4.5                                                             |
+| ----- | ------------------------------------------------------------------------ |
 | TL    | Coordination requires judgment — deciding what to delegate, when to poll |
 | SWE   | Continuous work requires judgment — looping, claiming issues, deciding   |
 
@@ -374,10 +375,10 @@ Score tasks before deciding how to route them:
 
 ### Score → Routing Decision
 
-| Score | Route To                            | Why                                          |
-| ----- | ----------------------------------- | -------------------------------------------- |
-| 0-2   | Cloud Agent (`agent:copilot-swe`)   | Simple async, TL continues working           |
-| 2-6   | SWE (`code chat -m "Software..."`)  | Needs judgment, continuous work              |
+| Score | Route To                           | Why                                |
+| ----- | ---------------------------------- | ---------------------------------- |
+| 0-2   | Cloud Agent (`agent:copilot-swe`)  | Simple async, TL continues working |
+| 2-6   | SWE (`code chat -m "Software..."`) | Needs judgment, continuous work    |
 
 **Simple rule:** Cloud agents for fire-and-forget. Local SWE for anything that needs judgment or continuous work.
 
@@ -396,10 +397,10 @@ When TL or SWE spawns subagents via `runSubagent`, they inherit the caller's mod
 
 ### Role Requirements
 
-| Role   | Model           | Spawned Via                          |
-| ------ | --------------- | ------------------------------------ |
-| **TL** | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`      |
-| **SWE**| Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
+| Role    | Model           | Spawned Via                              |
+| ------- | --------------- | ---------------------------------------- |
+| **TL**  | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`          |
+| **SWE** | Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
 
 **Agent name must be exact.** Partial names fall back to default (which may be TL).
 
@@ -430,10 +431,10 @@ There are two fundamentally different ways to get help from other agents:
 
 **When to use subagents:**
 
-| Agent | Subagent Use Cases                                               |
-| ----- | ---------------------------------------------------------------- |
-| TL    | Research before delegating, verification, design synthesis       |
-| SWE   | Parallel file analysis, non-blocking tests, quick lookups        |
+| Agent | Subagent Use Cases                                         |
+| ----- | ---------------------------------------------------------- |
+| TL    | Research before delegating, verification, design synthesis |
+| SWE   | Parallel file analysis, non-blocking tests, quick lookups  |
 
 **SWE should use subagents more than TL.** SWE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat`.
 

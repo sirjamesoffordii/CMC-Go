@@ -430,13 +430,13 @@ You're running in one of two modes:
 
 **When to use subagents:**
 
-| Situation                              | Use Subagent?    | Why                                |
-| -------------------------------------- | ---------------- | ---------------------------------- |
-| Need to understand 3+ files            | ✅ Yes (parallel) | Faster than reading sequentially   |
-| Running verification while coding      | ✅ Yes            | Don't block on test runs           |
-| Quick lookup (API signature, etc.)     | ✅ Yes            | Don't lose your train of thought   |
-| Simple sequential task                 | ❌ No             | Overhead not worth it              |
-| Need result before next step           | ❌ No             | Just do it yourself                |
+| Situation                          | Use Subagent?     | Why                              |
+| ---------------------------------- | ----------------- | -------------------------------- |
+| Need to understand 3+ files        | ✅ Yes (parallel) | Faster than reading sequentially |
+| Running verification while coding  | ✅ Yes            | Don't block on test runs         |
+| Quick lookup (API signature, etc.) | ✅ Yes            | Don't lose your train of thought |
+| Simple sequential task             | ❌ No             | Overhead not worth it            |
+| Need result before next step       | ❌ No             | Just do it yourself              |
 
 **Subagent spawning syntax:**
 
