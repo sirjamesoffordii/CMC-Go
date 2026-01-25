@@ -51,17 +51,41 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 Two agent roles, both using Claude Opus 4.5 for continuous autonomous work:
 
-| Agent                     | GitHub Account            | Model           | Token Cost | Responsibility                             |
-| ------------------------- | ------------------------- | --------------- | ---------- | ------------------------------------------ |
-| **Tech Lead (TL)**        | `Alpha-Tech-Lead`         | Claude Opus 4.5 | 3×         | Coordination, board management, delegation |
-| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5 | 3×         | Implementation, verification, continuous   |
-| **Cloud Agent**           | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
+| Agent                       | GitHub Account            | Model            | Token Cost | Responsibility                             |
+| --------------------------- | ------------------------- | ---------------- | ---------- | ------------------------------------------ |
+| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | Claude Opus 4.5  | 3×         | Coordination, board management, delegation |
+| **Software Engineer (SWE)** | `Software-Engineer-Agent` | Claude Opus 4.5  | 3×         | Implementation, verification, continuous   |
+| **Cloud Agent**             | `copilot-swe-agent[bot]`  | (GitHub default) | Dedicated  | Simple async issues (fire-and-forget)      |
+| **Human (Sir James)**       | `sirjamesoffordii`        | —                | —          | Oversight, decisions, Plus account owner   |
 
-**Key distinctions:**
+### Identity Separation (critical)
 
-- **Both TL and SWE use Opus 4.5** — both need judgment for continuous autonomous work.
-- **TL coordinates, SWE implements** — different responsibilities, same model capability.
-- **Cloud Agent** is for simple async work; uses dedicated quota (doesn't count against premium requests).
+**Every actor has a distinct GitHub account.** This makes it easy to audit who did what:
+
+- `sirjamesoffordii` = Human (Sir James) — oversight, critical decisions, Plus account features
+- `Alpha-Tech-Lead` = TL agent — coordination, delegation, board management
+- `Software-Engineer-Agent` = SWE agent — implementation, PRs, commits
+
+**Agents MUST authenticate as their designated account before any GitHub operations:**
+
+```powershell
+# TL verifies
+gh auth status  # Should show: Alpha-Tech-Lead
+
+# SWE verifies  
+gh auth status  # Should show: Software-Engineer-Agent
+
+# Switch if needed
+gh auth switch --user <account-name>
+```
+
+### Cloud Agent Access
+
+**Only `sirjamesoffordii` (Plus account) can directly spawn cloud agents** via `gh agent-task create` or the `copilot-coding-agent` tool.
+
+**TL can still trigger cloud agents indirectly** by applying the `agent:copilot-swe` label to issues — this triggers a GitHub workflow that uses the Plus account token.
+
+In practice, we rarely need cloud agents now that local SWE with Opus 4.5 works well for continuous work.
 
 **Spawning agents:**
 ```powershell
