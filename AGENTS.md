@@ -93,6 +93,7 @@ gh auth status  # Should show: sirjamesoffordii
 In practice, we rarely need cloud agents now that local SWE with Opus 4.5 works well for continuous work.
 
 **Spawning agents:**
+
 ```powershell
 code chat -m "Tech Lead (TL)" "Start"           # Spawn TL
 code chat -m "Software Engineer (SWE)" "Start"  # Spawn SWE
@@ -125,6 +126,40 @@ Ops/CI/tooling reference (as-needed):
 - **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via Tech Lead + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 - **Reflection is mandatory.** Every task ends with two checks: Workflow Improvement + Pattern Learning. See "End-of-Task Reflection".
+
+## TL Branch Discipline (critical)
+
+**Tech Lead stays on clean `staging` tracking `origin/staging`.** TL never makes local code edits.
+
+### At session start (TL only):
+
+```powershell
+# 1. Ensure you're on staging
+git checkout staging
+
+# 2. Fetch and sync with origin
+git fetch origin
+git pull origin staging
+
+# 3. Verify clean state
+git status -sb  # Should show: ## staging...origin/staging
+```
+
+### Why this matters:
+
+- TL coordinates and delegates — SWE implements
+- TL staying on `staging` prevents merge conflicts and dirty-state issues
+- All implementation happens in SWE worktrees/branches, never TL's working copy
+- If TL needs to make a docs-only change, delegate to SWE anyway (keeps discipline clean)
+
+### TL is forbidden from:
+
+- Running `git add` / `git commit` / `git push` on code changes
+- Creating branches for implementation
+- Making local file edits (except reading files for context)
+- Running `pnpm dev` outside of `wt-main` worktree
+
+**If you find yourself about to edit a file:** STOP. Delegate to SWE instead.
 
 ## Cold Start (Empty Board)
 
@@ -384,8 +419,8 @@ Do not create new Issues — only implement what's assigned.
 
 ### Why Opus 4.5 for both agents
 
-| Agent | Why Opus 4.5                                                            |
-| ----- | ----------------------------------------------------------------------- |
+| Agent | Why Opus 4.5                                                             |
+| ----- | ------------------------------------------------------------------------ |
 | TL    | Coordination requires judgment — deciding what to delegate, when to poll |
 | SWE   | Continuous work requires judgment — looping, claiming issues, deciding   |
 
@@ -403,10 +438,10 @@ Score tasks before deciding how to route them:
 
 ### Score → Routing Decision
 
-| Score | Route To                            | Why                                          |
-| ----- | ----------------------------------- | -------------------------------------------- |
-| 0-2   | Cloud Agent (`agent:copilot-swe`)   | Simple async, TL continues working           |
-| 2-6   | SWE (`code chat -m "Software..."`)  | Needs judgment, continuous work              |
+| Score | Route To                           | Why                                |
+| ----- | ---------------------------------- | ---------------------------------- |
+| 0-2   | Cloud Agent (`agent:copilot-swe`)  | Simple async, TL continues working |
+| 2-6   | SWE (`code chat -m "Software..."`) | Needs judgment, continuous work    |
 
 **Simple rule:** Cloud agents for fire-and-forget. Local SWE for anything that needs judgment or continuous work.
 
@@ -425,10 +460,10 @@ When TL or SWE spawns subagents via `runSubagent`, they inherit the caller's mod
 
 ### Role Requirements
 
-| Role   | Model           | Spawned Via                          |
-| ------ | --------------- | ------------------------------------ |
-| **TL** | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`      |
-| **SWE**| Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
+| Role    | Model           | Spawned Via                              |
+| ------- | --------------- | ---------------------------------------- |
+| **TL**  | Claude Opus 4.5 | `code chat -m "Tech Lead (TL)"`          |
+| **SWE** | Claude Opus 4.5 | `code chat -m "Software Engineer (SWE)"` |
 
 **Agent name must be exact.** Partial names fall back to default (which may be TL).
 
@@ -459,10 +494,10 @@ There are two fundamentally different ways to get help from other agents:
 
 **When to use subagents:**
 
-| Agent | Subagent Use Cases                                               |
-| ----- | ---------------------------------------------------------------- |
-| TL    | Research before delegating, verification, design synthesis       |
-| SWE   | Parallel file analysis, non-blocking tests, quick lookups        |
+| Agent | Subagent Use Cases                                         |
+| ----- | ---------------------------------------------------------- |
+| TL    | Research before delegating, verification, design synthesis |
+| SWE   | Parallel file analysis, non-blocking tests, quick lookups  |
 
 **SWE should use subagents more than TL.** SWE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat`.
 
@@ -1057,6 +1092,48 @@ git checkout -- .vscode/tasks.json
 
 1. Run: `gh auth status` to diagnose
 2. Ask TL/human to run: `gh auth login`
+
+### Tool-call cancelled / interrupted
+
+**Symptoms:** Tool call was cancelled mid-execution, or user sees "Cancelled" in chat.
+
+**Fix:**
+
+1. Check if the tool actually completed (file edits, terminal output)
+2. If partially completed: assess state and either continue or rollback
+3. If unclear: re-run the tool call with same parameters
+4. For terminal commands: check `get_terminal_output` for any output before cancellation
+
+**Prevention:** Avoid very long-running single tool calls. Break into smaller steps.
+
+### VS Code `acceptResponseProgress` glitch
+
+**Symptoms:** VS Code shows error about `acceptResponseProgress` or chat becomes unresponsive.
+
+**Cause:** VS Code extension internal state issue, often after rapid tool calls or long sessions.
+
+**Fix:**
+
+1. **Wait 5-10 seconds** — sometimes resolves itself
+2. If chat is stuck: User should reload VS Code window (`Ctrl+Shift+P` → "Developer: Reload Window")
+3. After reload: Resume work from last known good state
+4. Check GitHub Issue/PR comments for last posted evidence
+
+**Recovery after reload:**
+
+- Re-authenticate: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status`
+- Re-sync staging (for TL): `git checkout staging; git fetch origin; git pull origin staging`
+- Check board state: `gh project item-list 4 --owner sirjamesoffordii --format json`
+
+### Agent session lost / VS Code crashed
+
+**Symptoms:** Chat session disappeared, VS Code crashed, agent stopped responding.
+
+**Recovery:**
+
+1. Check GitHub for agent's last activity (comments, PRs, commits)
+2. Spawn new agent session: `code chat -m "<agent>" "Continue from Issue #X"`
+3. New agent should check board state and resume
 
 ### Health check (run at session start)
 
