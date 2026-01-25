@@ -111,7 +111,7 @@ export function DistrictDirectorDropZone({
     [person, canInteract]
   );
 
-  const handleNameMouseEnter = (e: React.MouseEvent) => {
+  const handleNameMouseEnter = (_e: React.MouseEvent) => {
     if (person && canInteract) {
       setIsHovered(true);
       if (nameRef.current) {
@@ -128,7 +128,7 @@ export function DistrictDirectorDropZone({
     }
   };
 
-  const handleNameMouseMove = (e: React.MouseEvent) => {
+  const handleNameMouseMove = (_e: React.MouseEvent) => {
     if (nameRef.current && isHovered && person && canInteract) {
       const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });

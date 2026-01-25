@@ -850,7 +850,7 @@ export function DistrictPanel({
       if (savedOrderJson) {
         try {
           savedOrder = JSON.parse(savedOrderJson);
-        } catch (e) {
+        } catch (_e) {
           // Invalid JSON, ignore
         }
       }
@@ -1526,7 +1526,7 @@ export function DistrictPanel({
       if (person.childrenAges) {
         try {
           childrenAges = JSON.parse(person.childrenAges);
-        } catch (e) {
+        } catch (_e) {
           childrenAges = [];
         }
       }
