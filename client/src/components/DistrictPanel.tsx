@@ -461,7 +461,7 @@ export function DistrictPanel({
   });
 
   // Validation state
-  const [householdValidationError, setHouseholdValidationError] = useState<
+  const [_householdValidationError, setHouseholdValidationError] = useState<
     string | null
   >(null);
   const [householdNameError, setHouseholdNameError] = useState<string | null>(
@@ -498,7 +498,7 @@ export function DistrictPanel({
   });
 
   // Fetch households for dropdown
-  const { data: allHouseholds = [], error: householdsError } =
+  const { data: allHouseholds = [], error: _householdsError } =
     trpc.households.list.useQuery(undefined, {
       retry: false,
     });

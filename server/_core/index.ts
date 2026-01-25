@@ -199,7 +199,7 @@ async function startServer() {
       // returned the call will throw and be caught below.
       await checkDbHealth();
       res.status(200).send("OK");
-    } catch (err) {
+    } catch (_err) {
       // If the DB connection fails or health check throws, return a
       // 503 to signal that the service is unhealthy. We do not include
       // error details for security reasons.
