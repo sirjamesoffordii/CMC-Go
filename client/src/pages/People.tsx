@@ -14,6 +14,7 @@ import {
   Edit2,
   Check,
   X,
+  Download,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
@@ -33,6 +34,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
 import { formatStatusLabel } from "@/utils/statusLabel";
+import { exportToCsv, formatDateForFilename } from "@/utils/csvExport";
 
 export default function People() {
   const [, setLocation] = useLocation();
@@ -200,6 +202,28 @@ export default function People() {
       throw new Error("Sentry test: staging");
     }
   }, []);
+
+  // Export to CSV handler
+  const handleExportCsv = () => {
+    const exportData = filteredPeople.map(person => {
+      const campus = person.primaryCampusId
+        ? campusById.get(person.primaryCampusId)
+        : undefined;
+      const districtId = person.primaryDistrictId ?? campus?.districtId;
+      const district = districtId ? districtById.get(districtId) : undefined;
+
+      return {
+        name: person.name || "",
+        status: person.status || "",
+        district: district?.name || "",
+        campus: campus?.name || "",
+        role: person.primaryRole || "",
+      };
+    });
+
+    const filename = `people-export-${formatDateForFilename()}`;
+    exportToCsv(exportData, filename);
+  };
 
   const filteredPeople = useMemo(() => {
     let filtered = allPeople;
@@ -573,51 +597,62 @@ export default function People() {
               </p>
             </div>
 
-            {/* Search (moved from Home header) */}
-            <div className="relative">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSearchOpen(!searchOpen)}
+                onClick={handleExportCsv}
                 className="bg-white"
               >
-                <Search className="h-4 w-4 mr-2" />
-                Search
+                <Download className="h-4 w-4 mr-2" />
+                Export CSV
               </Button>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchOpen(!searchOpen)}
+                  className="bg-white"
+                >
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </Button>
 
-              {searchOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setSearchOpen(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <Input
-                        ref={searchInputRef}
-                        type="text"
-                        placeholder="Search people by name, role, ID, or needs..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="pl-9 pr-9"
-                      />
-                      {searchQuery && (
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          type="button"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      )}
+                {searchOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setSearchOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          ref={searchInputRef}
+                          type="text"
+                          placeholder="Search people by name, role, ID, or needs..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                          className="pl-9 pr-9"
+                        />
+                        {searchQuery && (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            type="button"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-500">
+                        Type to filter the list below
+                      </div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      Type to filter the list below
-                    </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
