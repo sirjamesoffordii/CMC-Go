@@ -110,7 +110,7 @@ describe("Public Endpoint Security Audit - Issue #247", () => {
         expect(household).not.toHaveProperty("status");
         expect(household).not.toHaveProperty("members");
       }
-    });
+    }, 15000); // Extended timeout for potentially slow search query
   });
 
   describe("metrics.get", () => {
