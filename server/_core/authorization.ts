@@ -4,7 +4,7 @@
  */
 
 import { TRPCError } from "@trpc/server";
-import type { User } from "../../drizzle/schema";
+import type { Person, User } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { people } from "../../drizzle/schema";
 
@@ -327,4 +327,45 @@ export function getPeopleScope(user: {
     code: "FORBIDDEN",
     message: "Access denied: no scope assigned",
   });
+}
+
+export type PersonAnchors = Pick<
+  Person,
+  "primaryCampusId" | "primaryDistrictId" | "primaryRegion"
+>;
+
+export type UserScopeAnchors = Pick<
+  User,
+  "role" | "campusId" | "districtId" | "regionId"
+>;
+
+/**
+ * Check if the given user can access the given person based on the user's people-scope.
+ * Uses the person's primary anchors (campus/district/region) for scope comparison.
+ */
+export function canAccessPerson(
+  user: UserScopeAnchors,
+  person: PersonAnchors
+): boolean {
+  const scope = getPeopleScope(user);
+
+  if (scope.level === "ALL") return true;
+  if (scope.level === "REGION") return person.primaryRegion === scope.regionId;
+  if (scope.level === "DISTRICT")
+    return person.primaryDistrictId === scope.districtId;
+  return person.primaryCampusId === scope.campusId;
+}
+
+/**
+ * Drizzle `where` clause that scopes `people` rows to the current user's visibility.
+ * Intended for DB-level filtering.
+ */
+export function peopleScopeWhereClause(user: UserScopeAnchors) {
+  const scope = getPeopleScope(user);
+
+  if (scope.level === "ALL") return sql`1=1`;
+  if (scope.level === "REGION") return eq(people.primaryRegion, scope.regionId);
+  if (scope.level === "DISTRICT")
+    return eq(people.primaryDistrictId, scope.districtId);
+  return eq(people.primaryCampusId, scope.campusId);
 }

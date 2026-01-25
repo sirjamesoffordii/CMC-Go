@@ -1,0 +1,210 @@
+import { describe, expect, it } from "vitest";
+import { QueryBuilder } from "drizzle-orm/mysql-core";
+import { people } from "../drizzle/schema";
+import {
+  canAccessPerson,
+  peopleScopeWhereClause,
+  type UserScopeAnchors,
+} from "./_core/authorization";
+
+describe("people visibility helpers", () => {
+  describe("canAccessPerson", () => {
+    it("allows ALL scope to access any person", () => {
+      const user: UserScopeAnchors = {
+        role: "ADMIN",
+        campusId: 1,
+        districtId: null,
+        regionId: null,
+      };
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: null,
+          primaryDistrictId: null,
+          primaryRegion: null,
+        })
+      ).toBe(true);
+    });
+
+    it("enforces CAMPUS scope by primaryCampusId", () => {
+      const user: UserScopeAnchors = {
+        role: "STAFF",
+        campusId: 5,
+        districtId: "D-1",
+        regionId: "R-1",
+      };
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: "D-999",
+          primaryRegion: "R-999",
+        })
+      ).toBe(true);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 6,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-1",
+        })
+      ).toBe(false);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: null,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-1",
+        })
+      ).toBe(false);
+    });
+
+    it("enforces DISTRICT scope by primaryDistrictId (CAMPUS_DIRECTOR)", () => {
+      const user: UserScopeAnchors = {
+        role: "CAMPUS_DIRECTOR",
+        campusId: 5,
+        districtId: "D-1",
+        regionId: "R-1",
+      };
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 999,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-999",
+        })
+      ).toBe(true);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: "D-2",
+          primaryRegion: "R-1",
+        })
+      ).toBe(false);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: null,
+          primaryRegion: "R-1",
+        })
+      ).toBe(false);
+    });
+
+    it("enforces REGION scope by primaryRegion (DISTRICT_DIRECTOR with regionId)", () => {
+      const user: UserScopeAnchors = {
+        role: "DISTRICT_DIRECTOR",
+        campusId: 5,
+        districtId: "D-1",
+        regionId: "R-1",
+      };
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 999,
+          primaryDistrictId: "D-999",
+          primaryRegion: "R-1",
+        })
+      ).toBe(true);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-2",
+        })
+      ).toBe(false);
+    });
+
+    it("falls back to DISTRICT scope when DISTRICT_DIRECTOR has no regionId", () => {
+      const user: UserScopeAnchors = {
+        role: "DISTRICT_DIRECTOR",
+        campusId: 5,
+        districtId: "D-1",
+        regionId: null,
+      };
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 999,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-999",
+        })
+      ).toBe(true);
+
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: "D-2",
+          primaryRegion: "R-1",
+        })
+      ).toBe(false);
+    });
+  });
+
+  describe("peopleScopeWhereClause", () => {
+    function toSql(user: UserScopeAnchors) {
+      const qb = new QueryBuilder();
+      const built = qb
+        .select({ personId: people.personId })
+        .from(people)
+        .where(peopleScopeWhereClause(user))
+        .toSQL();
+
+      return built;
+    }
+
+    it("returns 1=1 for ALL scope", () => {
+      const user: UserScopeAnchors = {
+        role: "ADMIN",
+        campusId: 1,
+        districtId: null,
+        regionId: null,
+      };
+
+      const built = toSql(user);
+      expect(built.sql).toContain("1=1");
+      expect(built.params).toEqual([]);
+    });
+
+    it("returns primaryCampusId filter for CAMPUS scope", () => {
+      const user: UserScopeAnchors = {
+        role: "STAFF",
+        campusId: 42,
+        districtId: "D-1",
+        regionId: "R-1",
+      };
+
+      const built = toSql(user);
+      expect(built.sql).toContain("primaryCampusId");
+      expect(built.params).toEqual([42]);
+    });
+
+    it("returns primaryDistrictId filter for DISTRICT scope", () => {
+      const user: UserScopeAnchors = {
+        role: "CAMPUS_DIRECTOR",
+        campusId: 42,
+        districtId: "D-42",
+        regionId: "R-1",
+      };
+
+      const built = toSql(user);
+      expect(built.sql).toContain("primaryDistrictId");
+      expect(built.params).toEqual(["D-42"]);
+    });
+
+    it("returns primaryRegion filter for REGION scope", () => {
+      const user: UserScopeAnchors = {
+        role: "DISTRICT_DIRECTOR",
+        campusId: 42,
+        districtId: "D-42",
+        regionId: "R-42",
+      };
+
+      const built = toSql(user);
+      expect(built.sql).toContain("primaryRegion");
+      expect(built.params).toEqual(["R-42"]);
+    });
+  });
+});

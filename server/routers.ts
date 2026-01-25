@@ -12,6 +12,7 @@ import { setSessionCookie, clearSessionCookie } from "./_core/session";
 import { TRPCError } from "@trpc/server";
 import {
   getPeopleScope,
+  canAccessPerson,
   canApproveDistrictDirector,
   canApproveRegionDirector,
 } from "./_core/authorization";
@@ -144,32 +145,19 @@ export const appRouter = router({
     setPerson: protectedProcedure
       .input(z.object({ personId: z.string().min(1) }))
       .mutation(async ({ input, ctx }) => {
-        const person = await db.getPersonByPersonId(input.personId);
+        const person = await db.getPersonByPersonIdInScope(
+          input.personId,
+          ctx.user
+        );
         if (!person) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Person not found",
-          });
-        }
+          const exists = await db.personExists(input.personId);
+          if (!exists) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Person not found",
+            });
+          }
 
-        const scope = getPeopleScope(ctx.user);
-
-        if (
-          scope.level === "CAMPUS" &&
-          person.primaryCampusId !== scope.campusId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "DISTRICT" &&
-          person.primaryDistrictId !== scope.districtId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
-        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -770,34 +758,16 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const scope = getPeopleScope(ctx.user);
-
-        // Check if the person being created is in scope
         if (
-          scope.level === "CAMPUS" &&
-          input.primaryCampusId !== scope.campusId
+          !canAccessPerson(ctx.user, {
+            primaryCampusId: input.primaryCampusId ?? null,
+            primaryDistrictId: input.primaryDistrictId ?? null,
+            primaryRegion: input.primaryRegion ?? null,
+          })
         ) {
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Access denied: can only create people in your campus",
-          });
-        }
-        if (
-          scope.level === "DISTRICT" &&
-          input.primaryDistrictId !== scope.districtId
-        ) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Access denied: can only create people in your district",
-          });
-        }
-        if (
-          scope.level === "REGION" &&
-          input.primaryRegion !== scope.regionId
-        ) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Access denied: can only create people in your region",
+            message: "Access denied: can only create people within your scope",
           });
         }
 
@@ -896,33 +866,19 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        const person = await db.getPersonByPersonId(input.personId);
+        const person = await db.getPersonByPersonIdInScope(
+          input.personId,
+          ctx.user
+        );
         if (!person) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Person not found",
-          });
-        }
+          const exists = await db.personExists(input.personId);
+          if (!exists) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Person not found",
+            });
+          }
 
-        const scope = getPeopleScope(ctx.user);
-
-        // Check if person is in scope
-        if (
-          scope.level === "CAMPUS" &&
-          person.primaryCampusId !== scope.campusId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "DISTRICT" &&
-          person.primaryDistrictId !== scope.districtId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
-        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -932,68 +888,38 @@ export const appRouter = router({
     getById: protectedProcedure
       .input(z.object({ personId: z.string() }))
       .query(async ({ input, ctx }) => {
-        const person = await db.getPersonByPersonId(input.personId);
-        if (!person) {
+        const person = await db.getPersonByPersonIdInScope(
+          input.personId,
+          ctx.user
+        );
+        if (person) return person;
+
+        const exists = await db.personExists(input.personId);
+        if (!exists) {
           throw new TRPCError({
             code: "NOT_FOUND",
             message: "Person not found",
           });
         }
 
-        const scope = getPeopleScope(ctx.user);
-
-        // Check if person is in scope
-        if (
-          scope.level === "CAMPUS" &&
-          person.primaryCampusId !== scope.campusId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "DISTRICT" &&
-          person.primaryDistrictId !== scope.districtId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-
-        return person;
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }),
     updateName: protectedProcedure
       .input(z.object({ personId: z.string(), name: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        const person = await db.getPersonByPersonId(input.personId);
+        const person = await db.getPersonByPersonIdInScope(
+          input.personId,
+          ctx.user
+        );
         if (!person) {
-          throw new TRPCError({
-            code: "NOT_FOUND",
-            message: "Person not found",
-          });
-        }
+          const exists = await db.personExists(input.personId);
+          if (!exists) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Person not found",
+            });
+          }
 
-        const scope = getPeopleScope(ctx.user);
-
-        // Check if person is in scope
-        if (
-          scope.level === "CAMPUS" &&
-          person.primaryCampusId !== scope.campusId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "DISTRICT" &&
-          person.primaryDistrictId !== scope.districtId
-        ) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
-        }
-        if (
-          scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
-        ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
