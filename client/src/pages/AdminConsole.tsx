@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
+import { ImportModal } from "@/components/ImportModal";
 
 // Get version from package.json (will be injected at build time or read from env)
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -164,9 +165,10 @@ export default function AdminConsole() {
     checkDbHealth();
   }, [NODE_ENV, peopleLoading, allPeople.length]);
 
+  const [importModalOpen, setImportModalOpen] = useState(false);
+
   const handleImportContacts = () => {
-    toast.info("Import Contacts feature coming soon");
-    // TODO: Implement CSV/XLSX import
+    setImportModalOpen(true);
   };
 
   const handleExportContactsCSV = () => {
@@ -674,6 +676,9 @@ export default function AdminConsole() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Import Modal */}
+      <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
     </div>
   );
 }
