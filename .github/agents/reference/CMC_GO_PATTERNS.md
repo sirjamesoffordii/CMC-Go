@@ -138,6 +138,16 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 
 ### git
 
+### Quick board status check
+
+**Tags:** git
+**Problem:** Full board query is verbose and slow.
+**Solution:** Use this one-liner for actionable items:
+```powershell
+gh project item-list 4 --owner sirjamesoffordii --limit 20 --format json | ConvertFrom-Json | Select-Object -ExpandProperty items | Where-Object { $_.status -in @("Todo","In Progress","Blocked","Verify") } | Select-Object @{N='#';E={$_.content.number}}, status, @{N='Title';E={$_.title.Substring(0,[Math]::Min(50,$_.title.Length))}} | Format-Table -AutoSize
+```
+**Prevention:** Bookmark this command; run at session start and after each task.
+
 ### Projects v2 IDs are repo-specific
 
 **Tags:** git
