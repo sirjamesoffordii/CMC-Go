@@ -7,6 +7,7 @@ import { SentryTestRedirect } from "./components/SentryTestRedirect";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import People from "./pages/People";
+import { Login } from "./pages/Login";
 import MoreInfo from "./pages/MoreInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
 import AdminConsole from "./pages/AdminConsole";
@@ -52,6 +53,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
       <Route path="/people" component={People} />
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/more-info" component={MoreInfo} />

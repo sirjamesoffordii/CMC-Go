@@ -270,7 +270,15 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         }
       >();
 
-      allDistricts.forEach(district => {
+      const districtIdsWithPeople = new Set(
+        filteredPeople
+          .map((p: Person) => p.primaryDistrictId)
+          .filter((id): id is string => Boolean(id))
+      );
+
+      districtIdsWithPeople.forEach(districtId => {
+        const district = allDistricts.find(d => d.id === districtId);
+        if (!district) return;
         districtMap.set(district.id, {
           district,
           campuses: new Map(),
@@ -360,7 +368,15 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       }
     >();
 
-    allDistricts.forEach(district => {
+    const districtIdsWithPeople = new Set(
+      filteredPeople
+        .map((p: Person) => p.primaryDistrictId)
+        .filter((id): id is string => Boolean(id))
+    );
+
+    districtIdsWithPeople.forEach(districtId => {
+      const district = allDistricts.find(d => d.id === districtId);
+      if (!district) return;
       const region =
         district.region || DISTRICT_REGION_MAP[district.id] || "Unknown";
       if (!regionMap.has(region)) {

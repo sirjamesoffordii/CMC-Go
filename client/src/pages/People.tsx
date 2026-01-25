@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLocation } from "wouter";
-import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Tooltip,
@@ -39,8 +38,14 @@ import { exportToCsv, formatDateForFilename } from "@/utils/csvExport";
 
 export default function People() {
   const [, setLocation] = useLocation();
-  const { isAuthenticated, isLoading: authLoading } = usePublicAuth();
-  const { user } = useAuth();
+  const {
+    user,
+    isAuthenticated,
+    loading: authLoading,
+  } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: "/login",
+  });
   const utils = trpc.useUtils();
 
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
@@ -315,8 +320,18 @@ export default function People() {
 
     const districtMap = new Map<string, DistrictData>();
 
-    // Initialize districts
-    allDistricts.forEach(district => {
+    // Initialize districts (only those with people in the filtered set)
+    const districtIdsWithPeople = new Set<string>();
+    filteredPeople.forEach(person => {
+      const campusId = person.primaryCampusId;
+      const campus = campusId ? campusById.get(campusId) : undefined;
+      const districtId = person.primaryDistrictId ?? campus?.districtId;
+      if (districtId) districtIdsWithPeople.add(districtId);
+    });
+
+    districtIdsWithPeople.forEach(districtId => {
+      const district = allDistricts.find(d => d.id === districtId);
+      if (!district) return;
       districtMap.set(district.id, {
         district,
         campuses: new Map(),
@@ -540,31 +555,8 @@ export default function People() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
-        <div className="max-w-7xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => setLocation("/")}
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Map
-          </Button>
-          <div className="flex h-[60vh] items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Authentication Required
-              </h2>
-              <p className="text-gray-600 mb-4">
-                Please log in to view people.
-              </p>
-              <Button onClick={() => setLocation("/")}>Go to Home</Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    // Redirect handled by useAuth.
+    return null;
   }
 
   if (peopleLoading || campusesLoading || districtsLoading) {
