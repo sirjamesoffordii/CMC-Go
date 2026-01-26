@@ -23,7 +23,7 @@ jobs:
 
     steps:
       - name: Assign issue to Cloud Agent
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.COPILOT_ASSIGN_TOKEN_PRO }}
           script: |
