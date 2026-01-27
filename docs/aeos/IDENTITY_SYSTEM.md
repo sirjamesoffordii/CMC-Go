@@ -90,14 +90,11 @@ $env:GH_CONFIG_DIR = $null
 
 **Problem:** Windows Credential Manager prompts for account selection on `git push`, blocking autonomous operation.
 
-**Solution:** Configure git to use GH CLI for credentials:
+**Solution:** Configure git in this repo to use GH CLI for credentials:
 
 ```powershell
-# One-time setup (run as human)
-git config --global credential.helper ""
-git config --global credential.https://github.com.helper "!pwsh -File C:/Dev/CMC Go/scripts/git-credential-gh.ps1 -ConfigDir"
-
-# Per-repo alternative (uses current GH_CONFIG_DIR)
+# Run once in the CMC-Go repo (already done)
+cd "C:\Dev\CMC Go"
 git config credential.helper "!gh auth git-credential"
 ```
 
@@ -105,7 +102,7 @@ git config credential.helper "!gh auth git-credential"
 
 1. Git asks for credentials
 2. Credential helper calls `gh auth git-credential`
-3. GH CLI returns token from `GH_CONFIG_DIR` config
+3. GH CLI returns token from current `GH_CONFIG_DIR` config
 4. No popup, no manual selection
 
 **Verify:**
@@ -114,6 +111,13 @@ git config credential.helper "!gh auth git-credential"
 # Should push without popup
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 git push origin staging
+```
+
+**If popup still appears:** The credential helper may be overridden globally. Check:
+
+```powershell
+git config --global credential.helper  # Should be empty or match above
+git config credential.helper           # Should be "!gh auth git-credential"
 ```
 
 ---

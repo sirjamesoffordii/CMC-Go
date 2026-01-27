@@ -135,13 +135,33 @@ gh repo view sirjamesoffordii/CMC-Go --json name
 
 **Spawn Methods:**
 
-| Method              | Blocking? | Context Preserved?   | When to Use                        |
-| ------------------- | --------- | -------------------- | ---------------------------------- |
-| `runSubagent` tool  | Yes       | Yes (full)           | PE spawning TL, TL spawning SE     |
-| New chat tab + mode | No        | Yes (same window)    | Manual spawn in same VS Code       |
-| `code chat -n`      | No        | Partial (new window) | Not recommended — loses agent mode |
+| Method             | Blocking? | Context Preserved? | When to Use                                      |
+| ------------------ | --------- | ------------------ | ------------------------------------------------ |
+| `runSubagent` tool | Yes       | Yes (full)         | **Primary method** — PE→TL, TL→SE                |
+| `code chat -r -m`  | No        | Yes (same window)  | Manual spawn in same VS Code window              |
+| `code chat -n`     | No        | No (new window)    | **Not recommended** — loses agent mode & context |
 
 **Recommended: Use `runSubagent` tool** — preserves context, agent mode, and workspace.
+
+#### VS Code Chat CLI Reference
+
+```powershell
+# Full syntax
+code chat [options] [prompt]
+
+# Options:
+#   -m --mode <mode>      Agent mode: 'ask', 'edit', 'agent', or custom mode name
+#   -a --add-file <path>  Add file as context (can use multiple times)
+#   -r --reuse-window     Use last active VS Code window (creates new chat tab)
+#   -n --new-window       Open new VS Code window (loses context!)
+#   --maximize            Maximize chat panel
+
+# Examples:
+code chat -r -m "Tech Lead" "Start coordination"                    # New TL chat in current window
+code chat -r -m "Software Engineer" -a AGENTS.md "Implement #250"   # New SE chat with context
+```
+
+**IMPORTANT:** The `-r` flag creates a new chat TAB in the same window, it does NOT replace the current chat. This is the correct behavior for spawning additional agents.
 
 #### If you ARE the PE:
 
