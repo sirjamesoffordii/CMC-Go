@@ -95,7 +95,8 @@ When the operator says **"Start"**, **"Go"**, or similar:
 **If PE is missing (no heartbeat > 10 min):**
 
 ```powershell
-code chat -n -m "Principal Engineer (PE)" "You are PE-1. TL detected PE was missing. Check board, run planning epoch. Start."
+# -r reuses current window (creates new chat tab), -a adds context
+code chat -r -m "principal-engineer" -a AGENTS.md "You are PE-1. TL detected PE was missing. Check board, run planning epoch. Start."
 ```
 
 **Continuity rule:** TL does NOT step up to be PE. TL spawns a new PE and continues as coordinator.
@@ -230,8 +231,8 @@ Apply `agent:copilot-SE` label to issues to trigger cloud execution:
 TL can spawn agents via terminal commands that don't block:
 
 ```powershell
-# Spawn local SE agent in new VS Code window
-code chat -n -m "Software Engineer" "You are SE-1. Start."
+# Spawn local SE agent (reuses window, creates new chat tab)
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
 
 # Cloud agents (only via label since TL uses non-Plus account)
 # Apply label: agent:copilot-SE
@@ -255,11 +256,11 @@ SE-3: Idle (spawned 21:10, checking board)
 **Standard spawn commands:**
 
 ```powershell
-# Spawn SE with session ID
-code chat -n -m "Software Engineer" "You are SE-1. Rename your chat tab to 'Software Engineer 1'. Verify auth as Software-Engineer-Agent. Start."
+# Spawn SE with session ID (-r reuses window, -a adds context)
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Rename your chat tab to 'Software Engineer 1'. Verify auth as Software-Engineer-Agent. Start."
 
 # Spawn secondary TL (when needed for scaling)
-code chat -n -m "Tech Lead" "You are TL-2. Rename your chat tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Rename your chat tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
 ```
 
 **What agents do with session ID:**

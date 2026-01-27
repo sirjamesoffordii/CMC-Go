@@ -109,8 +109,11 @@ In practice, we rarely need cloud agents now that local SE works well for contin
 **Spawning agents:**
 
 ```powershell
-code chat -n -m "Tech Lead" -a ".github/agents/state/TL-1.md" "You are TL-1. Read your state file. Start."           # Spawn TL
-code chat -n -m "Software Engineer" -a ".github/agents/state/SE-1.md" "You are SE-1. Read your state file. Start."  # Spawn SE
+# -r reuses current window (creates new chat tab), -a adds context file
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."           # Spawn TL
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."   # Spawn SE
+
+# NEVER use -n (opens empty window without workspace context!)
 ```
 
 ## Session Start (once per session)
@@ -253,7 +256,8 @@ When an agent goes stale (no heartbeat beyond threshold):
 3. Supervisor spawns replacement:
 
 ```powershell
-code chat -n -m "Software Engineer" "You are SE-1(4). Read MCP Memory for context. Previous session ended. Continue work."
+# -r reuses current window (creates new chat tab)
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(4). Read MCP Memory for context. Previous session ended. Continue work."
 ```
 
 4. Replacement agent:
@@ -590,15 +594,15 @@ If count < 4 → delegate new work
 
 When workload exceeds 4 active items:
 
-1. Tech Lead spawns a **secondary Tech Lead** via `code chat -n` (non-blocking)
+1. Tech Lead spawns a **secondary Tech Lead** via `code chat -r` (reuses window)
 2. Secondary Tech Lead gets its own capacity of 4 items
 3. Primary Tech Lead retains coordination oversight
 
 **Spawning secondary TL:**
 
 ```powershell
-# Non-blocking: spawn in new VS Code window
-code chat -n -m "Tech Lead" -a ".github/agents/state/TL-2.md" "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Coordinate Issues #X, #Y. Start."
+# Reuse window: creates new chat tab in current window
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Coordinate Issues #X, #Y. Start."
 ```
 
 ## Model Selection
@@ -687,7 +691,7 @@ There are two fundamentally different ways to get help from other agents:
 **TL should avoid single subagents for implementation.** Either:
 
 - **Small task** → Delegate to SE anyway. TL never edits files.
-- **Big task** → Spawn autonomous SE via `code chat -n` (non-blocking)
+- **Big task** → Spawn autonomous SE via `code chat -r` (reuses window, creates new tab)
 - **Multiple tasks** → Batch subagents in parallel (one blocking period, multiple results)
 
 **When to use subagents:**
@@ -697,7 +701,7 @@ There are two fundamentally different ways to get help from other agents:
 | TL    | Parallel research batch, batch verification, design synthesis batches |
 | SE    | Parallel file analysis, non-blocking tests, quick lookups             |
 
-**SE should use subagents more than TL.** SE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat -n`.
+**SE should use subagents more than TL.** SE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat -r`.
 
 ### Subagent Execution Model (critical to understand)
 
@@ -747,17 +751,16 @@ TL Session (no user prompts needed between batches):
 **Custom agent CLI syntax:**
 
 ```powershell
-# Spawn SE agent (opens new chat tab in current window)
-code chat -m "Software Engineer (SE)" "Your task here"
-
-# Spawn SE agent in new window (fully non-blocking)
-code chat -n -m "Software Engineer (SE)" "Your task here"
+# Spawn SE agent (reuses current window, creates new chat tab)
+code chat -r -m "Software Engineer" -a AGENTS.md "Your task here"
 
 # Spawn Tech Lead agent
-code chat -m "Tech Lead (TL)" "Your task here"
+code chat -r -m "Tech Lead" -a AGENTS.md "Your task here"
+
+# NEVER use -n (opens empty window without workspace context!)
 ```
 
-The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SE)"`).
+The `-m` flag accepts the agent name from the `.agent.md` file (e.g., `"Software Engineer"`, `"Tech Lead"`).
 
 **What TL can and cannot do with spawned sessions:**
 
@@ -810,7 +813,7 @@ $comments = gh api repos/sirjamesoffordii/CMC-Go/issues/<coordination-issue>/com
 If no heartbeat for 5+ minutes:
 
 1. Check if SE chat tab is still open (manual)
-2. Spawn a new SE session: `code chat -n -m "Software Engineer (SE)" "Continue work..."`
+2. Spawn a new SE session: `code chat -r -m "Software Engineer" -a AGENTS.md "Continue work..."`
 
 ### The Golden Rule
 
@@ -835,11 +838,11 @@ PE (episodic planning bursts — ensures board health, priorities, coherence)
 
 ```powershell
 # PE spawns TL (if not already running)
-code chat -n -m "Tech Lead (TL)" "You are TL-1. Rename tab to 'Tech Lead 1'. Verify auth. Start."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Rename tab to 'Tech Lead 1'. Verify auth. Start."
 
 # TL spawns SEs
-code chat -n -m "Software Engineer (SE)" "You are SE-1. Rename tab to 'Software Engineer 1'. Verify auth. Start."
-code chat -n -m "Software Engineer (SE)" "You are SE-2. Rename tab to 'Software Engineer 2'. Verify auth. Start."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Rename tab to 'Software Engineer 1'. Verify auth. Start."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-2. Rename tab to 'Software Engineer 2'. Verify auth. Start."
 ```
 
 **Role focus:**
@@ -873,7 +876,7 @@ TL Session
 │   └── TL creates executable Issues
 │
 ├── PHASE 2: Implementation (AUTONOMOUS SE AGENTS)
-│   └── Spawn SE agents via code chat -n
+│   └── Spawn SE agents via code chat -r (reuses window)
 │   └── Each agent claims and implements independently
 │   └── TL continues coordination, reviews PRs
 │
@@ -905,12 +908,12 @@ TL Session
 
 When workload exceeds 4 active items:
 
-- **Preferred:** Spawn a second TL session using `code chat -n` (non-blocking).
+- **Preferred:** Spawn a second TL session using `code chat -r` (reuses window, creates new tab).
 - **Avoid:** `runSubagent` for TL spawning (blocking defeats the purpose).
 
 ```powershell
-# Non-blocking: spawn secondary TL in a new window
-code chat -n -m "Tech Lead (TL)" "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
+# Reuse window: creates new chat tab
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
 ```
 
 This keeps the coordinating brain unblocked.
@@ -921,7 +924,7 @@ This keeps the coordinating brain unblocked.
 2. Tech Lead scores complexity and selects delegation method:
    - **Score 0-1 (trivial):** Delegate to SE anyway. TL never edits files.
    - **Score 0-2 (simple async):** Cloud Agent via `agent:copilot-SE` label — TL continues working
-   - **Score 2-6 (standard/complex):** Autonomous SE agent via `code chat -n` — TL continues coordinating
+   - **Score 2-6 (standard/complex):** Autonomous SE agent via `code chat -r` — TL continues coordinating
 3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
 4. "Done" requires evidence (commands/results + links)
 5. Update Projects v2 as you go (board reflects reality)
@@ -952,9 +955,9 @@ These behaviors were empirically verified:
 | Parallel `runSubagent`               | ✅ BLOCKING (all) | TL waits for ALL to complete           | Independent tasks, need all results |
 | Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING   | Returns immediately, agent works async | Fire-and-forget tasks, scaling      |
 | `gh agent-task create`               | ❌ NON-BLOCKING   | CLI spawns cloud agent, returns URL    | Scripted/terminal agent spawning    |
-| `code chat -n -m "<agent>"`          | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
+| `code chat -r -m "<agent>"`          | ❌ NON-BLOCKING   | Creates new chat tab in current window | Local parallel agent sessions       |
 
-**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "Software Engineer (SE)"`.
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new chat tabs via `code chat -r -m "Software Engineer"`.
 
 ### Non-Blocking Spawn Methods
 
@@ -977,23 +980,20 @@ gh agent-task list -L 10
 Spawn local agent sessions with custom agents:
 
 ```powershell
-# Spawn SE agent in current window
-code chat -m "Software Engineer (SE)" "Implement Issue #42"
-
-# Spawn SE agent in new window (non-blocking)
-code chat -n -m "Software Engineer (SE)" "Implement Issue #42"
+# Spawn SE agent (reuses window, creates new chat tab)
+code chat -r -m "Software Engineer" -a AGENTS.md "Implement Issue #42"
 
 # Spawn Tech Lead agent
-code chat -m "Tech Lead (TL)" "Review project board and delegate"
+code chat -r -m "Tech Lead" -a AGENTS.md "Review project board and delegate"
 
 # Options:
-#   -n, --new-window      Force new window (non-blocking)
-#   -r, --reuse-window    Use last active window
+#   -r, --reuse-window    Use last active window (RECOMMENDED)
+#   -n, --new-window      Force NEW EMPTY window (LOSES CONTEXT - AVOID!)
 #   -m, --mode <id>       Mode: 'ask', 'edit', 'agent', or custom agent name
 #   -a, --add-file        Add file context
 ```
 
-**Custom agent identifiers** use the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SE)"`).
+**Custom agent identifiers** use the `name:` field from the `.agent.md` file (e.g., `"Software Engineer"`, `"Tech Lead"`).
 
 **Note:** Shares Copilot subscription with primary session.
 
@@ -1047,7 +1047,7 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 | **Simple implementation**  | Cloud agent                 | Fire-and-forget, don't wait        |
 | **Bulk simple tasks**      | Multiple cloud agents       | Scale to 50+ in parallel           |
 | **Complex implementation** | `runSubagent` (SE Opus)     | Need premium model, get result     |
-| **Local parallel work**    | `code chat -n -m "<agent>"` | Multiple VS Code windows           |
+| **Local parallel work**    | `code chat -r -m "<agent>"` | New chat tab in same window        |
 
 ### Spawning hierarchy
 
@@ -1057,7 +1057,7 @@ PRIMARY TL (has runSubagent tool)
 ├── Can spawn local TL ✅ (blocking)
 ├── Can spawn cloud agents ✅ (non-blocking)
 ├── Can run `gh agent-task create` ✅ (non-blocking)
-├── Can run `code chat -m "<agent>"` ✅ (non-blocking, new window)
+├── Can run `code chat -r -m "<agent>"` ✅ (non-blocking, new tab)
 │
 └── SPAWNED agents (no runSubagent tool)
     ├── Cannot spawn local agents ❌

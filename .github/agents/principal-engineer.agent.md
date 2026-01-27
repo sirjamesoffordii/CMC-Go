@@ -77,11 +77,12 @@ Follow `AGENTS.md` for the canonical workflow and `.github/copilot-instructions.
 - **GitHub comments:** Include `PE-1` in your comments
 - **Chat naming:** Rename your VS Code chat tab to "Principal Engineer 1"
 
-**At session start, authenticate:**
+**At session start, authenticate as PE:**
 
 ```powershell
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
-gh auth status  # Should show Alpha-Tech-Lead
+# Note: Directory is lowercase, account is Principle-Engineer-Agent
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+gh auth status  # Should show Principle-Engineer-Agent
 ````
 
 ## Activation
@@ -162,7 +163,8 @@ PE monitors TL. TL monitors SWEs. If any agent goes missing, the supervisor resp
 **If TL is missing (no heartbeat > 10 min):**
 
 ```powershell
-code chat -n -m "Tech Lead" "You are TL-1. PE detected TL was missing. Check board, resume coordination. Start."
+# -r reuses current window (creates new chat tab), -a adds context
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. PE detected TL was missing. Check board, resume coordination. Start."
 ```
 
 **If PE is missing:** TL spawns PE (see TL docs).
@@ -190,7 +192,8 @@ PE (planning/coherence)
 **PE spawns TL (if missing):**
 
 ```powershell
-code chat -n -m "Tech Lead" "You are TL-1. Start."
+# -r reuses current window (creates new chat tab), -a adds context
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
 ```
 
 **PE does NOT spawn SE directly.** TL manages the SE pool.
