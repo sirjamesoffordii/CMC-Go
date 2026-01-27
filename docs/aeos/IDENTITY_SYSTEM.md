@@ -58,8 +58,8 @@ github.com:
 **Every agent MUST authenticate at the start of EVERY terminal session:**
 
 ```powershell
-# Set identity (PE example)
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-Principle-Engineer-Agent"
+# Set identity (PE example - note lowercase directory name)
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 
 # Verify
 gh auth status
