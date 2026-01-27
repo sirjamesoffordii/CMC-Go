@@ -1,5 +1,5 @@
 import { Person } from "../../../drizzle/schema";
-import { StickyNote, DollarSign, Pencil, Check } from "lucide-react";
+import { StickyNote, DollarSign, Pencil, CircleDollarSign } from "lucide-react";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { useSortable } from "@dnd-kit/sortable";
@@ -55,6 +55,22 @@ export function PersonRow({
     },
   });
 
+  const updateDepositPaid = trpc.people.update.useMutation({
+    onSuccess: () => {
+      utils.people.list.invalidate();
+      utils.people.getNational.invalidate();
+      onPersonUpdate();
+    },
+  });
+
+  const handleDepositToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateDepositPaid.mutate({
+      personId: person.personId,
+      depositPaid: !person.depositPaid,
+    });
+  };
+
   const {
     attributes,
     listeners,
@@ -94,7 +110,11 @@ export function PersonRow({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative"
+      className={`flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative ${
+        person.depositPaid
+          ? "border-emerald-400 ring-2 ring-emerald-300/50 shadow-emerald-100"
+          : "border-slate-200"
+      }`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -133,6 +153,25 @@ export function PersonRow({
           <div className="flex items-center gap-0.5 flex-shrink-0">
             {hasNotes && <StickyNote className="h-3 w-3 text-slate-600" />}
             {hasNeeds && <DollarSign className="h-3 w-3 text-yellow-600" />}
+            {/* Deposit Paid indicator - always visible when paid, toggle on hover */}
+            {(person.depositPaid || isHovered) && (
+              <button
+                onClick={handleDepositToggle}
+                className={`h-3.5 w-3.5 transition-colors ${
+                  person.depositPaid
+                    ? "text-emerald-500 hover:text-emerald-700"
+                    : "text-slate-400 hover:text-emerald-500"
+                }`}
+                title={
+                  person.depositPaid
+                    ? "Deposit paid - click to mark unpaid"
+                    : "Click to mark deposit as paid"
+                }
+                disabled={updateDepositPaid.isPending}
+              >
+                <CircleDollarSign className="h-3 w-3" />
+              </button>
+            )}
             {isHovered && (
               <button
                 onClick={e => {
