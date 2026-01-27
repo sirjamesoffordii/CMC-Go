@@ -72,10 +72,8 @@ export default function Home() {
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
 
-  // Fetch saved header image, background color, height, and logo
-  const { data: savedHeaderImage } = trpc.settings.get.useQuery({
-    key: "headerImageUrl",
-  });
+  // Fetch saved header image URL (fresh presigned URL generated on each request)
+  const { data: savedHeaderImage } = trpc.settings.getHeaderImageUrl.useQuery();
   const { data: savedBgColor } = trpc.settings.get.useQuery({
     key: "headerBgColor",
   });
@@ -96,7 +94,7 @@ export default function Home() {
       if (data.backgroundColor) {
         setHeaderBgColor(data.backgroundColor);
       }
-      utils.settings.get.invalidate({ key: "headerImageUrl" });
+      utils.settings.getHeaderImageUrl.invalidate();
       utils.settings.get.invalidate({ key: "headerBgColor" });
     },
   });
@@ -195,15 +193,15 @@ export default function Home() {
     updateSetting.mutate({ key: "headerBgColor", value: color });
   };
 
-  // Set header image from database on load
+  // Set header image from database on load (fresh presigned URL)
   useEffect(() => {
     console.log(
       "[Header] savedHeaderImage raw:",
       JSON.stringify(savedHeaderImage)
     );
-    if (savedHeaderImage && savedHeaderImage.value) {
-      console.log("[Header] Setting header image URL:", savedHeaderImage.value);
-      setHeaderImageUrl(savedHeaderImage.value);
+    if (savedHeaderImage && savedHeaderImage.url) {
+      console.log("[Header] Setting header image URL:", savedHeaderImage.url);
+      setHeaderImageUrl(savedHeaderImage.url);
     }
   }, [savedHeaderImage]);
 
