@@ -13,7 +13,6 @@ permissions:
   contents: read
   issues: write
   pull-requests: write
-  projects: write
 
 env:
   PROJECT_NUMBER: 4
