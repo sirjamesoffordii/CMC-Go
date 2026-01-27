@@ -1,6 +1,6 @@
 # CMC Go — Project Overview
 
-> **Last Updated:** January 23, 2026  
+> **Last Updated:** January 27, 2026  
 > **Project Board:** https://github.com/users/sirjamesoffordii/projects/4
 
 ---
@@ -29,13 +29,13 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 
 ### Milestones (Sequential Releases)
 
-| Milestone            | Focus                                 | Status      |
-| -------------------- | ------------------------------------- | ----------- |
-| v1.0: Core System    | Schema, flows, state, observability   | ✅ Done     |
-| v1.1: Cross-View     | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done     |
-| v1.2: Desktop UX     | Navigation, filters, panel behavior   | ✅ Done     |
-| v1.3: Authentication | Login, sessions, roles, permissions   | 🔄 78% done |
-| v1.4: Mobile         | Responsive layout, touch optimization | 📋 10% done |
+| Milestone            | Focus                                 | Status  |
+| -------------------- | ------------------------------------- | ------- |
+| v1.0: Core System    | Schema, flows, state, observability   | ✅ Done |
+| v1.1: Cross-View     | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done |
+| v1.2: Desktop UX     | Navigation, filters, panel behavior   | ✅ Done |
+| v1.3: Authentication | Login, sessions, roles, permissions   | ✅ Done |
+| v1.4: Mobile         | Responsive layout, touch optimization | ✅ Done |
 
 ### Epics (Feature Groups)
 
@@ -147,7 +147,7 @@ Efficient, intuitive desktop experience.
 
 ---
 
-### 🔄 v1.3: Authentication (IN PROGRESS — 78%)
+### 🔄 v1.3: Authentication (COMPLETE)
 
 Lock down access after UX is stable.
 
@@ -155,11 +155,11 @@ Lock down access after UX is stable.
 | ---------------------------- | ----- | ------- |
 | Login flow                   | #115  | ✅ Done |
 | Session management           | #116  | ✅ Done |
-| Logout flow                  | #117  | 📋 Todo |
+| Logout flow                  | #117  | ✅ Done |
 | Role definitions             | #118  | ✅ Done |
 | Role-based view gating       | #119  | ✅ Done |
 | Permission enforcement       | #120  | ✅ Done |
-| View access control          | #121  | 📋 Todo |
+| View access control          | #121  | ✅ Done |
 | Data visibility by role      | #122  | ✅ Done |
 | Auth enforcement consistency | #123  | ✅ Done |
 
@@ -172,22 +172,23 @@ Lock down access after UX is stable.
 
 ---
 
-### 📋 v1.4: Mobile (QUEUED — 10%)
+### ✅ v1.4: Mobile (COMPLETE)
 
 Responsive layout, touch optimization.
 
 | Task                       | Issue | Status  |
 | -------------------------- | ----- | ------- |
 | Responsive layout          | #124  | ✅ Done |
-| Mobile panel behavior      | #125  | 📋 Todo |
-| Touch-friendly spacing     | #126  | 📋 Todo |
-| Min touch targets (44x44)  | #127  | 📋 Todo |
-| Swipe gestures             | #128  | 📋 Todo |
-| Mobile controls            | #129  | 📋 Todo |
-| Mobile status updates      | #130  | 📋 Todo |
-| Mobile notes entry         | #131  | 📋 Todo |
-| Mobile needs tracking      | #132  | 📋 Todo |
-| Mobile follow-up usability | #133  | 📋 Todo |
+| Mobile panel behavior      | #125  | ✅ Done |
+| Touch-friendly spacing     | #126  | ✅ Done |
+| Min touch targets (44x44)  | #127  | ✅ Done |
+| Swipe gestures             | #128  | ✅ Done |
+| Mobile controls            | #129  | ✅ Done |
+| Mobile status updates      | #130  | ✅ Done |
+| Mobile notes entry         | #131  | ✅ Done |
+| Mobile needs tracking      | #132  | ✅ Done |
+| Mobile follow-up usability | #133  | ✅ Done |
+| Mobile swipe-to-close      | #290  | ✅ Done |
 
 ---
 
@@ -197,7 +198,8 @@ Responsive layout, touch optimization.
 | ----------------------------- | ----- | ------- |
 | Post-merge verification gates | #76   | 📋 Todo |
 | Deployed staging smoke check  | #77   | 📋 Todo |
-| Reduce Playwright smoke flake | #85   | 📋 Todo |
+| Reduce Playwright smoke flake | #85   | ✅ Done |
+| Epic: Test Coverage Expansion | #192  | ✅ Done |
 | Epic: Test Coverage Expansion | #192  | 📋 Open |
 
 ---
@@ -211,10 +213,10 @@ Responsive layout, touch optimization.
 | v1.0: Core System    | ✅   | -    | -     | 100%     |
 | v1.1: Cross-View     | 3    | 0    | 3     | 100%     |
 | v1.2: Desktop UX     | 12   | 0    | 12    | 100%     |
-| v1.3: Authentication | 7    | 2    | 9     | 78%      |
-| v1.4: Mobile         | 1    | 9    | 10    | 10%      |
-| Infrastructure       | 0    | 4    | 4     | 0%       |
-| **Total**            | 23   | 15   | 38    | **61%**  |
+| v1.3: Authentication | 9    | 0    | 9     | 100%     |
+| v1.4: Mobile         | 11   | 0    | 11    | 100%     |
+| Infrastructure       | 2    | 2    | 4     | 50%      |
+| **Total**            | 37   | 2    | 39    | **95%**  |
 
 ### All Tasks
 
@@ -237,27 +239,28 @@ Responsive layout, touch optimization.
 | 114 | Leader-friendly flows           | v1.2      | ✅ Done |
 | 115 | Login flow                      | v1.3      | ✅ Done |
 | 116 | Session management              | v1.3      | ✅ Done |
-| 117 | Logout flow                     | v1.3      | 📋 Todo |
+| 117 | Logout flow                     | v1.3      | ✅ Done |
 | 118 | Role definitions                | v1.3      | ✅ Done |
 | 119 | Role-based view gating          | v1.3      | ✅ Done |
 | 120 | Permission enforcement          | v1.3      | ✅ Done |
-| 121 | View access control             | v1.3      | 📋 Todo |
+| 121 | View access control             | v1.3      | ✅ Done |
 | 122 | Data visibility by role         | v1.3      | ✅ Done |
 | 123 | Auth enforcement consistency    | v1.3      | ✅ Done |
 | 124 | Responsive layout               | v1.4      | ✅ Done |
-| 125 | Mobile panel behavior           | v1.4      | 📋 Todo |
-| 126 | Touch-friendly spacing          | v1.4      | 📋 Todo |
-| 127 | Min touch targets (44x44)       | v1.4      | 📋 Todo |
-| 128 | Swipe gestures                  | v1.4      | 📋 Todo |
-| 129 | Mobile controls                 | v1.4      | 📋 Todo |
-| 130 | Mobile status updates           | v1.4      | 📋 Todo |
-| 131 | Mobile notes entry              | v1.4      | 📋 Todo |
-| 132 | Mobile needs tracking           | v1.4      | 📋 Todo |
-| 133 | Mobile follow-up usability      | v1.4      | 📋 Todo |
+| 125 | Mobile panel behavior           | v1.4      | ✅ Done |
+| 126 | Touch-friendly spacing          | v1.4      | ✅ Done |
+| 127 | Min touch targets (44x44)       | v1.4      | ✅ Done |
+| 128 | Swipe gestures                  | v1.4      | ✅ Done |
+| 129 | Mobile controls                 | v1.4      | ✅ Done |
+| 130 | Mobile status updates           | v1.4      | ✅ Done |
+| 131 | Mobile notes entry              | v1.4      | ✅ Done |
+| 132 | Mobile needs tracking           | v1.4      | ✅ Done |
+| 133 | Mobile follow-up usability      | v1.4      | ✅ Done |
+| 290 | Mobile swipe-to-close panel     | v1.4      | ✅ Done |
 | 76  | Post-merge verification gates   | Infra     | 📋 Todo |
 | 77  | Deployed staging smoke check    | Infra     | 📋 Todo |
-| 85  | Reduce Playwright smoke flake   | Infra     | 📋 Todo |
-| 192 | Epic: Test Coverage Expansion   | Infra     | 📋 Open |
+| 85  | Reduce Playwright smoke flake   | Infra     | ✅ Done |
+| 192 | Epic: Test Coverage Expansion   | Infra     | ✅ Done |
 
 ---
 
