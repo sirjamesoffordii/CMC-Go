@@ -79,11 +79,13 @@ Every PR includes:
 - **Patterns:** No changes / [file] — [change]
 ```
 
-**Decision tree:**
+**Decision tree (10 seconds max):**
 
-1. Something wasted time that docs could prevent? → Edit doc
-2. Solved non-obvious problem others will hit? → Add to CMC_GO_PATTERNS.md
+1. Something wasted time? → Edit the doc NOW
+2. Solved non-obvious problem? → Add to CMC_GO_PATTERNS.md NOW
 3. Neither? → Write "No changes"
+
+**Never defer.** If improvement takes >2 min, log to MCP Memory and continue.
 
 ---
 

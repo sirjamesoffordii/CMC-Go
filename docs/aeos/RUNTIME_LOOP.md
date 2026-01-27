@@ -466,3 +466,65 @@ Evidence labels:
 
 - `evidence:db-or-ci` — Database or CI evidence
 - `evidence:deployed-smoke` — Deployed smoke test
+
+---
+
+## Improvement Loop (Fast Iteration)
+
+The system improves itself through three mechanisms:
+
+### 1. Per-PR Reflection (10 seconds)
+
+Every PR includes:
+
+```markdown
+## End-of-Task Reflection
+
+- **Workflow:** No changes / [file] — [change]
+- **Patterns:** No changes / [file] — [change]
+```
+
+**Decision tree:**
+
+1. Something wasted time that docs could prevent? → Edit doc
+2. Solved non-obvious problem others will hit? → Add to CMC_GO_PATTERNS.md
+3. Neither? → Write "No changes"
+
+### 2. Session Learnings (MCP Memory)
+
+When discovering a friction point or improvement:
+
+```powershell
+# Add to MCP Memory immediately
+mcp_memory_create_entities([{
+  name: "Pattern-<date>-<slug>",
+  entityType: "Pattern",
+  observations: ["<one-line description>", "<how to avoid>"]
+}])
+```
+
+**Don't wait until PR time.** Capture learnings as they happen.
+
+### 3. PE Planning Epochs (Periodic)
+
+PE reviews accumulated patterns and promotes to CMC_GO_PATTERNS.md:
+
+```
+PE Epoch:
+1. Query MCP: mcp_memory_search_nodes("Pattern")
+2. Review recent patterns
+3. If pattern appears 2+ times → add to CMC_GO_PATTERNS.md
+4. Clear promoted patterns from MCP
+```
+
+### Iteration Speed Targets
+
+| Action            | Target Time |
+| ----------------- | ----------- |
+| PR reflection     | 10 seconds  |
+| Capture learning  | 30 seconds  |
+| Find relevant doc | 1 minute    |
+| Edit doc          | 2 minutes   |
+| Full PR cycle     | 10 minutes  |
+
+**Principle: Never defer improvement.** If something can be better, make it better now.
