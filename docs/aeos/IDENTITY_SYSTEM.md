@@ -132,9 +132,11 @@ git config --global credential.helper
 git config credential.helper
 ```
 
-## Cloud Agents (Plus Owner Only)
+## Cloud Agents (DISABLED)
 
-Only the Human Plus owner can directly spawn cloud agents via `gh agent-task create`. TL can trigger indirect cloud work by applying the `agent:copilot-SE` label (workflow uses a stored token).
+**Cloud agents are disabled** — they cannot access MCP Memory, causing drift.
+
+All work is now routed to Local SE via `code chat -r -m "Software Engineer"`.
 
 ## Audit Trail (Quick Commands)
 

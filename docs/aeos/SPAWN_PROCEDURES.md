@@ -4,14 +4,14 @@ How agents spawn other agents. This is detailed reference — for quick decision
 
 ## Spawn Methods
 
-| Method                 | Blocking? | Context? | When to Use                   |
-| ---------------------- | --------- | -------- | ----------------------------- |
-| `runSubagent`          | ✅ Yes    | ✅ Full  | Need result before continuing |
-| `code chat -r -m`      | ❌ No     | ✅ Same  | Local parallel work           |
-| Cloud Agent (label)    | ❌ No     | ❌ None  | Fire-and-forget async         |
-| `gh agent-task create` | ❌ No     | ❌ None  | CLI-based cloud spawning      |
+| Method            | Blocking? | Context? | When to Use                   |
+| ----------------- | --------- | -------- | ----------------------------- |
+| `runSubagent`     | ✅ Yes    | ✅ Full  | Need result before continuing |
+| `code chat -r -m` | ❌ No     | ✅ Same  | Local parallel work           |
 
 **Never use `code chat -n`** — opens empty window, loses agent mode and workspace context.
+
+**Cloud agents are disabled** — they cannot access MCP Memory, causing drift.
 
 ---
 
@@ -88,29 +88,6 @@ code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
 
 ---
 
-## Cloud Agents
-
-### Via Label (TL method)
-
-Apply `agent:copilot-SE` label to issue. Workflow uses Plus account token.
-
-### Via CLI (Plus account only)
-
-```powershell
-gh agent-task create "Fix the login bug" --base staging
-gh agent-task list -L 10
-```
-
-### When to Use Cloud Agents
-
-**All three conditions must be met:**
-
-1. **(A) Trivial** — complexity 0-1, no judgment needed
-2. **(B) Batched** — 3+ similar issues at once
-3. **(C) Overflow** — local agents at capacity
-
----
-
 ## TL-SE Communication
 
 Since TL cannot see spawned SE chat, communication uses **two channels**:
@@ -145,7 +122,7 @@ mcp_memory_add_observations: {
 ```
 PE (can spawn TL only)
   └── TL (can spawn SE, secondary TL)
-        └── SE (can spawn cloud agents only)
+        └── SE (leaf — does not spawn)
 ```
 
 **Strict rule:** PE spawns TL. TL spawns SE. PE does NOT spawn SE directly.
@@ -155,6 +132,5 @@ PE (can spawn TL only)
 ## Tested Limits
 
 - Parallel `runSubagent`: 6+ (all return)
-- Parallel cloud agents: 50+ (no practical limit)
 - Local sessions via `code chat -r`: 5-10 (system resources)
 - Subagents do NOT count toward TL's 4-item capacity

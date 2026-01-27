@@ -93,9 +93,9 @@ body:
       label: "Complexity Score"
       description: "Sum of Risk (0-2) + Scope (0-2) + Ambiguity (0-2). See AGENTS.md for details."
       options:
-        - "0-2 (Simple → Cloud Agent)"
-        - "3-4 (Medium → SWE GPT-5.2-Codex)"
-        - "5-6 (Complex → SWE Opus)"
+        - "0-2 (Simple → Self or Local SE)"
+        - "3-4 (Medium → Local SE GPT-5.2)"
+        - "5-6 (Complex → Local SE Opus 4.5)"
     validations:
       required: true
 

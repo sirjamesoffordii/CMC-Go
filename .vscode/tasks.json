@@ -249,34 +249,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Agent: Spawn cloud agent (issue)",
-      "type": "shell",
-      "command": ".\\scripts\\spawn-cloud-agent.ps1 -IssueNumber ${input:issueNumber}",
-      "problemMatcher": [],
-      "detail": "Spawn a GitHub cloud agent for an issue (non-blocking)"
-    },
-    {
-      "label": "Agent: Spawn cloud agent (prompt)",
-      "type": "shell",
-      "command": ".\\scripts\\spawn-cloud-agent.ps1 -Prompt '${input:agentPrompt}'",
-      "problemMatcher": [],
-      "detail": "Spawn a GitHub cloud agent with custom prompt (non-blocking)"
-    },
-    {
-      "label": "Agent: List cloud agent tasks",
-      "type": "shell",
-      "command": "gh agent-task list",
-      "problemMatcher": [],
-      "detail": "List recent GitHub Copilot coding agent tasks"
-    },
-    {
-      "label": "Agent: View cloud agent task",
-      "type": "shell",
-      "command": "gh agent-task view ${input:prNumber}",
-      "problemMatcher": [],
-      "detail": "View a specific cloud agent task by PR number"
-    },
-    {
       "label": "Utility: Keep awake while VS Code running",
       "type": "shell",
       "command": ".\\scripts\\keep-awake-while-vscode.ps1",

@@ -19,11 +19,11 @@ This document defines the label system for GitHub Issues and PRs.
 
 ### Complexity Labels (`complexity:*`)
 
-| Label            | Color     | Description | Agent Routing              |
-| ---------------- | --------- | ----------- | -------------------------- |
-| `complexity:0-2` | `#0e8a16` | Simple      | Cloud Agent                |
-| `complexity:3-4` | `#fbca04` | Medium      | SWE (GPT-5.2-Codex)        |
-| `complexity:5-6` | `#d93f0b` | Complex     | SWE Opus (Claude Opus 4.5) |
+| Label            | Color     | Description | Agent Routing       |
+| ---------------- | --------- | ----------- | ------------------- |
+| `complexity:0-2` | `#0e8a16` | Simple      | Self or Local SE    |
+| `complexity:3-4` | `#fbca04` | Medium      | Local SE (GPT-5.2)  |
+| `complexity:5-6` | `#d93f0b` | Complex     | Local SE (Opus 4.5) |
 
 ### Phase Labels (`phase:*`)
 
@@ -65,10 +65,11 @@ This document defines the label system for GitHub Issues and PRs.
 
 ### Agent Labels (`agent:*`)
 
-| Label               | Color     | Description                |
-| ------------------- | --------- | -------------------------- |
-| `agent:copilot-swe` | `#5319e7` | Auto-assign to Cloud Agent |
-| `agent:copilot-tl`  | `#5319e7` | Auto-assign to TL          |
+| Label      | Color     | Description        |
+| ---------- | --------- | ------------------ |
+| `agent:se` | `#5319e7` | Assign to Local SE |
+| `agent:tl` | `#5319e7` | Assign to TL       |
+| `agent:pe` | `#5319e7` | Assign to PE       |
 
 ### Evidence Labels (`evidence:*`)
 
@@ -107,7 +108,7 @@ gh label create "type:test" --color "fbca04" --description "Testing"
 gh label create "type:security" --color "b60205" --description "Security"
 gh label create "type:spike" --color "c2e0c6" --description "Research"
 gh label create "type:verification" --color "f9d0c4" --description "PR verification"
-gh label create "complexity:0-2" --color "0e8a16" --description "Simple (Cloud Agent)"
+gh label create "complexity:0-2" --color "0e8a16" --description "Simple (Self or Local SE)"
 gh label create "complexity:3-4" --color "fbca04" --description "Medium (SWE GPT-5.2-Codex)"
 gh label create "complexity:5-6" --color "d93f0b" --description "Complex (SWE Opus)"
 gh label create "workstream:map" --color "1d76db" --description "Map component"

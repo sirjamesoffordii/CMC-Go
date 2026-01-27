@@ -7,11 +7,15 @@ CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Expr
 ```
 START
   │
+  ├─ Am I Principal Engineer?
+  │   ├─ YES → Check TL heartbeat → Spawn TL if missing → Run planning epoch
+  │   └─ NO → Continue below
+  │
   ├─ Am I Tech Lead?
-  │   ├─ YES → Check board → Delegate or coordinate
-  │   └─ NO → Am I assigned an Issue?
-  │           ├─ YES → EXPLORE → IMPLEMENT → VERIFY → Done
-  │           └─ NO → Wait for assignment (check Issue mentions)
+  │   ├─ YES → Check board → Delegate to SE or review PRs
+  │   └─ NO → Am I Software Engineer?
+  │           ├─ YES → Claim Todo → EXPLORE → IMPLEMENT → VERIFY → Loop
+  │           └─ NO → Check AGENTS.md for your role
   │
   └─ Is the board empty?
       ├─ YES → Run Cold Start Procedure (see AGENTS.md)

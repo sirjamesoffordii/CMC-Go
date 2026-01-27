@@ -1,5 +1,5 @@
 name: "✅ Quick Task"
-description: "Simple task (complexity 0-2) for Cloud Agent or quick fixes"
+description: "Simple task (complexity 0-2) for Local SE or quick fixes"
 title: "[Task] "
 labels: ["type:chore"]
 body:
@@ -58,8 +58,7 @@ body:
       label: "Agent Routing"
       description: "Who should handle this?"
       options:
-        - "Cloud Agent (apply agent:copilot-swe label)"
-        - "Local SWE (delegate via runSubagent)"
-        - "TL can do directly"
+        - "Local SE (delegate via code chat -r)"
+        - "TL can do directly (0-1 complexity)"
     validations:
       required: true

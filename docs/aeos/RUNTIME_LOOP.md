@@ -10,10 +10,12 @@ See also: `AGENTS.md`, `docs/aeos/PROJECT_BOARD.md`, `docs/aeos/PR_STANDARDS.md`
 PE (episodic planning epochs)
   └─ spawns/monitors
 TL (continuous coordination)
-  └─ delegates to SEs + Cloud Agents
+  └─ delegates to Local SEs
 SE (continuous implementation)
   └─ ships via GitHub: Issues → PRs → CI → Merge
 ```
+
+**Note:** Cloud agents are disabled (no MCP Memory access = drift). Use local SE only.
 
 ## PE Loop (Episodic)
 
@@ -87,9 +89,8 @@ TL delegation decision tree:
 ```
 Is there a Todo item?
 ├── YES → choose route (see AGENTS.md for scoring)
-│   ├── trivial → delegate to SE anyway (TL never edits)
-│   ├── simple async → Cloud Agent (agent:copilot-SE)
-│   └── standard/complex → Local SE (code chat -r)
+│   ├── trivial (0-1) → delegate to SE anyway (TL never edits)
+│   └── standard/complex (2-6) → Local SE (code chat -r)
 └── NO
     ├── board empty → ask PE for planning epoch
     └── all in progress → monitor + review PRs

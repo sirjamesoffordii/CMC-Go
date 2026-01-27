@@ -10,9 +10,10 @@ Which model to use for what. Quick reference — for full workflow, see [AGENTS.
 | GPT-5.2-Codex   | 1×   | Code implementation            |
 | GPT-5.2         | 1×   | General reasoning              |
 | Claude Opus 4.5 | 3×   | Complex thinking, coordination |
-| Cloud Agent     | SKU  | Async work (separate quota)    |
 
 **GitHub Copilot Pro: 1,500 premium requests/month.**
+
+**Cloud agents are disabled** — they cannot access MCP Memory, causing drift.
 
 ---
 
@@ -45,8 +46,7 @@ Score tasks before routing:
 | Score | Route To               | Why                               |
 | ----- | ---------------------- | --------------------------------- |
 | 0-1   | PE/TL directly         | Trivial, coordination cost > work |
-| 0-2   | Cloud Agent (label)    | Simple async, TL continues        |
-| 2-6   | Local SE (`code chat`) | Needs judgment, continuous work   |
+| 2-6   | Local SE (`code chat`) | Needs judgment, MCP Memory access |
 
 ---
 
@@ -64,14 +64,12 @@ Score tasks before routing:
 
 ## Quick Decision Table
 
-| Need                | Method                | Model          |
-| ------------------- | --------------------- | -------------- |
-| Trivial task (0-1)  | Do yourself           | GPT 4.1 (0×)   |
-| Research/analysis   | `runSubagent`         | GPT-5.2 (1×)   |
-| Simple async (0-2)  | Cloud Agent label     | GitHub default |
-| Standard task (2-4) | Local SE              | GPT-5.2 (1×)   |
-| Complex task (5-6)  | Local SE + Opus       | Opus 4.5 (3×)  |
-| Bulk tasks (10+)    | Multiple cloud agents | GitHub default |
+| Need                | Method        | Model         |
+| ------------------- | ------------- | ------------- |
+| Trivial task (0-1)  | Do yourself   | GPT 4.1 (0×)  |
+| Research/analysis   | `runSubagent` | GPT-5.2 (1×)  |
+| Standard task (2-4) | Local SE      | GPT-5.2 (1×)  |
+| Complex task (5-6)  | Local SE      | Opus 4.5 (3×) |
 
 ---
 

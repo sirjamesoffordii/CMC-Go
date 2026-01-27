@@ -104,9 +104,8 @@ PE (planning) → TL (coordination) → SE (implementation)
 - PR review/merge → TL
 - Unblocking SE → TL
 - Direct implementation → SE
-- Cloud agent dispatch → TL
 
-PE stays strategic.
+PE stays strategic. Focus on planning and coherence.
 
 ## Quick Reference
 

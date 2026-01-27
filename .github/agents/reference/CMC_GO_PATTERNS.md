@@ -116,7 +116,8 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Tags:** terminal
 **Problem:** Agent thinks command is "working" when it's actually hung waiting for input.
 **Solution:** Most commands complete in <30 seconds. If no output for 60+ seconds, it's likely hung. Cancel and retry with flags/env vars to avoid prompts.
-**Prevention:** 
+**Prevention:**
+
 - Add `| cat` suffix to avoid pagers
 - Add `--yes` or `--no-input` flags
 - Set `$env:GIT_PAGER='cat'` before git commands
@@ -247,5 +248,5 @@ Status Options:
 
 **Tags:** agent-spawning
 **Problem:** When TL uses blocking `runSubagent` for implementation, TL cannot poll board, answer blocked agents, or manage parallel work.
-**Solution:** TL should delegate via cloud agents (`gh agent-task create`) or local windows (`code chat -n -m "software-engineer"`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
+**Solution:** TL should delegate via local SE (`code chat -r -m "Software Engineer"`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
 **Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → non-blocking spawn instead.

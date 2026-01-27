@@ -64,13 +64,14 @@ code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
 
 ## Delegation Decision
 
-| Score | Route To    | Method                                |
-| ----- | ----------- | ------------------------------------- |
-| 0-1   | Do yourself | Direct (TL never edits)               |
-| 0-2   | Cloud Agent | `agent:copilot-SE` label              |
-| 2-6   | Local SE    | `code chat -r -m "Software Engineer"` |
+| Score | Route To | Method                                |
+| ----- | -------- | ------------------------------------- |
+| 0-1   | Yourself | Direct (but TL never edits code)      |
+| 2-6   | Local SE | `code chat -r -m "Software Engineer"` |
 
 **Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
+
+**Note:** Cloud agents are disabled (no MCP Memory access = drift). Use local SE only.
 
 **Details:** [docs/aeos/MODEL_SELECTION.md](docs/aeos/MODEL_SELECTION.md)
 

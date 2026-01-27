@@ -30,11 +30,11 @@ Every implementation Issue must have:
 
 ## Complexity Scoring → Agent Routing
 
-| Score | Calculation                                 | Agent                             |
-| ----- | ------------------------------------------- | --------------------------------- |
-| 0-2   | Low risk + 1 file + clear spec              | Cloud Agent (`agent:copilot-swe`) |
-| 3-4   | Medium risk/scope/ambiguity                 | SWE (GPT-5.2-Codex)               |
-| 5-6   | High risk + many files + exploration needed | SWE Opus (Claude Opus 4.5)        |
+| Score | Calculation                                 | Agent               |
+| ----- | ------------------------------------------- | ------------------- |
+| 0-2   | Low risk + 1 file + clear spec              | Self or Local SE    |
+| 3-4   | Medium risk/scope/ambiguity                 | Local SE (GPT-5.2)  |
+| 5-6   | High risk + many files + exploration needed | Local SE (Opus 4.5) |
 
 See AGENTS.md for full scoring criteria.
 

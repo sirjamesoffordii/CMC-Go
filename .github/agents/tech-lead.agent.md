@@ -64,8 +64,19 @@ START → Sync staging → Check board → Delegate/Review → Poll → LOOP
 mcp_memory_add_observations: entityName: "TL-1", contents: ["heartbeat: <ISO> | <context> | active"]
 ```
 
-**Monitor SE:** If no heartbeat > 6 min → respawn SE.
-**If PE missing:** Spawn PE (don't step up to be PE).
+**Monitor SE:** If no heartbeat > 6 min → respawn SE:
+
+```powershell
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. TL detected SE missing. Start."
+```
+
+**Monitor PE:** If no heartbeat > 6 min → respawn PE:
+
+```powershell
+code chat -r -m "Principal Engineer" -a AGENTS.md "You are PE-1. TL detected PE missing. Start."
+```
+
+**TL does NOT step up to be PE.** TL spawns a new PE and continues coordinating.
 
 ## Delegation
 
@@ -79,10 +90,12 @@ mcp_memory_add_observations: entityName: "TL-1", contents: ["heartbeat: <ISO> | 
 
 ### Routing
 
-| Score | Route       | Method                                                 |
-| ----- | ----------- | ------------------------------------------------------ |
-| 0-2   | Cloud Agent | `agent:copilot-SE` label (non-blocking)                |
-| 2-6   | Local SE    | `runSubagent` or `code chat -r -m "Software Engineer"` |
+| Score | Route    | Method                                                 |
+| ----- | -------- | ------------------------------------------------------ |
+| 0-1   | Yourself | Direct (but TL never edits code—delegate to SE)        |
+| 2-6   | Local SE | `runSubagent` or `code chat -r -m "Software Engineer"` |
+
+**Note:** Cloud agents disabled (no MCP Memory = drift). Use local SE only.
 
 ### Capacity: Max 4 In Progress + Verify items
 
@@ -91,14 +104,11 @@ If count >= 4 → spawn secondary TL or wait.
 ### Spawn Commands
 
 ```powershell
-# Local SE (blocking subagent)
+# Local SE (blocking subagent - you wait for result)
 runSubagent("Software Engineer", "Implement Issue #X: [title]. Goal: []. Scope: []. AC: [].")
 
 # Local SE (non-blocking, new chat tab)
 code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
-
-# Cloud agent (via label only - TL can't use gh agent-task directly)
-# Apply label: agent:copilot-SE
 ```
 
 ## Board-First Rule

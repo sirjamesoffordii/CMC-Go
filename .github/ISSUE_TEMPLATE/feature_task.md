@@ -77,5 +77,5 @@ Manual (if UI changed):
 
 ## Agent Routing (optional)
 
-- `agent:copilot-swe` — implementation
-- `agent:copilot-tl` — triage/coordination
+- `agent:se` — implementation
+- `agent:tl` — triage/coordination
