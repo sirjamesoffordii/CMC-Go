@@ -7,6 +7,7 @@ import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
+import { MobileDrawer } from "@/components/MobileDrawer";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -1020,87 +1021,131 @@ export default function Home() {
         className="flex main-content-area md:flex-row flex-col"
         style={{ height: "calc(100vh - 120px)" }}
       >
-        {/* Left District/National Panel */}
-        <div
-          className={[
-            "bg-white border-r border-gray-300 flex-shrink-0 relative",
-            !isResizingDistrict
-              ? "transition-all duration-300 ease-in-out"
-              : "",
-            isMobile ? "left-panel-mobile" : "",
-            isMobile && !(selectedDistrictId || nationalPanelOpen)
-              ? "closed"
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          style={
-            isMobile
-              ? {
-                  width: "100%",
-                  height:
-                    selectedDistrictId || nationalPanelOpen ? "45vh" : "0",
-                  overflow:
-                    selectedDistrictId || nationalPanelOpen ? "auto" : "hidden",
-                }
-              : {
-                  width:
-                    selectedDistrictId || nationalPanelOpen
-                      ? `${districtPanelWidth}%`
-                      : "0%",
-                  height: "100%",
-                  overflow:
-                    selectedDistrictId || nationalPanelOpen ? "auto" : "hidden",
-                }
-          }
-        >
-          {(selectedDistrictId || nationalPanelOpen) && (
-            <>
-              {/* Resize Handle (desktop only) */}
-              {!isMobile && (
+        {/* Left District/National Panel - Desktop */}
+        {!isMobile && (
+          <div
+            className={[
+              "bg-white border-r border-gray-300 flex-shrink-0 relative",
+              !isResizingDistrict
+                ? "transition-all duration-300 ease-in-out"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            style={{
+              width:
+                selectedDistrictId || nationalPanelOpen
+                  ? `${districtPanelWidth}%`
+                  : "0%",
+              height: "100%",
+              overflow:
+                selectedDistrictId || nationalPanelOpen ? "auto" : "hidden",
+            }}
+          >
+            {(selectedDistrictId || nationalPanelOpen) && (
+              <>
+                {/* Resize Handle (desktop only) */}
                 <div
                   className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
                   onMouseDown={handleDistrictMouseDown}
                 />
-              )}
-              <AnimatePresence mode="wait">
-                {selectedDistrictId && selectedDistrict && (
-                  <DistrictPanel
-                    key={selectedDistrict.id}
-                    district={selectedDistrict}
-                    campuses={selectedDistrictCampuses}
-                    people={selectedDistrictPeople}
-                    isOutOfScope={!isSelectedDistrictInScope}
-                    onClose={() => {
-                      setSelectedDistrictId(null);
-                      setViewState({
-                        ...viewState,
-                        districtId: null,
-                        regionId: null,
-                        campusId: null,
-                        panelOpen: false,
-                      });
-                    }}
-                    onPersonStatusChange={handlePersonStatusChange}
-                    onPersonAdd={handlePersonAdd}
+                <AnimatePresence mode="wait">
+                  {selectedDistrictId && selectedDistrict && (
+                    <DistrictPanel
+                      key={selectedDistrict.id}
+                      district={selectedDistrict}
+                      campuses={selectedDistrictCampuses}
+                      people={selectedDistrictPeople}
+                      isOutOfScope={!isSelectedDistrictInScope}
+                      onClose={() => {
+                        setSelectedDistrictId(null);
+                        setViewState({
+                          ...viewState,
+                          districtId: null,
+                          regionId: null,
+                          campusId: null,
+                          panelOpen: false,
+                        });
+                      }}
+                      onPersonStatusChange={handlePersonStatusChange}
+                      onPersonAdd={handlePersonAdd}
+                      onPersonClick={handlePersonClick}
+                      onDistrictUpdate={() => {
+                        utils.districts.list.invalidate();
+                        utils.people.list.invalidate();
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+                {nationalPanelOpen && (
+                  <NationalPanel
+                    onClose={() => setNationalPanelOpen(false)}
                     onPersonClick={handlePersonClick}
-                    onDistrictUpdate={() => {
-                      utils.districts.list.invalidate();
-                      utils.people.list.invalidate();
-                    }}
+                    onPersonStatusChange={handlePersonStatusChange}
                   />
                 )}
-              </AnimatePresence>
-              {nationalPanelOpen && (
-                <NationalPanel
-                  onClose={() => setNationalPanelOpen(false)}
-                  onPersonClick={handlePersonClick}
-                  onPersonStatusChange={handlePersonStatusChange}
-                />
-              )}
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Left District/National Panel - Mobile (swipe-to-close drawer) */}
+        {isMobile && (
+          <MobileDrawer
+            isOpen={!!(selectedDistrictId || nationalPanelOpen)}
+            onClose={() => {
+              setSelectedDistrictId(null);
+              setNationalPanelOpen(false);
+              setViewState({
+                ...viewState,
+                districtId: null,
+                regionId: null,
+                campusId: null,
+                panelOpen: false,
+              });
+            }}
+            title={
+              nationalPanelOpen
+                ? "National Team"
+                : (selectedDistrict?.name ?? "District")
+            }
+            height="70vh"
+          >
+            {selectedDistrictId && selectedDistrict && (
+              <DistrictPanel
+                key={selectedDistrict.id}
+                district={selectedDistrict}
+                campuses={selectedDistrictCampuses}
+                people={selectedDistrictPeople}
+                isOutOfScope={!isSelectedDistrictInScope}
+                onClose={() => {
+                  setSelectedDistrictId(null);
+                  setViewState({
+                    ...viewState,
+                    districtId: null,
+                    regionId: null,
+                    campusId: null,
+                    panelOpen: false,
+                  });
+                }}
+                onPersonStatusChange={handlePersonStatusChange}
+                onPersonAdd={handlePersonAdd}
+                onPersonClick={handlePersonClick}
+                onDistrictUpdate={() => {
+                  utils.districts.list.invalidate();
+                  utils.people.list.invalidate();
+                }}
+              />
+            )}
+            {nationalPanelOpen && (
+              <NationalPanel
+                onClose={() => setNationalPanelOpen(false)}
+                onPersonClick={handlePersonClick}
+                onPersonStatusChange={handlePersonStatusChange}
+              />
+            )}
+          </MobileDrawer>
+        )}
 
         {/* Center Map Area */}
         <div
@@ -1179,43 +1224,47 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right People Panel */}
-        <div
-          className={[
-            "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
-            !isResizingPeople ? "transition-all duration-300 ease-in-out" : "",
-            isMobile ? "right-panel-mobile" : "",
-            isMobile && !peoplePanelOpen ? "closed" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-          style={
-            isMobile
-              ? {
-                  width: "100%",
-                  height: peoplePanelOpen ? "50vh" : "0",
-                  overflow: "hidden",
-                }
-              : {
-                  width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
-                  height: "100%",
-                  overflow: "hidden",
-                }
-          }
-        >
-          {peoplePanelOpen && (
-            <>
-              {/* Resize Handle */}
-              {!isMobile && (
+        {/* Right People Panel - Desktop */}
+        {!isMobile && (
+          <div
+            className={[
+              "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
+              !isResizingPeople
+                ? "transition-all duration-300 ease-in-out"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            style={{
+              width: peoplePanelOpen ? `${peoplePanelWidth}%` : "0%",
+              height: "100%",
+              overflow: "hidden",
+            }}
+          >
+            {peoplePanelOpen && (
+              <>
+                {/* Resize Handle */}
                 <div
                   className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
                   onMouseDown={handlePeopleMouseDown}
                 />
-              )}
-              <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
-            </>
-          )}
-        </div>
+                <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Right People Panel - Mobile (swipe-to-close drawer) */}
+        {isMobile && (
+          <MobileDrawer
+            isOpen={peoplePanelOpen}
+            onClose={() => setPeoplePanelOpen(false)}
+            title="People"
+            height="70vh"
+          >
+            <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
+          </MobileDrawer>
+        )}
       </div>
 
       {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
