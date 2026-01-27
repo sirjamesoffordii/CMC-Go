@@ -4,10 +4,12 @@ How agents spawn other agents. This is detailed reference — for quick decision
 
 ## Spawn Methods
 
-| Method            | Blocking? | Context? | When to Use                   |
-| ----------------- | --------- | -------- | ----------------------------- |
-| `runSubagent`     | ✅ Yes    | ✅ Full  | Need result before continuing |
-| `code chat -r -m` | ❌ No     | ✅ Same  | Local parallel work           |
+| Method            | Blocking? | Context? | When to Use                 |
+| ----------------- | --------- | -------- | --------------------------- |
+| `runSubagent`     | ✅ Yes    | ✅ Full  | Research/verification tasks |
+| `code chat -r -m` | ❌ No     | ✅ Same  | Spawn autonomous agents     |
+
+**Critical:** PE→TL and TL→SE hierarchy spawns MUST use `code chat -r -m`, NOT `runSubagent`. `runSubagent` blocks the caller and returns results—it's for research, not for spawning autonomous workers.
 
 **Never use `code chat -n`** — opens empty window, loses agent mode and workspace context.
 
