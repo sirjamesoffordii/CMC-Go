@@ -29,14 +29,15 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 
 ### Milestones (Sequential Releases)
 
-| Milestone             | Focus                                 | Status    |
-| --------------------- | ------------------------------------- | --------- |
-| v1.0: Core System     | Schema, flows, state, observability   | ✅ Done   |
-| v1.1: Cross-View      | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done   |
-| v1.2: Desktop UX      | Navigation, filters, panel behavior   | ✅ Done   |
-| v1.3: Authentication  | Login, sessions, roles, permissions   | ✅ Done   |
-| v1.4: Mobile          | Responsive layout, touch optimization | ✅ Done   |
-| v1.5: Data Management | Campus ops, deposit tracking, UI      | 🔄 Active |
+| Milestone              | Focus                                 | Status    |
+| ---------------------- | ------------------------------------- | --------- |
+| v1.0: Core System      | Schema, flows, state, observability   | ✅ Done   |
+| v1.1: Cross-View       | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done   |
+| v1.2: Desktop UX       | Navigation, filters, panel behavior   | ✅ Done   |
+| v1.3: Authentication   | Login, sessions, roles, permissions   | ✅ Done   |
+| v1.4: Mobile           | Responsive layout, touch optimization | ✅ Done   |
+| v1.5: Data Management  | Campus ops, deposit tracking, UI      | ✅ Done   |
+| v1.6: Production Ready | Migrations, polish, Follow-Up filters | 🔄 Active |
 
 ### Epics (Feature Groups)
 
@@ -193,15 +194,30 @@ Responsive layout, touch optimization.
 
 ---
 
-### 🔄 v1.5: Data Management (ACTIVE)
+### ✅ v1.5: Data Management (COMPLETE)
 
 Campus operations, deposit tracking, and district panel improvements.
 
-| Task                         | Issue | Status  | Notes                            |
-| ---------------------------- | ----- | ------- | -------------------------------- |
-| Campus management mutations  | #295  | 📋 Todo | Archive, reorder, move person    |
-| No Campus Assigned row       | #296  | ✅ Done | Shows district-level assignments |
-| Deposit Paid indicator in UI | #297  | ✅ Done | Glow effect for paid deposits    |
+| Task                         | Issue | Status  | Notes                             |
+| ---------------------------- | ----- | ------- | --------------------------------- |
+| Campus management mutations  | #295  | ✅ Done | Archive, reorder, move person     |
+| No Campus Assigned row       | #296  | ✅ Done | Shows district-level assignments  |
+| Deposit Paid indicator in UI | #297  | ✅ Done | Glow effect for paid deposits     |
+| Header image persistence fix | #298  | ✅ Done | Store file key, not presigned URL |
+| Settings persistence tests   | #299  | ✅ Done | Test coverage for settings        |
+| Docs update for v1.5         | #300  | ✅ Done | Updated project overview          |
+
+---
+
+### 🔄 v1.6: Production Ready (ACTIVE)
+
+Migration rollout, Follow-Up filters, and polish.
+
+| Task                             | Issue | Status  | Notes                            |
+| -------------------------------- | ----- | ------- | -------------------------------- |
+| Apply migration 0006 to prod     | #306  | 📋 Todo | displayOrder column for campuses |
+| Deposit paid filter in Follow-Up | #307  | 📋 Todo | Filter by deposit status         |
+| Archived flag for campuses       | #308  | 📋 Todo | Soft delete vs hard delete       |
 
 ---
 
