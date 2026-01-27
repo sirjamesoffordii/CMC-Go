@@ -1,443 +1,180 @@
 # AEOS Runtime Loop
 
-> **Purpose:** Day-to-day agent execution — the continuous loop that delivers software.
+> **Purpose:** Day-to-day execution loop (AEOS). Keep flow moving; keep changes safe.
 
----
+See also: `AGENTS.md`, `docs/aeos/PROJECT_BOARD.md`, `docs/aeos/PR_STANDARDS.md`.
 
-## Overview
+## System Overview
 
 ```
-                    ┌─────────────────────────────────────┐
-                    │         PE (Episodic)               │
-                    │  Planning epochs, coherence checks  │
-                    └──────────────┬──────────────────────┘
-                                   │ spawns/monitors
-                    ┌──────────────▼──────────────────────┐
-                    │         TL (Continuous)             │
-                    │  Coordinate → Delegate → Review     │
-                    └──────────────┬──────────────────────┘
-                                   │ delegates to
-          ┌────────────────────────┼────────────────────────┐
-          ▼                        ▼                        ▼
-    ┌───────────┐            ┌───────────┐            ┌───────────┐
-    │   SE-1    │            │   SE-2    │            │  Cloud    │
-    │  (Local)  │            │  (Local)  │            │  Agents   │
-    └─────┬─────┘            └─────┬─────┘            └─────┬─────┘
-          │                        │                        │
-          └────────────────────────┼────────────────────────┘
-                                   ▼
-                    ┌──────────────────────────────────────┐
-                    │              GitHub                   │
-                    │  Issues → PRs → CI → Merge → Done    │
-                    └──────────────────────────────────────┘
+PE (episodic planning epochs)
+  └─ spawns/monitors
+TL (continuous coordination)
+  └─ delegates to SEs + Cloud Agents
+SE (continuous implementation)
+  └─ ships via GitHub: Issues → PRs → CI → Merge
 ```
-
----
 
 ## PE Loop (Episodic)
 
-PE runs in **planning bursts**, not continuously.
+PE runs bounded planning bursts (“epochs”), not continuous execution.
 
-### When PE Activates
+When PE activates:
 
 - System startup (boot AEOS)
 - TL requests planning help
 - Scheduled planning epoch
 - Coherence drift detected
 
-### PE Epoch Checklist
+PE epoch checklist (minimum):
 
-```markdown
-1. Check TL heartbeat → spawn if missing
-2. Board health: Are there enough executable Issues? (Target: 5-10)
-3. Priority clarity: Is next most important work obvious?
-4. Workstream coherence: Any conflicts between Issues?
-5. Stale work: Any "In Progress" items with no updates > 60 min?
-6. Architecture risks: Any drift from invariants?
+```
+1. TL heartbeat present? If missing → spawn/restore TL
+2. Board health: enough executable Issues? (target: 5–10)
+3. Priority clarity: next most important work obvious?
+4. Conflicts: issues fighting each other / invariants at risk?
+5. Stale work: “In Progress” with no updates > 60 min?
 ```
 
-### PE Output
-
-Post **Planning Summary** to MCP Memory:
+PE output (single MCP summary):
 
 ```
 PE Planning Epoch — <timestamp>
 - Board Health: [healthy / needs work]
 - Issues Ready: N executable, M need refinement
-- Priority: Next highest-value = Issue #X
-- Actions Taken: Created Issue #Z, Refined Issue #W
+- Priority: next = Issue #X
+- Actions Taken: created/refined issues, unblocked work
 ```
 
-### PE Epoch Subagents
+PE epoch subagents (rare; blocking by design):
 
-PE subagents are **rare, intentional, batch-oriented, time-boxed, and blocking by design**.
+- Contract: PE announces “Entering <type> epoch”, spawns N parallel subagents, and stays blocked until return.
+- Exit: synthesize → one coherent action; announce “Epoch complete. System state: <summary>”.
+- Must NOT: continuous execution, issue-level implementation, long-running work, “super-SE” behavior.
 
-An **epoch** is a bounded planning or synthesis phase where PE intentionally pauses coordination to get a complete picture before acting.
+When to use epoch subagents (defaults):
 
-#### When to Use Epoch Subagents
+- Decomposition (system start / major pivot) → Opus 4.5 (3×): infer intent from structure
+- Recovery (long gap / PE regeneration) → Opus 4.5 (3×): rebuild context
+- Arbitration (TL escalates with A/B/C) → Opus 4.5 (3×): reconcile conflicting truths
+- Health Scan (periodic / milestone) → mixed: judgment + mechanical checks
+- Drift Detection (board >10 stale items) → GPT-5.2 (1×): pattern match
+- Coherence Check (docs edited externally) → GPT-5.2 (1×): mechanical comparison
 
-| Epoch Type          | Trigger                      | Subagent Model | Why                                         |
-| ------------------- | ---------------------------- | -------------- | ------------------------------------------- |
-| **Decomposition**   | System start, major pivot    | Opus 4.5 (3×)  | Inferring intent from structure             |
-| **Recovery**        | PE regeneration, long gap    | Opus 4.5 (3×)  | Rebuilding context from incomplete signals  |
-| **Arbitration**     | TL escalation with A/B/C     | Opus 4.5 (3×)  | Reconciling conflicting truths              |
-| **Health Scan**     | Milestone complete, periodic | Mixed          | Some judgment (Opus), some checks (GPT-5.2) |
-| **Drift Detection** | Board > 10 stale items       | GPT-5.2 (1×)   | Pattern matching, not synthesis             |
-| **Coherence Check** | Docs edited externally       | GPT-5.2 (1×)   | Mechanical comparison                       |
+Model selection heuristic:
 
-#### Model Selection Heuristic
-
-**Opus is for synthesis, not search.**
-
-| Task Requires...                | Model         |
-| ------------------------------- | ------------- |
-| Listing things                  | GPT 4.1 (0×)  |
-| Finding things                  | GPT-5.2 (1×)  |
-| Comparing things mechanically   | GPT-5.2 (1×)  |
-| Inferring intent from structure | Opus 4.5 (3×) |
-| Reconciling conflicting truths  | Opus 4.5 (3×) |
-| Answering "why" questions       | Opus 4.5 (3×) |
-
-_If the answer could be a JSON list, don't use Opus._
-
-#### Epoch Contract
-
-```
-EPOCH ENTRY:
-  - PE announces: "Entering [type] epoch"
-  - PE spawns N parallel subagents (model per task complexity)
-  - System expects PE to be blocked
-
-EPOCH EXIT:
-  - All subagents return
-  - PE synthesizes → single coherent action
-  - PE announces: "Epoch complete. System state: [summary]"
-  - PE returns to episodic monitoring
-```
-
-#### Concrete Epoch Examples
-
-**Decomposition Epoch** (rare — system start):
-
-```
-PE spawns (all Opus):
-  - "What are the trust boundaries in this system?"
-  - "Where does state live and how does it flow?"
-  - "What are the failure modes if X breaks?"
-→ All return → PE creates workstream Issues
-```
-
-**Arbitration Epoch** (when TL escalates):
-
-```
-PE spawns (Opus):
-  - "Issue #A says X, Issue #B says Y. What's the actual goal?"
-→ Returns → PE decides, posts resolution
-```
-
-**Health Scan Epoch** (periodic):
-
-```
-PE spawns (mixed):
-  - Opus: "Are we building the right thing?"
-  - GPT-5.2: "What's stalled or orphaned?"
-  - GPT-5.2: "Any policy violations?"
-→ All return → PE reconciles, spawns TL if needed
-```
-
-#### What PE Epochs Should NOT Do
-
-- Continuous execution
-- Issue-level implementation
-- Long-running work
-- Anything that blocks PE frequently
-- Acting like "super-SEs"
-
-This would collapse role separation and reintroduce brittleness.
-
----
+- Listing things → GPT 4.1 (0×)
+- Finding things / comparisons → GPT-5.2 (1×)
+- Intent/why/arbitration → Opus 4.5 (3×)
+- If the answer could be a JSON list, don’t use Opus.
 
 ## TL Loop (Continuous)
 
-TL runs **continuously**, keeping execution flowing.
+TL keeps execution flowing and merges work; TL does not implement code.
 
-### TL Cycle (every ~3 min)
+TL cycle (every ~3 min):
 
 ```
 1. Post heartbeat to MCP Memory
-2. Check SE heartbeats (are they alive?)
-3. Poll board for state changes:
-   - Blocked items → unblock or escalate
-   - Verify items → review PR
-   - Todo items → delegate to SE
-4. Review open PRs → approve/request changes/merge
-5. Handle SE questions (via Issue comments)
-6. Loop
+2. Check SE heartbeats (alive?)
+3. Poll board: Blocked → unblock/escalate; Verify → review/merge; Todo → delegate
+4. Handle SE questions (Issue comments)
+5. Loop
 ```
 
-### TL Delegation Decision Tree
+TL delegation decision tree:
 
 ```
 Is there a Todo item?
-├── YES: What's the complexity score?
-│   ├── 0-1: Trivial → delegate to SE anyway (TL never edits code)
-│   ├── 0-2: Simple async → Cloud Agent (agent:copilot-SE label)
-│   └── 2-6: Standard/Complex → Local SE (code chat -r)
-└── NO: Board empty?
-    ├── YES: Ask PE to run planning epoch
-    └── NO: All items In Progress → monitor, review PRs
+├── YES → choose route (see AGENTS.md for scoring)
+│   ├── trivial → delegate to SE anyway (TL never edits)
+│   ├── simple async → Cloud Agent (agent:copilot-SE)
+│   └── standard/complex → Local SE (code chat -r)
+└── NO
+    ├── board empty → ask PE for planning epoch
+    └── all in progress → monitor + review PRs
 ```
 
-### Post-Delegation Verification
+Post-delegation verification (required): subagent reports are proposals, not facts.
 
-**Subagent reports are proposals, not facts.** After spawning SE or delegating work:
+- Verify Issue status is actually “In Progress”
+- Verify assignee is correct
+- If either is wrong, fix manually and continue
 
-1. **Verify board state** — Is Issue actually "In Progress"?
-2. **Verify assignee** — Is SE actually assigned?
-3. **If not** → Fix it manually, then continue
+TL capacity:
 
-This catches cases where subagent terminal context was lost.
-
-### TL Capacity
-
-- **Max 4 active items** per TL instance
-- Active = Status "In Progress" OR "Verify"
-- If capacity full → spawn secondary TL OR wait
-
----
+- Max 4 active items per TL instance (active = “In Progress” or “Verify”)
+- If capacity full: spawn secondary TL or wait
 
 ## SE Loop (Continuous)
 
-SE runs **continuously**, pulling and completing work.
+SE ships small diffs and verifies before PR.
 
-### SE Cycle
+SE cycle:
 
 ```
 1. Post heartbeat to MCP Memory
-2. Check board for work:
-   └── Status = "Todo" → claim highest priority
-3. Claim work:
-   - Set Status → "In Progress"
-   - Assign self
-   - Post claim comment
-4. Create worktree:
-   └── wt-impl-<issue#>-<slug>
-5. Implement:
-   - Smallest diff that solves the issue
-   - Run checks: pnpm check && pnpm test
-6. Open PR:
-   - Evidence of verification
-   - Link to Issue
-7. Set Status → "Verify"
-8. Wait for review → address feedback → merge
-9. Set Status → "Done"
-10. Loop to step 1
+2. Todo → claim highest priority (Status → In Progress, assign self, claim marker)
+3. Implement (smallest diff)
+4. Verify (at least: pnpm check && pnpm test)
+5. Open PR with evidence + Issue link; Status → Verify
+6. Address feedback → merge; Status → Done; loop
 ```
 
-### SE Circuit Breaker
+SE circuit breaker:
 
-**Task-level:** After 3 consecutive failures on same task:
+- Task-level: 3 consecutive failures → Status Blocked, post summary, move on
+- Session-level: 10 total failures → post session summary, stop and await review
 
-- Set Status → Blocked
-- Post failure summary
-- Move to next item
+## Heartbeats, Staleness, Recovery
 
-**Session-level:** After 10 total failures:
+Heartbeat cadence (canonical format in `AGENTS.md`): every 3 min; stale threshold 6 min.
 
-- Post session summary
-- Stop and await review
+Stale detection:
 
----
-
-## Heartbeat Protocol
-
-All agents post heartbeats to MCP Memory:
-
-| Agent | Interval | Stale Threshold | Format                                       |
-| ----- | -------- | --------------- | -------------------------------------------- |
-| PE    | 3 min    | 6 min           | `heartbeat: TIMESTAMP \| STATUS`             |
-| TL    | 3 min    | 6 min           | `heartbeat: TIMESTAMP \| STATUS`             |
-| SE    | 3 min    | 6 min           | `heartbeat: TIMESTAMP \| Issue #N \| STATUS` |
-
-### Heartbeat MCP Command
-
-```javascript
-mcp_memory_add_observations({
-  entityName: "SE-1",
-  contents: ["heartbeat: 2026-01-26T14:30:00Z | Issue #42 | working"],
-});
-```
-
-### Stale Detection
-
-TL monitors SE heartbeats. PE monitors TL heartbeat.
-
-If heartbeat missing > threshold:
-
-1. Check if agent still producing output
-2. Check Issue comments for activity
+1. Check whether agent still producing output
+2. Check Issue/PR activity (comments, commits)
 3. If truly stale → spawn replacement
 
-### Orphaned Work Recovery
+Orphaned work recovery (keep work if it exists)
 
-**Orphaned work** = Issue is "In Progress" but the assigned agent is gone (no heartbeat, no VS Code session).
+- Orphaned = Issue “In Progress” but assigned agent is gone
 
-**Detection (during PE planning epoch or TL cycle):**
+Detection (TL cycle or PE epoch):
 
 ```
-For each "In Progress" issue:
-  1. Check MCP Memory for agent heartbeat
-  2. If heartbeat > 6 min stale OR no heartbeat:
-     - Check GitHub for recent activity (comments, commits)
-     - Check if PR exists
-  3. If no activity in 6 min → issue is orphaned
+For each “In Progress” issue:
+  1. Check MCP heartbeat
+  2. If stale/missing, check GitHub activity + whether a PR exists
+  3. If no activity in 6 min → orphaned
 ```
 
-**Recovery procedure:**
+Recovery procedure:
 
-1. **Check for partial work:**
-
+1. Check for partial work (worktree/branch/PR):
    ```powershell
-   # Check for local worktree
    Get-ChildItem "C:\Dev\CMC Go" -Directory | Where-Object { $_.Name -like "wt-impl-<issue#>*" }
-
-   # Check for unpushed branch
    git -C "wt-impl-<issue#>-*" log --oneline origin/staging..HEAD
    ```
+2. If work exists: spawn a new SE to continue and adopt existing work
+3. If no work exists: move Issue back to “Todo”, remove assignee, comment `ORPHAN-RECOVERED: ...`
+4. Update MCP Memory: clear stale observations; mark agent idle
 
-2. **If work exists (worktree, branch, or PR):**
-   - Spawn new SE to continue: `code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Continue Issue #<N>. Check worktree wt-impl-<N>-*. Start."`
-   - New SE adopts the existing worktree/branch
-
-3. **If no work exists:**
-   - Move issue back to "Todo"
-   - Remove assignee
-   - Post comment: `ORPHAN-RECOVERED: No work found. Returning to Todo.`
-
-4. **Update MCP Memory:**
-   - Clear stale agent observations
-   - Update agent status to "idle"
-
----
-
-## Project Board Workflow
-
-The **CMC Go Project** (Project 4) is the source of truth.
-
-### Status Flow
+## Board & PR Flow (runtime view)
 
 ```
 Todo → In Progress → Verify → Done
          ↓
-      Blocked (if stuck)
+       Blocked
 ```
 
-### Required Actions by Status
+TL review checklist (minimum): evidence present; CI green; scope matches Issue → then squash merge + Status Done.
 
-| Status      | Who Sets | Next Action                         |
-| ----------- | -------- | ----------------------------------- |
-| Todo        | PE/TL    | SE claims, sets → In Progress       |
-| In Progress | SE       | SE implements, sets → Verify        |
-| Verify      | SE       | TL reviews PR, sets → Done          |
-| Blocked     | SE/TL    | Resolve blocker, sets → In Progress |
-| Done        | TL       | Nothing (complete)                  |
+## Communication & Escalation
 
-### Update Commands
+SE uses the Issue comment markers defined in `AGENTS.md` (SE-<N>-CLAIMED / -BLOCKED / -COMPLETE).
 
-```powershell
-# View project items
-gh project item-list 4 --owner sirjamesoffordii --format json
-
-# Add issue to project
-gh project item-add 4 --owner sirjamesoffordii --url <issue-url>
-
-# Update status (requires item-id and option-id)
-gh project item-edit --project-id PVT_kwHODqX6Qs4BNUfu --id <item-id> --field-id PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA --single-select-option-id <status-option-id>
-```
-
-Status option IDs:
-
-- Todo: `f75ad846`
-- In Progress: `47fc9ee4`
-- Verify: `5351d827`
-- Done: `98236657`
-- Blocked: `652442a1`
-
----
-
-## PR Lifecycle
-
-### Open PR
-
-```powershell
-# From worktree branch
-gh pr create --title "agent(se): <summary>" --body "..." --base staging
-```
-
-### PR Description (minimum)
-
-```markdown
-## Why
-
-Closes #<issue>
-
-## What Changed
-
-- Bullet points
-
-## How Verified
-
-- `pnpm check` — passed
-- `pnpm test` — N tests passed
-
-## Risk
-
-Low — <rationale>
-
-## End-of-Task Reflection
-
-- **Workflow:** No changes
-- **Patterns:** No changes
-```
-
-### Review & Merge
-
-TL reviews:
-
-1. Evidence present?
-2. Tests pass (CI green)?
-3. Scope matches Issue?
-
-If yes → Squash merge → Delete branch → Set Status → Done
-
----
-
-## Communication Patterns
-
-### SE → TL (via GitHub)
-
-SE posts these markers as Issue comments:
-
-| Marker                            | Meaning          | TL Action           |
-| --------------------------------- | ---------------- | ------------------- |
-| `SE-CLAIMED: Issue #X`            | Working on it    | Track on board      |
-| `SE-BLOCKED: Issue #X - <reason>` | Needs help       | Unblock or escalate |
-| `SE-COMPLETE: Issue #X, PR #Y`    | Ready for review | Review PR           |
-| `SE-IDLE: No work found`          | Board empty      | Create more work    |
-
-### TL → PE (via MCP Memory)
-
-TL updates observations on Agent entities. PE reads MCP Memory during planning epochs.
-
-### Escalation (to Human)
-
-Only escalate when:
-
-- Security-sensitive choice
-- Destructive/irreversible action
-- Changes repo invariants
-
-Use A/B/C format in Issue comment:
+Escalate to a human only when: security-sensitive choice; destructive/irreversible action; repo invariants change.
 
 ```markdown
 **Status:** Blocked
@@ -450,81 +187,29 @@ Use A/B/C format in Issue comment:
   **Recommended default (if no response by <time>):** A
 ```
 
----
-
 ## Verification Levels
 
-PRs require verification based on risk:
+- verify:v0: author self-verifies (SE)
+- verify:v1: someone else verifies (TL/SE)
+- verify:v2: peer verifies + extra evidence (TL + labels)
+- Evidence labels: evidence:db-or-ci, evidence:deployed-smoke
 
-| Label       | Requirement                    | Who                  |
-| ----------- | ------------------------------ | -------------------- |
-| `verify:v0` | Author self-verifies           | SE                   |
-| `verify:v1` | Someone else verifies          | TL or other SE       |
-| `verify:v2` | Peer verifies + extra evidence | TL + evidence labels |
+## Improvement Loop (fast iteration)
 
-Evidence labels:
+Per-PR reflection decision tree:
 
-- `evidence:db-or-ci` — Database or CI evidence
-- `evidence:deployed-smoke` — Deployed smoke test
+1. Docs could prevent the wasted time? → edit doc now
+2. Non-obvious problem others will hit? → add to CMC_GO_PATTERNS.md
+3. Neither → “No changes”
 
----
-
-## Improvement Loop (Fast Iteration)
-
-The system improves itself through three mechanisms:
-
-### 1. Per-PR Reflection (10 seconds)
-
-Every PR includes:
-
-```markdown
-## End-of-Task Reflection
-
-- **Workflow:** No changes / [file] — [change]
-- **Patterns:** No changes / [file] — [change]
-```
-
-**Decision tree:**
-
-1. Something wasted time that docs could prevent? → Edit doc
-2. Solved non-obvious problem others will hit? → Add to CMC_GO_PATTERNS.md
-3. Neither? → Write "No changes"
-
-### 2. Session Learnings (MCP Memory)
-
-When discovering a friction point or improvement:
+Session learnings (MCP Memory, immediately):
 
 ```powershell
-# Add to MCP Memory immediately
-mcp_memory_create_entities([{
-  name: "Pattern-<date>-<slug>",
-  entityType: "Pattern",
-  observations: ["<one-line description>", "<how to avoid>"]
-}])
+mcp_memory_create_entities([{ name: "Pattern-<date>-<slug>", entityType: "Pattern", observations: ["<one-line>", "<avoid>"] }])
 ```
 
-**Don't wait until PR time.** Capture learnings as they happen.
+PE promotion (periodic): search MCP “Pattern”; if seen 2+ times → promote to CMC_GO_PATTERNS.md; clear promoted.
 
-### 3. PE Planning Epochs (Periodic)
+Iteration speed targets: reflection 10s; capture learning 30s; find doc 1m; edit doc 2m; full PR cycle 10m.
 
-PE reviews accumulated patterns and promotes to CMC_GO_PATTERNS.md:
-
-```
-PE Epoch:
-1. Query MCP: mcp_memory_search_nodes("Pattern")
-2. Review recent patterns
-3. If pattern appears 2+ times → add to CMC_GO_PATTERNS.md
-4. Clear promoted patterns from MCP
-```
-
-### Iteration Speed Targets
-
-| Action            | Target Time |
-| ----------------- | ----------- |
-| PR reflection     | 10 seconds  |
-| Capture learning  | 30 seconds  |
-| Find relevant doc | 1 minute    |
-| Edit doc          | 2 minutes   |
-| Full PR cycle     | 10 minutes  |
-
-**Principle: Never defer improvement.** If something can be better, make it better now.
+Principle: never defer improvement.
