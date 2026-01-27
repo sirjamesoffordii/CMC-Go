@@ -21,6 +21,7 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 **Then execute your role:**
 
+- **Principal Engineer:** Plan epochs → monitor system health → ensure coherence
 - **Tech Lead:** Coordinate → delegate → poll board
 - **Software Engineer:** EXPLORE → IMPLEMENT → VERIFY → reflect
 
@@ -49,33 +50,44 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ## Agents
 
-Two agent roles using GPT-5.2 by default (upgrade to Opus for complex tasks):
+Three agent roles plus cloud agents. Each role has its own GitHub account for clear audit trails.
 
-| Agent                       | GitHub Account            | Default Model  | Token Cost | Responsibility                             |
-| --------------------------- | ------------------------- | -------------- | ---------- | ------------------------------------------ |
-| **Tech Lead (TL)**          | `Alpha-Tech-Lead`         | GPT-5.2        | 1×         | Coordination, board management, delegation |
-| **Software Engineer (SWE)** | `Software-Engineer-Agent` | GPT-5.2        | 1×         | Implementation, verification, continuous   |
-| **Cloud Agent**             | `copilot-swe-agent[bot]`  | GitHub default | Dedicated  | Simple async issues (fire-and-forget)      |
-| **Human (Sir James)**       | `sirjamesoffordii`        | —              | —          | Oversight, decisions, Plus account owner   |
+| Agent                       | GitHub Account             | Default Model   | Token Cost | Responsibility                                                  |
+| --------------------------- | -------------------------- | --------------- | ---------- | --------------------------------------------------------------- |
+| **Principal Engineer (PE)** | `Principle-Engineer-Agent` | Claude Opus 4.5 | 3×         | Planning epochs, surface mapping, coherence/arbitration         |
+| **Tech Lead (TL)**          | `Alpha-Tech-Lead`          | Claude Opus 4.5 | 3×         | Execution coordination, board mgmt, delegation, PR review/merge |
+| **Software Engineer (SE)**  | `Software-Engineer-Agent`  | GPT-5.2         | 1×         | Implementation, verification, continuous execution              |
+| **Cloud Agent**             | `copilot-SE-agent[bot]`    | GitHub default  | Dedicated  | Simple async issues (overflow batch only)                       |
+| **Human (Sir James)**       | `sirjamesoffordii`         | —               | —          | Oversight, decisions, Plus account owner                        |
 
-**When to upgrade to Opus 4.5 (3×):** Complexity score 4+, deep reasoning required, or when GPT-5.2 fails.
+**Model strategy:**
+
+- PE/TL use Opus 4.5 for coordination/reasoning
+- SE uses GPT-5.2 for efficient implementation
+- SE subagents use GPT-5.2 Codex for code tasks
 
 ### Identity Separation (critical)
 
 **Every actor has a distinct GitHub account.** This makes it easy to audit who did what:
 
 - `sirjamesoffordii` = Human (Sir James) — oversight, critical decisions, Plus account features
+- `Principle-Engineer-Agent` = PE agent — strategic planning, system coherence, arbitration
 - `Alpha-Tech-Lead` = TL agent — coordination, delegation, board management
-- `Software-Engineer-Agent` = SWE agent — implementation, PRs, commits
+- `Software-Engineer-Agent` = SE agent — implementation, PRs, commits
 
 **Agents MUST authenticate as their designated account before any GitHub operations:**
 
 ```powershell
+# PE authenticates (set at start of EVERY terminal session)
+# Note: Directory is lowercase, account name is Principle-Engineer-Agent
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+gh auth status  # Should show: Principle-Engineer-Agent
+
 # TL authenticates (set at start of EVERY terminal session)
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
 gh auth status  # Should show: Alpha-Tech-Lead
 
-# SWE authenticates (set at start of EVERY terminal session)
+# SE authenticates (set at start of EVERY terminal session)
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
 gh auth status  # Should show: Software-Engineer-Agent
 
@@ -90,15 +102,15 @@ gh auth status  # Should show: sirjamesoffordii
 
 **Only `sirjamesoffordii` (Plus account) can directly spawn cloud agents** via `gh agent-task create` or the `copilot-coding-agent` tool.
 
-**TL can still trigger cloud agents indirectly** by applying the `agent:copilot-swe` label to issues — this triggers a GitHub workflow that uses the Plus account token.
+**TL can still trigger cloud agents indirectly** by applying the `agent:copilot-SE` label to issues — this triggers a GitHub workflow that uses the Plus account token.
 
-In practice, we rarely need cloud agents now that local SWE with Opus 4.5 works well for continuous work.
+In practice, we rarely need cloud agents now that local SE works well for continuous work.
 
 **Spawning agents:**
 
 ```powershell
-code chat -m "Tech Lead (TL)" "Start"           # Spawn TL
-code chat -m "Software Engineer (SWE)" "Start"  # Spawn SWE
+code chat -n -m "Tech Lead" -a ".github/agents/state/TL-1.md" "You are TL-1. Read your state file. Start."           # Spawn TL
+code chat -n -m "Software Engineer" -a ".github/agents/state/SE-1.md" "You are SE-1. Read your state file. Start."  # Spawn SE
 ```
 
 ## Session Start (once per session)
@@ -117,21 +129,197 @@ Ops/CI/tooling reference (as-needed):
 
 - `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
+## Instruction Surfaces (what to edit to avoid drift)
+
+CMC Go has multiple instruction layers. To prevent contradictions, **define each rule in exactly one place** and have the other layers link to it.
+
+**Sources (in recommended order):**
+
+1. **`AGENTS.md` (this file)** — canonical workflow, delegation model, evidence gates, PR templates, and “how we operate”.
+2. **`.github/copilot-instructions.md`** — stable repo overview + invariants + key entrypoints/commands.
+3. **`.github/agents/*.agent.md`** — role overlays used when selecting a custom agent in VS Code (TL vs SE). Keep these short; do not duplicate templates/IDs.
+4. **`.github/instructions/*.instructions.md`** — path-scoped coding conventions (React, tRPC, Drizzle, E2E, shared types). Keep these focused on code patterns.
+
+**Ownership rule (anti-redundancy):**
+
+- **Workflow/evidence/templates/IDs** → `AGENTS.md`
+- **Invariants + architecture overview** → `.github/copilot-instructions.md`
+- **Role behavior (TL vs SE)** → `.github/agents/*.agent.md`
+- **Per-area coding patterns** → `.github/instructions/*.instructions.md`
+
 ## Operating principles
 
 - **CMC Go Project is the authoritative truth.** The project board (https://github.com/users/sirjamesoffordii/projects/4) tracks what happened, what's happening, and what's next. Tech Lead keeps it current.
 - **Issues/PRs are the task bus.** Decisions + evidence live there, but STATUS lives in the Project.
-- **Tech Lead coordinates, Software Engineer implements.** Tech Lead never gets locked into complex implementation — always delegate to Software Engineer to keep the project moving.
+- **PE/TL coordinate, SE implements.** PE/TL can handle trivial tasks (0-1 complexity) directly; complex work goes to SE.
 - **Execution mode must be explicit.** Local agents use worktrees; cloud agents are branch-only.
 - **Prefer small diffs.** Optimize for reviewability, but don't block forward progress; split into multiple PRs only when it materially reduces risk.
 - **No secrets in chat/code.** `.env*` stays local; use platform/GitHub secrets. For secret handling, see `CMC_GO_PATTERNS.md` → "Secrets & Tokens".
 - **Assume the user is not in the loop.** Only request user input when absolutely required; otherwise coordinate via Tech Lead + Project/Issues.
 - **Keep looping.** Take the next best safe step until Done.
 - **Reflection is mandatory.** Every task ends with two checks: Workflow Improvement + Pattern Learning. See "End-of-Task Reflection".
+- **State files enable continuity.** Agents update their state files so replacements can pick up where they left off.
+
+## Agent Continuity System
+
+### Key Concepts
+
+| Term                   | Definition                                                        |
+| ---------------------- | ----------------------------------------------------------------- |
+| **Active Agents**      | Which agents (PE, TLs, SEs) are alive (visible in VS Code panel)  |
+| **Active Work**        | Issues with status "In Progress" or "Verify" on the Project board |
+| **Executable Backlog** | Issues in "Todo" with clear Goal/Scope/AC ready to be claimed     |
+| **State File**         | Backup file for regeneration if MCP Memory unavailable            |
+| **Generation (gen-N)** | How many times an agent ID has been regenerated                   |
+
+### MCP Memory (Primary Storage)
+
+**MCP Memory Server is the primary storage for agent state and knowledge.** All agents should:
+
+1. **At session start:** Call `mcp_memory_read_graph` to load context
+2. **During work:** Update observations when state changes
+3. **At session end:** Ensure final state is recorded
+
+**Entity types in MCP Memory:**
+
+| Entity Type      | Purpose                                        | Example                                   |
+| ---------------- | ---------------------------------------------- | ----------------------------------------- |
+| `Agent`          | Agent state (status, current work, generation) | `SE-1`, `TL-1`, `PE-1`                    |
+| `Pattern`        | Reusable learnings                             | `TRPCErrorHandling`, `AuthFlow`           |
+| `WorkflowChange` | Workflow improvements                          | `HeartbeatInterval-3min`                  |
+| `Issue`          | Issue context and learnings                    | `Issue-42-DistrictFilter`                 |
+| `ProjectBrief`   | App overview, architecture, progress %         | `docs/project/CMC_GO_PROJECT_OVERVIEW.md` |
+| `AEOS`           | Autonomous Engineering Operating System docs   | `docs/aeos/` directory                    |
+
+**AEOS Documentation:** See `docs/aeos/README.md` for the complete operating system documentation.
+
+**If MCP is unavailable:** Fall back to state files (see backup section below).
+
+### State Files (Backup)
+
+Each agent has a backup state file at `.github/agents/state/<ID>.md`:
+
+- `PE-1.md`, `TL-1.md`, `SE-1.md`, `SE-2.md`, etc.
+
+**Used when:** MCP Memory Server is unavailable or for redundancy.
+
+**Format:** YAML frontmatter + markdown body with:
+
+- `agentId`, `generation`, `status`, `currentIssue`, `currentPR`, `workingBranch`
+- `lastHeartbeat`, `lastAction`, `blockers`
+- Freeform context and next steps
+
+### Session Naming (for VS Code Panel Visibility)
+
+**Agents MUST rename their VS Code chat tab** to show ID and generation:
+
+```
+SE-1(3)    ← Human sees this in VS Code panel
+TL-1(2)
+PE-1(1)
+```
+
+**Format:** `{ID}({generation})` — compact and clear.
+
+**How to rename:** Right-click chat tab → Rename → Enter `{ID}({N})`
+
+This lets Sir James see at a glance which agents are running and their generation.
+
+### Heartbeat Protocol
+
+Heartbeats are stored in MCP Memory (not GitHub Issues) to reduce noise:
+
+```
+mcp_memory_add_observations({
+  entityName: "SE-1",
+  contents: ["heartbeat: 2026-01-26T14:30:00Z | Issue #42 | working"]
+})
+```
+
+| Agent Type | Heartbeat Interval | Stale Threshold | Regenerator |
+| ---------- | ------------------ | --------------- | ----------- |
+| PE         | 3 min              | 6 min           | TL          |
+| TL         | 3 min              | 6 min           | PE          |
+| SE         | 3 min              | 6 min           | TL          |
+
+**Human visibility:** Sir James can see running agents in VS Code panel. To check heartbeats, ask any agent to read MCP Memory.
+
+### Regeneration Protocol
+
+When an agent goes stale (no heartbeat beyond threshold):
+
+1. Supervisor detects staleness via MCP Memory query
+2. Supervisor increments generation in MCP Memory
+3. Supervisor spawns replacement:
+
+```powershell
+code chat -n -m "Software Engineer" "You are SE-1(4). Read MCP Memory for context. Previous session ended. Continue work."
+```
+
+4. Replacement agent:
+   - Renames chat tab to `SE-1-gen-4`
+   - Reads MCP Memory for previous state
+   - If MCP unavailable, reads state file as backup
+   - Continues from where predecessor left off
+   - Posts heartbeat to MCP Memory
+
+### SE Subagents
+
+**SE subagents are extensions of the parent SE.** They:
+
+- Use the parent's identity (SE-1, not a separate ID)
+- Use `GPT-5.2 Codex` model for implementation
+- Have commits/PRs attributed to parent SE
+- Do NOT update MCP Memory — parent SE owns state updates
+
+## PE/TL Trivial Task Handling
+
+PE and TL can directly handle **trivial tasks (complexity 0-1)** when the coordination cost exceeds the work itself.
+
+### Allowed Buckets (PE/TL can do directly)
+
+1. **Docs/workflow/patterns** — Always allowed
+   - Updating AGENTS.md, role docs, CMC_GO_PATTERNS.md
+   - Tightening issue templates
+
+2. **Urgent unblockers (≤5 min, low risk)**
+   - Missing env var name in docs
+   - Wrong command in instructions
+   - Single config toggle or label
+
+3. **Meta repo hygiene**
+   - Labeling/triaging issues
+   - Reorganizing project board fields
+   - Renaming/moving docs
+
+4. **Micro-fixes during review**
+   - Typo in PR description
+   - Adjust a label or checklist
+
+5. **Pipeline health hotfixes**
+   - CI workflow busted
+   - Board automation broken
+
+### Not Allowed (always delegate to SE)
+
+- Auth / roles / permissions
+- Schema / migrations
+- Production deploy settings
+- Core routing / login / security
+
+### Rule of Thumb
+
+PE/TL does it themselves when:
+
+- ✅ Time-to-delegate > time-to-fix
+- ✅ Blast radius is tiny
+- ✅ Verification is cheap (diff review is enough)
+
+If any aren't true → delegate to SE.
 
 ## TL Branch Discipline (critical)
 
-**Tech Lead stays on clean `staging` tracking `origin/staging`.** TL never makes local code edits.
+**Tech Lead stays on clean `staging` tracking `origin/staging`.** TL works directly on staging for trivial tasks.
 
 ### At session start (TL only):
 
@@ -149,10 +337,10 @@ git status -sb  # Should show: ## staging...origin/staging
 
 ### Why this matters:
 
-- TL coordinates and delegates — SWE implements
+- TL coordinates and delegates — SE implements
 - TL staying on `staging` prevents merge conflicts and dirty-state issues
-- All implementation happens in SWE worktrees/branches, never TL's working copy
-- If TL needs to make a docs-only change, delegate to SWE anyway (keeps discipline clean)
+- All implementation happens in SE worktrees/branches, never TL's working copy
+- If TL needs to make a docs-only change, delegate to SE anyway (keeps discipline clean)
 
 ### TL is forbidden from:
 
@@ -161,7 +349,7 @@ git status -sb  # Should show: ## staging...origin/staging
 - Making local file edits (except reading files for context)
 - Running `pnpm dev` outside of `wt-main` worktree
 
-**If you find yourself about to edit a file:** STOP. Delegate to SWE instead.
+**If you find yourself about to edit a file:** STOP. Delegate to SE instead.
 
 ## Cold Start (Empty Board)
 
@@ -234,7 +422,7 @@ Use these defaults to reduce blocking and keep momentum. Post A/B/C only when th
 | Situation                        | Default                   | Override when         |
 | -------------------------------- | ------------------------- | --------------------- |
 | Retry vs rollback on failure     | Retry once                | Same error 3x         |
-| Local vs cloud agent (score 2-3) | Local SWE                 | Queue > 4 items       |
+| Local vs cloud agent (score 2-3) | Local SE                  | Queue > 4 items       |
 | Fix lint warning vs ignore       | Ignore if <10 LOC impact  | Breaks build          |
 | Create worktree vs direct edit   | Direct if docs-only       | Any code change       |
 | Escalate vs decide               | Decide with A/B/C comment | Security/irreversible |
@@ -333,14 +521,14 @@ Tech Lead's **#1 priority is keeping the project on track** — not implementing
 
 - Creates Issues using templates.
 - Scores complexity and delegates to appropriate Software Engineer (local or cloud).
-- Applies labels to route work (e.g. `agent:copilot-swe`, `verify:v1`).
+- Applies labels to route work (e.g. `agent:copilot-SE`, `verify:v1`).
 - Approves/merges PRs when the verification gate passes.
 - Manages workload (max 4 active items per Tech Lead instance).
 - Performs console-only steps when 2FA/login blocks automation (Sentry/Railway/etc.).
 
 **Never get locked into complex implementation.** If a task would take Tech Lead away from coordination for extended time, delegate it to Software Engineer.
 
-**Note:** TL (as `Alpha-Tech-Lead`) cannot directly spawn cloud agents via `gh agent-task create`. Use the `agent:copilot-swe` label on Issues instead — this triggers a workflow that uses `sirjamesoffordii`'s Plus account token.
+**Note:** TL (as `Alpha-Tech-Lead`) cannot directly spawn cloud agents via `gh agent-task create`. Use the `agent:copilot-SE` label on Issues instead — this triggers a workflow that uses `sirjamesoffordii`'s Plus account token.
 
 ## Workload Management
 
@@ -354,8 +542,8 @@ Tech Lead manages concurrent work to prevent review backlog. The **Project board
 
 **Active items** = Issues with Status "In Progress" OR "Verify". This includes:
 
-- Cloud Agent work (Issues delegated via `agent:copilot-swe` label or `gh agent-task create`)
-- Local delegated sessions (via `code chat -m "Software Engineer (SWE)"`)
+- Cloud Agent work (Issues delegated via `agent:copilot-SE` label or `gh agent-task create`)
+- Local delegated sessions (via `code chat -m "Software Engineer (SE)"`)
 
 **NOT counted:** Subagents via `runSubagent` — these are internal/blocking and don't require polling.
 
@@ -393,7 +581,7 @@ If count < 4 → delegate new work
 
 - **Still working:** Let it continue
 - **Silent (no activity):** Re-assign to new agent
-- **Stuck on question:** Answer and re-delegate
+- **Stuck on question:** AnSEr and re-delegate
 - **Session died:** Mark as Blocked or move back to Todo
 
 **On session start:** Tech Lead scans board for stale items (In Progress > expected time based on complexity) and recovers them.
@@ -402,37 +590,28 @@ If count < 4 → delegate new work
 
 When workload exceeds 4 active items:
 
-1. Tech Lead spawns a **secondary Tech Lead** via `runSubagent`
+1. Tech Lead spawns a **secondary Tech Lead** via `code chat -n` (non-blocking)
 2. Secondary Tech Lead gets its own capacity of 4 items
 3. Primary Tech Lead retains coordination oversight
 
-**Secondary Tech Lead spawn template:**
+**Spawning secondary TL:**
 
-```
-Prompt: You are a secondary Tech Lead instance. Primary has delegated these Issues to you:
-- Issue #X: [title]
-- Issue #Y: [title]
-
-You have capacity for 4 active items. Coordinate these issues to completion and report back when done.
-Do not create new Issues — only implement what's assigned.
+```powershell
+# Non-blocking: spawn in new VS Code window
+code chat -n -m "Tech Lead" -a ".github/agents/state/TL-2.md" "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Coordinate Issues #X, #Y. Start."
 ```
 
 ## Model Selection
 
-**Default model is GPT-5.2 (1× premium).** Reserve Opus 4.5 (3× premium) for complex tasks only (complexity score 4+).
+**PE and TL use Claude Opus 4.5 (3×).** SE uses GPT-5.2 (1×). SE subagents use GPT-5.2 Codex (1×).
 
 ### Model Defaults by Role
 
-| Agent | Default Model | When to Upgrade to Opus          |
-| ----- | ------------- | -------------------------------- |
-| TL    | GPT-5.2       | Complex multi-agent coordination |
-| SWE   | GPT-5.2       | Complexity score 4+ tasks        |
-
-**Cost efficiency:** GPT-5.2 handles most tasks well at 1/3 the cost of Opus. Opus is reserved for:
-
-- Complex reasoning across many files
-- Tasks requiring deep judgment
-- When GPT-5.2 fails on a task
+| Agent | Default Model   | Subagent Model  | Rationale                        |
+| ----- | --------------- | --------------- | -------------------------------- |
+| PE    | Claude Opus 4.5 | Claude Opus 4.5 | Complex planning, deep reasoning |
+| TL    | Claude Opus 4.5 | GPT-5.2         | Coordination requires judgment   |
+| SE    | GPT-5.2         | GPT-5.2 Codex   | Efficient implementation         |
 
 ### Complexity Scoring (for task routing)
 
@@ -446,42 +625,39 @@ Score tasks before deciding how to route them:
 
 ### Score → Routing Decision
 
-| Score | Route To                           | Why                                |
-| ----- | ---------------------------------- | ---------------------------------- |
-| 0-2   | Cloud Agent (`agent:copilot-swe`)  | Simple async, TL continues working |
-| 2-6   | SWE (`code chat -m "Software..."`) | Needs judgment, continuous work    |
+| Score | Route To                          | Why                                |
+| ----- | --------------------------------- | ---------------------------------- |
+| 0-1   | PE/TL directly (on staging)       | Trivial, coordination cost > work  |
+| 0-2   | Cloud Agent (`agent:copilot-se`)  | Simple async, TL continues working |
+| 2-6   | SE (`code chat -m "Software..."`) | Needs judgment, continuous work    |
 
-**Simple rule:** Cloud agents for fire-and-forget. Local SWE for anything that needs judgment or continuous work.
+**Simple rule:** PE/TL handle trivial. Cloud agents for fire-and-forget batches. Local SE for anything that needs judgment or continuous work.
 
 ### Subagent Model Selection
 
-Subagents inherit the caller's model (GPT-5.2 by default). Choose model based on task complexity:
+SE subagents use GPT-5.2 Codex for implementation work:
 
-| Complexity | Model             | Cost | Use Case                          |
-| ---------- | ----------------- | ---- | --------------------------------- |
-| 0-1        | GPT 4.1           | 0×   | Trivial: docs, comments, lookups  |
-| 2-4        | GPT-5.2 (default) | 1×   | Standard: most implementation     |
-| 5-6        | Claude Opus 4.5   | 3×   | Complex: deep reasoning, judgment |
+| Complexity | Model         | Cost | Use Case                         |
+| ---------- | ------------- | ---- | -------------------------------- |
+| 0-1        | GPT 4.1       | 0×   | Trivial: docs, comments, lookups |
+| 2-4        | GPT-5.2 Codex | 1×   | Standard: most implementation    |
+| 5-6        | GPT-5.2       | 1×   | Complex: needs reasoning         |
 
-**Subagent use cases:**
+**SE subagents are extensions of the parent SE:**
 
-| Caller | Subagent Purpose                         |
-| ------ | ---------------------------------------- |
-| TL     | Research before delegating, verification |
-| SWE    | Parallel research, non-blocking tests    |
-
-**Cost note:** Default to GPT-5.2 (1×). Only escalate to Opus (3×) for complexity 4+ or when lower models fail.
+- Use the same identity (SE-1's subagent is still SE-1)
+- Commits/PRs attributed to parent SE
+- Do NOT update board status — parent SE owns status
 
 ### Role Requirements
 
-| Role    | Default Model | Spawned Via                              |
-| ------- | ------------- | ---------------------------------------- |
-| **TL**  | GPT-5.2       | `code chat -m "Tech Lead (TL)"`          |
-| **SWE** | GPT-5.2       | `code chat -m "Software Engineer (SWE)"` |
+| Role   | Default Model   | Spawned Via                         |
+| ------ | --------------- | ----------------------------------- |
+| **PE** | Claude Opus 4.5 | `code chat -m "Principal Engineer"` |
+| **TL** | Claude Opus 4.5 | `code chat -m "Tech Lead"`          |
+| **SE** | GPT-5.2         | `code chat -m "Software Engineer"`  |
 
-**Agent name must be exact.** Partial names fall back to default (which may be TL).
-
-**When to use Opus:** If a task repeatedly fails or requires deep judgment, upgrade to Opus via model selector.
+**Agent name must be exact.** Include state file with `-a` flag for continuity.
 
 ## Subagents vs Delegated Sessions (critical distinction)
 
@@ -495,27 +671,33 @@ There are two fundamentally different ways to get help from other agents:
 - **Internal** — result comes back in the same session
 - **Uses quota** — subagents inherit caller's model (Opus 4.5 = 3× tokens)
 - **Unlimited count** — spawn as many as needed (tested: 6+ in parallel)
-- **Full powers** — subagents can do REAL WORK (edit files, run commands, commit, push)
-- **Best for:** Parallel research, non-blocking verification, implementation with tight coordination
+- **Full powers** — subagents can read/analyze and may propose changes
+- **Implementation boundary** — actual code commits should occur in SE sessions (local/cloud) unless explicitly permitted by role policy
+- **Best for:** Parallel batches where you need ALL results before proceeding
 
 **Cost note:** Subagents use GPT-5.2 by default (1× tokens). Upgrade to Opus (3×) only for complexity 4+ tasks.
 
-**Subagents do REAL WORK, not just research:**
+**CRITICAL: Subagents BLOCK the caller.** While waiting for subagents, TL cannot:
 
-- ✅ Edit and create files
-- ✅ Run terminal commands
-- ✅ Commit and push to git
-- ✅ Create PRs and Issues
-- ❌ Cannot spawn their own subagents (but CAN spawn cloud agents)
+- Poll board for blocked/completed work
+- AnSEr questions from other agents
+- Review PRs
+- Spawn more work
+
+**TL should avoid single subagents for implementation.** Either:
+
+- **Small task** → Delegate to SE anyway. TL never edits files.
+- **Big task** → Spawn autonomous SE via `code chat -n` (non-blocking)
+- **Multiple tasks** → Batch subagents in parallel (one blocking period, multiple results)
 
 **When to use subagents:**
 
-| Agent | Subagent Use Cases                                         |
-| ----- | ---------------------------------------------------------- |
-| TL    | Research before delegating, verification, design synthesis |
-| SWE   | Parallel file analysis, non-blocking tests, quick lookups  |
+| Agent | Subagent Use Cases                                                    |
+| ----- | --------------------------------------------------------------------- |
+| TL    | Parallel research batch, batch verification, design synthesis batches |
+| SE    | Parallel file analysis, non-blocking tests, quick lookups             |
 
-**SWE should use subagents more than TL.** SWE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat`.
+**SE should use subagents more than TL.** SE is doing implementation work where parallelization helps. TL mostly delegates full tasks via `code chat -n`.
 
 ### Subagent Execution Model (critical to understand)
 
@@ -556,26 +738,26 @@ TL Session (no user prompts needed between batches):
 
 **What:** Spawn an independent agent that works asynchronously and communicates via GitHub.
 
-| Method                                   | Blocking | Communication      | Best For                    |
-| ---------------------------------------- | -------- | ------------------ | --------------------------- |
-| Cloud Agent                              | ❌ No    | GitHub PR/comments | Simple async implementation |
-| `gh agent-task create`                   | ❌ No    | GitHub PR/comments | CLI-based async spawning    |
-| `code chat -m "Software Engineer (SWE)"` | ❌ No    | GitHub + workspace | Local parallel sessions     |
+| Method                                  | Blocking | Communication      | Best For                    |
+| --------------------------------------- | -------- | ------------------ | --------------------------- |
+| Cloud Agent                             | ❌ No    | GitHub PR/comments | Simple async implementation |
+| `gh agent-task create`                  | ❌ No    | GitHub PR/comments | CLI-based async spawning    |
+| `code chat -m "Software Engineer (SE)"` | ❌ No    | GitHub + workspace | Local parallel sessions     |
 
 **Custom agent CLI syntax:**
 
 ```powershell
-# Spawn SWE agent (opens new chat tab in current window)
-code chat -m "Software Engineer (SWE)" "Your task here"
+# Spawn SE agent (opens new chat tab in current window)
+code chat -m "Software Engineer (SE)" "Your task here"
 
-# Spawn SWE agent in new window (fully non-blocking)
-code chat -n -m "Software Engineer (SWE)" "Your task here"
+# Spawn SE agent in new window (fully non-blocking)
+code chat -n -m "Software Engineer (SE)" "Your task here"
 
 # Spawn Tech Lead agent
 code chat -m "Tech Lead (TL)" "Your task here"
 ```
 
-The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SWE)"`).
+The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SE)"`).
 
 **What TL can and cannot do with spawned sessions:**
 
@@ -595,84 +777,114 @@ The `-m` flag accepts the exact `name:` field from the `.agent.md` file (e.g., `
 **CRITICAL: TL must not block on implementation.** When TL uses `runSubagent` for implementation, TL cannot:
 
 - Poll the board for blocked/completed work
-- Answer questions from blocked agents
+- AnSEr questions from blocked agents
 - Review PRs from completed agents
 - Spawn more work as capacity allows
 
 Use `runSubagent` only for quick research/verification. Use delegated sessions for implementation.
 
-### TL-SWE Communication Protocol
+### TL-SE Communication Protocol
 
-Since TL cannot see spawned SWE chat sessions, communication happens through GitHub:
+Since TL cannot see spawned SE chat sessions, communication happens through GitHub:
 
-**Signal markers (SWE posts these as GitHub comments):**
+**Signal markers (SE posts these as GitHub comments):**
 
-| Marker                             | Meaning          | TL Action         |
-| ---------------------------------- | ---------------- | ----------------- |
-| `SWE-HEARTBEAT: <timestamp>`       | Agent alive      | None (monitoring) |
-| `SWE-CLAIMED: Issue #X`            | Working on issue | Track in board    |
-| `SWE-BLOCKED: Issue #X - <reason>` | Needs help       | Answer on issue   |
-| `SWE-COMPLETE: Issue #X, PR #Y`    | Ready for review | Review PR         |
-| `SWE-IDLE: No work found`          | Board empty      | Create more work  |
+| Marker                            | Meaning          | TL Action         |
+| --------------------------------- | ---------------- | ----------------- |
+| `SE-HEARTBEAT: <timestamp>`       | Agent alive      | None (monitoring) |
+| `SE-CLAIMED: Issue #X`            | Working on issue | Track in board    |
+| `SE-BLOCKED: Issue #X - <reason>` | Needs help       | AnSEr on issue    |
+| `SE-COMPLETE: Issue #X, PR #Y`    | Ready for review | Review PR         |
+| `SE-IDLE: No work found`          | Board empty      | Create more work  |
 
 **TL polling loop:**
 
 ```powershell
-# Check for SWE signals every 60 seconds
+# Check for SE signals every 60 seconds
 $comments = gh api repos/sirjamesoffordii/CMC-Go/issues/<coordination-issue>/comments --jq '.[].body'
-# Look for SWE-HEARTBEAT, SWE-BLOCKED, SWE-COMPLETE markers
+# Look for SE-HEARTBEAT, SE-BLOCKED, SE-COMPLETE markers
 ```
 
-**Restarting a stuck SWE:**
+**Restarting a stuck SE:**
 
 If no heartbeat for 5+ minutes:
 
-1. Check if SWE chat tab is still open (manual)
-2. Spawn a new SWE session: `code chat -m "Software Engineer (SWE)" "Continue work..."`
+1. Check if SE chat tab is still open (manual)
+2. Spawn a new SE session: `code chat -n -m "Software Engineer (SE)" "Continue work..."`
 
 ### The Golden Rule
 
-> **Use subagents when you NEED the answer NOW.**
-> **Use delegated sessions when you want work done WHILE you continue.**
+> **Use subagents only for parallel batches where you need ALL results.**
+> **Use autonomous SE sessions for implementation work — they keep running.**
 
-### Recommended Autonomous Workflow Pattern
+### Ideal Operating State
 
-For fully autonomous project execution, use a **hybrid approach**:
+The optimal configuration is **PE (episodic) + TL (continuous) + N SE agents (continuous)**:
 
 ```
-TL Session (Opus 4.5, runs autonomously)
+PE (episodic planning bursts — ensures board health, priorities, coherence)
+  │
+  └── TL (continuous coordination — delegate/review/merge)
+        │
+        ├── SE-1 (continuous — pull/implement/PR/loop)
+        ├── SE-2 (continuous — pull/implement/PR/loop)
+        └── Cloud Swarm (overflow batch — trivial+batched+overflow)
+```
+
+**Spawning at system start:**
+
+```powershell
+# PE spawns TL (if not already running)
+code chat -n -m "Tech Lead (TL)" "You are TL-1. Rename tab to 'Tech Lead 1'. Verify auth. Start."
+
+# TL spawns SEs
+code chat -n -m "Software Engineer (SE)" "You are SE-1. Rename tab to 'Software Engineer 1'. Verify auth. Start."
+code chat -n -m "Software Engineer (SE)" "You are SE-2. Rename tab to 'Software Engineer 2'. Verify auth. Start."
+```
+
+**Role focus:**
+
+- **PE:** Ensures the board has enough executable Issues, resolves priority conflicts, monitors system health
+- **TL:** Keeps execution flowing — delegate, unblock, review, merge
+- **SE:** Autonomous workers — poll board, claim Todo items, implement, open PRs, loop
+
+**Continuity rule:** If PE goes missing, TL spawns a new PE. If TL goes missing, PE spawns a new TL. The system self-restarts.
+
+### When to use subagents (rare for TL)
+
+TL should only use subagents when needing results from **multiple parallel tasks at once**:
+
+- Batch research before creating Issues (e.g., "analyze auth, schema, and UI for security gaps")
+- Batch verification of multiple PRs simultaneously
+- Design synthesis requiring multiple perspectives
+
+**Never use a single subagent** — it blocks TL for one task. Either do it yourself (small) or spawn autonomous SE (big).
+
+### Legacy: Hybrid Approach (still valid but less optimal)
+
+For projects where you can't maintain 3 autonomous agents:
+
+```
+TL Session
 │
-├── PHASE 1: Research/Planning (SUBAGENTS)
-│   └── Spawn 2-4 SWE subagents to analyze different areas
+├── PHASE 1: Research/Planning (SUBAGENTS in parallel)
+│   └── Spawn 2-4 SE subagents to analyze different areas
 │   └── All return → TL synthesizes findings
 │   └── TL creates executable Issues
 │
-├── PHASE 2: Implementation (CHOICE based on needs)
-│   ├── Option A: Subagents (tight coordination)
-│   │   └── Spawn SWE subagents with non-overlapping scopes
-│   │   └── Results return → TL reviews immediately
-│   │   └── Send next batch based on results
-│   │
-│   └── Option B: Delegated sessions (parallel independence)
-│       └── Fire off cloud agents for independent issues
-│       └── TL continues other coordination work
-│       └── Poll for completion, review PRs
+├── PHASE 2: Implementation (AUTONOMOUS SE AGENTS)
+│   └── Spawn SE agents via code chat -n
+│   └── Each agent claims and implements independently
+│   └── TL continues coordination, reviews PRs
 │
-├── PHASE 3: Verification (SUBAGENTS)
-│   └── Spawn SWE subagent to verify each PR
-│   └── Results return → TL merges or requests fixes
+├── PHASE 3: Merge & Loop
+│   └── TL merges approved PRs
+│   └── SE agents automatically claim next work
 │
-└── LOOP until project complete (no user intervention)
+└── LOOP until board empty
 ```
 
-**When to prefer subagents for implementation:**
-
-- Tasks depend on each other (need to sequence)
-- Need to synthesize results across tasks
-- Want tighter quality control
-- Complex coordination required
-
-**When to prefer delegated sessions:**
+**When to prefer delegated sessions (almost always for implementation):**
 
 - Tasks are truly independent
 - High volume of simple tasks
@@ -683,37 +895,50 @@ TL Session (Opus 4.5, runs autonomously)
 
 - **Subagents don't count** toward TL capacity (they're internal help)
 - **Delegated sessions count** toward the 4-item limit (they require TL polling/review)
-- If you need more than 4 parallel delegated items, spawn a secondary TL
+- If you need more than 4 parallel delegated items, scale TL capacity (see below)
 
 **Syntax:** Invoke the `runSubagent` tool with `agentName` and `prompt` parameters.
 
 **If you don't have access to `runSubagent`,** you're a spawned agent. Use cloud agents (`gh agent-task create`) or terminal commands instead.
 
+### Scaling with multiple Tech Leads
+
+When workload exceeds 4 active items:
+
+- **Preferred:** Spawn a second TL session using `code chat -n` (non-blocking).
+- **Avoid:** `runSubagent` for TL spawning (blocking defeats the purpose).
+
+```powershell
+# Non-blocking: spawn secondary TL in a new window
+code chat -n -m "Tech Lead (TL)" "You are TL-2. Rename tab to 'Tech Lead 2'. Verify auth as Alpha-Tech-Lead. Start."
+```
+
+This keeps the coordinating brain unblocked.
+
 ## Standard workflow
 
 1. Tech Lead makes the work executable (Goal/Scope/AC + verification checklist)
 2. Tech Lead scores complexity and selects delegation method:
-   - **Score 0-1 (trivial):** Do it yourself or spawn GPT 4.1 subagent (0× cost)
-   - **Score 0-2 (simple async):** Cloud Agent via `agent:copilot-swe` label — TL continues working
-   - **Score 2-4 (standard):** `runSubagent("Software Engineer (SWE)")` — uses GPT-5.2 (1×)
-   - **Score 5-6 (complex):** `runSubagent("Software Engineer (SWE)")` with Opus model — (3×)
+   - **Score 0-1 (trivial):** Delegate to SE anyway. TL never edits files.
+   - **Score 0-2 (simple async):** Cloud Agent via `agent:copilot-SE` label — TL continues working
+   - **Score 2-6 (standard/complex):** Autonomous SE agent via `code chat -n` — TL continues coordinating
 3. Software Engineer implements or verifies (smallest diff + evidence, or checklist + verdict)
 4. "Done" requires evidence (commands/results + links)
 5. Update Projects v2 as you go (board reflects reality)
 
-**Note:** TL (as `Alpha-Tech-Lead`) cannot use `gh agent-task create` directly. Use the `agent:copilot-swe` label on Issues instead — this triggers a workflow that uses the Plus account token.
+**Note:** TL (as `Alpha-Tech-Lead`) cannot use `gh agent-task create` directly. Use the `agent:copilot-SE` label on Issues instead — this triggers a workflow that uses the Plus account token.
 
 ### When TL Should Use Subagents vs Delegated Sessions
 
-| Situation                                 | Use Subagent         | Use Delegated Session |
-| ----------------------------------------- | -------------------- | --------------------- |
-| Need answer before deciding next step     | ✅ Yes               | ❌ No                 |
-| Research/analysis across multiple topics  | ✅ Yes (parallel)    | ❌ No                 |
-| Quick verification of a PR                | ✅ Yes               | ❌ No                 |
-| Simple implementation, don't need to wait | ❌ No                | ✅ Cloud Agent        |
-| Multiple parallel implementations         | ❌ No                | ✅ Multiple Cloud     |
-| Complex implementation, need result       | ✅ SWE Opus subagent | ❌ No                 |
-| Bulk tasks (5+ issues)                    | ❌ No                | ✅ Multiple Cloud     |
+| Situation                                 | Use Subagent      | Use Delegated Session |
+| ----------------------------------------- | ----------------- | --------------------- |
+| Need anSEr before deciding next step      | ✅ Yes            | ❌ No                 |
+| Research/analysis across multiple topics  | ✅ Yes (parallel) | ❌ No                 |
+| Quick verification of a PR                | ✅ Yes            | ❌ No                 |
+| Simple implementation, don't need to wait | ❌ No             | ✅ Cloud Agent        |
+| Multiple parallel implementations         | ❌ No             | ✅ Autonomous SE      |
+| Complex implementation, need result       | ❌ No             | ✅ Autonomous SE      |
+| Bulk tasks (5+ issues)                    | ❌ No             | ✅ Multiple SE        |
 
 ## Agent Spawning Behavior (tested)
 
@@ -723,13 +948,13 @@ These behaviors were empirically verified:
 
 | Spawn Method                         | Blocking?         | How It Works                           | When to Use                         |
 | ------------------------------------ | ----------------- | -------------------------------------- | ----------------------------------- |
-| `runSubagent`                        | ✅ BLOCKING       | TL waits for result                    | Need answer before continuing       |
+| `runSubagent`                        | ✅ BLOCKING       | TL waits for result                    | Need anSEr before continuing        |
 | Parallel `runSubagent`               | ✅ BLOCKING (all) | TL waits for ALL to complete           | Independent tasks, need all results |
 | Cloud Agent (`copilot-coding-agent`) | ❌ NON-BLOCKING   | Returns immediately, agent works async | Fire-and-forget tasks, scaling      |
 | `gh agent-task create`               | ❌ NON-BLOCKING   | CLI spawns cloud agent, returns URL    | Scripted/terminal agent spawning    |
 | `code chat -n -m "<agent>"`          | ❌ NON-BLOCKING   | Opens new VS Code window with agent    | Local parallel agent sessions       |
 
-**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "Software Engineer (SWE)"`.
+**There is NO async/non-blocking `runSubagent`**. The ONLY way to continue working while an agent executes is to use Cloud Agents or spawn new VS Code windows via `code chat -n -m "Software Engineer (SE)"`.
 
 ### Non-Blocking Spawn Methods
 
@@ -752,11 +977,11 @@ gh agent-task list -L 10
 Spawn local agent sessions with custom agents:
 
 ```powershell
-# Spawn SWE agent in current window
-code chat -m "Software Engineer (SWE)" "Implement Issue #42"
+# Spawn SE agent in current window
+code chat -m "Software Engineer (SE)" "Implement Issue #42"
 
-# Spawn SWE agent in new window (non-blocking)
-code chat -n -m "Software Engineer (SWE)" "Implement Issue #42"
+# Spawn SE agent in new window (non-blocking)
+code chat -n -m "Software Engineer (SE)" "Implement Issue #42"
 
 # Spawn Tech Lead agent
 code chat -m "Tech Lead (TL)" "Review project board and delegate"
@@ -768,26 +993,26 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 #   -a, --add-file        Add file context
 ```
 
-**Custom agent identifiers** use the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SWE)"`).
+**Custom agent identifiers** use the exact `name:` field from the `.agent.md` file (e.g., `"Software Engineer (SE)"`).
 
 **Note:** Shares Copilot subscription with primary session.
 
 ## Scalable Workflow Summary
 
-**The Golden Rule:** Use `runSubagent` when you NEED the answer. Use cloud agents when you DON'T.
+**The Golden Rule:** Use `runSubagent` when you NEED the anSEr. Use cloud agents when you DON'T.
 
 ### Quick Decision
 
-| Need                    | Method                              | Blocking? | Model          |
-| ----------------------- | ----------------------------------- | --------- | -------------- |
-| Trivial task (0-1)      | Do yourself or subagent             | ✅ Yes    | GPT 4.1 (0×)   |
-| Research/analysis       | `runSubagent` (parallel)            | ✅ Yes    | GPT-5.2 (1×)   |
-| Simple async task (0-2) | `agent:copilot-swe` label           | ❌ No     | GitHub default |
-| Standard task (2-4)     | `runSubagent` SWE                   | ✅ Yes    | GPT-5.2 (1×)   |
-| Complex task (5-6)      | `runSubagent` SWE + Opus            | ✅ Yes    | Opus 4.5 (3×)  |
-| Bulk tasks (10+)        | Multiple `agent:copilot-swe` labels | ❌ No     | GitHub default |
+| Need                    | Method                             | Blocking? | Model          |
+| ----------------------- | ---------------------------------- | --------- | -------------- |
+| Trivial task (0-1)      | Do yourself or subagent            | ✅ Yes    | GPT 4.1 (0×)   |
+| Research/analysis       | `runSubagent` (parallel)           | ✅ Yes    | GPT-5.2 (1×)   |
+| Simple async task (0-2) | `agent:copilot-SE` label           | ❌ No     | GitHub default |
+| Standard task (2-4)     | `runSubagent` SE                   | ✅ Yes    | GPT-5.2 (1×)   |
+| Complex task (5-6)      | `runSubagent` SE + Opus            | ✅ Yes    | Opus 4.5 (3×)  |
+| Bulk tasks (10+)        | Multiple `agent:copilot-SE` labels | ❌ No     | GitHub default |
 
-**Note:** TL (`Alpha-Tech-Lead`) uses `agent:copilot-swe` label, not `gh agent-task create`.
+**Note:** TL (`Alpha-Tech-Lead`) uses `agent:copilot-SE` label, not `gh agent-task create`.
 
 ### The Pattern
 
@@ -811,7 +1036,7 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 
 **Default to GPT-5.2 (1×).** Reserve Opus (3×) for complexity score 4+ only. Rate limits hit quickly with Opus — we've observed throttling when spawning multiple Opus subagents in parallel.
 
-**Cloud agents** (`agent:copilot-swe` label) use a dedicated SKU (separate billing). They don't count against your premium request quota.
+**Cloud agents** (`agent:copilot-SE` label) use a dedicated SKU (separate billing). They don't count against your premium request quota.
 
 ### Use Cases by Agent Type
 
@@ -821,14 +1046,14 @@ code chat -m "Tech Lead (TL)" "Review project board and delegate"
 | **Quick verification**     | `runSubagent` (single)      | Need verdict before proceeding     |
 | **Simple implementation**  | Cloud agent                 | Fire-and-forget, don't wait        |
 | **Bulk simple tasks**      | Multiple cloud agents       | Scale to 50+ in parallel           |
-| **Complex implementation** | `runSubagent` (SWE Opus)    | Need premium model, get result     |
+| **Complex implementation** | `runSubagent` (SE Opus)     | Need premium model, get result     |
 | **Local parallel work**    | `code chat -n -m "<agent>"` | Multiple VS Code windows           |
 
 ### Spawning hierarchy
 
 ```
 PRIMARY TL (has runSubagent tool)
-├── Can spawn local SWE ✅ (blocking)
+├── Can spawn local SE ✅ (blocking)
 ├── Can spawn local TL ✅ (blocking)
 ├── Can spawn cloud agents ✅ (non-blocking)
 ├── Can run `gh agent-task create` ✅ (non-blocking)
@@ -847,7 +1072,7 @@ Only the **primary agent session** has access to `runSubagent`. Spawned agents c
 TL can spawn **multiple local agents in parallel** in a single call:
 
 ```
-runSubagent([SWE-1, SWE-2, SWE-3, SWE-4])  // All run in parallel
+runSubagent([SE-1, SE-2, SE-3, SE-4])  // All run in parallel
 ```
 
 TL is blocked until ALL return, but they execute concurrently. No hard limit found (tested up to 6).
@@ -876,7 +1101,7 @@ Cloud agents:
 
 ### Context inheritance
 
-Spawned agents inherit workspace context (repo name, branch, project structure). They can answer questions about the codebase without reading files first.
+Spawned agents inherit workspace context (repo name, branch, project structure). They can anSEr questions about the codebase without reading files first.
 
 ## Solo mode (one agent can run the whole system)
 
@@ -888,9 +1113,12 @@ When only one agent/person is active, run the full loop end-to-end:
 
 ## Roles (active)
 
-- **Tech Lead** runs first (triage/coherence/deconflict): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
-- **Software Engineer** runs second (implement + evidence, or verify): see [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
-- **Cloud Agent** handles simple issues (score 0-2) via `agent:copilot-swe` label
+- **Principal Engineer (PE)** plans (epochs, issue mapping, coherence): see [.github/agents/principal-engineer.agent.md](.github/agents/principal-engineer.agent.md)
+- **Tech Lead (TL)** executes coordination (delegate/review/merge): see [.github/agents/tech-lead.agent.md](.github/agents/tech-lead.agent.md)
+- **Software Engineer (SE)** builds/verifies (PR + evidence): see [.github/agents/software-engineer.agent.md](.github/agents/software-engineer.agent.md)
+- **Cloud Agent** handles overflow batches (trivial + batched + overflow) via `agent:copilot-SE` label
+
+> **Anti-duplication rule:** AGENTS.md is the canonical workflow. Role files in `.github/agents/` are overlays and must not duplicate templates, IDs, or long procedures.
 
 ## Worktree policy
 
@@ -908,7 +1136,7 @@ Note: this policy applies to **Mode A (local)** only. In **Mode B (cloud)** the 
 Before editing:
 
 - Assign the Issue to yourself (preferred)
-- Optionally add a claim label (e.g. `claimed:tl`, `claimed:swe`)
+- Optionally add a claim label (e.g. `claimed:tl`, `claimed:SE`)
 - Leave a short Issue comment: `CLAIMED by <Tech Lead|Software Engineer> — <worktree>/<branch> — ETA <time>`
 
 If you go idle/blocked, unclaim and say why.
@@ -1047,7 +1275,7 @@ Procedure:
 
 ## Automation: Cloud Agent auto-handoff
 
-Label an Issue with `agent:copilot-swe` to trigger cloud execution:
+Label an Issue with `agent:copilot-SE` to trigger cloud execution:
 
 - [.github/workflows/copilot-auto-handoff.yml](.github/workflows/copilot-auto-handoff.yml)
 
@@ -1057,10 +1285,14 @@ Required secrets (repo Settings → Secrets and variables → Actions):
 
 Notes:
 
-- Cloud agents are for **simple issues only** (complexity score 0-2)
+- **Cloud agents only when ALL THREE conditions are met:**
+  - **(A) Trivial/mechanical** — complexity score 0-1, no judgment needed
+  - **(B) Batched** — 3+ similar issues at once (amortizes overhead)
+  - **(C) Overflow** — local agents are at capacity
 - The workflow requests Copilot to work from `staging` and open a PR targeting `staging`
 - Tech Lead is notified when cloud agent opens a PR (via `copilot-completion-notify.yml`)
 - GitHub evaluates `issues.*` workflows from the repository's default branch (`staging`)
+- **Cloud agents cannot auto-merge** — PRs still require TL review and merge
 
 ## Operational procedures (when needed)
 

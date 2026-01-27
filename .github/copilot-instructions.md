@@ -29,10 +29,17 @@ Ops/CI/tooling reference (as-needed):
 
 - `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`
 
+## Where rules live (anti-drift)
+
+- **This file (`.github/copilot-instructions.md`)**: stable repo overview + invariants + key commands.
+- **`AGENTS.md`**: canonical operating manual (workflow, delegation, evidence, templates).
+- **`.github/agents/*.agent.md`**: role-specific behavior (shows up in the VS Code agent dropdown when you pick a custom agent).
+- **`.github/instructions/*.instructions.md`**: path-scoped coding conventions (React, tRPC, Drizzle, tests, etc.).
+
 ## Guardrails
 
 - Use GitHub Issues/PRs as the task bus.
-- Worktrees are required; do not work directly on `staging`.
+- Use worktrees by default (see `AGENTS.md` for the documented low-risk exception).
 - Keep diffs small and scoped.
 - Never commit secrets (`.env*` stays local; use platform/GitHub secrets).
 
