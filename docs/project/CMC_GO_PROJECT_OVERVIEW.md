@@ -29,13 +29,14 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 
 ### Milestones (Sequential Releases)
 
-| Milestone            | Focus                                 | Status  |
-| -------------------- | ------------------------------------- | ------- |
-| v1.0: Core System    | Schema, flows, state, observability   | ✅ Done |
-| v1.1: Cross-View     | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done |
-| v1.2: Desktop UX     | Navigation, filters, panel behavior   | ✅ Done |
-| v1.3: Authentication | Login, sessions, roles, permissions   | ✅ Done |
-| v1.4: Mobile         | Responsive layout, touch optimization | ✅ Done |
+| Milestone             | Focus                                 | Status    |
+| --------------------- | ------------------------------------- | --------- |
+| v1.0: Core System     | Schema, flows, state, observability   | ✅ Done   |
+| v1.1: Cross-View      | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done   |
+| v1.2: Desktop UX      | Navigation, filters, panel behavior   | ✅ Done   |
+| v1.3: Authentication  | Login, sessions, roles, permissions   | ✅ Done   |
+| v1.4: Mobile          | Responsive layout, touch optimization | ✅ Done   |
+| v1.5: Data Management | Campus ops, deposit tracking, UI      | 🔄 Active |
 
 ### Epics (Feature Groups)
 
@@ -192,6 +193,18 @@ Responsive layout, touch optimization.
 
 ---
 
+### 🔄 v1.5: Data Management (ACTIVE)
+
+Campus operations, deposit tracking, and district panel improvements.
+
+| Task                         | Issue | Status  | Notes                            |
+| ---------------------------- | ----- | ------- | -------------------------------- |
+| Campus management mutations  | #295  | 📋 Todo | Archive, reorder, move person    |
+| No Campus Assigned row       | #296  | ✅ Done | Shows district-level assignments |
+| Deposit Paid indicator in UI | #297  | ✅ Done | Glow effect for paid deposits    |
+
+---
+
 ## Infrastructure Tasks (No Milestone)
 
 | Task                          | Issue | Status  |
@@ -208,15 +221,16 @@ Responsive layout, touch optimization.
 
 ### Summary
 
-| Milestone            | Done | Open | Total | Progress |
-| -------------------- | ---- | ---- | ----- | -------- |
-| v1.0: Core System    | ✅   | -    | -     | 100%     |
-| v1.1: Cross-View     | 3    | 0    | 3     | 100%     |
-| v1.2: Desktop UX     | 12   | 0    | 12    | 100%     |
-| v1.3: Authentication | 9    | 0    | 9     | 100%     |
-| v1.4: Mobile         | 11   | 0    | 11    | 100%     |
-| Infrastructure       | 2    | 2    | 4     | 50%      |
-| **Total**            | 37   | 2    | 39    | **95%**  |
+| Milestone             | Done | Open | Total | Progress |
+| --------------------- | ---- | ---- | ----- | -------- |
+| v1.0: Core System     | ✅   | -    | -     | 100%     |
+| v1.1: Cross-View      | 3    | 0    | 3     | 100%     |
+| v1.2: Desktop UX      | 12   | 0    | 12    | 100%     |
+| v1.3: Authentication  | 9    | 0    | 9     | 100%     |
+| v1.4: Mobile          | 11   | 0    | 11    | 100%     |
+| v1.5: Data Management | 2    | 1    | 3     | 67%      |
+| Infrastructure        | 2    | 2    | 4     | 50%      |
+| **Total**             | 39   | 3    | 42    | **93%**  |
 
 ### All Tasks
 
@@ -257,6 +271,9 @@ Responsive layout, touch optimization.
 | 132 | Mobile needs tracking           | v1.4      | ✅ Done |
 | 133 | Mobile follow-up usability      | v1.4      | ✅ Done |
 | 290 | Mobile swipe-to-close panel     | v1.4      | ✅ Done |
+| 295 | Campus management mutations     | v1.5      | 📋 Todo |
+| 296 | No Campus Assigned row          | v1.5      | ✅ Done |
+| 297 | Deposit Paid indicator in UI    | v1.5      | ✅ Done |
 | 76  | Post-merge verification gates   | Infra     | 📋 Todo |
 | 77  | Deployed staging smoke check    | Infra     | 📋 Todo |
 | 85  | Reduce Playwright smoke flake   | Infra     | ✅ Done |
