@@ -52,8 +52,9 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ```powershell
 # Always use -r (reuses window). NEVER use -n (loses context!)
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
+# Mode names are lowercase (match filename stems)
+code chat -r -m "tech-lead" -a AGENTS.md "You are TL-1. Start."
+code chat -r -m "software-engineer" -a AGENTS.md "You are SE-1. Start."
 ```
 
 **Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
@@ -67,7 +68,7 @@ code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
 | Score | Route To | Method                                |
 | ----- | -------- | ------------------------------------- |
 | 0-1   | Yourself | Direct (but TL never edits code)      |
-| 2-6   | Local SE | `code chat -r -m "Software Engineer"` |
+| 2-6   | Local SE | `code chat -r -m "software-engineer"` |
 
 **Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
 

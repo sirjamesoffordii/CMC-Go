@@ -54,7 +54,7 @@ WHILE true:
 **TL NEVER uses runSubagent.** Spawn SE as autonomous session:
 
 ```powershell
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue #42: [title]. Goal: [X]. AC: [Y]. Start now. NO QUESTIONS. Loop until PR created."
+code chat -r -m "software-engineer" -a AGENTS.md "You are SE-1. Implement Issue #42: [title]. Goal: [X]. AC: [Y]. Start now. NO QUESTIONS. Loop until PR created."
 ```
 
 This creates a new chat tab. SE runs autonomously. TL monitors via GitHub (comments, PR activity).
