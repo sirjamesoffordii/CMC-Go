@@ -835,6 +835,33 @@ export function DistrictPanel({
     p => p.primaryCampusId == null
   );
 
+  const unassignedPeople = useMemo(() => {
+    const excludedPersonIds = new Set<string>();
+    if (districtDirector?.personId) {
+      excludedPersonIds.add(districtDirector.personId);
+    }
+    if (districtStaff?.personId) {
+      excludedPersonIds.add(districtStaff.personId);
+    }
+
+    return filteredPeople.filter(
+      p => p.primaryCampusId == null && !excludedPersonIds.has(p.personId)
+    );
+  }, [filteredPeople, districtDirector?.personId, districtStaff?.personId]);
+
+  const sortedUnassignedPeople = useMemo(() => {
+    const statusOrder: Record<Person["status"], number> = {
+      "Not Invited": 0,
+      Yes: 1,
+      Maybe: 2,
+      No: 3,
+    };
+
+    return [...unassignedPeople].sort(
+      (a, b) => statusOrder[a.status] - statusOrder[b.status]
+    );
+  }, [unassignedPeople]);
+
   // Campus order state - stores ordered campus IDs
   const [campusOrder, setCampusOrder] = useState<number[]>([]);
 
@@ -2875,6 +2902,56 @@ export function DistrictPanel({
                 </div>
               );
             })}
+
+            {!isPublicSafeMode && sortedUnassignedPeople.length > 0 && (
+              <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
+                <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
+                  <h3 className="font-medium text-slate-900 break-words text-xl">
+                    No Campus Assigned
+                  </h3>
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <CampusDropZone
+                    campusId="unassigned"
+                    onDrop={handleCampusRowDrop}
+                    canInteract={canInteract}
+                  >
+                    <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
+                      {sortedUnassignedPeople.map((person, index) => (
+                        <PersonDropZone
+                          key={`unassigned-dropzone-${person.personId}`}
+                          campusId="unassigned"
+                          index={index}
+                          onDrop={handlePersonMove}
+                          canInteract={canInteract}
+                        >
+                          <DroppablePerson
+                            key={person.personId}
+                            person={person}
+                            campusId="unassigned"
+                            index={index}
+                            onEdit={handleEditPerson}
+                            onClick={handlePersonClick}
+                            onMove={handlePersonMove}
+                            hasNeeds={
+                              (
+                                person as Person & {
+                                  hasNeeds?: boolean;
+                                }
+                              ).hasNeeds
+                            }
+                            onPersonStatusChange={onPersonStatusChange}
+                            canInteract={canInteract}
+                            maskIdentity={isPublicSafeMode}
+                          />
+                        </PersonDropZone>
+                      ))}
+                    </div>
+                  </CampusDropZone>
+                </div>
+              </div>
+            )}
 
             {/* Add {entityName} (Inline) - Only when canInteract */}
             {canInteract && (
