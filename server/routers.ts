@@ -563,7 +563,8 @@ export const appRouter = router({
           });
         }
 
-        if (scope.level === "CAMPUS" && campus.id !== scope.campusId) {
+        // Authorization: Campus users cannot archive
+        if (scope.level === "CAMPUS") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
@@ -584,8 +585,59 @@ export const appRouter = router({
           }
         }
 
+        // Check if campus has people assigned
+        const peopleCount = await db.countPeopleByCampusId(input.id);
+        if (peopleCount > 0) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Cannot archive campus with ${peopleCount} people assigned. Move or remove people first.`,
+          });
+        }
+
         // NOTE: There is no "archived" flag in the schema yet; for now archive == delete.
         await db.deleteCampus(input.id);
+        return { success: true };
+      }),
+    updateDisplayOrder: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          displayOrder: z.number().min(0),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+        const campus = await db.getCampusById(input.id);
+        if (!campus) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Campus not found",
+          });
+        }
+
+        // Authorization: Campus users cannot reorder
+        if (scope.level === "CAMPUS") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (
+          scope.level === "DISTRICT" &&
+          campus.districtId !== scope.districtId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (scope.level === "REGION") {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
+          }
+        }
+
+        await db.updateCampusDisplayOrder(input.id, input.displayOrder);
         return { success: true };
       }),
     delete: protectedProcedure
@@ -1066,6 +1118,85 @@ export const appRouter = router({
         }
 
         await db.deletePerson(input.personId);
+        return { success: true };
+      }),
+    moveToCampus: protectedProcedure
+      .input(
+        z.object({
+          personId: z.string(),
+          targetCampusId: z.number().nullable(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const person = await db.getPersonByPersonId(input.personId);
+        if (!person) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
+        }
+
+        const scope = getPeopleScope(ctx.user);
+
+        // Authorization: Campus users cannot move people
+        if (scope.level === "CAMPUS") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Check if person is in scope (must be able to access source)
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (
+          scope.level === "REGION" &&
+          person.primaryRegion !== scope.regionId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // If target campus is specified, verify it's in scope
+        if (input.targetCampusId !== null) {
+          const targetCampus = await db.getCampusById(input.targetCampusId);
+          if (!targetCampus) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "Target campus not found",
+            });
+          }
+
+          // Check if target campus is within user's scope
+          if (
+            scope.level === "DISTRICT" &&
+            targetCampus.districtId !== scope.districtId
+          ) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Target campus is outside your district",
+            });
+          }
+          if (scope.level === "REGION") {
+            const targetDistrict = await db.getDistrictById(
+              targetCampus.districtId
+            );
+            if (!targetDistrict || targetDistrict.region !== scope.regionId) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "Target campus is outside your region",
+              });
+            }
+          }
+        }
+
+        // Update person's campus
+        await db.updatePerson(input.personId, {
+          primaryCampusId: input.targetCampusId,
+          lastEdited: new Date(),
+          lastEditedBy: ctx.user?.fullName || ctx.user?.email || "System",
+        });
+
         return { success: true };
       }),
     statusHistory: protectedProcedure

@@ -369,6 +369,25 @@ export async function updateCampusName(id: number, name: string) {
   await db.update(campuses).set({ name }).where(eq(campuses.id, id));
 }
 
+export async function updateCampusDisplayOrder(
+  id: number,
+  displayOrder: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses).set({ displayOrder }).where(eq(campuses.id, id));
+}
+
+export async function countPeopleByCampusId(campusId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryCampusId, campusId));
+  return result[0]?.count ?? 0;
+}
+
 export async function deleteCampus(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

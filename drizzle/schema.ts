@@ -75,6 +75,7 @@ export const campuses = mysqlTable(
     id: int("id").primaryKey().autoincrement(),
     name: varchar("name", { length: 255 }).notNull(),
     districtId: varchar("districtId", { length: 64 }).notNull(),
+    displayOrder: int("displayOrder").notNull().default(0), // Visual ordering within district
   },
   table => ({
     // PR 6: Add index for districtId lookups
