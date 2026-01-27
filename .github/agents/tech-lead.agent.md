@@ -44,17 +44,20 @@ WHILE true:
     1. Poll board: gh project item-list 4 --owner sirjamesoffordii --limit 10
     2. IF Blocked items → Unblock (answer on Issue, set to In Progress)
     3. IF Verify items → Review PR, merge or request changes
-    4. IF Todo items → Spawn SE: runSubagent("Software Engineer", "You are SE-1. Issue #X: [goal]. Start now. Loop until done.")
+    4. IF Todo items → Spawn SE via terminal (see below)
     5. IF nothing → Check for PRs, create new Issues from backlog
     6. Wait 60s → LOOP
 ```
 
-## Spawn SE (correct syntax)
+## Spawn SE (terminal command, NOT subagent)
+
+**TL NEVER uses runSubagent.** Spawn SE as autonomous session:
 
 ```powershell
-# Blocking subagent (waits for result)
-runSubagent("Software Engineer", "You are SE-1. Implement Issue #42: [title]. Goal: [X]. AC: [Y]. Start now. NO QUESTIONS. Loop until PR created.")
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue #42: [title]. Goal: [X]. AC: [Y]. Start now. NO QUESTIONS. Loop until PR created."
 ```
+
+This creates a new chat tab. SE runs autonomously. TL monitors via GitHub (comments, PR activity).
 
 ## TL Rules
 
