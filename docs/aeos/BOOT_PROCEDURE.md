@@ -63,7 +63,13 @@ git checkout staging
 git fetch origin
 git pull origin staging
 
-# 3. Install dependencies
+# 3. Handle pending work (if any)
+# Check for unpushed commits or uncommitted changes
+git status -sb
+# If ahead of origin → push or stash
+# If dirty working tree → commit AEOS changes or stash
+
+# 4. Install dependencies
 pnpm install
 
 # 4. Verify basic toolchain
@@ -128,10 +134,15 @@ gh repo view sirjamesoffordii/CMC-Go --json name
 gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | ConvertFrom-Json | Select-Object -ExpandProperty items | Format-Table number, title, status
 
 # 2. Check if TL is running (MCP Memory)
-# Query for TL-1 heartbeat
+# Use mcp_memory_open_nodes for TL-1
+# Look for heartbeat observation with timestamp
+# TL is MISSING if:
+#   - No heartbeat observation exists, OR
+#   - Last heartbeat > 6 minutes ago
+# TL is ALIVE if heartbeat < 6 minutes ago
 
 # 3. If TL missing → spawn TL
-code chat -n -m "Tech Lead" "You are TL-1. Rename tab to 'TL-1(1)'. Verify auth. Start."
+code chat -n -m "Tech Lead" "You are TL-1. Rename tab to 'TL-1(1)'. Verify auth as Alpha-Tech-Lead. Start."
 ```
 
 #### If you ARE the TL:
