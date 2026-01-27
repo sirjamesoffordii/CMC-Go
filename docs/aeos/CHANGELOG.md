@@ -1,5 +1,6 @@
 # AEOS Changelog
 
+2026-01-27: Fixed spawn -m flag: use filename stem ("tech-lead") not name field ("Tech Lead")
 2026-01-27: Simplified spawn ID to Role#(Gen#) e.g. TL1(1), SE1(2) - gen# tracks respawns
 2026-01-27: Spawn message = "You are ID(Gen). Activate." - role files handle the rest
 2026-01-27: Spawn mode names must be lowercase: "tech-lead", "software-engineer" (not capitalized)

@@ -53,7 +53,7 @@ WHILE true:
 **TL NEVER uses runSubagent for implementation.** Spawn SE as autonomous session:
 
 ```powershell
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE1(1). Activate."
+code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
 ```
 
 SE reads Issue from board, implements, creates PR. TL monitors via GitHub.

@@ -71,18 +71,18 @@ NOW TL can continue
 
 ```powershell
 # Spawn message: "You are ID(Gen). Activate."
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE1(1). Activate."
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL1(1). Activate."
+code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
+code chat -r -m "tech-lead" -a AGENTS.md "You are TL1(1). Activate."
 ```
 
 ### Options
 
-| Flag | Meaning                                     |
-| ---- | ------------------------------------------- |
-| `-r` | Reuse window (RECOMMENDED)                  |
-| `-m` | Agent mode (from `.agent.md` name field)    |
-| `-a` | Add file context                            |
-| `-n` | New window — **NEVER USE** (loses context!) |
+| Flag | Meaning                                           |
+| ---- | ------------------------------------------------- |
+| `-r` | Reuse window (RECOMMENDED)                        |
+| `-m` | Agent mode (lowercase filename stem, NOT `name:`) |
+| `-a` | Add file context                                  |
+| `-n` | New window — **NEVER USE** (loses context!)       |
 
 ### What Spawner Can/Cannot Do
 
