@@ -182,7 +182,7 @@ Is there a Todo item?
 ├── YES: What's the complexity score?
 │   ├── 0-1: Trivial → delegate to SE anyway (TL never edits code)
 │   ├── 0-2: Simple async → Cloud Agent (agent:copilot-SE label)
-│   └── 2-6: Standard/Complex → Local SE (code chat -n)
+│   └── 2-6: Standard/Complex → Local SE (code chat -r)
 └── NO: Board empty?
     ├── YES: Ask PE to run planning epoch
     └── NO: All items In Progress → monitor, review PRs
@@ -306,7 +306,7 @@ For each "In Progress" issue:
    ```
 
 2. **If work exists (worktree, branch, or PR):**
-   - Spawn new SE to continue: `code chat -n -m "Software Engineer" "Continue Issue #<N>. Check worktree wt-impl-<N>-*."`
+   - Spawn new SE to continue: `code chat -r -m "Software Engineer" -a AGENTS.md "Continue Issue #<N>. Check worktree wt-impl-<N>-*."`
    - New SE adopts the existing worktree/branch
 
 3. **If no work exists:**

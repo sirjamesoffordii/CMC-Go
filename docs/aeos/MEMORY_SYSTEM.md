@@ -297,7 +297,8 @@ Supervisor (TL for SE, PE for TL) detects via:
 2. **Spawn replacement:**
 
    ```powershell
-   code chat -n -m "Software Engineer" "You are SE-1(4). Previous session ended. Check MCP Memory for context. Continue work."
+   # -r reuses current window (creates new chat tab)
+   code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(4). Previous session ended. Check MCP Memory for context. Continue work."
    ```
 
 3. **Replacement agent:**

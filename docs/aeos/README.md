@@ -62,11 +62,12 @@ docker-compose up -d
 pnpm db:setup
 
 # 6. Authenticate as PE
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-Principle-Engineer-Agent"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 gh auth status
 
 # 7. Boot PE (spawns TL → SE cascade)
-code chat -n -m "principal-engineer" "You are PE-1. Boot AEOS. Start."
+# -r reuses current window (creates new chat tab)
+code chat -r -m "principal-engineer" -a AGENTS.md "You are PE-1. Boot AEOS. Start."
 ```
 
 ### Runtime Loop
