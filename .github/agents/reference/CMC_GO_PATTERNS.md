@@ -137,6 +137,21 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Pre-configure to avoid prompts. For git: `GIT_PAGER=cat`. For commands that prompt: add `-y` or `--yes` flags. For commands that open editors: use `-c core.editor=true`.
 **Prevention:** Use the provided VS Code tasks which have these settings. If running directly, set env vars first: `$env:GIT_PAGER='cat'; $env:GH_PAGER='cat'`
 
+### Fast, safe repo search (avoid Get-ChildItem recursion)
+
+**Tags:** terminal, worktree
+**Problem:** PowerShell recursion (`Get-ChildItem -Recurse`) can hang or throw `Could not find a part of the path ...` under `.worktrees/` or deep `.pnpm` folders.
+**Solution:** Search only git-tracked files via `scripts/git-grep.ps1`.
+**Prevention:** Prefer git-index search over filesystem traversal.
+
+```powershell
+# Fast search (only tracked files)
+./scripts/git-grep.ps1 -Pattern "heartbeat" -CaseInsensitive
+
+# Limit to a subtree
+./scripts/git-grep.ps1 -Pattern "cloud agents" -Path "docs/"
+```
+
 ### worktree
 
 ### Use worktrees for implementation

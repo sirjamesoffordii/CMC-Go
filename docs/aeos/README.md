@@ -38,9 +38,7 @@ docs/aeos/
 ├── PR_STANDARDS.md           ← Evidence and documentation
 ├── TROUBLESHOOTING.md        ← Escape hatches and recovery
 ├── TOOLCHAIN.md              ← Integrations and dependencies
-├── PATTERNS.md               ← Lessons learned (link to reference)
-└── TEST_REPORTS/             ← AEOS test cycle reports
-    └── 2026-01-26-boot-test.md
+└── PATTERNS.md               ← Lessons learned (link to reference)
 ```
 
 ---
@@ -113,17 +111,10 @@ PRs → CI → Review → Merge → Loop
 
 ## Test Cycles
 
-AEOS is continuously tested and hardened through three test types:
+AEOS hardening happens through real work (Issues/PRs). Keep durable evidence and learnings in:
 
-1. **Boot Test** — From-zero simulation (new agent, no tribal knowledge)
-2. **Runtime Test** — Day-to-day loop (Issue → PR → Merge)
-3. **Toolchain Test** — Integrations (CI, Codecov, Sentry, MCP)
-
-Each test cycle produces:
-
-- **Test Report** — What was tried, what failed, what changed
-- **Repo Improvements** — Direct fixes to docs/scripts
-- **Pattern Updates** — New lessons in CMC_GO_PATTERNS.md
+- Issue/PR threads (commands + results)
+- `.github/agents/reference/CMC_GO_PATTERNS.md` (only reusable patterns)
 
 ---
 

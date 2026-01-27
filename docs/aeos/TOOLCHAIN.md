@@ -78,19 +78,16 @@ Workflows live in `.github/workflows/`:
 - `test-and-coverage.yml` — tests + coverage
 - `verification-gate.yml` — PR policy gates
 - `validate-agents.yml` — validate agent docs/syntax
-- `copilot-auto-handoff.yml` — **DEPRECATED** (cloud agents disabled)
-- `copilot-completion-notify.yml` — notify TL on agent PRs
 - `auto-project-sync.yml` — issues → project sync
 - `codeql.yml` — security analysis
 - `stale.yml` — stale cleanup
 
 Required secrets:
 
-| Secret                     | Used by                    | Purpose                         |
-| -------------------------- | -------------------------- | ------------------------------- |
-| `DATABASE_URL`             | `test-and-coverage.yml`    | MySQL connection                |
-| `COPILOT_ASSIGN_TOKEN_PRO` | `copilot-auto-handoff.yml` | **DEPRECATED** (cloud disabled) |
-| `CODECOV_TOKEN`            | `test-and-coverage.yml`    | coverage upload                 |
+| Secret          | Used by                 | Purpose          |
+| --------------- | ----------------------- | ---------------- |
+| `DATABASE_URL`  | `test-and-coverage.yml` | MySQL connection |
+| `CODECOV_TOKEN` | `test-and-coverage.yml` | coverage upload  |
 
 ---
 

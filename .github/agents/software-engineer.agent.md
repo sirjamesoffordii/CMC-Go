@@ -12,7 +12,6 @@ tools:
     "web",
     "copilot-container-tools/*",
     "agent",
-    "github.vscode-pull-request-github/copilotCodingAgent",
     "github.vscode-pull-request-github/issue_fetch",
     "github.vscode-pull-request-github/suggest-fix",
     "github.vscode-pull-request-github/activePullRequest",

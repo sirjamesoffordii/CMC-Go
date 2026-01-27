@@ -2,54 +2,51 @@
 
 This directory contains scripts for database management, agent automation, data validation, and import/export operations for the CMC Go project.
 
-**Total Scripts:** 40 files (31 active + 2 subdirectories)
-
 ---
 
 ## Quick Reference
 
-| Script                            | Category   | Purpose                                                           |
-| --------------------------------- | ---------- | ----------------------------------------------------------------- |
-| `seed-database.mjs`               | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
-| `reset-db.mjs`                    | Database   | Drop all tables and reseed (with production safeguards)           |
-| `reset-local-db.mjs`              | Database   | Safe local-only database reset with multiple safety checks        |
-| `db-push-yes.mjs`                 | Database   | Non-interactive drizzle-kit push wrapper                          |
-| `run-migrations.mjs`              | Database   | Execute SQL migration files in order                              |
-| `init-mysql-db.mjs`               | Database   | Initialize MySQL database connection                              |
-| `seed-baseline.mjs`               | Database   | Seed only required baseline data (idempotent)                     |
-| `seed-chi-alpha.mjs`              | Database   | Seed Chi Alpha regions and districts                              |
-| `seed-regions-districts.mjs`      | Database   | Seed regions and districts with colors                            |
-| `seed-mysql-dev.mjs`              | Database   | Seed MySQL dev environment                                        |
-| `reseed-districts.mjs`            | Database   | Re-seed districts matching SVG map IDs                            |
-| `verify-database.mjs`             | Validation | Verify database schema matches expected structure                 |
-| `verify-write.mjs`                | Validation | Test create/update operations persist correctly                   |
-| `audit-migrations.mjs`            | Validation | Audit migration files against current schema                      |
-| `check-schema.mjs`                | Validation | Check critical tables and columns exist                           |
-| `check-map-data.mjs`              | Validation | Verify map data (districts, people, campuses)                     |
-| `validate-agents.mjs`             | Validation | Validate agent and prompt YAML frontmatter                        |
-| `import-from-export.mjs`          | Import     | Import data from exported JSON files                              |
-| `ingest-excel.mjs`                | Import     | Ingest Excel seed data with sanitization                          |
-| `agent-login-gh.ps1`              | Agent      | Interactive GitHub login for agent accounts                       |
-| `agent-quick.ps1`                 | Agent      | Quick agent operations (worktree, PR, issue comment)              |
-| `create-agent-issues.ps1`         | Agent      | Create GitHub issues (URL, CLI, or REST API)                      |
-| `clear-github-token.ps1`          | Agent      | Remove stored GitHub token                                        |
-| `gh-as.ps1`                       | Agent      | Run `gh` commands as a specific agent account                     |
-| `git-credential-gh.ps1`           | Agent      | Git credential helper for multi-identity                          |
-| `set-gh-secret.ps1`               | Agent      | Set GitHub repository secrets                                     |
-| `setup-agent-identities.ps1`      | Agent      | Configure git identities for agent worktrees                      |
-| `spawn-cloud-agent.ps1`           | Agent      | Spawn a GitHub Copilot cloud agent (non-blocking)                 |
-| `spawn-cloud-agents-parallel.ps1` | Agent      | Spawn multiple cloud agents in parallel                           |
-| `spawn-parallel-agents.ps1`       | Agent      | Spawn multiple VS Code agent sessions                             |
-| `spawn-worktree-agent.ps1`        | Agent      | Spawn Copilot agent in a new worktree                             |
-| `post-merge-evidence.ps1`         | Agent      | Post merge evidence to GitHub issues                              |
-| `populate-db.sql`                 | Data       | SQL script to populate database (legacy)                          |
-| `seed-data.sql`                   | Data       | Simple SQL seed script (legacy)                                   |
-| `temp-seed.sql`                   | Data       | Temporary seed data SQL                                           |
-| `seed-campuses.json`              | Data       | Campus seed data                                                  |
-| `seed-districts.json`             | Data       | District seed data                                                |
-| `seed-needs.json`                 | Data       | Needs seed data                                                   |
-| `seed-notes.json`                 | Data       | Notes seed data                                                   |
-| `seed-people.json`                | Data       | People seed data                                                  |
+| Script                       | Category   | Purpose                                                           |
+| ---------------------------- | ---------- | ----------------------------------------------------------------- |
+| `seed-database.mjs`          | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
+| `reset-db.mjs`               | Database   | Drop all tables and reseed (with production safeguards)           |
+| `reset-local-db.mjs`         | Database   | Safe local-only database reset with multiple safety checks        |
+| `db-push-yes.mjs`            | Database   | Non-interactive drizzle-kit push wrapper                          |
+| `run-migrations.mjs`         | Database   | Execute SQL migration files in order                              |
+| `init-mysql-db.mjs`          | Database   | Initialize MySQL database connection                              |
+| `seed-baseline.mjs`          | Database   | Seed only required baseline data (idempotent)                     |
+| `seed-chi-alpha.mjs`         | Database   | Seed Chi Alpha regions and districts                              |
+| `seed-regions-districts.mjs` | Database   | Seed regions and districts with colors                            |
+| `seed-mysql-dev.mjs`         | Database   | Seed MySQL dev environment                                        |
+| `reseed-districts.mjs`       | Database   | Re-seed districts matching SVG map IDs                            |
+| `verify-database.mjs`        | Validation | Verify database schema matches expected structure                 |
+| `verify-write.mjs`           | Validation | Test create/update operations persist correctly                   |
+| `audit-migrations.mjs`       | Validation | Audit migration files against current schema                      |
+| `check-schema.mjs`           | Validation | Check critical tables and columns exist                           |
+| `check-map-data.mjs`         | Validation | Verify map data (districts, people, campuses)                     |
+| `validate-agents.mjs`        | Validation | Validate agent and prompt YAML frontmatter                        |
+| `import-from-export.mjs`     | Import     | Import data from exported JSON files                              |
+| `ingest-excel.mjs`           | Import     | Ingest Excel seed data with sanitization                          |
+| `agent-login-gh.ps1`         | Agent      | Interactive GitHub login for agent accounts                       |
+| `agent-quick.ps1`            | Agent      | Quick agent operations (worktree, PR, issue comment)              |
+| `create-agent-issues.ps1`    | Agent      | Create GitHub issues (URL, CLI, or REST API)                      |
+| `clear-github-token.ps1`     | Agent      | Remove stored GitHub token                                        |
+| `gh-as.ps1`                  | Agent      | Run `gh` commands as a specific agent account                     |
+| `git-grep.ps1`               | Agent      | Fast search over git-tracked files (avoids recursion hangs)       |
+| `git-credential-gh.ps1`      | Agent      | Git credential helper for multi-identity                          |
+| `set-gh-secret.ps1`          | Agent      | Set GitHub repository secrets                                     |
+| `setup-agent-identities.ps1` | Agent      | Configure git identities for agent worktrees                      |
+| `spawn-parallel-agents.ps1`  | Agent      | Spawn multiple VS Code agent sessions                             |
+| `spawn-worktree-agent.ps1`   | Agent      | Spawn Copilot agent in a new worktree                             |
+| `post-merge-evidence.ps1`    | Agent      | Post merge evidence to GitHub issues                              |
+| `populate-db.sql`            | Data       | SQL script to populate database (legacy)                          |
+| `seed-data.sql`              | Data       | Simple SQL seed script (legacy)                                   |
+| `temp-seed.sql`              | Data       | Temporary seed data SQL                                           |
+| `seed-campuses.json`         | Data       | Campus seed data                                                  |
+| `seed-districts.json`        | Data       | District seed data                                                |
+| `seed-needs.json`            | Data       | Needs seed data                                                   |
+| `seed-notes.json`            | Data       | Notes seed data                                                   |
+| `seed-people.json`           | Data       | People seed data                                                  |
 
 ---
 
@@ -233,6 +230,15 @@ Run `gh` CLI commands as a specific agent account.
 .\scripts\gh-as.ps1 -Account software-engineer-agent pr view 42
 ```
 
+#### `git-grep.ps1`
+
+Fast search over **git-tracked** files (avoids `Get-ChildItem -Recurse` issues under `.worktrees/` / `.pnpm`).
+
+```powershell
+./scripts/git-grep.ps1 -Pattern "heartbeat" -CaseInsensitive
+./scripts/git-grep.ps1 -Pattern "DistrictSlug" -Path "drizzle/"
+```
+
 #### `git-credential-gh.ps1`
 
 Git credential helper that routes authentication through agent-specific `gh` config directories.
@@ -265,10 +271,10 @@ Creates GitHub issues in batch. Supports multiple modes:
 
 #### `set-gh-secret.ps1`
 
-Set GitHub repository secrets (e.g., `COPILOT_ASSIGN_TOKEN_TL`).
+Set GitHub repository secrets.
 
 ```powershell
-.\scripts\set-gh-secret.ps1 -SecretName COPILOT_ASSIGN_TOKEN_TL
+.\scripts\set-gh-secret.ps1 -SecretName CODECOV_TOKEN
 ```
 
 #### `clear-github-token.ps1`
@@ -279,32 +285,9 @@ Removes the stored GitHub token from local DPAPI storage.
 .\scripts\clear-github-token.ps1
 ```
 
-#### `spawn-cloud-agent.ps1`
+#### Cloud-agent scripts
 
-Spawn a GitHub Copilot coding agent task (non-blocking). Returns immediately with session ID.
-
-```powershell
-# By issue number
-.\scripts\spawn-cloud-agent.ps1 -IssueNumber 42
-
-# By custom prompt
-.\scripts\spawn-cloud-agent.ps1 -Prompt "Add unit tests for the auth module"
-
-# Follow logs (blocking)
-.\scripts\spawn-cloud-agent.ps1 -IssueNumber 42 -Follow
-```
-
-#### `spawn-cloud-agents-parallel.ps1`
-
-Spawn multiple cloud agents in parallel using PowerShell jobs.
-
-```powershell
-# Multiple issues
-.\scripts\spawn-cloud-agents-parallel.ps1 -IssueNumbers 42, 43, 44
-
-# Multiple prompts
-.\scripts\spawn-cloud-agents-parallel.ps1 -Prompts "Add tests", "Fix lint", "Update docs"
-```
+Cloud agents are disabled (no MCP Memory = drift). Cloud-agent scripts were removed.
 
 #### `spawn-worktree-agent.ps1`
 
