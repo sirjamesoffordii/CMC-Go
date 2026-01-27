@@ -1972,10 +1972,19 @@ export const appRouter = router({
 
   // AUTHORIZATION: Settings - Admin-only for mutations, public for queries
   settings: router({
+    getSettings: publicProcedure.query(async () => {
+      return await db.getAllSettings();
+    }),
     get: publicProcedure
       .input(z.object({ key: z.string() }))
       .query(async ({ input }) => {
         return await db.getSetting(input.key);
+      }),
+    updateSettings: adminProcedure
+      .input(z.record(z.string(), z.string()))
+      .mutation(async ({ input }) => {
+        await db.updateSettings(input);
+        return { success: true };
       }),
     // Get a fresh presigned URL for the header image
     // This is needed because stored URLs expire (presigned)

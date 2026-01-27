@@ -39,12 +39,12 @@ File: `.vscode/mcp.json`
 
 **Canonical Format:** `{Role}-{Instance}` — e.g., `TL-1`, `SE-3`, `PE-1`
 
-| ❌ Wrong           | ✅ Correct |
-| ------------------ | ---------- |
-| `tech-lead#1`      | `TL-1`     |
-| `tech-lead-1`      | `TL-1`     |
-| `SE1`              | `SE-1`     |
-| `software-engineer`| `SE-1`     |
+| ❌ Wrong            | ✅ Correct |
+| ------------------- | ---------- |
+| `tech-lead#1`       | `TL-1`     |
+| `tech-lead-1`       | `TL-1`     |
+| `SE1`               | `SE-1`     |
+| `software-engineer` | `SE-1`     |
 
 **Why it matters:** Inconsistent naming causes duplicate entities and breaks queries.
 
@@ -247,20 +247,22 @@ MCP Memory accumulates stale data. Run cleanup at session start:
 ```javascript
 // Read all agent entities
 const graph = await mcp_memory_read_graph();
-const agents = graph.entities.filter(e => e.entityType === 'Agent');
+const agents = graph.entities.filter(e => e.entityType === "Agent");
 
 // For each agent, delete heartbeat observations older than 24h
 for (const agent of agents) {
   const staleHeartbeats = agent.observations.filter(obs => {
-    const match = obs.match(/heartbeat: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/);
+    const match = obs.match(
+      /heartbeat: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/
+    );
     if (!match) return false;
     const timestamp = new Date(match[1]);
     return Date.now() - timestamp.getTime() > 24 * 60 * 60 * 1000;
   });
-  
+
   if (staleHeartbeats.length > 0) {
     mcp_memory_delete_observations({
-      deletions: [{ entityName: agent.name, observations: staleHeartbeats }]
+      deletions: [{ entityName: agent.name, observations: staleHeartbeats }],
     });
   }
 }

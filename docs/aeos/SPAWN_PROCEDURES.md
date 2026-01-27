@@ -142,11 +142,11 @@ SEs can stop unexpectedly (system sleep, context limits, errors). TL must track 
 
 ### Required SE Behavior
 
-| Checkpoint | Timeout | Required Action |
-| ---------- | ------- | --------------- |
+| Checkpoint | Timeout | Required Action                        |
+| ---------- | ------- | -------------------------------------- |
 | Claim      | 2 min   | Post `SE-N-CLAIMED: Issue #X` on issue |
-| Branch     | 5 min   | Push branch to origin |
-| PR         | 15 min  | Create PR (or post blocker) |
+| Branch     | 5 min   | Push branch to origin                  |
+| PR         | 15 min  | Create PR (or post blocker)            |
 
 ### TL Monitoring
 
@@ -177,10 +177,10 @@ If SE dies after pushing branch but before creating PR:
 
 **Rule:** Each SE works on ONE issue per PR.
 
-| ❌ Wrong | ✅ Correct |
-| -------- | ---------- |
+| ❌ Wrong                         | ✅ Correct                                        |
+| -------------------------------- | ------------------------------------------------- |
 | SE fixes #297 and #299 in one PR | SE creates PR for #297, then separate PR for #299 |
-| SE adds "bonus" features | SE sticks to issue scope |
+| SE adds "bonus" features         | SE sticks to issue scope                          |
 
 **Why:** Simplifies review, prevents scope creep, clearer git history.
 

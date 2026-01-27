@@ -4,10 +4,17 @@
  *
  * Issue #299: Add integration tests for settings persistence
  */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { getSetting, setSetting } from "./db";
+
+vi.mock("./storage", () => {
+  return {
+    storagePut: vi.fn(async () => ({ url: "https://example.test/presigned" })),
+    storageGet: vi.fn(async () => ({ url: "https://example.test/presigned" })),
+  };
+});
 
 // ============================================================================
 // Test Fixtures
@@ -23,6 +30,7 @@ function createAdminContext(): TrpcContext {
       campusId: 1,
       districtId: "TEST_DISTRICT",
       regionId: "TEST_REGION",
+      personId: null,
       approvalStatus: "ACTIVE",
       approvedByUserId: null,
       approvedAt: null,
@@ -54,6 +62,17 @@ function createUnauthenticatedContext(): TrpcContext {
 // Generate unique test keys to avoid cross-test interference
 function generateTestKey(prefix: string): string {
   return `test_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+async function withRestoredSetting<T>(key: string, run: () => Promise<T>) {
+  const original = await getSetting(key);
+  try {
+    return await run();
+  } finally {
+    if (original?.value != null) {
+      await setSetting(key, original.value);
+    }
+  }
 }
 
 // ============================================================================
@@ -205,6 +224,31 @@ describe("settings db functions", () => {
 // ============================================================================
 
 describe("settings router", () => {
+  describe("settings.getSettings", () => {
+    it("should be publicly accessible and return an array", async () => {
+      const ctx = createUnauthenticatedContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const result = await caller.settings.getSettings();
+
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it("should include a setting after it is created", async () => {
+      const key = generateTestKey("list_includes");
+      const value = "value-for-list";
+
+      const adminCaller = appRouter.createCaller(createAdminContext());
+      await adminCaller.settings.set({ key, value });
+
+      const publicCaller = appRouter.createCaller(
+        createUnauthenticatedContext()
+      );
+      const all = await publicCaller.settings.getSettings();
+      expect(all.some(s => s.key === key && s.value === value)).toBe(true);
+    });
+  });
+
   describe("settings.get", () => {
     it("should be publicly accessible (no auth required)", async () => {
       const ctx = createUnauthenticatedContext();
@@ -259,6 +303,37 @@ describe("settings router", () => {
 
       expect(result).not.toBeNull();
       expect(result?.value).toBe(value);
+    });
+  });
+
+  describe("settings.updateSettings", () => {
+    it("should update multiple keys in one call", async () => {
+      const ctx = createAdminContext();
+      const caller = appRouter.createCaller(ctx);
+
+      const key1 = generateTestKey("bulk1");
+      const key2 = generateTestKey("bulk2");
+
+      const result = await caller.settings.updateSettings({
+        [key1]: "v1",
+        [key2]: "v2",
+      });
+
+      expect(result).toEqual({ success: true });
+      expect((await getSetting(key1))?.value).toBe("v1");
+      expect((await getSetting(key2))?.value).toBe("v2");
+    });
+
+    it("should persist across simulated page loads (new caller instances)", async () => {
+      const key = generateTestKey("bulk_persist");
+
+      const caller1 = appRouter.createCaller(createAdminContext());
+      await caller1.settings.updateSettings({ [key]: "persisted" });
+
+      const caller2 = appRouter.createCaller(createUnauthenticatedContext());
+      const result = await caller2.settings.get({ key });
+
+      expect(result?.value).toBe("persisted");
     });
   });
 
@@ -367,6 +442,34 @@ describe("settings router", () => {
           true
         );
       }
+    });
+  });
+
+  describe("settings.uploadHeaderImage", () => {
+    it("should save headerImageKey and optional headerBgColor", async () => {
+      const ctx = createAdminContext();
+      const caller = appRouter.createCaller(ctx);
+
+      vi.spyOn(Date, "now").mockReturnValue(1234567890);
+
+      await withRestoredSetting("headerImageKey", async () => {
+        await withRestoredSetting("headerBgColor", async () => {
+          const result = await caller.settings.uploadHeaderImage({
+            imageData: "data:image/jpeg;base64,dGVzdA==",
+            fileName: "test.jpg",
+            backgroundColor: "#ffffff",
+          });
+
+          expect(result).toHaveProperty("url");
+          expect(result).toHaveProperty("backgroundColor", "#ffffff");
+
+          const savedKey = await getSetting("headerImageKey");
+          expect(savedKey?.value).toBe("header-images/1234567890-test.jpg");
+
+          const savedColor = await getSetting("headerBgColor");
+          expect(savedColor?.value).toBe("#ffffff");
+        });
+      });
     });
   });
 });

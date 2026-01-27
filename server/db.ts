@@ -920,6 +920,25 @@ export async function setSetting(key: string, value: string) {
     .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
 }
 
+export async function getAllSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(settings);
+}
+
+export async function updateSettings(values: Record<string, string>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const entries = Object.entries(values);
+  for (const [key, value] of entries) {
+    await db
+      .insert(settings)
+      .values({ key, value })
+      .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
+  }
+}
+
 // ============================================================================
 // METRICS & AGGREGATIONS
 // ============================================================================

@@ -265,3 +265,49 @@ Status Options:
 **Problem:** When TL uses blocking `runSubagent` for implementation, TL cannot poll board, answer blocked agents, or manage parallel work.
 **Solution:** TL should delegate via local SE (`code chat -r -m "Software Engineer"`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
 **Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → non-blocking spawn instead.
+
+### SE spawn reliability protocol
+
+**Tags:** agent-spawning
+**Problem:** SEs can stop mid-task (system sleep, context limits), leaving orphaned work.
+**Solution:** Enforce timeouts: claim comment (2 min), branch push (5 min), PR creation (15 min). If SE misses checkpoint, TL creates PR from orphaned branch.
+**Prevention:** SE posts claim comment immediately; pushes branch early; creates PR before 15 min mark.
+
+### One Issue per PR (no scope creep)
+
+**Tags:** agent-spawning, git
+**Problem:** SE combines multiple issues in one PR, making review harder and git history unclear.
+**Solution:** Strict 1:1 mapping — one Issue, one PR. If SE discovers related work, create new Issue.
+**Prevention:** TL rejects multi-issue PRs; SE stops at issue boundary.
+
+### Session recovery after gap
+
+**Tags:** agent-spawning, terminal
+**Problem:** After system sleep or crash, agent state is stale (heartbeats old, local branch behind).
+**Solution:** Follow recovery protocol: (1) re-auth, (2) sync staging, (3) scan for orphaned branches, (4) poll board, (5) resume loop.
+**Prevention:** Store recovery checklist in agent file; execute on activation if >10 min since last heartbeat.
+
+### database
+
+### Schema change requires migration awareness
+
+**Tags:** database
+**Problem:** Tests fail locally ("Unknown column") but CI passes (Railway has migration).
+**Solution:** After schema changes: (1) run `pnpm db:push:yes` locally, (2) verify with `pnpm test`.
+**Prevention:** Always sync local DB after pulling schema changes.
+
+### MCP Memory
+
+### MCP Memory cleanup on session start
+
+**Tags:** database, agent-spawning
+**Problem:** Heartbeats accumulate forever; duplicate entities from inconsistent naming.
+**Solution:** On session start: prune heartbeats >24h; merge duplicate entities under canonical name (TL-1, not tech-lead-1).
+**Prevention:** Use canonical naming: `{Role}-{Instance}` (e.g., TL-1, SE-3).
+
+### GitHub is truth, MCP Memory is cache
+
+**Tags:** database, git
+**Problem:** Agent trusts stale MCP Memory over actual GitHub state.
+**Solution:** For Issues/PRs, always verify via `gh` CLI. MCP Memory is context cache for Patterns and WorkflowChanges only.
+**Prevention:** After any state-changing action, verify via GitHub API, not MCP Memory.
