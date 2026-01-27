@@ -68,6 +68,93 @@ PE Planning Epoch — <timestamp>
 - Actions Taken: Created Issue #Z, Refined Issue #W
 ```
 
+### PE Epoch Subagents
+
+PE subagents are **rare, intentional, batch-oriented, time-boxed, and blocking by design**.
+
+An **epoch** is a bounded planning or synthesis phase where PE intentionally pauses coordination to get a complete picture before acting.
+
+#### When to Use Epoch Subagents
+
+| Epoch Type          | Trigger                      | Subagent Model | Why                                         |
+| ------------------- | ---------------------------- | -------------- | ------------------------------------------- |
+| **Decomposition**   | System start, major pivot    | Opus 4.5 (3×)  | Inferring intent from structure             |
+| **Recovery**        | PE regeneration, long gap    | Opus 4.5 (3×)  | Rebuilding context from incomplete signals  |
+| **Arbitration**     | TL escalation with A/B/C     | Opus 4.5 (3×)  | Reconciling conflicting truths              |
+| **Health Scan**     | Milestone complete, periodic | Mixed          | Some judgment (Opus), some checks (GPT-5.2) |
+| **Drift Detection** | Board > 10 stale items       | GPT-5.2 (1×)   | Pattern matching, not synthesis             |
+| **Coherence Check** | Docs edited externally       | GPT-5.2 (1×)   | Mechanical comparison                       |
+
+#### Model Selection Heuristic
+
+**Opus is for synthesis, not search.**
+
+| Task Requires...                | Model         |
+| ------------------------------- | ------------- |
+| Listing things                  | GPT 4.1 (0×)  |
+| Finding things                  | GPT-5.2 (1×)  |
+| Comparing things mechanically   | GPT-5.2 (1×)  |
+| Inferring intent from structure | Opus 4.5 (3×) |
+| Reconciling conflicting truths  | Opus 4.5 (3×) |
+| Answering "why" questions       | Opus 4.5 (3×) |
+
+_If the answer could be a JSON list, don't use Opus._
+
+#### Epoch Contract
+
+```
+EPOCH ENTRY:
+  - PE announces: "Entering [type] epoch"
+  - PE spawns N parallel subagents (model per task complexity)
+  - System expects PE to be blocked
+
+EPOCH EXIT:
+  - All subagents return
+  - PE synthesizes → single coherent action
+  - PE announces: "Epoch complete. System state: [summary]"
+  - PE returns to episodic monitoring
+```
+
+#### Concrete Epoch Examples
+
+**Decomposition Epoch** (rare — system start):
+
+```
+PE spawns (all Opus):
+  - "What are the trust boundaries in this system?"
+  - "Where does state live and how does it flow?"
+  - "What are the failure modes if X breaks?"
+→ All return → PE creates workstream Issues
+```
+
+**Arbitration Epoch** (when TL escalates):
+
+```
+PE spawns (Opus):
+  - "Issue #A says X, Issue #B says Y. What's the actual goal?"
+→ Returns → PE decides, posts resolution
+```
+
+**Health Scan Epoch** (periodic):
+
+```
+PE spawns (mixed):
+  - Opus: "Are we building the right thing?"
+  - GPT-5.2: "What's stalled or orphaned?"
+  - GPT-5.2: "Any policy violations?"
+→ All return → PE reconciles, spawns TL if needed
+```
+
+#### What PE Epochs Should NOT Do
+
+- Continuous execution
+- Issue-level implementation
+- Long-running work
+- Anything that blocks PE frequently
+- Acting like "super-SEs"
+
+This would collapse role separation and reintroduce brittleness.
+
 ---
 
 ## TL Loop (Continuous)
