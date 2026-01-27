@@ -127,6 +127,22 @@ gh repo view sirjamesoffordii/CMC-Go --json name
 
 ### Phase 5: Boot Agent Hierarchy
 
+**Spawn Hierarchy (strict):**
+
+- PE spawns TL only
+- TL spawns SE only
+- PE does NOT spawn SE directly
+
+**Spawn Methods:**
+
+| Method              | Blocking? | Context Preserved?   | When to Use                        |
+| ------------------- | --------- | -------------------- | ---------------------------------- |
+| `runSubagent` tool  | Yes       | Yes (full)           | PE spawning TL, TL spawning SE     |
+| New chat tab + mode | No        | Yes (same window)    | Manual spawn in same VS Code       |
+| `code chat -n`      | No        | Partial (new window) | Not recommended — loses agent mode |
+
+**Recommended: Use `runSubagent` tool** — preserves context, agent mode, and workspace.
+
 #### If you ARE the PE:
 
 ```powershell
@@ -141,8 +157,25 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 #   - Last heartbeat > 6 minutes ago
 # TL is ALIVE if heartbeat < 6 minutes ago
 
-# 3. If TL missing → spawn TL
-code chat -n -m "Tech Lead" "You are TL-1. Rename tab to 'TL-1(1)'. Verify auth as Alpha-Tech-Lead. Start."
+# 3. If TL missing → spawn TL using runSubagent tool
+# Prompt template:
+```
+
+**TL Spawn Prompt (for PE to use with runSubagent):**
+
+```
+You are TL-1(1). PE has spawned you for execution coordination.
+
+Your responsibilities:
+1. Verify auth: $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+2. Post heartbeat to MCP Memory
+3. Poll board for Todo items
+4. Spawn SE-1 (using runSubagent) to work highest priority item
+5. Review PRs, unblock issues, keep work flowing
+6. Report back: what you delegated, board state, any blockers
+
+Board location: Project 4 (sirjamesoffordii)
+Start now. Keep coordinating until board is empty or you're blocked.
 ```
 
 #### If you ARE the TL:
@@ -156,10 +189,30 @@ gh auth status
 gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json
 
 # 3. Check if SE is running (MCP Memory)
-# Query for SE-1 heartbeat
+# Query for SE-1 heartbeat (same criteria as PE checking TL)
 
-# 4. If SE missing → spawn SE
-code chat -n -m "Software Engineer" "You are SE-1. Rename tab to 'SE-1(1)'. Verify auth. Start."
+# 4. If SE missing → spawn SE using runSubagent tool
+# Prompt template below
+```
+
+**SE Spawn Prompt (for TL to use with runSubagent):**
+
+```
+You are SE-1(1). TL has spawned you for implementation.
+
+Your responsibilities:
+1. Verify auth: $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+2. Post heartbeat to MCP Memory
+3. Check board for highest priority Todo item
+4. Claim it: assign yourself, set status to In Progress
+5. Create worktree: wt-impl-<issue#>-<slug>
+6. Implement smallest working solution
+7. Run checks: pnpm check && pnpm test
+8. Open PR with evidence
+9. Report back: Issue #, PR #, what you did
+
+Board location: Project 4 (sirjamesoffordii)
+Start now. Keep implementing until you complete the task or hit a blocker.
 ```
 
 #### If you ARE the SE:
@@ -176,6 +229,22 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20 --format json | Conve
 # Set status → In Progress
 # Start implementation
 ```
+
+---
+
+## Chat Tab Naming Convention
+
+**All agents must rename their VS Code chat tab** to show identity:
+
+| Agent | Tab Name Format | Example   |
+| ----- | --------------- | --------- |
+| PE    | `PE-1(gen)`     | `PE-1(1)` |
+| TL    | `TL-1(gen)`     | `TL-1(2)` |
+| SE    | `SE-1(gen)`     | `SE-1(3)` |
+
+**How:** Right-click chat tab → Rename → Enter ID(gen)
+
+This makes it easy for humans to see which agents are running.
 
 ---
 

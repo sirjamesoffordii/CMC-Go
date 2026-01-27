@@ -86,6 +86,36 @@ $env:GH_CONFIG_DIR = $null
 
 **IMPORTANT:** The `GH_CONFIG_DIR` environment variable must be set in EACH new terminal. If you open a new terminal mid-session, set it again before running `gh` commands.
 
+### Git Credential Helper (Critical for Autonomous Operation)
+
+**Problem:** Windows Credential Manager prompts for account selection on `git push`, blocking autonomous operation.
+
+**Solution:** Configure git to use GH CLI for credentials:
+
+```powershell
+# One-time setup (run as human)
+git config --global credential.helper ""
+git config --global credential.https://github.com.helper "!pwsh -File C:/Dev/CMC Go/scripts/git-credential-gh.ps1 -ConfigDir"
+
+# Per-repo alternative (uses current GH_CONFIG_DIR)
+git config credential.helper "!gh auth git-credential"
+```
+
+**How it works:**
+
+1. Git asks for credentials
+2. Credential helper calls `gh auth git-credential`
+3. GH CLI returns token from `GH_CONFIG_DIR` config
+4. No popup, no manual selection
+
+**Verify:**
+
+```powershell
+# Should push without popup
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+git push origin staging
+```
+
 ---
 
 ## Required Token Scopes

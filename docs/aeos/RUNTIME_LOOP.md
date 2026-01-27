@@ -188,6 +188,16 @@ Is there a Todo item?
     └── NO: All items In Progress → monitor, review PRs
 ```
 
+### Post-Delegation Verification
+
+**Subagent reports are proposals, not facts.** After spawning SE or delegating work:
+
+1. **Verify board state** — Is Issue actually "In Progress"?
+2. **Verify assignee** — Is SE actually assigned?
+3. **If not** → Fix it manually, then continue
+
+This catches cases where subagent terminal context was lost.
+
 ### TL Capacity
 
 - **Max 4 active items** per TL instance
