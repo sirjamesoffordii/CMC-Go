@@ -136,6 +136,56 @@ PE (can spawn TL only)
 
 ---
 
+## SE Spawn Reliability Protocol
+
+SEs can stop unexpectedly (system sleep, context limits, errors). TL must track and recover.
+
+### Required SE Behavior
+
+| Checkpoint | Timeout | Required Action |
+| ---------- | ------- | --------------- |
+| Claim      | 2 min   | Post `SE-N-CLAIMED: Issue #X` on issue |
+| Branch     | 5 min   | Push branch to origin |
+| PR         | 15 min  | Create PR (or post blocker) |
+
+### TL Monitoring
+
+```powershell
+# Check for SE branches without PRs (orphaned work)
+git fetch --prune origin
+git branch -r --list "origin/agent/*"  # List SE branches
+gh pr list --state open                 # List open PRs
+
+# If branch exists but no PR after 15 min → SE died
+# TL creates PR from orphaned branch
+```
+
+### Orphan Work Recovery
+
+If SE dies after pushing branch but before creating PR:
+
+1. **Check branch has commits:** `git log origin/agent/swe/XXX-slug --oneline -3`
+2. **Create PR for them:**
+   ```powershell
+   gh pr create --base staging --head agent/swe/XXX-slug \
+     --title "[Recovered] Issue #XXX title" \
+     --body "PR created by TL from orphaned SE branch"
+   ```
+3. **Review and merge normally**
+
+### One Issue Per PR
+
+**Rule:** Each SE works on ONE issue per PR.
+
+| ❌ Wrong | ✅ Correct |
+| -------- | ---------- |
+| SE fixes #297 and #299 in one PR | SE creates PR for #297, then separate PR for #299 |
+| SE adds "bonus" features | SE sticks to issue scope |
+
+**Why:** Simplifies review, prevents scope creep, clearer git history.
+
+---
+
 ## Tested Limits
 
 - Parallel `runSubagent`: 6+ (all return)

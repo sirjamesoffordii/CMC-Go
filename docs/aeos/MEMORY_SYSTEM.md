@@ -35,11 +35,26 @@ File: `.vscode/mcp.json`
 
 ---
 
+## Entity Naming Standards
+
+**Canonical Format:** `{Role}-{Instance}` — e.g., `TL-1`, `SE-3`, `PE-1`
+
+| ❌ Wrong           | ✅ Correct |
+| ------------------ | ---------- |
+| `tech-lead#1`      | `TL-1`     |
+| `tech-lead-1`      | `TL-1`     |
+| `SE1`              | `SE-1`     |
+| `software-engineer`| `SE-1`     |
+
+**Why it matters:** Inconsistent naming causes duplicate entities and breaks queries.
+
+---
+
 ## Entity Types
 
 | Entity Type      | Purpose                                   | Example Name                    |
 | ---------------- | ----------------------------------------- | ------------------------------- |
-| `Agent`          | Runtime status + heartbeat + current work | `SE-1(1)`, `TL-1(2)`, `PE-1(1)` |
+| `Agent`          | Runtime status + heartbeat + current work | `SE-1`, `TL-1`, `PE-1`          |
 | `Issue`          | Work context + learnings tied to an issue | `Issue-42-DistrictFilter`       |
 | `Pattern`        | Reusable implementation learnings         | `AuthFlow`, `TRPCErrorHandling` |
 | `WorkflowChange` | Improvements to how AEOS runs             | `HeartbeatInterval-3min`        |
@@ -220,3 +235,53 @@ mcp_memory_add_observations({
 
 - **Memory server down:** Check VS Code MCP panel; restart; use state files.
 - **Memory vs state mismatch:** MCP Memory is authoritative; sync state file to match.
+
+---
+
+## Cleanup Protocol (Session Start)
+
+MCP Memory accumulates stale data. Run cleanup at session start:
+
+### 1. Prune Stale Heartbeats (>24h)
+
+```javascript
+// Read all agent entities
+const graph = await mcp_memory_read_graph();
+const agents = graph.entities.filter(e => e.entityType === 'Agent');
+
+// For each agent, delete heartbeat observations older than 24h
+for (const agent of agents) {
+  const staleHeartbeats = agent.observations.filter(obs => {
+    const match = obs.match(/heartbeat: (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)/);
+    if (!match) return false;
+    const timestamp = new Date(match[1]);
+    return Date.now() - timestamp.getTime() > 24 * 60 * 60 * 1000;
+  });
+  
+  if (staleHeartbeats.length > 0) {
+    mcp_memory_delete_observations({
+      deletions: [{ entityName: agent.name, observations: staleHeartbeats }]
+    });
+  }
+}
+```
+
+### 2. Merge Duplicate Entities
+
+If you find `TL-1`, `tech-lead-1`, and `tech-lead#1`:
+
+1. Keep the canonical name (`TL-1`)
+2. Copy useful observations from duplicates
+3. Delete duplicates: `mcp_memory_delete_entities({ entityNames: ['tech-lead-1', 'tech-lead#1'] })`
+
+### 3. GitHub is Truth
+
+MCP Memory is **context cache**, not authoritative state:
+
+| Data Type        | Authoritative Source | MCP Memory Role |
+| ---------------- | -------------------- | --------------- |
+| Issue status     | GitHub Issues        | Cache only      |
+| PR state         | GitHub PRs           | Cache only      |
+| Agent activity   | GitHub comments      | Recent context  |
+| Patterns learned | MCP Memory           | **Primary**     |
+| Workflow changes | MCP Memory           | **Primary**     |
