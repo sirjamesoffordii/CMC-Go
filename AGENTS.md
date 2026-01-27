@@ -50,11 +50,15 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ## Spawning Agents
 
+**ID Format:** `Role#(Gen#)` — e.g., `TL1(1)`, `SE1(2)`, `PE1(1)`
+
+- **Role#** = which instance (TL1, TL2, SE1, SE2)
+- **Gen#** = generation (increments on respawn). If gen# changes, previous instance stopped.
+
 ```powershell
-# Always use -r (reuses window). NEVER use -n (loses context!)
-# Mode names are lowercase (match filename stems)
-code chat -r -m "tech-lead" -a AGENTS.md "You are TL-1. Start."
-code chat -r -m "software-engineer" -a AGENTS.md "You are SE-1. Start."
+# Spawn message is just: "You are ID(Gen). Activate."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL1(1). Activate."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE1(1). Activate."
 ```
 
 **Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
@@ -65,10 +69,10 @@ code chat -r -m "software-engineer" -a AGENTS.md "You are SE-1. Start."
 
 ## Delegation Decision
 
-| Score | Route To | Method                                |
-| ----- | -------- | ------------------------------------- |
-| 0-1   | Yourself | Direct (but TL never edits code)      |
-| 2-6   | Local SE | `code chat -r -m "software-engineer"` |
+| Score | Route To | Method                                                                         |
+| ----- | -------- | ------------------------------------------------------------------------------ |
+| 0-1   | Yourself | Direct (but TL never edits code)                                               |
+| 2-6   | Local SE | `code chat -r -m "Software Engineer" -a AGENTS.md "You are SE1(1). Activate."` |
 
 **Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
 

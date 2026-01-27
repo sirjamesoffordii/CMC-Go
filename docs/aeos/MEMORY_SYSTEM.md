@@ -39,7 +39,7 @@ File: `.vscode/mcp.json`
 
 | Entity Type      | Purpose                                   | Example Name                    |
 | ---------------- | ----------------------------------------- | ------------------------------- |
-| `Agent`          | Runtime status + heartbeat + current work | `SE-1`, `TL-1`, `PE-1`          |
+| `Agent`          | Runtime status + heartbeat + current work | `SE1(1)`, `TL1(2)`, `PE1(1)`    |
 | `Issue`          | Work context + learnings tied to an issue | `Issue-42-DistrictFilter`       |
 | `Pattern`        | Reusable implementation learnings         | `AuthFlow`, `TRPCErrorHandling` |
 | `WorkflowChange` | Improvements to how AEOS runs             | `HeartbeatInterval-3min`        |

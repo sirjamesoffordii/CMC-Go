@@ -60,14 +60,19 @@ NOW TL can continue
 
 ## Delegated Sessions (`code chat -r`)
 
+### ID Format
+
+`Role#(Gen#)` — e.g., `TL1(1)`, `SE1(2)`, `PE1(1)`
+
+- **Role#** = which instance (TL1, TL2, SE1, SE2)
+- **Gen#** = generation (increments on respawn). If gen# changes, previous instance stopped.
+
 ### Syntax
 
 ```powershell
-# Spawn SE (reuses window, creates new chat tab)
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
-
-# Spawn TL
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
+# Spawn message: "You are ID(Gen). Activate."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE1(1). Activate."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL1(1). Activate."
 ```
 
 ### Options
@@ -101,8 +106,8 @@ All agents post heartbeats to MCP Memory every 3 minutes:
 ```powershell
 # MCP Memory heartbeat (only method)
 mcp_memory_add_observations: {
-  entityName: "SE-1",
-  contents: ["heartbeat: 2025-01-15T14:30:00Z | Issue #123 | active"]
+  entityName: "SE1(1)",
+  contents: ["heartbeat: 2026-01-27T14:30:00Z | Issue #123 | active"]
 }
 ```
 
@@ -110,12 +115,12 @@ mcp_memory_add_observations: {
 
 ### Work Signals (GitHub)
 
-| Signal                   | Meaning          | TL Action       |
-| ------------------------ | ---------------- | --------------- |
-| `SE-CLAIMED: Issue #X`   | Working on issue | Track in board  |
-| `SE-BLOCKED: #X - why`   | Needs help       | Answer on issue |
-| `SE-COMPLETE: #X, PR #Y` | Ready for review | Review PR       |
-| `SE-IDLE: No work`       | Board empty      | Create more     |
+| Signal                     | Meaning          | TL Action       |
+| -------------------------- | ---------------- | --------------- |
+| `<ID>-CLAIMED: Issue #X`   | Working on issue | Track in board  |
+| `<ID>-BLOCKED: #X - why`   | Needs help       | Answer on issue |
+| `<ID>-COMPLETE: #X, PR #Y` | Ready for review | Review PR       |
+| `<ID>-IDLE: No work`       | Board empty      | Create more     |
 
 ---
 
