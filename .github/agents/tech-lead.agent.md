@@ -90,14 +90,30 @@ When the operator says **"Start"**, **"Go"**, or similar:
 
 **Goal:** The autonomous system must not require Sir James to manually restart agents.
 
-**TL monitors SWEs.** If an SE goes silent (no activity > 10 min), respawn it.
+### Heartbeat Protocol (MCP Memory only)
 
-**If PE is missing (no heartbeat > 10 min):**
+Post heartbeat every **3 minutes**:
+
+```
+mcp_memory_add_observations: {
+  entityName: "TL-1",
+  contents: ["heartbeat: <ISO-8601> | <context> | <status>"]
+}
+```
+
+- **Stale threshold:** 6 minutes
+- **First heartbeat:** Immediately on spawn (not 60 seconds later)
+
+**TL monitors SE.** If SE has no heartbeat > 6 min, respawn it.
+
+**If PE is missing (no heartbeat > 6 min):**
 
 ```powershell
 # -r reuses current window (creates new chat tab), -a adds context
 code chat -r -m "principal-engineer" -a AGENTS.md "You are PE-1. TL detected PE was missing. Check board, run planning epoch. Start."
 ```
+
+**Note:** The agent mode is `principal-engineer` (the agent filename), even though the GitHub account is `Principle-Engineer-Agent`.
 
 **Continuity rule:** TL does NOT step up to be PE. TL spawns a new PE and continues as coordinator.
 

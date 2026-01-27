@@ -113,11 +113,26 @@ gh agent-task list -L 10
 
 ## TL-SE Communication
 
-Since TL cannot see spawned SE chat, communication happens via GitHub:
+Since TL cannot see spawned SE chat, communication uses **two channels**:
+
+### Heartbeats (MCP Memory)
+
+All agents post heartbeats to MCP Memory every 3 minutes:
+
+```powershell
+# MCP Memory heartbeat (only method)
+mcp_memory_add_observations: {
+  entityName: "SE-1",
+  contents: ["heartbeat: 2025-01-15T14:30:00Z | Issue #123 | active"]
+}
+```
+
+**Stale threshold:** 6 minutes (no heartbeat = respawn candidate)
+
+### Work Signals (GitHub)
 
 | Signal                   | Meaning          | TL Action       |
 | ------------------------ | ---------------- | --------------- |
-| `SE-HEARTBEAT: <time>`   | Agent alive      | Monitor         |
 | `SE-CLAIMED: Issue #X`   | Working on issue | Track in board  |
 | `SE-BLOCKED: #X - why`   | Needs help       | Answer on issue |
 | `SE-COMPLETE: #X, PR #Y` | Ready for review | Review PR       |

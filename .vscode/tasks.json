@@ -275,6 +275,14 @@
       "command": "gh agent-task view ${input:prNumber}",
       "problemMatcher": [],
       "detail": "View a specific cloud agent task by PR number"
+    },
+    {
+      "label": "Utility: Keep awake while VS Code running",
+      "type": "shell",
+      "command": ".\\scripts\\keep-awake-while-vscode.ps1",
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "Prevents Windows sleep while VS Code (Code.exe) is running. Stop the task to revert."
     }
   ],
   "inputs": [

@@ -161,7 +161,7 @@ This would collapse role separation and reintroduce brittleness.
 
 TL runs **continuously**, keeping execution flowing.
 
-### TL Cycle (every ~5 min)
+### TL Cycle (every ~3 min)
 
 ```
 1. Post heartbeat to MCP Memory
@@ -287,10 +287,10 @@ If heartbeat missing > threshold:
 ```
 For each "In Progress" issue:
   1. Check MCP Memory for agent heartbeat
-  2. If heartbeat > 60 min stale OR no heartbeat:
+  2. If heartbeat > 6 min stale OR no heartbeat:
      - Check GitHub for recent activity (comments, commits)
      - Check if PR exists
-  3. If no activity in 60 min → issue is orphaned
+  3. If no activity in 6 min → issue is orphaned
 ```
 
 **Recovery procedure:**
@@ -306,7 +306,7 @@ For each "In Progress" issue:
    ```
 
 2. **If work exists (worktree, branch, or PR):**
-   - Spawn new SE to continue: `code chat -r -m "Software Engineer" -a AGENTS.md "Continue Issue #<N>. Check worktree wt-impl-<N>-*."`
+   - Spawn new SE to continue: `code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Continue Issue #<N>. Check worktree wt-impl-<N>-*. Start."`
    - New SE adopts the existing worktree/branch
 
 3. **If no work exists:**

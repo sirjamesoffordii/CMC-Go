@@ -64,11 +64,11 @@ code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."
 
 ## Delegation Decision
 
-| Score | Route To    | Method                   |
-| ----- | ----------- | ------------------------ |
-| 0-1   | Do yourself | Direct (TL never edits)  |
-| 0-2   | Cloud Agent | `agent:copilot-SE` label |
-| 2-6   | Local SE    | `code chat -r -m "SE"`   |
+| Score | Route To    | Method                                |
+| ----- | ----------- | ------------------------------------- |
+| 0-1   | Do yourself | Direct (TL never edits)               |
+| 0-2   | Cloud Agent | `agent:copilot-SE` label              |
+| 2-6   | Local SE    | `code chat -r -m "Software Engineer"` |
 
 **Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
 
@@ -120,14 +120,29 @@ Low/Med/High — reason
 
 ---
 
+## Heartbeat Protocol (Simple)
+
+**MCP Memory only.** Every 3 minutes, each agent posts:
+
+```
+mcp_memory_add_observations: entityName: "<role>-<#>", contents: ["heartbeat: <ISO-8601> | <context> | <status>"]
+```
+
+- **Stale:** 6 min no heartbeat → supervisor respawns
+- **First heartbeat:** Immediately on spawn (not 60 seconds later)
+
+**Details:** [docs/aeos/MEMORY_SYSTEM.md](docs/aeos/MEMORY_SYSTEM.md)
+
+---
+
 ## Worktrees & Branches
 
 - `wt-main` — only place for `pnpm dev`
 - `wt-impl-<issue#>-<slug>` — implementation
 - `wt-verify-<pr#>-<slug>` — verification
 
-**Branch format:** `agent/<role>/<issue#>-<slug>`
-**Commit format:** `agent(<role>): <summary>`
+**Branch format:** `agent/<role>/<issue#>-<slug>` (e.g., `agent/se-1/42-fix-bug`)
+**Commit format:** `agent(<role>): <summary>` (e.g., `agent(se-1): Fix district filter`)
 
 ---
 

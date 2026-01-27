@@ -142,25 +142,26 @@ Post a **Planning Summary** to the Coordination Issue:
 
 ### Heartbeat Monitoring
 
-PE monitors TL. TL monitors SWEs. If any agent goes missing, the supervisor respawns it.
+PE monitors TL. TL monitors SE. If any agent goes missing, the supervisor respawns it.
 
-**Heartbeat signals:**
+**Heartbeats use MCP Memory only:**
 
-| Signal                      | Posted By | Meaning     |
-| --------------------------- | --------- | ----------- |
-| `PE-HEARTBEAT: <timestamp>` | PE        | PE is alive |
-| `TL-HEARTBEAT: <timestamp>` | TL        | TL is alive |
-| `SE-HEARTBEAT: <timestamp>` | SE        | SE is alive |
+```
+mcp_memory_add_observations: {
+  entityName: "<role>-<#>",  // e.g., "TL-1", "SE-1"
+  contents: ["heartbeat: <ISO-8601> | <context> | <status>"]
+}
+```
 
 **Thresholds:**
 
-- Heartbeat interval: ~5 minutes
-- Missing threshold: 10 minutes → spawn replacement
-- Dead threshold: 20 minutes → spawn + recovery note
+- Heartbeat interval: 3 minutes
+- Stale threshold: 6 minutes → spawn replacement
+- **First heartbeat:** Immediately on spawn (not 60 seconds later)
 
 ### Respawn Protocol
 
-**If TL is missing (no heartbeat > 10 min):**
+**If TL is missing (no heartbeat > 6 min):**
 
 ```powershell
 # -r reuses current window (creates new chat tab), -a adds context

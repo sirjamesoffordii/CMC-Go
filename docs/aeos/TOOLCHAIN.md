@@ -98,18 +98,20 @@ File: `.vscode/tasks.json`
 
 Each agent has a dedicated GitHub account with its own auth config:
 
-| Role  | Account                    | Config Directory                  |
-| ----- | -------------------------- | --------------------------------- |
-| PE    | `Principle-Engineer-Agent` | `~/.gh-Principle-Engineer-Agent/` |
-| TL    | `Alpha-Tech-Lead`          | `~/.gh-alpha-tech-lead/`          |
-| SE    | `Software-Engineer-Agent`  | `~/.gh-software-engineer-agent/`  |
-| Human | `sirjamesoffordii`         | Default (`~/.config/gh/`)         |
+| Role  | Account                    | Config Directory                              |
+| ----- | -------------------------- | --------------------------------------------- |
+| PE    | `Principle-Engineer-Agent` | `~/.gh-principal-engineer-agent/` (lowercase) |
+| TL    | `Alpha-Tech-Lead`          | `~/.gh-alpha-tech-lead/`                      |
+| SE    | `Software-Engineer-Agent`  | `~/.gh-software-engineer-agent/`              |
+| Human | `sirjamesoffordii`         | Default (`~/.config/gh/`)                     |
+
+**Note:** PE directory is lowercase (`principal-engineer-agent`) but the GitHub account is `Principle-Engineer-Agent` (with the "Principle" spelling).
 
 ### Switch Identity
 
 ```powershell
-# PE
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-Principle-Engineer-Agent"
+# PE (lowercase directory)
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 
 # TL
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"

@@ -191,14 +191,26 @@ START (no task given)
 
 ### Signal markers (use these exact strings):
 
-| Marker                                | Meaning                  | When to use                      |
-| ------------------------------------- | ------------------------ | -------------------------------- |
-| `SE-<N>-HEARTBEAT: <timestamp>`       | "I'm alive"              | Every 3 minutes or at loop start |
-| `SE-<N>-CLAIMED: Issue #X`            | "Working on this"        | After claiming an issue          |
-| `SE-<N>-BLOCKED: Issue #X - <reason>` | "Need help"              | When stuck                       |
-| `SE-<N>-COMPLETE: Issue #X, PR #Y`    | "Done, ready for review" | After opening PR                 |
-| `SE-<N>-IDLE: No work found`          | "Board empty"            | When no Todo items               |
-| `SE-<N>-SHUTDOWN: <reason>`           | "Graceful exit"          | When stopping (done/error)       |
+| Marker                                | Meaning                  | When to use                |
+| ------------------------------------- | ------------------------ | -------------------------- |
+| `SE-<N>-CLAIMED: Issue #X`            | "Working on this"        | After claiming an issue    |
+| `SE-<N>-BLOCKED: Issue #X - <reason>` | "Need help"              | When stuck                 |
+| `SE-<N>-COMPLETE: Issue #X, PR #Y`    | "Done, ready for review" | After opening PR           |
+| `SE-<N>-IDLE: No work found`          | "Board empty"            | When no Todo items         |
+| `SE-<N>-SHUTDOWN: <reason>`           | "Graceful exit"          | When stopping (done/error) |
+
+**Heartbeat uses MCP Memory (not GitHub comments):**
+
+```
+mcp_memory_add_observations: {
+  entityName: "SE-1",
+  contents: ["heartbeat: 2025-01-15T14:30:00Z | Issue #42 | active"]
+}
+```
+
+- Post every **3 minutes**
+- **First heartbeat:** Immediately on spawn (not 60 seconds later)
+- **Stale threshold:** 6 minutes (TL will respawn you)
 
 **`<N>` is your session number** (given by TL in spawn prompt, e.g., "You are SE-1"). If no session number given, use `SE` without a number.
 
@@ -210,13 +222,13 @@ START (no task given)
 ### Example signal flow:
 
 ```
-SE starts → "SE-HEARTBEAT: 2026-01-24T21:00:00Z"
-SE claims Issue #42 → "SE-CLAIMED: Issue #42"
-SE finishes → "SE-COMPLETE: Issue #42, PR #215"
-SE loops → "SE-HEARTBEAT: 2026-01-24T21:15:00Z"
+SE starts → mcp_memory: "heartbeat: 2025-01-15T14:00:00Z | startup | active"
+SE claims Issue #42 → GitHub comment: "SE-CLAIMED: Issue #42"
+SE finishes → GitHub comment: "SE-COMPLETE: Issue #42, PR #215"
+SE loops → mcp_memory: "heartbeat: 2025-01-15T14:03:00Z | Issue #43 | active"
 ```
 
-**TL polls every ~60 seconds** and can:
+**TL polls MCP Memory every ~3 minutes** and can:
 
 - See your progress
 - Answer blocked questions

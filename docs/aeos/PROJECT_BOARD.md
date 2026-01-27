@@ -92,6 +92,8 @@ If count < 4 → delegate new work
 
 ### Stale Detection
 
+**Note:** This is _task_ staleness (how long work should take), not _agent_ staleness. Agent heartbeat stale threshold is always **6 minutes** (see AGENTS.md).
+
 | Complexity | Expected Max Time | If Exceeded |
 | ---------- | ----------------- | ----------- |
 | 1          | 3 min             | Investigate |

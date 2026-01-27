@@ -20,12 +20,14 @@ These require a human with the `sirjamesoffordii` account:
 3. **GH CLI configs created:**
 
    ```
-   C:/Users/sirja/.gh-Principle-Engineer-Agent/
-   C:/Users/sirja/.gh-alpha-tech-lead/
-   C:/Users/sirja/.gh-software-engineer-agent/
+   C:/Users/sirja/.gh-principal-engineer-agent/   ← PE (lowercase dir, account is Principle-Engineer-Agent)
+   C:/Users/sirja/.gh-alpha-tech-lead/            ← TL
+   C:/Users/sirja/.gh-software-engineer-agent/    ← SE
    ```
 
    Each contains `hosts.yml` with auth token for that account.
+
+   **Note:** PE directory is lowercase (`principal-engineer-agent`) but the GitHub account is `Principle-Engineer-Agent` (with the "Principle" spelling).
 
 4. **Secrets configured:**
    - Repository secrets (Settings → Secrets → Actions):
@@ -157,8 +159,8 @@ code chat [options] [prompt]
 #   --maximize            Maximize chat panel
 
 # Examples:
-code chat -r -m "Tech Lead" "Start coordination"                    # New TL chat in current window
-code chat -r -m "Software Engineer" -a AGENTS.md "Implement #250"   # New SE chat with context
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."          # New TL chat
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Start."  # New SE chat
 ```
 
 **IMPORTANT:** The `-r` flag creates a new chat TAB in the same window, it does NOT replace the current chat. This is the correct behavior for spawning additional agents.
