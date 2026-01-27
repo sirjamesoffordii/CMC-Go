@@ -30,9 +30,14 @@ docs/aeos/
 ├── README.md                 ← You are here (index)
 ├── BOOT_PROCEDURE.md         ← Cold start from zero
 ├── RUNTIME_LOOP.md           ← Day-to-day agent execution
-├── TOOLCHAIN.md              ← Integrations and dependencies
 ├── IDENTITY_SYSTEM.md        ← GitHub accounts and auth
 ├── MEMORY_SYSTEM.md          ← MCP Memory + state files
+├── SPAWN_PROCEDURES.md       ← How agents spawn other agents
+├── MODEL_SELECTION.md        ← Which model for what task
+├── PROJECT_BOARD.md          ← Board workflow and CLI commands
+├── PR_STANDARDS.md           ← Evidence and documentation
+├── TROUBLESHOOTING.md        ← Escape hatches and recovery
+├── TOOLCHAIN.md              ← Integrations and dependencies
 ├── PATTERNS.md               ← Lessons learned (link to reference)
 └── TEST_REPORTS/             ← AEOS test cycle reports
     └── 2026-01-26-boot-test.md
