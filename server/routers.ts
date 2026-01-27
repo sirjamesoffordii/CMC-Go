@@ -7,7 +7,7 @@ import {
 } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
-import { storagePut } from "./storage";
+import { storagePut, storageGet } from "./storage";
 import { setSessionCookie, clearSessionCookie } from "./_core/session";
 import { TRPCError } from "@trpc/server";
 import {
@@ -1846,6 +1846,24 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getSetting(input.key);
       }),
+    // Get a fresh presigned URL for the header image
+    // This is needed because stored URLs expire (presigned)
+    getHeaderImageUrl: publicProcedure.query(async () => {
+      const setting = await db.getSetting("headerImageKey");
+      if (!setting || !setting.value) {
+        return { url: null };
+      }
+      try {
+        const { url } = await storageGet(setting.value);
+        return { url };
+      } catch (error) {
+        console.error(
+          "[getHeaderImageUrl] Failed to get presigned URL:",
+          error
+        );
+        return { url: null };
+      }
+    }),
     set: adminProcedure
       .input(z.object({ key: z.string(), value: z.string() }))
       .mutation(async ({ input }) => {
@@ -1881,9 +1899,13 @@ export const appRouter = router({
           const { url } = await storagePut(fileKey, buffer, "image/jpeg");
           console.log("[uploadHeaderImage] S3 upload successful, URL:", url);
 
-          // Save to database
-          console.log("[uploadHeaderImage] Saving URL to database");
-          await db.setSetting("headerImageUrl", url);
+          // Save the file KEY (not URL) to database - URLs are presigned and expire
+          // The key is used to generate fresh presigned URLs on retrieval
+          console.log(
+            "[uploadHeaderImage] Saving file key to database:",
+            fileKey
+          );
+          await db.setSetting("headerImageKey", fileKey);
 
           // Save background color if provided
           if (input.backgroundColor) {
