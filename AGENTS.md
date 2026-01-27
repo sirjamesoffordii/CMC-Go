@@ -50,15 +50,15 @@ gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | Conve
 
 ## Spawning Agents
 
-**ID Format:** `Role#(Gen#)` — e.g., `TL1(1)`, `SE1(2)`, `PE1(1)`
+**ID Format:** `Role-#(Gen#)` — e.g., `TL-1(1)`, `SE-1(2)`, `PE-1(1)`
 
-- **Role#** = which instance (TL1, TL2, SE1, SE2)
+- **Role-#** = which instance (TL-1, TL-2, SE-1, SE-2)
 - **Gen#** = generation (increments on respawn). If gen# changes, previous instance stopped.
 
 ```powershell
-# Spawn message is just: "You are ID(Gen). Activate."
-code chat -r -m "tech-lead" -a AGENTS.md "You are TL1(1). Activate."
-code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
+# Standard spawn prompt (MUST end with this line):
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
 ```
 
 **Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
@@ -69,10 +69,10 @@ code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
 
 ## Delegation Decision
 
-| Score | Route To | Method                                                                         |
-| ----- | -------- | ------------------------------------------------------------------------------ |
-| 0-1   | Yourself | Direct (but TL never edits code)                                               |
-| 2-6   | Local SE | `code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."` |
+| Score | Route To | Method                           |
+| ----- | -------- | -------------------------------- |
+| 0-1   | Yourself | Direct (but TL never edits code) |
+| 2-6   | Local SE | See spawn commands above         |
 
 **Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
 

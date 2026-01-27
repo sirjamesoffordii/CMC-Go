@@ -27,9 +27,9 @@ tools:
 
 ## Activation (immediately)
 
-1. Parse your ID from spawn message (e.g., "SE1(2)" = instance 1, generation 2)
+1. Parse your ID from spawn message (e.g., "SE-1(2)" = instance 1, generation 2)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"; gh auth status`
-3. Rename chat tab to your ID (e.g., "SE1(2)")
+3. Rename chat tab to your ID (e.g., "SE-1(2)")
 4. Post first heartbeat to MCP Memory
 5. Check board for Todo items, claim highest priority
 
@@ -52,7 +52,7 @@ tools:
 
 1. **SE NEVER asks questions** — make best judgment, document assumptions
 2. **SE NEVER stops mid-task** — complete the loop or report failure
-3. **Stuck >5 min?** → Try different approach. Still stuck? Report "<ID>-BLOCKED: #X - reason"
+3. **Stuck >5 min?** → Try different approach. Still stuck? Report "SE-1(#)-BLOCKED: #X - reason"
 4. **Tests fail?** → Fix them or explain why in PR
 
 ## PR Template

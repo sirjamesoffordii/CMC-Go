@@ -62,17 +62,17 @@ NOW TL can continue
 
 ### ID Format
 
-`Role#(Gen#)` — e.g., `TL1(1)`, `SE1(2)`, `PE1(1)`
+`Role-#(Gen#)` — e.g., `TL-1(1)`, `SE-1(2)`, `PE-1(1)`
 
-- **Role#** = which instance (TL1, TL2, SE1, SE2)
+- **Role-#** = which instance (TL-1, TL-2, SE-1, SE-2)
 - **Gen#** = generation (increments on respawn). If gen# changes, previous instance stopped.
 
 ### Syntax
 
 ```powershell
-# Spawn message: "You are ID(Gen). Activate."
-code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
-code chat -r -m "tech-lead" -a AGENTS.md "You are TL1(1). Activate."
+# Spawn message MUST end with: FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now.
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
 ```
 
 ### Options
@@ -106,7 +106,7 @@ All agents post heartbeats to MCP Memory every 3 minutes:
 ```powershell
 # MCP Memory heartbeat (only method)
 mcp_memory_add_observations: {
-  entityName: "SE1(1)",
+  entityName: "SE-1(1)",
   contents: ["heartbeat: 2026-01-27T14:30:00Z | Issue #123 | active"]
 }
 ```

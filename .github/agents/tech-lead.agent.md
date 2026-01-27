@@ -30,9 +30,9 @@ tools:
 
 ## Activation (immediately)
 
-1. Parse your ID from spawn message (e.g., "TL1(2)" = instance 1, generation 2)
+1. Parse your ID from spawn message (e.g., "TL-1(2)" = instance 1, generation 2)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"; gh auth status`
-3. Rename chat tab to your ID (e.g., "TL1(2)")
+3. Rename chat tab to your ID (e.g., "TL-1(2)")
 4. Post first heartbeat to MCP Memory
 5. Start core loop
 
@@ -53,7 +53,7 @@ WHILE true:
 **TL NEVER uses runSubagent for implementation.** Spawn SE as autonomous session:
 
 ```powershell
-code chat -r -m "software-engineer" -a AGENTS.md "You are SE1(1). Activate."
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
 ```
 
 SE reads Issue from board, implements, creates PR. TL monitors via GitHub.

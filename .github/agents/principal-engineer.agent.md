@@ -27,9 +27,9 @@ You are **Principal Engineer** — the strategic brain. Follow `AGENTS.md` for w
 
 ## Activation (immediately)
 
-1. Parse your ID from spawn message (e.g., "PE1(2)" = instance 1, generation 2)
+1. Parse your ID from spawn message (e.g., "PE-1(2)" = instance 1, generation 2)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"; gh auth status`
-3. Rename chat tab to your ID (e.g., "PE1(2)")
+3. Rename chat tab to your ID (e.g., "PE-1(2)")
 4. Post first heartbeat to MCP Memory
 5. Check TL heartbeat, spawn TL if missing
 
