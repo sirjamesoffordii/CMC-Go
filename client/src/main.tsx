@@ -1,6 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { getTrpcUrl } from "@/lib/apiConfig";
-import { UNAUTHED_ERR_MSG } from '@shared/const';
+import { UNAUTHED_ERR_MSG } from "@shared/const";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
@@ -12,8 +12,14 @@ import "./index.css";
 
 // Initialize Sentry with environment variables
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-const sentryEnvironment = import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE || "development";
-const sentryRelease = import.meta.env.VITE_SENTRY_RELEASE || import.meta.env.VITE_APP_VERSION || undefined;
+const sentryEnvironment =
+  import.meta.env.VITE_SENTRY_ENVIRONMENT ||
+  import.meta.env.MODE ||
+  "development";
+const sentryRelease =
+  import.meta.env.VITE_SENTRY_RELEASE ||
+  import.meta.env.VITE_APP_VERSION ||
+  undefined;
 
 if (sentryDsn && sentryDsn.trim()) {
   Sentry.init({
@@ -23,9 +29,7 @@ if (sentryDsn && sentryDsn.trim()) {
     sendDefaultPii: true,
     // Enable performance monitoring
     tracesSampleRate: 1.0,
-    integrations: [
-      Sentry.replayIntegration(),
-    ],
+    integrations: [Sentry.replayIntegration()],
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
   });
@@ -33,7 +37,7 @@ if (sentryDsn && sentryDsn.trim()) {
 
 const queryClient = new QueryClient();
 
-const redirectToLoginIfUnauthorized = (error: unknown) => {
+const redirectToLoginIfUnauthorized = (_error: unknown) => {
   // Authentication disabled - don't redirect to login
   return;
 };
@@ -67,21 +71,24 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    
+
     // Don't show toast for expected auth errors on aggregate/public queries
     // These queries are expected to fail for unauthenticated users, and metrics.get provides the data
     const queryKey = event.query.queryKey;
-    const isAggregateQuery = Array.isArray(queryKey) && (
-      queryKey[0]?.[0] === 'people.list' ||
-      queryKey[0]?.[0] === 'needs.listActive'
-    );
-    
-    if (isAggregateQuery && (error instanceof TRPCClientError && 
-        (error.data?.code === "UNAUTHORIZED" || error.data?.code === "FORBIDDEN"))) {
+    const isAggregateQuery =
+      Array.isArray(queryKey) &&
+      (queryKey[0]?.[0] === "people.list" ||
+        queryKey[0]?.[0] === "needs.listActive");
+
+    if (
+      isAggregateQuery &&
+      error instanceof TRPCClientError &&
+      (error.data?.code === "UNAUTHORIZED" || error.data?.code === "FORBIDDEN")
+    ) {
       // Silently ignore - metrics.get will provide aggregate data
       return;
     }
-    
+
     // PR 6: Show user-friendly toast instead of console.error
     const message = getErrorMessage(error);
     if (message !== UNAUTHED_ERR_MSG) {
@@ -94,7 +101,7 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
-    
+
     // PR 6: Show user-friendly toast instead of console.error
     const message = getErrorMessage(error);
     if (message !== UNAUTHED_ERR_MSG) {
@@ -124,7 +131,9 @@ import ErrorBoundary from "./components/ErrorBoundary";
 try {
   const rootElement = document.getElementById("root");
   if (!rootElement) {
-    throw new Error("Root element not found. Make sure there's a <div id='root'></div> in the HTML.");
+    throw new Error(
+      "Root element not found. Make sure there's a <div id='root'></div> in the HTML."
+    );
   }
 
   createRoot(rootElement).render(

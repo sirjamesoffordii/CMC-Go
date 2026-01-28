@@ -1,0 +1,23 @@
+{
+    "recommendations": [
+        // Core development
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "usernamehw.errorlens",
+        
+        // Database tools
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-mysql",
+        
+        // Code quality
+        "streetsidesoftware.code-spell-checker",
+        
+        // GitHub integration
+        "github.vscode-pull-request-github",
+        "github.copilot",
+        "github.copilot-chat",
+        
+        // Error monitoring
+        "bacebu4.sentry-issues"
+    ]
+}

@@ -11,7 +11,8 @@ const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 const connectionString = process.env.DATABASE_URL;
-console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL?.substring(0, 50) + '...');
+// Security: Don't log the connection string as it contains credentials
+console.log("🔍 DATABASE_URL:", connectionString ? "Set ✓" : "Not set ✗");
 if (!connectionString) {
   console.error("❌ DATABASE_URL environment variable is required");
   process.exit(1);
@@ -26,17 +27,19 @@ async function runMigrations() {
     // Get all migration files, sorted
     const migrationsDir = join(projectRoot, "drizzle", "migrations");
     const files = readdirSync(migrationsDir)
-      .filter((f) => f.endsWith(".sql"))
+      .filter(f => f.endsWith(".sql"))
       .sort();
 
     if (files.length === 0) {
-      console.log("⚠️  No migration files found in drizzle/migrations/ directory");
+      console.log(
+        "⚠️  No migration files found in drizzle/migrations/ directory"
+      );
       console.log("   Run 'pnpm db:generate' first to create migrations");
       return;
     }
 
     console.log(`\nFound  migration file(s) in drizzle/migrations:`);
-    files.forEach((f) => console.log(`  - ${f}`));
+    files.forEach(f => console.log(`  - ${f}`));
 
     // Check if migrations table exists
     const [tables] = await connection.query(
@@ -59,7 +62,7 @@ async function runMigrations() {
     const [applied] = await connection.query(
       "SELECT hash FROM drizzle_migrations ORDER BY created_at"
     );
-    const appliedHashes = new Set(applied.map((r) => r.hash));
+    const appliedHashes = new Set(applied.map(r => r.hash));
 
     // Run each migration
     for (const file of files) {
@@ -76,13 +79,15 @@ async function runMigrations() {
       // If they do, just mark migration as applied without running it
       const statements = content
         .split("--> statement-breakpoint")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0 && !s.startsWith("--"));
-      
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && !s.startsWith("--"));
+
       // Extract table names from CREATE TABLE statements
       const tableNames = [];
       for (const statement of statements) {
-        const createTableMatch = statement.match(/CREATE TABLE\s+(?:IF NOT EXISTS\s+)?`?(\w+)`?/i);
+        const createTableMatch = statement.match(
+          /CREATE TABLE\s+(?:IF NOT EXISTS\s+)?`?(\w+)`?/i
+        );
         if (createTableMatch) {
           tableNames.push(createTableMatch[1]);
         }
@@ -102,7 +107,9 @@ async function runMigrations() {
       }
 
       if (tablesExist) {
-        console.log(`⏭️  Skipping ${file} (tables already exist, likely from db:push)`);
+        console.log(
+          `⏭️  Skipping ${file} (tables already exist, likely from db:push)`
+        );
         // Mark as applied anyway to keep migration history in sync
         await connection.query(
           "INSERT INTO drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -126,13 +133,24 @@ async function runMigrations() {
             await connection.query(safeStatement);
           } catch (error) {
             // If table already exists error, that's okay - continue
-            if (error.code === "ER_TABLE_EXISTS_ERROR" || error.message.includes("already exists")) {
-              console.warn(`⚠️  Table already exists, skipping: ${error.message}`);
+            if (
+              error.code === "ER_TABLE_EXISTS_ERROR" ||
+              error.message.includes("already exists")
+            ) {
+              console.warn(
+                `⚠️  Table already exists, skipping: ${error.message}`
+              );
               continue;
             }
             // If column already exists error (for ALTER TABLE ADD COLUMN), that's okay - continue
-            if (error.code === "ER_DUP_FIELDNAME" || error.message.includes("Duplicate column name") || error.message.includes("already exists")) {
-              console.warn(`⚠️  Column already exists, skipping: ${error.message}`);
+            if (
+              error.code === "ER_DUP_FIELDNAME" ||
+              error.message.includes("Duplicate column name") ||
+              error.message.includes("already exists")
+            ) {
+              console.warn(
+                `⚠️  Column already exists, skipping: ${error.message}`
+              );
               continue;
             }
             console.error(`❌ Error executing statement in ${file}:`);
@@ -164,4 +182,3 @@ async function runMigrations() {
 }
 
 runMigrations().catch(console.error);
-

@@ -1,5 +1,117 @@
 {
     "githubPullRequests.ignoredPullRequestBranches": [
         "main"
-    ]
+    ],
+    
+    // Prevent terminal from stealing focus when agents run commands
+    "terminal.integrated.focusAfterRun": "none",
+    "terminal.integrated.showOnError": false,
+    "chat.agent.terminal.focusOnExecution": false,
+
+    // MCP servers (Copilot tools)
+    "chat.mcp.gallery.enabled": true,
+    "chat.mcp.autostart": true,
+    
+    // Auto-close task terminals without "press any key" prompt
+    "task.showDecorations": false,
+
+    // --- AGENT TERMINAL FIX ---
+    // Disable pagers to prevent "alternate buffer" hangs in agent terminal sessions
+    "terminal.integrated.env.windows": {
+        "GIT_PAGER": "cat",
+        "GH_PAGER": "cat",
+        "PAGER": "cat",
+        "LESS": "-R"
+    },
+    "terminal.integrated.env.linux": {
+        "GIT_PAGER": "cat",
+        "GH_PAGER": "cat",
+        "PAGER": "cat",
+        "LESS": "-R"
+    },
+    "terminal.integrated.env.osx": {
+        "GIT_PAGER": "cat",
+        "GH_PAGER": "cat",
+        "PAGER": "cat",
+        "LESS": "-R"
+    },
+
+    "sentry.enabled": true,
+    "sentry.organization": "sir-james-offord-ii",
+    "sentry.projects": ["cmc-go-client"],
+    "sentry.serverUrl": "https://sir-james-offord-ii.sentry.io",
+    "sentryAutoFix.sentryUrl": "https://sir-james-offord-ii.sentry.io",
+    "sentryAutoFix.projectSlugs": ["sir-james-offord-ii/cmc-go-client"],
+    // Embedded preview: prefer Microsoft Edge Tools (not Simple Browser).
+    "vscode-edge-devtools.defaultUrl": "http://127.0.0.1:3000",
+    "vscode-edge-devtools.webRoot": "${workspaceFolder}/client",
+
+    // If Ports auto-forwarding is ever used, open externally (avoids Simple Browser).
+    "remote.portsAttributes": {
+        "3000": {
+            "onAutoForward": "openBrowser"
+        }
+    },
+
+    // SQLTools settings
+    "sqltools.connections": [
+        {
+            "name": "CMC Go Local Dev",
+            "driver": "MySQL",
+            "server": "localhost",
+            "port": 3306,
+            "database": "cmc_go",
+            "username": "root",
+            "askForPassword": true,
+            "connectionTimeout": 30
+        }
+    ],
+    "sqltools.autoOpenSessionFiles": false,
+    
+    // Prettier settings
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+
+    // Code Spell Checker settings
+    "cSpell.words": [
+        "radix",
+        "shadcn",
+        "tanstack",
+        "trpc",
+        "tiptap",
+        "drizzle",
+        "nanoid",
+        "sonner",
+        "vaul",
+        "wouter",
+        "lucide",
+        "clsx",
+        "cmdk",
+        "tailwindcss",
+        "streetsidesoftware",
+        "esbenp",
+        "VITE",
+        "modelcontextprotocol",
+        "mcp",
+        "cmc",
+        "sirjamesoffordii"
+    ],
+
+    // Edge DevTools - disable CSS inline style warnings (common in React)
+    "vscode-edge-devtools.webhint": false
 }

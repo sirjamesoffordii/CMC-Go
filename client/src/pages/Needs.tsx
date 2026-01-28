@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hand, DollarSign, MapPin, User, CheckCircle } from "lucide-react";
@@ -18,26 +24,41 @@ export default function Needs() {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Check if user is a leader
-  const isLeader = user && ["CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"].includes(user.role);
+  const isLeader =
+    user &&
+    [
+      "CO_DIRECTOR",
+      "CAMPUS_DIRECTOR",
+      "DISTRICT_DIRECTOR",
+      "REGION_DIRECTOR",
+      "ADMIN",
+    ].includes(user.role);
 
   // Fetch DISTRICT_VISIBLE needs
-  const { data: allNeeds = [], isLoading: needsLoading } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [], isLoading: needsLoading } =
+    trpc.needs.listActive.useQuery();
   const { data: allPeople = [] } = trpc.people.list.useQuery();
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
 
   // Filter to DISTRICT_VISIBLE needs only
-  const districtVisibleNeeds = allNeeds.filter(need => need.visibility === "DISTRICT_VISIBLE");
+  const districtVisibleNeeds = allNeeds.filter(
+    need => need.visibility === "DISTRICT_VISIBLE"
+  );
 
   // Enrich needs with person and campus info
-  const enrichedNeeds = districtVisibleNeeds.map(need => {
-    const person = allPeople.find(p => p.personId === need.personId);
-    const campus = person?.primaryCampusId ? allCampuses.find(c => c.id === person.primaryCampusId) : null;
-    return {
-      ...need,
-      person,
-      campus,
-    };
-  }).filter(item => item.person); // Only show needs for people we can see
+  const enrichedNeeds = districtVisibleNeeds
+    .map(need => {
+      const person = allPeople.find(p => p.personId === need.personId);
+      const campus = person?.primaryCampusId
+        ? allCampuses.find(c => c.id === person.primaryCampusId)
+        : null;
+      return {
+        ...need,
+        person,
+        campus,
+      };
+    })
+    .filter(item => item.person); // Only show needs for people we can see
 
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
@@ -87,7 +108,11 @@ export default function Needs() {
             District-visible needs that can be mobilized by the community
           </p>
         </div>
-        <Button onClick={() => setLocation("/")} variant="outline" className="text-black hover:bg-red-600 hover:text-white">
+        <Button
+          onClick={() => setLocation("/")}
+          variant="outline"
+          className="text-black hover:bg-red-600 hover:text-white"
+        >
           Back to Map
         </Button>
       </div>
@@ -96,18 +121,19 @@ export default function Needs() {
         <Card>
           <CardContent className="py-12 text-center">
             <Hand className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">No district-visible needs</p>
+            <p className="text-lg font-medium text-gray-900 mb-2">
+              No district-visible needs
+            </p>
             <p className="text-sm text-gray-500">
-              {isLeader 
+              {isLeader
                 ? "Create needs and set them to 'District Visible' to mobilize the community."
-                : "Check back later for needs that need community support."
-              }
+                : "Check back later for needs that need community support."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4">
-          {enrichedNeeds.map((item) => (
+          {enrichedNeeds.map(item => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between gap-4">
@@ -116,7 +142,9 @@ export default function Needs() {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-gray-500" />
-                        <span className="font-semibold text-lg">{item.person?.name}</span>
+                        <span className="font-semibold text-lg">
+                          {item.person?.name}
+                        </span>
                       </div>
                       {item.campus && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
@@ -186,7 +214,7 @@ export default function Needs() {
           ))}
         </div>
       )}
-      
+
       <PersonDetailsDialog
         person={selectedPerson}
         open={dialogOpen}
@@ -195,4 +223,3 @@ export default function Needs() {
     </div>
   );
 }
-

@@ -25,7 +25,7 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Always log to console
     console.error("ErrorBoundary caught an error:", error, errorInfo);
-    
+
     // Capture to Sentry if available (browser SDK)
     try {
       Sentry.captureException(error, {
@@ -62,7 +62,8 @@ class ErrorBoundary extends Component<Props, State> {
 
             <h2 className="text-xl mb-2">Something went wrong</h2>
             <p className="text-muted-foreground mb-6 text-center">
-              An unexpected error occurred. You can try going home or reloading the page.
+              An unexpected error occurred. You can try going home or reloading
+              the page.
             </p>
 
             <div className="p-4 w-full rounded bg-muted overflow-auto mb-6 max-h-64">

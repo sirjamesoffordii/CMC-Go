@@ -1,9 +1,0 @@
-{
-  "query": "UPDATE districts SET region = 'South Central' WHERE id = 'Mississippi'",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2urQ2Y5ox8SwiQm.e293c8dbbee4 --database UQnsC7UkUSExcoqL3bpybA --execute UPDATE districts SET region = 'South Central' WHERE id = 'Mississippi'",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 83
-}

@@ -21,7 +21,8 @@ interface User {
  */
 function normalizeRole(role: string): string {
   // Campus-level roles - all normalize to appropriate campus scope role
-  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR") return "CAMPUS_DIRECTOR";
+  if (role === "CAMPUS_CO_DIRECTOR" || role === "CO_DIRECTOR")
+    return "CAMPUS_DIRECTOR";
   if (role === "CAMPUS_VOLUNTEER" || role === "CAMPUS_INTERN") return "STAFF";
 
   // District-level roles
@@ -31,7 +32,12 @@ function normalizeRole(role: string): string {
   if (role === "REGIONAL_STAFF") return "REGIONAL_DIRECTOR";
 
   // Handle national-level roles that map to REGION_DIRECTOR or ADMIN
-  if (role === "NATIONAL_DIRECTOR" || role === "REGIONAL_DIRECTOR" || role === "FIELD_DIRECTOR") return "REGION_DIRECTOR";
+  if (
+    role === "NATIONAL_DIRECTOR" ||
+    role === "REGIONAL_DIRECTOR" ||
+    role === "FIELD_DIRECTOR"
+  )
+    return "REGION_DIRECTOR";
   if (role === "NATIONAL_STAFF" || role === "CMC_GO_ADMIN") return "ADMIN";
 
   return role;
@@ -42,7 +48,9 @@ function normalizeRole(role: string): string {
  * Returns the appropriate scope level (CAMPUS, DISTRICT, REGION, or ALL).
  * Returns null if scope cannot be determined (user has no access).
  */
-export function getPeopleScope(user: User | null | undefined): PeopleScope | null {
+export function getPeopleScope(
+  user: User | null | undefined
+): PeopleScope | null {
   // Logged out users have NO people scope. Public UI must use aggregate endpoints.
   if (!user) return null;
 
@@ -57,14 +65,16 @@ export function getPeopleScope(user: User | null | undefined): PeopleScope | nul
   if (role === "DISTRICT_DIRECTOR") {
     if (user.regionId) return { level: "REGION", regionId: user.regionId };
     // fail-closed fallback (tightest we can)
-    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.districtId)
+      return { level: "DISTRICT", districtId: user.districtId };
     if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
     return null; // No scope identifiers
   }
 
   // District access - CAMPUS_DIRECTOR can see their district
   if (role === "CAMPUS_DIRECTOR") {
-    if (user.districtId) return { level: "DISTRICT", districtId: user.districtId };
+    if (user.districtId)
+      return { level: "DISTRICT", districtId: user.districtId };
     if (user.campusId) return { level: "CAMPUS", campusId: user.campusId };
     return null; // No scope identifiers
   }

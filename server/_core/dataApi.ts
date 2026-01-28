@@ -25,8 +25,13 @@ export async function callDataApi(
   }
 
   // Build the full URL by appending the service path to the base URL
-  const baseUrl = ENV.forgeApiUrl.endsWith("/") ? ENV.forgeApiUrl : `${ENV.forgeApiUrl}/`;
-  const fullUrl = new URL("webdevtoken.v1.WebDevService/CallApi", baseUrl).toString();
+  const baseUrl = ENV.forgeApiUrl.endsWith("/")
+    ? ENV.forgeApiUrl
+    : `${ENV.forgeApiUrl}/`;
+  const fullUrl = new URL(
+    "webdevtoken.v1.WebDevService/CallApi",
+    baseUrl
+  ).toString();
 
   const response = await fetch(fullUrl, {
     method: "POST",
@@ -52,11 +57,15 @@ export async function callDataApi(
     );
   }
 
-  const payload = await response.json().catch(() => ({}));
+  const payload = await response.json().catch(error => {
+    console.error("[Data API] Failed to parse JSON response:", error);
+    return {};
+  });
   if (payload && typeof payload === "object" && "jsonData" in payload) {
     try {
       return JSON.parse((payload as Record<string, string>).jsonData ?? "{}");
-    } catch {
+    } catch (error) {
+      console.error("[Data API] Failed to parse jsonData field:", error);
       return (payload as Record<string, unknown>).jsonData;
     }
   }

@@ -1,4 +1,14 @@
-import { mysqlTable, int, varchar, text, timestamp, boolean, mysqlEnum, index, datetime } from "drizzle-orm/mysql-core";
+import {
+  mysqlTable,
+  int,
+  varchar,
+  text,
+  timestamp,
+  boolean,
+  mysqlEnum,
+  index,
+  datetime,
+} from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -8,11 +18,26 @@ export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
   fullName: varchar("fullName", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull().unique(),
-  role: mysqlEnum("role", ["STAFF", "CO_DIRECTOR", "CAMPUS_DIRECTOR", "DISTRICT_DIRECTOR", "REGION_DIRECTOR", "ADMIN"]).notNull(),
-  campusId: int("campusId"), // Nullable - can be null for admin or "No campus" users
-  districtId: varchar("districtId", { length: 64 }), // Nullable - derived from campusId or explicit
-  regionId: varchar("regionId", { length: 255 }), // Nullable - derived from campusId or explicit
-  approvalStatus: mysqlEnum("approvalStatus", ["ACTIVE", "PENDING_APPROVAL", "REJECTED", "DISABLED"]).default("PENDING_APPROVAL").notNull(),
+  role: mysqlEnum("role", [
+    "STAFF",
+    "CO_DIRECTOR",
+    "CAMPUS_DIRECTOR",
+    "DISTRICT_DIRECTOR",
+    "REGION_DIRECTOR",
+    "ADMIN",
+  ]).notNull(),
+  campusId: int("campusId").notNull(), // Required - used to derive districtId and regionId
+  districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
+  regionId: varchar("regionId", { length: 255 }), // Derived from campusId server-side
+  personId: varchar("personId", { length: 64 }), // Optional link to people.personId (onboarding)
+  approvalStatus: mysqlEnum("approvalStatus", [
+    "ACTIVE",
+    "PENDING_APPROVAL",
+    "REJECTED",
+    "DISABLED",
+  ])
+    .default("PENDING_APPROVAL")
+    .notNull(),
   approvedByUserId: int("approvedByUserId"), // Nullable - set when approved
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
   createdAt: timestamp("createdAt").notNull().defaultNow(),
@@ -44,14 +69,19 @@ export type InsertDistrict = typeof districts.$inferInsert;
 /**
  * Campuses table - represents campuses within districts
  */
-export const campuses = mysqlTable("campuses", {
-  id: int("id").primaryKey().autoincrement(),
-  name: varchar("name", { length: 255 }).notNull(),
-  districtId: varchar("districtId", { length: 64 }).notNull(),
-}, (table) => ({
-  // PR 6: Add index for districtId lookups
-  districtIdIdx: index("campuses_districtId_idx").on(table.districtId),
-}));
+export const campuses = mysqlTable(
+  "campuses",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    name: varchar("name", { length: 255 }).notNull(),
+    districtId: varchar("districtId", { length: 64 }).notNull(),
+    displayOrder: int("displayOrder").notNull().default(0), // Visual ordering within district
+  },
+  table => ({
+    // PR 6: Add index for districtId lookups
+    districtIdIdx: index("campuses_districtId_idx").on(table.districtId),
+  })
+);
 
 export type Campus = typeof campuses.$inferSelect;
 export type InsertCampus = typeof campuses.$inferInsert;
@@ -77,47 +107,57 @@ export type InsertHousehold = typeof households.$inferInsert;
  * personId is the authoritative ID from the Excel seed data
  * A person can have multiple assignments but exists only once here
  */
-export const people = mysqlTable("people", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull().unique(), // Excel Person ID - source of truth
-  name: varchar("name", { length: 255 }).notNull(),
-  // Primary assignment info (from "People (Unique)" sheet)
-  primaryRole: varchar("primaryRole", { length: 255 }),
-  primaryCampusId: int("primaryCampusId"), // nullable for National roles
-  primaryDistrictId: varchar("primaryDistrictId", { length: 64 }), // nullable for National roles
-  primaryRegion: varchar("primaryRegion", { length: 255 }), // nullable for National roles
-  nationalCategory: varchar("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
-  // Status tracking (Universal responses)
-  status: mysqlEnum("status", ["Yes", "Maybe", "No", "Not Invited"]).default("Not Invited").notNull(),
-  depositPaid: boolean("depositPaid").default(false).notNull(),
+export const people = mysqlTable(
+  "people",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    personId: varchar("personId", { length: 64 }).notNull().unique(), // Excel Person ID - source of truth
+    name: varchar("name", { length: 255 }).notNull(),
+    // Primary assignment info (from "People (Unique)" sheet)
+    primaryRole: varchar("primaryRole", { length: 255 }),
+    primaryCampusId: int("primaryCampusId"), // nullable for National roles
+    primaryDistrictId: varchar("primaryDistrictId", { length: 64 }), // nullable for National roles
+    primaryRegion: varchar("primaryRegion", { length: 255 }), // nullable for National roles
+    nationalCategory: varchar("nationalCategory", { length: 255 }), // e.g., "National Director", "CMC Go Coordinator"
+    // Status tracking (Universal responses)
+    status: mysqlEnum("status", ["Yes", "Maybe", "No", "Not Invited"])
+      .default("Not Invited")
+      .notNull(),
+    depositPaid: boolean("depositPaid").default(false).notNull(),
     deposit_paid_at: datetime("deposit_paid_at"),
-  statusLastUpdated: timestamp("statusLastUpdated"),
-  statusLastUpdatedBy: varchar("statusLastUpdatedBy", { length: 255 }),
-  // Household linking
-  householdId: int("householdId"), // nullable FK to households.id
-  householdRole: mysqlEnum("householdRole", ["primary", "member"]).default("primary"), // "primary" when first linked
-  // Additional fields
-  needs: text("needs"),
-  notes: text("notes"),
-  spouse: varchar("spouse", { length: 255 }), // Deprecated - use spouseAttending + householdId
-  kids: varchar("kids", { length: 10 }), // Deprecated - use childrenCount + householdId
-  guests: varchar("guests", { length: 10 }), // Deprecated - use guestsCount
-  // Household and family fields
-  spouseAttending: boolean("spouseAttending").default(false).notNull(),
-  childrenCount: int("childrenCount").default(0).notNull(), // 0-10, requires householdId if > 0
-  guestsCount: int("guestsCount").default(0).notNull(), // 0-10, stored on person always
-  childrenAges: text("childrenAges"), // JSON array stored as text
-  // Last edited tracking
-  lastEdited: timestamp("lastEdited"),
-  lastEditedBy: varchar("lastEditedBy", { length: 255 }),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-}, (table) => ({
-  // PR 6: Add indexes for common queries
-  primaryCampusIdIdx: index("primaryCampusId_idx").on(table.primaryCampusId),
-  primaryDistrictIdIdx: index("primaryDistrictId_idx").on(table.primaryDistrictId),
-  statusIdx: index("status_idx").on(table.status),
-  householdIdIdx: index("householdId_idx").on(table.householdId),
-}));
+    statusLastUpdated: timestamp("statusLastUpdated"),
+    statusLastUpdatedBy: varchar("statusLastUpdatedBy", { length: 255 }),
+    // Household linking
+    householdId: int("householdId"), // nullable FK to households.id
+    householdRole: mysqlEnum("householdRole", ["primary", "member"]).default(
+      "primary"
+    ), // "primary" when first linked
+    // Additional fields
+    needs: text("needs"),
+    notes: text("notes"),
+    spouse: varchar("spouse", { length: 255 }), // Deprecated - use spouseAttending + householdId
+    kids: varchar("kids", { length: 10 }), // Deprecated - use childrenCount + householdId
+    guests: varchar("guests", { length: 10 }), // Deprecated - use guestsCount
+    // Household and family fields
+    spouseAttending: boolean("spouseAttending").default(false).notNull(),
+    childrenCount: int("childrenCount").default(0).notNull(), // 0-10, requires householdId if > 0
+    guestsCount: int("guestsCount").default(0).notNull(), // 0-10, stored on person always
+    childrenAges: text("childrenAges"), // JSON array stored as text
+    // Last edited tracking
+    lastEdited: timestamp("lastEdited"),
+    lastEditedBy: varchar("lastEditedBy", { length: 255 }),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    // PR 6: Add indexes for common queries
+    primaryCampusIdIdx: index("primaryCampusId_idx").on(table.primaryCampusId),
+    primaryDistrictIdIdx: index("primaryDistrictId_idx").on(
+      table.primaryDistrictId
+    ),
+    statusIdx: index("status_idx").on(table.status),
+    householdIdIdx: index("householdId_idx").on(table.householdId),
+  })
+);
 
 export type Person = typeof people.$inferSelect;
 export type InsertPerson = typeof people.$inferInsert;
@@ -129,7 +169,12 @@ export type InsertPerson = typeof people.$inferInsert;
 export const assignments = mysqlTable("assignments", {
   id: int("id").primaryKey().autoincrement(),
   personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  assignmentType: mysqlEnum("assignmentType", ["Campus", "District", "Region", "National"]).notNull(),
+  assignmentType: mysqlEnum("assignmentType", [
+    "Campus",
+    "District",
+    "Region",
+    "National",
+  ]).notNull(),
   roleTitle: varchar("roleTitle", { length: 255 }).notNull(),
   campusId: int("campusId"), // nullable for non-Campus assignments
   districtId: varchar("districtId", { length: 64 }), // nullable for National assignments
@@ -150,23 +195,34 @@ export type InsertAssignment = typeof assignments.$inferInsert;
  * Only active needs (isActive = true) are counted in metrics and summaries.
  * Inactive needs are retained for history.
  */
-export const needs = mysqlTable("needs", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  type: mysqlEnum("type", ["Financial", "Transportation", "Housing", "Other"]).notNull(),
-  description: text("description").notNull(),
-  amount: int("amount"), // in cents (only for Financial type)
-  visibility: mysqlEnum("visibility", ["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"]).default("LEADERSHIP_ONLY").notNull(), // PR 2: Updated visibility enum
-  createdById: int("createdById"), // Track creator (matches database column name)
-  isActive: boolean("isActive").default(true).notNull(), // false when need is met
-  resolvedAt: timestamp("resolvedAt"), // PR 2: Renamed from metAt for clarity
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-}, (table) => ({
-  // PR 6: Add indexes for common queries
-  personIdIdx: index("needs_personId_idx").on(table.personId),
-  isActiveIdx: index("needs_isActive_idx").on(table.isActive),
-  visibilityIdx: index("needs_visibility_idx").on(table.visibility),
-}));
+export const needs = mysqlTable(
+  "needs",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+    type: mysqlEnum("type", [
+      "Financial",
+      "Transportation",
+      "Housing",
+      "Other",
+    ]).notNull(),
+    description: text("description").notNull(),
+    amount: int("amount"), // in cents (only for Financial type)
+    visibility: mysqlEnum("visibility", ["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
+      .default("LEADERSHIP_ONLY")
+      .notNull(), // PR 2: Updated visibility enum
+    createdById: int("createdById"), // Track creator (matches database column name)
+    isActive: boolean("isActive").default(true).notNull(), // false when need is met
+    resolvedAt: timestamp("resolvedAt"), // PR 2: Renamed from metAt for clarity
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    // PR 6: Add indexes for common queries
+    personIdIdx: index("needs_personId_idx").on(table.personId),
+    isActiveIdx: index("needs_isActive_idx").on(table.isActive),
+    visibilityIdx: index("needs_visibility_idx").on(table.visibility),
+  })
+);
 
 export type Need = typeof needs.$inferSelect;
 export type InsertNeed = typeof needs.$inferInsert;
@@ -176,34 +232,46 @@ export type InsertNeed = typeof needs.$inferInsert;
  * References people by personId (varchar) for consistency
  * Category: INVITE for invite-related notes, INTERNAL for other notes
  */
-export const notes = mysqlTable("notes", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  category: mysqlEnum("category", ["INVITE", "INTERNAL"]).default("INTERNAL").notNull(), // INVITE for invite notes, INTERNAL for other notes
-  
-  content: text("content").notNull(),
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  createdBy: varchar("createdBy", { length: 255 }),
-  noteType: mysqlEnum("note_type", ["GENERAL", "NEED"]).notNull().default("GENERAL"),
-}, (table) => ({
-  // PR 6: Add index for personId lookups
-  personIdIdx: index("notes_personId_idx").on(table.personId),
-}));
+export const notes = mysqlTable(
+  "notes",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+    category: mysqlEnum("category", ["INVITE", "INTERNAL"])
+      .default("INTERNAL")
+      .notNull(), // INVITE for invite notes, INTERNAL for other notes
+
+    content: text("content").notNull(),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+    createdBy: varchar("createdBy", { length: 255 }),
+    noteType: mysqlEnum("note_type", ["GENERAL", "NEED"])
+      .notNull()
+      .default("GENERAL"),
+  },
+  table => ({
+    // PR 6: Add index for personId lookups
+    personIdIdx: index("notes_personId_idx").on(table.personId),
+  })
+);
 
 /**
  * Invite Notes table - PR 2: Leaders-only invite notes
  * Separate table for clarity and to enforce leaders-only access
  */
-export const inviteNotes = mysqlTable("invite_notes", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  content: text("content").notNull(),
-  createdByUserId: int("createdByUserId").notNull(), // References users.id
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-}, (table) => ({
-  // PR 6: Add index for personId lookups
-  personIdIdx: index("invite_notes_personId_idx").on(table.personId),
-}));
+export const inviteNotes = mysqlTable(
+  "invite_notes",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+    content: text("content").notNull(),
+    createdByUserId: int("createdByUserId").notNull(), // References users.id
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    // PR 6: Add index for personId lookups
+    personIdIdx: index("invite_notes_personId_idx").on(table.personId),
+  })
+);
 
 export type InviteNote = typeof inviteNotes.$inferSelect;
 export type InsertInviteNote = typeof inviteNotes.$inferInsert;
@@ -243,25 +311,38 @@ export type InsertSetting = typeof settings.$inferInsert;
  * Status changes table - PR 3: Audit log for status changes
  * Tracks who changed status, when, from what to what
  */
-export const statusChanges = mysqlTable("status_changes", {
-  id: int("id").primaryKey().autoincrement(),
-  personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
-  fromStatus: mysqlEnum("fromStatus", ["Yes", "Maybe", "No", "Not Invited"]), // Nullable for initial status
-  toStatus: mysqlEnum("toStatus", ["Yes", "Maybe", "No", "Not Invited"]).notNull(),
-  changedByUserId: int("changedByUserId").notNull(), // References users.id
-  changedAt: timestamp("changedAt").notNull().defaultNow(),
-  source: mysqlEnum("source", ["UI", "IMPORT", "ADMIN_BULK"]).default("UI").notNull(),
-  note: text("note"), // Optional note about the change
-  // Snapshot fields for context (optional but helpful)
-  districtId: varchar("districtId", { length: 64 }),
-  regionId: varchar("regionId", { length: 255 }),
-  campusId: int("campusId"),
-}, (table) => ({
-  // PR 6: Add indexes for common queries
-  personIdIdx: index("status_changes_personId_idx").on(table.personId),
-  changedByUserIdIdx: index("status_changes_changedByUserId_idx").on(table.changedByUserId),
-  changedAtIdx: index("status_changes_changedAt_idx").on(table.changedAt),
-}));
+export const statusChanges = mysqlTable(
+  "status_changes",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
+    fromStatus: mysqlEnum("fromStatus", ["Yes", "Maybe", "No", "Not Invited"]), // Nullable for initial status
+    toStatus: mysqlEnum("toStatus", [
+      "Yes",
+      "Maybe",
+      "No",
+      "Not Invited",
+    ]).notNull(),
+    changedByUserId: int("changedByUserId").notNull(), // References users.id
+    changedAt: timestamp("changedAt").notNull().defaultNow(),
+    source: mysqlEnum("source", ["UI", "IMPORT", "ADMIN_BULK"])
+      .default("UI")
+      .notNull(),
+    note: text("note"), // Optional note about the change
+    // Snapshot fields for context (optional but helpful)
+    districtId: varchar("districtId", { length: 64 }),
+    regionId: varchar("regionId", { length: 255 }),
+    campusId: int("campusId"),
+  },
+  table => ({
+    // PR 6: Add indexes for common queries
+    personIdIdx: index("status_changes_personId_idx").on(table.personId),
+    changedByUserIdIdx: index("status_changes_changedByUserId_idx").on(
+      table.changedByUserId
+    ),
+    changedAtIdx: index("status_changes_changedAt_idx").on(table.changedAt),
+  })
+);
 
 export type StatusChange = typeof statusChanges.$inferSelect;
 export type InsertStatusChange = typeof statusChanges.$inferInsert;
@@ -284,25 +365,3 @@ export const importRuns = mysqlTable("import_runs", {
 
 export type ImportRun = typeof importRuns.$inferSelect;
 export type InsertImportRun = typeof importRuns.$inferInsert;
-
-/**
- * User sessions table - tracks active sessions for "who's logged in" feature
- * Each session is identified by a hash of the session token
- */
-export const userSessions = mysqlTable("user_sessions", {
-  id: int("id").primaryKey().autoincrement(),
-  userId: int("userId").notNull(), // References users.id
-  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(), // Random session ID stored in cookie
-  createdAt: timestamp("createdAt").notNull().defaultNow(),
-  lastSeenAt: timestamp("lastSeenAt").notNull().defaultNow(),
-  revokedAt: timestamp("revokedAt"), // Nullable - set when session is revoked
-  userAgent: varchar("userAgent", { length: 500 }),
-  ipAddress: varchar("ipAddress", { length: 45 }), // IPv6 max length
-}, (table) => ({
-  userIdIdx: index("user_sessions_userId_idx").on(table.userId),
-  sessionIdIdx: index("user_sessions_sessionId_idx").on(table.sessionId),
-  lastSeenAtIdx: index("user_sessions_lastSeenAt_idx").on(table.lastSeenAt),
-}));
-
-export type UserSession = typeof userSessions.$inferSelect;
-export type InsertUserSession = typeof userSessions.$inferInsert;

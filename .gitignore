@@ -7,15 +7,22 @@ dist/
 build/
 *.dist
 
+# Playwright artifacts
+test-results/
+playwright-report/
+
 # Environment variables
 .env
+.env.*
+!.env.example
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
 # IDE and editor files
-.vscode/
+# Note: .vscode is committed for team consistency (tasks, extensions, settings)
+# Personal settings like launch.json should use !.vscode/ pattern if needed
 .idea/
 *.swp
 *.swo
@@ -101,9 +108,38 @@ jspm_packages/
 tmp/
 temp/
 
+# Local AI temp artifacts
+.claude/
+tmpclaude-*/
+tmpclaude-*
+
+# Local agent memory (MCP persistence; keep local)
+.agent-memory/
+
+# Agent heartbeat file (local-only, never commit)
+.github/agents/heartbeat.json
+
+# Local scratch / analysis clones
+_external/
+
 # Database
 data/
 
 # Build/deploy artifacts
 *.zip
 .manus/
+
+# Local SQL scratch files (may contain credentials)
+temp_setup_user.sql
+
+# Worktrees (local-only)
+.worktrees/
+
+# Local worktree folders (local-only)
+wt-main/
+wt-impl-*/
+wt-verify-*/
+
+# Historical snapshot folder (do not re-add)
+cmc-go updates/
+

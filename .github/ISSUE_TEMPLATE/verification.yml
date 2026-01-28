@@ -1,0 +1,96 @@
+name: "🔍 Verification Task"
+description: "Verify a PR or implementation"
+title: "[Verify] PR #"
+labels: ["type:verification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Verification Task
+        Use this to track verification of a PR or completed implementation.
+
+  - type: input
+    id: pr-number
+    attributes:
+      label: "PR Number"
+      description: "The PR being verified"
+      placeholder: "#123"
+    validations:
+      required: true
+
+  - type: input
+    id: original-issue
+    attributes:
+      label: "Original Issue"
+      description: "The Issue this PR implements"
+      placeholder: "#100"
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Acceptance Criteria to Verify"
+      description: "Copy the AC from the original Issue"
+      placeholder: |
+        - [ ] Feature X works as specified
+        - [ ] No regressions in feature Y
+        - [ ] `pnpm check` passes
+        - [ ] `pnpm test` passes
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification-steps
+    attributes:
+      label: "Verification Steps"
+      description: "What commands to run and what to check"
+      value: |
+        ```bash
+        # Checkout the PR
+        gh pr checkout <PR#>
+
+        # Run checks
+        pnpm check && pnpm test
+
+        # Manual verification (if UI)
+        pnpm dev
+        # Then test specific flows
+        ```
+
+  - type: dropdown
+    id: verify-level
+    attributes:
+      label: "Verify Level"
+      description: "What level of verification is required?"
+      options:
+        - "L0 (Author self-verifies)"
+        - "L1 (Peer verification required)"
+        - "L2 (Peer + extra evidence)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence-required
+    attributes:
+      label: "Evidence Required"
+      description: "What evidence should be posted?"
+      value: |
+        - [ ] `pnpm check` output
+        - [ ] `pnpm test` output (all tests pass)
+        - [ ] Screenshot/recording (if UI changed)
+        - [ ] Deployed smoke test (if L2)
+
+  - type: textarea
+    id: verdict
+    attributes:
+      label: "Verdict (filled by verifier)"
+      description: "To be filled when verification is complete"
+      value: |
+        **Result:** Pass / Pass-with-notes / Fail
+
+        **Evidence:**
+        ```
+        (paste command output)
+        ```
+
+        **Notes/Risks:**
+        (any gaps, flakiness, edge cases)

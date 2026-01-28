@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig } from "vite";
 
-
 // Configure React plugin - disable fastRefresh in development if CSP causes issues
 // This helps with CSP nonce compatibility
 const plugins = [
@@ -13,11 +12,11 @@ const plugins = [
     // Use esbuild instead of Babel for better performance and TypeScript support
     babel: {
       parserOpts: {
-        plugins: ['typescript', 'jsx']
-      }
-    }
-  }), 
-  tailwindcss(), 
+        plugins: ["typescript", "jsx"],
+      },
+    },
+  }),
+  tailwindcss(),
   // jsxLocPlugin(), // Disabled: incompatible with Vite 7.x (requires Vite 4 or 5)
   // vitePluginManusRuntime() // Temporarily disabled to test build
 ];
@@ -35,7 +34,7 @@ export default defineConfig({
   root: path.resolve(import.meta.dirname, "client"),
   publicDir: path.resolve(import.meta.dirname, "client", "public"),
   build: {
-    outDir:"../dist/public",
+    outDir: "../dist/public",
     emptyOutDir: true,
     sourcemap: true,
   },

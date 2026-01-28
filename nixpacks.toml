@@ -1,0 +1,13 @@
+# Railway/Nixpacks: pin Node to avoid build-to-build drift
+[phases.setup]
+# You can switch to 20.x if you prefer LTS-only
+nixPkgs = ["nodejs_22", "pnpm"]
+
+[phases.install]
+cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm build"]
+
+[start]
+cmd = "pnpm start"

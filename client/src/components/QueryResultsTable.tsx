@@ -49,8 +49,11 @@ export function QueryResultsTable({
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground">{data.length}</span> rows returned in{" "}
-          <span className="font-semibold text-foreground">{executionTime}ms</span>
+          <span className="font-semibold text-foreground">{data.length}</span>{" "}
+          rows returned in{" "}
+          <span className="font-semibold text-foreground">
+            {executionTime}ms
+          </span>
         </div>
         <div className="flex gap-2">
           <Button
@@ -78,7 +81,7 @@ export function QueryResultsTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              {columns.map((col) => (
+              {columns.map(col => (
                 <th
                   key={col}
                   className="px-4 py-3 text-left font-semibold text-muted-foreground"
@@ -94,7 +97,7 @@ export function QueryResultsTable({
                 key={idx}
                 className="border-b hover:bg-muted/30 transition-colors"
               >
-                {columns.map((col) => (
+                {columns.map(col => (
                   <td
                     key={`${idx}-${col}`}
                     className="px-4 py-3 text-foreground break-words max-w-xs"

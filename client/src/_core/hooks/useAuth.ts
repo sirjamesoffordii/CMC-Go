@@ -1,4 +1,3 @@
-import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -9,7 +8,7 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
+  const { redirectOnUnauthenticated = false, redirectPath = "/" } =
     options ?? {};
   const utils = trpc.useUtils();
 
@@ -46,10 +45,7 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "manus-runtime-user-info",
-      JSON.stringify(meQuery.data)
-    );
+    localStorage.setItem("cmc-go-user-info", JSON.stringify(meQuery.data));
     const devUser = devBypass
       ? ({
           id: 0,
@@ -59,6 +55,8 @@ export function useAuth(options?: UseAuthOptions) {
           campusId: 0,
           districtId: null,
           regionId: null,
+          personId: "dev-person",
+          personName: "Dev Person",
           approvalStatus: "ACTIVE",
           approvedByUserId: null,
           approvedAt: null,
@@ -73,9 +71,11 @@ export function useAuth(options?: UseAuthOptions) {
         } as any)
       : null;
     return {
-      user: devBypass ? devUser : meQuery.data ?? null,
-      loading: devBypass ? false : meQuery.isLoading || logoutMutation.isPending,
-      error: devBypass ? null : meQuery.error ?? logoutMutation.error ?? null,
+      user: devBypass ? devUser : (meQuery.data ?? null),
+      loading: devBypass
+        ? false
+        : meQuery.isLoading || logoutMutation.isPending,
+      error: devBypass ? null : (meQuery.error ?? logoutMutation.error ?? null),
       isAuthenticated: devBypass ? true : Boolean(meQuery.data),
     };
   }, [
@@ -95,7 +95,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,

@@ -23,7 +23,7 @@ const drizzleKit = spawn("npx", ["drizzle-kit", "push"], {
   },
 });
 
-drizzleKit.on("close", (code) => {
+drizzleKit.on("close", code => {
   if (code !== 0) {
     console.error(`\n❌ drizzle-kit push failed with exit code ${code}`);
     process.exit(code);
@@ -32,8 +32,7 @@ drizzleKit.on("close", (code) => {
   }
 });
 
-drizzleKit.on("error", (error) => {
+drizzleKit.on("error", error => {
   console.error("❌ Failed to spawn drizzle-kit:", error);
   process.exit(1);
 });
-

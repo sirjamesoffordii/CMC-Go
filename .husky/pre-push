@@ -1,0 +1,8 @@
+echo "\nPre-push review: verify changes and remove debug logs if needed."
+
+if [ -t 0 ]; then
+  echo "Press Enter to continue push, or Ctrl+C to abort."
+  read -r _
+else
+  echo "Non-interactive shell detected; continuing push."
+fi

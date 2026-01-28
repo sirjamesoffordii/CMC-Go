@@ -1,33 +1,33 @@
-import { useState, useRef, useEffect } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import { TextStyle } from '@tiptap/extension-text-style';
-import FontFamily from '@tiptap/extension-font-family';
-import Color from '@tiptap/extension-color';
-import { Button } from '@/components/ui/button';
-import { 
-  Bold, 
-  Italic, 
-  Underline as UnderlineIcon, 
+import { useState, useRef, useEffect } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Underline from "@tiptap/extension-underline";
+import { TextStyle } from "@tiptap/extension-text-style";
+import FontFamily from "@tiptap/extension-font-family";
+import Color from "@tiptap/extension-color";
+import { Button } from "@/components/ui/button";
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
   Pencil,
   X,
   Upload,
   Type,
-  ChevronDown
-} from 'lucide-react';
+  ChevronDown,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderEditorModalProps {
   open: boolean;
@@ -35,41 +35,45 @@ interface HeaderEditorModalProps {
   logoUrl: string | null;
   headerText: string;
   backgroundColor: string;
-  onSave: (data: { logoFile?: File; headerText: string; backgroundColor: string }) => void;
+  onSave: (data: {
+    logoFile?: File;
+    headerText: string;
+    backgroundColor: string;
+  }) => void;
 }
 
 const fontFamilies = [
-  { name: 'Default (Inter)', value: 'Inter, sans-serif' },
-  { name: 'Brush Script MT', value: 'Brush Script MT, cursive' },
-  { name: 'Serif (Georgia)', value: 'Georgia, serif' },
-  { name: 'Monospace', value: 'monospace' },
-  { name: 'Arial', value: 'Arial, sans-serif' },
-  { name: 'Times New Roman', value: 'Times New Roman, serif' },
-  { name: 'Courier New', value: 'Courier New, monospace' },
-  { name: 'Verdana', value: 'Verdana, sans-serif' },
-  { name: 'Trebuchet MS', value: 'Trebuchet MS, sans-serif' },
+  { name: "Default (Inter)", value: "Inter, sans-serif" },
+  { name: "Brush Script MT", value: "Brush Script MT, cursive" },
+  { name: "Serif (Georgia)", value: "Georgia, serif" },
+  { name: "Monospace", value: "monospace" },
+  { name: "Arial", value: "Arial, sans-serif" },
+  { name: "Times New Roman", value: "Times New Roman, serif" },
+  { name: "Courier New", value: "Courier New, monospace" },
+  { name: "Verdana", value: "Verdana, sans-serif" },
+  { name: "Trebuchet MS", value: "Trebuchet MS, sans-serif" },
 ];
 
 const fontSizes = [
-  { name: 'Extra Small', value: '12px' },
-  { name: 'Small', value: '14px' },
-  { name: 'Normal', value: '16px' },
-  { name: 'Medium', value: '18px' },
-  { name: 'Large', value: '22px' },
-  { name: 'Extra Large', value: '28px' },
-  { name: 'Huge', value: '36px' },
+  { name: "Extra Small", value: "12px" },
+  { name: "Small", value: "14px" },
+  { name: "Normal", value: "16px" },
+  { name: "Medium", value: "18px" },
+  { name: "Large", value: "22px" },
+  { name: "Extra Large", value: "28px" },
+  { name: "Huge", value: "36px" },
 ];
 
 const presetColors = [
-  { name: 'Black', value: '#000000' },
-  { name: 'Dark Gray', value: '#1f2937' },
-  { name: 'Chi Alpha Red', value: '#ED1C24' },
-  { name: 'Navy Blue', value: '#1e3a5f' },
-  { name: 'Dark Green', value: '#14532d' },
-  { name: 'Purple', value: '#581c87' },
-  { name: 'Dark Brown', value: '#451a03' },
-  { name: 'Slate', value: '#334155' },
-  { name: 'White', value: '#ffffff' },
+  { name: "Black", value: "#000000" },
+  { name: "Dark Gray", value: "#1f2937" },
+  { name: "Chi Alpha Red", value: "#ED1C24" },
+  { name: "Navy Blue", value: "#1e3a5f" },
+  { name: "Dark Green", value: "#14532d" },
+  { name: "Purple", value: "#581c87" },
+  { name: "Dark Brown", value: "#451a03" },
+  { name: "Slate", value: "#334155" },
+  { name: "White", value: "#ffffff" },
 ];
 
 export function HeaderEditorModal({
@@ -83,22 +87,17 @@ export function HeaderEditorModal({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(initialLogoUrl);
   const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [bgColor, setBgColor] = useState(initialBgColor || '#000000');
-  const [currentFontFamily, setCurrentFontFamily] = useState('Inter, sans-serif');
-  const [currentFontSize, setCurrentFontSize] = useState('18px');
+  const [bgColor, setBgColor] = useState(initialBgColor || "#000000");
+  const [currentFontFamily, setCurrentFontFamily] =
+    useState("Inter, sans-serif");
+  const [currentFontSize, setCurrentFontSize] = useState("18px");
 
   const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextStyle,
-      FontFamily,
-      Color,
-    ],
-    content: initialHeaderText || '',
+    extensions: [StarterKit, Underline, TextStyle, FontFamily, Color],
+    content: initialHeaderText || "",
     editorProps: {
       attributes: {
-        class: 'outline-none min-h-[40px] px-2 py-1',
+        class: "outline-none min-h-[40px] px-2 py-1",
       },
     },
   });
@@ -108,9 +107,9 @@ export function HeaderEditorModal({
     if (open) {
       setLogoPreview(initialLogoUrl);
       setLogoFile(null);
-      setBgColor(initialBgColor || '#000000');
+      setBgColor(initialBgColor || "#000000");
       if (editor) {
-        editor.commands.setContent(initialHeaderText || '');
+        editor.commands.setContent(initialHeaderText || "");
       }
     }
   }, [open, initialLogoUrl, initialHeaderText, initialBgColor, editor]);
@@ -121,21 +120,24 @@ export function HeaderEditorModal({
       setLogoFile(file);
       const previewUrl = URL.createObjectURL(file);
       setLogoPreview(previewUrl);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
   const handleSave = () => {
     onSave({
       logoFile: logoFile || undefined,
-      headerText: editor?.getHTML() || '',
+      headerText: editor?.getHTML() || "",
       backgroundColor: bgColor,
     });
     onClose();
   };
 
-  const isLightBackground = bgColor === '#ffffff' || bgColor === '#FFFFFF' || bgColor.toLowerCase() === '#fff';
-  const textColor = isLightBackground ? '#000000' : '#ffffff';
+  const isLightBackground =
+    bgColor === "#ffffff" ||
+    bgColor === "#FFFFFF" ||
+    bgColor.toLowerCase() === "#fff";
+  const textColor = isLightBackground ? "#000000" : "#ffffff";
 
   const setTextColor = (color: string) => {
     editor?.chain().focus().selectAll().setColor(color).run();
@@ -149,7 +151,7 @@ export function HeaderEditorModal({
   }, [bgColor, editor]);
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -161,8 +163,10 @@ export function HeaderEditorModal({
         <div className="space-y-6 py-4">
           {/* Live Preview */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Preview</label>
-            <div 
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Preview
+            </label>
+            <div
               className="rounded-lg overflow-hidden border border-gray-200 shadow-sm"
               style={{ backgroundColor: bgColor }}
             >
@@ -170,26 +174,29 @@ export function HeaderEditorModal({
                 {/* Logo Preview */}
                 <div className="flex-shrink-0 h-10 w-10 mr-4">
                   {logoPreview ? (
-                    <img 
-                      src={logoPreview} 
-                      alt="Logo" 
+                    <img
+                      src={logoPreview}
+                      alt="Logo"
                       className="h-full w-full object-contain"
-                      onError={(e) => {
-                        console.error('Error loading logo preview:', logoPreview);
-                        (e.target as HTMLImageElement).src = '/xa-logo.png';
+                      onError={e => {
+                        console.error(
+                          "Error loading logo preview:",
+                          logoPreview
+                        );
+                        (e.target as HTMLImageElement).src = "/xa-logo.png";
                       }}
                       onLoad={() => {
-                        console.log('Logo preview loaded successfully');
+                        console.log("Logo preview loaded successfully");
                       }}
                     />
                   ) : (
-                    <img 
-                      src="/xa-logo.png" 
-                      alt="Chi Alpha Logo" 
+                    <img
+                      src="/xa-logo.png"
+                      alt="Chi Alpha Logo"
                       className="h-full w-full object-contain"
-                      onError={(e) => {
-                        console.error('Error loading default logo');
-                        (e.target as HTMLImageElement).style.display = 'none';
+                      onError={e => {
+                        console.error("Error loading default logo");
+                        (e.target as HTMLImageElement).style.display = "none";
                       }}
                     />
                   )}
@@ -197,7 +204,7 @@ export function HeaderEditorModal({
 
                 {/* Text Preview */}
                 {editor?.getHTML() && editor.getHTML().trim() ? (
-                  <div 
+                  <div
                     className="flex-grow"
                     style={{ color: textColor }}
                     dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
@@ -213,19 +220,21 @@ export function HeaderEditorModal({
 
           {/* Logo Section */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Logo</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Logo
+            </label>
             <div className="flex items-center gap-4">
               <div className="h-16 w-16 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden bg-gray-50">
                 {logoPreview ? (
-                  <img 
-                    src={logoPreview} 
-                    alt="Logo preview" 
+                  <img
+                    src={logoPreview}
+                    alt="Logo preview"
                     className="h-full w-full object-contain"
                   />
                 ) : (
-                  <img 
-                    src="/xa-logo.png" 
-                    alt="Chi Alpha Logo" 
+                  <img
+                    src="/xa-logo.png"
+                    alt="Chi Alpha Logo"
                     className="h-12 w-12 object-contain"
                   />
                 )}
@@ -239,7 +248,9 @@ export function HeaderEditorModal({
                   <Upload className="w-4 h-4 mr-2" />
                   Upload Logo
                 </Button>
-                <p className="text-xs text-gray-500 mt-1">Recommended: Square image, PNG or SVG</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Recommended: Square image, PNG or SVG
+                </p>
               </div>
               <input
                 ref={logoInputRef}
@@ -253,14 +264,18 @@ export function HeaderEditorModal({
 
           {/* Background Color Section */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Background Color</label>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Background Color
+            </label>
             <div className="flex flex-wrap gap-2">
-              {presetColors.map((color) => (
+              {presetColors.map(color => (
                 <button
                   key={color.value}
                   onClick={() => setBgColor(color.value)}
                   className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                    bgColor === color.value ? 'border-blue-500 scale-110' : 'border-gray-200 hover:border-gray-400'
+                    bgColor === color.value
+                      ? "border-blue-500 scale-110"
+                      : "border-gray-200 hover:border-gray-400"
                   }`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
@@ -270,7 +285,7 @@ export function HeaderEditorModal({
                 <input
                   type="color"
                   value={bgColor}
-                  onChange={(e) => setBgColor(e.target.value)}
+                  onChange={e => setBgColor(e.target.value)}
                   className="sr-only"
                 />
                 <span className="text-xs text-gray-500">+</span>
@@ -280,27 +295,29 @@ export function HeaderEditorModal({
 
           {/* Text Editor Section */}
           <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">Header Text</label>
-            
+            <label className="text-sm font-medium text-gray-700 mb-2 block">
+              Header Text
+            </label>
+
             {/* Formatting Toolbar */}
             <div className="flex items-center gap-1 p-2 bg-gray-100 rounded-t-lg border border-b-0 border-gray-200">
               <button
                 onClick={() => editor?.chain().focus().toggleBold().run()}
-                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive('bold') ? 'bg-gray-300' : ''}`}
+                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive("bold") ? "bg-gray-300" : ""}`}
                 title="Bold (Ctrl+B)"
               >
                 <Bold className="w-4 h-4" />
               </button>
               <button
                 onClick={() => editor?.chain().focus().toggleItalic().run()}
-                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive('italic') ? 'bg-gray-300' : ''}`}
+                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive("italic") ? "bg-gray-300" : ""}`}
                 title="Italic (Ctrl+I)"
               >
                 <Italic className="w-4 h-4" />
               </button>
               <button
                 onClick={() => editor?.chain().focus().toggleUnderline().run()}
-                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive('underline') ? 'bg-gray-300' : ''}`}
+                className={`p-2 rounded hover:bg-gray-200 ${editor?.isActive("underline") ? "bg-gray-300" : ""}`}
                 title="Underline (Ctrl+U)"
               >
                 <UnderlineIcon className="w-4 h-4" />
@@ -318,7 +335,7 @@ export function HeaderEditorModal({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {fontFamilies.map((font) => (
+                  {fontFamilies.map(font => (
                     <DropdownMenuItem
                       key={font.value}
                       onClick={() => {
@@ -342,14 +359,16 @@ export function HeaderEditorModal({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  {fontSizes.map((size) => (
+                  {fontSizes.map(size => (
                     <DropdownMenuItem
                       key={size.value}
                       onClick={() => {
                         // Apply font size by wrapping in span with style
-                        const content = editor?.getHTML() || '';
-                        const text = editor?.getText() || '';
-                        editor?.commands.setContent(`<p style="font-size: ${size.value}; color: ${textColor};">${text}</p>`);
+                        const content = editor?.getHTML() || "";
+                        const text = editor?.getText() || "";
+                        editor?.commands.setContent(
+                          `<p style="font-size: ${size.value}; color: ${textColor};">${text}</p>`
+                        );
                         setCurrentFontSize(size.value);
                       }}
                       style={{ fontSize: size.value }}
@@ -364,14 +383,14 @@ export function HeaderEditorModal({
 
               {/* Text Color */}
               <label className="px-2 py-1.5 rounded hover:bg-gray-200 flex items-center gap-1 text-sm cursor-pointer">
-                <div 
+                <div
                   className="w-4 h-4 rounded border border-gray-300"
                   style={{ backgroundColor: textColor }}
                 />
                 <input
                   type="color"
                   value={textColor}
-                  onChange={(e) => setTextColor(e.target.value)}
+                  onChange={e => setTextColor(e.target.value)}
                   className="sr-only"
                 />
                 Text Color
@@ -380,8 +399,8 @@ export function HeaderEditorModal({
 
             {/* Editor Content */}
             <div className="border border-gray-200 rounded-b-lg bg-white min-h-[80px]">
-              <EditorContent 
-                editor={editor} 
+              <EditorContent
+                editor={editor}
                 className="[&_.ProseMirror]:p-3 [&_.ProseMirror]:min-h-[80px] [&_.ProseMirror]:outline-none"
               />
             </div>
@@ -392,9 +411,7 @@ export function HeaderEditorModal({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              Save Changes
-            </Button>
+            <Button onClick={handleSave}>Save Changes</Button>
           </div>
         </div>
       </DialogContent>

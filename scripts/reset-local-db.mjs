@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 /**
  * SAFE LOCAL DATABASE RESET
- * 
+ *
  * This script resets the local development database ONLY.
  * It includes multiple safety checks to prevent accidental execution on staging/production.
- * 
+ *
  * Safety guarantees:
  * - Only works when DATABASE_URL points to localhost/127.0.0.1/docker mysql
  * - Hard-fails if NODE_ENV=production
  * - Hard-fails if host is Railway/internal
  * - Requires explicit confirmation
- * 
+ *
  * Usage:
  *   pnpm db:reset:local
  */
@@ -42,7 +42,7 @@ function isLocalHost(host) {
     "mysql", // Docker container name
     "db", // Common Docker container name
   ];
-  
+
   const unsafePatterns = [
     "railway",
     "rlwy.net",
@@ -53,16 +53,16 @@ function isLocalHost(host) {
     "azure.com",
     "heroku.com",
   ];
-  
+
   const hostLower = host.toLowerCase();
-  
+
   // Check unsafe patterns first
   for (const pattern of unsafePatterns) {
     if (hostLower.includes(pattern)) {
       return false;
     }
   }
-  
+
   // Check safe hosts
   return safeHosts.some(safe => hostLower === safe || hostLower.includes(safe));
 }
@@ -89,19 +89,21 @@ function validateLocalDatabase() {
     return {
       valid: false,
       host: null,
-      error: "NODE_ENV is set to 'production'. Cannot reset database in production.",
+      error:
+        "NODE_ENV is set to 'production'. Cannot reset database in production.",
     };
   }
-  
+
   // Check APP_ENV
   if (process.env.APP_ENV === "production") {
     return {
       valid: false,
       host: null,
-      error: "APP_ENV is set to 'production'. Cannot reset database in production.",
+      error:
+        "APP_ENV is set to 'production'. Cannot reset database in production.",
     };
   }
-  
+
   // Get DATABASE_URL
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
@@ -111,7 +113,7 @@ function validateLocalDatabase() {
       error: "DATABASE_URL environment variable is not set.",
     };
   }
-  
+
   // Parse host
   const host = parseDatabaseHost(connectionString);
   if (!host) {
@@ -121,7 +123,7 @@ function validateLocalDatabase() {
       error: "Could not parse host from DATABASE_URL.",
     };
   }
-  
+
   // Check if host is local
   if (!isLocalHost(host)) {
     return {
@@ -130,7 +132,7 @@ function validateLocalDatabase() {
       error: `Host '${host}' is not a local database. This script only works with localhost/127.0.0.1/docker mysql.`,
     };
   }
-  
+
   return { valid: true, host };
 }
 
@@ -168,26 +170,28 @@ function getConnectionWithoutDb(connectionString) {
  */
 async function dropAndRecreateDatabase(connectionString, databaseName) {
   console.log("🗑️  Dropping and recreating database...");
-  
+
   const connectionWithoutDb = getConnectionWithoutDb(connectionString);
   let connection;
-  
+
   try {
     connection = await mysql.createConnection(connectionWithoutDb);
-    
+
     // Drop database if it exists
     await connection.query(`DROP DATABASE IF EXISTS \`${databaseName}\``);
     console.log(`  ✓ Dropped database ${databaseName}`);
-    
+
     // Create database
     await connection.query(`CREATE DATABASE \`${databaseName}\``);
     console.log(`  ✓ Created database ${databaseName}\n`);
-    
+
     return true;
   } catch (error) {
     if (error.code === "ER_DBACCESS_DENIED_ERROR") {
       console.error("❌ Permission denied: Cannot drop/create database");
-      console.error("   Your user doesn't have DROP/CREATE DATABASE permissions.");
+      console.error(
+        "   Your user doesn't have DROP/CREATE DATABASE permissions."
+      );
       console.error("   Falling back to table truncation instead...\n");
       return false;
     }
@@ -244,7 +248,7 @@ async function resetLocalDatabase() {
   console.log("🔄 LOCAL DATABASE RESET");
   console.log("=".repeat(60));
   console.log();
-  
+
   // Validate safety
   const validation = validateLocalDatabase();
   if (!validation.valid) {
@@ -252,18 +256,20 @@ async function resetLocalDatabase() {
     console.error(`   ${validation.error}`);
     console.error();
     console.error("This script only works with local databases.");
-    console.error("Allowed hosts: localhost, 127.0.0.1, docker mysql containers");
+    console.error(
+      "Allowed hosts: localhost, 127.0.0.1, docker mysql containers"
+    );
     console.error();
     process.exit(1);
   }
-  
+
   // Additional check: prevent running against Railway demo DB
+  const connectionString = process.env.DATABASE_URL;
   checkNotDemoDatabase(connectionString, "db:reset:local");
-  
-  const connectionString = process.env.DATABASE_URL!;
+
   const databaseName = parseDatabaseName(connectionString);
-  const host = validation.host!;
-  
+  const host = validation.host;
+
   // Display warning
   console.log("⚠️  WARNING: This will DELETE ALL DATA in the local database!");
   console.log();
@@ -272,36 +278,39 @@ async function resetLocalDatabase() {
   console.log();
   console.log("This operation cannot be undone.");
   console.log();
-  
+
   // In non-interactive mode, require explicit flag
   const args = process.argv.slice(2);
   const forceFlag = args.includes("--force") || args.includes("-f");
-  
+
   if (!forceFlag) {
     console.log("To proceed, run with --force flag:");
     console.log("   pnpm db:reset:local --force");
     console.log();
     process.exit(0);
   }
-  
+
   console.log("🚀 Starting reset (--force flag detected)...");
   console.log();
-  
+
   try {
     // Drop and recreate database
-    const dropped = await dropAndRecreateDatabase(connectionString, databaseName);
-    
+    const dropped = await dropAndRecreateDatabase(
+      connectionString,
+      databaseName
+    );
+
     if (!dropped) {
       console.error("❌ Could not drop/recreate database. Exiting.");
       process.exit(1);
     }
-    
+
     // Run migrations
     await runMigrations();
-    
+
     // Run seed
     await runSeed();
-    
+
     console.log("=".repeat(60));
     console.log("✅ LOCAL DATABASE RESET COMPLETED");
     console.log("=".repeat(60));
@@ -313,7 +322,6 @@ async function resetLocalDatabase() {
     console.log(`  - Migrations: Applied`);
     console.log(`  - Seed: Completed`);
     console.log();
-    
   } catch (error) {
     console.error();
     console.error("❌ Database reset failed:", error.message);
@@ -325,7 +333,7 @@ async function resetLocalDatabase() {
 }
 
 // Run
-resetLocalDatabase().catch((error) => {
+resetLocalDatabase().catch(error => {
   console.error("❌ Fatal error:", error);
   process.exit(1);
 });

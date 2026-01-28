@@ -1,0 +1,73 @@
+name: "🔬 Spike / Research"
+description: "Time-boxed exploration or research task"
+title: "[Spike] "
+labels: ["type:spike"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Spike / Research Task
+        For time-boxed exploration. Output is a recommendation, not code.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: "Question to Answer"
+      description: "What are we trying to learn?"
+      placeholder: "Should we use tRPC subscriptions or polling for real-time updates?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Context"
+      description: "Why does this matter? What's the decision we need to make?"
+      placeholder: |
+        We need real-time map updates when someone changes a status.
+        Options: WebSocket, SSE, polling, tRPC subscriptions.
+        Constraints: Railway hosting, current architecture.
+
+  - type: input
+    id: time-box
+    attributes:
+      label: "Time Box"
+      description: "Maximum time to spend on this"
+      placeholder: "2 hours"
+    validations:
+      required: true
+
+  - type: textarea
+    id: research-plan
+    attributes:
+      label: "Research Plan"
+      description: "What to investigate"
+      placeholder: |
+        - [ ] Review tRPC subscription docs
+        - [ ] Check Railway WebSocket support
+        - [ ] Look at similar implementations in codebase
+        - [ ] Prototype if time permits
+
+  - type: textarea
+    id: deliverable
+    attributes:
+      label: "Deliverable"
+      description: "What output is expected?"
+      value: |
+        A recommendation comment with:
+        - Summary of options considered
+        - Pros/cons of each
+        - Recommended approach
+        - Estimated complexity if we proceed
+
+        **NOT code** (unless a prototype helps the decision)
+
+  - type: dropdown
+    id: assignee
+    attributes:
+      label: "Best Agent for This"
+      description: "Who should do the research?"
+      options:
+        - "TL (needs strategic judgment)"
+        - "SWE Opus (technical depth needed)"
+        - "Cloud Agent (simple lookup)"

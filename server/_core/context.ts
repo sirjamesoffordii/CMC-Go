@@ -1,10 +1,8 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { sdk } from "./sdk";
-import { getSessionToken, getUserIdFromSession } from "./session";
+import { getUserIdFromSession } from "./session";
 import * as db from "../db";
-import * as dbAdditions from "../db-additions"; 
-import crypto from "crypto";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -22,15 +20,6 @@ export async function createContext(
   if (userId) {
     user = await db.getUserById(userId);
     if (user) {
-      // Update session lastSeenAt on each request
-      const token = getSessionToken(opts.req);
-      if (token) {
-        const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-        await dbAdditions.updateSessionLastSeen(tokenHash).catch(() => {
-          // Silently fail if session tracking fails - don't break auth
-        });
-      }
-
       return {
         req: opts.req,
         res: opts.res,
@@ -42,7 +31,7 @@ export async function createContext(
   // Fallback to legacy OAuth authentication
   try {
     user = await sdk.authenticateRequest(opts.req);
-  } catch (error) {
+  } catch (_error) {
     // Authentication is optional for public procedures.
     user = null;
   }

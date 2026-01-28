@@ -10,7 +10,7 @@ export default function WhyInvitationsMatter() {
   // Handle ESC key to close modal or navigate back
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         // If doc modal is open, close it first
         if (isDocModalOpen) {
           setIsDocModalOpen(false);
@@ -23,8 +23,8 @@ export default function WhyInvitationsMatter() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDocModalOpen, setLocation]);
 
   return (
@@ -50,7 +50,11 @@ export default function WhyInvitationsMatter() {
           {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-8 sm:mb-10">
             <p className="text-lg sm:text-xl text-slate-700 leading-relaxed">
-              Inviting people personally ensures that people not only know about an opportunity, but understand why it matters. It brings clarity around where they are in the decision process and what support or steps they need to move forward, and most of all, it communicates to them that they matter.
+              Inviting people personally ensures that people not only know about
+              an opportunity, but understand why it matters. It brings clarity
+              around where they are in the decision process and what support or
+              steps they need to move forward, and most of all, it communicates
+              to them that they matter.
             </p>
           </div>
 
@@ -66,14 +70,16 @@ export default function WhyInvitationsMatter() {
               <h3 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-3 sm:mb-4">
                 1. Why them attending CMC matters
               </h3>
-                <p className="text-base sm:text-lg text-slate-700 leading-relaxed">
-                 Share why you believe CMC would be meaningful for this person, and meaningful to Chi Alpha. For me, its tied to <button
-                   onClick={() => setIsDocModalOpen(true)}
-                   className="text-red-600 hover:text-red-700 underline font-medium cursor-pointer"
-                 >
-                   The Word God Gave Me For CMC
-                 </button>
-                </p>
+              <p className="text-base sm:text-lg text-slate-700 leading-relaxed">
+                Share why you believe CMC would be meaningful for this person,
+                and meaningful to Chi Alpha. For me, its tied to{" "}
+                <button
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="text-red-600 hover:text-red-700 underline font-medium cursor-pointer"
+                >
+                  The Word God Gave Me For CMC
+                </button>
+              </p>
             </div>
 
             {/* Point 2 */}
@@ -82,7 +88,8 @@ export default function WhyInvitationsMatter() {
                 2. Event details
               </h3>
               <p className="text-base sm:text-lg text-slate-700 leading-relaxed mb-3 sm:mb-4">
-                Share the practical information they need to make a real decision:
+                Share the practical information they need to make a real
+                decision:
               </p>
               <ul className="list-disc list-inside space-y-2 text-base sm:text-lg text-slate-700 ml-4">
                 <li>Location</li>
@@ -97,7 +104,9 @@ export default function WhyInvitationsMatter() {
                 3. Potential needs and support
               </h3>
               <p className="text-base sm:text-lg text-slate-700 leading-relaxed mb-3 sm:mb-4">
-                Name what might make this difficult and let them know support may be available and that they don't have to figure this out alone.
+                Name what might make this difficult and let them know support
+                may be available and that they don't have to figure this out
+                alone.
               </p>
               <ul className="list-disc list-inside space-y-2 text-base sm:text-lg text-slate-700 ml-4">
                 <li>Financial concerns</li>
@@ -144,7 +153,9 @@ export default function WhyInvitationsMatter() {
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-semibold text-slate-900">The Word God Gave Me For CMC</h2>
+              <h2 className="text-xl font-semibold text-slate-900">
+                The Word God Gave Me For CMC
+              </h2>
               <button
                 onClick={() => setIsDocModalOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -153,7 +164,7 @@ export default function WhyInvitationsMatter() {
                 <X className="w-5 h-5 text-slate-600" />
               </button>
             </div>
-            
+
             {/* Modal Content - Google Doc iframe */}
             <div className="flex-1 overflow-hidden">
               <iframe

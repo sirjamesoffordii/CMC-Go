@@ -9,7 +9,9 @@ import { getSessionCookieOptions } from "./cookies";
 import { COOKIE_NAME } from "@shared/const";
 import { ENV } from "./env";
 
-const SESSION_SECRET = ENV.SESSION_SECRET || process.env.SESSION_SECRET || "change-me-in-production";
+// Security: Default is for development only. Production will fail startup if not set (see env.ts validateEnv)
+const SESSION_SECRET =
+  ENV.SESSION_SECRET || process.env.SESSION_SECRET || "change-me-in-production";
 
 /**
  * Create a session token for a user ID
@@ -46,11 +48,10 @@ export function verifySessionToken(token: string): number | null {
       return null; // Invalid signature
     }
 
-    // Check if token is expired (30 days)
+    // Check if token is expired (disabled for persistent sessions)
     const tokenAge = Date.now() - parseInt(timestampStr, 10);
-    const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-    if (!Number.isFinite(tokenAge) || tokenAge > maxAge) {
-      return null; // Token expired or invalid timestamp
+    if (!Number.isFinite(tokenAge)) {
+      return null; // Invalid timestamp
     }
 
     const userId = parseInt(userIdStr, 10);
@@ -60,18 +61,20 @@ export function verifySessionToken(token: string): number | null {
   }
 }
 
-
 /**
  * Set session cookie
  */
-export function setSessionCookie(req: Request, res: Response, userId: number): string {
+export function setSessionCookie(
+  req: Request,
+  res: Response,
+  userId: number
+): void {
   const token = createSessionToken(userId);
   const cookieOptions = getSessionCookieOptions(req);
   res.cookie(COOKIE_NAME, token, {
     ...cookieOptions,
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years
   });
-  return token;
 }
 
 /**
@@ -81,10 +84,13 @@ export function getSessionToken(req: Request): string | null {
   // Prefer cookie-parser if present
   const anyReq = req as any;
   const tokenFromParser = anyReq?.cookies?.[COOKIE_NAME];
-  if (typeof tokenFromParser === "string" && tokenFromParser.length > 0) return tokenFromParser;
+  if (typeof tokenFromParser === "string" && tokenFromParser.length > 0)
+    return tokenFromParser;
 
   const cookiesHeader = req.headers.cookie || "";
-  const cookieMatch = cookiesHeader.match(new RegExp(`(^|; )${COOKIE_NAME}=([^;]+)`));
+  const cookieMatch = cookiesHeader.match(
+    new RegExp(`(^|; )${COOKIE_NAME}=([^;]+)`)
+  );
   if (!cookieMatch) return null;
   return cookieMatch[2] || null;
 }
@@ -95,7 +101,6 @@ export function getUserIdFromSession(req: Request): number | null {
   return verifySessionToken(token);
 }
 
-
 /**
  * Clear session cookie
  */
@@ -103,4 +108,3 @@ export function clearSessionCookie(req: Request, res: Response): void {
   const cookieOptions = getSessionCookieOptions(req);
   res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
 }
-

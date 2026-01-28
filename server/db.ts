@@ -1,13 +1,13 @@
-import { eq, and, or, sql, inArray } from "drizzle-orm";
+import { eq, and, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { 
-  InsertUser, 
-  users, 
-  districts, 
-  campuses, 
-  people, 
-  needs, 
+import {
+  InsertUser,
+  users,
+  districts,
+  campuses,
+  people,
+  needs,
   notes,
   settings,
   assignments,
@@ -20,14 +20,17 @@ import {
   InsertPerson,
   InsertNeed,
   InsertNote,
-  InsertSetting,
   InsertAssignment,
   InsertHousehold,
   InsertAuthToken,
   InsertInviteNote,
-  InsertStatusChange
 } from "../drizzle/schema";
-import { ENV } from './_core/env';
+import { ENV } from "./_core/env";
+import {
+  peopleScopeWhereClause,
+  type PeopleScope,
+  type UserScopeAnchors,
+} from "./_core/authorization";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
@@ -42,9 +45,11 @@ export async function getDb() {
     try {
       const connectionString = ENV.DATABASE_URL;
       if (!connectionString) {
-        throw new Error("DATABASE_URL environment variable is required. Set DATABASE_URL or MYSQL_* variables (MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)");
+        throw new Error(
+          "DATABASE_URL environment variable is required. Set DATABASE_URL or MYSQL_* variables (MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE)"
+        );
       }
-      
+
       // Create connection pool for MySQL/TiDB
       // Pool configuration optimizes for production workloads
       _pool = mysql.createPool({
@@ -63,7 +68,10 @@ export async function getDb() {
         await db.execute(sql`SELECT 1`);
         console.log("[Database] Connected to MySQL/TiDB with connection pool");
       } catch (testError) {
-        console.error("[Database] Connection pool created but test query failed:", testError);
+        console.error(
+          "[Database] Connection pool created but test query failed:",
+          testError
+        );
         throw testError;
       }
     } catch (error) {
@@ -109,7 +117,11 @@ export async function closeDb() {
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -123,7 +135,11 @@ export async function getUserById(id: number) {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -140,17 +156,74 @@ export async function createUser(user: InsertUser) {
 
 export async function updateUserLastLoginAt(userId: number) {
   const db = await getDb();
-  if (!db) return;
-  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
+  if (!db) {
+    console.error(
+      "[updateUserLastLoginAt] Database not available for user:",
+      userId
+    );
+    throw new Error("Database not available");
+  }
+  await db
+    .update(users)
+    .set({ lastLoginAt: new Date() })
+    .where(eq(users.id, userId));
 }
 
-export async function upsertUser(user: Partial<InsertUser> & { openId: string }) {
+export async function updateUserPersonId(
+  userId: number,
+  personId: string | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+  await db.update(users).set({ personId }).where(eq(users.id, userId));
+}
+
+export async function searchPeopleByNameInScope(
+  query: string,
+  scope: PeopleScope,
+  limit: number = 20
+) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const q = query.trim();
+  if (!q) return [];
+
+  const likePattern = `%${q}%`;
+  const nameFilter = sql`${people.name} LIKE ${likePattern}`;
+
+  let scopeFilter = sql`1=1`;
+  if (scope.level === "CAMPUS") {
+    scopeFilter = eq(people.primaryCampusId, scope.campusId);
+  } else if (scope.level === "DISTRICT") {
+    scopeFilter = eq(people.primaryDistrictId, scope.districtId);
+  } else if (scope.level === "REGION") {
+    scopeFilter = eq(people.primaryRegion, scope.regionId);
+  }
+
+  return await db
+    .select({
+      personId: people.personId,
+      name: people.name,
+      primaryCampusId: people.primaryCampusId,
+      primaryDistrictId: people.primaryDistrictId,
+      primaryRegion: people.primaryRegion,
+    })
+    .from(people)
+    .where(and(nameFilter, scopeFilter))
+    .limit(limit);
+}
+
+export async function upsertUser(
+  user: Partial<InsertUser> & { openId: string }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
   const existing = await getUserByOpenId(user.openId);
   if (existing) {
-    await db.update(users)
+    await db
+      .update(users)
       .set({ ...user })
       .where(eq(users.openId, user.openId));
     return existing.id;
@@ -180,7 +253,11 @@ export async function getAllDistricts() {
 export async function getDistrictById(id: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(districts).where(eq(districts.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(districts)
+    .where(eq(districts.id, id))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -191,7 +268,10 @@ export async function createDistrict(district: InsertDistrict) {
   return district.id;
 }
 
-export async function updateDistrict(id: string, data: Partial<InsertDistrict>) {
+export async function updateDistrict(
+  id: string,
+  data: Partial<InsertDistrict>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(districts).set(data).where(eq(districts.id, id));
@@ -222,7 +302,10 @@ export async function getAllCampuses() {
 export async function getCampusesByDistrictId(districtId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(campuses).where(eq(campuses.districtId, districtId));
+  return await db
+    .select()
+    .from(campuses)
+    .where(eq(campuses.districtId, districtId));
 }
 
 // Alias for backward compatibility
@@ -231,28 +314,46 @@ export const getCampusesByDistrict = getCampusesByDistrictId;
 export async function getCampusById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(campuses).where(eq(campuses.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(campuses)
+    .where(eq(campuses.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getCampusByNameAndDistrict(
+  name: string,
+  districtId: string
+) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(campuses)
+    .where(and(eq(campuses.name, name), eq(campuses.districtId, districtId)))
+    .limit(1);
   return result[0] || null;
 }
 
 export async function createCampus(campus: InsertCampus) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Insert campus with just name and districtId
   // displayOrder is optional and will be null if column doesn't exist yet
   const result = await db.insert(campuses).values({
     name: campus.name,
     districtId: campus.districtId,
   });
-  
+
   // Get the insertId from the result (MySQL with Drizzle returns it in result[0].insertId)
   const insertId = result[0]?.insertId;
-  
+
   if (!insertId) {
     throw new Error(`Failed to get insert ID from database`);
   }
-  
+
   return insertId;
 }
 
@@ -268,12 +369,34 @@ export async function updateCampusName(id: number, name: string) {
   await db.update(campuses).set({ name }).where(eq(campuses.id, id));
 }
 
+export async function updateCampusDisplayOrder(
+  id: number,
+  displayOrder: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(campuses).set({ displayOrder }).where(eq(campuses.id, id));
+}
+
+export async function countPeopleByCampusId(campusId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(eq(people.primaryCampusId, campusId));
+  return result[0]?.count ?? 0;
+}
+
 export async function deleteCampus(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   // Detach people from this campus (retain their person record)
-  await db.update(people).set({ primaryCampusId: null }).where(eq(people.primaryCampusId, id));
+  await db
+    .update(people)
+    .set({ primaryCampusId: null })
+    .where(eq(people.primaryCampusId, id));
   // Remove the campus row
   await db.delete(campuses).where(eq(campuses.id, id));
 }
@@ -292,8 +415,10 @@ export async function getAllPeople() {
     if (error instanceof Error) {
       console.error("[getAllPeople] Full error message:", error.message);
       // Check for common schema mismatch issues
-      if (error.message.includes('notes') || error.message.includes('note')) {
-        console.error("[getAllPeople] Possible schema mismatch with 'notes' field");
+      if (error.message.includes("notes") || error.message.includes("note")) {
+        console.error(
+          "[getAllPeople] Possible schema mismatch with 'notes' field"
+        );
       }
     }
     throw error;
@@ -303,51 +428,65 @@ export async function getAllPeople() {
 export async function getPersonByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(people).where(eq(people.personId, personId)).limit(1);
+  const result = await db
+    .select()
+    .from(people)
+    .where(eq(people.personId, personId))
+    .limit(1);
   return result[0] || null;
 }
 
-export async function getPersonByNameCaseInsensitive(name: string) {
+export async function personExists(personId: string) {
   const db = await getDb();
-  if (!db) return null;
-  const trimmedName = name.trim();
-  const result = await db.select().from(people).where(sql`LOWER(TRIM(${people.name})) = LOWER(${trimmedName})`).limit(1);
-  return result[0] || null;
+  if (!db) return false;
+  const result = await db
+    .select({ personId: people.personId })
+    .from(people)
+    .where(eq(people.personId, personId))
+    .limit(1);
+  return Boolean(result[0]);
 }
 
-export async function getLatestPersonEditByEditorName(editorName: string) {
+export async function getPersonByPersonIdInScope(
+  personId: string,
+  user: UserScopeAnchors
+) {
   const db = await getDb();
   if (!db) return null;
-
-  const name = editorName.trim();
-  if (!name) return null;
 
   const result = await db
     .select()
     .from(people)
-    .where(sql`TRIM(${people.lastEditedBy}) = ${name}`)
-    .orderBy(sql`${people.lastEdited} DESC`)
+    .where(and(eq(people.personId, personId), peopleScopeWhereClause(user)))
     .limit(1);
-
   return result[0] || null;
 }
 
 export async function getPeopleByDistrictId(districtId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(eq(people.primaryDistrictId, districtId));
+  return await db
+    .select()
+    .from(people)
+    .where(eq(people.primaryDistrictId, districtId));
 }
 
 export async function getPeopleByRegionId(regionId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(eq(people.primaryRegion, regionId));
+  return await db
+    .select()
+    .from(people)
+    .where(eq(people.primaryRegion, regionId));
 }
 
 export async function getPeopleByCampusId(campusId: number) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(eq(people.primaryCampusId, campusId));
+  return await db
+    .select()
+    .from(people)
+    .where(eq(people.primaryCampusId, campusId));
 }
 
 /**
@@ -381,17 +520,17 @@ export function sanitizePersonForPublic(person: typeof people.$inferSelect) {
 export async function createPerson(person: InsertPerson) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   try {
     // Build values object explicitly - only include fields that are provided
     // This prevents Drizzle from trying to insert undefined values
-    const values: any = {
+    const values: Record<string, unknown> = {
       personId: person.personId,
       name: person.name,
-      status: person.status || 'Not Invited',
+      status: person.status || "Not Invited",
       depositPaid: person.depositPaid ?? false,
     };
-    
+
     // Only add optional fields if they are explicitly provided (not undefined)
     if (person.primaryDistrictId !== undefined) {
       values.primaryDistrictId = person.primaryDistrictId;
@@ -402,10 +541,16 @@ export async function createPerson(person: InsertPerson) {
     if (person.primaryRole !== undefined && person.primaryRole !== null) {
       values.primaryRole = person.primaryRole;
     }
-    if (person.primaryCampusId !== undefined && person.primaryCampusId !== null) {
+    if (
+      person.primaryCampusId !== undefined &&
+      person.primaryCampusId !== null
+    ) {
       values.primaryCampusId = person.primaryCampusId;
     }
-    if (person.nationalCategory !== undefined && person.nationalCategory !== null) {
+    if (
+      person.nationalCategory !== undefined &&
+      person.nationalCategory !== null
+    ) {
       values.nationalCategory = person.nationalCategory;
     }
     if (person.notes !== undefined) {
@@ -444,23 +589,32 @@ export async function createPerson(person: InsertPerson) {
     if (person.lastEditedBy !== undefined) {
       values.lastEditedBy = person.lastEditedBy;
     }
-    
-    console.log('[db.createPerson] Inserting person:', JSON.stringify(values, null, 2));
-    const result = await db.insert(people).values(values);
-    console.log('[db.createPerson] Insert successful, result:', result);
+
+    console.log(
+      "[db.createPerson] Inserting person:",
+      JSON.stringify(values, null, 2)
+    );
+    const result = await db.insert(people).values(values as InsertPerson);
+    console.log("[db.createPerson] Insert successful, result:", result);
     const insertId = result[0]?.insertId;
     if (!insertId) {
       throw new Error("Failed to get insert ID from database");
     }
     return insertId;
   } catch (error) {
-    console.error('[db.createPerson] Database error:', error);
-    console.error('[db.createPerson] Error details:', error instanceof Error ? error.message : String(error));
+    console.error("[db.createPerson] Database error:", error);
+    console.error(
+      "[db.createPerson] Error details:",
+      error instanceof Error ? error.message : String(error)
+    );
     throw error;
   }
 }
 
-export async function updatePerson(personId: string, data: Partial<InsertPerson>) {
+export async function updatePerson(
+  personId: string,
+  data: Partial<InsertPerson>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(people).set(data).where(eq(people.personId, personId));
@@ -472,13 +626,19 @@ export async function deletePerson(personId: string) {
   await db.delete(people).where(eq(people.personId, personId));
 }
 
-export async function updatePersonStatus(personId: string, status: "Yes" | "Maybe" | "No" | "Not Invited") {
+export async function updatePersonStatus(
+  personId: string,
+  status: "Yes" | "Maybe" | "No" | "Not Invited"
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(people).set({ 
-    status,
-    statusLastUpdated: new Date()
-  }).where(eq(people.personId, personId));
+  await db
+    .update(people)
+    .set({
+      status,
+      statusLastUpdated: new Date(),
+    })
+    .where(eq(people.personId, personId));
 }
 
 export async function updatePersonName(personId: string, name: string) {
@@ -500,7 +660,10 @@ export async function getAllAssignments() {
 export async function getAssignmentsByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(assignments).where(eq(assignments.personId, personId));
+  return await db
+    .select()
+    .from(assignments)
+    .where(eq(assignments.personId, personId));
 }
 
 export async function createAssignment(assignment: InsertAssignment) {
@@ -526,7 +689,11 @@ export async function createAssignment(assignment: InsertAssignment) {
 export async function getNeedsByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`);
+  return await db
+    .select()
+    .from(needs)
+    .where(eq(needs.personId, personId))
+    .orderBy(sql`${needs.createdAt} DESC`);
 }
 
 export async function createNeed(need: InsertNeed) {
@@ -550,8 +717,13 @@ export async function getAllActiveNeeds() {
     console.error("[getAllActiveNeeds] Database error:", error);
     // Check if it's a column name issue
     if (error instanceof Error) {
-      if (error.message.includes('createdById') || error.message.includes('createdByUserId')) {
-        console.error("[getAllActiveNeeds] Schema mismatch: Check if database column name matches schema definition");
+      if (
+        error.message.includes("createdById") ||
+        error.message.includes("createdByUserId")
+      ) {
+        console.error(
+          "[getAllActiveNeeds] Schema mismatch: Check if database column name matches schema definition"
+        );
         console.error("[getAllActiveNeeds] Schema expects: createdById");
       }
       // Log the full error for debugging
@@ -568,7 +740,9 @@ export async function getAllActiveNeeds() {
 export async function toggleNeedActive(needId: number, isActive: boolean) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const updateData: { isActive: boolean; resolvedAt?: Date | null } = { isActive };
+  const updateData: { isActive: boolean; resolvedAt?: Date | null } = {
+    isActive,
+  };
   if (!isActive) {
     // When marking as met, set resolvedAt timestamp
     updateData.resolvedAt = new Date();
@@ -587,14 +761,23 @@ export async function getNeedByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return null;
   // Get most recent need (for display in tooltips/forms)
-  const result = await db.select().from(needs).where(eq(needs.personId, personId)).orderBy(sql`${needs.createdAt} DESC`).limit(1);
+  const result = await db
+    .select()
+    .from(needs)
+    .where(eq(needs.personId, personId))
+    .orderBy(sql`${needs.createdAt} DESC`)
+    .limit(1);
   return result[0] || null;
 }
 
 export async function getNeedById(needId: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(needs).where(eq(needs.id, needId)).limit(1);
+  const result = await db
+    .select()
+    .from(needs)
+    .where(eq(needs.id, needId))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -616,10 +799,10 @@ export async function updateOrCreateNeed(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Check if need exists for this person
   const existing = await getNeedByPersonId(personId);
-  
+
   const updateData: {
     type: InsertNeed["type"];
     description: string;
@@ -637,7 +820,7 @@ export async function updateOrCreateNeed(
   if (needData.visibility !== undefined) {
     updateData.visibility = needData.visibility;
   }
-  
+
   // Set resolvedAt when marking as met, clear when reactivating
   if (!needData.isActive) {
     updateData.resolvedAt = new Date();
@@ -645,7 +828,7 @@ export async function updateOrCreateNeed(
     // Reactivating a previously met need
     updateData.resolvedAt = null;
   }
-  
+
   if (existing) {
     // Update existing need
     await db.update(needs).set(updateData).where(eq(needs.id, existing.id));
@@ -685,15 +868,20 @@ export async function deleteNeedByPersonId(personId: string) {
 // NOTES
 // ============================================================================
 
-export async function getNotesByPersonId(personId: string, category?: "INVITE" | "INTERNAL") {
+export async function getNotesByPersonId(
+  personId: string,
+  category?: "INVITE" | "INTERNAL"
+) {
   const db = await getDb();
   if (!db) return [];
-  
+
   if (category) {
-    return await db.select().from(notes)
+    return await db
+      .select()
+      .from(notes)
       .where(and(eq(notes.personId, personId), eq(notes.category, category)));
   }
-  
+
   return await db.select().from(notes).where(eq(notes.personId, personId));
 }
 
@@ -715,15 +903,40 @@ export async function createNote(note: InsertNote) {
 export async function getSetting(key: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
+  const result = await db
+    .select()
+    .from(settings)
+    .where(eq(settings.key, key))
+    .limit(1);
   return result[0] || null;
 }
 
 export async function setSetting(key: string, value: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.insert(settings).values({ key, value })
+  await db
+    .insert(settings)
+    .values({ key, value })
     .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
+}
+
+export async function getAllSettings() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(settings);
+}
+
+export async function updateSettings(values: Record<string, string>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const entries = Object.entries(values);
+  for (const [key, value] of entries) {
+    await db
+      .insert(settings)
+      .values({ key, value })
+      .onDuplicateKeyUpdate({ set: { value, updatedAt: new Date() } });
+  }
 }
 
 // ============================================================================
@@ -752,24 +965,27 @@ export async function getMetrics() {
   const total = Number(totalResult[0]?.count) || 0;
 
   // Initialize counters with zero values
-  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
+    string,
+    number
+  >;
   let countedTotal = 0;
-  
+
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
     countedTotal += count;
     switch (status) {
-      case 'Yes':
+      case "Yes":
         counts.going = count;
         break;
-      case 'Maybe':
+      case "Maybe":
         counts.maybe = count;
         break;
-      case 'No':
+      case "No":
         counts.notGoing = count;
         break;
-      case 'Not Invited':
+      case "Not Invited":
         counts.notInvited = count;
         break;
       default:
@@ -778,12 +994,12 @@ export async function getMetrics() {
         break;
     }
   }
-  
+
   // If there's a discrepancy (people with null status), add them to notInvited
   if (total > countedTotal) {
-    counts.notInvited += (total - countedTotal);
+    counts.notInvited += total - countedTotal;
   }
-  
+
   return { ...counts, total };
 }
 
@@ -797,7 +1013,7 @@ export async function getDistrictMetrics(districtId: string) {
   // This fixes cases where primaryDistrictId is null but the campus belongs to the district.
   const districtWhere = or(
     eq(people.primaryDistrictId, districtId),
-    eq(campuses.districtId, districtId),
+    eq(campuses.districtId, districtId)
   );
 
   // Get total count separately to ensure we count ALL people in district
@@ -816,24 +1032,27 @@ export async function getDistrictMetrics(districtId: string) {
     .where(districtWhere)
     .groupBy(people.status);
 
-  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
+    string,
+    number
+  >;
   let countedTotal = 0;
-  
+
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
     countedTotal += count;
     switch (status) {
-      case 'Yes':
+      case "Yes":
         counts.going = count;
         break;
-      case 'Maybe':
+      case "Maybe":
         counts.maybe = count;
         break;
-      case 'No':
+      case "No":
         counts.notGoing = count;
         break;
-      case 'Not Invited':
+      case "Not Invited":
         counts.notInvited = count;
         break;
       default:
@@ -842,12 +1061,12 @@ export async function getDistrictMetrics(districtId: string) {
         break;
     }
   }
-  
+
   // If there's a discrepancy (people with null status), add them to notInvited
   if (total > countedTotal) {
-    counts.notInvited += (total - countedTotal);
+    counts.notInvited += total - countedTotal;
   }
-  
+
   return { ...counts, total };
 }
 
@@ -868,24 +1087,27 @@ export async function getRegionMetrics(region: string) {
     .where(eq(people.primaryRegion, region))
     .groupBy(people.status);
 
-  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<string, number>;
+  const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
+    string,
+    number
+  >;
   let countedTotal = 0;
-  
+
   for (const row of statusCounts) {
     const status = row.status;
     const count = Number((row as any).count) || 0;
     countedTotal += count;
     switch (status) {
-      case 'Yes':
+      case "Yes":
         counts.going = count;
         break;
-      case 'Maybe':
+      case "Maybe":
         counts.maybe = count;
         break;
-      case 'No':
+      case "No":
         counts.notGoing = count;
         break;
-      case 'Not Invited':
+      case "Not Invited":
         counts.notInvited = count;
         break;
       default:
@@ -894,12 +1116,12 @@ export async function getRegionMetrics(region: string) {
         break;
     }
   }
-  
+
   // If there's a discrepancy (people with null status), add them to notInvited
   if (total > countedTotal) {
-    counts.notInvited += (total - countedTotal);
+    counts.notInvited += total - countedTotal;
   }
-  
+
   return { ...counts, total };
 }
 
@@ -911,54 +1133,69 @@ export async function getRegionMetrics(region: string) {
 export async function getAllDistrictMetrics() {
   const db = await getDb();
   if (!db) return [];
-  
+
   // Include people in a district either by primaryDistrictId or by the district
   // of their primaryCampusId. Use COALESCE to derive the effective district.
   const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
 
   const result = await db
     .select({
-      districtId: effectiveDistrictId.as('districtId'),
+      districtId: effectiveDistrictId.as("districtId"),
       status: people.status,
-      count: sql<number>`COUNT(*)`.as('count'),
+      count: sql<number>`COUNT(*)`.as("count"),
     })
     .from(people)
     .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
     .where(sql`${effectiveDistrictId} IS NOT NULL`)
     .groupBy(effectiveDistrictId, people.status);
-  
+
   // Group by district and aggregate status counts
-  const districtMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
-  
+  const districtMap = new Map<
+    string,
+    {
+      going: number;
+      maybe: number;
+      notGoing: number;
+      notInvited: number;
+      total: number;
+    }
+  >();
+
   for (const row of result) {
     const districtId = row.districtId;
     if (!districtId) continue;
-    
+
     if (!districtMap.has(districtId)) {
-      districtMap.set(districtId, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+      districtMap.set(districtId, {
+        going: 0,
+        maybe: 0,
+        notGoing: 0,
+        notInvited: 0,
+        total: 0,
+      });
     }
-    
+
     const counts = districtMap.get(districtId)!;
     const count = Number(row.count) || 0;
     counts.total += count;
-    
+
     switch (row.status) {
-      case 'Yes':
+      case "Yes":
         counts.going = count;
         break;
-      case 'Maybe':
+      case "Maybe":
         counts.maybe = count;
         break;
-      case 'No':
+      case "No":
         counts.notGoing = count;
         break;
-      case 'Not Invited':
+      case "Not Invited":
       default:
         counts.notInvited += count;
         break;
     }
   }
-  
+
   return Array.from(districtMap.entries()).map(([districtId, counts]) => ({
     districtId,
     ...counts,
@@ -973,49 +1210,64 @@ export async function getAllDistrictMetrics() {
 export async function getAllRegionMetrics() {
   const db = await getDb();
   if (!db) return [];
-  
+
   const result = await db
     .select({
       region: people.primaryRegion,
       status: people.status,
-      count: sql<number>`COUNT(*)`.as('count'),
+      count: sql<number>`COUNT(*)`.as("count"),
     })
     .from(people)
     .where(sql`${people.primaryRegion} IS NOT NULL`)
     .groupBy(people.primaryRegion, people.status);
-  
+
   // Group by region and aggregate status counts
-  const regionMap = new Map<string, { going: number; maybe: number; notGoing: number; notInvited: number; total: number }>();
-  
+  const regionMap = new Map<
+    string,
+    {
+      going: number;
+      maybe: number;
+      notGoing: number;
+      notInvited: number;
+      total: number;
+    }
+  >();
+
   for (const row of result) {
     const region = row.region;
     if (!region) continue;
-    
+
     if (!regionMap.has(region)) {
-      regionMap.set(region, { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 });
+      regionMap.set(region, {
+        going: 0,
+        maybe: 0,
+        notGoing: 0,
+        notInvited: 0,
+        total: 0,
+      });
     }
-    
+
     const counts = regionMap.get(region)!;
     const count = Number(row.count) || 0;
     counts.total += count;
-    
+
     switch (row.status) {
-      case 'Yes':
+      case "Yes":
         counts.going = count;
         break;
-      case 'Maybe':
+      case "Maybe":
         counts.maybe = count;
         break;
-      case 'No':
+      case "No":
         counts.notGoing = count;
         break;
-      case 'Not Invited':
+      case "Not Invited":
       default:
         counts.notInvited += count;
         break;
     }
   }
-  
+
   return Array.from(regionMap.entries()).map(([region, counts]) => ({
     region,
     ...counts,
@@ -1026,12 +1278,15 @@ export async function getAllRegionMetrics() {
 export async function getNationalStaff() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(people).where(
-    and(
-      sql`${people.primaryDistrictId} IS NULL`,
-      sql`${people.primaryRegion} IS NULL`
-    )
-  );
+  return await db
+    .select()
+    .from(people)
+    .where(
+      and(
+        sql`${people.primaryDistrictId} IS NULL`,
+        sql`${people.primaryRegion} IS NULL`
+      )
+    );
 }
 
 // ============================================================================
@@ -1045,7 +1300,10 @@ export async function getAllHouseholds() {
     return await db.select().from(households);
   } catch (error) {
     // If households table doesn't exist yet, return empty array
-    console.error('Error fetching households (table may not exist yet):', error);
+    console.error(
+      "Error fetching households (table may not exist yet):",
+      error
+    );
     return [];
   }
 }
@@ -1054,11 +1312,18 @@ export async function getHouseholdById(id: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const result = await db.select().from(households).where(eq(households.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(households)
+      .where(eq(households.id, id))
+      .limit(1);
     return result[0] || null;
   } catch (error) {
     // If households table doesn't exist yet, return null
-    console.error('Error fetching household by id (table may not exist yet):', error);
+    console.error(
+      "Error fetching household by id (table may not exist yet):",
+      error
+    );
     return null;
   }
 }
@@ -1067,10 +1332,16 @@ export async function getHouseholdMembers(householdId: number) {
   const db = await getDb();
   if (!db) return [];
   try {
-    return await db.select().from(people).where(eq(people.householdId, householdId));
+    return await db
+      .select()
+      .from(people)
+      .where(eq(people.householdId, householdId));
   } catch (error) {
     // If households table doesn't exist yet, return empty array
-    console.error('Error fetching household members (table may not exist yet):', error);
+    console.error(
+      "Error fetching household members (table may not exist yet):",
+      error
+    );
     return [];
   }
 }
@@ -1081,34 +1352,37 @@ export async function searchHouseholds(query: string) {
   // Search by label or by member names
   const allHouseholds = await db.select().from(households);
   const matchingHouseholds = [];
-  
+
   for (const household of allHouseholds) {
     // Check label match
-    if (household.label && household.label.toLowerCase().includes(query.toLowerCase())) {
+    if (
+      household.label &&
+      household.label.toLowerCase().includes(query.toLowerCase())
+    ) {
       matchingHouseholds.push(household);
       continue;
     }
-    
+
     // Check member names
     const members = await getHouseholdMembers(household.id);
-    const memberNames = members.map(m => m.name.toLowerCase()).join(' ');
+    const memberNames = members.map(m => m.name.toLowerCase()).join(" ");
     if (memberNames.includes(query.toLowerCase())) {
       matchingHouseholds.push(household);
     }
   }
-  
+
   return matchingHouseholds;
 }
 
 export async function createHousehold(data: InsertHousehold) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const cleanData: any = {
+
+  const cleanData: Partial<InsertHousehold> = {
     childrenCount: data.childrenCount ?? 0,
     guestsCount: data.guestsCount ?? 0,
   };
-  
+
   // Ensure label is not empty - fallback to "Household" if needed
   if (data.label !== undefined && data.label !== null && data.label.trim()) {
     cleanData.label = data.label.trim();
@@ -1116,7 +1390,7 @@ export async function createHousehold(data: InsertHousehold) {
     // Fallback to "Household" if label is empty or not provided
     cleanData.label = "Household";
   }
-  
+
   const result = await db.insert(households).values(cleanData);
   const insertId = result[0]?.insertId;
   if (!insertId) {
@@ -1125,25 +1399,32 @@ export async function createHousehold(data: InsertHousehold) {
   return insertId;
 }
 
-export async function updateHousehold(id: number, data: Partial<InsertHousehold>) {
+export async function updateHousehold(
+  id: number,
+  data: Partial<InsertHousehold>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const updateData: any = {};
+
+  const updateData: Partial<InsertHousehold> = {};
   if (data.label !== undefined) updateData.label = data.label;
-  if (data.childrenCount !== undefined) updateData.childrenCount = data.childrenCount;
+  if (data.childrenCount !== undefined)
+    updateData.childrenCount = data.childrenCount;
   if (data.guestsCount !== undefined) updateData.guestsCount = data.guestsCount;
-  
+
   await db.update(households).set(updateData).where(eq(households.id, id));
 }
 
 export async function deleteHousehold(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // First, unlink all people from this household
-  await db.update(people).set({ householdId: null, householdRole: 'primary' }).where(eq(people.householdId, id));
-  
+  await db
+    .update(people)
+    .set({ householdId: null, householdRole: "primary" })
+    .where(eq(people.householdId, id));
+
   // Then delete the household
   await db.delete(households).where(eq(households.id, id));
 }
@@ -1166,12 +1447,16 @@ export async function createAuthToken(token: InsertAuthToken) {
 export async function getAuthToken(token: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(authTokens)
-    .where(and(
-      eq(authTokens.token, token),
-      sql`${authTokens.expiresAt} > NOW()`,
-      sql`${authTokens.consumedAt} IS NULL`
-    ))
+  const result = await db
+    .select()
+    .from(authTokens)
+    .where(
+      and(
+        eq(authTokens.token, token),
+        sql`${authTokens.expiresAt} > NOW()`,
+        sql`${authTokens.consumedAt} IS NULL`
+      )
+    )
     .limit(1);
   return result[0] || null;
 }
@@ -1179,7 +1464,10 @@ export async function getAuthToken(token: string) {
 export async function consumeAuthToken(token: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(authTokens).set({ consumedAt: new Date() }).where(eq(authTokens.token, token));
+  await db
+    .update(authTokens)
+    .set({ consumedAt: new Date() })
+    .where(eq(authTokens.token, token));
 }
 
 // ============================================================================
@@ -1189,26 +1477,40 @@ export async function consumeAuthToken(token: string) {
 export async function getPendingApprovals(role: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(users)
+  return await db
+    .select()
+    .from(users)
     .where(eq(users.approvalStatus, "PENDING_APPROVAL"));
 }
 
-export async function approveUser(userId: number, approvedByUserId: number | null) {
+export async function approveUser(
+  userId: number,
+  approvedByUserId: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(users).set({
-    approvalStatus: "ACTIVE",
-    approvedByUserId,
-    approvedAt: new Date()
-  }).where(eq(users.id, userId));
+  await db
+    .update(users)
+    .set({
+      approvalStatus: "ACTIVE",
+      approvedByUserId,
+      approvedAt: new Date(),
+    })
+    .where(eq(users.id, userId));
 }
 
-export async function rejectUser(userId: number, rejectedByUserId: number | null) {
+export async function rejectUser(
+  userId: number,
+  rejectedByUserId: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(users).set({
-    approvalStatus: "REJECTED"
-  }).where(eq(users.id, userId));
+  await db
+    .update(users)
+    .set({
+      approvalStatus: "REJECTED",
+    })
+    .where(eq(users.id, userId));
 }
 
 // ============================================================================
@@ -1218,7 +1520,9 @@ export async function rejectUser(userId: number, rejectedByUserId: number | null
 export async function getInviteNotesByPersonId(personId: string) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(inviteNotes)
+  return await db
+    .select()
+    .from(inviteNotes)
     .where(eq(inviteNotes.personId, personId))
     .orderBy(sql`${inviteNotes.createdAt} DESC`);
 }
@@ -1241,36 +1545,46 @@ export async function createInviteNote(note: InsertInviteNote) {
 export async function getStatusHistory(personId: string, limit: number = 20) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(statusChanges)
+  return await db
+    .select()
+    .from(statusChanges)
     .where(eq(statusChanges.personId, personId))
     .orderBy(sql`${statusChanges.changedAt} DESC`)
     .limit(limit);
 }
 
-export async function revertStatusChange(statusChangeId: number, revertedByUserId: number | null) {
+export async function revertStatusChange(
+  statusChangeId: number,
+  revertedByUserId: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Get the status change record
-  const change = await db.select().from(statusChanges)
+  const change = await db
+    .select()
+    .from(statusChanges)
     .where(eq(statusChanges.id, statusChangeId))
     .limit(1);
-  
+
   if (!change[0]) {
     throw new Error("Status change not found");
   }
-  
+
   // Check if this is an initial status (fromStatus is null)
   if (!change[0].fromStatus) {
     throw new Error("Cannot revert initial status change");
   }
-  
+
   // Revert person's status to fromStatus
-  await db.update(people).set({
-    status: change[0].fromStatus,
-    statusLastUpdated: new Date()
-  }).where(eq(people.personId, change[0].personId));
-  
+  await db
+    .update(people)
+    .set({
+      status: change[0].fromStatus,
+      statusLastUpdated: new Date(),
+    })
+    .where(eq(people.personId, change[0].personId));
+
   return { success: true };
 }
 
@@ -1281,22 +1595,24 @@ export async function revertStatusChange(statusChangeId: number, revertedByUserI
 export async function getFollowUpPeople() {
   const db = await getDb();
   if (!db) return [];
-  
+
   // Get people with Maybe status or active needs
-  const maybeStatus = await db.select().from(people)
+  const maybeStatus = await db
+    .select()
+    .from(people)
     .where(eq(people.status, "Maybe"));
-  
+
   const peopleWithNeeds = await db.select().from(people)
     .where(sql`${people.personId} IN (
       SELECT DISTINCT personId FROM ${needs} WHERE isActive = true
     )`);
-  
+
   // Combine and deduplicate by personId
   const allPeople = [...maybeStatus, ...peopleWithNeeds];
   const uniquePeople = Array.from(
     new Map(allPeople.map(p => [p.personId, p])).values()
   );
-  
+
   return uniquePeople;
 }
 
@@ -1304,50 +1620,52 @@ export async function getFollowUpPeople() {
 // IMPORT PEOPLE
 // ============================================================================
 
-export async function importPeople(rows: Array<{
-  name: string;
-  campus?: string;
-  district?: string;
-  role?: string;
-  status?: "Yes" | "Maybe" | "No" | "Not Invited";
-  notes?: string;
-}>) {
+export async function importPeople(
+  rows: Array<{
+    name: string;
+    campus?: string;
+    district?: string;
+    role?: string;
+    status?: "Yes" | "Maybe" | "No" | "Not Invited";
+    notes?: string;
+  }>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
-  
+
   // Load all campuses once at the start for efficiency
   const allCampuses = await getAllCampuses();
-  
+
   for (const row of rows) {
     try {
       // Generate personId from name (simple approach - could be improved)
-      const personId = row.name.toLowerCase().replace(/\s+/g, '_');
-      
+      const personId = row.name.toLowerCase().replace(/\s+/g, "_");
+
       // Check if person already exists
       const existing = await getPersonByPersonId(personId);
       if (existing) {
         skipped++;
         continue;
       }
-      
+
       // Find campus if provided
       let campusId: number | null = null;
       let districtId: string | null = null;
-      
+
       if (row.campus) {
-        const campus = allCampuses.find(c => 
-          c.name.toLowerCase() === row.campus?.toLowerCase()
+        const campus = allCampuses.find(
+          c => c.name.toLowerCase() === row.campus?.toLowerCase()
         );
         if (campus) {
           campusId = campus.id;
           districtId = campus.districtId;
         }
       }
-      
+
       // Create person
       await createPerson({
         personId,
@@ -1357,15 +1675,17 @@ export async function importPeople(rows: Array<{
         primaryRole: row.role,
         status: row.status || "Not Invited",
         notes: row.notes,
-        depositPaid: false
+        depositPaid: false,
       });
-      
+
       imported++;
     } catch (error) {
-      errors.push(`Failed to import ${row.name}: ${error instanceof Error ? error.message : String(error)}`);
+      errors.push(
+        `Failed to import ${row.name}: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
-  
+
   return { imported, skipped, errors };
 }
 
@@ -1373,7 +1693,10 @@ export async function importPeople(rows: Array<{
 // NEED VISIBILITY
 // ============================================================================
 
-export async function updateNeedVisibility(needId: number, visibility: "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE") {
+export async function updateNeedVisibility(
+  needId: number,
+  visibility: "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE"
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(needs).set({ visibility }).where(eq(needs.id, needId));

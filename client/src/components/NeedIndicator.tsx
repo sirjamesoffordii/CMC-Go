@@ -17,9 +17,12 @@ const NEED_ICON = {
  * - Icons are positioned upright on the right side of the head.
  */
 export function NeedIndicator({ type }: { type?: NeedType | null }) {
-  const Icon = (type && (NEED_ICON as any)[type] && (NEED_ICON as any)[type] !== null) 
-    ? (NEED_ICON as any)[type] 
-    : (type === "Other" ? null : HelpCircle);
+  const Icon =
+    type && (NEED_ICON as any)[type] && (NEED_ICON as any)[type] !== null
+      ? (NEED_ICON as any)[type]
+      : type === "Other"
+        ? null
+        : HelpCircle;
   const isOther = type === "Other";
 
   return (
@@ -43,11 +46,11 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
         }}
       >
         {isOther ? (
-          <span 
-            style={{ 
-              fontSize: '8px', 
-              fontWeight: 'bold', 
-              color: '#b45309',
+          <span
+            style={{
+              fontSize: "8px",
+              fontWeight: "bold",
+              color: "#b45309",
               lineHeight: 1,
               margin: 0,
               padding: 0,
@@ -56,16 +59,16 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
             O
           </span>
         ) : Icon ? (
-          <Icon 
-            className="w-3.5 h-3.5" 
-            style={{ margin: 0, padding: 0, strokeWidth: 2 }} 
-            color="#b45309" 
+          <Icon
+            className="w-3.5 h-3.5"
+            style={{ margin: 0, padding: 0, strokeWidth: 2 }}
+            color="#b45309"
           />
         ) : (
-          <HelpCircle 
-            className="w-3.5 h-3.5" 
-            style={{ margin: 0, padding: 0, strokeWidth: 2 }} 
-            color="#b45309" 
+          <HelpCircle
+            className="w-3.5 h-3.5"
+            style={{ margin: 0, padding: 0, strokeWidth: 2 }}
+            color="#b45309"
           />
         )}
       </div>

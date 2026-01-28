@@ -5,7 +5,7 @@
   .main-content-area {
     flex-direction: column !important;
   }
-  
+
   /* Left panel (district/national) - full width, partial height on mobile */
   .left-panel-mobile {
     width: 100% !important;
@@ -13,11 +13,11 @@
     border-right: none !important;
     border-bottom: 1px solid #d1d5db !important;
   }
-  
+
   .left-panel-mobile.closed {
     height: 0 !important;
   }
-  
+
   /* Right panel (people) - full width bottom drawer on mobile */
   .right-panel-mobile {
     width: 100% !important;
@@ -30,11 +30,11 @@
     right: 0 !important;
     z-index: 40 !important;
   }
-  
+
   .right-panel-mobile.closed {
     height: 0 !important;
   }
-  
+
   /* People tab button - adjust for mobile */
   .people-tab-mobile {
     bottom: 20px !important;
@@ -46,39 +46,41 @@
     border-radius: 9999px !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
   }
-  
+
   /* Map container - adjust for mobile panels */
   .map-container-mobile {
     flex: 1 !important;
     overflow: auto !important;
   }
-  
+
   /* Header - make more compact on mobile */
   .header-mobile {
     padding: 8px 12px !important;
   }
-  
+
   /* Search bar - full width on mobile */
   .search-mobile {
     max-width: 100% !important;
   }
-  
+
   /* Make touch targets larger on mobile */
   .touch-target {
     min-height: 44px !important;
     min-width: 44px !important;
   }
-  
+
   /* Remove hover-only interactions on mobile */
   .hover-only {
     display: none !important;
   }
-  
+
   /* Make all interactive elements tap-friendly */
-  button, a, [role="button"] {
+  button,
+  a,
+  [role="button"] {
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   /* Ensure buttons are large enough for touch */
   button:not(.touch-target) {
     min-height: 44px;
@@ -91,7 +93,7 @@
   .left-panel-mobile {
     width: 40% !important;
   }
-  
+
   .right-panel-mobile {
     width: 40% !important;
   }

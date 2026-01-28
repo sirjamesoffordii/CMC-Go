@@ -96,11 +96,13 @@ function loadMapScript() {
   return new Promise((resolve, reject) => {
     // Guard against missing API key in local development
     if (!API_KEY) {
-      console.warn('[Map] VITE_FRONTEND_FORGE_API_KEY not set. Map functionality will be disabled.');
-      reject(new Error('API key not configured'));
+      console.warn(
+        "[Map] VITE_FRONTEND_FORGE_API_KEY not set. Map functionality will be disabled."
+      );
+      reject(new Error("API key not configured"));
       return;
     }
-    
+
     const script = document.createElement("script");
     script.src = `${MAPS_PROXY_URL}/maps/api/js?key=${API_KEY}&v=weekly&libraries=marker,places,geocoding,geometry`;
     script.async = true;
@@ -111,7 +113,7 @@ function loadMapScript() {
     };
     script.onerror = () => {
       console.error("Failed to load Google Maps script");
-      reject(new Error('Failed to load Google Maps script'));
+      reject(new Error("Failed to load Google Maps script"));
     };
     document.head.appendChild(script);
   });

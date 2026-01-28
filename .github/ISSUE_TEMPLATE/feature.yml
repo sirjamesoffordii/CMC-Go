@@ -1,0 +1,145 @@
+name: "🚀 Feature / Task"
+description: "Standard work item for TL/SWE implementation"
+title: "[Task] "
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Work Item Template
+        Fill out all sections. Issues without Goal/Scope/AC will be returned for refinement.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: "Goal"
+      description: "One sentence: what user-visible or system behavior changes"
+      placeholder: "Enable users to filter the map by district status"
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavioral-spec
+    attributes:
+      label: "Behavioral Spec"
+      description: "Delete if trivial. Otherwise describe trigger/before/after/edge cases."
+      placeholder: |
+        - **Trigger:** User clicks district on map
+        - **Before:** No filtering available
+        - **After:** Panel shows only people in that district
+        - **Edge cases:** Empty district shows "No people" message
+
+  - type: textarea
+    id: surface-area
+    attributes:
+      label: "Surface Area (Files to Change)"
+      description: "List specific files and what changes. This helps agents find the right code."
+      placeholder: |
+        - `client/src/components/MapView.tsx` — add click handler
+        - `server/routers.ts` — add getPeopleByDistrict procedure
+        - `drizzle/schema.ts` — no changes needed
+    validations:
+      required: true
+
+  - type: textarea
+    id: pattern-to-follow
+    attributes:
+      label: "Pattern to Follow"
+      description: "Reference similar existing code in the codebase"
+      placeholder: "See `selectedDistrictId` pattern in `client/src/pages/Home.tsx`"
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: "Constraints"
+      description: "What must NOT break"
+      value: |
+        - Existing behavior must continue working
+        - `pnpm check` must pass
+        - `pnpm test` must pass
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Acceptance Criteria"
+      description: "Specific observable outcomes (checkboxes)"
+      placeholder: |
+        - [ ] Clicking district filters panel to that district's people
+        - [ ] Clicking again clears filter
+        - [ ] Empty district shows appropriate message
+        - [ ] `pnpm check` passes
+        - [ ] `pnpm test` passes
+    validations:
+      required: true
+
+  - type: textarea
+    id: verification
+    attributes:
+      label: "Verification Steps"
+      description: "Commands to run and manual steps if UI changed"
+      value: |
+        ```bash
+        pnpm check && pnpm test
+        ```
+
+        Manual (if UI changed):
+        1. Navigate to map
+        2. Click a district
+        3. Observe panel filters
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: "Complexity Score"
+      description: "Sum of Risk (0-2) + Scope (0-2) + Ambiguity (0-2). See AGENTS.md for details."
+      options:
+        - "0-2 (Simple → Self or Local SE)"
+        - "3-4 (Medium → Local SE GPT-5.2)"
+        - "5-6 (Complex → Local SE Opus 4.5)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: verify-level
+    attributes:
+      label: "Verify Level"
+      description: "Who verifies the PR"
+      options:
+        - "L0 (Author self-verifies)"
+        - "L1 (Peer verification required)"
+        - "L2 (Peer + extra evidence)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: "Phase"
+      description: "Which milestone"
+      options:
+        - "Phase 1: Core System"
+        - "Phase 1.2: Cross-View"
+        - "Phase 2: Desktop UX"
+        - "Phase 3: Auth"
+        - "Phase 4: Mobile"
+
+  - type: dropdown
+    id: workstream
+    attributes:
+      label: "Workstream"
+      description: "Area of the codebase"
+      options:
+        - "Map"
+        - "Panel"
+        - "Follow-Up"
+        - "Server"
+        - "DB/Schema"
+        - "Docs/Workflow"
+        - "Infra/Deploy"
+        - "Testing"
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: "Notes / Context"
+      description: "Anything else the implementer should know"

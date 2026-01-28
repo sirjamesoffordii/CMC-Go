@@ -11,7 +11,11 @@ function asRows(result: any): any[] {
     return result;
   }
   // If it's a tuple [rows, fields]
-  if (Array.isArray(result) && result.length === 2 && Array.isArray(result[0])) {
+  if (
+    Array.isArray(result) &&
+    result.length === 2 &&
+    Array.isArray(result[0])
+  ) {
     return result[0];
   }
   // If it's an object with rows property
@@ -19,7 +23,11 @@ function asRows(result: any): any[] {
     return result.rows;
   }
   // If it's wrapped in another array
-  if (Array.isArray(result) && result.length === 1 && Array.isArray(result[0])) {
+  if (
+    Array.isArray(result) &&
+    result.length === 1 &&
+    Array.isArray(result[0])
+  ) {
     return result[0];
   }
   // Default: try to return as-is if it's an array
@@ -80,18 +88,8 @@ const CRITICAL_COLUMNS: Record<string, string[]> = {
     "lastEditedBy",
     "createdAt",
   ],
-  districts: [
-    "id",
-    "name",
-    "region",
-    "leftNeighbor",
-    "rightNeighbor",
-  ],
-  campuses: [
-    "id",
-    "name",
-    "districtId",
-  ],
+  districts: ["id", "name", "region", "leftNeighbor", "rightNeighbor"],
+  campuses: ["id", "name", "districtId"],
   households: [
     "id",
     "label",
@@ -112,21 +110,8 @@ const CRITICAL_COLUMNS: Record<string, string[]> = {
     "resolvedAt",
     "createdAt",
   ],
-  notes: [
-    "id",
-    "personId",
-    "category",
-    "content",
-    "createdAt",
-    "createdBy",
-  ],
-  invite_notes: [
-    "id",
-    "personId",
-    "content",
-    "createdByUserId",
-    "createdAt",
-  ],
+  notes: ["id", "personId", "category", "content", "createdAt", "createdBy"],
+  invite_notes: ["id", "personId", "content", "createdByUserId", "createdAt"],
   assignments: [
     "id",
     "personId",
@@ -138,19 +123,8 @@ const CRITICAL_COLUMNS: Record<string, string[]> = {
     "isPrimary",
     "createdAt",
   ],
-  settings: [
-    "key",
-    "value",
-    "updatedAt",
-  ],
-  auth_tokens: [
-    "id",
-    "token",
-    "email",
-    "expiresAt",
-    "consumedAt",
-    "createdAt",
-  ],
+  settings: ["key", "value", "updatedAt"],
+  auth_tokens: ["id", "token", "email", "expiresAt", "consumedAt", "createdAt"],
   status_changes: [
     "id",
     "personId",
@@ -200,17 +174,17 @@ async function tableExists(tableName: string): Promise<boolean> {
   try {
     const db = await getDb();
     if (!db) return false;
-    
+
     const result = await db.execute(sql`
       SELECT COUNT(*) as count
       FROM information_schema.tables
       WHERE table_schema = DATABASE()
       AND table_name = ${tableName}
     `);
-    
+
     const rows = asRows(result);
     return rows.length > 0 && (rows[0] as any).count > 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -220,7 +194,7 @@ async function tableExists(tableName: string): Promise<boolean> {
  */
 async function getTableInfo(tableName: string): Promise<TableInfo> {
   const exists = await tableExists(tableName);
-  
+
   if (!exists) {
     return { exists: false };
   }
@@ -239,9 +213,11 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       AND table_name = ${tableName}
       ORDER BY ordinal_position
     `);
-    
+
     const columnRows = asRows(columnsResult);
-    const columns = columnRows.map((row: any) => row.column_name || row.COLUMN_NAME || "");
+    const columns = columnRows.map(
+      (row: any) => row.column_name || row.COLUMN_NAME || ""
+    );
 
     // Get row count - use pool directly for dynamic table names
     const pool = getPool();
@@ -252,9 +228,10 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) as count FROM \`${tableName}\``
     );
-    const rowCount = Array.isArray(countResult) && countResult.length > 0
-      ? (countResult[0] as any).count
-      : 0;
+    const rowCount =
+      Array.isArray(countResult) && countResult.length > 0
+        ? (countResult[0] as any).count
+        : 0;
 
     // Get a sample row (if any exist)
     let sampleRow: Record<string, any> | undefined;
@@ -274,7 +251,7 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       columns,
       sampleRow,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       exists: true,
       columnCount: undefined,
@@ -293,9 +270,12 @@ async function drizzleMigrationsTableExists(): Promise<boolean> {
 /**
  * Verify critical columns exist in a table
  */
-async function verifyCriticalColumns(tableName: string, requiredColumns: string[]): Promise<string[]> {
+async function verifyCriticalColumns(
+  tableName: string,
+  requiredColumns: string[]
+): Promise<string[]> {
   const missing: string[] = [];
-  
+
   try {
     const db = await getDb();
     if (!db) {
@@ -308,16 +288,18 @@ async function verifyCriticalColumns(tableName: string, requiredColumns: string[
       WHERE table_schema = DATABASE()
       AND table_name = ${tableName}
     `);
-    
+
     const columnRows = asRows(columnsResult);
-    const existingColumns = columnRows.map((row: any) => row.column_name || row.COLUMN_NAME || "");
+    const existingColumns = columnRows.map(
+      (row: any) => row.column_name || row.COLUMN_NAME || ""
+    );
 
     for (const col of requiredColumns) {
       if (!existingColumns.includes(col)) {
         missing.push(col);
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // If we can't check, assume all are missing
     return requiredColumns;
   }
@@ -348,14 +330,17 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
         warnings,
       };
     }
-    
+
     // Try a simple query to verify connection works
     try {
       await db.execute(sql`SELECT 1`);
       connected = true;
     } catch (queryError) {
-      const errorMsg = queryError instanceof Error ? queryError.message : String(queryError);
-      errors.push(`Database connection failed: Failed query: SELECT 1\nparams: ${errorMsg}`);
+      const errorMsg =
+        queryError instanceof Error ? queryError.message : String(queryError);
+      errors.push(
+        `Database connection failed: Failed query: SELECT 1\nparams: ${errorMsg}`
+      );
       return {
         connected: false,
         drizzleMigrationsTableExists: false,
@@ -364,15 +349,17 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
         warnings,
       };
     }
-    
+
     // Verify DATABASE() returns a database name (ensures DATABASE_URL includes DB name)
     try {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
       databaseName = dbRows.length > 0 ? (dbRows[0] as any).db_name : null;
-      
+
       if (!databaseName) {
-        errors.push("DATABASE_URL must include database name (e.g., mysql://user:pass@host:port/database_name)");
+        errors.push(
+          "DATABASE_URL must include database name (e.g., mysql://user:pass@host:port/database_name)"
+        );
         return {
           connected: true, // Connected but wrong DB
           drizzleMigrationsTableExists: false,
@@ -383,12 +370,16 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
       }
     } catch (dbNameError) {
       // If we can't get database name, log warning but don't fail
-      warnings.push(`Could not verify database name: ${dbNameError instanceof Error ? dbNameError.message : String(dbNameError)}`);
+      warnings.push(
+        `Could not verify database name: ${dbNameError instanceof Error ? dbNameError.message : String(dbNameError)}`
+      );
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : undefined;
-    errors.push(`Database connection failed: ${errorMsg}${errorStack ? `\nStack: ${errorStack}` : ''}`);
+    errors.push(
+      `Database connection failed: ${errorMsg}${errorStack ? `\nStack: ${errorStack}` : ""}`
+    );
     return {
       connected: false,
       drizzleMigrationsTableExists: false,
@@ -401,7 +392,9 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
   // Check drizzle_migrations table
   const hasDrizzleMigrationsTable = await drizzleMigrationsTableExists();
   if (!hasDrizzleMigrationsTable) {
-    warnings.push("drizzle_migrations table does not exist. Migrations may not have been run.");
+    warnings.push(
+      "drizzle_migrations table does not exist. Migrations may not have been run."
+    );
   }
 
   // Check each critical table
@@ -416,7 +409,10 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
       // Verify critical columns
       const requiredColumns = CRITICAL_COLUMNS[tableName] || [];
       if (requiredColumns.length > 0) {
-        const missingColumns = await verifyCriticalColumns(tableName, requiredColumns);
+        const missingColumns = await verifyCriticalColumns(
+          tableName,
+          requiredColumns
+        );
         if (missingColumns.length > 0) {
           const errorMsg = `Table '${tableName}' is missing required columns: ${missingColumns.join(", ")}`;
           errors.push(errorMsg);
@@ -445,52 +441,68 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
  */
 export async function startupDbHealthCheck(): Promise<void> {
   console.log("[DB Health] Performing startup database health check...");
-  
+
   const health = await checkDbHealth();
   const isProduction = process.env.NODE_ENV === "production";
 
   if (!health.connected) {
     console.error("[DB Health] ❌ CRITICAL: Database connection failed!");
     console.error("[DB Health] Errors:", health.errors);
-    
+
     // Log more details about connection failure
     if (health.errors.length > 0) {
-      const connectionError = health.errors.find(e => e.includes("connection") || e.includes("SELECT 1"));
+      const connectionError = health.errors.find(
+        e => e.includes("connection") || e.includes("SELECT 1")
+      );
       if (connectionError) {
         console.error("[DB Health] Connection error details:", connectionError);
       }
     }
-    
+
     throw new Error("Database connection failed during startup health check");
   }
 
   // In production, allow missing tables (they can be created via migrations)
   // But still log warnings for visibility
   if (health.errors.length > 0) {
-    const missingTableErrors = health.errors.filter(e => e.includes("does not exist"));
-    const schemaErrors = health.errors.filter(e => !e.includes("does not exist"));
-    
-    if (isProduction && missingTableErrors.length > 0 && schemaErrors.length === 0) {
+    const missingTableErrors = health.errors.filter(e =>
+      e.includes("does not exist")
+    );
+    const schemaErrors = health.errors.filter(
+      e => !e.includes("does not exist")
+    );
+
+    if (
+      isProduction &&
+      missingTableErrors.length > 0 &&
+      schemaErrors.length === 0
+    ) {
       // Production: Only missing tables, allow startup (migrations will create them)
-      console.warn("[DB Health] ⚠️  Missing tables detected (expected on first deploy):");
+      console.warn(
+        "[DB Health] ⚠️  Missing tables detected (expected on first deploy):"
+      );
       missingTableErrors.forEach(err => console.warn(`  - ${err}`));
-      console.warn("[DB Health] 💡 Run migrations to create tables: pnpm db:migrate");
+      console.warn(
+        "[DB Health] 💡 Run migrations to create tables: pnpm db:migrate"
+      );
     } else {
       // Development or schema errors: fail startup
       console.error("[DB Health] ❌ CRITICAL: Schema drift detected!");
-      
+
       // Log first failing table/columns for quick diagnosis
       const firstError = health.errors[0];
       if (firstError) {
         console.error("[DB Health] First failure:", firstError);
       }
-      
+
       console.error("[DB Health] All errors:", health.errors);
-      console.error("[DB Health] 💡 Fix: Run 'pnpm db:push' or 'pnpm db:migrate' to sync schema");
-      
+      console.error(
+        "[DB Health] 💡 Fix: Run 'pnpm db:push' or 'pnpm db:migrate' to sync schema"
+      );
+
       throw new Error(
         `Schema drift detected: ${firstError || health.errors.join("; ")}. ` +
-        `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
+          `Run 'pnpm db:push' or 'pnpm db:migrate' to fix.`
       );
     }
   }
@@ -500,13 +512,17 @@ export async function startupDbHealthCheck(): Promise<void> {
   }
 
   if (!health.drizzleMigrationsTableExists) {
-    console.warn("[DB Health] ⚠️  drizzle_migrations table not found. Migrations may not have been run.");
+    console.warn(
+      "[DB Health] ⚠️  drizzle_migrations table not found. Migrations may not have been run."
+    );
   }
 
   console.log("[DB Health] ✅ Database health check passed");
   console.log(`[DB Health] Tables checked: ${CRITICAL_TABLES.length}`);
-  console.log(`[DB Health] Tables with data: ${Object.values(health.tables).filter(t => (t.rowCount || 0) > 0).length}`);
-  
+  console.log(
+    `[DB Health] Tables with data: ${Object.values(health.tables).filter(t => (t.rowCount || 0) > 0).length}`
+  );
+
   // Log database name for debugging
   try {
     const db = await getDb();
@@ -520,4 +536,3 @@ export async function startupDbHealthCheck(): Promise<void> {
     // Ignore errors in logging
   }
 }
-

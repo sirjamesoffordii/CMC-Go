@@ -5,9 +5,10 @@ A map-first coordination app that helps leaders see who has been invited, where 
 ## Documentation
 
 - [CMC Go Overview](/docs/authority/CMC_OVERVIEW.md) - Project identity and mental model
+- [CMC Go Coordinator](/docs/authority/CMC_GO_COORDINATOR.md) - Coordination and truth-enforcement role
+- Human authority (Sir James): source of product intent
+- [The Coherence Engine](/docs/authority/The%20Coherence%20Engine.md) - System doctrine for truth and evidence
 - [CMC Go Project Tracker](/docs/CMC_GO_PROJECT_TRACKER.md) - Development progress and milestones
-- - [Lead Developer Role](/docs/authority/LEAD_DEVELOPER_ROLE.md) - Authority and decision-making framework
-  - - [Execution Agent Role](/docs/authority/EXECUTION_AGENT_ROLE.md) - Capabilities and behavioral rules for execution agents
 
 ## Overview
 
@@ -16,23 +17,27 @@ CMC Go provides an interactive SVG-based district map interface for tracking eve
 ## Key Features
 
 ### Interactive Map Interface
+
 - **SVG-based district visualization** using the plain Chi Alpha districts map
 - **Hover effects** with visual feedback on district selection
 - **Click-to-select** functionality for exploring district details
 - **Push-layout side panel** that slides out to show district information without overlaying the map
 
 ### District & Campus Management
+
 - **District-level view** with summary metrics (invited count, going count)
 - **Campus columns** displaying all people organized by campus
 - **Person rows** with visual status indicators and role information
 
 ### Status Tracking
+
 - **Four-state status cycle**: Not invited yet → Maybe → Going → Not Going
 - **Click-to-cycle** status bar on each person row
 - **Optimistic updates** for instant UI feedback
 - **Automatic lastUpdated** timestamp on all status changes
 
 ### Notes & Needs Management
+
 - **Notes system** with leader-only flag option
 - **Needs tracking** with Financial/Other type selection
 - **Amount field** for financial needs (stored in cents)
@@ -40,11 +45,13 @@ CMC Go provides an interactive SVG-based district map interface for tracking eve
 - **Visual indicators** on person rows when notes or needs exist
 
 ### Follow-Up Page
+
 - **Filtered view** showing people with "Maybe" status or active needs
 - **Comprehensive table** with person, campus, district, status, last updated, and active needs columns
 - **Click-to-view details** for quick access to person information
 
 ### Header Metrics
+
 - **% Invited** calculation (invited / total people)
 - **Going count** display
 - **Countdown to CMC** (configurable date)
@@ -55,6 +62,7 @@ CMC Go provides an interactive SVG-based district map interface for tracking eve
 ### Data Model
 
 The application uses **DistrictSlug as the source of truth** for district identification. This slug must match exactly across:
+
 1. SVG path `id` attributes
 2. Database `districts.id` field
 3. All related foreign keys
@@ -62,16 +70,19 @@ The application uses **DistrictSlug as the source of truth** for district identi
 #### Tables
 
 **Districts**
+
 - `id` (varchar) - DistrictSlug, primary key
 - `name` (varchar) - Display name
 - `region` (varchar) - Region name
 
 **Campuses**
+
 - `id` (int) - Auto-increment primary key
 - `name` (varchar) - Campus name
 - `districtId` (varchar) - Foreign key to districts
 
 **People**
+
 - `id` (int) - Auto-increment primary key
 - `name` (varchar) - Person name
 - `campusId` (int) - Foreign key to campuses
@@ -81,6 +92,7 @@ The application uses **DistrictSlug as the source of truth** for district identi
 - `lastUpdated` (timestamp) - Auto-updated on changes
 
 **Needs**
+
 - `id` (int) - Auto-increment primary key
 - `personId` (int) - Foreign key to people
 - `type` (enum) - Financial | Other
@@ -89,6 +101,7 @@ The application uses **DistrictSlug as the source of truth** for district identi
 - `isActive` (boolean) - Active/resolved status
 
 **Notes**
+
 - `id` (int) - Auto-increment primary key
 - `personId` (int) - Foreign key to people
 - `text` (text) - Note content
@@ -98,6 +111,7 @@ The application uses **DistrictSlug as the source of truth** for district identi
 ### SVG Map Integration
 
 The interactive map is built using the plain SVG file located at:
+
 ```
 client/public/map.svg
 ```
@@ -169,54 +183,58 @@ node scripts/seed-db.mjs
 ### Updating Data Safely
 
 **Adding Districts:**
+
 1. Add district to `districts` table with correct `DistrictSlug`
 2. Ensure SVG map has matching `<path id="DistrictSlug">`
 3. Add campuses with `districtId` matching the slug
 
 **Adding People:**
+
 1. Use the quick-add input in campus columns, or
 2. Insert via database with correct `campusId` and `districtId`
 3. Default status is "Not invited yet"
 
 **Modifying Status:**
+
 1. Click the status bar on any person row to cycle through statuses
 2. Status updates are optimistic and update immediately
 3. `lastUpdated` timestamp is automatically set
 
 ## Development
 
-### Local Development in Cursor
+### Local Development
 
-To run this project locally in Cursor (or any IDE), you need to set up environment variables:
+To run this project locally (Cursor or any IDE), set up environment variables.
 
-1. **Create a `.env` file** in the project root:
+1. **Create a `.env` file** in the project root (start from `.env.example`).
 
 ```env
-# Database (get from Manus Settings → Database panel, click "Show connection info")
-DATABASE_URL=mysql://user:password@host:port/database?ssl={"rejectUnauthorized":true}
+# Database
+DATABASE_URL=mysql://user:password@host:port/database
 
-# Authentication (get from Manus Settings → Secrets panel)
-JWT_SECRET=your-jwt-secret-from-manus
-VITE_APP_ID=your-app-id-from-manus
-OAUTH_SERVER_URL=https://api.manus.im
-VITE_OAUTH_PORTAL_URL=https://manus.im/oauth
-OWNER_OPEN_ID=your-owner-open-id
-OWNER_NAME=Your Name
+# Optional convenience for local dev (see server/_core/env.ts)
+# STAGING_DATABASE_URL=mysql://...
+# DEMO_DB_USER=cmc_go
+# DEMO_DB_PASSWORD=...
+# DEMO_DB_ALLOW_ROOT=false
 
-# Manus APIs (get from Manus Settings → Secrets panel)
-BUILT_IN_FORGE_API_URL=https://forge.manus.im
-BUILT_IN_FORGE_API_KEY=your-forge-api-key
-VITE_FRONTEND_FORGE_API_URL=https://forge.manus.im
-VITE_FRONTEND_FORGE_API_KEY=your-frontend-forge-api-key
+# Sentry (optional)
+SENTRY_DSN=
+VITE_SENTRY_DSN=
+VITE_SENTRY_ENVIRONMENT=SirCursor
+
+# Optional: OAuth / external services (only if you use those features)
+JWT_SECRET=
+VITE_APP_ID=
+OAUTH_SERVER_URL=https://oauth.example.com
+VITE_OAUTH_PORTAL_URL=https://oauth.example.com/portal
+BUILT_IN_FORGE_API_URL=https://forge.example.com
+BUILT_IN_FORGE_API_KEY=
+VITE_FRONTEND_FORGE_API_URL=https://forge.example.com
+VITE_FRONTEND_FORGE_API_KEY=
 ```
 
-2. **Get your credentials from Manus:**
-   - Open your project in Manus
-   - Click the **Settings** icon (gear) in the Management UI
-   - Go to **Database** panel → Click "Show connection info" → Copy the DATABASE_URL
-   - Go to **Secrets** panel → Copy each environment variable value
-
-3. **Install and run:**
+2. **Install and run:**
 
 ```bash
 # Install dependencies
@@ -234,11 +252,9 @@ pnpm dev
 
 4. **Open in browser:** Navigate to `http://localhost:3000`
 
-**Note:** The app uses the same Manus-hosted database whether running locally or in Manus, so your data stays in sync.
-
 ### Quick Setup (Existing Data)
 
-If the database is already seeded (you've been using the app in Manus):
+If the database is already seeded:
 
 ```bash
 pnpm install
@@ -253,6 +269,7 @@ pnpm test
 ```
 
 Tests cover:
+
 - District, campus, and people queries
 - Status updates with optimistic UI
 - Metrics calculations
@@ -286,8 +303,8 @@ Status colors are defined in `client/src/components/PersonRow.tsx`:
 
 ```typescript
 const STATUS_COLORS = {
-  "Going": "bg-green-500",
-  "Maybe": "bg-yellow-500",
+  Going: "bg-green-500",
+  Maybe: "bg-yellow-500",
   "Not Going": "bg-red-500",
   "Not invited yet": "bg-gray-400",
 };
@@ -295,8 +312,8 @@ const STATUS_COLORS = {
 
 ## Deployment
 
-The application is ready to deploy via the Manus platform. Use the "Publish" button in the Management UI after creating a checkpoint.
+The application is ready to deploy on your hosting platform (staging/production) using the normal build pipeline (`pnpm build`, `pnpm start`).
 
 ## Support
 
-For questions or issues, refer to the Manus documentation or contact support at https://help.manus.im
+For questions or issues, refer to the project docs in this repository.

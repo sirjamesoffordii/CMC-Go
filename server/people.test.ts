@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
+import { createNeed, toggleNeedActive } from "./db";
 
 function createTestContext(): TrpcContext {
   return {
@@ -38,7 +39,7 @@ describe("people router", () => {
 
     expect(Array.isArray(people)).toBe(true);
     expect(people.length).toBeGreaterThan(0);
-    
+
     // Check structure of first person
     if (people.length > 0) {
       const person = people[0];
@@ -60,7 +61,9 @@ describe("people router", () => {
 
     const testDistrictId = allPeople[0].primaryDistrictId;
     if (!testDistrictId) return; // Skip if no district
-    const districtPeople = await caller.people.byDistrict({ districtId: testDistrictId });
+    const districtPeople = await caller.people.byDistrict({
+      districtId: testDistrictId,
+    });
 
     expect(Array.isArray(districtPeople)).toBe(true);
     districtPeople.forEach(person => {
@@ -73,21 +76,67 @@ describe("people router", () => {
     const caller = appRouter.createCaller(ctx);
 
     const people = await caller.people.list();
-    if (people.length === 0) return;
+    expect(people.length).toBeGreaterThan(0);
 
     const testPerson = people[0];
-    const newStatus = testPerson.status === "Yes" ? "Maybe" : "Yes";
+    const originalStatus = testPerson.status;
+    const newStatus = originalStatus === "Yes" ? "Maybe" : "Yes";
 
-    const result = await caller.people.updateStatus({
+    // Ensure this person will appear in Follow-Up regardless of their status by
+    // creating a temporary active need.
+    const needId = await createNeed({
       personId: testPerson.personId,
-      status: newStatus,
+      type: "Other",
+      description: "test need (status propagation)",
+      visibility: "LEADERSHIP_ONLY",
+      createdById: ctx.user.id,
+      isActive: true,
+      resolvedAt: null,
     });
 
-    expect(result.success).toBe(true);
+    try {
+      const followUpBefore = await caller.followUp.list();
+      expect(followUpBefore.some(p => p.personId === testPerson.personId)).toBe(
+        true
+      );
 
-    // Verify the update
-    const updatedPerson = await caller.people.getById({ personId: testPerson.personId });
-    expect(updatedPerson?.status).toBe(newStatus);
+      const result = await caller.people.updateStatus({
+        personId: testPerson.personId,
+        status: newStatus,
+      });
+
+      expect(result.success).toBe(true);
+
+      // Verify the update propagates across the same queries the UI uses.
+      const updatedPerson = await caller.people.getById({
+        personId: testPerson.personId,
+      });
+      expect(updatedPerson?.status).toBe(newStatus);
+
+      const peopleAfter = await caller.people.list();
+      const listPerson = peopleAfter.find(
+        p => p.personId === testPerson.personId
+      );
+      expect(listPerson?.status).toBe(newStatus);
+
+      const followUpAfter = await caller.followUp.list();
+      const followUpPerson = followUpAfter.find(
+        p => p.personId === testPerson.personId
+      );
+      expect(followUpPerson?.status).toBe(newStatus);
+    } finally {
+      // Cleanup to reduce cross-test interference.
+      try {
+        if (originalStatus !== newStatus) {
+          await caller.people.updateStatus({
+            personId: testPerson.personId,
+            status: originalStatus,
+          });
+        }
+      } finally {
+        await toggleNeedActive(needId, false);
+      }
+    }
   });
 });
 
@@ -118,10 +167,18 @@ describe("metrics router", () => {
 
     // Verify counts are correct
     const allPeople = await caller.people.list();
-    expect(metrics.going).toBe(allPeople.filter(p => p.status === "Yes").length);
-    expect(metrics.maybe).toBe(allPeople.filter(p => p.status === "Maybe").length);
-    expect(metrics.notGoing).toBe(allPeople.filter(p => p.status === "No").length);
-    expect(metrics.notInvited).toBe(allPeople.filter(p => p.status === "Not Invited").length);
+    expect(metrics.going).toBe(
+      allPeople.filter(p => p.status === "Yes").length
+    );
+    expect(metrics.maybe).toBe(
+      allPeople.filter(p => p.status === "Maybe").length
+    );
+    expect(metrics.notGoing).toBe(
+      allPeople.filter(p => p.status === "No").length
+    );
+    expect(metrics.notInvited).toBe(
+      allPeople.filter(p => p.status === "Not Invited").length
+    );
   });
 });
 
@@ -178,7 +235,9 @@ describe("campuses router", () => {
     if (allCampuses.length === 0) return;
 
     const testDistrictId = allCampuses[0].districtId;
-    const districtCampuses = await caller.campuses.byDistrict({ districtId: testDistrictId });
+    const districtCampuses = await caller.campuses.byDistrict({
+      districtId: testDistrictId,
+    });
 
     expect(Array.isArray(districtCampuses)).toBe(true);
     districtCampuses.forEach(campus => {

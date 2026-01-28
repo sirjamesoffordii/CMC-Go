@@ -15,7 +15,8 @@ export default function FollowUpView() {
   const [showOnlyWithNeeds, setShowOnlyWithNeeds] = useState(false);
 
   // Data queries
-  const { data: allPeople = [], isLoading: peopleLoading } = trpc.people.list.useQuery();
+  const { data: allPeople = [], isLoading: peopleLoading } =
+    trpc.people.list.useQuery();
   const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
   const { data: allDistricts = [] } = trpc.districts.list.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
@@ -100,7 +101,9 @@ export default function FollowUpView() {
             <Checkbox
               id="showOnlyWithNeeds"
               checked={showOnlyWithNeeds}
-              onCheckedChange={(checked) => setShowOnlyWithNeeds(checked === true)}
+              onCheckedChange={checked =>
+                setShowOnlyWithNeeds(checked === true)
+              }
             />
             <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
               Show only people with active needs
@@ -138,7 +141,7 @@ export default function FollowUpView() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPeople.map((person) => {
+                  {filteredPeople.map(person => {
                     const needCount = needsByPersonId.get(person.personId) ?? 0;
                     return (
                       <tr

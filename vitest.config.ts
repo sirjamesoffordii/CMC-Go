@@ -14,11 +14,19 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["server/**/*.test.ts", "server/**/*.spec.ts"],
+    include: [
+      "server/**/*.test.ts",
+      "server/**/*.spec.ts",
+      "client/**/*.test.ts",
+      "client/**/*.test.tsx",
+    ],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "json", "html"],
       reportsDirectory: "coverage",
     },
+    // Use jsdom for client tests
+    environmentMatchGlobs: [["client/**/*.test.{ts,tsx}", "jsdom"]],
+    setupFiles: ["./client/src/test-setup.ts"],
   },
 });

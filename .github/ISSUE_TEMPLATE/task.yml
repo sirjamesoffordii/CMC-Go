@@ -1,0 +1,64 @@
+name: "✅ Quick Task"
+description: "Simple task (complexity 0-2) for Local SE or quick fixes"
+title: "[Task] "
+labels: ["type:chore"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Quick Task Template
+        For simple, well-defined tasks (complexity 0-2). Use Feature template for complex work.
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: "Goal"
+      description: "One sentence: what needs to happen"
+      placeholder: "Update README with new deployment instructions"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-to-change
+    attributes:
+      label: "What to Change"
+      description: "Specific files and changes"
+      placeholder: |
+        - `README.md` — Add Railway deployment section
+        - Update the "Getting Started" section
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: "Done When"
+      description: "How do we know this is complete?"
+      placeholder: |
+        - [ ] README includes Railway deployment steps
+        - [ ] `pnpm check` passes
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "Task Type"
+      options:
+        - "Docs update"
+        - "Config change"
+        - "Small refactor"
+        - "Test addition"
+        - "Dependency update"
+        - "Other"
+
+  - type: dropdown
+    id: agent-routing
+    attributes:
+      label: "Agent Routing"
+      description: "Who should handle this?"
+      options:
+        - "Local SE (delegate via code chat -r)"
+        - "TL can do directly (0-1 complexity)"
+    validations:
+      required: true

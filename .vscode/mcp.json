@@ -1,0 +1,20 @@
+{
+  "$schema": "vscode://schemas/mcp.json",
+  "servers": {
+    "railway": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@railway/mcp-server"],
+      "env": {
+        "RAILWAY_TOKEN": "${env:RAILWAY_TOKEN}"
+      },
+      "description": "Railway deployments, services, and logs"
+    },
+    "memory": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Persistent memory for agent context via knowledge graph"
+    }
+  }
+}
