@@ -116,6 +116,9 @@ tmpclaude-*
 # Local agent memory (MCP persistence; keep local)
 .agent-memory/
 
+# Agent heartbeat file (local-only, never commit)
+.github/agents/heartbeat.json
+
 # Local scratch / analysis clones
 _external/
 

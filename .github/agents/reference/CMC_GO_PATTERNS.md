@@ -191,24 +191,12 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20 --format json | Conve
 
 **Prevention:** Bookmark this command; run at session start and after each task.
 
-### Projects v2 IDs are repo-specific
+### Projects v2 IDs are in AGENTS.md
 
 **Tags:** git
 **Problem:** Wrong IDs break project updates.
-**Solution:** Use the CMC Go Project 4 IDs below.
-**Prevention:** Re-verify with `gh project view` if unsure.
-
-```
-Project Number: 4
-Project ID: PVT_kwHODqX6Qs4BNUfu
-Status Field ID: PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA
-Status Options:
-   - Todo: f75ad846
-   - In Progress: 47fc9ee4
-   - Verify: 5351d827
-   - Done: 98236657
-   - Blocked: 652442a1
-```
+**Solution:** Use the IDs defined in `AGENTS.md` (single source of truth).
+**Prevention:** Reference AGENTS.md for all board IDs.
 
 ### Projects v2 status must match reality
 
@@ -259,12 +247,12 @@ Status Options:
 **Example:** `code chat -m "Tech Lead (TL)" "Check board and delegate"` spawns TL.
 **Key insight:** The mode identifier is the exact `name:` field (e.g., `"Software Engineer (SWE)"`, not the filename stem).
 
-### TL must not block on subagents for implementation
+### TL spawns SE as standalone sessions
 
 **Tags:** agent-spawning
-**Problem:** When TL uses blocking `runSubagent` for implementation, TL cannot poll board, answer blocked agents, or manage parallel work.
-**Solution:** TL should delegate via local SE (`code chat -r -m "Software Engineer"`) and continue coordinating. Reserve `runSubagent` for quick research/verification only.
-**Prevention:** Before using `runSubagent`, ask: "Do I need to keep coordinating?" If yes → non-blocking spawn instead.
+**Problem:** TL needs to delegate implementation without blocking.
+**Solution:** TL spawns SE via `code chat -r -m "Software Engineer"`. SE runs as standalone session, self-registers in heartbeat. TL monitors via heartbeat file.
+**Prevention:** Never use blocking subagents for implementation. SE is always a standalone session.
 
 ### SE spawn reliability protocol
 
@@ -296,18 +284,18 @@ Status Options:
 **Solution:** After schema changes: (1) run `pnpm db:push:yes` locally, (2) verify with `pnpm test`.
 **Prevention:** Always sync local DB after pulling schema changes.
 
-### MCP Memory
+### Heartbeat File
 
-### MCP Memory cleanup on session start
+### Heartbeat file is local state
 
-**Tags:** database, agent-spawning
-**Problem:** Heartbeats accumulate forever; duplicate entities from inconsistent naming.
-**Solution:** On session start: prune heartbeats >24h; merge duplicate entities under canonical name (TL-1, not tech-lead-1).
-**Prevention:** Use canonical naming: `{Role}-{Instance}` (e.g., TL-1, SE-3).
+**Tags:** agent-spawning
+**Problem:** Agents need to track liveness without external dependencies.
+**Solution:** Use `.github/agents/heartbeat.json` (gitignored). All agents update every 3 min. Stale >6 min = dead.
+**Prevention:** Update heartbeat at start of every loop iteration.
 
-### GitHub is truth, MCP Memory is cache
+### GitHub is truth, heartbeat is liveness
 
-**Tags:** database, git
-**Problem:** Agent trusts stale MCP Memory over actual GitHub state.
-**Solution:** For Issues/PRs, always verify via `gh` CLI. MCP Memory is context cache for Patterns and WorkflowChanges only.
-**Prevention:** After any state-changing action, verify via GitHub API, not MCP Memory.
+**Tags:** git
+**Problem:** Agent trusts stale heartbeat over actual GitHub state.
+**Solution:** For Issues/PRs, always verify via `gh` CLI. Heartbeat file only tracks agent liveness, not work state.
+**Prevention:** After any state-changing action, verify via GitHub API.

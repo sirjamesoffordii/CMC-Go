@@ -1,196 +1,114 @@
-# CMC Go — Agent Operating Manual
+# CMC Go — Agent Manual
 
-**Single source of truth** for how agents operate. Detailed procedures live in `docs/aeos/`.
+## Start
 
-## Quick Start (30 seconds)
-
-```powershell
-# 1. Health check
-# Run VS Code task: "Agent: Health check"
-
-# 2. Authenticate
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<your-account>"  # pe/tl/se
-gh auth status
-
-# 3. Check board
-gh project item-list 4 --owner sirjamesoffordii --limit 10 --format json | ConvertFrom-Json | Select-Object -ExpandProperty items | Format-Table number, title, status
-
-# 4. Find work
-# - Status = "In Progress" assigned to you → continue it
-# - Status = "Todo" → claim highest priority
-# - Board empty → Cold Start (see docs/aeos/PROJECT_BOARD.md)
-```
-
-**Then execute your role. That's it.**
-
----
+1. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status`
+2. Heartbeat: Register in `.github/agents/heartbeat.json`
+3. Board: `gh project item-list 4 --owner sirjamesoffordii --limit 10`
+4. Execute your role
 
 ## Roles
 
-| Role | Account                    | Model    | Responsibility                    |
-| ---- | -------------------------- | -------- | --------------------------------- |
-| PE   | `Principle-Engineer-Agent` | Opus 4.5 | Planning, coherence, arbitration  |
-| TL   | `Alpha-Tech-Lead`          | Opus 4.5 | Coordination, delegation, merging |
-| SE   | `Software-Engineer-Agent`  | GPT-5.2  | Implementation, verification      |
+| Role | Account                  | Model    | Instances | Purpose                                |
+| ---- | ------------------------ | -------- | --------- | -------------------------------------- |
+| PE   | Principle-Engineer-Agent | Opus 4.5 | 1         | Issue creation, priorities, TL respawn |
+| TL   | Alpha-Tech-Lead          | Opus 4.5 | 2         | Coordination, SE spawning, merging     |
+| SE   | Software-Engineer-Agent  | Opus 4.5 | N         | Implementation (spawned by TL)         |
 
-**Role files:** `.github/agents/{principal-engineer,tech-lead,software-engineer}.agent.md`
+**Behavior:** `.github/agents/{role}.agent.md`
 
----
+## Architecture
 
-## Core Principles
+```
+PE (continuous) — reviews repo/app, creates issues, monitors heartbeats
+  ├── TL-1 (continuous) → spawns SE sessions, reviews PRs
+  └── TL-2 (continuous) → spawns SE sessions, reviews PRs
+        ├── SE-1 (session) → implements issues
+        └── SE-2 (session) → implements issues
+```
 
-1. **Board is truth** — Update status immediately, not at session end
-2. **Small diffs** — Optimize for reviewability
-3. **Evidence required** — Commands + results for every PR
-4. **No secrets in chat** — Use terminal prompts, clear immediately
-5. **Keep looping** — Take next safe step until Done
-6. **Reflect** — Every PR gets 2-line reflection
+- All agents are standalone sessions (`code chat -r`)
+- All agents self-register in heartbeat file
+- Any TL or PE can review PRs
 
----
+## Board
 
-## Spawning Agents
+**URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-**ID Format:** `Role-#(Gen#)` — e.g., `TL-1(1)`, `SE-1(2)`, `PE-1(1)`
+| Status      | Meaning                       |
+| ----------- | ----------------------------- |
+| Draft       | TL-created, needs PE approval |
+| Todo        | Ready, not claimed            |
+| In Progress | Being worked                  |
+| Blocked     | Needs decision                |
+| Verify      | PR ready for review           |
+| Done        | Merged                        |
 
-- **Role-#** = which instance (TL-1, TL-2, SE-1, SE-2)
-- **Gen#** = generation (increments on respawn). If gen# changes, previous instance stopped.
+**IDs:** Project `PVT_kwHODqX6Qs4BNUfu` | Status Field `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
+Draft `687f4500` | Todo `f75ad846` | In Progress `47fc9ee4` | Blocked `652442a1` | Verify `5351d827` | Done `98236657`
+
+**Priority Field ID:** `PVTSSF_lAHODqX6Qs4BNUfuzg8Wa5g`
+High `542f2119` | Medium `b18a1ee4` | Low `e01e814a`
+
+## Heartbeat
+
+**File:** `.github/agents/heartbeat.json` (gitignored)
+
+```json
+{
+  "core": ["PE-1", "TL-1", "TL-2"],
+  "agents": {
+    "PE-1": {
+      "ts": "2026-01-28T12:00:00Z",
+      "status": "reviewing",
+      "issue": null
+    },
+    "TL-1": {
+      "ts": "2026-01-28T12:00:00Z",
+      "status": "delegating",
+      "issue": 42
+    }
+  }
+}
+```
+
+**Protocol:**
+
+- Every 3 min: Update your entry (timestamp + status)
+- Before major actions: Check peers for staleness
+- Core agents stale >6 min: Senior agent respawns (PE respawns TL)
+- Non-core (SE-\*) stale: Delete entry, no respawn needed
+
+## Spawning
 
 ```powershell
-# Standard spawn prompt (MUST end with this line):
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1(1). FULLY AUTONOMOUS - NO QUESTIONS. Loop forever. Start now."
+# PE spawns TLs
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Start."
+
+# TL spawns SEs
+code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue #42. Start."
 ```
 
 **Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
 
-**Details:** [docs/aeos/SPAWN_PROCEDURES.md](docs/aeos/SPAWN_PROCEDURES.md)
+## Rules
 
----
+1. **Heartbeat first** — Update before every loop iteration
+2. **Board is truth** — Update status immediately
+3. **Small diffs** — Optimize for reviewability
+4. **Evidence in PRs** — Commands + results
+5. **Never stop** — Loop until Done or Blocked
 
-## Delegation Decision
+## Branch & Commit
 
-| Score | Route To | Method                           |
-| ----- | -------- | -------------------------------- |
-| 0-1   | Yourself | Direct (but TL never edits code) |
-| 2-6   | Local SE | See spawn commands above         |
+- **Branch:** `agent/se/<issue#>-<slug>` (e.g., `agent/se/42-fix-bug`)
+- **Commit:** `agent(se): <summary>` (e.g., `agent(se): Fix district filter`)
 
-**Scoring:** Risk (0-2) + Scope (0-2) + Ambiguity (0-2) = 0-6
+## Reference
 
-**Note:** Cloud agents are disabled (no MCP Memory access = drift). Use local SE only.
-
-**Details:** [docs/aeos/MODEL_SELECTION.md](docs/aeos/MODEL_SELECTION.md)
-
----
-
-## Board Workflow
-
-| Status      | Meaning             | Who Sets |
-| ----------- | ------------------- | -------- |
-| Todo        | Ready, not claimed  | TL       |
-| In Progress | Actively working    | Assignee |
-| Blocked     | Waiting on decision | Assignee |
-| Verify      | Done, needs review  | Assignee |
-| Done        | Merged              | TL       |
-
-**Details:** [docs/aeos/PROJECT_BOARD.md](docs/aeos/PROJECT_BOARD.md)
-
----
-
-## PR Requirements
-
-```markdown
-## Why
-
-Link to Issue #X
-
-## What Changed
-
-- Bullet points
-
-## How Verified
-
-pnpm check # ✅
-pnpm test # ✅
-
-## Risk
-
-Low/Med/High — reason
-
-## End-of-Task Reflection
-
-- **Workflow:** No changes / [file] — [change]
-- **Patterns:** No changes / [file] — [change]
-```
-
-**Details:** [docs/aeos/PR_STANDARDS.md](docs/aeos/PR_STANDARDS.md)
-
----
-
-## Heartbeat Protocol (Simple)
-
-**MCP Memory only.** Every 3 minutes, each agent posts:
-
-```
-mcp_memory_add_observations: entityName: "<role>-<#>", contents: ["heartbeat: <ISO-8601> | <context> | <status>"]
-```
-
-- **Stale:** 6 min no heartbeat → supervisor respawns
-- **First heartbeat:** Immediately on spawn (not 60 seconds later)
-
-**Details:** [docs/aeos/MEMORY_SYSTEM.md](docs/aeos/MEMORY_SYSTEM.md)
-
----
-
-## Worktrees & Branches
-
-- `wt-main` — only place for `pnpm dev`
-- `wt-impl-<issue#>-<slug>` — implementation
-- `wt-verify-<pr#>-<slug>` — verification
-
-**Branch format:** `agent/<role>/<issue#>-<slug>` (e.g., `agent/se-1/42-fix-bug`)
-**Commit format:** `agent(<role>): <summary>` (e.g., `agent(se-1): Fix district filter`)
-
----
-
-## Troubleshooting
-
-| Problem        | Quick Fix                       |
-| -------------- | ------------------------------- |
-| Terminal stuck | Task: `Agent: Recover terminal` |
-| Rebase stuck   | Task: `Git: Rebase abort`       |
-| Dirty tree     | Task: `Git: Hard reset staging` |
-| Auth issues    | Re-set `GH_CONFIG_DIR`          |
-
-**Details:** [docs/aeos/TROUBLESHOOTING.md](docs/aeos/TROUBLESHOOTING.md)
-
----
-
-## AEOS Documentation
-
-Complete operating system docs:
-
-| Doc                                                  | Purpose              |
-| ---------------------------------------------------- | -------------------- |
-| [BOOT_PROCEDURE.md](docs/aeos/BOOT_PROCEDURE.md)     | System startup       |
-| [RUNTIME_LOOP.md](docs/aeos/RUNTIME_LOOP.md)         | Continuous execution |
-| [IDENTITY_SYSTEM.md](docs/aeos/IDENTITY_SYSTEM.md)   | Auth & accounts      |
-| [MEMORY_SYSTEM.md](docs/aeos/MEMORY_SYSTEM.md)       | MCP & state          |
-| [SPAWN_PROCEDURES.md](docs/aeos/SPAWN_PROCEDURES.md) | Agent spawning       |
-| [MODEL_SELECTION.md](docs/aeos/MODEL_SELECTION.md)   | Model costs          |
-| [PROJECT_BOARD.md](docs/aeos/PROJECT_BOARD.md)       | Board workflow       |
-| [PR_STANDARDS.md](docs/aeos/PR_STANDARDS.md)         | Evidence & PRs       |
-| [TROUBLESHOOTING.md](docs/aeos/TROUBLESHOOTING.md)   | Escape hatches       |
-
----
-
-## Instruction Surfaces
-
-| Surface                                  | Purpose                | Edit When          |
-| ---------------------------------------- | ---------------------- | ------------------ |
-| `AGENTS.md`                              | Quick reference, links | Workflow changes   |
-| `docs/aeos/`                             | Detailed procedures    | Deep dives         |
-| `.github/agents/*.agent.md`              | Role overlays          | Role behavior      |
-| `.github/instructions/*.instructions.md` | Code patterns          | Coding conventions |
-| `.github/copilot-instructions.md`        | Repo invariants        | Architecture       |
-
-**Anti-duplication:** Define each rule in exactly one place. Link from others.
+| Doc                                                               | Purpose          |
+| ----------------------------------------------------------------- | ---------------- |
+| [IDENTITY_SYSTEM.md](docs/aeos/IDENTITY_SYSTEM.md)                | Auth setup       |
+| [TROUBLESHOOTING.md](docs/aeos/TROUBLESHOOTING.md)                | Recovery         |
+| [CMC_GO_PATTERNS.md](.github/agents/reference/CMC_GO_PATTERNS.md) | Learned patterns |

@@ -1,25 +1,38 @@
 # Autonomous Engineering Operating System (AEOS)
 
-> **Version:** 1.0.0  
-> **Last Updated:** January 26, 2026  
-> **Purpose:** Exhaustive, coherent, reproducible operating system for autonomous software delivery
+> **Version:** 2.0.0
+> **Last Updated:** January 28, 2026
+> **Purpose:** Simple, reliable operating system for autonomous software delivery
 
 ---
 
 ## What is AEOS?
 
-AEOS is a **complete operating system** for running autonomous software engineering agents. It combines:
+AEOS is a **lightweight operating system** for running autonomous software engineering agents. It combines:
 
 - **Agent roles and identity** — PE, TL, SE with distinct GitHub accounts
-- **Documentation architecture** — AGENTS.md, role files, instruction files
-- **GitHub automation** — Workflows, labels, project board, PR templates
+- **Simple architecture** — AGENTS.md is the single source of truth
+- **Heartbeat system** — Local file for agent liveness tracking
+- **GitHub as work bus** — Project board for coordination
 - **CI/CD** — Test pipelines, verification gates, deployment
-- **Observability** — Sentry, Railway logs, health checks
-- **Local tooling** — VS Code extensions, MCP servers, tasks
-- **Policies and decisions** — Patterns, anti-patterns, escalation rules
-- **Memory system** — MCP Memory + state file backups
 
-**Goal:** The entire workflow can be recreated and run with minimal human intervention.
+**Goal:** Spawn agents → they read AGENTS.md + board → they work autonomously.
+
+---
+
+## Architecture
+
+```
+PE (continuous) — reviews repo/app, creates issues, monitors heartbeats
+  ├── TL-1 (continuous) → spawns SE sessions, reviews PRs
+  └── TL-2 (continuous) → spawns SE sessions, reviews PRs
+        ├── SE-1 (session) → implements issues
+        └── SE-2 (session) → implements issues
+```
+
+- All agents are standalone sessions (`code chat -r`)
+- All agents self-register in heartbeat file
+- Board is the command center
 
 ---
 
@@ -27,18 +40,14 @@ AEOS is a **complete operating system** for running autonomous software engineer
 
 ```
 docs/aeos/
-├── README.md                 ← You are here (index)
-├── BOOT_PROCEDURE.md         ← Cold start from zero
-├── RUNTIME_LOOP.md           ← Day-to-day agent execution
-├── IDENTITY_SYSTEM.md        ← GitHub accounts and auth
-├── MEMORY_SYSTEM.md          ← MCP Memory + state files
-├── SPAWN_PROCEDURES.md       ← How agents spawn other agents
-├── MODEL_SELECTION.md        ← Which model for what task
-├── PROJECT_BOARD.md          ← Board workflow and CLI commands
-├── PR_STANDARDS.md           ← Evidence and documentation
-├── TROUBLESHOOTING.md        ← Escape hatches and recovery
-├── TOOLCHAIN.md              ← Integrations and dependencies
-└── PATTERNS.md               ← Lessons learned (link to reference)
+├── README.md                 ← You are here (human overview)
+├── IDENTITY_SYSTEM.md        ← GitHub accounts and auth setup
+└── TROUBLESHOOTING.md        ← Recovery procedures
+
+Key agent files:
+├── AGENTS.md                 ← Single source of truth for agents
+├── .github/agents/*.agent.md ← Role-specific behavior
+└── .github/agents/heartbeat.json ← Agent liveness (gitignored)
 ```
 
 ---
@@ -68,53 +77,29 @@ pnpm db:setup
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 gh auth status
 
-# 7. Boot PE (spawns TL → SE cascade)
-# -r reuses current window (creates new chat tab)
-code chat -r -m "principal-engineer" -a AGENTS.md "You are PE-1. Boot AEOS. Start."
-```
-
-### Runtime Loop
-
-```
-PE (episodic planning)
-  ↓ spawns
-TL (continuous coordination)
-  ↓ delegates to
-SE (continuous implementation)
-  ↓ opens
-PRs → CI → Review → Merge → Loop
+# 7. Boot PE
+code chat -r -m "Principal Engineer" -a AGENTS.md "You are PE-1. Start."
 ```
 
 ### Key Files
 
-| File                                          | Purpose                        |
-| --------------------------------------------- | ------------------------------ |
-| `AGENTS.md`                                   | Canonical operating manual     |
-| `.github/copilot-instructions.md`             | Repo-wide invariants           |
-| `.github/agents/*.agent.md`                   | Role-specific behavior         |
-| `.github/instructions/*.instructions.md`      | Path-scoped coding conventions |
-| `docs/project/CMC_GO_PROJECT_OVERVIEW.md`     | Project brief (61% complete)   |
-| `.github/agents/reference/CMC_GO_PATTERNS.md` | Accumulated knowledge          |
+| File                                          | Purpose                     |
+| --------------------------------------------- | --------------------------- |
+| `AGENTS.md`                                   | Canonical agent manual      |
+| `.github/agents/*.agent.md`                   | Role-specific behavior      |
+| `.github/agents/heartbeat.json`               | Agent liveness (gitignored) |
+| `.github/agents/reference/CMC_GO_PATTERNS.md` | Learned patterns            |
 
 ---
 
-## AEOS Categories (4)
+## Heartbeat System
 
-| Category                  | Purpose                   | Location                                           |
-| ------------------------- | ------------------------- | -------------------------------------------------- |
-| **Accumulated Knowledge** | Patterns/lessons learned  | MCP Memory `Pattern` entities + CMC_GO_PATTERNS.md |
-| **Agent States**          | Heartbeats + current work | MCP Memory `Agent` observations + state files      |
-| **AEOS**                  | Autonomous system docs    | This directory (docs/aeos/) + AGENTS.md            |
-| **Project Brief**         | App overview + progress   | docs/project/CMC_GO_PROJECT_OVERVIEW.md            |
+**File:** `.github/agents/heartbeat.json` (local only, never committed)
 
----
-
-## Test Cycles
-
-AEOS hardening happens through real work (Issues/PRs). Keep durable evidence and learnings in:
-
-- Issue/PR threads (commands + results)
-- `.github/agents/reference/CMC_GO_PATTERNS.md` (only reusable patterns)
+- Every 3 min: Agents update their entry
+- Stale >6 min: Senior agent respawns (PE respawns TL)
+- Core agents: `["PE-1", "TL-1", "TL-2"]`
+- Non-core (SE-\*): Ephemeral, delete if stale
 
 ---
 
