@@ -895,11 +895,14 @@ export function InteractiveMap({
     const visualSvg = visualContainer.querySelector("svg");
     if (!clickSvg || !visualSvg) return;
 
-    // Make both SVGs responsive
+    // Make both SVGs responsive and properly scaled
     [clickSvg, visualSvg].forEach(svg => {
       svg.setAttribute("width", "100%");
       svg.setAttribute("height", "100%");
+      svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
       svg.style.display = "block";
+      svg.style.maxWidth = "100%";
+      svg.style.maxHeight = "100%";
     });
 
     // Get all path elements from both SVGs
@@ -1678,10 +1681,11 @@ export function InteractiveMap({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full" style={{ minHeight: "600px" }}>
       <div
-        className="relative w-full h-full min-h-[720px]"
+        className="relative w-full h-full"
         style={{
+          minHeight: "600px",
           // Enhanced elevation effect - stronger shadow for more depth
           filter:
             "drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))",
@@ -2021,13 +2025,16 @@ export function InteractiveMap({
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div
           ref={visualContainerRef}
-          className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
+          className="absolute inset-0 pointer-events-none z-10"
           style={{
             filter: "blur(0.3px)", // Minimal blur to fill tiny gaps while preserving sharp edges
             transform: selectedDistrictId
               ? "scale(1.05)" // Larger scale when panel open
               : "scale(1)", // Normal scale, centered
             transformOrigin: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         />
 
@@ -2074,7 +2081,7 @@ export function InteractiveMap({
         {/* Invisible SVG click zones */}
         <div
           ref={svgContainerRef}
-          className="absolute inset-0 flex items-center justify-center z-30"
+          className="absolute inset-0 z-30"
           style={{
             opacity: 0,
             pointerEvents: "auto",
@@ -2082,6 +2089,9 @@ export function InteractiveMap({
               ? "scale(1.05)" // Match visual layer when panel open
               : "scale(1)",
             transformOrigin: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
           onClick={e => {
             // If clicking on the SVG container itself (not a path), close panels

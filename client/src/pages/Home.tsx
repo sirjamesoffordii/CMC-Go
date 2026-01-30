@@ -1178,7 +1178,8 @@ export default function Home() {
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
-              minHeight: "100%",
+              minHeight: "calc(100vh - 180px)",
+              height: "100%",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
