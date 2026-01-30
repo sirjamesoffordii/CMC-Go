@@ -136,24 +136,27 @@ export function DistrictStaffDropZone({
   };
 
   if (!person) {
-    // Show add tile when no district staff
+    // In public/masked mode, hide the slot entirely when no district staff exists
+    if (!canInteract || maskIdentity) {
+      return null;
+    }
+
+    // Show add tile when no district staff (only in interactive mode)
     return (
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -mt-2"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
           <button
             type="button"
-            disabled={!canInteract}
             aria-label="Add district staff"
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
-              if (!canInteract) return;
               onAddClick?.();
             }}
-            className="flex flex-col items-center w-[60px] disabled:opacity-60 disabled:cursor-not-allowed"
+            className="flex flex-col items-center w-[60px]"
           >
             {/* Plus sign in name position - clickable for quick add */}
             <div className="relative flex items-center justify-center mb-1">
@@ -227,7 +230,7 @@ export function DistrictStaffDropZone({
     <>
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -mt-2"
       >
         {/* Name Label with Edit Button */}
         <div
@@ -282,7 +285,7 @@ export function DistrictStaffDropZone({
             )}
             {/* Main person icon - solid */}
             <div
-              className={`relative ${maskIdentity ? "text-zinc-400" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
+              className={`relative ${maskIdentity ? "text-gray-300" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
                 className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}

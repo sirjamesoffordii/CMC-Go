@@ -42,7 +42,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
   const [needFilter, setNeedFilter] = useState<
-    Set<"Financial" | "Transportation" | "Housing" | "Other" | "Need Met">
+    Set<"Financial" | "Transportation" | "Housing" | "Other" | "Request Met">
   >(new Set());
   const [roleFilter, setRoleFilter] = useState<Set<string>>(new Set());
   const [familyGuestFilter, setFamilyGuestFilter] = useState<
@@ -108,14 +108,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         );
         const personNeedTypes = new Set(personNeeds.map(n => n.type));
 
-        // Check if "Need Met" is selected (person has no active needs)
-        if (needFilter.has("Need Met") && personNeeds.length === 0) {
+        // Check if "Request Met" is selected (person has no active requests)
+        if (needFilter.has("Request Met") && personNeeds.length === 0) {
           return true;
         }
 
-        // Check if person has any of the selected need types (excluding "Need Met")
+        // Check if person has any of the selected request types (excluding "Request Met")
         const selectedNeedTypes = Array.from(needFilter).filter(
-          need => need !== "Need Met"
+          need => need !== "Request Met"
         );
         if (selectedNeedTypes.length > 0) {
           const hasSelectedNeedType = selectedNeedTypes.some(needType =>
@@ -504,7 +504,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       "District",
       "Status",
       "Last Updated",
-      "Active Needs",
+      "Active Requests",
     ];
 
     // Create CSV rows
@@ -722,7 +722,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 >
                   <span>
                     {needFilter.size === 0
-                      ? "All Needs"
+                      ? "All Requests"
                       : needFilter.size === 1
                         ? Array.from(needFilter)[0]
                         : `${needFilter.size} selected`}
@@ -738,13 +738,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       "Transportation",
                       "Housing",
                       "Other",
-                      "Need Met",
+                      "Request Met",
                     ] as const
                   ).map(need => {
-                    // Calculate count for each need type
+                    // Calculate count for each request type
                     let count = 0;
-                    if (need === "Need Met") {
-                      // Count people with no active needs
+                    if (need === "Request Met") {
+                      // Count people with no active requests
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
@@ -752,7 +752,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         return personNeeds.length === 0;
                       }).length;
                     } else {
-                      // Count people with this specific need type
+                      // Count people with this specific request type
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
@@ -1080,7 +1080,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     </span>
                     {personNeeds.length > 0 && (
                       <span className="text-xs text-yellow-600 font-medium">
-                        {personNeeds.length} need
+                        {personNeeds.length} request
                         {personNeeds.length === 1 ? "" : "s"}
                       </span>
                     )}
@@ -1143,7 +1143,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                             {people.length}{" "}
                             {people.length === 1 ? "person" : "people"}
                             {campusNeeds.length > 0 &&
-                              ` • ${campusNeeds.length} need${campusNeeds.length === 1 ? "" : "s"}`}
+                              ` • ${campusNeeds.length} request${campusNeeds.length === 1 ? "" : "s"}`}
                           </div>
                         </div>
                       </div>

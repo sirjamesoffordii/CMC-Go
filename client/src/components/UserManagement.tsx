@@ -17,8 +17,48 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, Trash2, Shield, Activity, Ban } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Users,
+  Trash2,
+  Shield,
+  Activity,
+  Ban,
+  Globe,
+  Map,
+  MapPin,
+  Eye,
+  Edit,
+} from "lucide-react";
 import { toast } from "sonner";
+
+// Authorization level constants
+const SCOPE_LEVELS = ["NATIONAL", "REGION", "DISTRICT"] as const;
+const VIEW_LEVELS = ["NATIONAL", "REGION", "DISTRICT", "CAMPUS"] as const;
+const EDIT_LEVELS = [
+  "NATIONAL",
+  "XAN",
+  "REGION",
+  "DISTRICT",
+  "CAMPUS",
+] as const;
+
+type ScopeLevel = (typeof SCOPE_LEVELS)[number];
+type ViewLevel = (typeof VIEW_LEVELS)[number];
+type EditLevel = (typeof EDIT_LEVELS)[number];
+
+// Level display labels
+const LEVEL_LABELS: Record<string, string> = {
+  NATIONAL: "National",
+  REGION: "Region",
+  DISTRICT: "District",
+  CAMPUS: "Campus",
+  XAN: "XAN (Nat'l Team)",
+};
 
 export function UserManagement() {
   const utils = trpc.useUtils();
@@ -45,6 +85,17 @@ export function UserManagement() {
       toast.error(`Failed to update status: ${error.message}`);
     },
   });
+
+  const updateAuthLevelsMutation =
+    trpc.admin.users.updateAuthLevels.useMutation({
+      onSuccess: () => {
+        toast.success("Authorization levels updated");
+        utils.admin.users.list.invalidate();
+      },
+      onError: error => {
+        toast.error(`Failed to update authorization: ${error.message}`);
+      },
+    });
 
   const deleteUserMutation = trpc.admin.users.delete.useMutation({
     onSuccess: () => {
@@ -74,9 +125,27 @@ export function UserManagement() {
         | "CO_DIRECTOR"
         | "CAMPUS_DIRECTOR"
         | "DISTRICT_DIRECTOR"
+        | "DISTRICT_STAFF"
         | "REGION_DIRECTOR"
+        | "REGIONAL_STAFF"
+        | "NATIONAL_STAFF"
+        | "NATIONAL_DIRECTOR"
+        | "FIELD_DIRECTOR"
+        | "CMC_GO_ADMIN"
         | "ADMIN",
     });
+  };
+
+  const handleScopeChange = (userId: number, scopeLevel: ScopeLevel) => {
+    updateAuthLevelsMutation.mutate({ userId, scopeLevel });
+  };
+
+  const handleViewChange = (userId: number, viewLevel: ViewLevel) => {
+    updateAuthLevelsMutation.mutate({ userId, viewLevel });
+  };
+
+  const handleEditChange = (userId: number, editLevel: EditLevel) => {
+    updateAuthLevelsMutation.mutate({ userId, editLevel });
   };
 
   const handleStatusToggle = (userId: number, currentStatus: string) => {
@@ -180,9 +249,45 @@ export function UserManagement() {
                   <th className="text-left p-2 font-medium">Email</th>
                   <th className="text-left p-2 font-medium">Role</th>
                   <th className="text-left p-2 font-medium">Campus/District</th>
+                  <th className="text-left p-2 font-medium">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1 cursor-help">
+                          <Globe className="w-3 h-3" /> Scope
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Map filter scope - what districts user can see on the
+                        map
+                      </TooltipContent>
+                    </Tooltip>
+                  </th>
+                  <th className="text-left p-2 font-medium">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1 cursor-help">
+                          <Eye className="w-3 h-3" /> View
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        View level - who's data the user can see
+                      </TooltipContent>
+                    </Tooltip>
+                  </th>
+                  <th className="text-left p-2 font-medium">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center gap-1 cursor-help">
+                          <Edit className="w-3 h-3" /> Edit
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Edit level - who's data the user can modify
+                      </TooltipContent>
+                    </Tooltip>
+                  </th>
                   <th className="text-left p-2 font-medium">Status</th>
                   <th className="text-left p-2 font-medium">Last Login</th>
-                  <th className="text-left p-2 font-medium">Last Edited</th>
                   <th className="text-left p-2 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -224,10 +329,28 @@ export function UserManagement() {
                           <SelectItem value="DISTRICT_DIRECTOR">
                             District Director
                           </SelectItem>
+                          <SelectItem value="DISTRICT_STAFF">
+                            District Staff
+                          </SelectItem>
                           <SelectItem value="REGION_DIRECTOR">
                             Region Director
                           </SelectItem>
-                          <SelectItem value="ADMIN">Admin</SelectItem>
+                          <SelectItem value="REGIONAL_STAFF">
+                            Regional Staff
+                          </SelectItem>
+                          <SelectItem value="NATIONAL_STAFF">
+                            National Staff
+                          </SelectItem>
+                          <SelectItem value="NATIONAL_DIRECTOR">
+                            National Director
+                          </SelectItem>
+                          <SelectItem value="FIELD_DIRECTOR">
+                            Field Director
+                          </SelectItem>
+                          <SelectItem value="CMC_GO_ADMIN">
+                            CMC Go Admin
+                          </SelectItem>
+                          <SelectItem value="ADMIN">Admin (Legacy)</SelectItem>
                         </SelectContent>
                       </Select>
                     </td>
@@ -244,6 +367,66 @@ export function UserManagement() {
                         !user.regionName && (
                           <span className="text-gray-400">No assignment</span>
                         )}
+                    </td>
+                    {/* Scope Level */}
+                    <td className="p-2">
+                      <Select
+                        value={user.scopeLevel || "DISTRICT"}
+                        onValueChange={value =>
+                          handleScopeChange(user.id, value as ScopeLevel)
+                        }
+                      >
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SCOPE_LEVELS.map(level => (
+                            <SelectItem key={level} value={level}>
+                              {LEVEL_LABELS[level]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    {/* View Level */}
+                    <td className="p-2">
+                      <Select
+                        value={user.viewLevel || "CAMPUS"}
+                        onValueChange={value =>
+                          handleViewChange(user.id, value as ViewLevel)
+                        }
+                      >
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {VIEW_LEVELS.map(level => (
+                            <SelectItem key={level} value={level}>
+                              {LEVEL_LABELS[level]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    {/* Edit Level */}
+                    <td className="p-2">
+                      <Select
+                        value={user.editLevel || "CAMPUS"}
+                        onValueChange={value =>
+                          handleEditChange(user.id, value as EditLevel)
+                        }
+                      >
+                        <SelectTrigger className="w-28">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {EDIT_LEVELS.map(level => (
+                            <SelectItem key={level} value={level}>
+                              {LEVEL_LABELS[level]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </td>
                     <td className="p-2">
                       <Badge
@@ -267,20 +450,6 @@ export function UserManagement() {
                       {user.lastLoginAt
                         ? new Date(user.lastLoginAt).toLocaleDateString()
                         : "Never"}
-                    </td>
-                    <td className="p-2 text-sm text-gray-600">
-                      {user.lastEdited && user.lastEditedBy ? (
-                        <div>
-                          <div>
-                            {new Date(user.lastEdited).toLocaleDateString()}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            by {user.lastEditedBy}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">Never</span>
-                      )}
                     </td>
                     <td className="p-2">
                       <div className="flex gap-2">

@@ -30,9 +30,9 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
       className="absolute top-1 -right-1 z-20 pointer-events-none m-0 p-0"
       style={{ margin: 0, padding: 0 }}
       aria-hidden="true"
-      title={type || "Need"}
+      title={type || "Request"}
     >
-      {/* Need type icon */}
+      {/* Request type icon */}
       <div
         className="flex items-center justify-center m-0 p-0"
         style={{

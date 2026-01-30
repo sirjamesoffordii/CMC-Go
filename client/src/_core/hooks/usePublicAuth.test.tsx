@@ -5,7 +5,15 @@ import { usePublicAuth } from "./usePublicAuth";
 const trpcMocks = vi.hoisted(() => {
   const mockUseQuery = vi.fn();
   const mockUseMutation = vi.fn();
-  return { mockUseQuery, mockUseMutation };
+  const mockInvalidate = vi.fn();
+  const mockUseUtils = vi.fn(() => ({
+    auth: {
+      me: {
+        invalidate: mockInvalidate,
+      },
+    },
+  }));
+  return { mockUseQuery, mockUseMutation, mockUseUtils, mockInvalidate };
 });
 
 vi.mock("@/lib/trpc", () => ({
@@ -18,6 +26,7 @@ vi.mock("@/lib/trpc", () => ({
         useMutation: trpcMocks.mockUseMutation,
       },
     },
+    useUtils: trpcMocks.mockUseUtils,
   },
 }));
 
@@ -43,6 +52,7 @@ describe("usePublicAuth", () => {
   beforeEach(() => {
     trpcMocks.mockUseQuery.mockReset();
     trpcMocks.mockUseMutation.mockReset();
+    trpcMocks.mockInvalidate.mockReset();
     setDevBypass(false);
   });
 
@@ -96,6 +106,7 @@ describe("usePublicAuth", () => {
     trpcMocks.mockUseMutation.mockReturnValue({
       mutateAsync,
     } as UseMutationResult);
+    trpcMocks.mockInvalidate.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => usePublicAuth());
 
@@ -104,6 +115,7 @@ describe("usePublicAuth", () => {
     });
 
     expect(mutateAsync).toHaveBeenCalled();
+    expect(trpcMocks.mockInvalidate).toHaveBeenCalled();
   });
 
   it("returns dev user when bypass is enabled", async () => {

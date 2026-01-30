@@ -1,701 +1,1464 @@
 /**
- * Login/Registration Modal - PR 2
- * Handles self-registration with email verification
+ * Login/Registration Flow
+ *
+ * Registration Flow:
+ * 1. Gate 1: Email + Password (credentials)
+ * 2. Gate 2: Region → District → Campus sequence
+ *    - No Region = National Team
+ *    - Region but No District = Regional level
+ *    - District but No Campus = District level
+ *    - Campus = Campus level
+ *    - "Other" = External affiliate (view-only aggregate access)
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { Loader2, Plus } from "lucide-react";
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  ChevronRight,
+  ArrowLeft,
+  Globe,
+  MapPin,
+  Building2,
+  Users,
+  Check,
+  X,
+  Plus,
+} from "lucide-react";
 
 interface LoginModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Role configuration based on scope level
+const NATIONAL_ROLES = [
+  { value: "NATIONAL_DIRECTOR", label: "National Director" },
+  { value: "FIELD_DIRECTOR", label: "Field Director" },
+  { value: "NATIONAL_STAFF", label: "National Staff" },
+] as const;
+
+const REGIONAL_ROLES = [
+  { value: "REGION_DIRECTOR", label: "Regional Director" },
+  { value: "REGIONAL_STAFF", label: "Regional Staff" },
+] as const;
+
+const DISTRICT_ROLES = [
+  { value: "DISTRICT_DIRECTOR", label: "District Director" },
+  { value: "DISTRICT_STAFF", label: "District Staff" },
+] as const;
+
+const CAMPUS_ROLES = [
+  { value: "CAMPUS_DIRECTOR", label: "Campus Director" },
+  { value: "CO_DIRECTOR", label: "Co-Director" },
+  { value: "STAFF", label: "Staff" },
+] as const;
+
+type RegistrationStep =
+  | "credentials" // Email + Password
+  | "region" // Select region or "National Team"
+  | "district" // Select district or "Regional level"
+  | "campus" // Select campus or "District level"
+  | "role" // Select role based on scope
+  | "affiliation" // For "Other" - external affiliates
+  | "confirm"; // Final confirmation
+
+type ScopeLevel = "national" | "regional" | "district" | "campus" | "other";
+
+type AuthMode = "login" | "register" | "forgotPassword" | "resetPassword";
+
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const utils = trpc.useUtils();
-  const [mode, setMode] = useState<"email" | "register">("email");
-  const [emailStepError, setEmailStepError] = useState<string | null>(null);
-  const [startStep, setStartStep] = useState<
-    "region" | "district" | "campus" | "name"
-  >("region");
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<
-    | "STAFF"
-    | "CO_DIRECTOR"
-    | "CAMPUS_DIRECTOR"
-    | "DISTRICT_DIRECTOR"
-    | "REGION_DIRECTOR"
-  >("STAFF");
-  const [region, setRegion] = useState<string | null>(null);
-  const [districtId, setDistrictId] = useState<string | null>(null);
-  const [campusId, setCampusId] = useState<number | null>(null);
-  const [regionInput, setRegionInput] = useState("");
-  const [districtInput, setDistrictInput] = useState("");
-  const [campusInput, setCampusInput] = useState("");
-  const [regionSuggestionsOpen, setRegionSuggestionsOpen] = useState(false);
-  const [districtSuggestionsOpen, setDistrictSuggestionsOpen] = useState(false);
-  const [campusSuggestionsOpen, setCampusSuggestionsOpen] = useState(false);
 
+  // Mode
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [step, setStep] = useState<RegistrationStep>("credentials");
+
+  // Form fields
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [fullName, setFullName] = useState("");
+
+  // Password reset fields
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  // Scope selection
+  const [scopeLevel, setScopeLevel] = useState<ScopeLevel | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(
+    null
+  );
+  const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [affiliation, setAffiliation] = useState("");
+
+  // UI state
+  const [error, setError] = useState<string | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Typeahead search state
+  const [regionQuery, setRegionQuery] = useState("");
+  const [districtQuery, setDistrictQuery] = useState("");
+  const [campusQuery, setCampusQuery] = useState("");
+
+  // Data queries
   const { data: districts = [] } = trpc.districts.publicList.useQuery();
   const { data: campuses = [] } = trpc.campuses.byDistrict.useQuery(
-    { districtId: districtId ?? "" },
-    { enabled: !!districtId }
+    { districtId: selectedDistrictId ?? "" },
+    { enabled: !!selectedDistrictId }
   );
-  const createCampusMutation = trpc.campuses.createPublic.useMutation();
 
+  // Compute unique regions
   const regions = useMemo(() => {
-    const regionSet = new Set(
-      districts.map(district => district.region).filter(Boolean)
-    );
+    const regionSet = new Set(districts.map(d => d.region).filter(Boolean));
     return Array.from(regionSet).sort();
   }, [districts]);
 
+  // Filtered regions by search query
   const filteredRegions = useMemo(() => {
-    const query = regionInput.trim().toLowerCase();
-    return regions.filter(regionName =>
-      regionName.toLowerCase().includes(query)
-    );
-  }, [regions, regionInput]);
+    if (!regionQuery.trim()) return regions;
+    const q = regionQuery.toLowerCase();
+    return regions.filter(r => r.toLowerCase().includes(q));
+  }, [regions, regionQuery]);
 
+  // Filter districts by region
   const filteredDistricts = useMemo(() => {
-    const query = districtInput.trim().toLowerCase();
-    return districts.filter(district =>
-      region
-        ? district.region === region &&
-          district.name.toLowerCase().includes(query)
-        : false
-    );
-  }, [districts, region, districtInput]);
+    if (!selectedRegion) return [];
+    return districts
+      .filter(d => d.region === selectedRegion)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [districts, selectedRegion]);
 
+  // Filtered districts by search query
+  const searchFilteredDistricts = useMemo(() => {
+    if (!districtQuery.trim()) return filteredDistricts;
+    const q = districtQuery.toLowerCase();
+    return filteredDistricts.filter(d => d.name.toLowerCase().includes(q));
+  }, [filteredDistricts, districtQuery]);
+
+  // Filtered campuses by search query
   const filteredCampuses = useMemo(() => {
-    const query = campusInput.trim().toLowerCase();
-    return campuses.filter(campus => campus.name.toLowerCase().includes(query));
-  }, [campuses, campusInput]);
+    if (!campusQuery.trim()) return campuses;
+    const q = campusQuery.toLowerCase();
+    return campuses.filter(c => c.name.toLowerCase().includes(q));
+  }, [campuses, campusQuery]);
 
-  const selectedDistrict =
-    districts.find(district => district.id === districtId) || null;
-  const selectedCampus =
-    campuses.find(campus => campus.id === campusId) || null;
-
-  const goToStartStep = (
-    nextStep: "region" | "district" | "campus" | "name"
-  ) => {
-    if (isTransitioning || nextStep === startStep) return;
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setStartStep(nextStep);
-      setTimeout(() => setIsTransitioning(false), 200);
-    }, 200);
-  };
-
-  const startMutation = trpc.auth.start.useMutation({
-    onSuccess: () => {
-      utils.auth.me.invalidate();
+  // Mutations
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
       onOpenChange(false);
-      // Reset form
-      setMode("email");
-      setStartStep("region");
-      setEmail("");
-      setFullName("");
-      setRole("STAFF");
-      setRegion(null);
-      setRegionInput("");
-      setDistrictId(null);
-      setDistrictInput("");
-      setCampusId(null);
-      setCampusInput("");
-      setEmailStepError(null);
+      resetForm();
     },
+    onError: err => setError(err.message),
   });
 
-  useEffect(() => {
-    if (open) return;
-    // Reset when modal closes (even if user cancels)
-    setMode("email");
-    setStartStep("region");
-    setIsTransitioning(false);
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
+      onOpenChange(false);
+      resetForm();
+    },
+    onError: err => setError(err.message),
+  });
+
+  const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
+    onSuccess: () => {
+      setError(null);
+      setMode("resetPassword");
+    },
+    onError: err => setError(err.message),
+  });
+
+  const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
+    onSuccess: () => {
+      setError(null);
+      setResetSuccess(true);
+      // After 2 seconds, go back to login
+      setTimeout(() => {
+        setMode("login");
+        setResetCode("");
+        setNewPassword("");
+        setResetSuccess(false);
+      }, 2000);
+    },
+    onError: err => setError(err.message),
+  });
+
+  const resetForm = () => {
+    setMode("login");
+    setStep("credentials");
     setEmail("");
+    setPassword("");
+    setShowPassword(false);
     setFullName("");
-    setRole("STAFF");
-    setRegion(null);
-    setRegionInput("");
-    setDistrictId(null);
-    setDistrictInput("");
-    setCampusId(null);
-    setCampusInput("");
-    setEmailStepError(null);
+    setResetCode("");
+    setNewPassword("");
+    setShowNewPassword(false);
+    setResetSuccess(false);
+    setScopeLevel(null);
+    setSelectedRegion(null);
+    setSelectedDistrictId(null);
+    setSelectedCampusId(null);
+    setSelectedRole(null);
+    setAffiliation("");
+    setError(null);
+    setRegionQuery("");
+    setDistrictQuery("");
+    setCampusQuery("");
+  };
+
+  useEffect(() => {
+    if (!open) resetForm();
   }, [open]);
 
-  const handleCreateCampus = async () => {
-    if (!districtId || !campusInput.trim()) return;
-    const result = await createCampusMutation.mutateAsync({
-      name: campusInput.trim(),
-      districtId,
-    });
-    setCampusId(result.id);
-    setCampusInput(result.name);
-    setCampusSuggestionsOpen(false);
+  // Step navigation with animation
+  const goToStep = (newStep: RegistrationStep) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setError(null);
+    setTimeout(() => {
+      setStep(newStep);
+      setTimeout(() => setIsTransitioning(false), 150);
+    }, 150);
   };
 
-  const handleStart = () => {
-    if (!email || !fullName || !role || !campusId) {
+  // Handlers
+  const handleLogin = () => {
+    if (!email.trim() || !password) {
+      setError("Please enter your email and password");
       return;
     }
-    startMutation.mutate({
-      fullName,
-      email,
-      role,
-      campusId,
+    setError(null);
+    loginMutation.mutate({ email: email.trim(), password });
+  };
+
+  const handleCredentialsNext = () => {
+    if (!email.trim()) {
+      setError("Please enter your email");
+      return;
+    }
+    if (!password || password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (!fullName.trim()) {
+      setError("Please enter your full name");
+      return;
+    }
+    setError(null);
+    goToStep("region");
+  };
+
+  const handleRegionSelect = (region: string | null) => {
+    if (region === null) {
+      // National Team
+      setScopeLevel("national");
+      setSelectedRegion(null);
+      goToStep("role");
+    } else {
+      setSelectedRegion(region);
+      goToStep("district");
+    }
+  };
+
+  const handleDistrictSelect = (districtId: string | null) => {
+    if (districtId === null) {
+      // Regional level
+      setScopeLevel("regional");
+      setSelectedDistrictId(null);
+      goToStep("role");
+    } else {
+      setSelectedDistrictId(districtId);
+      goToStep("campus");
+    }
+  };
+
+  const handleCampusSelect = (
+    campusId: number | null,
+    isOther: boolean = false
+  ) => {
+    if (isOther) {
+      // External affiliate
+      setScopeLevel("other");
+      setSelectedCampusId(null);
+      goToStep("affiliation");
+    } else if (campusId === null) {
+      // District level
+      setScopeLevel("district");
+      setSelectedCampusId(null);
+      goToStep("role");
+    } else {
+      setScopeLevel("campus");
+      setSelectedCampusId(campusId);
+      goToStep("role");
+    }
+  };
+
+  const handleRoleSelect = (role: string) => {
+    setSelectedRole(role);
+    goToStep("confirm");
+  };
+
+  const handleRegister = () => {
+    if (!email.trim() || !password || !fullName.trim()) {
+      setError("Missing required fields");
+      return;
+    }
+
+    // For "other" scope, affiliation is required
+    if (scopeLevel === "other" && !affiliation.trim()) {
+      setError("Please enter your affiliation");
+      return;
+    }
+
+    // For all other scopes, role is required
+    if (scopeLevel !== "other" && !selectedRole) {
+      setError("Please select a role");
+      return;
+    }
+
+    setError(null);
+
+    registerMutation.mutate({
+      email: email.trim(),
+      password,
+      fullName: fullName.trim(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      role: (scopeLevel === "other" ? "STAFF" : selectedRole!) as any,
+      campusId: selectedCampusId ?? undefined,
+      overseeRegionId:
+        scopeLevel === "regional" ? (selectedRegion ?? undefined) : undefined,
     });
   };
 
-  const handleEmailContinue = async () => {
-    const trimmedEmail = email.trim();
-    setEmailStepError(null);
-    if (!trimmedEmail) {
-      setEmailStepError("Please enter your email.");
-      return;
+  // Get available roles based on scope
+  const getAvailableRoles = () => {
+    switch (scopeLevel) {
+      case "national":
+        return NATIONAL_ROLES;
+      case "regional":
+        return REGIONAL_ROLES;
+      case "district":
+        return DISTRICT_ROLES;
+      case "campus":
+        return CAMPUS_ROLES;
+      default:
+        return [];
     }
+  };
 
-    try {
-      const { exists } = await utils.auth.emailExists.fetch({
-        email: trimmedEmail,
-      });
-      if (exists) {
-        await startMutation.mutateAsync({ email: trimmedEmail });
-        return;
+  // Get scope description
+  const getScopeDescription = () => {
+    switch (scopeLevel) {
+      case "national":
+        return "You'll have national-level access to view and manage Chi Alpha across all regions.";
+      case "regional":
+        return `You'll have regional access to ${selectedRegion}.`;
+      case "district": {
+        const district = districts.find(d => d.id === selectedDistrictId);
+        return `You'll have district-level access to ${district?.name || "your district"}.`;
       }
-
-      setMode("register");
-      setStartStep("region");
-    } catch {
-      // If lookup fails (network/etc), still allow the user to proceed.
-      setMode("register");
-      setStartStep("region");
+      case "campus": {
+        const campus = campuses.find(c => c.id === selectedCampusId);
+        return `You'll have access to ${campus?.name || "your campus"}.`;
+      }
+      case "other":
+        return "You'll have view-only access to aggregate statistics.";
+      default:
+        return "";
     }
   };
 
-  const handleImNew = () => {
-    const trimmedEmail = email.trim();
-    setEmailStepError(null);
-    if (!trimmedEmail) {
-      setEmailStepError("Please enter your email first.");
-      return;
-    }
-    setEmail(trimmedEmail);
-    setMode("register");
-    setStartStep("region");
+  // Progress calculation
+  const getProgress = () => {
+    const steps = ["credentials", "region"];
+    if (scopeLevel === "national") steps.push("role", "confirm");
+    else if (scopeLevel === "regional")
+      steps.push("district", "role", "confirm");
+    else if (scopeLevel === "district")
+      steps.push("district", "campus", "role", "confirm");
+    else if (scopeLevel === "campus")
+      steps.push("district", "campus", "role", "confirm");
+    else if (scopeLevel === "other")
+      steps.push("district", "campus", "affiliation", "confirm");
+    else steps.push("district", "campus", "role", "confirm");
+
+    const currentIndex = steps.indexOf(step);
+    return { current: currentIndex + 1, total: steps.length };
   };
+
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="h-screen max-h-screen w-screen max-w-none overflow-hidden border-none bg-gradient-to-br from-black via-red-950 to-black p-0 shadow-none">
-        {/* Full-screen background layers */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          {/* Animated gradient orbs */}
-          <div className="absolute -left-40 -top-40 h-96 w-96 animate-pulse rounded-full bg-red-500/20 blur-3xl" />
-          <div className="absolute -right-40 top-1/4 h-96 w-96 animate-pulse rounded-full bg-red-600/15 blur-3xl animation-delay-2000" />
-          <div className="absolute bottom-0 left-1/3 h-96 w-96 animate-pulse rounded-full bg-red-700/10 blur-3xl animation-delay-4000" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+      {/* Sky gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-100 via-white to-slate-50" />
 
-          {/* Geometric shapes */}
-          <div className="absolute left-10 top-20 h-32 w-32 rotate-45 border-2 border-red-500/20" />
-          <div className="absolute bottom-20 right-20 h-40 w-40 rotate-12 border-2 border-white/10" />
-          <div className="absolute right-1/4 top-1/3 h-24 w-24 -rotate-12 border border-red-400/30" />
+      {/* Subtle animated clouds */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 left-1/4 h-40 w-80 rounded-full bg-white/60 blur-3xl animate-[drift_20s_ease-in-out_infinite]" />
+        <div className="absolute top-1/4 -right-20 h-60 w-96 rounded-full bg-white/50 blur-3xl animate-[drift_25s_ease-in-out_infinite_reverse]" />
+        <div className="absolute bottom-1/4 -left-20 h-48 w-72 rounded-full bg-red-50/40 blur-3xl animate-[drift_22s_ease-in-out_infinite]" />
+      </div>
 
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
+      {/* Connection lines SVG */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-20">
+        <defs>
+          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#ef4444" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
+        <g className="animate-pulse">
+          <line
+            x1="15%"
+            y1="25%"
+            x2="35%"
+            y2="45%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="35%"
+            y1="45%"
+            x2="55%"
+            y2="35%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="55%"
+            y1="35%"
+            x2="75%"
+            y2="55%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="75%"
+            y1="55%"
+            x2="90%"
+            y2="40%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="20%"
+            y1="65%"
+            x2="45%"
+            y2="55%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="45%"
+            y1="55%"
+            x2="65%"
+            y2="70%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="65%"
+            y1="70%"
+            x2="85%"
+            y2="60%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <circle cx="15%" cy="25%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="35%" cy="45%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="55%" cy="35%" r="6" fill="#dc2626" fillOpacity="0.7" />
+          <circle cx="75%" cy="55%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="90%" cy="40%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="20%" cy="65%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="45%" cy="55%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="65%" cy="70%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="85%" cy="60%" r="4" fill="#dc2626" fillOpacity="0.5" />
+        </g>
+      </svg>
 
-          {/* Radial gradient overlay */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.4)_100%)]" />
+      {/* ===== GIANT CENTERED CMC GO WATERMARK ===== */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
+        <div className="text-center animate-[float_20s_ease-in-out_infinite]">
+          <div
+            className="font-black uppercase leading-[0.85] tracking-tighter text-slate-300/70"
+            style={{ fontSize: "clamp(120px, 30vw, 400px)" }}
+          >
+            CMC
+          </div>
+          <div
+            className="font-black uppercase leading-[0.85] tracking-tighter bg-gradient-to-r from-red-400/60 via-red-500/70 to-red-400/60 bg-clip-text text-transparent"
+            style={{ fontSize: "clamp(120px, 30vw, 400px)" }}
+          >
+            GO
+          </div>
+        </div>
+      </div>
 
-          {/* Large CMC GO text */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="select-none text-center">
-              <div className="text-[120px] font-black uppercase leading-none tracking-wider text-white/5 sm:text-[180px] lg:text-[240px]">
-                CMC
-              </div>
-              <div className="text-[120px] font-black uppercase leading-none tracking-wider text-white/5 sm:text-[180px] lg:text-[240px]">
-                GO
-              </div>
+      {/* Vignette */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(255,255,255,0.4)_60%,rgba(248,250,252,0.8)_100%)]" />
+
+      {/* Top-left branding */}
+      <div className="absolute left-6 top-6 z-10 flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="h-11 w-11 rotate-12 rounded-full border-2 border-white bg-black shadow-lg flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center text-white font-bold leading-none">
+              <span className="text-[11px] tracking-wide">CMC</span>
+              <span className="-mt-0.5 text-[12px] font-semibold tracking-wide">
+                Go
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Content container */}
-        <div className="relative flex h-full items-center justify-center p-4">
-          <div className="w-full max-w-md space-y-8">
-            {/* Header */}
-            <div className="text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-black/40 px-4 py-2 text-xs font-bold uppercase tracking-[0.3em] text-red-400 backdrop-blur-sm">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                CMC Go Access
-              </div>
-              <h1 className="mb-2 text-4xl font-black uppercase tracking-tight text-white">
-                Welcome
-              </h1>
-              <p className="text-sm text-white/60">Let's get you connected</p>
+      {/* Close */}
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => onOpenChange(false)}
+        className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
+      >
+        <svg
+          className="h-5 w-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
 
-              {mode === "register" && (
-                <div className="mt-6 flex justify-center gap-2">
-                  <span
-                    className={cn(
-                      "h-2 w-8 rounded-full transition-all",
-                      startStep === "region" ? "bg-red-500" : "bg-white/20"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "h-2 w-8 rounded-full transition-all",
-                      startStep === "district" ? "bg-red-500" : "bg-white/20"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "h-2 w-8 rounded-full transition-all",
-                      startStep === "campus" ? "bg-red-500" : "bg-white/20"
-                    )}
-                  />
-                  <span
-                    className={cn(
-                      "h-2 w-8 rounded-full transition-all",
-                      startStep === "name" ? "bg-red-500" : "bg-white/20"
-                    )}
-                  />
-                </div>
-              )}
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes drift {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          50% { transform: translateX(30px) translateY(-20px); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+      `}</style>
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-md px-6">
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
+            {mode === "login" && "Go Together"}
+            {mode === "register" && "Create Account"}
+            {mode === "forgotPassword" && "Forgot Password"}
+            {mode === "resetPassword" && "Reset Password"}
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            {mode === "login" && "Sign in to continue"}
+            {mode === "forgotPassword" && "We'll send you a reset code"}
+            {mode === "resetPassword" && "Enter your new password"}
+            {mode === "register" &&
+              (step === "credentials"
+                ? "Let's start with your credentials"
+                : "Tell us about your role")}
+          </p>
+
+          {/* Progress indicator for registration */}
+          {mode === "register" && step !== "credentials" && (
+            <div className="mt-6 flex justify-center gap-2">
+              {Array.from({ length: getProgress().total }).map((_, idx) => (
+                <span
+                  key={idx}
+                  className={cn(
+                    "h-2 w-8 rounded-full transition-all",
+                    idx < getProgress().current
+                      ? "bg-gradient-to-r from-red-500 to-rose-500"
+                      : "bg-slate-200/70"
+                  )}
+                />
+              ))}
             </div>
+          )}
+        </div>
 
-            {/* Form container */}
-            <div className="rounded-2xl border border-white/10 bg-black/40 p-8 backdrop-blur-xl">
-              <div
-                className={cn(
-                  "space-y-6 transition-all duration-300",
-                  isTransitioning
-                    ? "opacity-0 translate-y-2"
-                    : "opacity-100 translate-y-0"
-                )}
+        {/* Form container */}
+        <div
+          className={cn(
+            "rounded-2xl border border-slate-200/60 bg-white/70 p-8 backdrop-blur-xl shadow-xl shadow-slate-900/5 transition-all duration-150",
+            isTransitioning ? "opacity-0 scale-98" : "opacity-100 scale-100"
+          )}
+        >
+          {/* LOGIN MODE */}
+          {mode === "login" && (
+            <div className="space-y-5">
+              <div>
+                <Label
+                  htmlFor="login-email"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="login-email"
+                  name="username"
+                  type="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  onKeyDown={e => e.key === "Enter" && handleLogin()}
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="login-password"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Password
+                </Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    id="login-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                    onKeyDown={e => e.key === "Enter" && handleLogin()}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setMode("forgotPassword");
+                  }}
+                  className="text-sm font-medium text-red-700 hover:text-red-600"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
+              <Button
+                onClick={handleLogin}
+                disabled={loginMutation.isPending}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
-                {mode === "email" && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label
-                        htmlFor="email"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        Email
-                      </Label>
+                {loginMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
+
+              <p className="text-center text-sm text-slate-600">
+                Don't have an account?{" "}
+                <button
+                  onClick={() => {
+                    setMode("register");
+                    setStep("credentials");
+                  }}
+                  className="font-medium text-red-700 hover:text-red-600"
+                >
+                  Create one
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* FORGOT PASSWORD */}
+          {mode === "forgotPassword" && (
+            <div className="space-y-5">
+              <div className="text-center mb-4">
+                <p className="text-sm text-slate-600">
+                  Enter your email address and we'll send you a code to reset
+                  your password.
+                </p>
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="forgot-email"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && email.trim()) {
+                      forgotPasswordMutation.mutate({ email: email.trim() });
+                    }
+                  }}
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <Button
+                onClick={() => {
+                  if (email.trim()) {
+                    forgotPasswordMutation.mutate({ email: email.trim() });
+                  }
+                }}
+                disabled={forgotPasswordMutation.isPending || !email.trim()}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+              >
+                {forgotPasswordMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Reset Code"
+                )}
+              </Button>
+
+              <p className="text-center text-sm text-slate-600">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setMode("login");
+                  }}
+                  className="font-medium text-red-700 hover:text-red-600"
+                >
+                  ← Back to login
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* RESET PASSWORD */}
+          {mode === "resetPassword" && (
+            <div className="space-y-5">
+              {resetSuccess ? (
+                <div className="text-center py-4">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Password Reset!
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Your password has been changed. Redirecting to login...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-slate-600">
+                      Enter the 6-digit code sent to <strong>{email}</strong>{" "}
+                      and your new password.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="reset-code"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Reset Code
+                    </Label>
+                    <Input
+                      id="reset-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={resetCode}
+                      onChange={e =>
+                        setResetCode(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="000000"
+                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 text-center text-2xl tracking-widest placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="new-password"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      New Password
+                    </Label>
+                    <div className="relative mt-1.5">
                       <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
+                        id="new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="Enter new password (min. 8 characters)"
+                        className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                         onKeyDown={e => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleEmailContinue();
+                          if (
+                            e.key === "Enter" &&
+                            resetCode.length === 6 &&
+                            newPassword.length >= 8
+                          ) {
+                            resetPasswordMutation.mutate({
+                              email: email.trim(),
+                              code: resetCode,
+                              newPassword,
+                            });
                           }
                         }}
                       />
-                    </div>
-
-                    {emailStepError && (
-                      <p className="text-sm text-red-400">{emailStepError}</p>
-                    )}
-
-                    <div className="flex gap-3">
-                      <Button
+                      <button
                         type="button"
-                        variant="secondary"
-                        onClick={handleImNew}
-                        className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                       >
-                        I'm new
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleEmailContinue}
-                        disabled={startMutation.isPending}
-                        className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                      >
-                        {startMutation.isPending ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Continue...
-                          </>
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
                         ) : (
-                          "Continue"
+                          <Eye className="h-4 w-4" />
                         )}
-                      </Button>
+                      </button>
                     </div>
+                  </div>
 
-                    {startMutation.error && (
-                      <p className="text-sm text-red-400">
-                        {startMutation.error.message}
-                      </p>
+                  {error && <p className="text-sm text-red-700">{error}</p>}
+
+                  <Button
+                    onClick={() => {
+                      resetPasswordMutation.mutate({
+                        email: email.trim(),
+                        code: resetCode,
+                        newPassword,
+                      });
+                    }}
+                    disabled={
+                      resetPasswordMutation.isPending ||
+                      resetCode.length !== 6 ||
+                      newPassword.length < 8
+                    }
+                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                  >
+                    {resetPasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      "Reset Password"
                     )}
-                  </div>
-                )}
+                  </Button>
 
-                {mode === "register" && startStep === "region" && (
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Label
-                        htmlFor="region"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        Region *
-                      </Label>
-                      <Input
-                        id="region"
-                        value={regionInput}
-                        onChange={e => {
-                          setRegionInput(e.target.value);
-                          setRegionSuggestionsOpen(true);
-                          setRegion(null);
-                        }}
-                        onFocus={() => setRegionSuggestionsOpen(true)}
-                        onBlur={() =>
-                          setTimeout(() => setRegionSuggestionsOpen(false), 150)
-                        }
-                        placeholder="Type your region"
-                        className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-                      />
-                      {regionSuggestionsOpen && filteredRegions.length > 0 && (
-                        <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
-                          {filteredRegions.map(regionName => (
-                            <button
-                              key={regionName}
-                              type="button"
-                              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
-                              onMouseDown={event => event.preventDefault()}
-                              onClick={() => {
-                                setRegion(regionName);
-                                setRegionInput(regionName);
-                                setDistrictId(null);
-                                setDistrictInput("");
-                                setCampusId(null);
-                                setCampusInput("");
-                                setRegionSuggestionsOpen(false);
-                              }}
-                            >
-                              {regionName}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => {
-                          setMode("email");
-                          setEmailStepError(null);
-                        }}
-                        className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={() => goToStartStep("district")}
-                        disabled={!region}
-                        className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {mode === "register" && startStep === "district" && (
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Label
-                        htmlFor="district"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        District *
-                      </Label>
-                      <Input
-                        id="district"
-                        value={districtInput}
-                        onChange={e => {
-                          setDistrictInput(e.target.value);
-                          setDistrictSuggestionsOpen(true);
-                          setDistrictId(null);
-                        }}
-                        onFocus={() => setDistrictSuggestionsOpen(true)}
-                        onBlur={() =>
-                          setTimeout(
-                            () => setDistrictSuggestionsOpen(false),
-                            150
-                          )
-                        }
-                        placeholder="Type your district"
-                        className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-                      />
-                      {districtSuggestionsOpen &&
-                        filteredDistricts.length > 0 && (
-                          <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
-                            {filteredDistricts.map(district => (
-                              <button
-                                key={district.id}
-                                type="button"
-                                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
-                                onMouseDown={event => event.preventDefault()}
-                                onClick={() => {
-                                  setDistrictId(district.id);
-                                  setDistrictInput(district.name);
-                                  setCampusId(null);
-                                  setCampusInput("");
-                                  setDistrictSuggestionsOpen(false);
-                                }}
-                              >
-                                <span>{district.name}</span>
-                                <span className="text-xs text-white/40">
-                                  {district.id}
-                                </span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => goToStartStep("region")}
-                        className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={() => goToStartStep("campus")}
-                        disabled={!districtId}
-                        className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {mode === "register" && startStep === "campus" && (
-                  <div className="space-y-4">
-                    <div className="relative">
-                      <Label
-                        htmlFor="campus"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        Campus *
-                      </Label>
-                      <Input
-                        id="campus"
-                        value={campusInput}
-                        onChange={e => {
-                          setCampusInput(e.target.value);
-                          setCampusSuggestionsOpen(true);
-                          setCampusId(null);
-                        }}
-                        onFocus={() => setCampusSuggestionsOpen(true)}
-                        onBlur={() =>
-                          setTimeout(() => setCampusSuggestionsOpen(false), 150)
-                        }
-                        placeholder="Type your campus"
-                        className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-                      />
-                      {campusSuggestionsOpen && (
-                        <div className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-lg border border-white/20 bg-black/90 shadow-2xl backdrop-blur-xl">
-                          {filteredCampuses.map(campus => (
-                            <button
-                              key={campus.id}
-                              type="button"
-                              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/20"
-                              onMouseDown={event => event.preventDefault()}
-                              onClick={() => {
-                                setCampusId(campus.id);
-                                setCampusInput(campus.name);
-                                setCampusSuggestionsOpen(false);
-                              }}
-                            >
-                              {campus.name}
-                            </button>
-                          ))}
-                          {campusInput.trim().length > 1 &&
-                            filteredCampuses.length === 0 && (
-                              <button
-                                type="button"
-                                className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-red-500/30"
-                                onMouseDown={event => event.preventDefault()}
-                                onClick={handleCreateCampus}
-                                disabled={createCampusMutation.isPending}
-                              >
-                                <Plus className="h-4 w-4 text-red-400" />
-                                <span>Add "{campusInput.trim()}"</span>
-                              </button>
-                            )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => goToStartStep("district")}
-                        className="flex-1 border border-white/20 bg-white/5 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        onClick={() => goToStartStep("name")}
-                        disabled={!campusId}
-                        className="flex-1 bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
-                      >
-                        Next
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {mode === "register" && startStep === "name" && (
-                  <div className="space-y-4">
-                    <div>
-                      <Label
-                        htmlFor="role"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        Role
-                      </Label>
-                      <Select
-                        value={role}
-                        onValueChange={v => setRole(v as any)}
-                      >
-                        <SelectTrigger className="mt-2 border-white/20 bg-white/5 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="border-white/20 bg-black/95 text-white backdrop-blur-xl">
-                          <SelectItem
-                            value="STAFF"
-                            className="hover:bg-red-500/20"
-                          >
-                            Staff
-                          </SelectItem>
-                          <SelectItem
-                            value="CO_DIRECTOR"
-                            className="hover:bg-red-500/20"
-                          >
-                            Co-Director
-                          </SelectItem>
-                          <SelectItem
-                            value="CAMPUS_DIRECTOR"
-                            className="hover:bg-red-500/20"
-                          >
-                            Campus Director
-                          </SelectItem>
-                          <SelectItem
-                            value="DISTRICT_DIRECTOR"
-                            className="hover:bg-red-500/20"
-                          >
-                            District Director
-                          </SelectItem>
-                          <SelectItem
-                            value="REGION_DIRECTOR"
-                            className="hover:bg-red-500/20"
-                          >
-                            Region Director
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label
-                        htmlFor="fullName"
-                        className="text-sm font-medium uppercase tracking-wide text-white/80"
-                      >
-                        Full Name *
-                      </Label>
-                      <Input
-                        id="fullName"
-                        value={fullName}
-                        onChange={e => setFullName(e.target.value)}
-                        placeholder="John Doe"
-                        className="mt-2 border-white/20 bg-white/5 text-white placeholder:text-white/30 focus-visible:border-red-500 focus-visible:ring-red-500/50"
-                      />
-                    </div>
-
-                    <Button
-                      onClick={handleStart}
-                      disabled={
-                        !fullName ||
-                        !email ||
-                        !role ||
-                        !campusId ||
-                        startMutation.isPending
-                      }
-                      className="w-full bg-red-600 py-6 text-base font-semibold uppercase tracking-wide text-white hover:bg-red-500 disabled:opacity-50"
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setMode("forgotPassword");
+                        setResetCode("");
+                        setNewPassword("");
+                      }}
+                      className="font-medium text-red-700 hover:text-red-600"
                     >
-                      {startMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Signing in...
-                        </>
-                      ) : (
-                        "Sign In"
-                      )}
-                    </Button>
-
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => goToStartStep("campus")}
-                        className="flex-1 border border-white/20 bg-white/5 py-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        onClick={() => {
-                          setMode("email");
-                          setEmailStepError(null);
-                        }}
-                        className="flex-1 border border-white/20 bg-white/5 py-4 text-sm font-semibold uppercase tracking-wide text-white hover:bg-white/10"
-                      >
-                        Different email
-                      </Button>
-                    </div>
-
-                    {startMutation.error && (
-                      <p className="text-sm text-red-400">
-                        {startMutation.error.message}
-                      </p>
-                    )}
+                      ← Resend code
+                    </button>
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setMode("login");
+                        setResetCode("");
+                        setNewPassword("");
+                      }}
+                      className="font-medium text-red-700 hover:text-red-600"
+                    >
+                      Back to login
+                    </button>
                   </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* REGISTER: CREDENTIALS */}
+          {mode === "register" && step === "credentials" && (
+            <div className="space-y-5">
+              <div>
+                <Label
+                  htmlFor="register-full-name"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Full Name
+                </Label>
+                <Input
+                  id="register-full-name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  placeholder="John Smith"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="register-email"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="register-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                />
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="register-password"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Password
+                </Label>
+                <div className="relative mt-1.5">
+                  <Input
+                    id="register-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Minimum 8 characters"
+                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Minimum 8 characters
+                </p>
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <Button
+                onClick={handleCredentialsNext}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+              >
+                Continue <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <p className="text-center text-sm text-slate-600">
+                Already have an account?{" "}
+                <button
+                  onClick={() => {
+                    setMode("login");
+                    resetForm();
+                  }}
+                  className="font-medium text-red-700 hover:text-red-600"
+                >
+                  Sign in
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* REGISTER: REGION SELECTION */}
+          {mode === "register" && step === "region" && (
+            <div className="space-y-4">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Select your region
+                </h2>
+                <p className="text-sm text-slate-600">
+                  What region are you part of?
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={regionQuery}
+                  onChange={e => setRegionQuery(e.target.value)}
+                  placeholder="Type to search regions..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {regionQuery && (
+                  <button
+                    onClick={() => setRegionQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 )}
               </div>
+
+              {/* Region dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {filteredRegions.length > 0 ? (
+                  filteredRegions.map(region => (
+                    <button
+                      key={region}
+                      onClick={() => handleRegionSelect(region)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {region}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <MapPin className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No regions found</span>
+                  </div>
+                )}
+                {/* No region option at bottom */}
+                <button
+                  onClick={() => handleRegionSelect(null)}
+                  className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
+                >
+                  <Globe className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">No region</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setRegionQuery("");
+                  goToStep("credentials");
+                }}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
             </div>
-          </div>
+          )}
+
+          {/* REGISTER: DISTRICT SELECTION */}
+          {mode === "register" && step === "district" && (
+            <div className="space-y-4">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Select your district
+                </h2>
+                <p className="text-sm text-slate-600">
+                  What district in {selectedRegion} are you part of?
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={districtQuery}
+                  onChange={e => setDistrictQuery(e.target.value)}
+                  placeholder="Type to search districts..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {districtQuery && (
+                  <button
+                    onClick={() => setDistrictQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* District dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {searchFilteredDistricts.length > 0 ? (
+                  searchFilteredDistricts.map(district => (
+                    <button
+                      key={district.id}
+                      onClick={() => handleDistrictSelect(district.id)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <Building2 className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {district.name}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <Building2 className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No districts found</span>
+                  </div>
+                )}
+                {/* No district option at bottom */}
+                <button
+                  onClick={() => handleDistrictSelect(null)}
+                  className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
+                >
+                  <MapPin className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">No district</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => {
+                  setDistrictQuery("");
+                  goToStep("region");
+                }}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
+
+          {/* REGISTER: CAMPUS SELECTION */}
+          {mode === "register" && step === "campus" && (
+            <div className="space-y-4">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Select your campus
+                </h2>
+                <p className="text-sm text-slate-600">
+                  What campus are you part of?
+                </p>
+              </div>
+
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={campusQuery}
+                  onChange={e => setCampusQuery(e.target.value)}
+                  placeholder="Type to search campuses..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {campusQuery && (
+                  <button
+                    onClick={() => setCampusQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Campus dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {filteredCampuses.length > 0 ? (
+                  filteredCampuses.map(campus => (
+                    <button
+                      key={campus.id}
+                      onClick={() => handleCampusSelect(campus.id)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <Users className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {campus.name}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <Users className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No campuses found</span>
+                  </div>
+                )}
+                {/* Add campus and No campus options at bottom */}
+                <div className="border-t border-slate-100 mt-1 pt-2 space-y-1">
+                  <button
+                    onClick={() => handleCampusSelect(null, true)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-green-50"
+                  >
+                    <Plus className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-green-700">Add campus</span>
+                  </button>
+                  <button
+                    onClick={() => handleCampusSelect(null)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-slate-50"
+                  >
+                    <Building2 className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">No campus</span>
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setCampusQuery("");
+                  goToStep("district");
+                }}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
+
+          {/* REGISTER: ROLE SELECTION */}
+          {mode === "register" && step === "role" && (
+            <div className="space-y-4">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  What's your role?
+                </h2>
+                <p className="text-sm text-slate-600">
+                  {getScopeDescription()}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {getAvailableRoles().map(role => (
+                  <button
+                    key={role.value}
+                    onClick={() => handleRoleSelect(role.value)}
+                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-red-300 hover:bg-white"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-slate-900">{role.label}</p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  if (scopeLevel === "national") goToStep("region");
+                  else if (scopeLevel === "regional") goToStep("district");
+                  else if (scopeLevel === "district") goToStep("campus");
+                  else if (scopeLevel === "campus") goToStep("campus");
+                }}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
+
+          {/* REGISTER: AFFILIATION (for Other) */}
+          {mode === "register" && step === "affiliation" && (
+            <div className="space-y-5">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Your Affiliation
+                </h2>
+                <p className="text-sm text-slate-600">
+                  How are you connected to Chi Alpha?
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-slate-700">
+                  Affiliation / Organization
+                </Label>
+                <Input
+                  type="text"
+                  value={affiliation}
+                  onChange={e => setAffiliation(e.target.value)}
+                  placeholder="e.g., Partner church, Donor, Assemblies of God"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                />
+              </div>
+
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm text-amber-900">
+                  <strong>Note:</strong> As an external affiliate, you'll have
+                  view-only access to aggregate statistics. You won't be able to
+                  see or edit individual records.
+                </p>
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <Button
+                onClick={() => goToStep("confirm")}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+              >
+                Continue <ChevronRight className="ml-2 h-4 w-4" />
+              </Button>
+
+              <button
+                onClick={() => goToStep("campus")}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
+
+          {/* REGISTER: CONFIRMATION */}
+          {mode === "register" && step === "confirm" && (
+            <div className="space-y-5">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Confirm your details
+                </h2>
+                <p className="text-sm text-slate-600">
+                  Please review your information
+                </p>
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-slate-200/70 bg-white/70 p-4">
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-600">Name</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {fullName}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-600">Email</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {email}
+                  </span>
+                </div>
+                {selectedRegion && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Region</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {selectedRegion}
+                    </span>
+                  </div>
+                )}
+                {selectedDistrictId && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">District</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {districts.find(d => d.id === selectedDistrictId)?.name}
+                    </span>
+                  </div>
+                )}
+                {selectedCampusId && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Campus</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {campuses.find(c => c.id === selectedCampusId)?.name}
+                    </span>
+                  </div>
+                )}
+                {scopeLevel === "other" ? (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Affiliation</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {affiliation}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Role</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {
+                        getAvailableRoles().find(r => r.value === selectedRole)
+                          ?.label
+                      }
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-600">Access Level</span>
+                  <span className="text-sm font-medium capitalize text-red-700">
+                    {scopeLevel}
+                  </span>
+                </div>
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <Button
+                onClick={handleRegister}
+                disabled={registerMutation.isPending}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+              >
+                {registerMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Create Account
+                  </>
+                )}
+              </Button>
+
+              <button
+                onClick={() => goToStep("role")}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
+
+export default LoginModal;

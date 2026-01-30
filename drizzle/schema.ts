@@ -13,23 +13,54 @@ import {
 /**
  * Core user table backing auth flow.
  * PR 2: Self-registration with role-based approval system
+ * Password Auth: Added passwordHash, scopeLevel, viewLevel, editLevel, overseeRegionId, isBanned
  */
 export const users = mysqlTable("users", {
   id: int("id").primaryKey().autoincrement(),
   fullName: varchar("fullName", { length: 255 }).notNull(),
   email: varchar("email", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }), // Password auth - nullable for migration
   role: mysqlEnum("role", [
     "STAFF",
     "CO_DIRECTOR",
     "CAMPUS_DIRECTOR",
     "DISTRICT_DIRECTOR",
+    "DISTRICT_STAFF",
     "REGION_DIRECTOR",
+    "REGIONAL_STAFF",
+    "NATIONAL_STAFF",
+    "NATIONAL_DIRECTOR",
+    "FIELD_DIRECTOR",
+    "CMC_GO_ADMIN",
     "ADMIN",
   ]).notNull(),
-  campusId: int("campusId").notNull(), // Required - used to derive districtId and regionId
+  campusId: int("campusId"), // Nullable for National Team members
   districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
   regionId: varchar("regionId", { length: 255 }), // Derived from campusId server-side
+  overseeRegionId: varchar("overseeRegionId", { length: 255 }), // For Regional Directors/Staff
   personId: varchar("personId", { length: 64 }), // Optional link to people.personId (onboarding)
+  // Three-tier authorization system
+  scopeLevel: mysqlEnum("scopeLevel", ["NATIONAL", "REGION", "DISTRICT"])
+    .default("REGION")
+    .notNull(),
+  viewLevel: mysqlEnum("viewLevel", [
+    "NATIONAL",
+    "REGION",
+    "DISTRICT",
+    "CAMPUS",
+  ])
+    .default("CAMPUS")
+    .notNull(),
+  editLevel: mysqlEnum("editLevel", [
+    "NATIONAL",
+    "XAN",
+    "REGION",
+    "DISTRICT",
+    "CAMPUS",
+  ])
+    .default("CAMPUS")
+    .notNull(),
+  isBanned: boolean("isBanned").default(false).notNull(),
   approvalStatus: mysqlEnum("approvalStatus", [
     "ACTIVE",
     "PENDING_APPROVAL",
@@ -42,10 +73,14 @@ export const users = mysqlTable("users", {
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   lastLoginAt: timestamp("lastLoginAt"), // Updated on login
-  // Legacy fields for backward compatibility (can be removed later)
+  // Legacy OAuth columns (kept for database compatibility, not used in password auth)
   openId: varchar("openId", { length: 64 }),
   name: varchar("name", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  // Additional metadata
+  roleLabel: varchar("roleLabel", { length: 255 }),
+  roleTitle: varchar("roleTitle", { length: 255 }),
+  linkedPersonId: varchar("linkedPersonId", { length: 64 }),
 });
 
 export type User = typeof users.$inferSelect;
@@ -244,7 +279,7 @@ export const notes = mysqlTable(
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     createdBy: varchar("createdBy", { length: 255 }),
-    noteType: mysqlEnum("note_type", ["GENERAL", "NEED"])
+    noteType: mysqlEnum("note_type", ["GENERAL", "REQUEST"])
       .notNull()
       .default("GENERAL"),
   },

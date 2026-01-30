@@ -32,7 +32,7 @@ CMC Go is a **map-first coordination app** for managing CMC (Chi Alpha Campus Mi
 | Milestone              | Focus                                 | Status    |
 | ---------------------- | ------------------------------------- | --------- |
 | v1.0: Core System      | Schema, flows, state, observability   | ✅ Done   |
-| v1.1: Cross-View       | Map ↔ Panel ↔ Follow-Up consistency | ✅ Done   |
+| v1.1: Cross-View       | Map ↔ Panel ↔ Follow-Up consistency   | ✅ Done   |
 | v1.2: Desktop UX       | Navigation, filters, panel behavior   | ✅ Done   |
 | v1.3: Authentication   | Login, sessions, roles, permissions   | ✅ Done   |
 | v1.4: Mobile           | Responsive layout, touch optimization | ✅ Done   |
@@ -117,7 +117,7 @@ All views stay in sync; no desync edge cases.
 
 | Task                        | Issue | Status  |
 | --------------------------- | ----- | ------- |
-| Map ↔ Panel state sync     | #102  | ✅ Done |
+| Map ↔ Panel state sync      | #102  | ✅ Done |
 | Status propagation tests    | #81   | ✅ Done |
 | Follow-Up consistency tests | #87   | ✅ Done |
 
@@ -254,7 +254,7 @@ Migration rollout, Follow-Up filters, and polish.
 | --- | ------------------------------- | --------- | ------- |
 | 81  | Status propagation tests        | v1.1      | ✅ Done |
 | 87  | Follow-Up consistency tests     | v1.1      | ✅ Done |
-| 102 | Map ↔ Panel state sync         | v1.1      | ✅ Done |
+| 102 | Map ↔ Panel state sync          | v1.1      | ✅ Done |
 | 103 | Default regional scope (TEXICO) | v1.2      | ✅ Done |
 | 104 | ~~Default district panel~~      | v1.2      | ❌      |
 | 105 | ~~View mode selector~~          | v1.2      | ❌      |

@@ -442,7 +442,33 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
 export async function startupDbHealthCheck(): Promise<void> {
   console.log("[DB Health] Performing startup database health check...");
 
-  const health = await checkDbHealth();
+  // Add timeout for health check (30 seconds)
+  const healthCheckPromise = checkDbHealth();
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(
+      () =>
+        reject(new Error("Database health check timed out after 30 seconds")),
+      30000
+    );
+  });
+
+  let health;
+  try {
+    health = await Promise.race([healthCheckPromise, timeoutPromise]);
+  } catch (error) {
+    const isProduction = process.env.NODE_ENV === "production";
+    if (error instanceof Error && error.message.includes("timed out")) {
+      console.warn("[DB Health] ⚠️  Health check timed out (development).");
+      if (!isProduction) {
+        console.warn(
+          "[DB Health] Continuing without full health check. Database may be slow."
+        );
+        return; // Skip health check in development if it times out
+      }
+    }
+    throw error;
+  }
+
   const isProduction = process.env.NODE_ENV === "production";
 
   if (!health.connected) {
