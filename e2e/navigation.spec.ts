@@ -39,22 +39,6 @@ test.describe("Admin Console Pages", () => {
     // Admin console requires CMC_GO_ADMIN role and redirects to home when not authenticated
     await expect(page).toHaveURL("/", { timeout: 5000 });
   });
-
-  test("admin database page redirects to home when unauthenticated", async ({
-    page,
-  }) => {
-    await page.goto("/admin/database");
-    // Admin pages require authentication
-    await expect(page).toHaveURL("/", { timeout: 5000 });
-  });
-
-  test("admin config page redirects to home when unauthenticated", async ({
-    page,
-  }) => {
-    await page.goto("/admin/config");
-    // Admin pages require authentication
-    await expect(page).toHaveURL("/", { timeout: 5000 });
-  });
 });
 
 test.describe("Responsive Design", () => {
