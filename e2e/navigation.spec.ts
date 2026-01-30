@@ -32,21 +32,28 @@ test.describe("Home Page Map", () => {
 });
 
 test.describe("Admin Console Pages", () => {
-  test("admin console has navigation tabs", async ({ page }) => {
+  test("admin console redirects to home when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/admin");
-    await expect(
-      page.getByRole("heading", { name: "Admin Console" })
-    ).toBeVisible();
+    // Admin console requires CMC_GO_ADMIN role and redirects to home when not authenticated
+    await expect(page).toHaveURL("/", { timeout: 5000 });
   });
 
-  test("admin database page loads", async ({ page }) => {
+  test("admin database page redirects to home when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/admin/database");
-    await expect(page).toHaveURL(/admin\/database/);
+    // Admin pages require authentication
+    await expect(page).toHaveURL("/", { timeout: 5000 });
   });
 
-  test("admin config page loads", async ({ page }) => {
+  test("admin config page redirects to home when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/admin/config");
-    await expect(page).toHaveURL(/admin\/config/);
+    // Admin pages require authentication
+    await expect(page).toHaveURL("/", { timeout: 5000 });
   });
 });
 

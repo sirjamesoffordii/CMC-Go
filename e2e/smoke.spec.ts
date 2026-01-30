@@ -9,9 +9,8 @@ test("home page renders core navigation", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("admin console loads", async ({ page }) => {
+test("admin console redirects when unauthenticated", async ({ page }) => {
   await page.goto("/admin");
-  await expect(
-    page.getByRole("heading", { name: "Admin Console" })
-  ).toBeVisible();
+  // Admin console requires CMC_GO_ADMIN role and redirects to home when not authenticated
+  await expect(page).toHaveURL("/", { timeout: 5000 });
 });

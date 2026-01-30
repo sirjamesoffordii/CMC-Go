@@ -1705,14 +1705,13 @@ export function InteractiveMap({
         {/* Top Left Invited / Total + Metrics */}
         <div className="absolute top-4 left-4 z-40 flex flex-col items-start gap-3">
           <div
-            className="flex items-center gap-2"
+            className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
           >
             <span
-              className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              className="text-4xl font-semibold text-rose-600 whitespace-nowrap tracking-tight"
               style={{
                 lineHeight: "1",
-                minWidth: "6.5rem",
                 textAlign: "left",
               }}
             >
@@ -1723,11 +1722,11 @@ export function InteractiveMap({
               className="flex items-baseline gap-2 tabular-nums"
               style={{ lineHeight: "1" }}
             >
-              <span className="text-5xl font-bold text-slate-900 tracking-tight">
+              <span className="text-4xl font-bold text-slate-900 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.invited}
               </span>
-              <span className="text-2xl font-normal text-slate-400">/</span>
-              <span className="text-xl font-normal text-slate-400 tracking-tight">
+              <span className="text-xl font-normal text-slate-400">/</span>
+              <span className="text-lg font-normal text-slate-400 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.total}
               </span>
             </div>
@@ -1737,7 +1736,7 @@ export function InteractiveMap({
         </div>
 
         {/* Top Right Metrics (kept on the right) */}
-        <div className="absolute top-16 right-4 z-40 flex flex-col items-end gap-3">
+        <div className="absolute top-28 right-4 z-40 flex flex-col items-end gap-3">
           {/* Going */}
           <button
             onClick={() => toggleMetric("yes")}
@@ -2026,8 +2025,8 @@ export function InteractiveMap({
           style={{
             filter: "blur(0.3px)", // Minimal blur to fill tiny gaps while preserving sharp edges
             transform: selectedDistrictId
-              ? "scale(1.05) translateX(0px)" // Larger scale, centered when panel open
-              : "scale(1.03) translateX(-70px)", // Shift map further left for layout balance
+              ? "scale(1.05)" // Larger scale when panel open
+              : "scale(1)", // Normal scale, centered
             transformOrigin: "center",
           }}
         />
@@ -2039,9 +2038,7 @@ export function InteractiveMap({
           <div
             className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
             style={{
-              transform: selectedDistrictId
-                ? "scale(1.05) translateX(0px)"
-                : "scale(1.03) translateX(-70px)",
+              transform: selectedDistrictId ? "scale(1.05)" : "scale(1)",
               transformOrigin: "center",
             }}
           >
@@ -2082,8 +2079,8 @@ export function InteractiveMap({
             opacity: 0,
             pointerEvents: "auto",
             transform: selectedDistrictId
-              ? "scale(1.05) translateX(0px)" // Match visual layer when panel open
-              : "scale(1.03) translateX(-70px)",
+              ? "scale(1.05)" // Match visual layer when panel open
+              : "scale(1)",
             transformOrigin: "center",
           }}
           onClick={e => {
@@ -2103,9 +2100,7 @@ export function InteractiveMap({
         <div
           className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none"
           style={{
-            transform: selectedDistrictId
-              ? "scale(1.05) translateX(0px)"
-              : "scale(1.03) translateX(-70px)",
+            transform: selectedDistrictId ? "scale(1.05)" : "scale(1)",
             transformOrigin: "center",
           }}
         >
