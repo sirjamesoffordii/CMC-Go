@@ -191,7 +191,7 @@ function DashboardLayoutContent({
                       <Tooltip>
                         <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
                         <TooltipContent side="right" align="center">
-                          Please log in to view people
+                          Please log in to view table
                         </TooltipContent>
                       </Tooltip>
                     ) : (

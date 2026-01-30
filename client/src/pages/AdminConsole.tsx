@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield,
   Upload,
@@ -26,11 +27,14 @@ import {
   CheckCircle2,
   Clock,
   Bug,
+  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
 import { ImportModal } from "@/components/ImportModal";
+import { UserManagement } from "@/components/UserManagement";
+import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 // Get version from package.json (will be injected at build time or read from env)
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || "1.0.0";
@@ -66,10 +70,33 @@ function csvEscape(value: unknown): string {
 
 export default function AdminConsole() {
   const [, setLocation] = useLocation();
+  const { user, isLoading: authLoading } = usePublicAuth();
   const [dbHealth, setDbHealth] = useState<DbHealthStatus>({
     connected: false,
     status: "checking",
   });
+
+  // Redirect non-admins to home
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== "CMC_GO_ADMIN")) {
+      toast.error("Access denied - Admin privileges required");
+      setLocation("/");
+    }
+  }, [user, authLoading, setLocation]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Don't render if not admin (redirect will happen via useEffect)
+  if (!user || user.role !== "CMC_GO_ADMIN") {
+    return null;
+  }
 
   // Fetch data
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -330,9 +357,9 @@ export default function AdminConsole() {
       color: "text-purple-600",
     },
     {
-      title: "Active Needs",
+      title: "Active Requests",
       value: stats.activeNeeds.toLocaleString(),
-      description: "Unmet needs",
+      description: "Unmet requests",
       icon: Heart,
       color: "text-red-600",
     },
@@ -376,306 +403,334 @@ export default function AdminConsole() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="container max-w-7xl mx-auto px-4 py-8 space-y-6">
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {statCards.map(stat => (
-            <Card key={stat.title} className="transition-all hover:shadow-md">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {stat.title}
+      {/* Tabs for Dashboard and User Management */}
+      <Tabs
+        defaultValue="dashboard"
+        className="container max-w-7xl mx-auto px-4 py-6"
+      >
+        <TabsList className="mb-6">
+          <TabsTrigger value="dashboard" className="flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            User Management
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          {/* Stats Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {statCards.map(stat => (
+              <Card key={stat.title} className="transition-all hover:shadow-md">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {stat.title}
+                  </CardTitle>
+                  <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold tracking-tight">
+                    {stat.value}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {stat.description}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Imports Section */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="w-5 h-5" />
+                  Imports
                 </CardTitle>
-                <stat.icon className={`h-4 w-4 ${stat.color}`} />
+                <CardDescription>
+                  Import data from external sources
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">
-                  {stat.value}
+              <CardContent className="space-y-4">
+                <div>
+                  <Button
+                    onClick={handleImportContacts}
+                    className="w-full"
+                    variant="default"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Import Contacts (CSV/XLSX)
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Accepted formats: CSV, XLSX. Columns: Name, Email, Phone,
+                    District, Campus, Role
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stat.description}
-                </p>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Imports Section */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Upload className="w-5 h-5" />
-                Imports
-              </CardTitle>
-              <CardDescription>
-                Import data from external sources
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
+            {/* Data Section */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="w-5 h-5" />
+                  Data
+                </CardTitle>
+                <CardDescription>
+                  Export data in various formats
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
                 <Button
-                  onClick={handleImportContacts}
+                  onClick={handleExportContactsCSV}
                   className="w-full"
-                  variant="default"
+                  variant="outline"
                 >
                   <FileText className="w-4 h-4 mr-2" />
-                  Import Contacts (CSV/XLSX)
+                  Export Contacts CSV
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Accepted formats: CSV, XLSX. Columns: Name, Email, Phone,
-                  District, Campus, Role
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Data Section */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="w-5 h-5" />
-                Data
-              </CardTitle>
-              <CardDescription>Export data in various formats</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button
-                onClick={handleExportContactsCSV}
-                className="w-full"
-                variant="outline"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Export Contacts CSV
-              </Button>
-              <Button
-                onClick={handleExportRegionsJSON}
-                className="w-full"
-                variant="outline"
-              >
-                <FileJson className="w-4 h-4 mr-2" />
-                Export Regions JSON
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* System Section */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="w-5 h-5" />
-                System
-              </CardTitle>
-              <CardDescription>System information and status</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    App Version
-                  </span>
-                  <Badge variant="secondary">{APP_VERSION}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Environment
-                  </span>
-                  <Badge
-                    variant={NODE_ENV === "production" ? "default" : "outline"}
-                  >
-                    {NODE_ENV}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-muted-foreground">
-                    Database
-                  </span>
-                  {dbHealth.status === "checking" ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  ) : dbHealth.status === "connected" ? (
-                    <Badge variant="default" className="bg-green-600">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Connected
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive">
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      {dbHealth.status === "error" ? "Error" : "Not Connected"}
-                    </Badge>
-                  )}
-                </div>
-                {dbHealth.message && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    {dbHealth.status === "error" && (
-                      <AlertCircle className="w-3 h-3" />
-                    )}
-                    {dbHealth.message}
-                  </p>
-                )}
-              </div>
-
-              {/* Sentry Test Error Button */}
-              <div className="pt-2 border-t">
                 <Button
-                  onClick={() => {
-                    throw new Error(
-                      "This is your test error - Sentry error tracking verification"
-                    );
-                  }}
-                  variant="destructive"
+                  onClick={handleExportRegionsJSON}
                   className="w-full"
-                  size="sm"
+                  variant="outline"
                 >
-                  <Bug className="w-4 h-4 mr-2" />
-                  Test Sentry Error
+                  <FileJson className="w-4 h-4 mr-2" />
+                  Export Regions JSON
                 </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Click to trigger a test error and verify Sentry is capturing
-                  errors correctly.
-                </p>
+              </CardContent>
+            </Card>
+
+            {/* System Section */}
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  System
+                </CardTitle>
+                <CardDescription>System information and status</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      App Version
+                    </span>
+                    <Badge variant="secondary">{APP_VERSION}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Environment
+                    </span>
+                    <Badge
+                      variant={
+                        NODE_ENV === "production" ? "default" : "outline"
+                      }
+                    >
+                      {NODE_ENV}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-muted-foreground">
+                      Database
+                    </span>
+                    {dbHealth.status === "checking" ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    ) : dbHealth.status === "connected" ? (
+                      <Badge variant="default" className="bg-green-600">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Connected
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        {dbHealth.status === "error"
+                          ? "Error"
+                          : "Not Connected"}
+                      </Badge>
+                    )}
+                  </div>
+                  {dbHealth.message && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      {dbHealth.status === "error" && (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      {dbHealth.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Sentry Test Error Button */}
+                <div className="pt-2 border-t">
+                  <Button
+                    onClick={() => {
+                      throw new Error(
+                        "This is your test error - Sentry error tracking verification"
+                      );
+                    }}
+                    variant="destructive"
+                    className="w-full"
+                    size="sm"
+                  >
+                    <Bug className="w-4 h-4 mr-2" />
+                    Test Sentry Error
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Click to trigger a test error and verify Sentry is capturing
+                    errors correctly.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Last Edits Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>
+                Last edited people and recent changes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {peopleLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : stats.recentEdits.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>No recent edits found</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.recentEdits.map(person => (
+                    <div
+                      key={person.personId}
+                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">
+                            {person.name}
+                          </p>
+                          {person.primaryRole && (
+                            <Badge
+                              variant="secondary"
+                              className="h-5 text-xs shrink-0"
+                            >
+                              {person.primaryRole}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {person.primaryDistrictId && (
+                            <>
+                              <span className="truncate">
+                                {person.primaryDistrictId}
+                              </span>
+                              {person.primaryCampusId && <span>•</span>}
+                            </>
+                          )}
+                          {person.lastEditedBy && (
+                            <>
+                              <span>Edited by {person.lastEditedBy}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0 ml-4">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatTimeAgo(person.lastEdited)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* System Health Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="w-5 h-5" />
+                System Health
+              </CardTitle>
+              <CardDescription>
+                Overall application status and performance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="flex flex-col gap-2 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Database
+                    </span>
+                    {dbHealth.status === "connected" ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                    )}
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {dbHealth.status === "connected" ? "Healthy" : "Issues"}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Data Load
+                    </span>
+                    {!peopleLoading && !districtsLoading && !campusesLoading ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    ) : (
+                      <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="text-lg font-semibold">
+                    {!peopleLoading && !districtsLoading && !campusesLoading
+                      ? "Complete"
+                      : "Loading..."}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Response Time
+                    </span>
+                    <Activity className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <p className="text-lg font-semibold">Good</p>
+                </div>
+                <div className="flex flex-col gap-2 p-4 rounded-lg border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">
+                      Uptime
+                    </span>
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  </div>
+                  <p className="text-lg font-semibold">Operational</p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </TabsContent>
 
-        {/* Last Edits Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>
-              Last edited people and recent changes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {peopleLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : stats.recentEdits.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>No recent edits found</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {stats.recentEdits.map(person => (
-                  <div
-                    key={person.personId}
-                    className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">
-                          {person.name}
-                        </p>
-                        {person.primaryRole && (
-                          <Badge
-                            variant="secondary"
-                            className="h-5 text-xs shrink-0"
-                          >
-                            {person.primaryRole}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {person.primaryDistrictId && (
-                          <>
-                            <span className="truncate">
-                              {person.primaryDistrictId}
-                            </span>
-                            {person.primaryCampusId && <span>•</span>}
-                          </>
-                        )}
-                        {person.lastEditedBy && (
-                          <>
-                            <span>Edited by {person.lastEditedBy}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0 ml-4">
-                      <Clock className="w-3 h-3" />
-                      <span>{formatTimeAgo(person.lastEdited)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* System Health Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5" />
-              System Health
-            </CardTitle>
-            <CardDescription>
-              Overall application status and performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="flex flex-col gap-2 p-4 rounded-lg border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Database
-                  </span>
-                  {dbHealth.status === "connected" ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                  )}
-                </div>
-                <p className="text-lg font-semibold">
-                  {dbHealth.status === "connected" ? "Healthy" : "Issues"}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 p-4 rounded-lg border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Data Load
-                  </span>
-                  {!peopleLoading && !districtsLoading && !campusesLoading ? (
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
-                  ) : (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  )}
-                </div>
-                <p className="text-lg font-semibold">
-                  {!peopleLoading && !districtsLoading && !campusesLoading
-                    ? "Complete"
-                    : "Loading..."}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 p-4 rounded-lg border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Response Time
-                  </span>
-                  <Activity className="w-4 h-4 text-blue-600" />
-                </div>
-                <p className="text-lg font-semibold">Good</p>
-              </div>
-              <div className="flex flex-col gap-2 p-4 rounded-lg border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Uptime</span>
-                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                </div>
-                <p className="text-lg font-semibold">Operational</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="users">
+          <UserManagement />
+        </TabsContent>
+      </Tabs>
 
       {/* Import Modal */}
       <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />

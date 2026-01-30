@@ -92,7 +92,7 @@ export default function Needs() {
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please log in to view needs.</CardDescription>
+            <CardDescription>Please log in to view requests.</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -103,9 +103,9 @@ export default function Needs() {
     <div className="container max-w-6xl py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">District Needs</h1>
+          <h1 className="text-3xl font-bold">District Requests</h1>
           <p className="text-muted-foreground mt-1">
-            District-visible needs that can be mobilized by the community
+            District-visible requests that can be mobilized by the community
           </p>
         </div>
         <Button
@@ -122,12 +122,12 @@ export default function Needs() {
           <CardContent className="py-12 text-center">
             <Hand className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-lg font-medium text-gray-900 mb-2">
-              No district-visible needs
+              No district-visible requests
             </p>
             <p className="text-sm text-gray-500">
               {isLeader
-                ? "Create needs and set them to 'District Visible' to mobilize the community."
-                : "Check back later for needs that need community support."}
+                ? "Create requests and set them to 'District Visible' to mobilize the community."
+                : "Check back later for requests that need community support."}
             </p>
           </CardContent>
         </Card>

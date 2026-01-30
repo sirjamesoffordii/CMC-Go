@@ -625,7 +625,7 @@ export default function People() {
                         <Input
                           ref={searchInputRef}
                           type="text"
-                          placeholder="Search people by name, role, ID, or needs..."
+                          placeholder="Search people by name, role, ID, or requests..."
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                           className="pl-9 pr-9"
@@ -695,9 +695,11 @@ export default function People() {
               })}
             </div>
 
-            {/* Needs Filter */}
+            {/* Request Filter */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">Needs:</span>
+              <span className="text-sm text-gray-600 font-medium">
+                Request:
+              </span>
               <button
                 onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
                 className={`
@@ -709,14 +711,14 @@ export default function People() {
                   }
                 `}
               >
-                Has active needs
+                Has active requests
               </button>
             </div>
 
-            {/* Need Type Filter */}
+            {/* Request Type Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">
-                Need Type:
+                Request Type:
               </span>
               <select
                 value={needTypeFilter}
@@ -894,7 +896,7 @@ export default function People() {
                                                 ? "person"
                                                 : "people"}
                                               {campusNeeds.length > 0 &&
-                                                ` • ${campusNeeds.length} need${campusNeeds.length === 1 ? "" : "s"}`}
+                                                ` • ${campusNeeds.length} request${campusNeeds.length === 1 ? "" : "s"}`}
                                             </p>
                                           </div>
                                         </button>
@@ -1044,7 +1046,8 @@ export default function People() {
                                                   </span>
                                                   {personNeeds.length > 0 && (
                                                     <span className="text-xs text-yellow-600 font-medium">
-                                                      {personNeeds.length} need
+                                                      {personNeeds.length}{" "}
+                                                      request
                                                       {personNeeds.length === 1
                                                         ? ""
                                                         : "s"}
@@ -1111,7 +1114,7 @@ export default function People() {
                                             </span>
                                             {personNeeds.length > 0 && (
                                               <span className="text-xs text-yellow-600 font-medium">
-                                                {personNeeds.length} need
+                                                {personNeeds.length} request
                                                 {personNeeds.length === 1
                                                   ? ""
                                                   : "s"}

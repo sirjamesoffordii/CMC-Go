@@ -55,6 +55,7 @@ export function useAuth(options?: UseAuthOptions) {
           campusId: 0,
           districtId: null,
           regionId: null,
+          overseeRegionId: null, // For Regional Directors/Staff
           personId: "dev-person",
           personName: "Dev Person",
           approvalStatus: "ACTIVE",
@@ -68,6 +69,11 @@ export function useAuth(options?: UseAuthOptions) {
           campusName: null,
           districtName: null,
           regionName: null,
+          // Three-tier authorization system
+          scopeLevel: "NATIONAL" as const, // Dev user gets full national scope
+          viewLevel: "NATIONAL" as const, // Dev user can view everyone
+          editLevel: "NATIONAL" as const, // Dev user can edit everyone
+          isBanned: false,
         } as any)
       : null;
     return {

@@ -57,7 +57,9 @@ const baseUser = {
   fullName: "Test User",
 };
 
-const makeQuery = (overrides: Partial<UseQueryResult> = {}): UseQueryResult => ({
+const makeQuery = (
+  overrides: Partial<UseQueryResult> = {}
+): UseQueryResult => ({
   data: baseUser,
   isLoading: false,
   error: null,
