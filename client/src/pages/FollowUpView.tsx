@@ -13,6 +13,7 @@ export default function FollowUpView() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [showOnlyWithNeeds, setShowOnlyWithNeeds] = useState(false);
+  const [showOnlyDepositPaid, setShowOnlyDepositPaid] = useState(false);
 
   // Data queries
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -46,8 +47,12 @@ export default function FollowUpView() {
       });
     }
 
+    if (showOnlyDepositPaid) {
+      filtered = filtered.filter(p => p.depositPaid === true);
+    }
+
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [allPeople, showOnlyWithNeeds, needsByPersonId]);
+  }, [allPeople, showOnlyWithNeeds, showOnlyDepositPaid, needsByPersonId]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -95,19 +100,33 @@ export default function FollowUpView() {
           </p>
         </div>
 
-        {/* Filter */}
+        {/* Filters */}
         <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="showOnlyWithNeeds"
-              checked={showOnlyWithNeeds}
-              onCheckedChange={checked =>
-                setShowOnlyWithNeeds(checked === true)
-              }
-            />
-            <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
-              Show only people with active requests
-            </Label>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showOnlyWithNeeds"
+                checked={showOnlyWithNeeds}
+                onCheckedChange={checked =>
+                  setShowOnlyWithNeeds(checked === true)
+                }
+              />
+              <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
+                Show only people with active requests
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showOnlyDepositPaid"
+                checked={showOnlyDepositPaid}
+                onCheckedChange={checked =>
+                  setShowOnlyDepositPaid(checked === true)
+                }
+              />
+              <Label htmlFor="showOnlyDepositPaid" className="cursor-pointer">
+                Show only people with deposit paid
+              </Label>
+            </div>
           </div>
         </div>
 
