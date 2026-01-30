@@ -1150,16 +1150,6 @@ export default function Home() {
           className="flex-1 relative overflow-auto map-container-mobile"
           style={{ minWidth: 0 }}
         >
-          {/* View Mode Selector - fixed near XAN at bottom-right of screen */}
-          <div
-            className="fixed z-30"
-            style={{ right: "12%", bottom: "5%", margin: 0, padding: 0 }}
-          >
-            <ViewModeSelector
-              viewState={viewState}
-              onViewStateChange={handleViewStateChange}
-            />
-          </div>
           {/* Map with Overlay Metrics */}
           <div
             className="relative py-4"

@@ -5,7 +5,6 @@ import {
   Edit2,
   Check,
   Archive,
-  Hand,
   Trash2,
   Download,
   MoreVertical,
@@ -24,7 +23,14 @@ import { District, Campus, Person } from "../../../drizzle/schema";
 import { Button } from "./ui/button";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
-import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useLayoutEffect,
+  useCallback,
+} from "react";
 import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -131,6 +137,11 @@ export function DistrictPanel({
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
   );
+  const { data: publicCampusMetrics } =
+    trpc.metrics.campusesByDistrict.useQuery(
+      { districtId: districtId ?? "" },
+      { enabled: !!districtId && isPublicSafeMode }
+    );
   const { data: publicCampuses = [] } = trpc.campuses.byDistrict.useQuery(
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
@@ -140,6 +151,55 @@ export function DistrictPanel({
   const campusesForLayout: Campus[] = isPublicSafeMode
     ? (publicCampuses as Campus[])
     : campuses;
+
+  const publicCampusCountMap = useMemo(() => {
+    const map = new Map<number, number>();
+    (publicCampusMetrics?.campuses ?? []).forEach(entry => {
+      map.set(entry.campusId, entry.total);
+    });
+    return map;
+  }, [publicCampusMetrics?.campuses]);
+
+  const publicUnassignedCount = publicCampusMetrics?.unassigned ?? 0;
+
+  const buildPublicPlaceholderPeople = useCallback(
+    (count: number, campusId: number | null) => {
+      if (count <= 0) return [];
+      return Array.from({ length: count }).map((_, index) => {
+        const suffix = campusId ?? "unassigned";
+        return {
+          id: -1 * (Number(campusId ?? 0) * 100000 + index + 1),
+          personId: `public-${districtId ?? "district"}-${suffix}-${index + 1}`,
+          name: "Hidden",
+          primaryRole: null,
+          primaryCampusId: campusId,
+          primaryDistrictId: districtId,
+          primaryRegion: district?.region ?? null,
+          nationalCategory: null,
+          status: "Not Invited",
+          depositPaid: false,
+          deposit_paid_at: null,
+          statusLastUpdated: null,
+          statusLastUpdatedBy: null,
+          householdId: null,
+          householdRole: "primary",
+          needs: null,
+          notes: null,
+          spouse: null,
+          kids: null,
+          guests: null,
+          spouseAttending: false,
+          childrenCount: 0,
+          guestsCount: 0,
+          childrenAges: null,
+          lastEdited: null,
+          lastEditedBy: null,
+          createdAt: new Date(0),
+        } as Person;
+      });
+    },
+    [district?.region, districtId]
+  );
 
   // PR 5: Filter state
   const [statusFilter, setStatusFilter] = useState<
@@ -831,11 +891,14 @@ export function DistrictPanel({
     user?.campusId,
   ]);
 
-  const districtLevelPeople = filteredPeople.filter(
-    p => p.primaryCampusId == null
-  );
+  const districtLevelPeople = isPublicSafeMode
+    ? buildPublicPlaceholderPeople(publicUnassignedCount, null)
+    : filteredPeople.filter(p => p.primaryCampusId == null);
 
   const unassignedPeople = useMemo(() => {
+    if (isPublicSafeMode) {
+      return buildPublicPlaceholderPeople(publicUnassignedCount, null);
+    }
     const excludedPersonIds = new Set<string>();
     if (districtDirector?.personId) {
       excludedPersonIds.add(districtDirector.personId);
@@ -847,7 +910,14 @@ export function DistrictPanel({
     return filteredPeople.filter(
       p => p.primaryCampusId == null && !excludedPersonIds.has(p.personId)
     );
-  }, [filteredPeople, districtDirector?.personId, districtStaff?.personId]);
+  }, [
+    buildPublicPlaceholderPeople,
+    filteredPeople,
+    districtDirector?.personId,
+    districtStaff?.personId,
+    isPublicSafeMode,
+    publicUnassignedCount,
+  ]);
 
   const sortedUnassignedPeople = useMemo(() => {
     const statusOrder: Record<Person["status"], number> = {
@@ -919,9 +989,21 @@ export function DistrictPanel({
 
     return ordered.map(campus => ({
       ...campus,
-      people: filteredPeople.filter(p => p.primaryCampusId === campus.id),
+      people: isPublicSafeMode
+        ? buildPublicPlaceholderPeople(
+            publicCampusCountMap.get(campus.id) ?? 0,
+            campus.id
+          )
+        : filteredPeople.filter(p => p.primaryCampusId === campus.id),
     }));
-  }, [campusesForLayout, campusOrder, filteredPeople]);
+  }, [
+    buildPublicPlaceholderPeople,
+    campusesForLayout,
+    campusOrder,
+    filteredPeople,
+    isPublicSafeMode,
+    publicCampusCountMap,
+  ]);
 
   // Calculate dynamic offsets for pie chart and labels (after campusesWithPeople is defined)
   useLayoutEffect(() => {
@@ -2101,15 +2183,6 @@ export function DistrictPanel({
       return;
     }
 
-    // Handle moving to unassigned
-    if (targetCampusId === "unassigned") {
-      updatePerson.mutate({
-        personId: person.personId,
-        primaryCampusId: null,
-      });
-      return;
-    }
-
     // Handle moving to a campus
     if (typeof targetCampusId === "number") {
       updatePerson.mutate({
@@ -2270,24 +2343,6 @@ export function DistrictPanel({
                   canInteract={canInteract}
                   maskIdentity={isPublicSafeMode}
                 />
-
-                {isPublicSafeMode && districtLevelPeople.length > 0 && (
-                  <div className="flex flex-wrap gap-1 ml-2">
-                    {districtLevelPeople.map(p => (
-                      <DroppablePerson
-                        key={p.id}
-                        person={p}
-                        campusId={-1}
-                        index={0}
-                        onEdit={() => {}}
-                        onMove={() => {}}
-                        onClick={() => {}}
-                        canInteract={false}
-                        maskIdentity
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -2307,53 +2362,30 @@ export function DistrictPanel({
               </Button>
             )}
 
-            {/* Right side: Needs Summary - aligned above Maybe metric */}
-            <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
-              <Hand className="w-6 h-6 text-yellow-600" />
-              <div className="flex items-center gap-3">
+            {/* Right side: Needs Summary - only shown when authenticated (needs data requires auth) */}
+            {isAuthenticated && (
+              <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <span className="text-slate-600 text-base">Needs:</span>
-                  <span className="font-semibold text-slate-900 text-base tabular-nums">
-                    {needsSummary.totalNeeds}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-600 text-base">Total:</span>
-                  <span className="font-semibold text-slate-900 text-base tabular-nums">
-                    $
-                    {(needsSummary.totalFinancial / 100).toLocaleString(
-                      "en-US",
-                      { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                    )}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-600 text-base">Needs:</span>
+                    <span className="font-semibold text-slate-900 text-base tabular-nums">
+                      {needsSummary.totalNeeds}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-slate-600 text-base">Total:</span>
+                    <span className="font-semibold text-slate-900 text-base tabular-nums">
+                      $
+                      {(needsSummary.totalFinancial / 100).toLocaleString(
+                        "en-US",
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
-
-          {isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0 && (
-            <div className="mt-3">
-              <div className="text-slate-600 text-sm font-semibold mb-2">
-                People
-              </div>
-              <div className="flex items-center gap-1 flex-wrap">
-                {Array.from({
-                  length: Math.min(publicDistrictMetrics?.total ?? 0, 24),
-                }).map((_, idx) => (
-                  <User
-                    key={`presence-${idx}`}
-                    className="w-5 h-5 text-zinc-400"
-                    strokeWidth={1.5}
-                  />
-                ))}
-                {(publicDistrictMetrics?.total ?? 0) > 24 && (
-                  <span className="text-slate-500 text-sm font-medium ml-2">
-                    +{(publicDistrictMetrics?.total ?? 0) - 24}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Stats Section - Left aligned */}
           <div
@@ -2717,183 +2749,189 @@ export function DistrictPanel({
                               );
                             })}
 
-                            {/* Add Person Tile */}
-                            <PersonDropZone
-                              campusId={campus.id}
-                              index={sortedPeople.length}
-                              onDrop={handlePersonMove}
-                              canInteract={canInteract}
-                            >
-                              <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
-                                <button
-                                  type="button"
-                                  disabled={disableEdits}
-                                  aria-label={`Add person to ${campus.name}`}
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (disableEdits) return;
-                                    openAddPersonDialog(campus.id);
-                                  }}
-                                  className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                            {canInteract && (
+                              <>
+                                {/* Add Person Tile */}
+                                <PersonDropZone
+                                  campusId={campus.id}
+                                  index={sortedPeople.length}
+                                  onDrop={handlePersonMove}
+                                  canInteract={canInteract}
                                 >
-                                  {/* Plus sign in name position - clickable for quick add */}
-                                  <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
-                                    {quickAddMode === `campus-${campus.id}` ? (
-                                      <div className="relative">
-                                        <Input
-                                          ref={quickAddInputRef}
-                                          list="quick-add-name-suggestions"
-                                          value={quickAddName}
-                                          onChange={e =>
-                                            setQuickAddName(e.target.value)
-                                          }
-                                          onKeyDown={e => {
-                                            if (e.key === "Enter") {
-                                              handleQuickAddSubmit(
-                                                `campus-${campus.id}`
-                                              );
-                                            } else if (e.key === "Escape") {
-                                              setQuickAddMode(null);
-                                              setQuickAddName("");
-                                            }
-                                          }}
-                                          onBlur={() => {
-                                            handleQuickAddSubmit(
-                                              `campus-${campus.id}`
-                                            );
-                                          }}
-                                          placeholder="Name"
-                                          className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                          autoFocus
-                                          spellCheck={true}
-                                          autoComplete="name"
-                                        />
-                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                          Quick Add
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <Plus
-                                        className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
-                                        strokeWidth={1.5}
-                                        onClick={e =>
-                                          handleQuickAddClick(e, campus.id)
-                                        }
-                                      />
-                                    )}
-                                  </div>
-                                  {/* Icon - solid */}
-                                  <div className="relative">
-                                    <User
-                                      className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
-                                      strokeWidth={1.5}
-                                      fill="currentColor"
-                                    />
-                                  </div>
-                                </button>
-                                {/* Label - shown on hover */}
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                                  Add
-                                </div>
-                              </div>
-                            </PersonDropZone>
-
-                            {/* Add Person Button */}
-                            <PersonDropZone
-                              campusId={campus.id}
-                              index={sortedPeople.length}
-                              onDrop={handlePersonMove}
-                              canInteract={canInteract}
-                            >
-                              <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
-                                <button
-                                  type="button"
-                                  disabled={disableEdits}
-                                  onClick={e => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (disableEdits) return;
-                                    openAddPersonDialog(campus.id);
-                                  }}
-                                  className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
-                                >
-                                  {/* Plus sign in name position - clickable for quick add */}
-                                  <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
-                                    {quickAddMode === `campus-${campus.id}` ? (
-                                      <div className="relative">
-                                        <Input
-                                          ref={quickAddInputRef}
-                                          value={quickAddName}
-                                          onChange={e =>
-                                            setQuickAddName(e.target.value)
-                                          }
-                                          onKeyDown={e => {
-                                            if (e.key === "Enter") {
-                                              handleQuickAddSubmit(
-                                                `campus-${campus.id}`
-                                              );
-                                            } else if (e.key === "Escape") {
-                                              setQuickAddMode(null);
-                                              setQuickAddName("");
-                                            }
-                                          }}
-                                          onBlur={() => {
-                                            handleQuickAddSubmit(
-                                              `campus-${campus.id}`
-                                            );
-                                          }}
-                                          placeholder="Name"
-                                          className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                          autoFocus
-                                          spellCheck={true}
-                                          autoComplete="name"
-                                        />
-                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                          Quick Add
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <Plus
-                                        className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
-                                        strokeWidth={1.5}
-                                        onClick={e =>
-                                          handleQuickAddClick(e, campus.id)
-                                        }
-                                      />
-                                    )}
-                                  </div>
-                                  {/* Icon */}
-                                  <div className="relative">
-                                    <User
-                                      className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
-                                      strokeWidth={1.5}
-                                      fill="none"
-                                      stroke="currentColor"
-                                    />
-                                    <User
-                                      className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
-                                      strokeWidth={1.5}
-                                      fill="none"
-                                      stroke="currentColor"
-                                    />
-                                    <User
-                                      className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
-                                      strokeWidth={0}
-                                      fill="currentColor"
-                                      style={{
-                                        filter:
-                                          "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
+                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                                    <button
+                                      type="button"
+                                      disabled={disableEdits}
+                                      aria-label={`Add person to ${campus.name}`}
+                                      onClick={e => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (disableEdits) return;
+                                        openAddPersonDialog(campus.id);
                                       }}
-                                    />
+                                      className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                                    >
+                                      {/* Plus sign in name position - clickable for quick add */}
+                                      <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                        {quickAddMode ===
+                                        `campus-${campus.id}` ? (
+                                          <div className="relative">
+                                            <Input
+                                              ref={quickAddInputRef}
+                                              list="quick-add-name-suggestions"
+                                              value={quickAddName}
+                                              onChange={e =>
+                                                setQuickAddName(e.target.value)
+                                              }
+                                              onKeyDown={e => {
+                                                if (e.key === "Enter") {
+                                                  handleQuickAddSubmit(
+                                                    `campus-${campus.id}`
+                                                  );
+                                                } else if (e.key === "Escape") {
+                                                  setQuickAddMode(null);
+                                                  setQuickAddName("");
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                handleQuickAddSubmit(
+                                                  `campus-${campus.id}`
+                                                );
+                                              }}
+                                              placeholder="Name"
+                                              className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                              autoFocus
+                                              spellCheck={true}
+                                              autoComplete="name"
+                                            />
+                                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                              Quick Add
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <Plus
+                                            className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
+                                            strokeWidth={1.5}
+                                            onClick={e =>
+                                              handleQuickAddClick(e, campus.id)
+                                            }
+                                          />
+                                        )}
+                                      </div>
+                                      {/* Icon - solid */}
+                                      <div className="relative">
+                                        <User
+                                          className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                                          strokeWidth={1.5}
+                                          fill="currentColor"
+                                        />
+                                      </div>
+                                    </button>
+                                    {/* Label - shown on hover */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                      Add
+                                    </div>
                                   </div>
-                                </button>
-                                {/* Label - Absolutely positioned, shown on hover */}
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                                  Add
-                                </div>
-                              </div>
-                            </PersonDropZone>
+                                </PersonDropZone>
+
+                                {/* Add Person Button */}
+                                <PersonDropZone
+                                  campusId={campus.id}
+                                  index={sortedPeople.length}
+                                  onDrop={handlePersonMove}
+                                  canInteract={canInteract}
+                                >
+                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                                    <button
+                                      type="button"
+                                      disabled={disableEdits}
+                                      onClick={e => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (disableEdits) return;
+                                        openAddPersonDialog(campus.id);
+                                      }}
+                                      className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                                    >
+                                      {/* Plus sign in name position - clickable for quick add */}
+                                      <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
+                                        {quickAddMode ===
+                                        `campus-${campus.id}` ? (
+                                          <div className="relative">
+                                            <Input
+                                              ref={quickAddInputRef}
+                                              value={quickAddName}
+                                              onChange={e =>
+                                                setQuickAddName(e.target.value)
+                                              }
+                                              onKeyDown={e => {
+                                                if (e.key === "Enter") {
+                                                  handleQuickAddSubmit(
+                                                    `campus-${campus.id}`
+                                                  );
+                                                } else if (e.key === "Escape") {
+                                                  setQuickAddMode(null);
+                                                  setQuickAddName("");
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                handleQuickAddSubmit(
+                                                  `campus-${campus.id}`
+                                                );
+                                              }}
+                                              placeholder="Name"
+                                              className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                              autoFocus
+                                              spellCheck={true}
+                                              autoComplete="name"
+                                            />
+                                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
+                                              Quick Add
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <Plus
+                                            className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
+                                            strokeWidth={1.5}
+                                            onClick={e =>
+                                              handleQuickAddClick(e, campus.id)
+                                            }
+                                          />
+                                        )}
+                                      </div>
+                                      {/* Icon */}
+                                      <div className="relative">
+                                        <User
+                                          className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                                          strokeWidth={1.5}
+                                          fill="none"
+                                          stroke="currentColor"
+                                        />
+                                        <User
+                                          className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                                          strokeWidth={1.5}
+                                          fill="none"
+                                          stroke="currentColor"
+                                        />
+                                        <User
+                                          className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                                          strokeWidth={0}
+                                          fill="currentColor"
+                                          style={{
+                                            filter:
+                                              "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
+                                          }}
+                                        />
+                                      </div>
+                                    </button>
+                                    {/* Label - Absolutely positioned, shown on hover */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                      Add
+                                    </div>
+                                  </div>
+                                </PersonDropZone>
+                              </>
+                            )}
                           </div>
                         </CampusDropZone>
                       </div>
@@ -2902,56 +2940,6 @@ export function DistrictPanel({
                 </div>
               );
             })}
-
-            {!isPublicSafeMode && sortedUnassignedPeople.length > 0 && (
-              <div className="flex items-center gap-4 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
-                <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
-                  <h3 className="font-medium text-slate-900 break-words text-xl">
-                    No Campus Assigned
-                  </h3>
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <CampusDropZone
-                    campusId="unassigned"
-                    onDrop={handleCampusRowDrop}
-                    canInteract={canInteract}
-                  >
-                    <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
-                      {sortedUnassignedPeople.map((person, index) => (
-                        <PersonDropZone
-                          key={`unassigned-dropzone-${person.personId}`}
-                          campusId="unassigned"
-                          index={index}
-                          onDrop={handlePersonMove}
-                          canInteract={canInteract}
-                        >
-                          <DroppablePerson
-                            key={person.personId}
-                            person={person}
-                            campusId="unassigned"
-                            index={index}
-                            onEdit={handleEditPerson}
-                            onClick={handlePersonClick}
-                            onMove={handlePersonMove}
-                            hasNeeds={
-                              (
-                                person as Person & {
-                                  hasNeeds?: boolean;
-                                }
-                              ).hasNeeds
-                            }
-                            onPersonStatusChange={onPersonStatusChange}
-                            canInteract={canInteract}
-                            maskIdentity={isPublicSafeMode}
-                          />
-                        </PersonDropZone>
-                      ))}
-                    </div>
-                  </CampusDropZone>
-                </div>
-              </div>
-            )}
 
             {/* Add {entityName} (Inline) - Only when canInteract */}
             {canInteract && (
@@ -3016,43 +3004,6 @@ export function DistrictPanel({
                 )}
               </div>
             )}
-
-            {/* Unassigned Row - show presence in public-safe mode */}
-            {isPublicSafeMode && (publicDistrictMetrics?.total ?? 0) > 0 && (
-              <div className="flex items-center gap-4 py-0.5 border-b last:border-b-0 group relative">
-                {/* Unassigned Label */}
-                <div className="w-72 flex-shrink-0 flex items-center gap-2 -ml-2">
-                  <h3 className="font-medium text-slate-500 italic text-xl">
-                    Unassigned
-                  </h3>
-                </div>
-
-                {/* Person Figures */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 min-h-[70px] min-w-max -ml-16 pr-4">
-                    {Array.from({
-                      length: Math.min(publicDistrictMetrics?.total ?? 0, 24),
-                    }).map((_, idx) => (
-                      <div
-                        key={`presence-${idx}`}
-                        className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0"
-                      >
-                        <div className="mb-1 h-4 w-full" />
-                        <User
-                          className="w-10 h-10 text-zinc-400"
-                          strokeWidth={1.5}
-                        />
-                      </div>
-                    ))}
-                    {(publicDistrictMetrics?.total ?? 0) > 24 && (
-                      <div className="text-sm text-slate-500 font-medium ml-2">
-                        +{(publicDistrictMetrics?.total ?? 0) - 24}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -3066,7 +3017,7 @@ export function DistrictPanel({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="w-full h-full flex flex-col"
+      className={`w-full h-full flex flex-col ${!canInteract ? "cursor-not-allowed" : ""}`}
     >
       {content}
     </motion.div>

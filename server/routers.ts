@@ -16,6 +16,91 @@ import {
   canApproveDistrictDirector,
   canApproveRegionDirector,
 } from "./_core/authorization";
+import { hashPassword, verifyPassword } from "./_core/password";
+
+/**
+ * Get default authorization levels based on role
+ * Phase 2: Authorization matrix from design spec
+ */
+function getDefaultAuthorization(role: string) {
+  switch (role) {
+    case "NATIONAL_DIRECTOR":
+    case "FIELD_DIRECTOR":
+    case "CMC_GO_ADMIN":
+      return {
+        scopeLevel: "NATIONAL" as const,
+        viewLevel: "NATIONAL" as const,
+        editLevel: "NATIONAL" as const,
+      };
+
+    case "NATIONAL_STAFF":
+      return {
+        scopeLevel: "NATIONAL" as const,
+        viewLevel: "NATIONAL" as const,
+        editLevel: "XAN" as const, // Can only edit XAN panel members
+      };
+
+    case "REGION_DIRECTOR":
+    case "REGIONAL_STAFF":
+      return {
+        scopeLevel: "REGION" as const,
+        viewLevel: "NATIONAL" as const,
+        editLevel: "REGION" as const,
+      };
+
+    case "DISTRICT_DIRECTOR":
+    case "DISTRICT_STAFF":
+      return {
+        scopeLevel: "REGION" as const,
+        viewLevel: "REGION" as const,
+        editLevel: "DISTRICT" as const,
+      };
+
+    case "CAMPUS_DIRECTOR":
+    case "CO_DIRECTOR":
+      return {
+        scopeLevel: "REGION" as const,
+        viewLevel: "DISTRICT" as const,
+        editLevel: "CAMPUS" as const,
+      };
+
+    default: // STAFF and below
+      return {
+        scopeLevel: "REGION" as const,
+        viewLevel: "CAMPUS" as const,
+        editLevel: "CAMPUS" as const,
+      };
+  }
+}
+
+// Roles available for registration (excludes CMC_GO_ADMIN which is pre-seeded)
+const REGISTERABLE_ROLES = [
+  "STAFF",
+  "CO_DIRECTOR",
+  "CAMPUS_DIRECTOR",
+  "DISTRICT_DIRECTOR",
+  "DISTRICT_STAFF",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+] as const;
+
+// National Team roles (for registration flow - no campus required)
+const NATIONAL_TEAM_ROLES = [
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+] as const;
+
+// Roles that require overseeRegionId
+const ROLES_REQUIRING_OVERSEE_REGION = [
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+] as const;
 
 export const appRouter = router({
   system: systemRouter,
@@ -51,7 +136,194 @@ export const appRouter = router({
         return { exists: Boolean(existing) } as const;
       }),
 
-    // PR 2: Start registration/login
+    // Password-based login
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(1),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const user = await db.getUserByEmail(input.email);
+
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid email or password",
+          });
+        }
+
+        // Check if user is banned
+        if (user.isBanned) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Your account has been suspended",
+          });
+        }
+
+        const isValid = await verifyPassword(input.password, user.passwordHash);
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid email or password",
+          });
+        }
+
+        await db.updateUserLastLoginAt(user.id);
+        setSessionCookie(ctx.req, ctx.res, user.id);
+
+        const campus = user.campusId
+          ? await db.getCampusById(user.campusId)
+          : null;
+        const district = user.districtId
+          ? await db.getDistrictById(user.districtId)
+          : null;
+
+        return {
+          success: true,
+          user: {
+            ...user,
+            campusName: campus?.name || null,
+            districtName: district?.name || null,
+            regionName: user.regionId || null,
+          },
+        };
+      }),
+
+    // Password-based registration
+    register: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          password: z.string().min(8),
+          fullName: z.string().min(1),
+          role: z.enum(REGISTERABLE_ROLES),
+          // For campus-based roles
+          campusId: z.number().optional(),
+          // For Regional Directors/Staff - which region they oversee
+          overseeRegionId: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // Check if user already exists
+        const existingUser = await db.getUserByEmail(input.email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "An account with this email already exists",
+          });
+        }
+
+        const isNationalTeamRole = (
+          NATIONAL_TEAM_ROLES as readonly string[]
+        ).includes(input.role);
+        const requiresOverseeRegion = (
+          ROLES_REQUIRING_OVERSEE_REGION as readonly string[]
+        ).includes(input.role);
+
+        // Validate based on role type
+        if (isNationalTeamRole) {
+          // National team members don't need campus
+          if (requiresOverseeRegion && !input.overseeRegionId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Regional Directors and Regional Staff must specify which region they oversee",
+            });
+          }
+        } else {
+          // Campus-based roles need campus
+          if (!input.campusId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Campus is required for this role",
+            });
+          }
+        }
+
+        // Get campus/district/region info if campus-based
+        let campusId: number | null = null;
+        let districtId: string | null = null;
+        let regionId: string | null = null;
+
+        if (input.campusId) {
+          const campus = await db.getCampusById(input.campusId);
+          if (!campus) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Campus not found",
+            });
+          }
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "District not found",
+            });
+          }
+          campusId = campus.id;
+          districtId = campus.districtId;
+          regionId = district.region;
+        }
+
+        // For regional roles, set their oversee region
+        const overseeRegionId = requiresOverseeRegion
+          ? input.overseeRegionId || null
+          : null;
+
+        // Hash password
+        const passwordHash = await hashPassword(input.password);
+
+        // Get default authorization levels
+        const authLevels = getDefaultAuthorization(input.role);
+
+        // Create user
+        const userId = await db.createUser({
+          fullName: input.fullName,
+          email: input.email,
+          passwordHash,
+          role: input.role,
+          campusId,
+          districtId,
+          regionId,
+          overseeRegionId,
+          ...authLevels,
+          approvalStatus: "ACTIVE", // Auto-approve for now
+        });
+
+        const user = await db.getUserById(userId);
+        if (!user) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create user",
+          });
+        }
+
+        // Set session
+        await db.updateUserLastLoginAt(user.id);
+        setSessionCookie(ctx.req, ctx.res, user.id);
+
+        // Get names for response
+        const campus = user.campusId
+          ? await db.getCampusById(user.campusId)
+          : null;
+        const district = user.districtId
+          ? await db.getDistrictById(user.districtId)
+          : null;
+
+        return {
+          success: true,
+          user: {
+            ...user,
+            campusName: campus?.name || null,
+            districtName: district?.name || null,
+            regionName: user.regionId || null,
+          },
+        };
+      }),
+
+    // Legacy: Start registration/login (kept for backward compatibility)
     start: publicProcedure
       .input(
         z.object({
@@ -274,6 +546,96 @@ export const appRouter = router({
       return {
         success: true,
       } as const;
+    }),
+  }),
+
+  // Admin router - User management endpoints
+  admin: router({
+    users: router({
+      // List all users with joined names
+      list: adminProcedure.query(async () => {
+        const users = await db.getAllUsers();
+        return users.map(user => ({
+          ...user,
+          isActiveSession:
+            user.lastLoginAt &&
+            new Date(user.lastLoginAt).getTime() > Date.now() - 30 * 60 * 1000,
+        }));
+      }),
+
+      // Update user role
+      updateRole: adminProcedure
+        .input(
+          z.object({
+            userId: z.number(),
+            role: z.enum([
+              "STAFF",
+              "CO_DIRECTOR",
+              "CAMPUS_DIRECTOR",
+              "DISTRICT_DIRECTOR",
+              "DISTRICT_STAFF",
+              "REGION_DIRECTOR",
+              "REGIONAL_STAFF",
+              "NATIONAL_STAFF",
+              "NATIONAL_DIRECTOR",
+              "FIELD_DIRECTOR",
+              "CMC_GO_ADMIN",
+              "ADMIN",
+            ]),
+          })
+        )
+        .mutation(async ({ input }) => {
+          await db.updateUserRole(input.userId, input.role);
+          return { success: true };
+        }),
+
+      // Update user approval status
+      updateStatus: adminProcedure
+        .input(
+          z.object({
+            userId: z.number(),
+            approvalStatus: z.enum(["ACTIVE", "DISABLED"]),
+          })
+        )
+        .mutation(async ({ input }) => {
+          await db.updateUserApprovalStatus(input.userId, input.approvalStatus);
+          return { success: true };
+        }),
+
+      // Update authorization levels (scope, view, edit)
+      updateAuthLevels: adminProcedure
+        .input(
+          z.object({
+            userId: z.number(),
+            scopeLevel: z.enum(["NATIONAL", "REGION", "DISTRICT"]).optional(),
+            viewLevel: z
+              .enum(["NATIONAL", "REGION", "DISTRICT", "CAMPUS"])
+              .optional(),
+            editLevel: z
+              .enum(["NATIONAL", "XAN", "REGION", "DISTRICT", "CAMPUS"])
+              .optional(),
+          })
+        )
+        .mutation(async ({ input }) => {
+          const { userId, ...levels } = input;
+          await db.updateUserAuthLevels(userId, levels);
+          return { success: true };
+        }),
+
+      // Delete user
+      delete: adminProcedure
+        .input(z.object({ userId: z.number() }))
+        .mutation(async ({ input }) => {
+          await db.deleteUser(input.userId);
+          return { success: true };
+        }),
+    }),
+
+    sessions: router({
+      // List active sessions (users logged in within threshold)
+      listActive: adminProcedure.query(async () => {
+        return await db.getActiveSessions(30); // 30 minute threshold
+      }),
     }),
   }),
 
@@ -1299,7 +1661,7 @@ export const appRouter = router({
           rows: z.array(
             z.object({
               name: z.string(),
-              campus: z.string().optional(),
+              campus: z.string().optional(), // Optional for leadership roles (DD, DS, RD, etc.)
               district: z.string().optional(),
               role: z.string().optional(),
               status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
@@ -1929,6 +2291,11 @@ export const appRouter = router({
       .input(z.object({ districtId: z.string() }))
       .query(async ({ input }) => {
         return await db.getDistrictMetrics(input.districtId);
+      }),
+    campusesByDistrict: publicProcedure
+      .input(z.object({ districtId: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getCampusMetricsByDistrict(input.districtId);
       }),
     allDistricts: publicProcedure.query(async () => {
       // Public aggregate endpoint - everyone can see district counts

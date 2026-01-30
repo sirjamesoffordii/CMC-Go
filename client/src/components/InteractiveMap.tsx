@@ -1430,60 +1430,6 @@ export function InteractiveMap({
             "drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))",
         }}
       >
-        {/* Not Yet Invited Count */}
-        <div
-          className="absolute left-6 z-40 flex flex-col gap-1"
-          style={{ top: "16px" }}
-        >
-          <div className="flex items-center gap-3">
-            {/* Not Invited Toggle */}
-            <button
-              onClick={() => toggleMetric("notInvited")}
-              className="flex items-center transition-all duration-200 hover:scale-110"
-            >
-              <div
-                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 ${
-                  activeMetrics.has("notInvited")
-                    ? "bg-slate-500 border-slate-500"
-                    : "border-slate-300 hover:border-slate-400 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("notInvited")
-                    ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-                {activeMetrics.has("notInvited") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
-            <div className="flex flex-col items-start transition-transform duration-200 hover:scale-105 origin-left">
-              <span className="text-4xl text-slate-800">
-                <span className="font-semibold">
-                  {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
-                </span>{" "}
-                <span className="font-medium">Not Invited Yet</span>
-              </span>
-              <span className="text-base text-slate-500 font-normal mt-0.5 ml-1">
-                /{showPublicPlaceholder ? "—" : displayedTotals.total}
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Top Right Content - Right Aligned */}
         <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2">
           {/* Label above metrics - right aligned */}
@@ -1658,6 +1604,64 @@ export function InteractiveMap({
                 }}
               >
                 {activeMetrics.has("no") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </button>
+
+            {/* Not Invited Yet */}
+            <button
+              onClick={() => toggleMetric("notInvited")}
+              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+              style={{
+                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+              }}
+            >
+              <span
+                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "6.5rem",
+                  textAlign: "right",
+                }}
+              >
+                Not Invited Yet
+              </span>
+              <span
+                className="text-2xl font-semibold text-slate-900 tracking-tight"
+                style={{
+                  lineHeight: "1",
+                  minWidth: "4rem",
+                  textAlign: "center",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+              </span>
+              <div
+                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                  activeMetrics.has("notInvited")
+                    ? "bg-slate-500 border-slate-500"
+                    : "border-slate-300 hover:border-slate-400 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("notInvited")
+                    ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)",
+                }}
+              >
+                {activeMetrics.has("notInvited") && (
                   <svg
                     className="w-full h-full text-white"
                     fill="none"

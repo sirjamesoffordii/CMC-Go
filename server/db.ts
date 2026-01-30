@@ -1,4 +1,4 @@
-import { eq, and, or, sql } from "drizzle-orm";
+import { eq, and, or, sql, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import {
@@ -176,6 +176,117 @@ export async function updateUserPersonId(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ personId }).where(eq(users.id, userId));
+}
+
+// Admin: Get all users with joined names
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: users.id,
+      fullName: users.fullName,
+      email: users.email,
+      role: users.role,
+      campusId: users.campusId,
+      districtId: users.districtId,
+      regionId: users.regionId,
+      overseeRegionId: users.overseeRegionId,
+      scopeLevel: users.scopeLevel,
+      viewLevel: users.viewLevel,
+      editLevel: users.editLevel,
+      approvalStatus: users.approvalStatus,
+      lastLoginAt: users.lastLoginAt,
+      createdAt: users.createdAt,
+      isBanned: users.isBanned,
+      // Join names
+      campusName: campuses.name,
+      districtName: districts.name,
+      regionName: users.regionId,
+    })
+    .from(users)
+    .leftJoin(campuses, eq(users.campusId, campuses.id))
+    .leftJoin(districts, eq(users.districtId, districts.id))
+    .orderBy(users.fullName);
+
+  return result;
+}
+
+// Admin: Update user role
+export async function updateUserRole(userId: number, role: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(users)
+    .set({ role: role as any })
+    .where(eq(users.id, userId));
+}
+
+// Admin: Update user approval status
+export async function updateUserApprovalStatus(
+  userId: number,
+  approvalStatus: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(users)
+    .set({ approvalStatus: approvalStatus as any })
+    .where(eq(users.id, userId));
+}
+
+// Admin: Update user authorization levels
+export async function updateUserAuthLevels(
+  userId: number,
+  levels: {
+    scopeLevel?: string;
+    viewLevel?: string;
+    editLevel?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updateData: any = {};
+  if (levels.scopeLevel) updateData.scopeLevel = levels.scopeLevel;
+  if (levels.viewLevel) updateData.viewLevel = levels.viewLevel;
+  if (levels.editLevel) updateData.editLevel = levels.editLevel;
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update(users).set(updateData).where(eq(users.id, userId));
+  }
+}
+
+// Admin: Delete user
+export async function deleteUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(users).where(eq(users.id, userId));
+}
+
+// Admin: Get active sessions (users with recent lastLoginAt)
+export async function getActiveSessions(thresholdMinutes: number = 30) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const threshold = new Date(Date.now() - thresholdMinutes * 60 * 1000);
+
+  const result = await db
+    .select({
+      id: users.id,
+      lastSeenAt: users.lastLoginAt,
+      user: {
+        fullName: users.fullName,
+        email: users.email,
+        role: users.role,
+      },
+    })
+    .from(users)
+    .where(sql`${users.lastLoginAt} >= ${threshold}`)
+    .orderBy(sql`${users.lastLoginAt} DESC`);
+
+  return result;
 }
 
 export async function searchPeopleByNameInScope(
@@ -1070,6 +1181,39 @@ export async function getDistrictMetrics(districtId: string) {
   return { ...counts, total };
 }
 
+export async function getCampusMetricsByDistrict(districtId: string) {
+  const db = await getDb();
+  if (!db) return { campuses: [], unassigned: 0 };
+
+  const campusCounts = await db
+    .select({
+      campusId: campuses.id,
+      total: sql<number>`COUNT(${people.id})`,
+    })
+    .from(campuses)
+    .leftJoin(people, eq(people.primaryCampusId, campuses.id))
+    .where(eq(campuses.districtId, districtId))
+    .groupBy(campuses.id);
+
+  const unassignedResult = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(people)
+    .where(
+      and(
+        eq(people.primaryDistrictId, districtId),
+        isNull(people.primaryCampusId)
+      )
+    );
+
+  return {
+    campuses: campusCounts.map(row => ({
+      campusId: row.campusId,
+      total: Number(row.total) || 0,
+    })),
+    unassigned: Number(unassignedResult[0]?.count) || 0,
+  };
+}
+
 export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
@@ -1620,6 +1764,20 @@ export async function getFollowUpPeople() {
 // IMPORT PEOPLE
 // ============================================================================
 
+// Leadership roles that don't require a campus (N/A for campus)
+// These roles belong to a district, region, or national level
+const LEADERSHIP_ROLES_NO_CAMPUS = [
+  "DISTRICT_DIRECTOR",
+  "DISTRICT_STAFF",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "CMC_GO_ADMIN",
+  "ADMIN",
+] as const;
+
 export async function importPeople(
   rows: Array<{
     name: string;
@@ -1637,11 +1795,68 @@ export async function importPeople(
   let skipped = 0;
   const errors: string[] = [];
 
-  // Load all campuses once at the start for efficiency
+  // Load all campuses and districts once at the start for efficiency
   const allCampuses = await getAllCampuses();
+  const allDistricts = await getAllDistricts();
 
   for (const row of rows) {
     try {
+      const normalizedRole = row.role?.toUpperCase().replace(/\s+/g, "_");
+      const isLeadershipRole = LEADERSHIP_ROLES_NO_CAMPUS.includes(
+        normalizedRole as (typeof LEADERSHIP_ROLES_NO_CAMPUS)[number]
+      );
+
+      // Campus-based roles (STAFF, CO_DIRECTOR, CAMPUS_DIRECTOR) require a campus
+      // Leadership roles (DD, DS, RD, RS, etc.) do NOT require a campus - they are N/A for campus
+      if (!isLeadershipRole && !row.campus) {
+        errors.push(
+          `${row.name}: Campus is required for role "${row.role || "STAFF"}"`
+        );
+        continue;
+      }
+
+      // Find campus if provided
+      let campus = null;
+      if (row.campus) {
+        campus = allCampuses.find(
+          c => c.name.toLowerCase() === row.campus?.toLowerCase()
+        );
+        if (!campus) {
+          errors.push(`${row.name}: Campus "${row.campus}" not found`);
+          continue;
+        }
+      }
+
+      // For leadership roles without campus, district is required
+      let districtId = campus?.districtId || null;
+      if (isLeadershipRole && !campus && row.district) {
+        const district = allDistricts.find(
+          (d: { id: string }) =>
+            d.id.toLowerCase() === row.district?.toLowerCase()
+        );
+        if (district) {
+          districtId = district.id;
+        } else {
+          errors.push(`${row.name}: District "${row.district}" not found`);
+          continue;
+        }
+      } else if (isLeadershipRole && !campus && !row.district) {
+        // Leadership roles without campus need at least a district (except national roles)
+        const isNationalRole = [
+          "NATIONAL_STAFF",
+          "NATIONAL_DIRECTOR",
+          "FIELD_DIRECTOR",
+          "CMC_GO_ADMIN",
+          "ADMIN",
+        ].includes(normalizedRole || "");
+        if (!isNationalRole) {
+          errors.push(
+            `${row.name}: District is required for role "${row.role}" without campus`
+          );
+          continue;
+        }
+      }
+
       // Generate personId from name (simple approach - could be improved)
       const personId = row.name.toLowerCase().replace(/\s+/g, "_");
 
@@ -1652,25 +1867,11 @@ export async function importPeople(
         continue;
       }
 
-      // Find campus if provided
-      let campusId: number | null = null;
-      let districtId: string | null = null;
-
-      if (row.campus) {
-        const campus = allCampuses.find(
-          c => c.name.toLowerCase() === row.campus?.toLowerCase()
-        );
-        if (campus) {
-          campusId = campus.id;
-          districtId = campus.districtId;
-        }
-      }
-
-      // Create person
+      // Create person - campus may be null for leadership roles
       await createPerson({
         personId,
         name: row.name,
-        primaryCampusId: campusId,
+        primaryCampusId: campus?.id || null,
         primaryDistrictId: districtId,
         primaryRole: row.role,
         status: row.status || "Not Invited",

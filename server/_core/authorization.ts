@@ -1,6 +1,8 @@
 /**
  * Authorization helpers for PR 2
  * Implements the editing ladder and viewing rules
+ *
+ * Password Auth: Added three-tier authorization (scopeLevel, viewLevel, editLevel)
  */
 
 import { TRPCError } from "@trpc/server";
@@ -13,8 +15,193 @@ export type UserRole =
   | "CO_DIRECTOR"
   | "CAMPUS_DIRECTOR"
   | "DISTRICT_DIRECTOR"
+  | "DISTRICT_STAFF"
   | "REGION_DIRECTOR"
+  | "REGIONAL_STAFF"
+  | "NATIONAL_STAFF"
+  | "NATIONAL_DIRECTOR"
+  | "FIELD_DIRECTOR"
+  | "CMC_GO_ADMIN"
   | "ADMIN";
+
+// Phase 3: Authorization level types
+export type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";
+export type ViewLevel = "NATIONAL" | "REGION" | "DISTRICT" | "CAMPUS";
+export type EditLevel = "NATIONAL" | "XAN" | "REGION" | "DISTRICT" | "CAMPUS";
+
+// Level ordering for comparisons (lower index = more access)
+const VIEW_LEVEL_ORDER: ViewLevel[] = [
+  "NATIONAL",
+  "REGION",
+  "DISTRICT",
+  "CAMPUS",
+];
+const EDIT_LEVEL_ORDER: EditLevel[] = [
+  "NATIONAL",
+  "XAN",
+  "REGION",
+  "DISTRICT",
+  "CAMPUS",
+];
+
+// XAN roles - National Team members
+const XAN_ROLES = [
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+  "CMC_GO_ADMIN",
+];
+
+/**
+ * Check if a person is a XAN panel member (National Team)
+ */
+export function isXanMember(person: {
+  primaryRole?: string | null;
+  primaryDistrictId?: string | null;
+}): boolean {
+  if (person.primaryDistrictId === "XAN") return true;
+  if (person.primaryRole && XAN_ROLES.includes(person.primaryRole)) return true;
+  return false;
+}
+
+/**
+ * Check if a user is a National Team member
+ */
+export function isNationalTeamMember(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return XAN_ROLES.includes(user.role);
+}
+
+/**
+ * Check if user's view level grants access to view a person
+ */
+export function canViewAtLevel(
+  userViewLevel: ViewLevel,
+  targetLevel: ViewLevel
+): boolean {
+  const userIdx = VIEW_LEVEL_ORDER.indexOf(userViewLevel);
+  const targetIdx = VIEW_LEVEL_ORDER.indexOf(targetLevel);
+  return userIdx <= targetIdx;
+}
+
+/**
+ * Check if user's edit level grants access to edit a person
+ */
+export function canEditAtLevel(
+  userEditLevel: EditLevel,
+  targetLevel: EditLevel
+): boolean {
+  const userIdx = EDIT_LEVEL_ORDER.indexOf(userEditLevel);
+  const targetIdx = EDIT_LEVEL_ORDER.indexOf(targetLevel);
+  return userIdx <= targetIdx;
+}
+
+/**
+ * Determine what level a person is at based on their location
+ */
+export function getPersonLevel(person: {
+  primaryCampusId?: number | null;
+  primaryDistrictId?: string | null;
+  primaryRegion?: string | null;
+}): ViewLevel {
+  if (person.primaryCampusId != null) return "CAMPUS";
+  if (person.primaryDistrictId) return "DISTRICT";
+  if (person.primaryRegion) return "REGION";
+  return "NATIONAL";
+}
+
+/**
+ * Check if user can VIEW a person based on viewLevel authorization
+ */
+export function canViewPerson(
+  user: User | null | undefined,
+  person: {
+    primaryCampusId?: number | null;
+    primaryDistrictId?: string | null;
+    primaryRegion?: string | null;
+    primaryRole?: string | null;
+  }
+): boolean {
+  if (!user) return false;
+
+  // XAN member special rule: Only National Team members can view XAN member info
+  if (isXanMember(person)) {
+    return isNationalTeamMember(user);
+  }
+
+  const userViewLevel = (user as any).viewLevel || "CAMPUS";
+
+  // NATIONAL view level can see everyone
+  if (userViewLevel === "NATIONAL") return true;
+
+  // REGION view level: user can see people in their region
+  if (userViewLevel === "REGION") {
+    const userRegion = (user as any).overseeRegionId || user.regionId;
+    return person.primaryRegion === userRegion;
+  }
+
+  // DISTRICT view level: user can see people in their district
+  if (userViewLevel === "DISTRICT") {
+    return person.primaryDistrictId === user.districtId;
+  }
+
+  // CAMPUS view level: user can see people in their campus
+  if (userViewLevel === "CAMPUS") {
+    return person.primaryCampusId === user.campusId;
+  }
+
+  return false;
+}
+
+/**
+ * Check if user can EDIT a person based on editLevel authorization
+ */
+export function canEditPerson(
+  user: User | null | undefined,
+  person: {
+    primaryCampusId?: number | null;
+    primaryDistrictId?: string | null;
+    primaryRegion?: string | null;
+    primaryRole?: string | null;
+  }
+): boolean {
+  if (!user) return false;
+
+  // National Team members can always edit XAN members
+  if (isNationalTeamMember(user) && isXanMember(person)) {
+    return true;
+  }
+
+  const userEditLevel = (user as any).editLevel || "CAMPUS";
+
+  // NATIONAL edit level can edit everyone
+  if (userEditLevel === "NATIONAL") return true;
+
+  // XAN edit level: can ONLY edit XAN members (handled above), nothing else
+  if (userEditLevel === "XAN") {
+    return false;
+  }
+
+  // REGION edit level: user can edit people in their region
+  if (userEditLevel === "REGION") {
+    const userRegion = (user as any).overseeRegionId || user.regionId;
+    return person.primaryRegion === userRegion;
+  }
+
+  // DISTRICT edit level: user can edit people in their district
+  if (userEditLevel === "DISTRICT") {
+    return person.primaryDistrictId === user.districtId;
+  }
+
+  // CAMPUS edit level: user can edit people in their campus
+  if (userEditLevel === "CAMPUS") {
+    return person.primaryCampusId === user.campusId;
+  }
+
+  return false;
+}
 
 /**
  * Check if a role is a leader role (CO_DIRECTOR+)

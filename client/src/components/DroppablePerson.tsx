@@ -314,8 +314,14 @@ export function DroppablePerson({
           }
         >
           <button
+            type="button"
             onClick={handleStatusClick}
-            className="relative transition-all hover:scale-110 active:scale-95"
+            disabled={!canInteract}
+            className={`relative transition-all ${
+              canInteract
+                ? "hover:scale-110 active:scale-95 cursor-pointer"
+                : "cursor-default"
+            }`}
           >
             {/* Gray spouse icon behind - shown when person has spouse */}
             {!maskIdentity && person.spouse && (
@@ -327,7 +333,7 @@ export function DroppablePerson({
             )}
             {/* Main person icon - solid */}
             <div
-              className={`relative ${maskIdentity ? "text-zinc-400" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
+              className={`relative ${maskIdentity ? "text-gray-300" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
                 className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}

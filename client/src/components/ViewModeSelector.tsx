@@ -1,11 +1,26 @@
 import { ViewMode, ViewState } from "@/types/viewModes";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Globe2, MapPin, Building2, School } from "lucide-react";
 
 interface ViewModeSelectorProps {
   viewState: ViewState;
   onViewStateChange: (viewState: ViewState) => void;
 }
+
+// Texico region districts
+const TEXICO_DISTRICTS = [
+  { id: "NewMexico", name: "New Mexico" },
+  { id: "NorthTexas", name: "North Texas" },
+  { id: "SouthTexas", name: "South Texas" },
+  { id: "WestTexas", name: "West Texas" },
+];
 
 export function ViewModeSelector({
   viewState,
@@ -20,6 +35,17 @@ export function ViewModeSelector({
       regionId: mode === "region" ? viewState.regionId : null,
       districtId: mode === "district" ? viewState.districtId : null,
       campusId: mode === "campus" ? viewState.campusId : null,
+    };
+    onViewStateChange(newState);
+  };
+
+  const handleTexicoDistrictChange = (districtId: string) => {
+    const newState: ViewState = {
+      ...viewState,
+      mode: "district",
+      districtId,
+      regionId: "Texico",
+      campusId: null,
     };
     onViewStateChange(newState);
   };
@@ -91,6 +117,27 @@ export function ViewModeSelector({
         <School className="w-4 h-4" />
         Campus
       </Button>
+
+      {/* Texico Region Dropdown */}
+      <Select
+        value={
+          viewState.mode === "district" && viewState.regionId === "Texico"
+            ? viewState.districtId || ""
+            : ""
+        }
+        onValueChange={handleTexicoDistrictChange}
+      >
+        <SelectTrigger className="w-[180px] text-sm">
+          <SelectValue placeholder="Texico" />
+        </SelectTrigger>
+        <SelectContent>
+          {TEXICO_DISTRICTS.map(district => (
+            <SelectItem key={district.id} value={district.id}>
+              {district.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
