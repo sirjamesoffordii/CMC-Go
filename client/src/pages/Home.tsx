@@ -26,6 +26,7 @@ import {
   Upload,
   Menu,
   LogIn,
+  LogOut,
   Shield,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -34,6 +35,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
+import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -122,10 +124,13 @@ function createSyntheticDistrict(
 }
 export default function Home() {
   // PR 2: Real authentication
-  const { user } = usePublicAuth();
+  const { user, logout } = usePublicAuth();
   const isAuthenticated = !!user;
   const isMobile = useIsMobile();
   const [, setLocation] = useLocation();
+
+  // Scope filter for map filtering (only visible when authenticated)
+  const { currentScope, setScopeFilter } = useScopeFilter();
 
   // View mode state - initialize from URL or defaults
   // Default: district-scoped view (as per requirements)
@@ -755,33 +760,6 @@ export default function Home() {
     }
   }, [isResizingDistrict, isResizingPeople]);
 
-  // Calculate days until CMC - dynamic counter that updates
-  const [daysUntilCMC, setDaysUntilCMC] = useState(() => {
-    const cmcDate = new Date("2026-07-06");
-    const today = new Date();
-    return Math.abs(
-      Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-    );
-  });
-
-  // Update days until CMC counter periodically
-  useEffect(() => {
-    const updateDaysUntilCMC = () => {
-      const cmcDate = new Date("2026-07-06");
-      const today = new Date();
-      const days = Math.abs(
-        Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      );
-      setDaysUntilCMC(days);
-    };
-
-    // Update immediately and then every hour
-    updateDaysUntilCMC();
-    const interval = setInterval(updateDaysUntilCMC, 60 * 60 * 1000); // Update every hour
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Diagnostic: Log if queries are failing
   if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
     console.error("[Home] Query errors:", {
@@ -910,6 +888,17 @@ export default function Home() {
           </div>
         )}
 
+        {/* Scope selector - visible when authenticated */}
+        {isAuthenticated && (
+          <ScopeSelector
+            currentScope={currentScope}
+            onScopeChange={setScopeFilter}
+            userRegionName={user?.regionName}
+            userDistrictName={user?.districtName}
+            className="flex-shrink-0 z-10 bg-white/10 border-white/20 text-white [&>span]:text-white"
+          />
+        )}
+
         {/* Right Side: Why Personal Invitations Matter Button and Hamburger Menu */}
         <div className="flex items-center gap-2 flex-shrink-0 z-10 ml-auto">
           {/* Why Personal Invitations Matter Button */}
@@ -946,18 +935,23 @@ export default function Home() {
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      setLoginModalOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
-                  >
-                    <LogIn className="w-4 h-4" />
-                    Login
-                  </button>
-                  <div className="border-t border-gray-200 my-1"></div>
+                  {!isAuthenticated && (
+                    <>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setLoginModalOpen(true);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        Login
+                      </button>
+                      <div className="border-t border-gray-200 my-1"></div>
+                    </>
+                  )}
+
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -980,33 +974,58 @@ export default function Home() {
                     <Upload className="w-4 h-4" />
                     Import
                   </button>
-                  <button
-                    onClick={e => {
-                      e.preventDefault();
-                      setLocation("/admin");
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
-                  >
-                    <Shield className="w-4 h-4" />
-                    Admin Console
-                  </button>
+
                   <button
                     onClick={e => {
                       e.stopPropagation();
                       setLocation("/more-info");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white transition-colors"
                   >
-                    <span className="text-sm font-semibold">CMC Info</span>
+                    <span className="text-sm">CMC Info</span>
                   </button>
-                  {/* Days Until CMC - Footer */}
-                  <div className="px-4 py-2 border-t border-gray-200">
-                    <div className="text-sm font-bold text-gray-900">
-                      {daysUntilCMC} days until CMC
-                    </div>
-                  </div>
+
+                  {user?.role === "CMC_GO_ADMIN" && (
+                    <button
+                      onClick={e => {
+                        e.preventDefault();
+                        setLocation("/admin");
+                        setMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    >
+                      <Shield className="w-4 h-4" />
+                      Admin Console
+                    </button>
+                  )}
+
+                  {isAuthenticated && (
+                    <>
+                      <div className="border-t border-gray-200 my-1"></div>
+                      <button
+                        onClick={async e => {
+                          e.stopPropagation();
+                          await logout();
+                          setMenuOpen(false);
+                          setLoginModalOpen(true);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <LogOut className="w-4 h-4 mt-0.5" />
+                          <div className="flex flex-col items-start">
+                            <span className="font-semibold">Logout</span>
+                            {user?.email && (
+                              <span className="text-xs text-gray-600">
+                                {user.email}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -1181,6 +1200,9 @@ export default function Home() {
               selectedDistrictId={selectedDistrictId}
               onDistrictSelect={handleDistrictSelect}
               viewState={viewState}
+              scopeFilter={currentScope}
+              userRegionId={user?.regionId || user?.overseeRegionId}
+              userDistrictId={user?.districtId}
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
@@ -1247,7 +1269,7 @@ export default function Home() {
           <MobileDrawer
             isOpen={peoplePanelOpen}
             onClose={() => setPeoplePanelOpen(false)}
-            title="People"
+            title="Table"
             height="70vh"
           >
             <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
@@ -1255,7 +1277,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* People Tab Button - Fixed to right side, slides out from edge on hover */}
+      {/* People Tab Button - Fixed to right side */}
       {!peoplePanelOpen && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -1272,19 +1294,19 @@ export default function Home() {
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none shadow-md font-medium text-sm backdrop-blur-sm md:translate-x-[calc(100%-20px)] md:group-hover:translate-x-0 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] group-hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target
-                  ${!user ? "opacity-70" : "group-hover:bg-red-700/90"}
+                  relative bg-black hover:bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none font-medium text-sm backdrop-blur-sm transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target after:content-[''] after:absolute after:top-0 after:right-[-12px] after:h-full after:w-3 after:bg-black after:rounded-r-full hover:after:bg-black
+                  ${!user ? "opacity-70" : ""}
                 `}
               >
                 <span className="inline-block whitespace-nowrap select-none">
-                  People
+                  Table
                 </span>
               </button>
             </div>
           </TooltipTrigger>
           {!user && (
             <TooltipContent side="left">
-              <p>Please log in to view people</p>
+              <p>Please log in to view table</p>
             </TooltipContent>
           )}
         </Tooltip>

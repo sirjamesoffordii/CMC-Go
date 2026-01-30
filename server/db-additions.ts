@@ -110,11 +110,42 @@ export async function updateUserLastLogin(userId: number) {
 // ADMIN USER MANAGEMENT
 // ============================================================================
 
+// Explicit column selection for users - all columns that exist in Railway DB
+const userColumns = {
+  id: users.id,
+  fullName: users.fullName,
+  email: users.email,
+  passwordHash: users.passwordHash,
+  role: users.role,
+  campusId: users.campusId,
+  districtId: users.districtId,
+  regionId: users.regionId,
+  overseeRegionId: users.overseeRegionId,
+  personId: users.personId,
+  scopeLevel: users.scopeLevel,
+  viewLevel: users.viewLevel,
+  editLevel: users.editLevel,
+  isBanned: users.isBanned,
+  approvalStatus: users.approvalStatus,
+  approvedByUserId: users.approvedByUserId,
+  approvedAt: users.approvedAt,
+  createdAt: users.createdAt,
+  lastLoginAt: users.lastLoginAt,
+  // Legacy OAuth columns (kept for compatibility)
+  openId: users.openId,
+  name: users.name,
+  loginMethod: users.loginMethod,
+  // Additional metadata
+  roleLabel: users.roleLabel,
+  roleTitle: users.roleTitle,
+  linkedPersonId: users.linkedPersonId,
+};
+
 export async function getAllUsers() {
   const { getDb } = await import("./db");
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(users);
+  return await db.select(userColumns).from(users);
 }
 
 export async function updateUserRole(

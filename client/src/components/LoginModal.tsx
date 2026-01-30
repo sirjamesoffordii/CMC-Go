@@ -28,6 +28,8 @@ import {
   Building2,
   Users,
   Check,
+  X,
+  Plus,
 } from "lucide-react";
 
 interface LoginModalProps {
@@ -69,11 +71,13 @@ type RegistrationStep =
 
 type ScopeLevel = "national" | "regional" | "district" | "campus" | "other";
 
+type AuthMode = "login" | "register" | "forgotPassword" | "resetPassword";
+
 export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const utils = trpc.useUtils();
 
   // Mode
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<AuthMode>("login");
   const [step, setStep] = useState<RegistrationStep>("credentials");
 
   // Form fields
@@ -81,6 +85,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
+
+  // Password reset fields
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   // Scope selection
   const [scopeLevel, setScopeLevel] = useState<ScopeLevel | null>(null);
@@ -96,6 +106,11 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // Typeahead search state
+  const [regionQuery, setRegionQuery] = useState("");
+  const [districtQuery, setDistrictQuery] = useState("");
+  const [campusQuery, setCampusQuery] = useState("");
+
   // Data queries
   const { data: districts = [] } = trpc.districts.publicList.useQuery();
   const { data: campuses = [] } = trpc.campuses.byDistrict.useQuery(
@@ -109,6 +124,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     return Array.from(regionSet).sort();
   }, [districts]);
 
+  // Filtered regions by search query
+  const filteredRegions = useMemo(() => {
+    if (!regionQuery.trim()) return regions;
+    const q = regionQuery.toLowerCase();
+    return regions.filter(r => r.toLowerCase().includes(q));
+  }, [regions, regionQuery]);
+
   // Filter districts by region
   const filteredDistricts = useMemo(() => {
     if (!selectedRegion) return [];
@@ -117,10 +139,24 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [districts, selectedRegion]);
 
+  // Filtered districts by search query
+  const searchFilteredDistricts = useMemo(() => {
+    if (!districtQuery.trim()) return filteredDistricts;
+    const q = districtQuery.toLowerCase();
+    return filteredDistricts.filter(d => d.name.toLowerCase().includes(q));
+  }, [filteredDistricts, districtQuery]);
+
+  // Filtered campuses by search query
+  const filteredCampuses = useMemo(() => {
+    if (!campusQuery.trim()) return campuses;
+    const q = campusQuery.toLowerCase();
+    return campuses.filter(c => c.name.toLowerCase().includes(q));
+  }, [campuses, campusQuery]);
+
   // Mutations
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => {
-      utils.auth.me.invalidate();
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
       onOpenChange(false);
       resetForm();
     },
@@ -128,10 +164,33 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   });
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => {
-      utils.auth.me.invalidate();
+    onSuccess: async () => {
+      await utils.auth.me.invalidate();
       onOpenChange(false);
       resetForm();
+    },
+    onError: err => setError(err.message),
+  });
+
+  const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
+    onSuccess: () => {
+      setError(null);
+      setMode("resetPassword");
+    },
+    onError: err => setError(err.message),
+  });
+
+  const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
+    onSuccess: () => {
+      setError(null);
+      setResetSuccess(true);
+      // After 2 seconds, go back to login
+      setTimeout(() => {
+        setMode("login");
+        setResetCode("");
+        setNewPassword("");
+        setResetSuccess(false);
+      }, 2000);
     },
     onError: err => setError(err.message),
   });
@@ -143,6 +202,10 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     setPassword("");
     setShowPassword(false);
     setFullName("");
+    setResetCode("");
+    setNewPassword("");
+    setShowNewPassword(false);
+    setResetSuccess(false);
     setScopeLevel(null);
     setSelectedRegion(null);
     setSelectedDistrictId(null);
@@ -150,6 +213,9 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     setSelectedRole(null);
     setAffiliation("");
     setError(null);
+    setRegionQuery("");
+    setDistrictQuery("");
+    setCampusQuery("");
   };
 
   useEffect(() => {
@@ -335,78 +401,182 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-50 via-sky-50 to-indigo-50">
-      {/* Dynamic background layers */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden">
+      {/* Sky gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-sky-100 via-white to-slate-50" />
+
+      {/* Subtle animated clouds */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Animated glowing orbs */}
-        <div className="absolute -left-40 -top-40 h-96 w-96 animate-pulse rounded-full bg-cyan-400/25 blur-3xl" />
-        <div className="absolute -right-40 top-1/4 h-96 w-96 animate-pulse rounded-full bg-sky-400/25 blur-3xl [animation-delay:2s]" />
-        <div className="absolute bottom-0 left-1/3 h-96 w-96 animate-pulse rounded-full bg-indigo-400/20 blur-3xl [animation-delay:4s]" />
+        <div className="absolute -top-20 left-1/4 h-40 w-80 rounded-full bg-white/60 blur-3xl animate-[drift_20s_ease-in-out_infinite]" />
+        <div className="absolute top-1/4 -right-20 h-60 w-96 rounded-full bg-white/50 blur-3xl animate-[drift_25s_ease-in-out_infinite_reverse]" />
+        <div className="absolute bottom-1/4 -left-20 h-48 w-72 rounded-full bg-red-50/40 blur-3xl animate-[drift_22s_ease-in-out_infinite]" />
+      </div>
 
-        {/* Geometric shapes */}
-        <div className="absolute left-10 top-20 h-32 w-32 rotate-45 border-2 border-sky-500/20" />
-        <div className="absolute bottom-20 right-20 h-40 w-40 rotate-12 border-2 border-slate-900/10" />
-        <div className="absolute right-1/4 top-1/3 h-24 w-24 -rotate-12 border border-indigo-500/20" />
-        <div className="absolute bottom-1/3 left-1/4 h-20 w-20 rotate-45 border border-slate-900/5" />
+      {/* Connection lines SVG */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-20">
+        <defs>
+          <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#dc2626" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="#ef4444" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="#dc2626" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
+        <g className="animate-pulse">
+          <line
+            x1="15%"
+            y1="25%"
+            x2="35%"
+            y2="45%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="35%"
+            y1="45%"
+            x2="55%"
+            y2="35%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="55%"
+            y1="35%"
+            x2="75%"
+            y2="55%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="75%"
+            y1="55%"
+            x2="90%"
+            y2="40%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="20%"
+            y1="65%"
+            x2="45%"
+            y2="55%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="45%"
+            y1="55%"
+            x2="65%"
+            y2="70%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <line
+            x1="65%"
+            y1="70%"
+            x2="85%"
+            y2="60%"
+            stroke="url(#lineGrad)"
+            strokeWidth="1.5"
+          />
+          <circle cx="15%" cy="25%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="35%" cy="45%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="55%" cy="35%" r="6" fill="#dc2626" fillOpacity="0.7" />
+          <circle cx="75%" cy="55%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="90%" cy="40%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="20%" cy="65%" r="4" fill="#dc2626" fillOpacity="0.5" />
+          <circle cx="45%" cy="55%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="65%" cy="70%" r="5" fill="#dc2626" fillOpacity="0.6" />
+          <circle cx="85%" cy="60%" r="4" fill="#dc2626" fillOpacity="0.5" />
+        </g>
+      </svg>
 
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(15,23,42,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.08)_1px,transparent_1px)] [background-size:50px_50px]" />
+      {/* ===== GIANT CENTERED CMC GO WATERMARK ===== */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
+        <div className="text-center animate-[float_20s_ease-in-out_infinite]">
+          <div
+            className="font-black uppercase leading-[0.85] tracking-tighter text-slate-300/70"
+            style={{ fontSize: "clamp(120px, 30vw, 400px)" }}
+          >
+            CMC
+          </div>
+          <div
+            className="font-black uppercase leading-[0.85] tracking-tighter bg-gradient-to-r from-red-400/60 via-red-500/70 to-red-400/60 bg-clip-text text-transparent"
+            style={{ fontSize: "clamp(120px, 30vw, 400px)" }}
+          >
+            GO
+          </div>
+        </div>
+      </div>
 
-        {/* Radial vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(2,6,23,0.06)_100%)]" />
+      {/* Vignette */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(255,255,255,0.4)_60%,rgba(248,250,252,0.8)_100%)]" />
 
-        {/* Large watermark text */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="select-none text-center">
-            <div className="text-[120px] font-black uppercase leading-none tracking-wider text-slate-900/[0.04] sm:text-[180px] lg:text-[240px]">
-              CMC
-            </div>
-            <div className="text-[120px] font-black uppercase leading-none tracking-wider text-slate-900/[0.04] sm:text-[180px] lg:text-[240px]">
-              GO
+      {/* Top-left branding */}
+      <div className="absolute left-6 top-6 z-10 flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="h-11 w-11 rotate-12 rounded-full border-2 border-white bg-black shadow-lg flex items-center justify-center">
+            <div className="flex flex-col items-center justify-center text-white font-bold leading-none">
+              <span className="text-[11px] tracking-wide">CMC</span>
+              <span className="-mt-0.5 text-[12px] font-semibold tracking-wide">
+                Go
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Close button */}
+      {/* Close */}
       <button
+        type="button"
+        aria-label="Close"
         onClick={() => onOpenChange(false)}
-        className="absolute right-6 top-6 z-10 rounded-full p-2 text-slate-500 transition-colors hover:bg-white/60 hover:text-slate-700"
+        className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
       >
         <svg
-          className="h-6 w-6"
+          className="h-5 w-5"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
+          strokeWidth={2}
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
             d="M6 18L18 6M6 6l12 12"
           />
         </svg>
       </button>
 
+      {/* CSS Animations */}
+      <style>{`
+        @keyframes drift {
+          0%, 100% { transform: translateX(0) translateY(0); }
+          50% { transform: translateX(30px) translateY(-20px); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-15px); }
+        }
+      `}</style>
+
       {/* Content */}
-      <div className="relative w-full max-w-md px-6">
-        {/* Logo/Header */}
+      <div className="relative z-10 w-full max-w-md px-6">
+        {/* Header */}
         <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white/70 px-4 py-2 backdrop-blur-sm shadow-sm shadow-slate-900/5">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-sky-500" />
-            <span className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-700">
-              CMC Go Access
-            </span>
-          </div>
           <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
-            {mode === "login" ? "Welcome Back" : "Create Account"}
+            {mode === "login" && "Go Together"}
+            {mode === "register" && "Create Account"}
+            {mode === "forgotPassword" && "Forgot Password"}
+            {mode === "resetPassword" && "Reset Password"}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            {mode === "login"
-              ? "Sign in to continue"
-              : step === "credentials"
+            {mode === "login" && "Sign in to continue"}
+            {mode === "forgotPassword" && "We'll send you a reset code"}
+            {mode === "resetPassword" && "Enter your new password"}
+            {mode === "register" &&
+              (step === "credentials"
                 ? "Let's start with your credentials"
-                : "Tell us about your role"}
+                : "Tell us about your role")}
           </p>
 
           {/* Progress indicator for registration */}
@@ -418,7 +588,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   className={cn(
                     "h-2 w-8 rounded-full transition-all",
                     idx < getProgress().current
-                      ? "bg-gradient-to-r from-sky-500 to-indigo-500"
+                      ? "bg-gradient-to-r from-red-500 to-rose-500"
                       : "bg-slate-200/70"
                   )}
                 />
@@ -438,30 +608,46 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           {mode === "login" && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="login-email"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Email
                 </Label>
                 <Input
+                  id="login-email"
+                  name="username"
                   type="email"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   onKeyDown={e => e.key === "Enter" && handleLogin()}
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="login-password"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Password
                 </Label>
                 <div className="relative mt-1.5">
                   <Input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                     onKeyDown={e => e.key === "Enter" && handleLogin()}
                   />
                   <button
@@ -478,12 +664,25 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </div>
               </div>
 
-              {error && <p className="text-sm text-sky-700">{error}</p>}
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    setMode("forgotPassword");
+                  }}
+                  className="text-sm font-medium text-red-700 hover:text-red-600"
+                >
+                  Forgot password?
+                </button>
+              </div>
 
               <Button
                 onClick={handleLogin}
                 disabled={loginMutation.isPending}
-                className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-500 hover:to-indigo-500 hover:shadow-sky-500/30"
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
                 {loginMutation.isPending ? (
                   <>
@@ -502,7 +701,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     setMode("register");
                     setStep("credentials");
                   }}
-                  className="font-medium text-indigo-700 hover:text-indigo-600"
+                  className="font-medium text-red-700 hover:text-red-600"
                 >
                   Create one
                 </button>
@@ -510,46 +709,281 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
             </div>
           )}
 
+          {/* FORGOT PASSWORD */}
+          {mode === "forgotPassword" && (
+            <div className="space-y-5">
+              <div className="text-center mb-4">
+                <p className="text-sm text-slate-600">
+                  Enter your email address and we'll send you a code to reset
+                  your password.
+                </p>
+              </div>
+
+              <div>
+                <Label
+                  htmlFor="forgot-email"
+                  className="text-sm font-medium text-slate-700"
+                >
+                  Email
+                </Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && email.trim()) {
+                      forgotPasswordMutation.mutate({ email: email.trim() });
+                    }
+                  }}
+                />
+              </div>
+
+              {error && <p className="text-sm text-red-700">{error}</p>}
+
+              <Button
+                onClick={() => {
+                  if (email.trim()) {
+                    forgotPasswordMutation.mutate({ email: email.trim() });
+                  }
+                }}
+                disabled={forgotPasswordMutation.isPending || !email.trim()}
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+              >
+                {forgotPasswordMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send Reset Code"
+                )}
+              </Button>
+
+              <p className="text-center text-sm text-slate-600">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setMode("login");
+                  }}
+                  className="font-medium text-red-700 hover:text-red-600"
+                >
+                  ← Back to login
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* RESET PASSWORD */}
+          {mode === "resetPassword" && (
+            <div className="space-y-5">
+              {resetSuccess ? (
+                <div className="text-center py-4">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Password Reset!
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Your password has been changed. Redirecting to login...
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-slate-600">
+                      Enter the 6-digit code sent to <strong>{email}</strong>{" "}
+                      and your new password.
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="reset-code"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Reset Code
+                    </Label>
+                    <Input
+                      id="reset-code"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={resetCode}
+                      onChange={e =>
+                        setResetCode(e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="000000"
+                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 text-center text-2xl tracking-widest placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                    />
+                  </div>
+
+                  <div>
+                    <Label
+                      htmlFor="new-password"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      New Password
+                    </Label>
+                    <div className="relative mt-1.5">
+                      <Input
+                        id="new-password"
+                        type={showNewPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="Enter new password (min. 8 characters)"
+                        className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                        onKeyDown={e => {
+                          if (
+                            e.key === "Enter" &&
+                            resetCode.length === 6 &&
+                            newPassword.length >= 8
+                          ) {
+                            resetPasswordMutation.mutate({
+                              email: email.trim(),
+                              code: resetCode,
+                              newPassword,
+                            });
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        {showNewPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {error && <p className="text-sm text-red-700">{error}</p>}
+
+                  <Button
+                    onClick={() => {
+                      resetPasswordMutation.mutate({
+                        email: email.trim(),
+                        code: resetCode,
+                        newPassword,
+                      });
+                    }}
+                    disabled={
+                      resetPasswordMutation.isPending ||
+                      resetCode.length !== 6 ||
+                      newPassword.length < 8
+                    }
+                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                  >
+                    {resetPasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      "Reset Password"
+                    )}
+                  </Button>
+
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setMode("forgotPassword");
+                        setResetCode("");
+                        setNewPassword("");
+                      }}
+                      className="font-medium text-red-700 hover:text-red-600"
+                    >
+                      ← Resend code
+                    </button>
+                    <button
+                      onClick={() => {
+                        setError(null);
+                        setMode("login");
+                        setResetCode("");
+                        setNewPassword("");
+                      }}
+                      className="font-medium text-red-700 hover:text-red-600"
+                    >
+                      Back to login
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           {/* REGISTER: CREDENTIALS */}
           {mode === "register" && step === "credentials" && (
             <div className="space-y-5">
               <div>
-                <Label className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="register-full-name"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Full Name
                 </Label>
                 <Input
+                  id="register-full-name"
+                  name="name"
                   type="text"
+                  autoComplete="name"
                   value={fullName}
                   onChange={e => setFullName(e.target.value)}
                   placeholder="John Smith"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="register-email"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Email
                 </Label>
                 <Input
+                  id="register-email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-slate-700">
+                <Label
+                  htmlFor="register-password"
+                  className="text-sm font-medium text-slate-700"
+                >
                   Password
                 </Label>
                 <div className="relative mt-1.5">
                   <Input
+                    id="register-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Minimum 8 characters"
-                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                    className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   />
                   <button
                     type="button"
@@ -568,11 +1002,11 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </p>
               </div>
 
-              {error && <p className="text-sm text-sky-700">{error}</p>}
+              {error && <p className="text-sm text-red-700">{error}</p>}
 
               <Button
                 onClick={handleCredentialsNext}
-                className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-500 hover:to-indigo-500 hover:shadow-sky-500/30"
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
                 Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -584,7 +1018,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     setMode("login");
                     resetForm();
                   }}
-                  className="font-medium text-indigo-700 hover:text-indigo-600"
+                  className="font-medium text-red-700 hover:text-red-600"
                 >
                   Sign in
                 </button>
@@ -595,7 +1029,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           {/* REGISTER: REGION SELECTION */}
           {mode === "register" && step === "region" && (
             <div className="space-y-4">
-              <div className="mb-6">
+              <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">
                   Select your region
                 </h2>
@@ -604,44 +1038,62 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </p>
               </div>
 
-              {/* National Team option */}
-              <button
-                onClick={() => handleRegionSelect(null)}
-                className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-                  <Globe className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900">National Team</p>
-                  <p className="text-sm text-slate-600">
-                    I'm part of the national Chi Alpha team
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
-              </button>
-
-              {/* Region list */}
-              <div className="max-h-64 space-y-2 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300/80">
-                {regions.map(region => (
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={regionQuery}
+                  onChange={e => setRegionQuery(e.target.value)}
+                  placeholder="Type to search regions..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {regionQuery && (
                   <button
-                    key={region}
-                    onClick={() => handleRegionSelect(region)}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
+                    onClick={() => setRegionQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900/5 text-slate-700">
-                      <MapPin className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900">{region}</p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+                    <X className="h-4 w-4" />
                   </button>
-                ))}
+                )}
+              </div>
+
+              {/* Region dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {filteredRegions.length > 0 ? (
+                  filteredRegions.map(region => (
+                    <button
+                      key={region}
+                      onClick={() => handleRegionSelect(region)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {region}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <MapPin className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No regions found</span>
+                  </div>
+                )}
+                {/* No region option at bottom */}
+                <button
+                  onClick={() => handleRegionSelect(null)}
+                  className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
+                >
+                  <Globe className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">No region</span>
+                </button>
               </div>
 
               <button
-                onClick={() => goToStep("credentials")}
+                onClick={() => {
+                  setRegionQuery("");
+                  goToStep("credentials");
+                }}
                 className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" /> Back
@@ -652,7 +1104,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           {/* REGISTER: DISTRICT SELECTION */}
           {mode === "register" && step === "district" && (
             <div className="space-y-4">
-              <div className="mb-6">
+              <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">
                   Select your district
                 </h2>
@@ -661,46 +1113,62 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </p>
               </div>
 
-              {/* Regional level option */}
-              <button
-                onClick={() => handleDistrictSelect(null)}
-                className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white">
-                  <MapPin className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900">Regional Level</p>
-                  <p className="text-sm text-slate-600">
-                    I work at the regional level, not a specific district
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
-              </button>
-
-              {/* District list */}
-              <div className="max-h-64 space-y-2 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300/80">
-                {filteredDistricts.map(district => (
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={districtQuery}
+                  onChange={e => setDistrictQuery(e.target.value)}
+                  placeholder="Type to search districts..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {districtQuery && (
                   <button
-                    key={district.id}
-                    onClick={() => handleDistrictSelect(district.id)}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
+                    onClick={() => setDistrictQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900/5 text-slate-700">
-                      <Building2 className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900">
-                        {district.name}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+                    <X className="h-4 w-4" />
                   </button>
-                ))}
+                )}
+              </div>
+
+              {/* District dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {searchFilteredDistricts.length > 0 ? (
+                  searchFilteredDistricts.map(district => (
+                    <button
+                      key={district.id}
+                      onClick={() => handleDistrictSelect(district.id)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <Building2 className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {district.name}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <Building2 className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No districts found</span>
+                  </div>
+                )}
+                {/* No district option at bottom */}
+                <button
+                  onClick={() => handleDistrictSelect(null)}
+                  className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
+                >
+                  <MapPin className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">No district</span>
+                </button>
               </div>
 
               <button
-                onClick={() => goToStep("region")}
+                onClick={() => {
+                  setDistrictQuery("");
+                  goToStep("region");
+                }}
                 className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" /> Back
@@ -711,7 +1179,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
           {/* REGISTER: CAMPUS SELECTION */}
           {mode === "register" && step === "campus" && (
             <div className="space-y-4">
-              <div className="mb-6">
+              <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">
                   Select your campus
                 </h2>
@@ -720,77 +1188,71 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </p>
               </div>
 
-              {/* District level option */}
-              <button
-                onClick={() => handleCampusSelect(null)}
-                className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white">
-                  <Building2 className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-900">District Level</p>
-                  <p className="text-sm text-slate-600">
-                    I work at the district level, not a specific campus
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
-              </button>
-
-              {/* Campus list */}
-              <div className="max-h-48 space-y-2 overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-300/80">
-                {campuses.map(campus => (
+              {/* Search input */}
+              <div className="relative">
+                <Input
+                  type="text"
+                  value={campusQuery}
+                  onChange={e => setCampusQuery(e.target.value)}
+                  placeholder="Type to search campuses..."
+                  className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                  autoFocus
+                />
+                {campusQuery && (
                   <button
-                    key={campus.id}
-                    onClick={() => handleCampusSelect(campus.id)}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
+                    onClick={() => setCampusQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900/5 text-slate-700">
-                      <Users className="h-6 w-6" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900">
-                        {campus.name}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+                    <X className="h-4 w-4" />
                   </button>
-                ))}
+                )}
               </div>
 
-              {/* Other/External option */}
-              <button
-                onClick={() => handleCampusSelect(null, true)}
-                className="group flex w-full items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-900/5 text-slate-400">
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              {/* Campus dropdown list */}
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-slate-200/60 bg-white/60 p-2">
+                {filteredCampuses.length > 0 ? (
+                  filteredCampuses.map(campus => (
+                    <button
+                      key={campus.id}
+                      onClick={() => handleCampusSelect(campus.id)}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-red-50"
+                    >
+                      <Users className="h-4 w-4 text-slate-400" />
+                      <span className="font-medium text-slate-900">
+                        {campus.name}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
+                    <Users className="h-4 w-4 text-slate-300" />
+                    <span className="text-sm">No campuses found</span>
+                  </div>
+                )}
+                {/* Add campus and No campus options at bottom */}
+                <div className="border-t border-slate-100 mt-1 pt-2 space-y-1">
+                  <button
+                    onClick={() => handleCampusSelect(null, true)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-green-50"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
+                    <Plus className="h-4 w-4 text-green-500" />
+                    <span className="text-sm text-green-700">Add campus</span>
+                  </button>
+                  <button
+                    onClick={() => handleCampusSelect(null)}
+                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-slate-50"
+                  >
+                    <Building2 className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">No campus</span>
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <p className="font-medium text-slate-700">
-                    Other / Not Chi Alpha Staff
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    I'm an external affiliate or partner
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
-              </button>
+              </div>
 
               <button
-                onClick={() => goToStep("district")}
+                onClick={() => {
+                  setCampusQuery("");
+                  goToStep("district");
+                }}
                 className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" /> Back
@@ -815,12 +1277,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   <button
                     key={role.value}
                     onClick={() => handleRoleSelect(role.value)}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-sky-300 hover:bg-white"
+                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-red-300 hover:bg-white"
                   >
                     <div className="flex-1">
                       <p className="font-medium text-slate-900">{role.label}</p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-indigo-600" />
+                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
                   </button>
                 ))}
               </div>
@@ -860,7 +1322,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   value={affiliation}
                   onChange={e => setAffiliation(e.target.value)}
                   placeholder="e.g., Partner church, Donor, Assemblies of God"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-sky-500/60 focus-visible:ring-sky-500/20"
+                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                 />
               </div>
 
@@ -872,11 +1334,11 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 </p>
               </div>
 
-              {error && <p className="text-sm text-sky-700">{error}</p>}
+              {error && <p className="text-sm text-red-700">{error}</p>}
 
               <Button
                 onClick={() => goToStep("confirm")}
-                className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-500 hover:to-indigo-500 hover:shadow-sky-500/30"
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
                 Continue <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -959,18 +1421,18 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                 )}
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-600">Access Level</span>
-                  <span className="text-sm font-medium capitalize text-indigo-700">
+                  <span className="text-sm font-medium capitalize text-red-700">
                     {scopeLevel}
                   </span>
                 </div>
               </div>
 
-              {error && <p className="text-sm text-sky-700">{error}</p>}
+              {error && <p className="text-sm text-red-700">{error}</p>}
 
               <Button
                 onClick={handleRegister}
                 disabled={registerMutation.isPending}
-                className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-sky-500/20 transition-all hover:from-sky-500 hover:to-indigo-500 hover:shadow-sky-500/30"
+                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
                 {registerMutation.isPending ? (
                   <>

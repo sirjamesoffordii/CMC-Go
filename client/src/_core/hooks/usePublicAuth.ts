@@ -15,6 +15,7 @@ export function usePublicAuth() {
     enabled: !devBypass,
   });
   const logoutMutation = trpc.auth.logout.useMutation();
+  const utils = trpc.useUtils();
 
   const user = devBypass
     ? ({
@@ -55,6 +56,7 @@ export function usePublicAuth() {
     logout: async () => {
       if (devBypass) return;
       await logoutMutation.mutateAsync();
+      await utils.auth.me.invalidate();
     },
   };
 }

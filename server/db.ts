@@ -114,21 +114,56 @@ export async function closeDb() {
 // USERS
 // ============================================================================
 
-export async function getUserByOpenId(openId: string) {
-  const db = await getDb();
-  if (!db) return null;
-  const result = await db
-    .select()
-    .from(users)
-    .where(eq(users.openId, openId))
-    .limit(1);
-  return result[0] || null;
-}
+// Explicit column selection for users - all columns that exist in Railway DB
+const userColumns = {
+  id: users.id,
+  fullName: users.fullName,
+  email: users.email,
+  passwordHash: users.passwordHash,
+  role: users.role,
+  campusId: users.campusId,
+  districtId: users.districtId,
+  regionId: users.regionId,
+  overseeRegionId: users.overseeRegionId,
+  personId: users.personId,
+  scopeLevel: users.scopeLevel,
+  viewLevel: users.viewLevel,
+  editLevel: users.editLevel,
+  isBanned: users.isBanned,
+  approvalStatus: users.approvalStatus,
+  approvedByUserId: users.approvedByUserId,
+  approvedAt: users.approvedAt,
+  createdAt: users.createdAt,
+  lastLoginAt: users.lastLoginAt,
+  // Legacy OAuth columns (kept for compatibility)
+  openId: users.openId,
+  name: users.name,
+  loginMethod: users.loginMethod,
+  // Additional metadata
+  roleLabel: users.roleLabel,
+  roleTitle: users.roleTitle,
+  linkedPersonId: users.linkedPersonId,
+};
 
 export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const result = await db
+    .select(userColumns)
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getUserByOpenId(openId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select(userColumns)
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result[0] || null;
 }
 
@@ -136,7 +171,7 @@ export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return null;
   const result = await db
-    .select()
+    .select(userColumns)
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -167,6 +202,12 @@ export async function updateUserLastLoginAt(userId: number) {
     .update(users)
     .set({ lastLoginAt: new Date() })
     .where(eq(users.id, userId));
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
 export async function updateUserPersonId(
@@ -1211,6 +1252,113 @@ export async function getCampusMetricsByDistrict(districtId: string) {
       total: Number(row.total) || 0,
     })),
     unassigned: Number(unassignedResult[0]?.count) || 0,
+  };
+}
+
+export async function getDistrictLeadershipCounts(districtId: string) {
+  const db = await getDb();
+  if (!db) return { districtDirectorCount: 0, districtStaffCount: 0 };
+
+  // District leadership are people who belong to the district but have no campus (campus is N/A)
+  const districtLevelPeople = await db
+    .select({ primaryRole: people.primaryRole })
+    .from(people)
+    .where(
+      and(
+        eq(people.primaryDistrictId, districtId),
+        isNull(people.primaryCampusId)
+      )
+    );
+
+  const totalDistrictLevel = districtLevelPeople.length;
+  let districtDirectorCount = 0;
+  let districtStaffCount = 0;
+
+  for (const row of districtLevelPeople) {
+    const role = (row.primaryRole ?? "").toLowerCase().trim();
+    if (!role) continue;
+    if (
+      role.includes("district director") ||
+      role === "dd" ||
+      (districtId === "XAN" &&
+        (role.includes("national director") || role.includes("field director")))
+    ) {
+      districtDirectorCount += 1;
+      continue;
+    }
+    if (
+      role.includes("district staff") ||
+      role === "ds" ||
+      (districtId === "XAN" && role.includes("national staff"))
+    ) {
+      districtStaffCount += 1;
+    }
+  }
+
+  if (totalDistrictLevel > 0) {
+    const remaining = totalDistrictLevel - districtDirectorCount;
+    if (remaining > districtStaffCount) {
+      districtStaffCount = remaining;
+    }
+  }
+
+  return { districtDirectorCount, districtStaffCount };
+}
+
+/**
+ * Get aggregate needs summary for a district (public - no person identifiers).
+ * Returns total needs count, met needs count, and total financial amount (active needs only).
+ */
+export async function getDistrictNeedsSummary(districtId: string) {
+  const db = await getDb();
+  if (!db) return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0 };
+
+  // Get all needs for people in this district (active + met)
+  const result = await db
+    .select({
+      totalNeeds: sql<number>`COUNT(${needs.id})`,
+      metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
+      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+    })
+    .from(needs)
+    .innerJoin(people, eq(needs.personId, people.personId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .where(
+      and(
+        or(
+          eq(people.primaryDistrictId, districtId),
+          eq(campuses.districtId, districtId)
+        )
+      )
+    );
+
+  return {
+    totalNeeds: Number(result[0]?.totalNeeds) || 0,
+    metNeeds: Number(result[0]?.metNeeds) || 0,
+    totalFinancial: Number(result[0]?.totalAmount) || 0,
+  };
+}
+
+/**
+ * Get aggregate needs summary for all districts (public - no person identifiers).
+ * Returns total needs count and met needs count.
+ */
+export async function getNeedsAggregateSummary() {
+  const db = await getDb();
+  if (!db) return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0 };
+
+  const result = await db
+    .select({
+      totalNeeds: sql<number>`COUNT(${needs.id})`,
+      metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
+      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+    })
+    .from(needs);
+
+  return {
+    totalNeeds: Number(result[0]?.totalNeeds) || 0,
+    metNeeds: Number(result[0]?.metNeeds) || 0,
+    totalFinancial: Number(result[0]?.totalAmount) || 0,
   };
 }
 

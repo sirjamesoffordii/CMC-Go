@@ -257,7 +257,7 @@ export function DroppablePerson({
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 },
         }}
-        className={`relative group/person flex flex-col items-center w-[60px] flex-shrink-0 ${isDragging ? "drop-shadow-lg" : ""}`}
+        className={`relative group/person flex flex-col items-center w-[60px] flex-shrink-0 -mt-2 ${isDragging ? "drop-shadow-lg" : ""}`}
       >
         {/* First Name Label with Edit Button */}
         <div

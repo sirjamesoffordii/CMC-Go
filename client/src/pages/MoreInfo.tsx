@@ -1,10 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Calendar, MapPin, Users, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function MoreInfo() {
   const [, setLocation] = useLocation();
+
+  // Calculate days until CMC - dynamic counter that updates
+  const [daysUntilCMC, setDaysUntilCMC] = useState(() => {
+    const cmcDate = new Date("2026-07-06");
+    const today = new Date();
+    return Math.abs(
+      Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    );
+  });
+
+  useEffect(() => {
+    const updateDaysUntilCMC = () => {
+      const cmcDate = new Date("2026-07-06");
+      const today = new Date();
+      const days = Math.abs(
+        Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      );
+      setDaysUntilCMC(days);
+    };
+
+    updateDaysUntilCMC();
+    const interval = setInterval(updateDaysUntilCMC, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Handle ESC key to navigate back
   useEffect(() => {
@@ -48,6 +72,9 @@ export default function MoreInfo() {
               <p className="text-xl drop-shadow-md">
                 Campus Missions Conference
               </p>
+              <div className="mt-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm backdrop-blur-sm">
+                {daysUntilCMC} days until CMC
+              </div>
             </div>
           </div>
         </div>

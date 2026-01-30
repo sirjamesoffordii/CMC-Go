@@ -73,10 +73,14 @@ export const users = mysqlTable("users", {
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved
   createdAt: timestamp("createdAt").notNull().defaultNow(),
   lastLoginAt: timestamp("lastLoginAt"), // Updated on login
-  // Legacy fields for backward compatibility (can be removed later)
+  // Legacy OAuth columns (kept for database compatibility, not used in password auth)
   openId: varchar("openId", { length: 64 }),
   name: varchar("name", { length: 255 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  // Additional metadata
+  roleLabel: varchar("roleLabel", { length: 255 }),
+  roleTitle: varchar("roleTitle", { length: 255 }),
+  linkedPersonId: varchar("linkedPersonId", { length: 64 }),
 });
 
 export type User = typeof users.$inferSelect;
@@ -275,7 +279,7 @@ export const notes = mysqlTable(
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     createdBy: varchar("createdBy", { length: 255 }),
-    noteType: mysqlEnum("note_type", ["GENERAL", "NEED"])
+    noteType: mysqlEnum("note_type", ["GENERAL", "REQUEST"])
       .notNull()
       .default("GENERAL"),
   },

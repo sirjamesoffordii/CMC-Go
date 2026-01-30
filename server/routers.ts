@@ -124,7 +124,7 @@ export const appRouter = router({
         ...ctx.user,
         campusName: campus?.name || null,
         districtName: district?.name || null,
-        regionName: ctx.user.regionId || null,
+        regionName: ctx.user.regionId || ctx.user.overseeRegionId || null,
         personName: selectedPerson?.name || null,
       };
     }),
@@ -272,6 +272,12 @@ export const appRouter = router({
           ? input.overseeRegionId || null
           : null;
 
+        // For regional roles (REGION_DIRECTOR, REGIONAL_STAFF), set regionId to their oversee region
+        // so they can properly filter the map to their region
+        if (requiresOverseeRegion && overseeRegionId) {
+          regionId = overseeRegionId;
+        }
+
         // Hash password
         const passwordHash = await hashPassword(input.password);
 
@@ -321,6 +327,81 @@ export const appRouter = router({
             regionName: user.regionId || null,
           },
         };
+      }),
+
+    // Request password reset - sends a 6-digit code
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+
+        // Always return success to prevent email enumeration
+        if (!user) {
+          console.log(
+            `[ForgotPassword] No user found for email: ${input.email}`
+          );
+          return { success: true };
+        }
+
+        // Generate a 6-digit code
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Store the code with 15-minute expiration
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        await db.createAuthToken({
+          token: code,
+          email: input.email,
+          expiresAt,
+        });
+
+        // In production, send email here. For now, log to console.
+        console.log(`[ForgotPassword] Reset code for ${input.email}: ${code}`);
+        console.log(
+          `[ForgotPassword] Code expires at: ${expiresAt.toISOString()}`
+        );
+
+        return { success: true };
+      }),
+
+    // Verify reset code and reset password
+    resetPassword: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+          code: z.string().length(6),
+          newPassword: z.string().min(8),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Verify the code
+        const authToken = await db.getAuthToken(input.code);
+
+        if (!authToken || authToken.email !== input.email) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid or expired reset code",
+          });
+        }
+
+        // Get the user
+        const user = await db.getUserByEmail(input.email);
+        if (!user) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid or expired reset code",
+          });
+        }
+
+        // Hash the new password
+        const passwordHash = await hashPassword(input.newPassword);
+
+        // Update the password
+        await db.updateUserPassword(user.id, passwordHash);
+
+        // Consume the token so it can't be reused
+        await db.consumeAuthToken(input.code);
+
+        return { success: true };
       }),
 
     // Legacy: Start registration/login (kept for backward compatibility)
@@ -2061,7 +2142,7 @@ export const appRouter = router({
           personId: z.string(),
           category: z.enum(["INVITE", "INTERNAL"]).default("INTERNAL"),
           content: z.string(),
-          noteType: z.enum(["GENERAL", "NEED"]).optional(),
+          noteType: z.enum(["GENERAL", "REQUEST"]).optional(),
           createdBy: z.string().optional(),
         })
       )
@@ -2292,11 +2373,24 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getDistrictMetrics(input.districtId);
       }),
+    districtLeadership: publicProcedure
+      .input(z.object({ districtId: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getDistrictLeadershipCounts(input.districtId);
+      }),
     campusesByDistrict: publicProcedure
       .input(z.object({ districtId: z.string() }))
       .query(async ({ input }) => {
         return await db.getCampusMetricsByDistrict(input.districtId);
       }),
+    districtNeeds: publicProcedure
+      .input(z.object({ districtId: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getDistrictNeedsSummary(input.districtId);
+      }),
+    needsAggregate: publicProcedure.query(async () => {
+      return await db.getNeedsAggregateSummary();
+    }),
     allDistricts: publicProcedure.query(async () => {
       // Public aggregate endpoint - everyone can see district counts
       return await db.getAllDistrictMetrics();

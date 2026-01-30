@@ -5,6 +5,7 @@
  * based on their scopeLevel authorization.
  */
 
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Select,
@@ -52,12 +53,16 @@ interface ScopeSelectorProps {
   currentScope: ScopeLevel;
   onScopeChange: (scope: ScopeLevel) => void;
   className?: string;
+  userRegionName?: string | null; // Display name for user's region
+  userDistrictName?: string | null; // Display name for user's district
 }
 
 export function ScopeSelector({
   currentScope,
   onScopeChange,
   className = "",
+  userRegionName,
+  userDistrictName,
 }: ScopeSelectorProps) {
   const { user } = useAuth();
 
@@ -70,6 +75,17 @@ export function ScopeSelector({
     return null;
   }
 
+  // Get display label for scope - use user's region/district name if available
+  const getScopeLabel = (scope: ScopeLevel): string => {
+    if (scope === "REGION" && userRegionName) {
+      return userRegionName;
+    }
+    if (scope === "DISTRICT" && userDistrictName) {
+      return userDistrictName;
+    }
+    return SCOPE_CONFIG[scope].label;
+  };
+
   const CurrentIcon = SCOPE_CONFIG[currentScope].icon;
 
   return (
@@ -77,10 +93,10 @@ export function ScopeSelector({
       value={currentScope}
       onValueChange={v => onScopeChange(v as ScopeLevel)}
     >
-      <SelectTrigger className={`w-[140px] ${className}`}>
+      <SelectTrigger className={`w-[160px] ${className}`}>
         <div className="flex items-center gap-2">
           <CurrentIcon className="h-4 w-4" />
-          <SelectValue />
+          <SelectValue>{getScopeLabel(currentScope)}</SelectValue>
         </div>
       </SelectTrigger>
       <SelectContent>
@@ -91,7 +107,7 @@ export function ScopeSelector({
             <SelectItem key={scope} value={scope}>
               <div className="flex items-center gap-2">
                 <Icon className="h-4 w-4" />
-                <span>{config.label}</span>
+                <span>{getScopeLabel(scope)}</span>
               </div>
             </SelectItem>
           );
@@ -146,8 +162,5 @@ export function useScopeFilter() {
     accessibleScopes: getAccessibleScopes(userScopeLevel),
   };
 }
-
-// Import required hooks
-import { useState, useEffect } from "react";
 
 export default ScopeSelector;

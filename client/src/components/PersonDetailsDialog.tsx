@@ -264,16 +264,16 @@ export function PersonDetailsDialog({
         </div>
       </div>
 
-      {/* Needs Section */}
+      {/* Request Section */}
       <div className="space-y-4">
         <div className="border-b border-slate-200 pb-2">
-          <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Request</h3>
         </div>
 
-        {/* Add Need Form (Leaders Only) */}
+        {/* Add Request Form (Leaders Only) */}
         {isLeader && (
           <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Add Need (Leaders Only)</Label>
+            <Label>Add Request (Leaders Only)</Label>
             <div className="space-y-3">
               <div>
                 <Label className="text-sm">Type</Label>
@@ -313,7 +313,7 @@ export function PersonDetailsDialog({
               <div>
                 <Label className="text-sm">Description *</Label>
                 <Textarea
-                  placeholder="Describe the need..."
+                  placeholder="Describe the request..."
                   value={needDescription}
                   onChange={e => setNeedDescription(e.target.value)}
                   rows={2}
@@ -364,7 +364,7 @@ export function PersonDetailsDialog({
                 className="w-full"
                 disabled={!needDescription.trim()}
               >
-                Add Need
+                Add Request
               </Button>
             </div>
           </div>
@@ -372,10 +372,10 @@ export function PersonDetailsDialog({
 
         {/* Needs List */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Needs List</Label>
+          <Label className="text-sm font-medium">Requests List</Label>
           {needs.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">
-              No needs yet
+              No requests yet
             </p>
           ) : (
             needs.map(need => (

@@ -137,11 +137,20 @@ export function DistrictPanel({
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
   );
+  const { data: publicDistrictLeadership } =
+    trpc.metrics.districtLeadership.useQuery(
+      { districtId: districtId ?? "" },
+      { enabled: !!districtId && isPublicSafeMode }
+    );
   const { data: publicCampusMetrics } =
     trpc.metrics.campusesByDistrict.useQuery(
       { districtId: districtId ?? "" },
       { enabled: !!districtId && isPublicSafeMode }
     );
+  const { data: publicDistrictNeeds } = trpc.metrics.districtNeeds.useQuery(
+    { districtId: districtId ?? "" },
+    { enabled: !!districtId }
+  );
   const { data: publicCampuses = [] } = trpc.campuses.byDistrict.useQuery(
     { districtId: districtId ?? "" },
     { enabled: !!districtId }
@@ -843,20 +852,74 @@ export function DistrictPanel({
   }, [districtPeople, allNeeds]);
 
   const districtDirector =
-    peopleWithNeeds.find(
-      p =>
-        p.primaryRole?.toLowerCase().includes("district director") ||
-        p.primaryRole?.toLowerCase().includes("dd")
-    ) || null;
+    peopleWithNeeds.find(p => {
+      const role = p.primaryRole?.toLowerCase() ?? "";
+      if (role.includes("district director") || role.includes("dd"))
+        return true;
+      if (district?.id === "XAN") {
+        return (
+          role.includes("national director") || role.includes("field director")
+        );
+      }
+      return false;
+    }) || null;
 
-  const districtStaff =
-    peopleWithNeeds.find(
-      p =>
-        (p.primaryRole?.toLowerCase().includes("district staff") &&
-          // Keep the staff slot separate from campus placements
-          p.primaryCampusId === null) ||
-        p.primaryCampusId === undefined
-    ) || null;
+  const districtStaffList = useMemo(() => {
+    const statusOrder: Record<Person["status"], number> = {
+      "Not Invited": 0,
+      Yes: 1,
+      Maybe: 2,
+      No: 3,
+    };
+
+    return peopleWithNeeds
+      .filter(p => {
+        const role = p.primaryRole?.toLowerCase() ?? "";
+        if (role.includes("district staff")) return p.primaryCampusId == null;
+        if (district?.id === "XAN" && role.includes("national staff")) {
+          return p.primaryCampusId == null;
+        }
+        return false;
+      })
+      .sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+  }, [peopleWithNeeds]);
+
+  const publicDistrictDirectorPerson = useMemo(() => {
+    if (!isPublicSafeMode) return null;
+    if (!publicDistrictLeadership?.districtDirectorCount) return null;
+    return {
+      ...buildPublicPlaceholderPeople(1, null)[0],
+      primaryRole: "District Director",
+    } as Person;
+  }, [
+    buildPublicPlaceholderPeople,
+    isPublicSafeMode,
+    publicDistrictLeadership?.districtDirectorCount,
+  ]);
+
+  const publicDistrictStaffPeople = useMemo(() => {
+    if (!isPublicSafeMode) return [] as Person[];
+    const directorCount = publicDistrictLeadership?.districtDirectorCount ?? 0;
+    const count = Math.max(publicUnassignedCount - directorCount, 0);
+    if (count <= 0) return [] as Person[];
+    return buildPublicPlaceholderPeople(count, null).map(person => ({
+      ...person,
+      primaryRole: "District Staff",
+    })) as Person[];
+  }, [
+    buildPublicPlaceholderPeople,
+    isPublicSafeMode,
+    publicDistrictLeadership?.districtDirectorCount,
+    publicUnassignedCount,
+  ]);
+
+  const displayedDistrictDirector = isPublicSafeMode
+    ? publicDistrictDirectorPerson
+    : districtDirector;
+
+  const displayedDistrictStaffList = isPublicSafeMode
+    ? publicDistrictStaffPeople
+    : districtStaffList;
 
   // PR 5: Filter people based on status, search, and campus
   const filteredPeople = useMemo(() => {
@@ -903,9 +966,9 @@ export function DistrictPanel({
     if (districtDirector?.personId) {
       excludedPersonIds.add(districtDirector.personId);
     }
-    if (districtStaff?.personId) {
-      excludedPersonIds.add(districtStaff.personId);
-    }
+    districtStaffList.forEach(person => {
+      excludedPersonIds.add(person.personId);
+    });
 
     return filteredPeople.filter(
       p => p.primaryCampusId == null && !excludedPersonIds.has(p.personId)
@@ -914,7 +977,7 @@ export function DistrictPanel({
     buildPublicPlaceholderPeople,
     filteredPeople,
     districtDirector?.personId,
-    districtStaff?.personId,
+    districtStaffList,
     isPublicSafeMode,
     publicUnassignedCount,
   ]);
@@ -1134,9 +1197,18 @@ export function DistrictPanel({
     notInvited: stats.notInvited ?? 0,
   };
 
-  // Calculate needs summary for district - ONLY active needs are counted
-  // Only active needs are counted. Inactive needs are retained for history.
+  // Calculate needs summary for district - use public endpoint in public mode
+  // or calculate from local data when authenticated
   const needsSummary = useMemo(() => {
+    // Use public endpoint data if available (works in both public and auth modes)
+    if (publicDistrictNeeds) {
+      return {
+        totalNeeds: publicDistrictNeeds.totalNeeds,
+        metNeeds: publicDistrictNeeds.metNeeds ?? 0,
+        totalFinancial: publicDistrictNeeds.totalFinancial,
+      };
+    }
+    // Fallback to calculating from local data (authenticated mode with allNeeds loaded)
     const districtPersonIds = new Set(peopleWithNeeds.map(p => p.personId));
     // allNeeds already contains only active needs (from listActive query)
     const districtNeeds = allNeeds.filter(
@@ -1149,9 +1221,10 @@ export function DistrictPanel({
 
     return {
       totalNeeds,
+      metNeeds: 0,
       totalFinancial, // in cents
     };
-  }, [allNeeds, peopleWithNeeds]);
+  }, [allNeeds, peopleWithNeeds, publicDistrictNeeds]);
 
   const totalPeople =
     safeStats.going +
@@ -1582,13 +1655,13 @@ export function DistrictPanel({
             isActive: !personForm.needsMet, // Active if needsMet is false
           });
 
-          // Save needDetails to notes table with noteType="NEED" if provided
+          // Save needDetails to notes table with noteType="REQUEST" if provided
           if (personForm.needDetails?.trim()) {
             createNote.mutate({
               personId,
               category: "INTERNAL",
               content: personForm.needDetails.trim(),
-              noteType: "NEED",
+              noteType: "REQUEST",
             });
           }
         }
@@ -1639,7 +1712,7 @@ export function DistrictPanel({
         }
       }
 
-      // Extract needDetails from need description or from notes with noteType="NEED"
+      // Extract needDetails from need description or from notes with noteType="REQUEST"
       let needDetails = "";
       if (personNeed) {
         try {
@@ -1655,19 +1728,19 @@ export function DistrictPanel({
         }
       }
 
-      // Also check notes table for need notes (noteType="NEED")
+      // Also check notes table for request notes (noteType="REQUEST")
       try {
         const safeNotes = notesResult || [];
         const needNotes = safeNotes.filter((n: any) => {
           if (!n) return false;
-          return n.noteType === "NEED" || n.note_type === "NEED";
+          return n.noteType === "REQUEST" || n.note_type === "REQUEST";
         });
         if (needNotes.length > 0 && !needDetails) {
           const lastNote = needNotes[needNotes.length - 1];
           needDetails = (lastNote?.content || "") as string;
         }
       } catch (error) {
-        console.error("Error processing need notes:", error);
+        console.error("Error processing request notes:", error);
       }
 
       setPersonForm({
@@ -1860,13 +1933,13 @@ export function DistrictPanel({
               },
               {
                 onSuccess: () => {
-                  // Save needDetails to notes table with noteType="NEED" if provided
+                  // Save needDetails to notes table with noteType="REQUEST" if provided
                   if (formData.needDetails?.trim()) {
                     createNote.mutate({
                       personId,
                       category: "INTERNAL",
                       content: formData.needDetails.trim(),
-                      noteType: "NEED",
+                      noteType: "REQUEST",
                     });
                   }
                   // Close dialog and reset form after needs are updated
@@ -2263,11 +2336,11 @@ export function DistrictPanel({
                 {/* District Director */}
                 <div ref={districtDirectorRef}>
                   <DistrictDirectorDropZone
-                    person={districtDirector}
+                    person={displayedDistrictDirector}
                     onDrop={handleDistrictDirectorDrop}
                     onEdit={handleEditPerson}
                     onClick={() => {
-                      if (!districtDirector) return;
+                      if (!displayedDistrictDirector) return;
                       const statusCycle: Person["status"][] = [
                         "Not Invited",
                         "Yes",
@@ -2275,12 +2348,12 @@ export function DistrictPanel({
                         "No",
                       ];
                       const currentIndex = statusCycle.indexOf(
-                        districtDirector.status
+                        displayedDistrictDirector.status
                       );
                       const nextStatus =
                         statusCycle[(currentIndex + 1) % statusCycle.length];
                       onPersonStatusChange(
-                        districtDirector.personId,
+                        displayedDistrictDirector.personId,
                         nextStatus
                       );
                     }}
@@ -2303,46 +2376,76 @@ export function DistrictPanel({
                   />
                 </div>
 
-                {/* District Staff slot (optional) */}
-                <DistrictStaffDropZone
-                  person={districtStaff}
-                  onDrop={handleDistrictStaffDrop}
-                  onEdit={handleEditPerson}
-                  onClick={() => {
-                    if (!districtStaff) return;
-                    const statusCycle: Person["status"][] = [
-                      "Not Invited",
-                      "Yes",
-                      "Maybe",
-                      "No",
-                    ];
-                    const currentIndex = statusCycle.indexOf(
-                      districtStaff.status
-                    );
-                    const nextStatus =
-                      statusCycle[(currentIndex + 1) % statusCycle.length];
-                    onPersonStatusChange(districtStaff.personId, nextStatus);
-                  }}
-                  onAddClick={() => {
-                    openAddPersonDialog("district-staff");
-                  }}
-                  quickAddMode={quickAddMode === "district-staff"}
-                  quickAddName={quickAddName}
-                  onQuickAddNameChange={setQuickAddName}
-                  onQuickAddSubmit={() =>
-                    handleQuickAddSubmit("district-staff")
-                  }
-                  onQuickAddCancel={() => {
-                    setQuickAddMode(null);
-                    setQuickAddName("");
-                  }}
-                  onQuickAddClick={e =>
-                    handleQuickAddClick(e, "district-staff")
-                  }
-                  quickAddInputRef={quickAddInputRef}
-                  canInteract={canInteract}
-                  maskIdentity={isPublicSafeMode}
-                />
+                {/* District Staff slots (optional, multiple) */}
+                {displayedDistrictStaffList.map(person => (
+                  <DistrictStaffDropZone
+                    key={person.personId}
+                    person={person}
+                    onDrop={handleDistrictStaffDrop}
+                    onEdit={handleEditPerson}
+                    onClick={() => {
+                      if (!person) return;
+                      const statusCycle: Person["status"][] = [
+                        "Not Invited",
+                        "Yes",
+                        "Maybe",
+                        "No",
+                      ];
+                      const currentIndex = statusCycle.indexOf(person.status);
+                      const nextStatus =
+                        statusCycle[(currentIndex + 1) % statusCycle.length];
+                      onPersonStatusChange(person.personId, nextStatus);
+                    }}
+                    onAddClick={() => {
+                      openAddPersonDialog("district-staff");
+                    }}
+                    quickAddMode={quickAddMode === "district-staff"}
+                    quickAddName={quickAddName}
+                    onQuickAddNameChange={setQuickAddName}
+                    onQuickAddSubmit={() =>
+                      handleQuickAddSubmit("district-staff")
+                    }
+                    onQuickAddCancel={() => {
+                      setQuickAddMode(null);
+                      setQuickAddName("");
+                    }}
+                    onQuickAddClick={e =>
+                      handleQuickAddClick(e, "district-staff")
+                    }
+                    quickAddInputRef={quickAddInputRef}
+                    canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
+                  />
+                ))}
+                {canInteract && !isPublicSafeMode && (
+                  <DistrictStaffDropZone
+                    person={null}
+                    onDrop={handleDistrictStaffDrop}
+                    onEdit={handleEditPerson}
+                    onClick={() => {
+                      return;
+                    }}
+                    onAddClick={() => {
+                      openAddPersonDialog("district-staff");
+                    }}
+                    quickAddMode={quickAddMode === "district-staff"}
+                    quickAddName={quickAddName}
+                    onQuickAddNameChange={setQuickAddName}
+                    onQuickAddSubmit={() =>
+                      handleQuickAddSubmit("district-staff")
+                    }
+                    onQuickAddCancel={() => {
+                      setQuickAddMode(null);
+                      setQuickAddName("");
+                    }}
+                    onQuickAddClick={e =>
+                      handleQuickAddClick(e, "district-staff")
+                    }
+                    quickAddInputRef={quickAddInputRef}
+                    canInteract={canInteract}
+                    maskIdentity={isPublicSafeMode}
+                  />
+                )}
               </div>
             </div>
 
@@ -2361,30 +2464,39 @@ export function DistrictPanel({
                 Export CSV
               </Button>
             )}
-
-            {/* Right side: Needs Summary - only shown when authenticated (needs data requires auth) */}
-            {isAuthenticated && (
-              <div className="flex items-center gap-3 mr-[60px] flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-600 text-base">Needs:</span>
-                    <span className="font-semibold text-slate-900 text-base tabular-nums">
-                      {needsSummary.totalNeeds}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-600 text-base">Total:</span>
-                    <span className="font-semibold text-slate-900 text-base tabular-nums">
-                      $
-                      {(needsSummary.totalFinancial / 100).toLocaleString(
-                        "en-US",
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                      )}
-                    </span>
-                  </div>
+            <div className="flex items-center mr-[40px] flex-shrink-0">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-base">
+                {/* Request and $ Requested */}
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    {Math.max(
+                      0,
+                      needsSummary.totalNeeds - needsSummary.metNeeds
+                    )}
+                  </span>
+                  <span className="text-slate-600 text-sm">Request</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    {`$${(needsSummary.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                  </span>
+                  <span className="text-slate-600 text-sm">$ Requested</span>
+                </div>
+                {/* Met and $ Met */}
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    {needsSummary.metNeeds}
+                  </span>
+                  <span className="text-slate-600 text-sm">Met</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="font-semibold text-slate-900 tabular-nums">
+                    $0.00
+                  </span>
+                  <span className="text-slate-600 text-sm">$ Met</span>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Stats Section - Left aligned */}
@@ -2758,7 +2870,7 @@ export function DistrictPanel({
                                   onDrop={handlePersonMove}
                                   canInteract={canInteract}
                                 >
-                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add -mt-2">
                                     <button
                                       type="button"
                                       disabled={disableEdits}
@@ -2841,7 +2953,7 @@ export function DistrictPanel({
                                   onDrop={handlePersonMove}
                                   canInteract={canInteract}
                                 >
-                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add">
+                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add -mt-2">
                                     <button
                                       type="button"
                                       disabled={disableEdits}
@@ -3461,7 +3573,7 @@ export function DistrictPanel({
                         htmlFor="person-need"
                         className="text-sm font-medium"
                       >
-                        Need Request
+                        Request
                       </Label>
                       <Select
                         value={personForm.needType}
@@ -3542,7 +3654,7 @@ export function DistrictPanel({
                               htmlFor="person-needs-met"
                               className="text-sm font-medium"
                             >
-                              Need Met
+                              Request Met
                             </Label>
                             <div className="flex items-center h-9">
                               <Checkbox
@@ -3621,15 +3733,15 @@ export function DistrictPanel({
                     </div>
                   )}
 
-                  {/* Need Notes and General Notes Section - Side by side */}
+                  {/* Request Notes and General Notes Section - Side by side */}
                   <div className="mt-4 grid grid-cols-2 gap-4">
-                    {/* Need Notes Section */}
+                    {/* Request Notes Section */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="person-need-notes"
                         className="text-sm font-medium"
                       >
-                        Need Notes
+                        Request Notes
                       </Label>
                       <Textarea
                         id="person-need-notes"
@@ -4093,10 +4205,10 @@ export function DistrictPanel({
                     </h3>
                   </div>
 
-                  {/* Need Type & Amount Row */}
+                  {/* Request Type & Amount Row */}
                   <div className="flex items-center gap-4">
                     <div className="w-40">
-                      <Label htmlFor="edit-person-need">Need Request</Label>
+                      <Label htmlFor="edit-person-need">Request</Label>
                       <Select
                         value={personForm.needType}
                         onValueChange={value =>
@@ -4178,7 +4290,7 @@ export function DistrictPanel({
                               htmlFor="edit-person-needs-met"
                               className="cursor-pointer"
                             >
-                              Need Met
+                              Request Met
                             </Label>
                             <Checkbox
                               id="edit-person-needs-met"
@@ -4226,13 +4338,13 @@ export function DistrictPanel({
                   </div>
                 </div>
 
-                {/* Need Notes and General Notes Section - Side by side */}
+                {/* Request Notes and General Notes Section - Side by side */}
                 <div className="space-y-4 mt-4 grid grid-cols-2 gap-4">
-                  {/* Need Notes Section */}
+                  {/* Request Notes Section */}
                   <div className="space-y-4">
                     <div className="border-b border-slate-200 pb-2">
                       <h3 className="text-sm font-semibold text-slate-700">
-                        Need Notes
+                        Request Notes
                       </h3>
                     </div>
                     <div className="space-y-2">

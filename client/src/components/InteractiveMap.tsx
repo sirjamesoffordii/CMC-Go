@@ -6,6 +6,9 @@ import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
+// Scope filter type for map filtering
+type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";
+
 interface InteractiveMapProps {
   districts: District[];
   selectedDistrictId: string | null;
@@ -13,6 +16,9 @@ interface InteractiveMapProps {
   onBackgroundClick?: () => void;
   onNationalClick?: () => void;
   viewState?: ViewState; // Optional for backward compatibility
+  scopeFilter?: ScopeLevel; // Filter map display by scope level
+  userRegionId?: string | null; // User's region for REGION scope filtering
+  userDistrictId?: string | null; // User's district for DISTRICT scope filtering
 }
 
 // Base region label positions - closest to map (for 1 metric active)
@@ -41,8 +47,8 @@ const baseRegionPositions: Record<
   "West Coast": { baseX: 100, baseY: 300, labelDirection: "left" },
 
   // BOTTOM ROW - closer to map edge
-  Texico: { baseX: 420, baseY: 500, labelDirection: "below" },
-  "South Central": { baseX: 640, baseY: 500, labelDirection: "below" },
+  Texico: { baseX: 420, baseY: 470, labelDirection: "below" },
+  "South Central": { baseX: 640, baseY: 470, labelDirection: "below" },
 };
 
 // Map boundaries (from comment: x: 180-880, y: 120-500 in 960x600 viewBox)
@@ -66,7 +72,7 @@ interface MetricBounds {
 
 // Check if two bounds overlap
 const boundsOverlap = (a: MetricBounds, b: MetricBounds): boolean => {
-  const padding = 8; // Minimum spacing between labels
+  const padding = 0; // No extra spacing between labels
   return !(
     a.x + a.width + padding < b.x ||
     b.x + b.width + padding < a.x ||
@@ -124,7 +130,7 @@ const resolveCollisions = (
   const resolved = bounds.map(b => ({ ...b }));
   const maxIterations = 30;
   const shiftStep = 3;
-  const minSpacing = 10;
+  const minSpacing = 0;
 
   // Store center positions for easier manipulation
   const centers: Array<{
@@ -275,9 +281,11 @@ const getDynamicPosition = (
   let labelX = base.baseX;
   let labelY = base.baseY;
 
+  const isBottomRegion = region === "Texico" || region === "South Central";
+
   // Calculate metric bounds
   const metricWidth = 80;
-  const metricPadding = 15; // Minimum padding from map edge
+  const metricPadding = 0; // No extra padding from map edge
   const textHeight = totalHeight;
 
   // Check if metrics would overlap with map and calculate required offset
@@ -361,6 +369,16 @@ const getDynamicPosition = (
           rOffset = MAP_BOUNDS.bottom + metricPadding - rMetricTop;
           rY += rOffset;
         }
+
+        // Extra clamp ONLY for bottom regions so their stacks don't go off-screen.
+        if (r === "Texico" || r === "South Central") {
+          const rLineHeight = activeMetricCount === 1 ? 26 : 22;
+          const rLastBaseline = rY + (activeMetricCount - 1) * rLineHeight;
+          const rMaxBaseline = MAP_BOUNDS.viewBoxHeight - 18;
+          if (rLastBaseline > rMaxBaseline) {
+            rY -= rLastBaseline - rMaxBaseline;
+          }
+        }
         break;
       }
       case "right": {
@@ -392,6 +410,20 @@ const getDynamicPosition = (
   if (resolved) {
     labelX = resolved.x + resolved.width / 2;
     labelY = resolved.y + resolved.height / 2;
+  }
+
+  // Final clamp ONLY for bottom regions.
+  if (
+    isBottomRegion &&
+    base.labelDirection === "below" &&
+    activeMetricCount > 0
+  ) {
+    const lineHeight = activeMetricCount === 1 ? 26 : 22;
+    const lastBaseline = labelY + (activeMetricCount - 1) * lineHeight;
+    const maxBaseline = MAP_BOUNDS.viewBoxHeight - 18;
+    if (lastBaseline > maxBaseline) {
+      labelY -= lastBaseline - maxBaseline;
+    }
   }
 
   return { labelX, labelY, labelDirection: base.labelDirection };
@@ -457,6 +489,9 @@ export function InteractiveMap({
   onBackgroundClick,
   onNationalClick,
   viewState,
+  scopeFilter = "NATIONAL",
+  userRegionId,
+  userDistrictId,
 }: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
   const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -468,6 +503,29 @@ export function InteractiveMap({
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+
+  // Zoom viewBox for scope filtering - null means use default "0 0 960 600"
+  const [zoomViewBox, setZoomViewBox] = useState<string | null>(null);
+
+  // Filter districts based on scope
+  const filteredDistricts = useMemo(() => {
+    if (scopeFilter === "NATIONAL") {
+      return districts; // Show all
+    }
+    if (scopeFilter === "REGION" && userRegionId) {
+      // Show only districts in user's region
+      return districts.filter(d => {
+        const districtRegion = d.region || DISTRICT_REGION_MAP[d.id];
+        return districtRegion === userRegionId;
+      });
+    }
+    if (scopeFilter === "DISTRICT" && userDistrictId) {
+      // Show only user's district
+      return districts.filter(d => d.id === userDistrictId);
+    }
+    // Default to all if no valid filter
+    return districts;
+  }, [districts, scopeFilter, userRegionId, userDistrictId]);
 
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
@@ -491,6 +549,9 @@ export function InteractiveMap({
 
   // Fetch metrics from server for accurate totals
   const { data: serverMetrics } = trpc.metrics.get.useQuery();
+
+  // Fetch aggregate needs summary (public - no person identifiers)
+  const { data: needsAggregate } = trpc.metrics.needsAggregate.useQuery();
 
   // Fetch aggregate district and region metrics (public - everyone can see these)
   // These must be declared BEFORE useMemo hooks that use them
@@ -724,29 +785,6 @@ export function InteractiveMap({
     return totals;
   }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
 
-  // Get displayed totals (regional if hovering, otherwise national)
-  const displayedTotals =
-    hoveredRegion && regionalTotals[hoveredRegion]
-      ? regionalTotals[hoveredRegion]
-      : nationalTotals;
-  const displayedLabel = hoveredRegion || "Chi Alpha";
-
-  const toggleMetric = (metric: string) => {
-    setActiveMetrics(prev => {
-      const next = new Set(prev);
-      if (next.has(metric)) {
-        next.delete(metric);
-      } else {
-        next.add(metric);
-      }
-      return next;
-    });
-  };
-
-  const clearAllMetrics = () => {
-    setActiveMetrics(new Set());
-  };
-
   // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
     const stats: Record<string, DistrictStats> = {};
@@ -771,6 +809,67 @@ export function InteractiveMap({
 
     return stats;
   }, [districts, allPeople, allDistrictMetrics, isAuthenticated]);
+
+  // Get displayed totals based on hover state and scope filter
+  // Returns the same shape as nationalTotals (includes 'invited' field)
+  const getDisplayedTotals = (): typeof nationalTotals => {
+    // If hovering over a region, show that region's totals
+    if (hoveredRegion && regionalTotals[hoveredRegion]) {
+      return regionalTotals[hoveredRegion];
+    }
+    // If in REGION scope, show that region's totals
+    if (
+      scopeFilter === "REGION" &&
+      userRegionId &&
+      regionalTotals[userRegionId]
+    ) {
+      return regionalTotals[userRegionId];
+    }
+    // If in DISTRICT scope, show that district's totals
+    if (
+      scopeFilter === "DISTRICT" &&
+      userDistrictId &&
+      districtStats[userDistrictId]
+    ) {
+      const stats = districtStats[userDistrictId];
+      return {
+        ...stats,
+        invited: stats.yes + stats.maybe + stats.no,
+      };
+    }
+    // Default to national totals
+    return nationalTotals;
+  };
+  const displayedTotals = getDisplayedTotals();
+
+  // Determine the label to display:
+  // - If hovering over a region, show that region name
+  // - If in REGION scope filter, show user's region name
+  // - If in DISTRICT scope filter, show user's district name
+  // - Otherwise show "Chi Alpha"
+  const getDisplayLabel = (): string => {
+    if (hoveredRegion) return hoveredRegion;
+    if (scopeFilter === "REGION" && userRegionId) return userRegionId;
+    if (scopeFilter === "DISTRICT" && userDistrictId) return userDistrictId;
+    return "Chi Alpha";
+  };
+  const displayedLabel = getDisplayLabel();
+
+  const toggleMetric = (metric: string) => {
+    setActiveMetrics(prev => {
+      const next = new Set(prev);
+      if (next.has(metric)) {
+        next.delete(metric);
+      } else {
+        next.add(metric);
+      }
+      return next;
+    });
+  };
+
+  const clearAllMetrics = () => {
+    setActiveMetrics(new Set());
+  };
 
   useEffect(() => {
     // Load SVG content
@@ -821,6 +920,20 @@ export function InteractiveMap({
       Southeast: "#568969", // slightly brighter sage
       Texico: "#9F588A", // slightly brighter pink-purple magenta
       "West Coast": "#A77649", // slightly brighter warm amber
+    };
+
+    // District-specific colors for region/district scope views
+    // Used when zoomed into a region to differentiate districts
+    // Keys must match district IDs in DISTRICT_REGION_MAP (camelCase)
+    const districtColors: Record<string, string> = {
+      // Texico region districts
+      NewMexico: "#568969", // sage green
+      WestTexas: "#9F5A57", // brick red/brown
+      SouthTexas: "#8F8257", // warm brown/stone
+      NorthTexas: "#A77649", // amber brown
+      // South Central region (Oklahoma is not in Texico)
+      Oklahoma: "#6295AA", // coastal blue
+      // Add more districts as needed for other regions
     };
 
     // Premium map styling constants - vibrant, pop style
@@ -876,7 +989,27 @@ export function InteractiveMap({
       const district = districtMap.get(pathId);
       // Get region from district in database, or from mapping if not in database yet
       const region = district?.region || DISTRICT_REGION_MAP[pathId];
-      const baseColor = region ? regionColors[region] || "#e5e7eb" : "#e5e7eb";
+
+      // Use district-specific colors ONLY when:
+      // 1. We're in REGION scope AND have a userRegionId AND the district is in that region, OR
+      // 2. We're in DISTRICT scope AND have a userDistrictId
+      // This prevents showing district colors on national view
+      let baseColor: string;
+      const shouldShowDistrictColor =
+        (scopeFilter === "REGION" &&
+          userRegionId &&
+          region === userRegionId &&
+          districtColors[pathId]) ||
+        (scopeFilter === "DISTRICT" &&
+          userDistrictId &&
+          pathId === userDistrictId &&
+          districtColors[pathId]);
+
+      if (shouldShowDistrictColor) {
+        baseColor = districtColors[pathId];
+      } else {
+        baseColor = region ? regionColors[region] || "#e5e7eb" : "#e5e7eb";
+      }
 
       path.style.fill = baseColor;
       path.style.stroke = BORDER_COLOR;
@@ -957,16 +1090,44 @@ export function InteractiveMap({
         }
       }
 
-      // Apply styling based on dimming logic
-      if (isSelected) {
+      // Additional scope filter - hide districts outside the scope completely
+      // If scope filter restricts view, hide districts outside the scope
+      let shouldHide = false;
+      if (scopeFilter !== "NATIONAL") {
+        const pathDistrict = districtMap.get(pathId);
+        const pathRegion = pathDistrict?.region || DISTRICT_REGION_MAP[pathId];
+
+        if (scopeFilter === "REGION" && userRegionId) {
+          // Only show districts in user's region, hide all others
+          if (pathRegion !== userRegionId) {
+            shouldHide = true;
+          }
+        } else if (scopeFilter === "DISTRICT" && userDistrictId) {
+          // Only show user's district, hide all others
+          if (pathId !== userDistrictId) {
+            shouldHide = true;
+          }
+        }
+      }
+
+      // Apply styling based on dimming/hiding logic
+      if (shouldHide) {
+        // Completely hide districts outside scope
+        path.style.opacity = "0";
+        path.style.visibility = "hidden";
+        path.style.pointerEvents = "none";
+      } else if (isSelected) {
         path.style.filter = SELECTED_FILTER;
         path.style.opacity = "1";
+        path.style.visibility = "visible";
       } else if (shouldDim) {
         path.style.filter = DIM_FILTER;
         path.style.opacity = DIM_OPACITY;
+        path.style.visibility = "visible";
       } else {
         path.style.filter = "brightness(1.04)"; // Slightly brighter default
         path.style.opacity = "1";
+        path.style.visibility = "visible";
       }
     });
 
@@ -984,7 +1145,28 @@ export function InteractiveMap({
       // Allow clicking on all districts, even if not in database yet
       const district = districtMap.get(pathId);
 
+      // Get region once for this path
+      const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
+
+      // Check if this district should be hidden based on scope filter
+      let isHiddenByScope = false;
+      if (scopeFilter !== "NATIONAL") {
+        if (scopeFilter === "REGION" && userRegionId) {
+          isHiddenByScope = pathRegion !== userRegionId;
+        } else if (scopeFilter === "DISTRICT" && userDistrictId) {
+          isHiddenByScope = pathId !== userDistrictId;
+        }
+      }
+
+      // Disable interaction for hidden districts
+      if (isHiddenByScope) {
+        path.style.cursor = "default";
+        path.style.pointerEvents = "none";
+        return; // Skip adding event handlers for hidden districts
+      }
+
       path.style.cursor = "pointer";
+      path.style.pointerEvents = "auto";
 
       // Click handler - allow clicking even if district not in database
       const clickHandler = (e: MouseEvent) => {
@@ -992,9 +1174,6 @@ export function InteractiveMap({
         onDistrictSelect(pathId);
       };
       path.addEventListener("click", clickHandler);
-
-      // Get region once for this path
-      const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
 
       // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
@@ -1179,6 +1358,81 @@ export function InteractiveMap({
 
     // XAN button will be added as a separate element in JSX that transforms with the map
 
+    // Calculate zoom viewBox based on visible districts for scope filtering
+    // Only zoom if user has the appropriate ID for the selected scope level
+    const shouldZoom =
+      (scopeFilter === "REGION" && userRegionId) ||
+      (scopeFilter === "DISTRICT" && userDistrictId);
+
+    if (shouldZoom) {
+      // Collect bounding boxes of all visible paths
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity;
+      let hasVisiblePaths = false;
+
+      visualPaths.forEach(path => {
+        const pathId =
+          path.getAttribute("inkscape:label") ||
+          path.getAttributeNS(
+            "http://www.inkscape.org/namespaces/inkscape",
+            "label"
+          ) ||
+          path.getAttribute("id");
+        if (!pathId) return;
+
+        const district = districtMap.get(pathId);
+        const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
+
+        // Check if this path is visible based on scope
+        let isVisible = true;
+        if (scopeFilter === "REGION" && userRegionId) {
+          isVisible = pathRegion === userRegionId;
+        } else if (scopeFilter === "DISTRICT" && userDistrictId) {
+          isVisible = pathId === userDistrictId;
+        }
+
+        if (isVisible) {
+          try {
+            const bbox = path.getBBox();
+            minX = Math.min(minX, bbox.x);
+            minY = Math.min(minY, bbox.y);
+            maxX = Math.max(maxX, bbox.x + bbox.width);
+            maxY = Math.max(maxY, bbox.y + bbox.height);
+            hasVisiblePaths = true;
+          } catch {
+            // getBBox can throw if element is not rendered
+          }
+        }
+      });
+
+      if (hasVisiblePaths && minX !== Infinity) {
+        // Add padding around the visible area (10% on each side)
+        const width = maxX - minX;
+        const height = maxY - minY;
+        const paddingX = width * 0.15;
+        const paddingY = height * 0.15;
+
+        const viewBoxX = Math.max(0, minX - paddingX);
+        const viewBoxY = Math.max(0, minY - paddingY);
+        const viewBoxWidth = width + paddingX * 2;
+        const viewBoxHeight = height + paddingY * 2;
+
+        const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
+        setZoomViewBox(newViewBox);
+
+        // Apply the viewBox to both SVGs
+        clickSvg.setAttribute("viewBox", newViewBox);
+        visualSvg.setAttribute("viewBox", newViewBox);
+      }
+    } else {
+      // Reset to default viewBox for national view
+      setZoomViewBox(null);
+      clickSvg.setAttribute("viewBox", "0 0 960 600");
+      visualSvg.setAttribute("viewBox", "0 0 960 600");
+    }
+
     // Cleanup
     return () => {
       // Remove all event listeners by cloning paths
@@ -1200,6 +1454,9 @@ export function InteractiveMap({
     selectedDistrictId,
     onDistrictSelect,
     onNationalClick,
+    scopeFilter,
+    userRegionId,
+    userDistrictId,
   ]);
 
   // Generate pie chart SVG
@@ -1430,254 +1687,324 @@ export function InteractiveMap({
             "drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))",
         }}
       >
-        {/* Top Right Content - Right Aligned */}
+        {/* Top Right Label - Chi Alpha */}
         <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2">
-          {/* Label above metrics - right aligned */}
           <div className="flex items-center justify-end">
             <span
-              className="text-4xl font-semibold text-slate-800 transition-opacity duration-300 tracking-tight"
-              style={{ fontFamily: "Inter, sans-serif" }}
+              className="font-beach text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none"
+              style={{
+                transform: "scaleX(1.08)",
+                transformOrigin: "right center",
+              }}
             >
               {displayedLabel}
             </span>
           </div>
+        </div>
 
-          {/* Metrics section - moved down with more spacing */}
+        {/* Top Left Invited / Total + Metrics */}
+        <div className="absolute top-4 left-4 z-40 flex flex-col items-start gap-3">
           <div
-            className="flex flex-col items-end gap-3"
-            style={{ marginTop: "1.75rem" }}
+            className="flex items-center gap-2"
+            style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
           >
-            {/* Going */}
-            <button
-              onClick={() => toggleMetric("yes")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            <span
+              className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
               style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                lineHeight: "1",
+                minWidth: "6.5rem",
+                textAlign: "left",
               }}
             >
-              <span
-                className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
-                }}
-              >
-                Going
-              </span>
-              <span
-                className="text-4xl font-semibold text-slate-900"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.yes}
-              </span>
-              <div
-                className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("yes")
-                    ? "bg-emerald-700 border-emerald-700"
-                    : "border-slate-300 hover:border-emerald-600 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("yes")
-                    ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("yes") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+              Invited
+            </span>
 
-            {/* Maybe */}
-            <button
-              onClick={() => toggleMetric("maybe")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-              style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-              }}
+            <div
+              className="flex items-baseline gap-2 tabular-nums"
+              style={{ lineHeight: "1" }}
             >
-              <span
-                className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
-                }}
-              >
-                Maybe
+              <span className="text-5xl font-bold text-slate-900 tracking-tight">
+                {showPublicPlaceholder ? "—" : displayedTotals.invited}
               </span>
-              <span
-                className="text-3xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+              <span className="text-2xl font-normal text-slate-400">/</span>
+              <span className="text-xl font-normal text-slate-400 tracking-tight">
+                {showPublicPlaceholder ? "—" : displayedTotals.total}
               </span>
-              <div
-                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("maybe")
-                    ? "bg-yellow-600 border-yellow-600"
-                    : "border-slate-300 hover:border-yellow-600 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("maybe")
-                    ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("maybe") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+            </div>
 
-            {/* Not Going */}
-            <button
-              onClick={() => toggleMetric("no")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-              style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-              }}
-            >
-              <span
-                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
-                }}
-              >
-                Not Going
-              </span>
-              <span
-                className="text-2xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.no}
-              </span>
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("no")
-                    ? "bg-red-700 border-red-700"
-                    : "border-slate-300 hover:border-red-700 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("no")
-                    ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("no") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+            <div className="w-6 h-6 flex-shrink-0" />
+          </div>
+        </div>
 
-            {/* Not Invited Yet */}
-            <button
-              onClick={() => toggleMetric("notInvited")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+        {/* Top Right Metrics (kept on the right) */}
+        <div className="absolute top-16 right-4 z-40 flex flex-col items-end gap-3">
+          {/* Going */}
+          <button
+            onClick={() => toggleMetric("yes")}
+            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            style={{
+              filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+            }}
+          >
+            <span
+              className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
               style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                lineHeight: "1",
+                minWidth: "6.5rem",
+                textAlign: "right",
               }}
             >
-              <span
-                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
-                }}
-              >
-                Not Invited Yet
+              Going
+            </span>
+            <span
+              className="text-4xl font-semibold text-slate-900"
+              style={{
+                lineHeight: "1",
+                minWidth: "4rem",
+                textAlign: "center",
+              }}
+            >
+              {showPublicPlaceholder ? "—" : displayedTotals.yes}
+            </span>
+            <div
+              className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                activeMetrics.has("yes")
+                  ? "bg-emerald-700 border-emerald-700"
+                  : "border-slate-300 hover:border-emerald-600 bg-white"
+              }`}
+              style={{
+                boxShadow: activeMetrics.has("yes")
+                  ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+              }}
+            >
+              {activeMetrics.has("yes") && (
+                <svg
+                  className="w-full h-full text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </button>
+
+          {/* Maybe */}
+          <button
+            onClick={() => toggleMetric("maybe")}
+            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            style={{
+              filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+            }}
+          >
+            <span
+              className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "6.5rem",
+                textAlign: "right",
+              }}
+            >
+              Maybe
+            </span>
+            <span
+              className="text-3xl font-semibold text-slate-900 tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "4rem",
+                textAlign: "center",
+              }}
+            >
+              {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+            </span>
+            <div
+              className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                activeMetrics.has("maybe")
+                  ? "bg-yellow-600 border-yellow-600"
+                  : "border-slate-300 hover:border-yellow-600 bg-white"
+              }`}
+              style={{
+                boxShadow: activeMetrics.has("maybe")
+                  ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+              }}
+            >
+              {activeMetrics.has("maybe") && (
+                <svg
+                  className="w-full h-full text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </button>
+
+          {/* Not Going */}
+          <button
+            onClick={() => toggleMetric("no")}
+            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            style={{
+              filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+            }}
+          >
+            <span
+              className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "6.5rem",
+                textAlign: "right",
+              }}
+            >
+              Not Going
+            </span>
+            <span
+              className="text-2xl font-semibold text-slate-900 tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "4rem",
+                textAlign: "center",
+              }}
+            >
+              {showPublicPlaceholder ? "—" : displayedTotals.no}
+            </span>
+            <div
+              className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                activeMetrics.has("no")
+                  ? "bg-red-700 border-red-700"
+                  : "border-slate-300 hover:border-red-700 bg-white"
+              }`}
+              style={{
+                boxShadow: activeMetrics.has("no")
+                  ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+              }}
+            >
+              {activeMetrics.has("no") && (
+                <svg
+                  className="w-full h-full text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </button>
+
+          {/* Not Invited Yet */}
+          <button
+            onClick={() => toggleMetric("notInvited")}
+            className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            style={{
+              filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+            }}
+          >
+            <span
+              className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "6.5rem",
+                textAlign: "right",
+              }}
+            >
+              Not Invited Yet
+            </span>
+            <span
+              className="text-2xl font-semibold text-slate-900 tracking-tight"
+              style={{
+                lineHeight: "1",
+                minWidth: "4rem",
+                textAlign: "center",
+              }}
+            >
+              {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+            </span>
+            <div
+              className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                activeMetrics.has("notInvited")
+                  ? "bg-slate-500 border-slate-500"
+                  : "border-slate-300 hover:border-slate-400 bg-white"
+              }`}
+              style={{
+                boxShadow: activeMetrics.has("notInvited")
+                  ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
+                  : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+              }}
+            >
+              {activeMetrics.has("notInvited") && (
+                <svg
+                  className="w-full h-full text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              )}
+            </div>
+          </button>
+        </div>
+
+        {/* Bottom Right Request Summary */}
+        <div className="absolute bottom-4 right-4 z-40 rounded-lg border border-slate-200 bg-white/90 px-4 py-3 shadow-md backdrop-blur-sm">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
+            Request Summary
+          </div>
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+            <div className="flex items-baseline justify-end gap-1">
+              <span className="font-semibold text-slate-900 tabular-nums">
+                {needsAggregate
+                  ? needsAggregate.totalNeeds - needsAggregate.metNeeds
+                  : "—"}
               </span>
-              <span
-                className="text-2xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+              <span className="text-slate-600 text-xs">Request</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="font-semibold text-slate-900 tabular-nums">
+                {needsAggregate
+                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : "—"}
               </span>
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("notInvited")
-                    ? "bg-slate-500 border-slate-500"
-                    : "border-slate-300 hover:border-slate-400 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("notInvited")
-                    ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-                {activeMetrics.has("notInvited") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+              <span className="text-slate-600 text-xs">$ Requested</span>
+            </div>
+            <div className="flex items-baseline justify-end gap-1">
+              <span className="font-semibold text-slate-900 tabular-nums">
+                {needsAggregate ? needsAggregate.metNeeds : "—"}
+              </span>
+              <span className="text-slate-600 text-xs">Met</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="font-semibold text-slate-900 tabular-nums">
+                $0.00
+              </span>
+              <span className="text-slate-600 text-xs">$ Met</span>
+            </div>
           </div>
         </div>
 
@@ -1700,7 +2027,7 @@ export function InteractiveMap({
             filter: "blur(0.3px)", // Minimal blur to fill tiny gaps while preserving sharp edges
             transform: selectedDistrictId
               ? "scale(1.05) translateX(0px)" // Larger scale, centered when panel open
-              : "scale(1.03) translateX(-50px)", // Make map just a tiny bit bigger and shift left
+              : "scale(1.03) translateX(-70px)", // Shift map further left for layout balance
             transformOrigin: "center",
           }}
         />
@@ -1714,14 +2041,14 @@ export function InteractiveMap({
             style={{
               transform: selectedDistrictId
                 ? "scale(1.05) translateX(0px)"
-                : "scale(1.03) translateX(-50px)",
+                : "scale(1.03) translateX(-70px)",
               transformOrigin: "center",
             }}
           >
             <button
               type="button"
               aria-label="Open XAN (Chi Alpha National)"
-              className="absolute cursor-pointer pointer-events-auto"
+              className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none"
               style={{
                 left: "12%", // Moved to the left a little
                 bottom: "5%", // Moved up a little
@@ -1731,17 +2058,9 @@ export function InteractiveMap({
                 e.stopPropagation();
                 onNationalClick?.();
               }}
-              onMouseEnter={e => {
-                const circle = e.currentTarget.querySelector("div");
-                if (circle) circle.style.backgroundColor = "#b91c1c";
-              }}
-              onMouseLeave={e => {
-                const circle = e.currentTarget.querySelector("div");
-                if (circle) circle.style.backgroundColor = "#334155";
-              }}
             >
               <div
-                className="rounded-full bg-black hover:bg-red-700 flex items-center justify-center transition-colors duration-200"
+                className="rounded-full bg-black hover:bg-black focus-visible:bg-black flex items-center justify-center transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-black/60"
                 style={{
                   width: "3.5vw", // Larger default size, scales with viewport
                   height: "3.5vw",
@@ -1764,7 +2083,7 @@ export function InteractiveMap({
             pointerEvents: "auto",
             transform: selectedDistrictId
               ? "scale(1.05) translateX(0px)" // Match visual layer when panel open
-              : "scale(1.03) translateX(-50px)", // Match visual layer scale and shift left - FIXED: was -20px
+              : "scale(1.03) translateX(-70px)",
             transformOrigin: "center",
           }}
           onClick={e => {
@@ -1781,11 +2100,19 @@ export function InteractiveMap({
         />
 
         {/* Metric Overlays - Anchored to Region Labels around map edges */}
-        <div className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none">
+        <div
+          className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none"
+          style={{
+            transform: selectedDistrictId
+              ? "scale(1.05) translateX(0px)"
+              : "scale(1.03) translateX(-70px)",
+            transformOrigin: "center",
+          }}
+        >
           <svg
             width="100%"
             height="100%"
-            viewBox="0 0 960 600"
+            viewBox={zoomViewBox || "0 0 960 600"}
             preserveAspectRatio="xMidYMid meet"
           >
             {activeMetrics.size > 0 &&
@@ -1883,25 +2210,12 @@ export function InteractiveMap({
                   );
                   const direction = pos.labelDirection;
 
-                  // Calculate region name position based on direction with more padding
-                  let nameX = pos.labelX;
-                  let nameY = pos.labelY;
-                  let nameAnchor: "start" | "middle" | "end" = "middle";
-                  const namePadding = 24; // Increased padding to avoid overlap with numbers
-
-                  if (direction === "above") {
-                    nameY = pos.labelY - namePadding;
-                  } else if (direction === "below") {
-                    nameY = pos.labelY + totalHeight + namePadding;
-                  } else if (direction === "left") {
-                    nameX = pos.labelX - namePadding;
-                    nameY = pos.labelY - totalHeight / 2 + 4;
-                    nameAnchor = "end";
-                  } else if (direction === "right") {
-                    nameX = pos.labelX + namePadding;
-                    nameY = pos.labelY - totalHeight / 2 + 4;
-                    nameAnchor = "start";
-                  }
+                  // Region label: always directly under the metric stack (no padding/margins)
+                  const lastBaseline =
+                    pos.labelY + (metricsToShow.length - 1) * lineHeight;
+                  const nameX = pos.labelX;
+                  const nameY = lastBaseline + lineHeight;
+                  const nameAnchor: "start" | "middle" | "end" = "middle";
 
                   return (
                     <g
@@ -1914,9 +2228,9 @@ export function InteractiveMap({
                       {/* Invisible hit area for hover detection */}
                       <rect
                         x={pos.labelX - 40}
-                        y={pos.labelY - 25}
+                        y={pos.labelY - 30}
                         width={80}
-                        height={totalHeight + 40}
+                        height={totalHeight + 55}
                         fill="transparent"
                         rx="4"
                       />

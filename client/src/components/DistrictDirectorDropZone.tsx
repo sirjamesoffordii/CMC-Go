@@ -136,31 +136,16 @@ export function DistrictDirectorDropZone({
   };
 
   if (!person) {
-    // In public/masked mode, show a grey placeholder icon with no interactivity
+    // In public/masked mode, hide the slot entirely when no district director exists
     if (!canInteract || maskIdentity) {
-      return (
-        <div className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3">
-          <div className="relative flex flex-col items-center w-[60px]">
-            {/* Placeholder spacer for name label height */}
-            <div className="h-[18px]"></div>
-            {/* Grey placeholder icon */}
-            <div className="relative">
-              <User
-                className="w-10 h-10 text-gray-300"
-                strokeWidth={1.5}
-                fill="currentColor"
-              />
-            </div>
-          </div>
-        </div>
-      );
+      return null;
     }
 
     // Show add button when no district director (only in interactive mode)
     return (
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
           <button
@@ -243,7 +228,7 @@ export function DistrictDirectorDropZone({
     <>
       <div
         ref={drop}
-        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3"
+        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         {/* Name Label with Edit Button */}
         <div
