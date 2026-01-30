@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Person } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,24 @@ export default function FollowUpView() {
   const [, setLocation] = useLocation();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showOnlyWithNeeds, setShowOnlyWithNeeds] = useState(false);
+  // Filter state - initialize from URL query parameters
+  const getShowOnlyWithNeedsInitial = () => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("hasNeeds") === "true";
+  };
+  const [showOnlyWithNeeds, setShowOnlyWithNeeds] = useState(
+    getShowOnlyWithNeedsInitial()
+  );
+
+  const getDepositPaidFilterInitial = () => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("depositPaid") === "true";
+  };
+  const [depositPaidFilter, setDepositPaidFilter] = useState(
+    getDepositPaidFilterInitial()
+  );
 
   // Data queries
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -46,8 +63,28 @@ export default function FollowUpView() {
       });
     }
 
+    if (depositPaidFilter) {
+      filtered = filtered.filter(p => p.depositPaid === true);
+    }
+
     return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [allPeople, showOnlyWithNeeds, needsByPersonId]);
+  }, [allPeople, showOnlyWithNeeds, depositPaidFilter, needsByPersonId]);
+  // Update URL params when filters change
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (showOnlyWithNeeds) {
+      params.set("hasNeeds", "true");
+    } else {
+      params.delete("hasNeeds");
+    }
+    if (depositPaidFilter) {
+      params.set("depositPaid", "true");
+    } else {
+      params.delete("depositPaid");
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, "", newUrl);
+  }, [showOnlyWithNeeds, depositPaidFilter]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -97,17 +134,31 @@ export default function FollowUpView() {
 
         {/* Filter */}
         <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="showOnlyWithNeeds"
-              checked={showOnlyWithNeeds}
-              onCheckedChange={checked =>
-                setShowOnlyWithNeeds(checked === true)
-              }
-            />
-            <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
-              Show only people with active requests
-            </Label>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="showOnlyWithNeeds"
+                checked={showOnlyWithNeeds}
+                onCheckedChange={checked =>
+                  setShowOnlyWithNeeds(checked === true)
+                }
+              />
+              <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
+                Show only people with active requests
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="depositPaidFilter"
+                checked={depositPaidFilter}
+                onCheckedChange={checked =>
+                  setDepositPaidFilter(checked === true)
+                }
+              />
+              <Label htmlFor="depositPaidFilter" className="cursor-pointer">
+                Deposit Paid
+              </Label>
+            </div>
           </div>
         </div>
 
