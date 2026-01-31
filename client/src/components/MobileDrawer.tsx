@@ -11,8 +11,8 @@ interface MobileDrawerProps {
   height?: string;
 }
 
-const SWIPE_CLOSE_THRESHOLD = 100; // pixels to swipe down before closing
-const SWIPE_VELOCITY_THRESHOLD = 500; // velocity in px/s for quick swipes
+const SWIPE_CLOSE_THRESHOLD = 80; // pixels to swipe down before closing
+const SWIPE_VELOCITY_THRESHOLD = 400; // velocity in px/s for quick swipes
 
 export function MobileDrawer({
   isOpen,
@@ -68,8 +68,8 @@ export function MobileDrawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-[1px]"
             onClick={onClose}
           />
 
@@ -80,37 +80,41 @@ export function MobileDrawer({
             exit={{ y: "100%" }}
             transition={{
               type: "spring",
-              damping: 30,
-              stiffness: 300,
+              damping: 28,
+              stiffness: 350,
             }}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.5 }}
+            dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-xl shadow-lg flex flex-col"
-            style={{ height, maxHeight: "85vh" }}
+            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-2xl shadow-2xl flex flex-col"
+            style={{ height, maxHeight: "90vh" }}
           >
             {/* Drag Handle Indicator */}
-            <div className="flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
-              <div className="w-10 h-1 bg-gray-300 rounded-full" />
+            <div className="flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
             </div>
 
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between shrink-0">
-              {title && <h2 className="text-lg font-semibold">{title}</h2>}
-              {/* Touch-friendly close button: min 44x44 */}
+            <div className="px-4 py-2 flex items-center justify-between shrink-0 border-b border-gray-100">
+              {title && (
+                <h2 className="text-lg font-semibold text-gray-900 truncate pr-2">
+                  {title}
+                </h2>
+              )}
+              {/* Touch-friendly close button */}
               <button
                 onClick={onClose}
-                className="ml-auto p-2.5 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors touch-target"
+                className="ml-auto p-2 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors flex items-center justify-center"
                 style={{ minWidth: 44, minHeight: 44 }}
                 aria-label="Close panel"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
             {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {children}
             </div>
           </motion.div>
