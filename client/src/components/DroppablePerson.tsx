@@ -346,14 +346,14 @@ export function DroppablePerson({
               <NeedIndicator type={personNeed?.type} />
             )}
           </button>
-
-          {/* Role Label - hidden until hover */}
-          {!maskIdentity && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
-              {person.primaryRole || "Staff"}
-            </div>
-          )}
         </div>
+
+        {/* Role Label - hidden until hover, positioned relative to motion.div */}
+        {!maskIdentity && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            {person.primaryRole || "Staff"}
+          </div>
+        )}
       </motion.div>
       {/* Person Tooltip */}
       {!maskIdentity && isHovered && tooltipPos && (

@@ -124,9 +124,7 @@ export function PersonDetailsDialog({
   const handleAddNeed = () => {
     if (!person || !needDescription.trim()) return;
     const amount =
-      needType === "Financial" && needAmount
-        ? parseFloat(needAmount) * 100
-        : undefined;
+      needAmount ? parseFloat(needAmount) * 100 : undefined;
     createNeed.mutate({
       personId: person.personId,
       type: needType,
@@ -264,16 +262,16 @@ export function PersonDetailsDialog({
         </div>
       </div>
 
-      {/* Request Section */}
+      {/* Needs Section */}
       <div className="space-y-4">
         <div className="border-b border-slate-200 pb-2">
-          <h3 className="text-sm font-semibold text-slate-700">Request</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
         </div>
 
-        {/* Add Request Form (Leaders Only) */}
+        {/* Add Need Form (Leaders Only) */}
         {isLeader && (
           <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Add Request (Leaders Only)</Label>
+            <Label>Add Need (Leaders Only)</Label>
             <div className="space-y-3">
               <div>
                 <Label className="text-sm">Type</Label>
@@ -298,22 +296,20 @@ export function PersonDetailsDialog({
                   </SelectContent>
                 </Select>
               </div>
-              {needType === "Financial" && (
-                <div>
-                  <Label className="text-sm">Amount ($)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={needAmount}
-                    onChange={e => setNeedAmount(e.target.value)}
-                  />
-                </div>
-              )}
+              <div>
+                <Label className="text-sm">Amount ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={needAmount}
+                  onChange={e => setNeedAmount(e.target.value)}
+                />
+              </div>
               <div>
                 <Label className="text-sm">Description *</Label>
                 <Textarea
-                  placeholder="Describe the request..."
+                  placeholder="Describe the need..."
                   value={needDescription}
                   onChange={e => setNeedDescription(e.target.value)}
                   rows={2}
@@ -364,7 +360,7 @@ export function PersonDetailsDialog({
                 className="w-full"
                 disabled={!needDescription.trim()}
               >
-                Add Request
+                Add Need
               </Button>
             </div>
           </div>
@@ -372,10 +368,10 @@ export function PersonDetailsDialog({
 
         {/* Needs List */}
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Requests List</Label>
+          <Label className="text-sm font-medium">Needs List</Label>
           {needs.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-4">
-              No requests yet
+              No needs yet
             </p>
           ) : (
             needs.map(need => (

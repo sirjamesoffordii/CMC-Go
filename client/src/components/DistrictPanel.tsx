@@ -392,8 +392,9 @@ export function DistrictPanel({
   const [pieChartOffset, setPieChartOffset] = useState(0);
   const [labelsOffset, setLabelsOffset] = useState(0);
   const pieChartPadding = Math.max(0, pieChartOffset);
-  const statsGridOffset =
-    labelsOffset > 0 ? Math.max(0, labelsOffset - pieChartPadding - 116) : 32;
+  // Stats grid offset: position first circle under district director
+  // labelsOffset is already set to align the circle with director center
+  const statsGridOffset = labelsOffset > 0 ? labelsOffset : 0;
 
   // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -1108,8 +1109,9 @@ export function DistrictPanel({
           if (directorIcon) {
             const iconRect = directorIcon.getBoundingClientRect();
             const directorCenter = iconRect.left + iconRect.width / 2;
-            // Center the stats grid under the icon (stats grid is approximately 200px wide)
-            const labelsOffset = directorCenter - containerRect.left - 100;
+            // Align the first circle (Going) with the center of the district director icon
+            // The circle is 14px (w-3.5) with a small offset from grid edge
+            const labelsOffset = directorCenter - containerRect.left - 7;
             setLabelsOffset(Math.max(0, labelsOffset));
           }
         }
@@ -1206,6 +1208,7 @@ export function DistrictPanel({
         totalNeeds: publicDistrictNeeds.totalNeeds,
         metNeeds: publicDistrictNeeds.metNeeds ?? 0,
         totalFinancial: publicDistrictNeeds.totalFinancial,
+        metFinancial: publicDistrictNeeds.metFinancial ?? 0,
       };
     }
     // Fallback to calculating from local data (authenticated mode with allNeeds loaded)
@@ -1223,6 +1226,7 @@ export function DistrictPanel({
       totalNeeds,
       metNeeds: 0,
       totalFinancial, // in cents
+      metFinancial: 0,
     };
   }, [allNeeds, peopleWithNeeds, publicDistrictNeeds]);
 
@@ -1632,26 +1636,30 @@ export function DistrictPanel({
         }
         // Create need only if needType is not "None"
         if (personForm.needType !== "None" && personForm.needType) {
-          // Build need description - include needDetails for Financial needs if provided
-          let needDescription: string;
-          if (personForm.needType === "Financial") {
-            const amountPart = `$${personForm.needAmount || "0"}`;
-            needDescription = personForm.needDetails
-              ? `${amountPart} - ${personForm.needDetails}`
-              : `Financial need: ${amountPart}`;
-          } else {
-            needDescription =
-              personForm.needDetails || `${personForm.needType} need`;
-          }
+          const parsedAmount = personForm.needAmount
+            ? Math.round(parseFloat(personForm.needAmount) * 100)
+            : undefined;
+
+          const amountPart =
+            parsedAmount !== undefined
+              ? `$${(parsedAmount / 100).toLocaleString("en-US", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`
+              : null;
+
+          const details = personForm.needDetails?.trim();
+          const needDescription = amountPart
+            ? details
+              ? `${amountPart} - ${details}`
+              : `${personForm.needType} need: ${amountPart}`
+            : details || `${personForm.needType} need`;
 
           updateOrCreateNeed.mutate({
             personId,
             type: personForm.needType,
             description: needDescription,
-            amount:
-              personForm.needType === "Financial" && personForm.needAmount
-                ? Math.round(parseFloat(personForm.needAmount) * 100)
-                : undefined,
+            amount: parsedAmount,
             isActive: !personForm.needsMet, // Active if needsMet is false
           });
 
@@ -1754,10 +1762,7 @@ export function DistrictPanel({
               | "Housing"
               | "Other")
           : "None",
-        needAmount:
-          personNeed?.type === "Financial" && personNeed?.amount
-            ? (personNeed.amount / 100).toString()
-            : "",
+        needAmount: personNeed?.amount ? (personNeed.amount / 100).toString() : "",
         needDetails: needDetails,
         notes: person.notes || "",
         spouseAttending:
@@ -1908,27 +1913,31 @@ export function DistrictPanel({
           }
           // Handle needs: create/update if needType is not "None", delete if "None"
           if (formData.needType !== "None" && formData.needType) {
-            // Build need description - include needDetails for all need types if provided
-            let needDescription: string;
-            if (formData.needType === "Financial") {
-              const amountPart = `$${formData.needAmount || "0"}`;
-              needDescription = formData.needDetails?.trim()
-                ? `${amountPart} - ${formData.needDetails.trim()}`
-                : `Financial need: ${amountPart}`;
-            } else {
-              needDescription =
-                formData.needDetails?.trim() || `${formData.needType} need`;
-            }
+            const parsedAmount = formData.needAmount
+              ? Math.round(parseFloat(formData.needAmount) * 100)
+              : undefined;
+
+            const amountPart =
+              parsedAmount !== undefined
+                ? `$${(parsedAmount / 100).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
+                : null;
+
+            const details = formData.needDetails?.trim();
+            const needDescription = amountPart
+              ? details
+                ? `${amountPart} - ${details}`
+                : `${formData.needType} need: ${amountPart}`
+              : details || `${formData.needType} need`;
 
             updateOrCreateNeed.mutate(
               {
                 personId,
                 type: formData.needType,
                 description: needDescription,
-                amount:
-                  formData.needType === "Financial" && formData.needAmount
-                    ? Math.round(parseFloat(formData.needAmount) * 100)
-                    : undefined,
+                amount: parsedAmount,
                 isActive: !formData.needsMet, // Active if needsMet is false
               },
               {
@@ -2268,340 +2277,225 @@ export function DistrictPanel({
   const content = district ? (
     <div className="w-full h-full flex flex-col">
       <div className="flex-1 overflow-auto scrollbar-hide py-2 px-2 sm:px-4">
+        {/* Wrapper to keep header and campuses same width */}
+        <div className="w-max min-w-full">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 sm:p-3 mb-2 w-full">
-          {/* Title Section */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 sm:gap-5 flex-wrap">
-              <div ref={districtNameRef} className="ml-1 sm:ml-2 min-w-0">
-                <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
-                  <EditableText
-                    value={district.name}
-                    onSave={newName => {
-                      updateDistrictName.mutate({
-                        id: district.id,
-                        name: newName,
-                      });
-                    }}
-                    disabled={disableEdits}
-                    className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                    inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                  />
-                  {disableEdits && (
-                    <span className="ml-1 text-slate-400"></span>
-                  )}
-                </h1>
-                <span className="text-slate-500 text-sm mt-0.5 block font-medium">
-                  <EditableText
-                    value={district.region}
-                    onSave={newRegion => {
-                      updateDistrictRegion.mutate({
-                        id: district.id,
-                        region: newRegion,
-                      });
-                    }}
-                    disabled={disableEdits}
-                    className="text-slate-500 text-sm"
-                    inputClassName="text-slate-500 text-sm"
-                  />
-                  {disableEdits && (
-                    <span className="ml-1 text-slate-400"></span>
-                  )}
-                </span>
-              </div>
-              <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
-
-              {/* District Director and Staff - grouped together with smaller gap */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* District Director */}
-                <div ref={districtDirectorRef}>
-                  <DistrictDirectorDropZone
-                    person={displayedDistrictDirector}
-                    onDrop={handleDistrictDirectorDrop}
-                    onEdit={handleEditPerson}
-                    onClick={() => {
-                      if (!displayedDistrictDirector) return;
-                      const statusCycle: Person["status"][] = [
-                        "Not Invited",
-                        "Yes",
-                        "Maybe",
-                        "No",
-                      ];
-                      const currentIndex = statusCycle.indexOf(
-                        displayedDistrictDirector.status
-                      );
-                      const nextStatus =
-                        statusCycle[(currentIndex + 1) % statusCycle.length];
-                      onPersonStatusChange(
-                        displayedDistrictDirector.personId,
-                        nextStatus
-                      );
-                    }}
-                    onAddClick={() => {
-                      openAddPersonDialog("district");
-                    }}
-                    quickAddMode={quickAddMode === "district"}
-                    quickAddName={quickAddName}
-                    onQuickAddNameChange={setQuickAddName}
-                    onQuickAddSubmit={() => handleQuickAddSubmit("district")}
-                    onQuickAddCancel={() => {
-                      setQuickAddMode(null);
-                      setQuickAddName("");
-                    }}
-                    onQuickAddClick={e => handleQuickAddClick(e, "district")}
-                    quickAddInputRef={quickAddInputRef}
-                    districtId={district?.id || null}
-                    canInteract={canInteract}
-                    maskIdentity={isPublicSafeMode}
-                  />
-                </div>
-
-                {/* District Staff slots (optional, multiple) */}
-                {displayedDistrictStaffList.map(person => (
-                  <DistrictStaffDropZone
-                    key={person.personId}
-                    person={person}
-                    onDrop={handleDistrictStaffDrop}
-                    onEdit={handleEditPerson}
-                    onClick={() => {
-                      if (!person) return;
-                      const statusCycle: Person["status"][] = [
-                        "Not Invited",
-                        "Yes",
-                        "Maybe",
-                        "No",
-                      ];
-                      const currentIndex = statusCycle.indexOf(person.status);
-                      const nextStatus =
-                        statusCycle[(currentIndex + 1) % statusCycle.length];
-                      onPersonStatusChange(person.personId, nextStatus);
-                    }}
-                    onAddClick={() => {
-                      openAddPersonDialog("district-staff");
-                    }}
-                    quickAddMode={quickAddMode === "district-staff"}
-                    quickAddName={quickAddName}
-                    onQuickAddNameChange={setQuickAddName}
-                    onQuickAddSubmit={() =>
-                      handleQuickAddSubmit("district-staff")
-                    }
-                    onQuickAddCancel={() => {
-                      setQuickAddMode(null);
-                      setQuickAddName("");
-                    }}
-                    onQuickAddClick={e =>
-                      handleQuickAddClick(e, "district-staff")
-                    }
-                    quickAddInputRef={quickAddInputRef}
-                    canInteract={canInteract}
-                    maskIdentity={isPublicSafeMode}
-                  />
-                ))}
-                {canInteract && !isPublicSafeMode && (
-                  <DistrictStaffDropZone
-                    person={null}
-                    onDrop={handleDistrictStaffDrop}
-                    onEdit={handleEditPerson}
-                    onClick={() => {
-                      return;
-                    }}
-                    onAddClick={() => {
-                      openAddPersonDialog("district-staff");
-                    }}
-                    quickAddMode={quickAddMode === "district-staff"}
-                    quickAddName={quickAddName}
-                    onQuickAddNameChange={setQuickAddName}
-                    onQuickAddSubmit={() =>
-                      handleQuickAddSubmit("district-staff")
-                    }
-                    onQuickAddCancel={() => {
-                      setQuickAddMode(null);
-                      setQuickAddName("");
-                    }}
-                    onQuickAddClick={e =>
-                      handleQuickAddClick(e, "district-staff")
-                    }
-                    quickAddInputRef={quickAddInputRef}
-                    canInteract={canInteract}
-                    maskIdentity={isPublicSafeMode}
-                  />
+        <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
+          {/* Title Section - District Name, Region, Directors, and Needs Summary */}
+          <div className="flex items-center gap-4 sm:gap-5 flex-wrap">
+            <div ref={districtNameRef} className="min-w-0">
+              <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
+                <EditableText
+                  value={district.name}
+                  onSave={newName => {
+                    updateDistrictName.mutate({
+                      id: district.id,
+                      name: newName,
+                    });
+                  }}
+                  disabled={disableEdits}
+                  className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                  inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                />
+                {disableEdits && (
+                  <span className="ml-1 text-slate-400"></span>
                 )}
+              </h1>
+              <span className="text-slate-500 text-sm mt-0.5 block font-medium">
+                <EditableText
+                  value={district.region}
+                  onSave={newRegion => {
+                    updateDistrictRegion.mutate({
+                      id: district.id,
+                      region: newRegion,
+                    });
+                  }}
+                  disabled={disableEdits}
+                  className="text-slate-500 text-sm"
+                  inputClassName="text-slate-500 text-sm"
+                />
+                {disableEdits && (
+                  <span className="ml-1 text-slate-400"></span>
+                )}
+              </span>
+            </div>
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
+
+            {/* District Director and Staff - grouped together with smaller gap */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* District Director */}
+              <div ref={districtDirectorRef}>
+                <DistrictDirectorDropZone
+                  person={displayedDistrictDirector}
+                  onDrop={handleDistrictDirectorDrop}
+                  onEdit={handleEditPerson}
+                  onClick={() => {
+                    if (!displayedDistrictDirector) return;
+                    const statusCycle: Person["status"][] = [
+                      "Not Invited",
+                      "Yes",
+                      "Maybe",
+                      "No",
+                    ];
+                    const currentIndex = statusCycle.indexOf(
+                      displayedDistrictDirector.status
+                    );
+                    const nextStatus =
+                      statusCycle[(currentIndex + 1) % statusCycle.length];
+                    onPersonStatusChange(
+                      displayedDistrictDirector.personId,
+                      nextStatus
+                    );
+                  }}
+                  onAddClick={() => {
+                    openAddPersonDialog("district");
+                  }}
+                  quickAddMode={quickAddMode === "district"}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() => handleQuickAddSubmit("district")}
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName("");
+                  }}
+                  onQuickAddClick={e => handleQuickAddClick(e, "district")}
+                  quickAddInputRef={quickAddInputRef}
+                  districtId={district?.id || null}
+                  canInteract={canInteract}
+                  maskIdentity={isPublicSafeMode}
+                />
               </div>
+
+              {/* District Staff slots (optional, multiple) */}
+              {displayedDistrictStaffList.map(person => (
+                <DistrictStaffDropZone
+                  key={person.personId}
+                  person={person}
+                  onDrop={handleDistrictStaffDrop}
+                  onEdit={handleEditPerson}
+                  onClick={() => {
+                    if (!person) return;
+                    const statusCycle: Person["status"][] = [
+                      "Not Invited",
+                      "Yes",
+                      "Maybe",
+                      "No",
+                    ];
+                    const currentIndex = statusCycle.indexOf(person.status);
+                    const nextStatus =
+                      statusCycle[(currentIndex + 1) % statusCycle.length];
+                    onPersonStatusChange(person.personId, nextStatus);
+                  }}
+                  onAddClick={() => {
+                    openAddPersonDialog("district-staff");
+                  }}
+                  quickAddMode={quickAddMode === "district-staff"}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() =>
+                    handleQuickAddSubmit("district-staff")
+                  }
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName("");
+                  }}
+                  onQuickAddClick={e =>
+                    handleQuickAddClick(e, "district-staff")
+                  }
+                  quickAddInputRef={quickAddInputRef}
+                  canInteract={canInteract}
+                  maskIdentity={isPublicSafeMode}
+                />
+              ))}
+              {canInteract && !isPublicSafeMode && (
+                <DistrictStaffDropZone
+                  person={null}
+                  onDrop={handleDistrictStaffDrop}
+                  onEdit={handleEditPerson}
+                  onClick={() => {
+                    return;
+                  }}
+                  onAddClick={() => {
+                    openAddPersonDialog("district-staff");
+                  }}
+                  quickAddMode={quickAddMode === "district-staff"}
+                  quickAddName={quickAddName}
+                  onQuickAddNameChange={setQuickAddName}
+                  onQuickAddSubmit={() =>
+                    handleQuickAddSubmit("district-staff")
+                  }
+                  onQuickAddCancel={() => {
+                    setQuickAddMode(null);
+                    setQuickAddName("");
+                  }}
+                  onQuickAddClick={e =>
+                    handleQuickAddClick(e, "district-staff")
+                  }
+                  quickAddInputRef={quickAddInputRef}
+                  canInteract={canInteract}
+                  maskIdentity={isPublicSafeMode}
+                />
+              )}
             </div>
 
-            {/* Needs Summary - Clean aligned layout */}
-            <div className="flex items-center ml-auto flex-shrink-0 text-right">
-              <div className="space-y-0.5">
-                <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
-                    {Math.max(
-                      0,
-                      needsSummary.totalNeeds - needsSummary.metNeeds
-                    )}
-                  </span>
-                  <span className="text-slate-500 text-xs">Open</span>
-                </div>
-                <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
-                    {`$${(needsSummary.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
-                  </span>
-                  <span className="text-slate-500 text-xs">Requested</span>
-                </div>
-                <div className="flex items-baseline justify-end gap-1.5">
-                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
-                    {needsSummary.metNeeds}
-                  </span>
-                  <span className="text-slate-500 text-xs">Met</span>
-                </div>
-              </div>
-            </div>
-          </div>
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
 
-          {/* Stats Section - Left aligned */}
-          <div
-            className="flex items-center mt-1.5"
-            style={{ paddingLeft: pieChartPadding }}
-          >
-            {/* Pie Chart - Left aligned, smaller on mobile */}
-            <svg
-              width="80"
-              height="80"
-              viewBox="0 0 120 120"
-              className="flex-shrink-0 sm:w-[100px] sm:h-[100px]"
-            >
-              <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
-              {(() => {
-                const total = totalPeople || 1;
-                const goingAngle = (safeStats.going / total) * 360;
-                const maybeAngle = (safeStats.maybe / total) * 360;
-                const notGoingAngle = (safeStats.notGoing / total) * 360;
-                const notInvitedAngle = (safeStats.notInvited / total) * 360;
-
-                const createPieSlice = (
-                  startAngle: number,
-                  angle: number,
-                  color: string
-                ) => {
-                  const startRad = ((startAngle - 90) * Math.PI) / 180;
-                  const endRad = ((startAngle + angle - 90) * Math.PI) / 180;
-                  const x1 = 60 + 55 * Math.cos(startRad);
-                  const y1 = 60 + 55 * Math.sin(startRad);
-                  const x2 = 60 + 55 * Math.cos(endRad);
-                  const y2 = 60 + 55 * Math.sin(endRad);
-                  const largeArc = angle > 180 ? 1 : 0;
-
-                  return `M 60 60 L ${x1} ${y1} A 55 55 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                };
-
-                let currentAngle = 0;
-                const slices = [];
-
-                if (safeStats.going > 0) {
-                  slices.push(
-                    <path
-                      key="going"
-                      d={createPieSlice(currentAngle, goingAngle, "#047857")}
-                      fill="#047857"
-                      stroke="white"
-                      strokeWidth="1"
-                    />
-                  );
-                  currentAngle += goingAngle;
-                }
-
-                if (safeStats.maybe > 0) {
-                  slices.push(
-                    <path
-                      key="maybe"
-                      d={createPieSlice(currentAngle, maybeAngle, "#ca8a04")}
-                      fill="#ca8a04"
-                      stroke="white"
-                      strokeWidth="1"
-                    />
-                  );
-                  currentAngle += maybeAngle;
-                }
-
-                if (safeStats.notGoing > 0) {
-                  slices.push(
-                    <path
-                      key="notGoing"
-                      d={createPieSlice(currentAngle, notGoingAngle, "#b91c1c")}
-                      fill="#b91c1c"
-                      stroke="white"
-                      strokeWidth="1"
-                    />
-                  );
-                  currentAngle += notGoingAngle;
-                }
-
-                if (safeStats.notInvited > 0) {
-                  slices.push(
-                    <path
-                      key="notInvited"
-                      d={createPieSlice(
-                        currentAngle,
-                        notInvitedAngle,
-                        "#64748b"
-                      )}
-                      fill="#64748b"
-                      stroke="white"
-                      strokeWidth="1"
-                    />
-                  );
-                }
-
-                return slices;
-              })()}
-            </svg>
-
-            {/* Stats Grid - Left aligned with more spacing */}
-            <div
-              className="grid grid-cols-2 gap-x-12 gap-y-2 ml-6"
-              style={{ marginLeft: statsGridOffset }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-emerald-700 flex-shrink-0 ring-1 ring-emerald-200"></div>
-                <span className="text-slate-600 text-base font-medium">
-                  Going:
-                </span>
-                <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">
+            {/* Stats Grid - Metrics */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-700 flex-shrink-0"></div>
+                <span className="text-slate-600 text-sm">Going:</span>
+                <span className="font-semibold text-slate-900 tabular-nums text-sm">
                   {safeStats.going}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-yellow-600 flex-shrink-0 ring-1 ring-yellow-200"></div>
-                <span className="text-slate-600 text-base font-medium">
-                  Maybe:
-                </span>
-                <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-yellow-600 flex-shrink-0"></div>
+                <span className="text-slate-600 text-sm">Maybe:</span>
+                <span className="font-semibold text-slate-900 tabular-nums text-sm">
                   {safeStats.maybe}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-red-700 flex-shrink-0 ring-1 ring-red-200"></div>
-                <span className="text-slate-600 text-base font-medium">
-                  Not Going:
-                </span>
-                <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-700 flex-shrink-0"></div>
+                <span className="text-slate-600 text-sm">Not Going:</span>
+                <span className="font-semibold text-slate-900 tabular-nums text-sm">
                   {safeStats.notGoing}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3.5 h-3.5 rounded-full bg-slate-500 flex-shrink-0 ring-1 ring-slate-200"></div>
-                <span className="text-slate-600 text-base font-medium">
-                  Not Invited Yet:
-                </span>
-                <span className="font-semibold text-slate-900 ml-auto tabular-nums text-base">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-500 flex-shrink-0"></div>
+                <span className="text-slate-600 text-sm">Not Invited:</span>
+                <span className="font-semibold text-slate-900 tabular-nums text-sm">
                   {safeStats.notInvited}
                 </span>
+              </div>
+            </div>
+
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
+
+            {/* Needs Summary */}
+            <div className="flex-shrink-0 text-right">
+              <div className="space-y-0.5">
+                <div className="text-sm font-semibold text-slate-700 tabular-nums">
+                  <span className="text-slate-500 font-medium">Needs Met:</span>{" "}
+                  {needsSummary.metNeeds}{" "}
+                  <span className="text-slate-500 font-medium">/</span>{" "}
+                  {needsSummary.totalNeeds}
+                </div>
+                <div className="text-xs text-slate-600 tabular-nums">
+                  <span className="text-slate-500">Funds Received:</span>{" "}
+                  {`$${((needsSummary.metFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}{" "}
+                  <span className="text-slate-500 font-medium">/</span>{" "}
+                  {`$${((needsSummary.totalFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Campuses Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200 w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200">
           <div className="space-y-1.5 min-w-max">
             {campusesWithPeople.map((campus, index) => {
               const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -2821,89 +2715,6 @@ export function DistrictPanel({
 
                             {canInteract && (
                               <>
-                                {/* Add Person Tile */}
-                                <PersonDropZone
-                                  campusId={campus.id}
-                                  index={sortedPeople.length}
-                                  onDrop={handlePersonMove}
-                                  canInteract={canInteract}
-                                >
-                                  <div className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 group/add -mt-2">
-                                    <button
-                                      type="button"
-                                      disabled={disableEdits}
-                                      aria-label={`Add person to ${campus.name}`}
-                                      onClick={e => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        if (disableEdits) return;
-                                        openAddPersonDialog(campus.id);
-                                      }}
-                                      className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
-                                    >
-                                      {/* Plus sign in name position - clickable for quick add */}
-                                      <div className="relative flex items-center justify-center mb-1 w-full min-w-0">
-                                        {quickAddMode ===
-                                        `campus-${campus.id}` ? (
-                                          <div className="relative">
-                                            <Input
-                                              ref={quickAddInputRef}
-                                              list="quick-add-name-suggestions"
-                                              value={quickAddName}
-                                              onChange={e =>
-                                                setQuickAddName(e.target.value)
-                                              }
-                                              onKeyDown={e => {
-                                                if (e.key === "Enter") {
-                                                  handleQuickAddSubmit(
-                                                    `campus-${campus.id}`
-                                                  );
-                                                } else if (e.key === "Escape") {
-                                                  setQuickAddMode(null);
-                                                  setQuickAddName("");
-                                                }
-                                              }}
-                                              onBlur={() => {
-                                                handleQuickAddSubmit(
-                                                  `campus-${campus.id}`
-                                                );
-                                              }}
-                                              placeholder="Name"
-                                              className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
-                                              autoFocus
-                                              spellCheck={true}
-                                              autoComplete="name"
-                                            />
-                                            <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                              Quick Add
-                                            </div>
-                                          </div>
-                                        ) : (
-                                          <Plus
-                                            className="w-4 h-4 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
-                                            strokeWidth={1.5}
-                                            onClick={e =>
-                                              handleQuickAddClick(e, campus.id)
-                                            }
-                                          />
-                                        )}
-                                      </div>
-                                      {/* Icon - solid */}
-                                      <div className="relative">
-                                        <User
-                                          className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
-                                          strokeWidth={1.5}
-                                          fill="currentColor"
-                                        />
-                                      </div>
-                                    </button>
-                                    {/* Label - shown on hover */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
-                                      Add
-                                    </div>
-                                  </div>
-                                </PersonDropZone>
-
                                 {/* Add Person Button */}
                                 <PersonDropZone
                                   campusId={campus.id}
@@ -2995,7 +2806,7 @@ export function DistrictPanel({
                                       </div>
                                     </button>
                                     {/* Label - Absolutely positioned, shown on hover */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity">
                                       Add
                                     </div>
                                   </div>
@@ -3076,6 +2887,7 @@ export function DistrictPanel({
             )}
           </div>
         </div>
+        </div>{/* Close wrapper div */}
       </div>
     </div>
   ) : null;
@@ -3531,7 +3343,7 @@ export function DistrictPanel({
                         htmlFor="person-need"
                         className="text-sm font-medium"
                       >
-                        Request
+                        Need
                       </Label>
                       <Select
                         value={personForm.needType}
@@ -3565,7 +3377,7 @@ export function DistrictPanel({
                     </div>
                     <div className="space-y-2">
                       <AnimatePresence mode="popLayout">
-                        {personForm.needType === "Financial" ? (
+                        {personForm.needType !== "None" && (
                           <motion.div
                             key="amount"
                             initial={{ opacity: 0 }}
@@ -3587,6 +3399,7 @@ export function DistrictPanel({
                               <Input
                                 id="person-need-amount"
                                 type="number"
+                                step="0.01"
                                 value={personForm.needAmount}
                                 onChange={e =>
                                   setPersonForm({
@@ -3599,79 +3412,39 @@ export function DistrictPanel({
                               />
                             </div>
                           </motion.div>
-                        ) : personForm.needType !== "None" ? (
-                          <motion.div
-                            key="need-met"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-2"
-                          >
-                            <Label
-                              htmlFor="person-needs-met"
-                              className="text-sm font-medium"
-                            >
-                              Request Met
-                            </Label>
-                            <div className="flex items-center h-9">
-                              <Checkbox
-                                id="person-needs-met"
-                                checked={personForm.needsMet}
-                                onCheckedChange={checked =>
-                                  setPersonForm({
-                                    ...personForm,
-                                    needsMet: checked === true,
-                                  })
-                                }
-                                className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                              />
-                              <Label
-                                htmlFor="person-needs-met"
-                                className="cursor-pointer ml-2 text-sm"
-                              >
-                                Yes
-                              </Label>
-                            </div>
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="deposit-paid"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-2"
-                          >
-                            <Label
-                              htmlFor="person-deposit-paid"
-                              className="text-sm font-medium"
-                            >
-                              Deposit Paid
-                            </Label>
-                            <div className="flex items-center h-9">
-                              <Checkbox
-                                id="person-deposit-paid"
-                                checked={personForm.depositPaid}
-                                onCheckedChange={checked =>
-                                  setPersonForm({
-                                    ...personForm,
-                                    depositPaid: checked === true,
-                                  })
-                                }
-                                className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                              />
-                              <Label
-                                htmlFor="person-deposit-paid"
-                                className="cursor-pointer ml-2 text-sm"
-                              >
-                                Yes
-                              </Label>
-                            </div>
-                          </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
+
+                    {personForm.needType !== "None" && (
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="person-needs-met"
+                          className="text-sm font-medium"
+                        >
+                          Need Met
+                        </Label>
+                        <div className="flex items-center h-9">
+                          <Checkbox
+                            id="person-needs-met"
+                            checked={personForm.needsMet}
+                            onCheckedChange={checked =>
+                              setPersonForm({
+                                ...personForm,
+                                needsMet: checked === true,
+                              })
+                            }
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                          />
+                          <Label
+                            htmlFor="person-needs-met"
+                            className="cursor-pointer ml-2 text-sm"
+                          >
+                            Yes
+                          </Label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Household Errors */}
@@ -3691,15 +3464,15 @@ export function DistrictPanel({
                     </div>
                   )}
 
-                  {/* Request Notes and General Notes Section - Side by side */}
+                  {/* Needs Notes and General Notes Section - Side by side */}
                   <div className="mt-4 grid grid-cols-2 gap-4">
-                    {/* Request Notes Section */}
+                    {/* Needs Notes Section */}
                     <div className="space-y-2">
                       <Label
                         htmlFor="person-need-notes"
                         className="text-sm font-medium"
                       >
-                        Request Notes
+                        Needs Notes
                       </Label>
                       <Textarea
                         id="person-need-notes"
@@ -4163,10 +3936,10 @@ export function DistrictPanel({
                     </h3>
                   </div>
 
-                  {/* Request Type & Amount Row */}
+                  {/* Need Type & Amount Row */}
                   <div className="flex items-center gap-4">
                     <div className="w-40">
-                      <Label htmlFor="edit-person-need">Request</Label>
+                      <Label htmlFor="edit-person-need">Need</Label>
                       <Select
                         value={personForm.needType}
                         onValueChange={value =>
@@ -4198,7 +3971,7 @@ export function DistrictPanel({
                       </Select>
                     </div>
                     <AnimatePresence mode="popLayout">
-                      {personForm.needType === "Financial" && (
+                      {personForm.needType !== "None" && (
                         <motion.div
                           key="amount"
                           initial={{ opacity: 0, x: -30, width: 0 }}
@@ -4218,6 +3991,7 @@ export function DistrictPanel({
                             <Input
                               id="edit-person-need-amount"
                               type="number"
+                              step="0.01"
                               value={personForm.needAmount}
                               onChange={e =>
                                 setPersonForm({
@@ -4248,7 +4022,7 @@ export function DistrictPanel({
                               htmlFor="edit-person-needs-met"
                               className="cursor-pointer"
                             >
-                              Request Met
+                              Need Met
                             </Label>
                             <Checkbox
                               id="edit-person-needs-met"
@@ -4296,13 +4070,13 @@ export function DistrictPanel({
                   </div>
                 </div>
 
-                {/* Request Notes and General Notes Section - Side by side */}
+                {/* Needs Notes and General Notes Section - Side by side */}
                 <div className="space-y-4 mt-4 grid grid-cols-2 gap-4">
-                  {/* Request Notes Section */}
+                  {/* Needs Notes Section */}
                   <div className="space-y-4">
                     <div className="border-b border-slate-200 pb-2">
                       <h3 className="text-sm font-semibold text-slate-700">
-                        Request Notes
+                        Needs Notes
                       </h3>
                     </div>
                     <div className="space-y-2">
