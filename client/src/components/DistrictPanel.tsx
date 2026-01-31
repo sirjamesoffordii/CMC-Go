@@ -393,7 +393,7 @@ export function DistrictPanel({
   const [labelsOffset, setLabelsOffset] = useState(0);
   const pieChartPadding = Math.max(0, pieChartOffset);
   const statsGridOffset =
-    labelsOffset > 0 ? Math.max(0, labelsOffset - pieChartPadding - 116) : 16;
+    labelsOffset > 0 ? Math.max(0, labelsOffset - pieChartPadding - 116) : 32;
 
   // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -2555,9 +2555,9 @@ export function DistrictPanel({
               })()}
             </svg>
 
-            {/* Stats Grid - Left aligned */}
+            {/* Stats Grid - Left aligned with more spacing */}
             <div
-              className="grid grid-cols-2 gap-x-16 gap-y-2"
+              className="grid grid-cols-2 gap-x-12 gap-y-2 ml-6"
               style={{ marginLeft: statsGridOffset }}
             >
               <div className="flex items-center gap-3">
