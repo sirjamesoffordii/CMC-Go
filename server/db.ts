@@ -1307,11 +1307,12 @@ export async function getDistrictLeadershipCounts(districtId: string) {
 
 /**
  * Get aggregate needs summary for a district (public - no person identifiers).
- * Returns total needs count, met needs count, and total financial amount (active needs only).
+ * Returns total needs count, met needs count, and financial amounts (active + met).
  */
 export async function getDistrictNeedsSummary(districtId: string) {
   const db = await getDb();
-  if (!db) return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0 };
+  if (!db)
+    return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0, metFinancial: 0 };
 
   // Get all needs for people in this district (active + met)
   const result = await db
@@ -1319,6 +1320,7 @@ export async function getDistrictNeedsSummary(districtId: string) {
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
       totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+      metAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN ${needs.amount} ELSE 0 END), 0)`,
     })
     .from(needs)
     .innerJoin(people, eq(needs.personId, people.personId))
@@ -1336,22 +1338,25 @@ export async function getDistrictNeedsSummary(districtId: string) {
     totalNeeds: Number(result[0]?.totalNeeds) || 0,
     metNeeds: Number(result[0]?.metNeeds) || 0,
     totalFinancial: Number(result[0]?.totalAmount) || 0,
+    metFinancial: Number(result[0]?.metAmount) || 0,
   };
 }
 
 /**
  * Get aggregate needs summary for all districts (public - no person identifiers).
- * Returns total needs count and met needs count.
+ * Returns total needs count, met needs count, and financial amounts (active + met).
  */
 export async function getNeedsAggregateSummary() {
   const db = await getDb();
-  if (!db) return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0 };
+  if (!db)
+    return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0, metFinancial: 0 };
 
   const result = await db
     .select({
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
       totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+      metAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN ${needs.amount} ELSE 0 END), 0)`,
     })
     .from(needs);
 
@@ -1359,6 +1364,7 @@ export async function getNeedsAggregateSummary() {
     totalNeeds: Number(result[0]?.totalNeeds) || 0,
     metNeeds: Number(result[0]?.metNeeds) || 0,
     totalFinancial: Number(result[0]?.totalAmount) || 0,
+    metFinancial: Number(result[0]?.metAmount) || 0,
   };
 }
 
