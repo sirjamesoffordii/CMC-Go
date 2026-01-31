@@ -5,6 +5,7 @@ import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Scope filter type for map filtering
 type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";
@@ -504,6 +505,7 @@ export function InteractiveMap({
   userDistrictId,
 }: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
+  const isMobile = useIsMobile();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -1605,9 +1607,9 @@ export function InteractiveMap({
       .replace(/^./, str => str.toUpperCase());
   };
 
-  // Render tooltip
+  // Render tooltip - disabled on mobile
   const renderTooltip = () => {
-    if (!hoveredDistrict || !tooltipPos) return null;
+    if (!hoveredDistrict || !tooltipPos || isMobile) return null;
 
     const district = districts.find(d => d.id === hoveredDistrict);
     // Calculate stats using shared utility to ensure consistency with DistrictPanel
@@ -2019,33 +2021,29 @@ export function InteractiveMap({
           </button>
         </div>
 
-        {/* Bottom Right Request Summary - Clean, no background, hidden on mobile */}
+        {/* Bottom Right Needs Summary - Clean, no background, hidden on mobile */}
         <div className="absolute bottom-4 right-4 z-40 text-right hidden sm:block">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-            Requests
+            Needs
           </div>
-          <div className="space-y-0.5 text-sm">
-            <div className="flex items-baseline justify-end gap-1.5">
-              <span className="font-semibold text-slate-700 tabular-nums">
-                {needsAggregate
-                  ? needsAggregate.totalNeeds - needsAggregate.metNeeds
-                  : "—"}
-              </span>
-              <span className="text-slate-500 text-xs">Open</span>
+
+          <div className="space-y-1">
+            <div className="text-sm font-semibold text-slate-700 tabular-nums">
+              <span className="text-slate-500 font-medium">Needs:</span>{" "}
+              {needsAggregate ? needsAggregate.totalNeeds : "—"}
+              <span className="text-slate-500 font-medium ml-3">Met:</span>{" "}
+              {needsAggregate ? needsAggregate.metNeeds : "—"}
             </div>
-            <div className="flex items-baseline justify-end gap-1.5">
-              <span className="font-semibold text-slate-700 tabular-nums">
-                {needsAggregate
-                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                  : "—"}
-              </span>
-              <span className="text-slate-500 text-xs">Requested</span>
-            </div>
-            <div className="flex items-baseline justify-end gap-1.5">
-              <span className="font-semibold text-slate-700 tabular-nums">
-                {needsAggregate ? needsAggregate.metNeeds : "—"}
-              </span>
-              <span className="text-slate-500 text-xs">Met</span>
+
+            <div className="text-xs text-slate-600 tabular-nums">
+              <span className="text-slate-500">$ Requested:</span>{" "}
+              {needsAggregate
+                ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                : "—"}
+              <span className="text-slate-500 ml-3">Given:</span>{" "}
+              {needsAggregate
+                ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                : "—"}
             </div>
           </div>
         </div>
