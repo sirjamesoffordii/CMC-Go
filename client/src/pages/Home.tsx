@@ -130,7 +130,12 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   // Scope filter for map filtering (only visible when authenticated)
-  const { currentScope, setScopeFilter } = useScopeFilter();
+  const {
+    currentScope,
+    selectedRegion,
+    selectedDistrict: scopeSelectedDistrict,
+    setScopeFilter,
+  } = useScopeFilter();
 
   // View mode state - initialize from URL or defaults
   // Default: district-scoped view (as per requirements)
@@ -812,10 +817,10 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div
-        className="relative flex items-center px-4 group flex-shrink-0"
+        className="relative flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
-          height: `${headerHeight}px`,
-          minHeight: "52px",
+          height: isMobile ? "48px" : `${headerHeight}px`,
+          minHeight: isMobile ? "48px" : "52px",
           backgroundColor: headerBgColor || savedBgColor?.value || "#1f1f1f",
         }}
         onMouseEnter={() => setIsHeaderHovered(true)}
@@ -823,8 +828,8 @@ export default function Home() {
       >
         {/* Logo - Left Side */}
         <div
-          className="flex-shrink-0 h-12 w-auto mr-4 relative z-10 flex items-center gap-2"
-          style={{ marginLeft: "12px" }}
+          className="flex-shrink-0 h-10 sm:h-12 w-auto mr-2 sm:mr-4 relative z-10 flex items-center gap-2"
+          style={{ marginLeft: isMobile ? "4px" : "12px" }}
         >
           {headerLogoUrl || savedHeaderLogo?.value ? (
             <img
@@ -852,7 +857,7 @@ export default function Home() {
         {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
         <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
           <div
-            className="whitespace-nowrap text-white absolute"
+            className="whitespace-nowrap text-white absolute hidden sm:block"
             style={{
               fontSize: "16px",
               fontFamily: "Inter, system-ui, -apple-system, sans-serif",
@@ -875,33 +880,18 @@ export default function Home() {
           Edit
         </button>
 
-        {/* User info (authentication disabled) */}
-        {user && (
-          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm flex items-center gap-2 flex-wrap">
-            <span>{user.fullName || user.email}</span>
-            {/* PR 4: Editing badge - mobile only */}
-            {isMobile && (
-              <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
-                Editing as: {user.districtName || user.campusName || user.role}
-              </span>
-            )}
+        {/* PR 4: Editing badge - mobile only */}
+        {user && isMobile && (
+          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm">
+            <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
+              Editing as: {user.districtName || user.campusName || user.role}
+            </span>
           </div>
         )}
 
-        {/* Scope selector - visible when authenticated */}
-        {isAuthenticated && (
-          <ScopeSelector
-            currentScope={currentScope}
-            onScopeChange={setScopeFilter}
-            userRegionName={user?.regionName}
-            userDistrictName={user?.districtName}
-            className="flex-shrink-0 z-10 bg-white/10 border-white/20 text-white [&>span]:text-white"
-          />
-        )}
-
-        {/* Right Side: Why Personal Invitations Matter Button and Hamburger Menu */}
-        <div className="flex items-center gap-2 flex-shrink-0 z-10 ml-auto">
-          {/* Why Personal Invitations Matter Button */}
+        {/* Right Side: Why Personal Invitations Matter, Scope Selector, and Hamburger Menu */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto">
+          {/* Why Personal Invitations Matter Button - hidden on mobile */}
           <Button
             variant="ghost"
             size="sm"
@@ -909,12 +899,23 @@ export default function Home() {
               e.preventDefault();
               setLocation("/why-invitations-matter");
             }}
-            className="text-white/80 hover:text-white hover:bg-red-700"
+            className="hidden sm:flex text-white/80 hover:text-white hover:bg-red-700"
           >
             <span className="text-sm font-semibold tracking-wide">
               Why Personal Invitations Matter
             </span>
           </Button>
+
+          {/* Scope selector - visible when authenticated, compact on mobile */}
+          {isAuthenticated && (
+            <ScopeSelector
+              currentScope={currentScope}
+              selectedRegion={selectedRegion}
+              selectedDistrict={scopeSelectedDistrict}
+              onScopeChange={setScopeFilter}
+              className="bg-white/10 border-white/20 text-white [&>span]:text-white text-xs sm:text-sm"
+            />
+          )}
 
           {/* Hamburger Menu */}
           <div className="relative">
@@ -931,10 +932,10 @@ export default function Home() {
             {menuOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40"
+                  className="fixed inset-0 z-[100]"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50 py-1">
+                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
                   {!isAuthenticated && (
                     <>
                       <button
@@ -943,14 +944,27 @@ export default function Home() {
                           setLoginModalOpen(true);
                           setMenuOpen(false);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 font-semibold transition-colors"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 font-semibold transition-colors"
                       >
-                        <LogIn className="w-4 h-4" />
+                        <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
                         Login
                       </button>
                       <div className="border-t border-gray-200 my-1"></div>
                     </>
                   )}
+
+                  {/* Why Personal Invitations Matter - Mobile only */}
+                  <button
+                    onClick={e => {
+                      e.stopPropagation();
+                      setLocation("/why-invitations-matter");
+                      setMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 sm:hidden text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                  >
+                    <Calendar className="w-5 h-5" />
+                    Why Invitations Matter
+                  </button>
 
                   <button
                     onClick={e => {
@@ -958,9 +972,9 @@ export default function Home() {
                       setShareModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
-                    <Share2 className="w-4 h-4" />
+                    <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     Share
                   </button>
                   <button
@@ -969,9 +983,9 @@ export default function Home() {
                       setImportModalOpen(true);
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
                     Import
                   </button>
 
@@ -981,7 +995,7 @@ export default function Home() {
                       setLocation("/more-info");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white transition-colors"
+                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
                   >
                     <span className="text-sm">CMC Info</span>
                   </button>
@@ -993,9 +1007,9 @@ export default function Home() {
                         setLocation("/admin");
                         setMenuOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                      className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                     >
-                      <Shield className="w-4 h-4" />
+                      <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
                       Admin Console
                     </button>
                   )}
@@ -1010,14 +1024,14 @@ export default function Home() {
                           setMenuOpen(false);
                           setLoginModalOpen(true);
                         }}
-                        className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white transition-colors"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
                       >
-                        <div className="flex items-start gap-2">
-                          <LogOut className="w-4 h-4 mt-0.5" />
+                        <div className="flex items-start gap-3">
+                          <LogOut className="w-5 h-5 sm:w-4 sm:h-4 mt-0.5" />
                           <div className="flex flex-col items-start">
                             <span className="font-semibold">Logout</span>
                             {user?.email && (
-                              <span className="text-xs text-gray-600">
+                              <span className="text-xs text-gray-500">
                                 {user.email}
                               </span>
                             )}
@@ -1164,22 +1178,16 @@ export default function Home() {
           </MobileDrawer>
         )}
 
-        {/* Center Map Area */}
+        {/* Center Map Area - fills remaining space so map is full size */}
         <div
-          className="flex-1 relative overflow-auto map-container-mobile"
+          className="flex-1 relative overflow-hidden map-container-mobile bg-white"
           style={{ minWidth: 0 }}
         >
-          {/* Map with Overlay Metrics */}
+          {/* Map wrapper - centers the map and gives it full height */}
           <div
-            className="relative py-4"
+            className="absolute inset-0 flex items-center justify-center"
             style={{
-              paddingLeft: "1.5rem",
-              paddingRight: "1.5rem",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "calc(100vh - 180px)",
-              height: "100%",
+              padding: "1rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
@@ -1202,8 +1210,18 @@ export default function Home() {
               onDistrictSelect={handleDistrictSelect}
               viewState={viewState}
               scopeFilter={currentScope}
-              userRegionId={user?.regionId || user?.overseeRegionId}
-              userDistrictId={user?.districtId}
+              userRegionId={
+                currentScope === "REGION" && selectedRegion
+                  ? selectedRegion
+                  : currentScope === "DISTRICT" && selectedRegion
+                    ? selectedRegion
+                    : user?.regionId || user?.overseeRegionId
+              }
+              userDistrictId={
+                currentScope === "DISTRICT" && scopeSelectedDistrict
+                  ? scopeSelectedDistrict
+                  : user?.districtId
+              }
               onBackgroundClick={() => {
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
@@ -1278,14 +1296,12 @@ export default function Home() {
         )}
       </div>
 
-      {/* People Tab Button - Fixed to right side */}
+      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile */}
       {!peoplePanelOpen && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div
-              className="fixed top-1/2 -translate-y-1/2 z-30 group md:block people-tab-mobile"
-              style={{ right: 0 }}
-            >
+            {isMobile ? (
+              /* Mobile: FAB-style button in bottom right */
               <button
                 onClick={() => {
                   if (!user) {
@@ -1295,15 +1311,37 @@ export default function Home() {
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  relative bg-black hover:bg-black text-white px-1 py-6 rounded-full md:rounded-l-full md:rounded-r-none font-medium text-sm backdrop-blur-sm transition-all duration-300 ease-out shadow-[0_0_15px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(0,0,0,0.7)] touch-target after:content-[''] after:absolute after:top-0 after:right-[-12px] after:h-full after:w-3 after:bg-black after:rounded-r-full hover:after:bg-black
+                  fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
                   ${!user ? "opacity-70" : ""}
                 `}
               >
-                <span className="inline-block whitespace-nowrap select-none">
-                  Table
-                </span>
+                <span className="whitespace-nowrap select-none">Table</span>
               </button>
-            </div>
+            ) : (
+              /* Desktop: Slide-out tab on right edge */
+              <div
+                className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16"
+                style={{ right: 0 }}
+              >
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginModalOpen(true);
+                      return;
+                    }
+                    setPeoplePanelOpen(true);
+                  }}
+                  className={`
+                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
+                    ${!user ? "opacity-70" : ""}
+                  `}
+                >
+                  <span className="inline-block whitespace-nowrap select-none">
+                    Table
+                  </span>
+                </button>
+              </div>
+            )}
           </TooltipTrigger>
           {!user && (
             <TooltipContent side="left">
