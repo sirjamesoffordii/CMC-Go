@@ -60,6 +60,16 @@ const MAP_BOUNDS = {
   viewBoxHeight: 600,
 };
 
+const DEFAULT_VIEWBOX = "0 0 960 600";
+
+const parseViewBox = (svgText: string) => {
+  const match = svgText.match(/viewBox="([^"]+)"/);
+  if (!match) return null;
+  const [minX, minY, width, height] = match[1].trim().split(/\s+/).map(Number);
+  if ([minX, minY, width, height].some(Number.isNaN)) return null;
+  return { minX, minY, width, height };
+};
+
 // Metric label bounds for collision detection
 interface MetricBounds {
   region: string;
@@ -506,6 +516,7 @@ export function InteractiveMap({
 
   // Zoom viewBox for scope filtering - null means use default "0 0 960 600"
   const [zoomViewBox, setZoomViewBox] = useState<string | null>(null);
+  const originalViewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
 
   // Filter districts based on scope
   const filteredDistricts = useMemo(() => {
@@ -905,6 +916,33 @@ export function InteractiveMap({
       svg.style.maxHeight = "100%";
     });
 
+    const applyMapScale = (svg: SVGSVGElement) => {
+      if (!originalViewBox) return;
+      const key = `${originalViewBox.minX},${originalViewBox.minY},${originalViewBox.width},${originalViewBox.height}`;
+      if (svg.dataset.mapScaleKey === key) return;
+
+      const targetWidth = 960;
+      const targetHeight = 600;
+      const scaleX = targetWidth / originalViewBox.width;
+      const scaleY = targetHeight / originalViewBox.height;
+      const translateX = -originalViewBox.minX;
+      const translateY = -originalViewBox.minY;
+
+      const group =
+        svg.querySelector('g[inkscape\\:label="Districts"]') ||
+        svg.querySelector("g");
+      if (!group) return;
+
+      group.setAttribute(
+        "transform",
+        `translate(${translateX} ${translateY}) scale(${scaleX} ${scaleY})`
+      );
+      svg.dataset.mapScaleKey = key;
+    };
+
+    applyMapScale(clickSvg);
+    applyMapScale(visualSvg);
+
     // Get all path elements from both SVGs
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
@@ -928,31 +966,112 @@ export function InteractiveMap({
     // District-specific colors for region/district scope views
     // Used when zoomed into a region to differentiate districts
     // Keys must match district IDs in DISTRICT_REGION_MAP (camelCase)
+    // Each region has its own unique palette with clearly distinct colors
     const districtColors: Record<string, string> = {
-      // Texico region districts
+      // Northwest region - pacific evergreen palette (teals, slate, pine)
+      Alaska: "#2D6A7A", // deep teal
+      NorthIdaho: "#4A7C59", // pine green
+      Oregon: "#7A9E8E", // sage mist
+      Washington: "#3D5A6E", // puget slate
+
+      // Big Sky region - mountain palette (sky blue, terracotta, sage, sand)
+      Colorado: "#5B8FA8", // mountain sky
+      Montana: "#C4956A", // terracotta
+      SouthIdaho: "#8B9F72", // high desert sage
+      Utah: "#D4A574", // red rock sand
+      Wyoming: "#7A8B5A", // prairie grass
+
+      // Great Plains North - northern lights palette (violet, wheat, lake blue)
+      Minnesota: "#4A6670", // lake slate
+      NorthDakota: "#8B7355", // wheat brown
+      SouthDakota: "#6B5B7A", // prairie violet
+      "Wisconsin-NorthMichigan": "#5A7A6A", // north woods
+
+      // Great Lakes region - industrial palette (steel, rust, navy, concrete)
+      Illinois: "#7A8A9A", // industrial steel
+      Indiana: "#A67A5A", // rust
+      Michigan: "#4A6A8A", // great lake blue
+      Ohio: "#8A7A6A", // concrete
+
+      // Great Plains South - harvest palette (corn green, wheat gold, copper)
+      Iowa: "#6A8A5A", // corn green
+      Kansas: "#C4A454", // wheat gold
+      Nebraska: "#B8945A", // harvest amber
+      NorthernMissouri: "#9A7A4A", // copper
+      SouthernMissouri: "#7A6A4A", // burnt umber
+
+      // Mid-Atlantic region - colonial palette (burgundy, navy, forest, brass)
+      Appalachian: "#5A7A5A", // mountain laurel
+      Kentucky: "#7A5A4A", // bourbon brown
+      NorthCarolina: "#5A6A7A", // colonial blue
+      Potomac: "#8A6A5A", // federal brick
+      Tennessee: "#9A7A5A", // whiskey amber
+      Virginia: "#6A5A6A", // williamsburg plum
+      WestVirginia: "#6A7A5A", // rhododendron
+
+      // Northeast region - new england palette (cranberry, slate, hunter, maple)
+      NewJersey: "#7A6A5A", // brownstone
+      NewYork: "#4A5A7A", // empire slate
+      NorthernNewEngland: "#5A6A5A", // pine
+      NorthernNewEnglend: "#5A6A5A", // pine (typo variant)
+      "Penn-Del": "#8A5A5A", // liberty brick
+      SouthernNewEngland: "#6A5A6A", // vineyard plum
+      Connecticut: "#5A7A7A", // harbor teal
+      Maine: "#4A5A5A", // granite
+      Massachusetts: "#8A4A5A", // cranberry
+      NewHampshire: "#6A7A5A", // maple
+      Pennsylvania: "#7A5A4A", // keystone brown
+      Vermont: "#5A8A6A", // green mountain
+
+      // South Central region - cajun palette (bayou, red clay, mustard)
+      Arkansas: "#8A6A4A", // ozark amber
+      Louisiana: "#4A6A5A", // bayou green
+      Oklahoma: "#9A5A4A", // red earth
+
+      // Southeast region - southern palette (peach, magnolia, moss, coral)
+      Alabama: "#9A7A6A", // red clay
+      Georgia: "#8A6A5A", // peach
+      Mississippi: "#6A7A6A", // spanish moss
+      PeninsularFlorida: "#5A8A8A", // turquoise
+      SouthCarolina: "#7A8A6A", // palmetto
+      WestFlorida: "#8A8A6A", // sand dune
+      Florida: "#5A8A8A", // turquoise
+
+      // Texico region - southwest palette (sage, terracotta, sand, brick)
       NewMexico: "#568969", // sage green
-      WestTexas: "#9F5A57", // brick red/brown
-      SouthTexas: "#8F8257", // warm brown/stone
       NorthTexas: "#A77649", // amber brown
-      // South Central region (Oklahoma is not in Texico)
-      Oklahoma: "#6295AA", // coastal blue
-      // Add more districts as needed for other regions
+      SouthTexas: "#8F8257", // warm stone
+      WestTexas: "#9F5A57", // brick red
+
+      // West Coast region - california palette (pacific, redwood, poppy, desert)
+      Arizona: "#C47A5A", // sedona red
+      Hawaii: "#4A8A9A", // pacific blue
+      "NorthernCal-Nevada": "#7A5A4A", // redwood
+      SouthernCalifornia: "#D4A44A", // golden poppy
+      Nevada: "#AA8A6A", // mojave tan
+      NorthCalifornia: "#7A5A4A", // redwood
+      SouthCalifornia: "#D4A44A", // golden poppy
     };
 
-    // Premium map styling constants - vibrant, pop style
-    const BORDER_COLOR = "rgba(255,255,255,0.85)"; // brighter white borders for more contrast
-    const BORDER_WIDTH = "0.2"; // thinner borders for cleaner look
-    const BORDER_WIDTH_HOVER = "0.45"; // more prominent on hover
-    const BORDER_WIDTH_SELECTED = "0.55"; // strong prominence for selected
-    const TRANSITION = "all 300ms cubic-bezier(0.4, 0, 0.2, 1)"; // smooth, consistent transitions
-    const DIM_OPACITY = "0.95"; // shadow overlay on hover (reduced for brighter map)
-    const DIM_FILTER = "brightness(0.92)"; // Slight shadow-like darkening on hover (reduced for brighter map)
-    const LIFT_FILTER =
-      "saturate(1.1) brightness(1.06) drop-shadow(0 3px 8px rgba(0,0,0,0.18)) drop-shadow(0 1px 4px rgba(0,0,0,0.12))"; // Smooth, professional raised effect - very slightly brighter
+    // Premium map styling constants - clean, subtle design
+    const BORDER_COLOR = "rgba(255,255,255,0.85)"; // soft white borders
+    const BORDER_WIDTH = "0.3"; // clean borders
+    const BORDER_WIDTH_HOVER = "0.35"; // subtle increase on hover
+    const BORDER_WIDTH_SELECTED = "0.4"; // emphasis for selected
+    const TRANSITION = "all 200ms ease-out"; // smooth transitions
+    const DIM_OPACITY = "1"; // keep opacity full, use brightness for dimming
+    const DIM_FILTER = "brightness(0.65)"; // darken non-hovered regions
+
+    // Subtle shadow for depth
+    const BASE_FILTER = "drop-shadow(0 1px 2px rgba(0,0,0,0.08))";
+    // Hovered district - subtle lift effect
+    const HOVER_FILTER =
+      "brightness(1.05) drop-shadow(0 4px 8px rgba(0,0,0,0.15))";
+    // Selected district - slightly more prominent
     const SELECTED_FILTER =
-      "saturate(1.15) brightness(1.1) drop-shadow(0 2px 6px rgba(0,0,0,0.2))";
-    const GREYED_OUT_FILTER = "saturate(0.85) brightness(0.9)"; // More noticeable dimming for contrast
-    const GREYED_OUT_OPACITY = "0.85"; // More visible opacity reduction
+      "brightness(1.08) drop-shadow(0 4px 8px rgba(0,0,0,0.18))";
+    const GREYED_OUT_FILTER = "brightness(0.6)";
+    const GREYED_OUT_OPACITY = "1";
 
     // View mode dimming logic
     // Determine which districts should be fully visible based on viewState
@@ -1019,16 +1138,11 @@ export function InteractiveMap({
       path.style.strokeWidth = BORDER_WIDTH;
       path.style.strokeLinejoin = "round";
       path.style.strokeLinecap = "round";
-      path.style.filter = "brightness(1.04)"; // Slightly brighter default
+      path.style.filter = BASE_FILTER;
       path.style.strokeDasharray = "";
       path.style.transition = TRANSITION;
       path.style.transformOrigin = "center";
-      // Move Alaska down a bit
-      if (pathId === "Alaska") {
-        path.style.transform = "scale(1) translateY(5px)";
-      } else {
-        path.style.transform = "scale(1) translateY(0)";
-      }
+      path.style.transform = "translateY(0)";
 
       // View mode dimming logic
       let shouldDim = false;
@@ -1128,7 +1242,7 @@ export function InteractiveMap({
         path.style.opacity = DIM_OPACITY;
         path.style.visibility = "visible";
       } else {
-        path.style.filter = "brightness(1.04)"; // Slightly brighter default
+        path.style.filter = BASE_FILTER; // 3D floating effect
         path.style.opacity = "1";
         path.style.visibility = "visible";
       }
@@ -1202,88 +1316,27 @@ export function InteractiveMap({
             vRegion && pathRegion && vRegion === pathRegion;
 
           if (vPathId === pathId) {
-            // Hovered district - enhanced raised effect
+            // Hovered district - lift effect with brightness
             vPath.style.opacity = "1";
             vPath.style.filter =
-              selectedDistrictId === pathId ? SELECTED_FILTER : LIFT_FILTER;
+              selectedDistrictId === pathId ? SELECTED_FILTER : HOVER_FILTER;
             vPath.style.strokeWidth =
               selectedDistrictId === pathId
                 ? BORDER_WIDTH_SELECTED
                 : BORDER_WIDTH_HOVER;
-            // Enhanced transform for raised effect - consistent 3D bottom-side perspective for all
-            if (vPathId === "Alaska") {
-              vPath.style.transform =
-                "scale(1.02) translateY(7.3px) scaleY(0.99)";
-            } else if (vPathId === "Hawaii") {
-              vPath.style.transform =
-                "scale(1.02) translateY(-0.8px) scaleY(0.99)";
-            } else {
-              // Default balanced 3D effect for all districts - consistent with edge districts
-              vPath.style.transform =
-                "scale(1.02) translateY(-0.8px) scaleY(0.99)";
-            }
-            vPath.style.transformOrigin = "center";
+            vPath.style.transform = "translateY(-2px)"; // Subtle lift
           } else if (isInSameRegion) {
-            // Same region - lighting effect (brighten)
-            // BUT: if this is the selected district and we're hovering over a different district, dim it
-            if (
-              selectedDistrictId &&
-              vPathId === selectedDistrictId &&
-              vPathId !== pathId
-            ) {
-              // Selected district being hovered over by different district - dim it
-              vPath.style.opacity = DIM_OPACITY;
-              vPath.style.filter = DIM_FILTER;
-              vPath.style.strokeWidth = BORDER_WIDTH;
-              vPath.style.stroke = BORDER_COLOR;
-            } else {
-              // Same region - lighting effect (brighten)
-              vPath.style.opacity = "1";
-              vPath.style.filter = "saturate(1.04) brightness(1.04)";
-              vPath.style.strokeWidth = BORDER_WIDTH;
-              vPath.style.stroke = BORDER_COLOR;
-            }
-            // Keep Alaska moved down
-            if (vPathId === "Alaska") {
-              vPath.style.transform = "scale(1) translateY(5px)";
-            } else {
-              vPath.style.transform = "scale(1) translateY(0)";
-            }
-          } else {
-            // Other regions - dimmed (but respect selected district greyed out effect)
-            if (selectedDistrictId && selectedRegion) {
-              const vDistrict = districtMap.get(vPathId);
-              const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
-              const isInSelectedRegion = vRegion && vRegion === selectedRegion;
-
-              if (!isInSelectedRegion) {
-                // Different region from selected - shadow effect (darken)
-                vPath.style.opacity = DIM_OPACITY;
-                vPath.style.filter = DIM_FILTER;
-              } else {
-                // Same region as selected - but if this IS the selected district and we're hovering a different one, dim it
-                if (vPathId === selectedDistrictId && vPathId !== pathId) {
-                  // Selected district being hovered over by different district - dim it
-                  vPath.style.opacity = DIM_OPACITY;
-                  vPath.style.filter = DIM_FILTER;
-                } else {
-                  // Same region - keep lighting effect even on hover of other region
-                  vPath.style.opacity = "1";
-                  vPath.style.filter = "saturate(1.02) brightness(1.05)";
-                }
-              }
-            } else {
-              // No district selected - normal dimming
-              vPath.style.opacity = DIM_OPACITY;
-              vPath.style.filter = DIM_FILTER;
-            }
+            // Same region - normal appearance
+            vPath.style.opacity = "1";
+            vPath.style.filter = BASE_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH;
-            // Keep Alaska moved down
-            if (vPathId === "Alaska") {
-              vPath.style.transform = "scale(1) translateY(5px)";
-            } else {
-              vPath.style.transform = "scale(1) translateY(0)";
-            }
+            vPath.style.transform = "translateY(0)";
+          } else {
+            // Other regions - dimmed (darker)
+            vPath.style.opacity = DIM_OPACITY;
+            vPath.style.filter = DIM_FILTER;
+            vPath.style.strokeWidth = BORDER_WIDTH;
+            vPath.style.transform = "translateY(0)";
           }
         });
       };
@@ -1309,6 +1362,7 @@ export function InteractiveMap({
           mousemoveTimeout = null;
         }
 
+        // Restore all districts to their default state
         visualPaths.forEach(vPath => {
           const vPathId =
             vPath.getAttribute("inkscape:label") ||
@@ -1319,41 +1373,14 @@ export function InteractiveMap({
             vPath.getAttribute("id");
           if (!vPathId) return;
 
-          const vDistrict = districtMap.get(vPathId);
-          const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
-          const isInSelectedRegion =
-            selectedRegion && vRegion && vRegion === selectedRegion;
-
-          // Restore to selected state styling (with shadow and lighting effects if applicable)
-          if (selectedDistrictId && selectedRegion) {
-            if (vPathId === selectedDistrictId) {
-              vPath.style.filter = SELECTED_FILTER;
-              vPath.style.opacity = "1";
-            } else if (isInSelectedRegion) {
-              // Same region - lighting effect (brighten)
-              vPath.style.filter = "saturate(1.02) brightness(1.05)";
-              vPath.style.opacity = "1";
-            } else {
-              // Different region - shadow effect (darken)
-              vPath.style.filter = DIM_FILTER;
-              vPath.style.opacity = DIM_OPACITY;
-            }
+          if (selectedDistrictId === vPathId) {
+            vPath.style.filter = SELECTED_FILTER;
           } else {
-            if (selectedDistrictId === vPathId) {
-              vPath.style.filter = SELECTED_FILTER;
-            } else {
-              vPath.style.filter = "brightness(1.04)"; // Slightly brighter default
-            }
-            vPath.style.opacity = "1";
+            vPath.style.filter = BASE_FILTER;
           }
+          vPath.style.opacity = "1";
           vPath.style.strokeWidth = BORDER_WIDTH;
-          vPath.style.stroke = BORDER_COLOR;
-          // Keep Alaska moved down
-          if (vPathId === "Alaska") {
-            vPath.style.transform = "scale(1) translateY(5px)";
-          } else {
-            vPath.style.transform = "scale(1) translateY(0)";
-          }
+          vPath.style.transform = "translateY(0)";
         });
       };
       path.addEventListener("mouseleave", mouseLeaveHandler);
@@ -1362,13 +1389,18 @@ export function InteractiveMap({
     // XAN button will be added as a separate element in JSX that transforms with the map
 
     // Calculate zoom viewBox based on visible districts for scope filtering
-    // Only zoom if user has the appropriate ID for the selected scope level
     const shouldZoom =
       (scopeFilter === "REGION" && userRegionId) ||
       (scopeFilter === "DISTRICT" && userDistrictId);
 
-    if (shouldZoom) {
-      // Collect bounding boxes of all visible paths
+    if (shouldZoom && originalViewBox) {
+      // Calculate the scale factors we used to transform the SVG
+      const scaleX = 960 / originalViewBox.width;
+      const scaleY = 600 / originalViewBox.height;
+      const translateX = -originalViewBox.minX;
+      const translateY = -originalViewBox.minY;
+
+      // Collect bounding boxes of all visible paths in scaled coordinates
       let minX = Infinity,
         minY = Infinity,
         maxX = -Infinity,
@@ -1389,7 +1421,7 @@ export function InteractiveMap({
         const pathRegion = district?.region || DISTRICT_REGION_MAP[pathId];
 
         // Check if this path is visible based on scope
-        let isVisible = true;
+        let isVisible = false;
         if (scopeFilter === "REGION" && userRegionId) {
           isVisible = pathRegion === userRegionId;
         } else if (scopeFilter === "DISTRICT" && userDistrictId) {
@@ -1399,10 +1431,16 @@ export function InteractiveMap({
         if (isVisible) {
           try {
             const bbox = path.getBBox();
-            minX = Math.min(minX, bbox.x);
-            minY = Math.min(minY, bbox.y);
-            maxX = Math.max(maxX, bbox.x + bbox.width);
-            maxY = Math.max(maxY, bbox.y + bbox.height);
+            // Transform the bounding box to the scaled coordinate system
+            const scaledX = (bbox.x + translateX) * scaleX;
+            const scaledY = (bbox.y + translateY) * scaleY;
+            const scaledWidth = bbox.width * scaleX;
+            const scaledHeight = bbox.height * scaleY;
+
+            minX = Math.min(minX, scaledX);
+            minY = Math.min(minY, scaledY);
+            maxX = Math.max(maxX, scaledX + scaledWidth);
+            maxY = Math.max(maxY, scaledY + scaledHeight);
             hasVisiblePaths = true;
           } catch {
             // getBBox can throw if element is not rendered
@@ -1411,16 +1449,18 @@ export function InteractiveMap({
       });
 
       if (hasVisiblePaths && minX !== Infinity) {
-        // Add padding around the visible area (10% on each side)
+        // Add padding around the visible area
+        // Use more padding for district scope to avoid being too zoomed in
         const width = maxX - minX;
         const height = maxY - minY;
-        const paddingX = width * 0.15;
-        const paddingY = height * 0.15;
+        const isDistrictScope = scopeFilter === "DISTRICT";
+        const paddingX = width * (isDistrictScope ? 0.8 : 0.2);
+        const paddingY = height * (isDistrictScope ? 0.8 : 0.2);
 
         const viewBoxX = Math.max(0, minX - paddingX);
         const viewBoxY = Math.max(0, minY - paddingY);
-        const viewBoxWidth = width + paddingX * 2;
-        const viewBoxHeight = height + paddingY * 2;
+        const viewBoxWidth = Math.min(960, width + paddingX * 2);
+        const viewBoxHeight = Math.min(600, height + paddingY * 2);
 
         const newViewBox = `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
         setZoomViewBox(newViewBox);
@@ -1428,12 +1468,16 @@ export function InteractiveMap({
         // Apply the viewBox to both SVGs
         clickSvg.setAttribute("viewBox", newViewBox);
         visualSvg.setAttribute("viewBox", newViewBox);
+      } else {
+        setZoomViewBox(null);
+        clickSvg.setAttribute("viewBox", DEFAULT_VIEWBOX);
+        visualSvg.setAttribute("viewBox", DEFAULT_VIEWBOX);
       }
     } else {
       // Reset to default viewBox for national view
       setZoomViewBox(null);
-      clickSvg.setAttribute("viewBox", "0 0 960 600");
-      visualSvg.setAttribute("viewBox", "0 0 960 600");
+      clickSvg.setAttribute("viewBox", DEFAULT_VIEWBOX);
+      visualSvg.setAttribute("viewBox", DEFAULT_VIEWBOX);
     }
 
     // Cleanup
@@ -1460,6 +1504,7 @@ export function InteractiveMap({
     scopeFilter,
     userRegionId,
     userDistrictId,
+    originalViewBox,
   ]);
 
   // Generate pie chart SVG
@@ -1680,17 +1725,17 @@ export function InteractiveMap({
     );
   };
 
+  // Map always fills the available container - scoping is handled via zoom/filter
   return (
-    <div className="w-full h-full" style={{ minHeight: "600px" }}>
-      <div
-        className="relative w-full h-full"
-        style={{
-          minHeight: "600px",
-          // Enhanced elevation effect - stronger shadow for more depth
-          filter:
-            "drop-shadow(0 12px 32px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.08))",
-        }}
-      >
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        maxWidth: "100%",
+        maxHeight: "100%",
+      }}
+    >
+      <div className="relative w-full h-full">
         {/* Top Right Label - Chi Alpha */}
         <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2">
           <div className="flex items-center justify-end">
@@ -1713,7 +1758,7 @@ export function InteractiveMap({
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
           >
             <span
-              className="text-4xl font-semibold text-rose-600 whitespace-nowrap tracking-tight"
+              className="text-4xl font-semibold text-slate-900 whitespace-nowrap tracking-tight"
               style={{
                 lineHeight: "1",
                 textAlign: "left",
@@ -1974,39 +2019,33 @@ export function InteractiveMap({
           </button>
         </div>
 
-        {/* Bottom Right Request Summary */}
-        <div className="absolute bottom-4 right-4 z-40 rounded-lg border border-slate-200 bg-white/90 px-4 py-3 shadow-md backdrop-blur-sm">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">
-            Request Summary
+        {/* Bottom Right Request Summary - Clean, no background, hidden on mobile */}
+        <div className="absolute bottom-4 right-4 z-40 text-right hidden sm:block">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+            Requests
           </div>
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-            <div className="flex items-baseline justify-end gap-1">
-              <span className="font-semibold text-slate-900 tabular-nums">
+          <div className="space-y-0.5 text-sm">
+            <div className="flex items-baseline justify-end gap-1.5">
+              <span className="font-semibold text-slate-700 tabular-nums">
                 {needsAggregate
                   ? needsAggregate.totalNeeds - needsAggregate.metNeeds
                   : "—"}
               </span>
-              <span className="text-slate-600 text-xs">Request</span>
+              <span className="text-slate-500 text-xs">Open</span>
             </div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-semibold text-slate-900 tabular-nums">
+            <div className="flex items-baseline justify-end gap-1.5">
+              <span className="font-semibold text-slate-700 tabular-nums">
                 {needsAggregate
-                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
                   : "—"}
               </span>
-              <span className="text-slate-600 text-xs">$ Requested</span>
+              <span className="text-slate-500 text-xs">Requested</span>
             </div>
-            <div className="flex items-baseline justify-end gap-1">
-              <span className="font-semibold text-slate-900 tabular-nums">
+            <div className="flex items-baseline justify-end gap-1.5">
+              <span className="font-semibold text-slate-700 tabular-nums">
                 {needsAggregate ? needsAggregate.metNeeds : "—"}
               </span>
-              <span className="text-slate-600 text-xs">Met</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-              <span className="font-semibold text-slate-900 tabular-nums">
-                $0.00
-              </span>
-              <span className="text-slate-600 text-xs">$ Met</span>
+              <span className="text-slate-500 text-xs">Met</span>
             </div>
           </div>
         </div>
@@ -2052,7 +2091,7 @@ export function InteractiveMap({
             <button
               type="button"
               aria-label="Open XAN (Chi Alpha National)"
-              className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none"
+              className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan"
               style={{
                 left: "12%", // Moved to the left a little
                 bottom: "5%", // Moved up a little
@@ -2064,7 +2103,7 @@ export function InteractiveMap({
               }}
             >
               <div
-                className="rounded-full bg-black hover:bg-black focus-visible:bg-black flex items-center justify-center transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-black/60"
+                className="rounded-full bg-black group-hover/xan:bg-red-700 flex items-center justify-center transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-black/60 shadow-lg group-hover/xan:-translate-y-2 group-hover/xan:shadow-xl"
                 style={{
                   width: "3.5vw", // Larger default size, scales with viewport
                   height: "3.5vw",

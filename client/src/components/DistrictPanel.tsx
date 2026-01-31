@@ -2267,22 +2267,14 @@ export function DistrictPanel({
 
   const content = district ? (
     <div className="w-full h-full flex flex-col">
-      <div className="flex-1 overflow-auto scrollbar-hide py-2 px-4">
+      <div className="flex-1 overflow-auto scrollbar-hide py-2 px-2 sm:px-4">
         {/* Header Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 mb-1.5 transition-all hover:shadow-md hover:border-slate-200 w-full">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-2 sm:p-3 mb-2 w-full">
           {/* Title Section */}
-          <div className="flex items-center justify-between mb-1.5 flex-wrap gap-3 min-w-max">
-            <div className="flex items-center gap-5 flex-wrap">
-              <div ref={districtNameRef} className="ml-2 min-w-0">
-                <h1
-                  className={`font-semibold text-slate-900 leading-tight tracking-tight ${
-                    district.name === "South Texas"
-                      ? "text-3xl"
-                      : district.name === "Texico"
-                        ? "text-2xl"
-                        : "text-2xl"
-                  }`}
-                >
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center gap-2 sm:gap-5 flex-wrap">
+              <div ref={districtNameRef} className="ml-1 sm:ml-2 min-w-0">
+                <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
                   <EditableText
                     value={district.name}
                     onSave={newName => {
@@ -2292,20 +2284,8 @@ export function DistrictPanel({
                       });
                     }}
                     disabled={disableEdits}
-                    className={`font-semibold text-slate-900 tracking-tight ${
-                      district.name === "South Texas"
-                        ? "text-3xl"
-                        : district.name === "Texico"
-                          ? "text-2xl"
-                          : "text-2xl"
-                    }`}
-                    inputClassName={`font-semibold text-slate-900 tracking-tight ${
-                      district.name === "South Texas"
-                        ? "text-3xl"
-                        : district.name === "Texico"
-                          ? "text-2xl"
-                          : "text-2xl"
-                    }`}
+                    className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                    inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
                   />
                   {disableEdits && (
                     <span className="ml-1 text-slate-400"></span>
@@ -2449,51 +2429,29 @@ export function DistrictPanel({
               </div>
             </div>
 
-            {/* PR 3: Export Button */}
-            {isAuthenticated && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const url = `/api/export/people.csv?districtId=${district.id}`;
-                  window.open(url, "_blank");
-                }}
-                className="ml-auto flex-shrink-0"
-              >
-                <Download className="h-5 w-5 mr-2" />
-                Export CSV
-              </Button>
-            )}
-            <div className="flex items-center mr-[40px] flex-shrink-0">
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-base">
-                {/* Request and $ Requested */}
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="font-semibold text-slate-900 tabular-nums">
+            {/* Needs Summary - Clean aligned layout */}
+            <div className="flex items-center ml-auto flex-shrink-0 text-right">
+              <div className="space-y-0.5">
+                <div className="flex items-baseline justify-end gap-1.5">
+                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
                     {Math.max(
                       0,
                       needsSummary.totalNeeds - needsSummary.metNeeds
                     )}
                   </span>
-                  <span className="text-slate-600 text-sm">Request</span>
+                  <span className="text-slate-500 text-xs">Open</span>
                 </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {`$${(needsSummary.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                <div className="flex items-baseline justify-end gap-1.5">
+                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
+                    {`$${(needsSummary.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
                   </span>
-                  <span className="text-slate-600 text-sm">$ Requested</span>
+                  <span className="text-slate-500 text-xs">Requested</span>
                 </div>
-                {/* Met and $ Met */}
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="font-semibold text-slate-900 tabular-nums">
+                <div className="flex items-baseline justify-end gap-1.5">
+                  <span className="font-semibold text-slate-700 tabular-nums text-sm">
                     {needsSummary.metNeeds}
                   </span>
-                  <span className="text-slate-600 text-sm">Met</span>
-                </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    $0.00
-                  </span>
-                  <span className="text-slate-600 text-sm">$ Met</span>
+                  <span className="text-slate-500 text-xs">Met</span>
                 </div>
               </div>
             </div>
@@ -2504,12 +2462,12 @@ export function DistrictPanel({
             className="flex items-center mt-1.5"
             style={{ paddingLeft: pieChartPadding }}
           >
-            {/* Pie Chart - Left aligned */}
+            {/* Pie Chart - Left aligned, smaller on mobile */}
             <svg
-              width="100"
-              height="100"
+              width="80"
+              height="80"
               viewBox="0 0 120 120"
-              className="flex-shrink-0"
+              className="flex-shrink-0 sm:w-[100px] sm:h-[100px]"
             >
               <circle cx="60" cy="60" r="55" fill="#e2e8f0" />
               {(() => {

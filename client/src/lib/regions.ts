@@ -1,4 +1,23 @@
 /**
+ * All regions in alphabetical order
+ */
+export const ALL_REGIONS = [
+  "Big Sky",
+  "Great Lakes",
+  "Great Plains North",
+  "Great Plains South",
+  "Mid-Atlantic",
+  "Northeast",
+  "Northwest",
+  "South Central",
+  "Southeast",
+  "Texico",
+  "West Coast",
+] as const;
+
+export type RegionName = (typeof ALL_REGIONS)[number];
+
+/**
  * District to region mapping (for districts not yet in database)
  *
  * This is temporary glue logic until all districts are properly seeded in the database.

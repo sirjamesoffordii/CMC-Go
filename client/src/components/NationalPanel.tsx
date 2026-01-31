@@ -277,32 +277,33 @@ export function NationalPanel({
   return (
     <div className="w-full flex flex-col bg-white">
       {/* Header */}
-      <div className="flex-shrink-0 border-b border-slate-200 bg-gradient-to-r from-slate-700 to-slate-800 text-white p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm shadow-md backdrop-blur-sm">
+      <div className="flex-shrink-0 border-b border-slate-200 bg-gradient-to-r from-slate-700 to-slate-800 text-white p-3 sm:p-5">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-3.5">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-xs sm:text-sm shadow-md backdrop-blur-sm">
               XAN
             </div>
             <div>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Chi Alpha National Team
+              <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
+                Chi Alpha National
               </h2>
-              <p className="text-sm text-white/90 mt-0.5 font-medium">
+              <p className="text-xs sm:text-sm text-white/90 mt-0.5 font-medium">
                 {stats.total} team members
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setIsAddPersonDialogOpen(true)}
-              className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors text-sm font-medium flex items-center gap-1.5"
+              className="px-2 sm:px-3 py-1.5 bg-white/20 hover:bg-white/30 active:bg-white/40 rounded-lg transition-colors text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              Add Person
+              <span className="hidden sm:inline">Add Person</span>
+              <span className="sm:hidden">Add</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 active:bg-white/30 rounded-lg transition-colors hidden sm:block"
             >
               <X className="w-5 h-5" />
             </button>
@@ -310,7 +311,7 @@ export function NationalPanel({
         </div>
 
         {/* Stats */}
-        <div className="flex gap-4 text-sm">
+        <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-700"></div>
             <span>Going: {stats.going}</span>

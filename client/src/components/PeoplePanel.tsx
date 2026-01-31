@@ -594,19 +594,21 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
       <div className="w-full bg-white border-l border-gray-300 flex flex-col">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">People</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              People
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors hidden sm:block"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
-        <div className="flex-1 p-6">
-          <p className="text-gray-600">Loading...</p>
+        <div className="flex-1 p-4 sm:p-6 flex items-center justify-center">
+          <p className="text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -615,22 +617,22 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   return (
     <div className="h-full bg-white border-l border-gray-300 flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b border-gray-200">
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">People</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">People</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={handleExport}
             disabled={filteredPeople.length === 0}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Export to CSV"
           >
             <Download className="h-5 w-5 text-gray-500" />
           </button>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors hidden sm:block"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -638,7 +640,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       </div>
 
       {/* Filters Section */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
+      <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
         <div className="space-y-3">
           {/* Search Input */}
           <div className="relative">
