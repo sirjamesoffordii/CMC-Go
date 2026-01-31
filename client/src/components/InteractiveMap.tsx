@@ -1753,8 +1753,8 @@ export function InteractiveMap({
           </div>
         </div>
 
-        {/* Top Left Invited / Total + Metrics */}
-        <div className="absolute top-4 left-4 z-40 flex flex-col items-start gap-3">
+        {/* Top Left Invited / Total + Needs */}
+        <div className="absolute top-4 left-4 z-40 flex flex-col items-start gap-2">
           <div
             className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
@@ -1783,6 +1783,41 @@ export function InteractiveMap({
             </div>
 
             <div className="w-6 h-6 flex-shrink-0" />
+          </div>
+
+          {/* Needs summary (moved from bottom-right) */}
+          <div className="hidden sm:block text-left">
+            <div className="space-y-1">
+              <div className="text-sm font-semibold text-slate-700 tabular-nums">
+                <span className="text-slate-500 font-medium">Needs Met:</span>{" "}
+                {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
+                <span className="text-slate-500 font-medium">/</span>{" "}
+                {needsAggregate ? needsAggregate.totalNeeds : "—"}
+              </div>
+
+              <div className="text-xs text-slate-600 tabular-nums">
+                <span className="text-slate-500">Funds Received:</span>{" "}
+                {needsAggregate
+                  ? `$${(needsAggregate.metFinancial / 100).toLocaleString(
+                      "en-US",
+                      {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }
+                    )}`
+                  : "—"}{" "}
+                <span className="text-slate-500 font-medium">/</span>{" "}
+                {needsAggregate
+                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString(
+                      "en-US",
+                      {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }
+                    )}`
+                  : "—"}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2019,33 +2054,6 @@ export function InteractiveMap({
               )}
             </div>
           </button>
-        </div>
-
-        {/* Bottom Right Needs Summary - Clean, no background, hidden on mobile */}
-        <div className="absolute bottom-4 right-4 z-40 text-right hidden sm:block">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-            Needs
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-sm font-semibold text-slate-700 tabular-nums">
-              <span className="text-slate-500 font-medium">Needs:</span>{" "}
-              {needsAggregate ? needsAggregate.totalNeeds : "—"}
-              <span className="text-slate-500 font-medium ml-3">Met:</span>{" "}
-              {needsAggregate ? needsAggregate.metNeeds : "—"}
-            </div>
-
-            <div className="text-xs text-slate-600 tabular-nums">
-              <span className="text-slate-500">$ Requested:</span>{" "}
-              {needsAggregate
-                ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                : "—"}
-              <span className="text-slate-500 ml-3">Given:</span>{" "}
-              {needsAggregate
-                ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                : "—"}
-            </div>
-          </div>
         </div>
 
         {/* Background click layer - captures clicks on empty space */}

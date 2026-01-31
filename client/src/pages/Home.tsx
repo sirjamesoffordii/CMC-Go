@@ -854,21 +854,18 @@ export default function Home() {
           )}
         </div>
 
-        {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
-        <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
-          <div
-            className="whitespace-nowrap text-white absolute hidden sm:block"
-            style={{
-              fontSize: "16px",
-              fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-              animation: "fade-in-text 1.2s ease-out 4.2s forwards",
-              left: "calc(12px + 36px + 16px + 12px)", // Position after logo
-              fontWeight: 400,
-              opacity: 0,
-            }}
-          >
-            Going Together
-          </div>
+        {/* Banner Text (desktop) - Fades in towards end of CMC Go animation */}
+        <div
+          className="hidden sm:flex items-center gap-2 flex-shrink-0 z-10"
+          style={{
+            fontSize: "16px",
+            fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+            animation: "fade-in-text 1.2s ease-out 4.2s forwards",
+            fontWeight: 400,
+            opacity: 0,
+          }}
+        >
+          <span className="whitespace-nowrap text-white">Go Together</span>
         </div>
 
         {/* Edit Header Button - Positioned absolutely in top left corner */}
@@ -889,9 +886,20 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Why Personal Invitations Matter, Scope Selector, and Hamburger Menu */}
+        {/* Right Side: Scope Selector, Why button, and Hamburger Menu */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto">
-          {/* Why Personal Invitations Matter Button - hidden on mobile */}
+          {/* Scope selector - visible when authenticated, compact on mobile */}
+          {isAuthenticated && (
+            <ScopeSelector
+              currentScope={currentScope}
+              selectedRegion={selectedRegion}
+              selectedDistrict={scopeSelectedDistrict}
+              onScopeChange={setScopeFilter}
+              className="bg-white/10 border-white/20 text-white [&>span]:text-white text-xs sm:text-sm"
+            />
+          )}
+
+          {/* Why Personal Invitations Matter Button - desktop only (kept near scope selector) */}
           <Button
             variant="ghost"
             size="sm"
@@ -905,17 +913,6 @@ export default function Home() {
               Why Personal Invitations Matter
             </span>
           </Button>
-
-          {/* Scope selector - visible when authenticated, compact on mobile */}
-          {isAuthenticated && (
-            <ScopeSelector
-              currentScope={currentScope}
-              selectedRegion={selectedRegion}
-              selectedDistrict={scopeSelectedDistrict}
-              onScopeChange={setScopeFilter}
-              className="bg-white/10 border-white/20 text-white [&>span]:text-white text-xs sm:text-sm"
-            />
-          )}
 
           {/* Hamburger Menu */}
           <div className="relative">

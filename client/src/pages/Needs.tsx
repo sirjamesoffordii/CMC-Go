@@ -103,7 +103,7 @@ export default function Needs() {
     <div className="container max-w-6xl py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">District Requests</h1>
+          <h1 className="text-3xl font-bold">District Needs</h1>
           <p className="text-muted-foreground mt-1">
             District-visible requests that can be mobilized by the community
           </p>

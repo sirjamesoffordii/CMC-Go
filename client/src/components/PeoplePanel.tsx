@@ -42,7 +42,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
   const [needFilter, setNeedFilter] = useState<
-    Set<"Financial" | "Transportation" | "Housing" | "Other" | "Request Met">
+    Set<"Financial" | "Transportation" | "Housing" | "Other" | "Need Met">
   >(new Set());
   const [roleFilter, setRoleFilter] = useState<Set<string>>(new Set());
   const [familyGuestFilter, setFamilyGuestFilter] = useState<
@@ -108,14 +108,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         );
         const personNeedTypes = new Set(personNeeds.map(n => n.type));
 
-        // Check if "Request Met" is selected (person has no active requests)
-        if (needFilter.has("Request Met") && personNeeds.length === 0) {
+        // Check if "Need Met" is selected (person has no active needs)
+        if (needFilter.has("Need Met") && personNeeds.length === 0) {
           return true;
         }
 
-        // Check if person has any of the selected request types (excluding "Request Met")
+        // Check if person has any of the selected need types (excluding "Need Met")
         const selectedNeedTypes = Array.from(needFilter).filter(
-          need => need !== "Request Met"
+          need => need !== "Need Met"
         );
         if (selectedNeedTypes.length > 0) {
           const hasSelectedNeedType = selectedNeedTypes.some(needType =>
@@ -504,7 +504,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       "District",
       "Status",
       "Last Updated",
-      "Active Requests",
+      "Active Needs",
     ];
 
     // Create CSV rows
@@ -724,7 +724,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 >
                   <span>
                     {needFilter.size === 0
-                      ? "All Requests"
+                      ? "All Needs"
                       : needFilter.size === 1
                         ? Array.from(needFilter)[0]
                         : `${needFilter.size} selected`}
@@ -740,13 +740,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       "Transportation",
                       "Housing",
                       "Other",
-                      "Request Met",
+                      "Need Met",
                     ] as const
                   ).map(need => {
                     // Calculate count for each request type
                     let count = 0;
-                    if (need === "Request Met") {
-                      // Count people with no active requests
+                    if (need === "Need Met") {
+                      // Count people with no active needs
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
@@ -754,7 +754,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         return personNeeds.length === 0;
                       }).length;
                     } else {
-                      // Count people with this specific request type
+                      // Count people with this specific need type
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive

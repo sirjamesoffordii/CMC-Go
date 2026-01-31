@@ -167,7 +167,7 @@ export default function FollowUpView() {
           {filteredPeople.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
               No people found with status "Maybe"
-              {showOnlyWithNeeds && " with active requests"}
+              {showOnlyWithNeeds && " with active needs"}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -187,7 +187,7 @@ export default function FollowUpView() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Requests
+                      Needs
                     </th>
                   </tr>
                 </thead>

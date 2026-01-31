@@ -357,9 +357,9 @@ export default function AdminConsole() {
       color: "text-purple-600",
     },
     {
-      title: "Active Requests",
+      title: "Active Needs",
       value: stats.activeNeeds.toLocaleString(),
-      description: "Unmet requests",
+      description: "Unmet needs",
       icon: Heart,
       color: "text-red-600",
     },
