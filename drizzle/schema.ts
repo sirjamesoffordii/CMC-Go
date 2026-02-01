@@ -103,6 +103,8 @@ export type InsertDistrict = typeof districts.$inferInsert;
 
 /**
  * Campuses table - represents campuses within districts
+ * archived: soft-delete flag (default false), archived campuses are excluded from default queries
+ * archivedAt: timestamp for audit trail when campus was archived
  */
 export const campuses = mysqlTable(
   "campuses",
@@ -111,10 +113,14 @@ export const campuses = mysqlTable(
     name: varchar("name", { length: 255 }).notNull(),
     districtId: varchar("districtId", { length: 64 }).notNull(),
     displayOrder: int("displayOrder").notNull().default(0), // Visual ordering within district
+    archived: boolean("archived").notNull().default(false), // Soft-delete flag
+    archivedAt: timestamp("archivedAt"), // Audit trail timestamp
   },
   table => ({
     // PR 6: Add index for districtId lookups
     districtIdIdx: index("campuses_districtId_idx").on(table.districtId),
+    // Index for filtering archived campuses
+    archivedIdx: index("campuses_archived_idx").on(table.archived),
   })
 );
 
