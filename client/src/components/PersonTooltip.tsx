@@ -40,43 +40,6 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
       }}
     >
       <div className="space-y-4">
-        {/* Basic Information Section */}
-        <div className="space-y-2">
-          <div className="border-b border-slate-200 pb-1">
-            <h3 className="text-xs font-semibold text-slate-700">
-              Basic Information
-            </h3>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-xs">
-            <div className="space-y-2">
-              <div className="text-slate-600 text-xs font-medium">Name</div>
-              <div className="font-semibold text-slate-900">
-                {person.name || person.personId || "Person"}
-              </div>
-            </div>
-            {person.primaryRole && (
-              <div className="space-y-2">
-                <div className="text-slate-600 text-xs font-medium">Role</div>
-                <div className="font-medium text-slate-900">
-                  {person.primaryRole}
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              <div className="text-slate-600 text-xs font-medium">Status</div>
-              <div className="font-medium text-slate-900">
-                {person.status === "Yes"
-                  ? "Going"
-                  : person.status === "Maybe"
-                    ? "Maybe"
-                    : person.status === "No"
-                      ? "Not Going"
-                      : "Not Invited Yet"}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Family & Guests Section */}
         {(person.householdId ||
           person.spouseAttending ||
@@ -174,17 +137,15 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
           </div>
         )}
 
-        {/* Request Section */}
+        {/* Needs Section */}
         {need && (
           <div className="space-y-2">
             <div className="border-b border-slate-200 pb-1">
-              <h3 className="text-xs font-semibold text-slate-700">Request</h3>
+              <h3 className="text-xs font-semibold text-slate-700">Need</h3>
             </div>
             <div className="grid grid-cols-3 gap-4 text-xs">
               <div className="space-y-2">
-                <div className="text-slate-600 text-xs font-medium">
-                  Request
-                </div>
+                <div className="text-slate-600 text-xs font-medium">Need</div>
                 <div
                   className={`font-medium ${need.isActive ? "text-slate-900" : "text-slate-500 line-through"}`}
                 >
@@ -198,7 +159,9 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="text-slate-600 text-xs font-medium">Amount</div>
+                <div className="text-slate-600 text-xs font-medium">
+                  Funds Needed
+                </div>
                 <div
                   className={`font-medium ${need.isActive ? "text-slate-900" : "text-slate-500 line-through"}`}
                 >
@@ -211,7 +174,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
               </div>
               <div className="space-y-2">
                 <div className="text-slate-600 text-xs font-medium">
-                  Request Met
+                  Need Met
                 </div>
                 <div className="font-medium text-slate-900">
                   {!need.isActive ? (
@@ -228,7 +191,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
             {need.description && (
               <div className="col-span-3 space-y-2 mt-2">
                 <div className="text-slate-600 text-xs font-medium">
-                  Request Notes
+                  Need Note
                 </div>
                 <div
                   className={`text-xs text-slate-700 ${need.isActive ? "" : "line-through text-slate-400"}`}
@@ -240,7 +203,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
           </div>
         )}
 
-        {/* Additional Information Section */}
+        {/* Needs Section */}
         {(person.notes || person.depositPaid) && (
           <div className="space-y-2">
             <div className="border-b border-slate-200 pb-1">

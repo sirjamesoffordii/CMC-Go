@@ -9,11 +9,6 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { MobileDrawer } from "@/components/MobileDrawer";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
 import {
   Calendar,
@@ -162,9 +157,9 @@ export default function Home() {
   const [nationalPanelOpen, setNationalPanelOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
-  const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
+  const [peoplePanelOpen, setPeoplePanelOpen] = useState(true); // open by default
   const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
-  const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
+  const [peoplePanelWidth, setPeoplePanelWidth] = useState(100); // full screen when open
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingPeople, setIsResizingPeople] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
@@ -183,6 +178,7 @@ export default function Home() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [tableButtonHovered, setTableButtonHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -815,9 +811,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
-      {/* Header - Chi Alpha Toolbar Style */}
+      {/* Header - Chi Alpha Toolbar Style (high z so dropdowns sit above map/metrics) */}
       <div
-        className="relative flex items-center px-2 sm:px-4 group flex-shrink-0"
+        className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "48px" : `${headerHeight}px`,
           minHeight: isMobile ? "48px" : "52px",
@@ -854,21 +850,18 @@ export default function Home() {
           )}
         </div>
 
-        {/* Banner Text - "Going Together" - Fades in towards end of CMC Go animation */}
-        <div className="absolute left-0 right-0 top-0 bottom-0 flex items-center overflow-hidden pointer-events-none z-0">
-          <div
-            className="whitespace-nowrap text-white absolute hidden sm:block"
-            style={{
-              fontSize: "16px",
-              fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-              animation: "fade-in-text 1.2s ease-out 4.2s forwards",
-              left: "calc(12px + 36px + 16px + 12px)", // Position after logo
-              fontWeight: 400,
-              opacity: 0,
-            }}
-          >
-            Going Together
-          </div>
+        {/* Banner Text (desktop) - Fades in towards end of CMC Go animation */}
+        <div
+          className="hidden sm:flex items-center gap-2 flex-shrink-0 z-10"
+          style={{
+            fontSize: "16px",
+            fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+            animation: "fade-in-text 1.2s ease-out 4.2s forwards",
+            fontWeight: 400,
+            opacity: 0,
+          }}
+        >
+          <span className="whitespace-nowrap text-white">Go Together</span>
         </div>
 
         {/* Edit Header Button - Positioned absolutely in top left corner */}
@@ -889,9 +882,20 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Why Personal Invitations Matter, Scope Selector, and Hamburger Menu */}
+        {/* Right Side: Scope Selector, Why button, and Hamburger Menu */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto">
-          {/* Why Personal Invitations Matter Button - hidden on mobile */}
+          {/* Scope selector - visible when authenticated, compact on mobile */}
+          {isAuthenticated && (
+            <ScopeSelector
+              currentScope={currentScope}
+              selectedRegion={selectedRegion}
+              selectedDistrict={scopeSelectedDistrict}
+              onScopeChange={setScopeFilter}
+              className="bg-white/10 border-white/20 text-white [&>span]:text-white text-xs sm:text-sm"
+            />
+          )}
+
+          {/* Why Personal Invitations Matter Button - desktop only (kept near scope selector) */}
           <Button
             variant="ghost"
             size="sm"
@@ -905,17 +909,6 @@ export default function Home() {
               Why Personal Invitations Matter
             </span>
           </Button>
-
-          {/* Scope selector - visible when authenticated, compact on mobile */}
-          {isAuthenticated && (
-            <ScopeSelector
-              currentScope={currentScope}
-              selectedRegion={selectedRegion}
-              selectedDistrict={scopeSelectedDistrict}
-              onScopeChange={setScopeFilter}
-              className="bg-white/10 border-white/20 text-white [&>span]:text-white text-xs sm:text-sm"
-            />
-          )}
 
           {/* Hamburger Menu */}
           <div className="relative">
@@ -932,10 +925,10 @@ export default function Home() {
             {menuOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-[100]"
+                  className="fixed inset-0 z-[205]"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
+                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[206] py-1 max-h-[80vh] overflow-y-auto">
                   {!isAuthenticated && (
                     <>
                       <button
@@ -1257,9 +1250,9 @@ export default function Home() {
         {!isMobile && (
           <div
             className={[
-              "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
+              "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col min-w-0",
               !isResizingPeople
-                ? "transition-all duration-300 ease-in-out"
+                ? "transition-[width] duration-500 ease-in-out"
                 : "",
             ]
               .filter(Boolean)
@@ -1270,16 +1263,17 @@ export default function Home() {
               overflow: "hidden",
             }}
           >
-            {peoplePanelOpen && (
-              <>
-                {/* Resize Handle */}
-                <div
-                  className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                  onMouseDown={handlePeopleMouseDown}
-                />
+            {/* Content always mounted so slide-out/slide-back animation is smooth */}
+            <>
+              {/* Resize Handle - only interactive when open */}
+              <div
+                className={`absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10 ${peoplePanelOpen ? "" : "pointer-events-none"}`}
+                onMouseDown={handlePeopleMouseDown}
+              />
+              <div className="flex-1 flex flex-col min-w-0 w-full overflow-hidden h-full">
                 <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
-              </>
-            )}
+              </div>
+            </>
           </div>
         )}
 
@@ -1296,59 +1290,74 @@ export default function Home() {
         )}
       </div>
 
-      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile */}
+      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile. When not logged in, button is not clickable; hover shows Log in button. */}
       {!peoplePanelOpen && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {isMobile ? (
-              /* Mobile: FAB-style button in bottom right */
+        <>
+          {isMobile ? (
+            /* Mobile: FAB-style button in bottom right */
+            <div
+              className="fixed bottom-4 right-4 z-30 flex flex-col items-end gap-2"
+              onMouseEnter={() => !user && setTableButtonHovered(true)}
+              onMouseLeave={() => setTableButtonHovered(false)}
+            >
+              {!user && tableButtonHovered && (
+                <button
+                  type="button"
+                  onClick={() => setLoginModalOpen(true)}
+                  className="rounded-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium shadow-lg whitespace-nowrap"
+                >
+                  Log in
+                </button>
+              )}
               <button
+                type="button"
                 onClick={() => {
-                  if (!user) {
-                    setLoginModalOpen(true);
-                    return;
-                  }
+                  if (!user) return;
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
-                  ${!user ? "opacity-70" : ""}
+                  bg-black text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
+                  ${user ? "hover:bg-red-700 active:bg-red-800 cursor-pointer" : "opacity-70 cursor-not-allowed"}
                 `}
               >
                 <span className="whitespace-nowrap select-none">Table</span>
               </button>
-            ) : (
-              /* Desktop: Slide-out tab on right edge */
-              <div
-                className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16"
-                style={{ right: 0 }}
-              >
+            </div>
+          ) : (
+            /* Desktop: Slide-out tab on right edge */
+            <div
+              className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16 flex flex-col items-end gap-2"
+              style={{ right: 0 }}
+              onMouseEnter={() => !user && setTableButtonHovered(true)}
+              onMouseLeave={() => setTableButtonHovered(false)}
+            >
+              {!user && tableButtonHovered && (
                 <button
-                  onClick={() => {
-                    if (!user) {
-                      setLoginModalOpen(true);
-                      return;
-                    }
-                    setPeoplePanelOpen(true);
-                  }}
-                  className={`
-                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
-                    ${!user ? "opacity-70" : ""}
-                  `}
+                  type="button"
+                  onClick={() => setLoginModalOpen(true)}
+                  className="rounded-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium shadow-lg whitespace-nowrap translate-x-[92%] group-hover:translate-x-[86%]"
                 >
-                  <span className="inline-block whitespace-nowrap select-none">
-                    Table
-                  </span>
+                  Log in
                 </button>
-              </div>
-            )}
-          </TooltipTrigger>
-          {!user && (
-            <TooltipContent side="left">
-              <p>Please log in to view table</p>
-            </TooltipContent>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user) return;
+                  setPeoplePanelOpen(true);
+                }}
+                className={`
+                  relative bg-black text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
+                  ${user ? "hover:bg-red-700 cursor-pointer" : "opacity-70 cursor-not-allowed"}
+                `}
+              >
+                <span className="inline-block whitespace-nowrap select-none">
+                  Table
+                </span>
+              </button>
+            </div>
           )}
-        </Tooltip>
+        </>
       )}
 
       <PersonDetailsDialog

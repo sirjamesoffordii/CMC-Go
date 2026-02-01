@@ -695,10 +695,10 @@ export default function People() {
               })}
             </div>
 
-            {/* Request Filter */}
+            {/* Needs Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">
-                Request:
+                Needs:
               </span>
               <button
                 onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
@@ -711,14 +711,14 @@ export default function People() {
                   }
                 `}
               >
-                Has active requests
+                Has active needs
               </button>
             </div>
 
-            {/* Request Type Filter */}
+            {/* Need Type Filter */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600 font-medium">
-                Request Type:
+                Need Type:
               </span>
               <select
                 value={needTypeFilter}
