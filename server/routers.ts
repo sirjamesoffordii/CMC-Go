@@ -843,57 +843,68 @@ export const appRouter = router({
   }),
 
   campuses: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      try {
-        const scope = getPeopleScope(ctx.user);
+    list: protectedProcedure
+      .input(z.object({ includeArchived: z.boolean().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        try {
+          const scope = getPeopleScope(ctx.user);
+          const includeArchived = input?.includeArchived ?? false;
 
-        // Return all campuses for ALL scope, otherwise filtered by user's scope
-        const allCampuses = await db.getAllCampuses();
+          // Return all campuses for ALL scope, otherwise filtered by user's scope
+          const allCampuses = await db.getAllCampuses(includeArchived);
 
-        if (scope.level === "ALL") {
-          return allCampuses;
-        }
+          if (scope.level === "ALL") {
+            return allCampuses;
+          }
 
-        // Filter campuses by scope
-        if (scope.level === "REGION") {
-          // Get all districts in the region first
-          const allDistricts = await db.getAllDistricts();
-          const regionDistrictIds = allDistricts
-            .filter(d => d.region === scope.regionId)
-            .map(d => d.id);
-          return allCampuses.filter(c =>
-            regionDistrictIds.includes(c.districtId)
+          // Filter campuses by scope
+          if (scope.level === "REGION") {
+            // Get all districts in the region first
+            const allDistricts = await db.getAllDistricts();
+            const regionDistrictIds = allDistricts
+              .filter(d => d.region === scope.regionId)
+              .map(d => d.id);
+            return allCampuses.filter(c =>
+              regionDistrictIds.includes(c.districtId)
+            );
+          }
+
+          if (scope.level === "DISTRICT") {
+            return allCampuses.filter(c => c.districtId === scope.districtId);
+          }
+
+          if (scope.level === "CAMPUS") {
+            return allCampuses.filter(c => c.id === scope.campusId);
+          }
+
+          return [];
+        } catch (error) {
+          console.error(
+            "[campuses.list] Error:",
+            error instanceof Error ? error.message : String(error)
           );
+          if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message:
+                "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
+            });
+          }
+          throw error;
         }
-
-        if (scope.level === "DISTRICT") {
-          return allCampuses.filter(c => c.districtId === scope.districtId);
-        }
-
-        if (scope.level === "CAMPUS") {
-          return allCampuses.filter(c => c.id === scope.campusId);
-        }
-
-        return [];
-      } catch (error) {
-        console.error(
-          "[campuses.list] Error:",
-          error instanceof Error ? error.message : String(error)
-        );
-        if (error instanceof Error && error.message.includes("DATABASE_URL")) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message:
-              "Database connection not configured. Please set DATABASE_URL or MYSQL_* environment variables.",
-          });
-        }
-        throw error;
-      }
-    }),
+      }),
     byDistrict: publicProcedure
-      .input(z.object({ districtId: z.string() }))
+      .input(
+        z.object({
+          districtId: z.string(),
+          includeArchived: z.boolean().optional(),
+        })
+      )
       .query(async ({ input }) => {
-        return await db.getCampusesByDistrict(input.districtId);
+        return await db.getCampusesByDistrict(
+          input.districtId,
+          input.includeArchived ?? false
+        );
       }),
     createPublic: publicProcedure
       .input(
@@ -1037,8 +1048,52 @@ export const appRouter = router({
           });
         }
 
-        // NOTE: There is no "archived" flag in the schema yet; for now archive == delete.
-        await db.deleteCampus(input.id);
+        // Soft-delete: set archived flag instead of hard delete
+        await db.archiveCampus(input.id);
+        return { success: true };
+      }),
+    unarchive: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const scope = getPeopleScope(ctx.user);
+        const campus = await db.getCampusById(input.id);
+        if (!campus) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Campus not found",
+          });
+        }
+
+        // Authorization: Campus users cannot unarchive
+        if (scope.level === "CAMPUS") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (
+          scope.level === "DISTRICT" &&
+          campus.districtId !== scope.districtId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (scope.level === "REGION") {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district || district.region !== scope.regionId) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "Access denied",
+            });
+          }
+        }
+
+        if (!campus.archived) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Campus is not archived",
+          });
+        }
+
+        await db.unarchiveCampus(input.id);
         return { success: true };
       }),
     updateDisplayOrder: protectedProcedure

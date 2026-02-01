@@ -445,19 +445,33 @@ export async function updateDistrictRegion(id: string, region: string) {
 // CAMPUSES
 // ============================================================================
 
-export async function getAllCampuses() {
+export async function getAllCampuses(includeArchived = false) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(campuses);
+  if (includeArchived) {
+    return await db.select().from(campuses);
+  }
+  return await db.select().from(campuses).where(eq(campuses.archived, false));
 }
 
-export async function getCampusesByDistrictId(districtId: string) {
+export async function getCampusesByDistrictId(
+  districtId: string,
+  includeArchived = false
+) {
   const db = await getDb();
   if (!db) return [];
+  if (includeArchived) {
+    return await db
+      .select()
+      .from(campuses)
+      .where(eq(campuses.districtId, districtId));
+  }
   return await db
     .select()
     .from(campuses)
-    .where(eq(campuses.districtId, districtId));
+    .where(
+      and(eq(campuses.districtId, districtId), eq(campuses.archived, false))
+    );
 }
 
 // Alias for backward compatibility
@@ -551,6 +565,32 @@ export async function deleteCampus(id: number) {
     .where(eq(people.primaryCampusId, id));
   // Remove the campus row
   await db.delete(campuses).where(eq(campuses.id, id));
+}
+
+export async function archiveCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(campuses)
+    .set({
+      archived: true,
+      archivedAt: new Date(),
+    })
+    .where(eq(campuses.id, id));
+}
+
+export async function unarchiveCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(campuses)
+    .set({
+      archived: false,
+      archivedAt: null,
+    })
+    .where(eq(campuses.id, id));
 }
 
 // ============================================================================
