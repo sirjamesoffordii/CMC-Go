@@ -267,41 +267,43 @@ export function DroppablePerson({
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
         >
-          <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-            {maskIdentity ? "\u00A0" : capitalizedFirstName}
+          <div className="relative inline-flex items-center justify-center">
+            <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+              {maskIdentity ? "\u00A0" : capitalizedFirstName}
+            </div>
+            {canInteract && (
+              <button
+                ref={editButtonRef}
+                onClick={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  console.log("Edit button clicked directly", {
+                    campusId,
+                    personId: person.personId,
+                  });
+                  onEdit(campusId, person);
+                }}
+                onMouseDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onDragStart={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                className="absolute left-full top-0 -translate-y-0.5 ml-1.5 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
+                title="Edit person"
+                type="button"
+                draggable={false}
+              >
+                <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
+              </button>
+            )}
           </div>
-          {canInteract && (
-            <button
-              ref={editButtonRef}
-              onClick={e => {
-                e.stopPropagation();
-                e.preventDefault();
-                console.log("Edit button clicked directly", {
-                  campusId,
-                  personId: person.personId,
-                });
-                onEdit(campusId, person);
-              }}
-              onMouseDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onPointerDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onDragStart={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
-              title="Edit person"
-              type="button"
-              draggable={false}
-            >
-              <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
-            </button>
-          )}
         </div>
 
         <div

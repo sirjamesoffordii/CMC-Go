@@ -1607,7 +1607,7 @@ export function InteractiveMap({
       .replace(/^./, str => str.toUpperCase());
   };
 
-  // Render tooltip - disabled on mobile
+  // Render tooltip on district hover (pie chart + metrics). Disabled on mobile to avoid freezing.
   const renderTooltip = () => {
     if (!hoveredDistrict || !tooltipPos || isMobile) return null;
 
@@ -1622,7 +1622,7 @@ export function InteractiveMap({
 
     return (
       <div
-        className="fixed z-50 bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
+        className="fixed z-[100] bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,

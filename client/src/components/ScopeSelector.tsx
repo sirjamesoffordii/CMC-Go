@@ -161,9 +161,9 @@ export function ScopeSelector({
         />
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown - high z so it sits above map and metrics */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] bg-white rounded-md shadow-lg border border-gray-200 py-1">
+        <div className="absolute top-full left-0 mt-1 z-[210] min-w-[180px] bg-white rounded-md shadow-lg border border-gray-200 py-1">
           {/* National option */}
           <button
             onClick={handleNationalClick}
@@ -214,7 +214,7 @@ export function ScopeSelector({
                 {/* Districts submenu */}
                 {isHovered && districts.length > 0 && (
                   <div
-                    className="absolute left-full top-0 ml-1 min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 py-1 max-h-[350px] overflow-y-auto"
+                    className="absolute left-full top-0 ml-1 z-[210] min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 py-1 max-h-[350px] overflow-y-auto"
                     onMouseEnter={() => handleRegionHover(region)}
                     onMouseLeave={() => handleRegionHover(null)}
                   >

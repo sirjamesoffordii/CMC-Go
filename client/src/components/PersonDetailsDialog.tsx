@@ -123,8 +123,7 @@ export function PersonDetailsDialog({
 
   const handleAddNeed = () => {
     if (!person || !needDescription.trim()) return;
-    const amount =
-      needAmount ? parseFloat(needAmount) * 100 : undefined;
+    const amount = needAmount ? parseFloat(needAmount) * 100 : undefined;
     createNeed.mutate({
       personId: person.personId,
       type: needType,
@@ -297,7 +296,7 @@ export function PersonDetailsDialog({
                 </Select>
               </div>
               <div>
-                <Label className="text-sm">Amount ($)</Label>
+                <Label className="text-sm">Funds Needed ($)</Label>
                 <Input
                   type="number"
                   step="0.01"

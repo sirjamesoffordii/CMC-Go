@@ -77,7 +77,7 @@ export default function WhyInvitationsMatter() {
                   onClick={() => setIsDocModalOpen(true)}
                   className="text-red-600 hover:text-red-700 underline font-medium cursor-pointer"
                 >
-                  The Word God Gave Me For CMC
+                  The Word God Gave Sir James For CMC
                 </button>
               </p>
             </div>
@@ -154,7 +154,7 @@ export default function WhyInvitationsMatter() {
             {/* Modal Header */}
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-xl font-semibold text-slate-900">
-                The Word God Gave Me For CMC
+                The Word God Gave Sir James For CMC
               </h2>
               <button
                 onClick={() => setIsDocModalOpen(false)}
@@ -170,7 +170,7 @@ export default function WhyInvitationsMatter() {
               <iframe
                 src="https://docs.google.com/document/d/1vo23ldjIphJSz7tvj8h3FQoAtREvzUh31A5zJ__M81I/preview?usp=sharing&embedded=true"
                 className="w-full h-full border-0"
-                title="The Word God Gave Me For CMC"
+                title="The Word God Gave Sir James For CMC"
                 allow="clipboard-read; clipboard-write"
               />
             </div>
