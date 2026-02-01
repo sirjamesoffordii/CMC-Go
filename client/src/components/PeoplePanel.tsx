@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import {
@@ -33,9 +33,9 @@ interface PeoplePanelProps {
 export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
-  const utils = trpc.useUtils();
+  const _utils = trpc.useUtils();
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
@@ -192,9 +192,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       cutoff.setDate(cutoff.getDate() - days);
       cutoff.setHours(0, 0, 0, 0);
       filtered = filtered.filter((p: Person) => {
-        const lastEdited = (p as any).lastEdited
-          ? new Date((p as any).lastEdited).getTime()
-          : 0;
+        const lastEdited = p.lastEdited ? new Date(p.lastEdited).getTime() : 0;
         const statusLast = p.statusLastUpdated
           ? new Date(p.statusLastUpdated).getTime()
           : 0;
@@ -219,10 +217,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   ]);
 
   // Helper function to get region for a district
-  const getRegionForDistrict = (districtId: string): string => {
-    const district = allDistricts.find(d => d.id === districtId);
-    return district?.region || DISTRICT_REGION_MAP[districtId] || "Unknown";
-  };
+  const getRegionForDistrict = useCallback(
+    (districtId: string): string => {
+      const district = allDistricts.find(d => d.id === districtId);
+      return district?.region || DISTRICT_REGION_MAP[districtId] || "Unknown";
+    },
+    [allDistricts]
+  );
 
   // Group and sort people based on sortBy and order
   const groupedData = useMemo(() => {
@@ -288,8 +289,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         string,
         {
           district: District;
-          campuses: Map<number, { campus: Campus; people: any[] }>;
-          unassigned: any[];
+          campuses: Map<number, { campus: Campus; people: Person[] }>;
+          unassigned: Person[];
         }
       >();
 
@@ -346,7 +347,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               return a.campus.name.localeCompare(b.campus.name);
             }
           );
-          const newMap = new Map<number, { campus: Campus; people: any[] }>();
+          const newMap = new Map<
+            number,
+            { campus: Campus; people: Person[] }
+          >();
           sortedCampuses.forEach(item => {
             newMap.set(item.campus.id, item);
           });
@@ -384,8 +388,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           string,
           {
             district: District;
-            campuses: Map<number, { campus: Campus; people: any[] }>;
-            unassigned: any[];
+            campuses: Map<number, { campus: Campus; people: Person[] }>;
+            unassigned: Person[];
           }
         >;
       }
@@ -455,7 +459,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               }
               return a.campus.name.localeCompare(b.campus.name);
             });
-            const newMap = new Map<number, { campus: Campus; people: any[] }>();
+            const newMap = new Map<
+              number,
+              { campus: Campus; people: Person[] }
+            >();
             sortedCampuses.forEach(item => {
               newMap.set(item.campus.id, item);
             });
@@ -509,7 +516,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       });
 
     return { type: "region" as const, regions };
-  }, [filteredPeople, allDistricts, allCampuses, sortBy, order]);
+  }, [
+    filteredPeople,
+    allDistricts,
+    allCampuses,
+    sortBy,
+    order,
+    getRegionForDistrict,
+  ]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person as Person);
@@ -851,7 +865,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 <div className="space-y-1">
                   {uniqueRoles.map(role => {
                     const count = allPeople.filter(
-                      (p: any) => p.primaryRole === role
+                      (p: Person) => p.primaryRole === role
                     ).length;
                     const isChecked = roleFilter.has(role);
                     return (
@@ -913,7 +927,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     { key: "children" as const, label: "Children" },
                     { key: "guest" as const, label: "Guest" },
                   ].map(({ key, label }) => {
-                    const count = allPeople.filter((p: any) => {
+                    const count = allPeople.filter((p: Person) => {
                       if (key === "spouse") return p.spouseAttending;
                       if (key === "children")
                         return p.childrenCount && p.childrenCount > 0;
@@ -976,7 +990,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     { value: true, label: "Paid" },
                     { value: false, label: "Not Paid" },
                   ].map(({ value, label }) => {
-                    const count = allPeople.filter((p: any) => {
+                    const count = allPeople.filter((p: Person) => {
                       const hasDepositPaid = p.depositPaid === true;
                       return hasDepositPaid === value;
                     }).length;
@@ -1102,7 +1116,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       <div className="flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0 flex flex-col">
         {/* Helper function to render a person */}
         {(() => {
-          const renderPerson = (person: any, indentClass: string = "px-12") => {
+          const renderPerson = (
+            person: Person,
+            indentClass: string = "px-12"
+          ) => {
             const personNeeds = allNeeds.filter(
               n => n.personId === person.personId && n.isActive
             );
@@ -1184,7 +1201,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             }
             return (
               <div className="divide-y divide-gray-200 w-full min-w-0">
-                {groupedData.people.map((person: any) =>
+                {groupedData.people.map((person: Person) =>
                   renderPerson(person, "px-4")
                 )}
               </div>
@@ -1233,7 +1250,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       </div>
                       {isCampusExpanded && people.length > 0 && (
                         <div className="bg-gray-50">
-                          {people.map((person: any) =>
+                          {people.map((person: Person) =>
                             renderPerson(person, "px-8")
                           )}
                         </div>
@@ -1341,7 +1358,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                     </div>
                                     {isCampusExpanded && people.length > 0 && (
                                       <div className="bg-white">
-                                        {people.map((person: any) =>
+                                        {people.map((person: Person) =>
                                           renderPerson(person, "px-12")
                                         )}
                                       </div>
@@ -1356,7 +1373,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                   Unassigned ({unassigned.length})
                                 </h4>
                                 <div className="bg-white rounded border border-gray-200">
-                                  {unassigned.map((person: any) =>
+                                  {unassigned.map((person: Person) =>
                                     renderPerson(person, "px-4")
                                   )}
                                 </div>
@@ -1508,7 +1525,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                           {isCampusExpanded &&
                                             people.length > 0 && (
                                               <div className="bg-gray-50">
-                                                {people.map((person: any) =>
+                                                {people.map((person: Person) =>
                                                   renderPerson(person, "px-16")
                                                 )}
                                               </div>
@@ -1523,7 +1540,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                         Unassigned ({unassigned.length})
                                       </h4>
                                       <div className="bg-gray-50 rounded border border-gray-200">
-                                        {unassigned.map((person: any) =>
+                                        {unassigned.map((person: Person) =>
                                           renderPerson(person, "px-4")
                                         )}
                                       </div>
