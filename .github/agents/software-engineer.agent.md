@@ -1,7 +1,7 @@
 ---
 name: Software Engineer
 description: "Implements Issues autonomously. Creates PRs with evidence. Never stops, never asks questions."
-model: Claude Opus 4.5
+model: GPT 5.2 Codex
 tools:
   [
     "vscode",
@@ -157,7 +157,11 @@ $wtPath = (Get-Location).Path
 .\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created" -Issue 42 -Worktree $wtPath
 ```
 
-**Monitor TL:** Check TL heartbeat. If stale >6 min, respawn TL via `code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."`
+**Monitor TL:** Check TL heartbeat. If stale >6 min, respawn TL via:
+
+```powershell
+code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+```
 
 ## Pre-Flight Validation
 

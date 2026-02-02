@@ -82,7 +82,7 @@ export function setSessionCookie(
  */
 export function getSessionToken(req: Request): string | null {
   // Prefer cookie-parser if present
-  const anyReq = req as any;
+  const anyReq = req as Request & { cookies?: Record<string, string> };
   const tokenFromParser = anyReq?.cookies?.[COOKIE_NAME];
   if (typeof tokenFromParser === "string" && tokenFromParser.length > 0)
     return tokenFromParser;

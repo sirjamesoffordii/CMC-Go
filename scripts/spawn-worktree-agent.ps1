@@ -21,9 +21,6 @@
 .PARAMETER BaseBranch
   Branch to base the worktree on (defaults to origin/staging).
 
-.PARAMETER Mode
-  Chat mode: 'agent', 'ask', or 'edit'. Defaults to 'agent'.
-
 .PARAMETER Profile
   VS Code profile to use. Optional.
 
@@ -50,9 +47,6 @@ param(
 
   [string]$BaseBranch = 'origin/staging',
 
-  [ValidateSet('agent', 'ask', 'edit')]
-  [string]$Mode = 'agent',
-
   [string]$Profile,
 
   [string]$WorktreeRoot = 'C:\Dev\CMC-Go-Worktrees',
@@ -66,32 +60,13 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $WorktreePath = Join-Path $WorktreeRoot $WorktreeName
 
-# Default prompt for persistent SE
+# Default prompt for persistent SE - CANONICAL ACTIVATION MESSAGE
 if (-not $Prompt) {
-  $Prompt = @"
-You are Software Engineer (SE). You run continuously.
-
-Your workflow:
-1. Register heartbeat: .\scripts\update-heartbeat.ps1 -Role SE -Status "idle" -Worktree "$WorktreePath"
-2. Check for assignment: .github/agents/assignment.json
-3. If no assignment, wait 30 seconds, then loop back to step 1
-4. If assignment exists:
-   a. Read issue number, delete the file to claim it
-   b. Read issue: gh issue view <number>
-   c. Create branch: git checkout -b agent/se/<issue>-<slug> origin/staging
-   d. Implement the smallest diff that satisfies requirements
-   e. Verify: pnpm check && pnpm test
-   f. Create PR: gh pr create --base staging
-   g. Update heartbeat to "idle"
-   h. Loop back to step 1
-
-Start by registering your heartbeat and checking for assignments.
-"@
+  $Prompt = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 }
 
 Write-Host "=== Spawn Persistent SE Agent ===" -ForegroundColor Cyan
 Write-Host "Worktree:  $WorktreePath"
-Write-Host "Mode:      $Mode"
 if ($Profile) { Write-Host "Profile:   $Profile" }
 Write-Host ""
 
@@ -151,17 +126,17 @@ if ($DryRun) {
   Start-Sleep -Seconds $waitSeconds
 }
 
-# Step 5: Trigger Copilot chat
-$chatArgs = @('chat', '-r', '-m', $Mode, '--maximize', $Prompt)
+# Step 5: Trigger Copilot chat with Software Engineer agent
+$chatArgs = @('chat', '-r', '-m', 'Software Engineer', $Prompt)
 $chatCmd = "code " + ($chatArgs -join ' ')
 
 if ($DryRun) {
-  Write-Host "[DryRun] Would run: code chat -r -m $Mode --maximize '<prompt>'" -ForegroundColor Yellow
+  Write-Host "[DryRun] Would run: code chat -r -m 'Software Engineer' '<prompt>'" -ForegroundColor Yellow
   Write-Host ""
   Write-Host "Prompt content:" -ForegroundColor Cyan
   Write-Host $Prompt
 } else {
-  Write-Host "Triggering Copilot chat..." -ForegroundColor Cyan
+  Write-Host "Triggering Copilot chat with Software Engineer agent..." -ForegroundColor Cyan
   & code @chatArgs
   Write-Host ""
   Write-Host "Persistent SE agent started!" -ForegroundColor Green

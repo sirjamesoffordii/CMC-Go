@@ -52,13 +52,13 @@ Ops/CI/tooling reference (as-needed):
 ```
 PE (continuous) → monitors, creates issues, spawns TL
   └── TL (continuous) → delegates, reviews, spawns SE via worktree
-        └── SE (session) → implements in isolated worktree
+        └── SE (continuous) → implements in isolated worktree
 ```
 
 **Constraints:**
 
 - Only 1 of each agent type at a time
-- SE MUST work in worktree (`C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`)
+- SE MUST work in worktree (`C:/Dev/CMC-Go-Worktrees/wt-se`)
 - TL spawns SE via `.\scripts\spawn-worktree-agent.ps1` only
 - Main workspace is for PE/TL coordination only
 

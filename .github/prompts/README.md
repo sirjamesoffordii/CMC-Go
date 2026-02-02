@@ -1,24 +1,32 @@
 # `.github/prompts/` — Agent Mode Prompts
 
-These are copy/paste prompts to activate an operating mode.
+These are VS Code prompts to activate an operating mode. Use them via `/` command in Copilot Chat.
 
-## Frontmatter Standard
+## Agent Activation
 
-All prompt files use YAML frontmatter:
+**To start AEOS, use:** `/activate Principal Engineer`
 
-| Field         | Required | Purpose                    |
-| ------------- | -------- | -------------------------- |
-| `name`        | ✓        | Prompt identifier          |
-| `description` | ✓        | One-line purpose statement |
+| Prompt                         | Purpose                             |
+| ------------------------------ | ----------------------------------- |
+| `/activate Principal Engineer` | Start PE - monitors, creates issues |
+| `/activate Tech Lead`          | Start TL - delegates, reviews PRs   |
+| `/activate Software Engineer`  | Start SE - implements in worktree   |
 
-## Active prompts
+**Canonical activation message (used by all methods):**
 
-| File                           | Purpose                                         |
-| ------------------------------ | ----------------------------------------------- |
-| `principal-engineer.prompt.md` | Architect/oversee/improve (top of hierarchy)    |
-| `tech-lead.prompt.md`          | Coordination/triage/deconflict mode             |
-| `software-engineer.prompt.md`  | Implementation + evidence, or peer verification |
-| `loop.prompt.md`               | "Stay in loop mode until Done"                  |
+```
+You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW.
+```
+
+## Other prompts
+
+| File                         | Purpose                        |
+| ---------------------------- | ------------------------------ |
+| `loop.prompt.md`             | "Stay in loop mode until Done" |
+| `verify-pr.prompt.md`        | PR verification checklist      |
+| `add-db-column.prompt.md`    | Database schema change guide   |
+| `debug-production.prompt.md` | Production debugging workflow  |
+| `fix-test-failure.prompt.md` | Test failure analysis          |
 
 ## Notes
 

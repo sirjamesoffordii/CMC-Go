@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { TrpcContext } from "./_core/context";
 import { getPeopleScope } from "./_core/authorization";
 import { protectedProcedure, router } from "./_core/trpc";
+import type { InsertUser } from "../drizzle/schema";
 
 const testRouter = router({
   peopleScope: protectedProcedure.query(({ ctx }) => getPeopleScope(ctx.user)),
@@ -36,7 +37,7 @@ function createTestContext(
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: "STAFF" as any,
+      role: "STAFF" as InsertUser["role"],
       campusId: 1,
       districtId: "TEST_DISTRICT",
       regionId: "TEST_REGION",
@@ -91,7 +92,7 @@ describe("getPeopleScope fail-closed (missing anchors)", () => {
 describe("API fail-closed (bad user state)", () => {
   it("peopleScope rejects CAMPUS_DIRECTOR without districtId", async () => {
     const ctx = createTestContext({
-      role: "CAMPUS_DIRECTOR" as any,
+      role: "CAMPUS_DIRECTOR" as InsertUser["role"],
       campusId: 1,
       districtId: null,
     });
@@ -102,7 +103,7 @@ describe("API fail-closed (bad user state)", () => {
 
   it("peopleScope rejects DISTRICT_DIRECTOR without regionId", async () => {
     const ctx = createTestContext({
-      role: "DISTRICT_DIRECTOR" as any,
+      role: "DISTRICT_DIRECTOR" as InsertUser["role"],
       districtId: "TEST_DISTRICT",
       regionId: null,
     });
@@ -113,6 +114,7 @@ describe("API fail-closed (bad user state)", () => {
 
   it("peopleScope rejects unmapped roles", async () => {
     const ctx = createTestContext({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing invalid role
       role: "SOME_UNKNOWN_ROLE" as any,
       campusId: 1,
     });
