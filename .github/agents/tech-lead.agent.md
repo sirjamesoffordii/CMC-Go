@@ -125,7 +125,9 @@ Update every 3 min using the heartbeat script:
 .\scripts\update-heartbeat.ps1 -Role TL -Status "assigning" -Issue 42
 ```
 
-**Monitor Software Engineer:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue.
+**Monitor PE:** Check PE heartbeat. If stale >6 min, alert (TL cannot respawn PE, but should note it).
+
+**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `spawn-worktree-agent.ps1`.
 
 ## PR Review
 

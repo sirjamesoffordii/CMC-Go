@@ -88,11 +88,11 @@ All 3 agents run simultaneously in separate VS Code windows
 
 **Staleness Detection & Recovery:**
 
-| Agent | Monitored By       | If Stale (>6 min)                         |
-| ----- | ------------------ | ----------------------------------------- |
-| PE    | Human              | Human restarts PE                         |
-| TL    | Principal Engineer | PE respawns TL via `code chat`            |
-| SE    | Tech Lead          | TL respawns SE via `spawn-worktree-agent` |
+| Agent | Monitored By | If Stale (>6 min)                         |
+| ----- | ------------ | ----------------------------------------- |
+| PE    | Human + TL   | Human restarts PE; TL alerts              |
+| TL    | PE + SE      | PE respawns TL; SE alerts                 |
+| SE    | TL           | TL respawns SE via `spawn-worktree-agent` |
 
 **PE monitors TL:**
 
@@ -106,16 +106,44 @@ if ($staleMinutes -gt 6) {
 }
 ```
 
-**TL monitors SE:**
+**TL monitors PE + SE:**
 
 ```powershell
 $hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+
+# Monitor PE - alert if stale (TL cannot respawn PE, but should log it)
+if ($hb.PE) {
+    $peTs = [DateTime]::Parse($hb.PE.ts)
+    $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
+    if ($staleMinutes -gt 6) {
+        Write-Host "⚠️ PE stale ($staleMinutes min) - human intervention needed!" -ForegroundColor Red
+        # Log to AEOS improvements issue or continue operating autonomously
+    }
+}
+
+# Monitor SE - respawn if stale
 if ($hb.SE) {
     $seTs = [DateTime]::Parse($hb.SE.ts)
     $staleMinutes = ((Get-Date).ToUniversalTime() - $seTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "SE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
         .\scripts\spawn-worktree-agent.ps1
+    }
+}
+```
+
+**SE monitors TL:**
+
+```powershell
+$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+
+# Monitor TL - alert if stale (SE cannot respawn TL, but should log it)
+if ($hb.TL) {
+    $tlTs = [DateTime]::Parse($hb.TL.ts)
+    $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
+    if ($staleMinutes -gt 6) {
+        Write-Host "⚠️ TL stale ($staleMinutes min) - PE should respawn TL" -ForegroundColor Red
+        # Continue working on current issue, but note TL unavailable for PR review
     }
 }
 ```
