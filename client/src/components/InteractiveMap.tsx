@@ -440,59 +440,6 @@ const getDynamicPosition = (
   return { labelX, labelY, labelDirection: base.labelDirection };
 };
 
-// District centroids for pie chart positioning (based on new SVG)
-const districtCentroids: Record<string, { x: number; y: number }> = {
-  Alabama: { x: 646, y: 376 },
-  Alaska: { x: 110, y: 92 },
-  Appalachian: { x: 707, y: 266 },
-  Arizona: { x: 284, y: 330 },
-  Arkansas: { x: 577, y: 333 },
-  Colorado: { x: 406, y: 274 },
-  Georgia: { x: 698, y: 363 },
-  Hawaii: { x: 122, y: 380 },
-  Illinois: { x: 600, y: 254 },
-  Indiana: { x: 638, y: 257 },
-  Iowa: { x: 560, y: 216 },
-  Kansas: { x: 498, y: 274 },
-  Kentucky: { x: 645, y: 279 },
-  Louisiana: { x: 585, y: 408 },
-  Michigan: { x: 649, y: 166 },
-  Minnesota: { x: 543, y: 133 },
-  Mississippi: { x: 602, y: 373 },
-  Montana: { x: 322, y: 134 },
-  Nebraska: { x: 475, y: 223 },
-  NewJersey: { x: 781, y: 223 },
-  NewMexico: { x: 370, y: 353 },
-  NewYork: { x: 762, y: 178 },
-  NorthCarolina: { x: 742, y: 302 },
-  NorthDakota: { x: 478, y: 126 },
-  "NorthernCal-Nevada": { x: 199, y: 246 },
-  NorthernNewEnglend: { x: 818, y: 122 },
-  NorthernNewEngland: { x: 818, y: 122 },
-  NorthernMissouri: { x: 557, y: 262 },
-  NorthTexas: { x: 501, y: 367 },
-  Ohio: { x: 686, y: 235 },
-  Oklahoma: { x: 494, y: 335 },
-  Oregon: { x: 230, y: 139 },
-  PeninsularFlorida: { x: 725, y: 428 },
-  "Penn-Del": { x: 750, y: 207 },
-  Potomac: { x: 757, y: 254 },
-  SouthCarolina: { x: 719, y: 337 },
-  SouthDakota: { x: 480, y: 185 },
-  SouthernCalifornia: { x: 228, y: 313 },
-  SouthernNewEngland: { x: 806, y: 180 },
-  SouthIdaho: { x: 299, y: 156 },
-  SouthernMissouri: { x: 581, y: 291 },
-  SouthTexas: { x: 503, y: 430 },
-  Tennessee: { x: 650, y: 312 },
-  Utah: { x: 323, y: 239 },
-  Washington: { x: 238, y: 100 },
-  WestFlorida: { x: 666, y: 401 },
-  WestTexas: { x: 422, y: 390 },
-  "Wisconsin-NorthMichigan": { x: 597, y: 154 },
-  Wyoming: { x: 377, y: 195 },
-};
-
 export function InteractiveMap({
   districts,
   selectedDistrictId,
@@ -508,7 +455,6 @@ export function InteractiveMap({
   const isMobile = useIsMobile();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
-  const pieContainerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
@@ -521,7 +467,7 @@ export function InteractiveMap({
   const originalViewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
 
   // Filter districts based on scope
-  const filteredDistricts = useMemo(() => {
+  const _filteredDistricts = useMemo(() => {
     if (scopeFilter === "NATIONAL") {
       return districts; // Show all
     }
@@ -676,17 +622,6 @@ export function InteractiveMap({
     !isAuthenticated && allRegionMetrics.length === 0;
   const showOverlayPlaceholder =
     !isAuthenticated && allDistrictMetrics.length === 0;
-  const invitedPercent =
-    nationalTotals.total > 0
-      ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
-      : 0;
-
-  // Calculate days until CMC
-  const cmcDate = new Date("2026-07-06");
-  const today = new Date();
-  const daysUntilCMC = Math.abs(
-    Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  );
 
   // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
   // Everyone can see regional aggregate numbers
@@ -796,7 +731,7 @@ export function InteractiveMap({
     }
 
     return totals;
-  }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
+  }, [districts, allPeople, allRegionMetrics]);
 
   // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
@@ -878,10 +813,6 @@ export function InteractiveMap({
       }
       return next;
     });
-  };
-
-  const clearAllMetrics = () => {
-    setActiveMetrics(new Set());
   };
 
   useEffect(() => {
@@ -1072,8 +1003,6 @@ export function InteractiveMap({
     // Selected district - slightly more prominent
     const SELECTED_FILTER =
       "brightness(1.08) drop-shadow(0 4px 8px rgba(0,0,0,0.18))";
-    const GREYED_OUT_FILTER = "brightness(0.6)";
-    const GREYED_OUT_OPACITY = "1";
 
     // View mode dimming logic
     // Determine which districts should be fully visible based on viewState
@@ -1507,6 +1436,8 @@ export function InteractiveMap({
     userRegionId,
     userDistrictId,
     originalViewBox,
+    allCampuses,
+    viewState,
   ]);
 
   // Generate pie chart SVG
@@ -1611,13 +1542,13 @@ export function InteractiveMap({
   const renderTooltip = () => {
     if (!hoveredDistrict || !tooltipPos || isMobile) return null;
 
-    const district = districts.find(d => d.id === hoveredDistrict);
+    const _district = districts.find(d => d.id === hoveredDistrict);
     // Calculate stats using shared utility to ensure consistency with DistrictPanel
     // This handles both districts in the database and districts created on-the-fly
     const stats =
       districtStats[hoveredDistrict] ||
       calculateDistrictStats(allPeople, hoveredDistrict);
-    const invited = stats.yes + stats.maybe + stats.no;
+    const _invited = stats.yes + stats.maybe + stats.no;
     const pieChartSvg = generatePieChart(stats, 80); // Larger pie chart for tooltip
 
     return (
@@ -2234,7 +2165,7 @@ export function InteractiveMap({
                 });
 
                 return allRegions.map(region => {
-                  const stats = regionStats[region] || {
+                  const _stats = regionStats[region] || {
                     yes: 0,
                     maybe: 0,
                     no: 0,
@@ -2258,7 +2189,7 @@ export function InteractiveMap({
                     allRegions,
                     allTotalHeights
                   );
-                  const direction = pos.labelDirection;
+                  const _direction = pos.labelDirection;
 
                   // Region label: always directly under the metric stack (no padding/margins)
                   const lastBaseline =
