@@ -291,13 +291,16 @@ code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULL
 .\scripts\spawn-worktree-agent.ps1
 ```
 
-**⚠️ MODEL INHERITANCE WARNING:** The `code chat` command does NOT have a `--model` flag. The spawned agent inherits the model from the **current VS Code window**. If PE is running Claude Opus 4.5 and respawns TL, the TL will also use Claude Opus 4.5 (ignoring the `model:` field in the agent file).
+**⚠️ MODEL INHERITANCE WARNING:** The `code chat` command does NOT have a `--model` flag. The spawned agent inherits the model from the **current VS Code window**, NOT from the agent file's `model:` field. If PE is running Claude Opus 4.5 and respawns TL, the TL will also use Claude Opus 4.5 (ignoring `model: GPT 5.2 Codex` in tech-lead.agent.md).
 
-**To verify correct model after respawn:**
+**Agent File Model Field (Reference):**
+Each agent file has a `model:` field in frontmatter (e.g., `model: GPT 5.2 Codex`). This field SHOULD be respected when selecting the agent via the VS Code UI, but is NOT respected by `code chat` CLI.
 
-1. Check spawned agent's first response
-2. Ask "What model are you using?" if uncertain
-3. If wrong model, close that window and manually start from a fresh VS Code window with the correct model selected
+**To ensure correct model:**
+
+1. **Preferred method:** Open a fresh VS Code window, select the correct model in the model picker FIRST, then use `/activate <Agent Name>` prompt
+2. **Verify after spawn:** Ask "What model are you using?" in the first message
+3. **If wrong model:** Close the window and restart with correct model selected
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
