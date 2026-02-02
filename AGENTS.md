@@ -1,54 +1,58 @@
 # CMC Go — Agent Manual
 
-## Start
+## Quick Start
 
-1. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status`
-2. Heartbeat: Register in `.github/agents/heartbeat.json`
-3. Board: `gh project item-list 4 --owner sirjamesoffordii --limit 10`
-4. Execute your role
+```powershell
+# 1. Auth (replace <account> with your account name)
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status
 
-## Roles
+# 2. Check board
+gh project item-list 4 --owner sirjamesoffordii --limit 20
 
-| Role | Account                  | Model    | Instances | Purpose                                |
-| ---- | ------------------------ | -------- | --------- | -------------------------------------- |
-| PE   | Principle-Engineer-Agent | Opus 4.5 | 1         | Issue creation, priorities, TL respawn |
-| TL   | Alpha-Tech-Lead          | Opus 4.5 | 2         | Coordination, SE spawning, merging     |
-| SE   | Software-Engineer-Agent  | Opus 4.5 | N         | Implementation (spawned by TL)         |
-
-**Behavior:** `.github/agents/{role}.agent.md`
+# 3. Execute your role (see Roles below)
+```
 
 ## Architecture
 
 ```
-PE (continuous) — reviews repo/app, creates issues, monitors heartbeats
-  ├── TL-1 (continuous) → spawns SE sessions, reviews PRs
-  └── TL-2 (continuous) → spawns SE sessions, reviews PRs
-        ├── SE-1 (session) → implements issues
-        └── SE-2 (session) → implements issues
+PE (1 instance, continuous)
+ └── TL (1 instance, continuous)
+      └── SE (1 at a time, session-based, in worktree)
 ```
 
-- All agents are standalone sessions (`code chat -r`)
-- All agents self-register in heartbeat file
-- Any TL or PE can review PRs
+**Why this structure:**
+
+- **PE** maintains issue pipeline, respawns TL if stale
+- **TL** coordinates work, spawns SE, reviews/merges PRs
+- **SE** implements ONE issue in isolated worktree, then exits
+- Only 1 SE at a time prevents merge conflicts
+
+## Roles
+
+| Role | Account                  | Spawned By | Purpose                       |
+| ---- | ------------------------ | ---------- | ----------------------------- |
+| PE   | Principle-Engineer-Agent | Human      | Issues, priorities, oversight |
+| TL   | Alpha-Tech-Lead          | PE         | Coordination, PR review       |
+| SE   | Software-Engineer-Agent  | TL         | Implementation (worktree)     |
+
+**Behavior files:** `.github/agents/{role}.agent.md`
 
 ## Board
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status      | Meaning                       |
-| ----------- | ----------------------------- |
-| Draft       | TL-created, needs PE approval |
-| Todo        | Ready, not claimed            |
-| In Progress | Being worked                  |
-| Blocked     | Needs decision                |
-| Verify      | PR ready for review           |
-| Done        | Merged                        |
+| Status      | Owner | Action                       |
+| ----------- | ----- | ---------------------------- |
+| Todo        | TL    | Spawn SE to implement        |
+| In Progress | SE    | Being worked in worktree     |
+| Verify      | TL/PE | Review and merge PR          |
+| Blocked     | PE    | Needs architectural decision |
+| Done        | —     | Merged and closed            |
 
-**IDs:** Project `PVT_kwHODqX6Qs4BNUfu` | Status Field `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
-Draft `687f4500` | Todo `f75ad846` | In Progress `47fc9ee4` | Blocked `652442a1` | Verify `5351d827` | Done `98236657`
+**IDs (for GraphQL):**
 
-**Priority Field ID:** `PVTSSF_lAHODqX6Qs4BNUfuzg8Wa5g`
-High `542f2119` | Medium `b18a1ee4` | Low `e01e814a`
+- Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
+- Todo: `f75ad846` | In Progress: `47fc9ee4` | Verify: `5351d827` | Done: `98236657`
 
 ## Heartbeat
 
@@ -56,54 +60,65 @@ High `542f2119` | Medium `b18a1ee4` | Low `e01e814a`
 
 ```json
 {
-  "core": ["PE-1", "TL-1", "TL-2"],
-  "agents": {
-    "PE-1": {
-      "ts": "2026-01-28T12:00:00Z",
-      "status": "reviewing",
-      "issue": null
-    },
-    "TL-1": {
-      "ts": "2026-01-28T12:00:00Z",
-      "status": "delegating",
-      "issue": 42
-    }
+  "PE": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
+  "TL": { "ts": "2026-02-02T12:00:00Z", "status": "reviewing-pr", "pr": 123 },
+  "SE": {
+    "ts": "2026-02-02T12:00:00Z",
+    "status": "implementing",
+    "issue": 42,
+    "worktree": "wt-42"
   }
 }
 ```
 
 **Protocol:**
 
-- Every 3 min: Update your entry (timestamp + status)
-- Before major actions: Check peers for staleness
-- Core agents stale >6 min: Senior agent respawns (PE respawns TL)
-- Non-core (SE-\*) stale: Delete entry, no respawn needed
+- Update every 3 min with current status
+- Stale = no update in 6+ min → PE respawns TL
 
 ## Spawning
 
 ```powershell
-# PE spawns TLs
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Start."
+# PE spawns TL (only 1 TL at a time)
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL. Start."
 
-# TL spawns SEs
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue #42. Start."
+# TL spawns SE via worktree script (only 1 SE at a time)
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
 ```
 
-**Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
+**Rules:**
 
-## Rules
+1. PE spawns exactly 1 TL
+2. TL spawns exactly 1 SE at a time using the worktree script
+3. TL waits for SE to complete (PR merged) before spawning next SE
 
-1. **Heartbeat first** — Update before every loop iteration
-2. **Board is truth** — Update status immediately
-3. **Small diffs** — Optimize for reviewability
-4. **Evidence in PRs** — Commands + results
-5. **Never stop** — Loop until Done or Blocked
+## SE Worktree Workflow
+
+SE always works in an isolated worktree, never the main repo:
+
+```powershell
+# Worktree created by spawn script at:
+C:\Dev\CMC-Go-Worktrees\wt-<issue>
+
+# After PR merged, TL cleans up:
+git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
+git branch -d agent/se/<issue>-<slug>
+```
 
 ## Branch & Commit
 
 - **Branch:** `agent/se/<issue#>-<slug>` (e.g., `agent/se/42-fix-bug`)
-- **Commit:** `agent(se): <summary>` (e.g., `agent(se): Fix district filter`)
+- **Commit:** `agent(se): <summary>`
+- **PR Title:** `[#<issue>] <description>`
+- **PR Body:** Must include `Closes #<issue>`
+
+## Rules
+
+1. **Board is truth** — Update status immediately
+2. **Small diffs** — Optimize for reviewability
+3. **Evidence in PRs** — Commands + results
+4. **Never stop** — Loop until Done or Blocked
+5. **Worktree isolation** — SE never works in main repo
 
 ## Reference
 

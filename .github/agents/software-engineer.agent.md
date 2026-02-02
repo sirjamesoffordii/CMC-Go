@@ -26,26 +26,50 @@ tools:
 
 ## Activation
 
-1. Parse your ID from spawn message (e.g., "SE-1")
+1. You are "SE" (single instance, spawned via worktree script)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"; gh auth status`
-3. Register in `.github/agents/heartbeat.json`
-4. Set board status to "In Progress" for your issue
+3. **VERIFY WORKTREE:** `(Get-Location).Path` must NOT be `C:\Dev\CMC Go`
+4. Register in `.github/agents/heartbeat.json`
+5. Set board status to "In Progress" for your issue
+
+**Account:** `Software-Engineer-Agent`
 
 ## Core Loop
 
 ```
 WHILE issue not complete:
     1. Update heartbeat (every 3 min)
-    2. Branch: git checkout -b agent/se/<issue#>-<slug> origin/staging
-    3. Explore: Read relevant files, understand scope
-    4. Implement: Make changes, keep diffs small
-    5. Verify: pnpm check && pnpm test
-    6. Commit: git add -A && git commit -m "agent(se): <summary>"
-    7. Push: git push -u origin <branch>
-    8. PR: gh pr create --base staging --title "[#X] <title>" --body "..."
-    9. Set board status to "Verify"
-    10. Done (session ends)
+    2. Explore: Read issue, understand scope
+    3. Implement: Make changes, keep diffs small
+    4. Verify: Run pre-commit checks (see below)
+    5. Commit: git add -A && git commit -m "agent(se): <summary>"
+    6. Push: git push -u origin <branch>
+    7. PR: gh pr create --base staging --title "[#X] <title>" --body "Closes #X\n\n..."
+    8. Set board status to "Verify"
+    9. Done (session ends, TL will review/merge)
 ```
+
+**Note:** Branch was already created by spawn script. You're in the worktree.
+
+## Pre-Commit Verification
+
+Before committing, verify ALL of these pass:
+
+```powershell
+# 1. Confirm changes are on disk (not just in VS Code buffer)
+git diff --stat  # Should show expected files
+
+# 2. TypeScript + lint
+pnpm check  # Must pass
+
+# 3. Tests
+pnpm test  # Must pass or have documented exception
+
+# 4. Specific file lint (for targeted fixes)
+npx eslint <changed-files>  # Should show improvement
+```
+
+**If any fail:** Fix issues before committing. Do NOT push broken code.
 
 ## SE Rules
 
@@ -60,7 +84,19 @@ WHILE issue not complete:
 Update `.github/agents/heartbeat.json` every 3 min:
 
 ```json
-{ "SE-1": { "ts": "<ISO-8601>", "status": "implementing", "issue": 42 } }
+{
+  "SE": {
+    "ts": "<ISO-8601>",
+    "status": "implementing",
+    "issue": 42,
+    "worktree": "wt-42"
+  }
+}
 ```
 
-**NOW START. Auth, register heartbeat, implement, create PR. NO QUESTIONS.**
+## Worktree Check
+
+If `(Get-Location).Path` is `C:\Dev\CMC Go`, **STOP** — you're in the wrong directory.
+SE must ONLY work in worktree (e.g., `C:\Dev\CMC-Go-Worktrees\wt-42`).
+
+**NOW START. Auth, verify worktree, register heartbeat, implement, create PR. NO QUESTIONS.**

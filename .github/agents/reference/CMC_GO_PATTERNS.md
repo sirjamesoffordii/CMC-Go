@@ -90,6 +90,13 @@ Purpose: a **small, curated** set of reusable patterns + pitfalls for agents and
 **Solution:** Use tasks: `Agent: Recover terminal`, then `Agent: Health check`.
 **Prevention:** Prefer VS Code tasks for git/gh commands.
 
+### File edit desync (VS Code buffer vs disk)
+
+**Tags:** terminal
+**Problem:** `replace_string_in_file` fails or edits don't persist. `read_file` shows different content than `Get-Content` in terminal.
+**Solution:** Use `git checkout -- file` to reset, or use PowerShell `[System.IO.File]::ReadAllText/WriteAllText` to bypass VS Code buffer.
+**Prevention:** Before editing, run `git status -sb` to check for dirty files. After edits, verify with `Get-Content | Select-Object -First N`.
+
 ### Avoid editor hangs in git
 
 **Tags:** terminal, git
