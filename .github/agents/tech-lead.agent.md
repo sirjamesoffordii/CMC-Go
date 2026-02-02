@@ -39,34 +39,39 @@ tools:
 ```
 WHILE true:
     1. Update heartbeat (every 3 min)
-    2. Check for existing SE — if SE in heartbeat + stale >6 min, clean up
-    3. Check for open PRs: gh pr list --author Software-Engineer-Agent
-    4. IF Verify items → Review PR, merge or request changes
-    5. IF SE exists → Wait for SE to finish (monitor heartbeat)
-    6. IF no SE + Todo items → Spawn SE via worktree script
+    2. Check for open PRs: gh pr list --author Software-Engineer-Agent
+    3. IF open PRs → Review PR, merge or request changes
+    4. Check SE heartbeat status
+    5. IF SE status is "idle" + Todo items exist → Assign next issue
+    6. IF SE status is "implementing" → Monitor progress
     7. IF nothing actionable → Wait 60s → LOOP
 ```
 
-## Spawn SE (Worktree Isolation)
+## Assign Issue to SE
 
-**MUST use the spawn script** — never spawn SE directly:
+When SE is idle and Todo items exist, write an assignment file:
 
 ```powershell
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+# Pick highest priority Todo item
+$issue = 42  # From board query
+
+# Write assignment file
+$assignment = @{
+    issue = $issue
+    priority = "high"
+    assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    assignedBy = "TL"
+} | ConvertTo-Json
+$assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
+
+Write-Host "Assigned issue #$issue to SE"
 ```
-
-This script:
-
-1. Creates worktree at `C:\Dev\CMC-Go-Worktrees\wt-<issue>`
-2. Creates branch `agent/se/<issue>-<slug>`
-3. Opens VS Code in the worktree
-4. Spawns SE in that isolated environment
 
 **Rules:**
 
-- Only 1 SE at a time (prevents merge conflicts)
-- Wait for SE to complete (PR merged) before spawning next
-- Clean up after merge: `git worktree remove ...`
+- Only assign when SE heartbeat shows "idle"
+- Only 1 assignment at a time (file exists = SE has work)
+- Update board status to "In Progress" after assigning
 
 ## Heartbeat
 
@@ -76,7 +81,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 { "TL": { "ts": "<ISO-8601>", "status": "reviewing-pr", "pr": 123 } }
 ```
 
-**Monitor SE:** If SE entry exists and stale >6 min, clean up worktree and delete entry.
+**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue.
 
 ## PR Review
 

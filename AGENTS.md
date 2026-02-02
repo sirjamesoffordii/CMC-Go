@@ -76,6 +76,52 @@ PE (1 instance, continuous)
 - Update every 3 min with current status
 - Stale = no update in 6+ min → PE respawns TL
 
+## Assignment (TL → SE Signaling)
+
+**File:** `.github/agents/assignment.json` (gitignored)
+
+TL writes this file to signal what SE should work on next. SE reads and clears it.
+
+```json
+{
+  "issue": 42,
+  "priority": "high",
+  "assignedAt": "2026-02-02T12:00:00Z",
+  "assignedBy": "TL"
+}
+```
+
+**Protocol:**
+
+1. **TL assigns:** Write `assignment.json` with issue details
+2. **SE checks:** On loop iteration, check if file exists
+3. **SE claims:** Read issue number, then delete the file (atomic claim)
+4. **SE works:** Implement the issue, create PR
+5. **SE completes:** Update heartbeat status to "idle", loop back to step 2
+
+**Claim pattern (SE):**
+
+```powershell
+$assignmentFile = ".github/agents/assignment.json"
+if (Test-Path $assignmentFile) {
+    $assignment = Get-Content $assignmentFile | ConvertFrom-Json
+    Remove-Item $assignmentFile  # Claim it
+    # Now work on $assignment.issue
+}
+```
+
+**Assign pattern (TL):**
+
+```powershell
+$assignment = @{
+    issue = 42
+    priority = "high"
+    assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    assignedBy = "TL"
+} | ConvertTo-Json
+$assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
+```
+
 ## Spawning
 
 ```powershell
