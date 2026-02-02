@@ -199,13 +199,15 @@
     {
       "label": "Agent: Spawn worktree agent",
       "type": "shell",
-      "command": ".\\scripts\\spawn-worktree-agent.ps1 -IssueNumber ${input:issueNumber}",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1",
+      "detail": "Spawn persistent SE agent in worktree (runs continuously, picks up work via assignment.json)",
       "problemMatcher": []
     },
     {
       "label": "Agent: Spawn worktree agent (dry run)",
       "type": "shell",
-      "command": ".\\scripts\\spawn-worktree-agent.ps1 -IssueNumber ${input:issueNumber} -DryRun",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1 -DryRun",
+      "detail": "Preview what spawn-worktree-agent would do",
       "problemMatcher": []
     },
     {

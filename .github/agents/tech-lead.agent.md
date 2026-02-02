@@ -67,45 +67,51 @@ if ($rateCheck.status -eq "wait") {
 }
 ```
 
-2. **Spawn SE in worktree (MANDATORY):**
+2. **Write assignment.json:**
 
 ```powershell
 # Pick highest priority Todo item
 $issue = 42  # From board query
 
-# Spawn SE in isolated worktree - this is the ONLY way to start SE
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber $issue
+# Write assignment file - SE will pick it up
+$assignment = @{
+    issue = $issue
+    priority = "high"
+    assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+    assignedBy = "TechLead"
+} | ConvertTo-Json
+$assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
+
+Write-Host "Assigned issue #$issue to Software Engineer"
 ```
 
-The spawn script will:
-
-- Create worktree at `C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`
-- Create branch `agent/se/<issue>-impl`
-- Open VS Code in that worktree
-- Start SE agent session with proper prompt
-
-**⚠️ NEVER spawn SE with `code chat` directly.** Always use the spawn script.
+**SE is persistent:** TL does NOT spawn SE per-issue. SE runs continuously and picks up work via assignment.json.
 
 **Rules:**
 
-- **Check rate limits before spawning**
-- Only spawn when no SE is currently running (check heartbeat)
-- Only 1 SE at a time
-- Update board status to "In Progress" after spawning
+- **Check rate limits before assigning**
+- Only assign when SE heartbeat shows "idle"
+- Only 1 assignment at a time (file exists = SE has work)
+- Update board status to "In Progress" after assigning
 
-## Worktree Cleanup
+## Spawn SE (One Time Only)
 
-After merging a PR, clean up the worktree:
+If no SE is running (no SE heartbeat), spawn one:
 
 ```powershell
-$issue = 42
-git worktree remove C:/Dev/CMC-Go-Worktrees/wt-impl-$issue --force
-git branch -d agent/se/$issue-impl
+.\scripts\spawn-worktree-agent.ps1
 ```
 
-Periodically run the cleanup script:
+This creates a persistent SE in a worktree. SE then loops forever checking for assignments.
+
+## Branch Cleanup
+
+After merging a PR, clean up the merged branch:
 
 ```powershell
+git branch -d agent/se/<issue>-<slug>
+
+# Periodically run full cleanup
 .\scripts\cleanup-agent-branches.ps1
 ```
 

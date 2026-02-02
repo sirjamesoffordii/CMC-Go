@@ -46,13 +46,13 @@ $cwd = (Get-Location).Path
 if ($cwd -match "C:\\Dev\\CMC Go$|C:/Dev/CMC Go$") {
     Write-Error "ABORT: In main repo! SE must work in worktree."
     # Do NOT proceed with any file edits
-    # Wait for TL to spawn you properly via spawn-worktree-agent.ps1
+    # You were spawned incorrectly
 }
 ```
 
-**Expected location:** `C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`
+**Expected location:** `C:/Dev/CMC-Go-Worktrees/wt-se`
 
-If you find yourself in the main repo, STOP immediately. You were spawned incorrectly.
+If you find yourself in the main repo, STOP immediately. Wait for TL to spawn you properly.
 
 ## Outer Loop (Continuous)
 

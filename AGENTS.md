@@ -84,7 +84,41 @@ All 3 agents run simultaneously in separate VS Code windows
 
 - Update every 3 min with current status
 - SE must include worktree path (for verification)
-- Stale = no update in 6+ min → Principal Engineer respawns Tech Lead
+- Stale = no update in 6+ min
+
+**Staleness Detection & Recovery:**
+
+| Agent | Monitored By       | If Stale (>6 min)                         |
+| ----- | ------------------ | ----------------------------------------- |
+| PE    | Human              | Human restarts PE                         |
+| TL    | Principal Engineer | PE respawns TL via `code chat`            |
+| SE    | Tech Lead          | TL respawns SE via `spawn-worktree-agent` |
+
+**PE monitors TL:**
+
+```powershell
+$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+$tlTs = [DateTime]::Parse($hb.TL.ts)
+$staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
+if ($staleMinutes -gt 6) {
+    Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
+    code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
+}
+```
+
+**TL monitors SE:**
+
+```powershell
+$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+if ($hb.SE) {
+    $seTs = [DateTime]::Parse($hb.SE.ts)
+    $staleMinutes = ((Get-Date).ToUniversalTime() - $seTs).TotalMinutes
+    if ($staleMinutes -gt 6) {
+        Write-Host "SE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
+        .\scripts\spawn-worktree-agent.ps1
+    }
+}
+```
 
 ## Assignment (Tech Lead → Software Engineer Signaling)
 
@@ -141,8 +175,8 @@ code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. L
 # Principal Engineer starts Tech Lead (only 1 at a time)
 code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
 
-# Tech Lead starts Software Engineer in WORKTREE (mandatory)
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+# Tech Lead spawns Software Engineer ONCE in a worktree (persistent, not per-issue)
+.\scripts\spawn-worktree-agent.ps1
 ```
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
@@ -154,22 +188,34 @@ All agents run continuously. Tech Lead assigns work via `assignment.json`.
 Why worktrees?
 
 - Prevents file contention when PE/TL are in main workspace
-- Each issue gets isolated working directory
+- Isolated working directory for SE
 - Main repo stays clean for coordination
-- Easy cleanup after PR merges
+- SE creates branches per-issue from within worktree
 
-### TL Spawns SE (Required)
+### TL Spawns SE (One Time)
 
 ```powershell
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+# Spawn SE once - it runs continuously and picks up work via assignment.json
+.\scripts\spawn-worktree-agent.ps1
 ```
 
 This script:
 
-1. Creates worktree at `C:/Dev/CMC-Go-Worktrees/wt-impl-42`
-2. Creates branch `agent/se/42-impl`
-3. Opens VS Code in that worktree
-4. Starts agent session with proper prompt
+1. Creates worktree at `C:/Dev/CMC-Go-Worktrees/wt-se`
+2. Opens VS Code in that worktree
+3. Starts SE agent session with proper prompt
+
+**SE is persistent:** Once spawned, SE loops forever checking for assignments. TL does NOT spawn SE per-issue.
+
+### SE Branch Per-Issue
+
+SE creates branches for each issue from within the worktree:
+
+```powershell
+# SE runs this when picking up an assignment
+git fetch origin
+git checkout -b agent/se/<issue>-<slug> origin/staging
+```
 
 ### SE Pre-Flight Check
 
@@ -186,8 +232,8 @@ if ($cwd -match "C:\\\\Dev\\\\CMC Go$|C:/Dev/CMC Go$") {
 ### Cleanup (TL does after merge)
 
 ```powershell
-git worktree remove C:/Dev/CMC-Go-Worktrees/wt-impl-42
-git branch -d agent/se/42-impl
+# Clean up merged branch (worktree stays for next issue)
+git branch -d agent/se/<issue>-<slug>
 ```
 
 ## Branch Cleanup

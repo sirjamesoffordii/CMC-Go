@@ -1,25 +1,22 @@
 <#
 .SYNOPSIS
-  Spawn a Copilot agent session in a new VS Code window for a worktree.
+  Spawn a persistent Software Engineer agent in an isolated worktree.
 
 .DESCRIPTION
-  This script enables worktree-based parallel agent execution by:
-  1. Creating a Git worktree (if it doesn't exist)
+  This script creates a persistent SE workspace by:
+  1. Creating a Git worktree (if it doesn't exist) at a fixed location
   2. Opening VS Code in a new window with that worktree
-  3. Triggering a Copilot chat session with the specified prompt
+  3. Triggering a Copilot chat session with the SE prompt
   
-  This allows running multiple independent agent sessions in parallel,
-  each operating on their own worktree (isolated working directory + branch).
-
-.PARAMETER IssueNumber
-  GitHub Issue number to work on.
+  The SE agent runs continuously, picking up work via assignment.json.
+  It creates per-issue branches from within the worktree.
 
 .PARAMETER Prompt
-  The prompt to send to the Copilot agent. If not provided, a default
-  prompt based on the issue number is used.
+  The prompt to send to the Copilot agent. If not provided, uses the
+  standard persistent SE prompt.
 
 .PARAMETER WorktreeName
-  Name of the worktree (defaults to wt-impl-<issue>).
+  Name of the worktree (defaults to wt-se).
 
 .PARAMETER BaseBranch
   Branch to base the worktree on (defaults to origin/staging).
@@ -28,7 +25,7 @@
   Chat mode: 'agent', 'ask', or 'edit'. Defaults to 'agent'.
 
 .PARAMETER Profile
-  VS Code profile to use. Optional - allows profile-based isolation.
+  VS Code profile to use. Optional.
 
 .PARAMETER WorktreeRoot
   Root directory for worktrees. Defaults to C:\Dev\CMC-Go-Worktrees.
@@ -37,26 +34,19 @@
   Show what would be done without executing.
 
 .EXAMPLE
-  # Spawn agent for Issue #42
-  .\spawn-worktree-agent.ps1 -IssueNumber 42 -Prompt "Implement the feature described in Issue #42"
-
-.EXAMPLE
-  # Spawn with custom profile (for parallel sessions)
-  .\spawn-worktree-agent.ps1 -IssueNumber 42 -Profile "Agent-SWE-1"
+  # Spawn persistent SE agent
+  .\spawn-worktree-agent.ps1
 
 .EXAMPLE
   # Dry run to see commands
-  .\spawn-worktree-agent.ps1 -IssueNumber 42 -DryRun
+  .\spawn-worktree-agent.ps1 -DryRun
 #>
 
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)]
-  [int]$IssueNumber,
-
   [string]$Prompt,
 
-  [string]$WorktreeName,
+  [string]$WorktreeName = 'wt-se',
 
   [string]$BaseBranch = 'origin/staging',
 
@@ -74,29 +64,33 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve paths
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$WorktreeName = if ($WorktreeName) { $WorktreeName } else { "wt-$IssueNumber" }
 $WorktreePath = Join-Path $WorktreeRoot $WorktreeName
-$BranchName = "agent/se/$IssueNumber-impl"
 
-# Default prompt if not provided
+# Default prompt for persistent SE
 if (-not $Prompt) {
   $Prompt = @"
-You are Software Engineer (SWE) working on Issue #$IssueNumber.
+You are Software Engineer (SE). You run continuously.
 
-1. First, read the issue details with: gh issue view $IssueNumber
-2. Understand the acceptance criteria
-3. Implement the smallest diff that satisfies the requirements
-4. Run verification: pnpm check && pnpm test
-5. Create a PR when done
+Your workflow:
+1. Register heartbeat: .\scripts\update-heartbeat.ps1 -Role SE -Status "idle" -Worktree "$WorktreePath"
+2. Check for assignment: .github/agents/assignment.json
+3. If no assignment, wait 30 seconds, then loop back to step 1
+4. If assignment exists:
+   a. Read issue number, delete the file to claim it
+   b. Read issue: gh issue view <number>
+   c. Create branch: git checkout -b agent/se/<issue>-<slug> origin/staging
+   d. Implement the smallest diff that satisfies requirements
+   e. Verify: pnpm check && pnpm test
+   f. Create PR: gh pr create --base staging
+   g. Update heartbeat to "idle"
+   h. Loop back to step 1
 
-Start by reading the issue.
+Start by registering your heartbeat and checking for assignments.
 "@
 }
 
-Write-Host "=== Spawn Worktree Agent ===" -ForegroundColor Cyan
-Write-Host "Issue:     #$IssueNumber"
+Write-Host "=== Spawn Persistent SE Agent ===" -ForegroundColor Cyan
 Write-Host "Worktree:  $WorktreePath"
-Write-Host "Branch:    $BranchName"
 Write-Host "Mode:      $Mode"
 if ($Profile) { Write-Host "Profile:   $Profile" }
 Write-Host ""
@@ -114,8 +108,11 @@ if (-not (Test-Path $WorktreeRoot)) {
 # Step 2: Create worktree if it doesn't exist
 if (Test-Path $WorktreePath) {
   Write-Host "Worktree already exists: $WorktreePath" -ForegroundColor Yellow
+  Write-Host "SE will use existing worktree." -ForegroundColor Yellow
 } else {
-  $gitCmd = "git -C `"$RepoRoot`" worktree add -b `"$BranchName`" `"$WorktreePath`" `"$BaseBranch`""
+  # For persistent SE, we checkout staging directly (no branch created here)
+  # SE creates per-issue branches from within the worktree
+  $gitCmd = "git -C `"$RepoRoot`" worktree add `"$WorktreePath`" `"$BaseBranch`""
   if ($DryRun) {
     Write-Host "[DryRun] Would run: $gitCmd" -ForegroundColor Yellow
   } else {
@@ -123,7 +120,7 @@ if (Test-Path $WorktreePath) {
     Push-Location $RepoRoot
     try {
       git fetch --prune origin 2>&1 | Out-Null
-      git worktree add -b $BranchName $WorktreePath $BaseBranch
+      git worktree add $WorktreePath $BaseBranch
       Write-Host "Created: $WorktreePath" -ForegroundColor Green
     } finally {
       Pop-Location
@@ -167,9 +164,10 @@ if ($DryRun) {
   Write-Host "Triggering Copilot chat..." -ForegroundColor Cyan
   & code @chatArgs
   Write-Host ""
-  Write-Host "Agent session started!" -ForegroundColor Green
-  Write-Host "Window: $WorktreePath"
-  Write-Host "Branch: $BranchName"
+  Write-Host "Persistent SE agent started!" -ForegroundColor Green
+  Write-Host "Worktree: $WorktreePath"
+  Write-Host ""
+  Write-Host "SE will loop continuously, checking for assignments." -ForegroundColor Yellow
 }
 
 Write-Host ""
