@@ -63,7 +63,12 @@ All 3 agents run simultaneously in separate VS Code windows
 {
   "PE": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
   "TL": { "ts": "2026-02-02T12:00:00Z", "status": "reviewing-pr", "pr": 123 },
-  "SE": { "ts": "2026-02-02T12:00:00Z", "status": "implementing", "issue": 42 }
+  "SE": {
+    "ts": "2026-02-02T12:00:00Z",
+    "status": "implementing",
+    "issue": 42,
+    "worktree": "C:/Dev/CMC-Go-Worktrees/wt-impl-42"
+  }
 }
 ```
 
@@ -71,13 +76,14 @@ All 3 agents run simultaneously in separate VS Code windows
 
 ```powershell
 .\scripts\update-heartbeat.ps1 -Role TL -Status "reviewing-pr-123" -PR 123
-.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42
+.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42 -Worktree "C:/Dev/CMC-Go-Worktrees/wt-impl-42"
 .\scripts\update-heartbeat.ps1 -Role PE -Status "monitoring"
 ```
 
 **Protocol:**
 
 - Update every 3 min with current status
+- SE must include worktree path (for verification)
 - Stale = no update in 6+ min → Principal Engineer respawns Tech Lead
 
 ## Assignment (Tech Lead → Software Engineer Signaling)
@@ -135,11 +141,54 @@ code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. L
 # Principal Engineer starts Tech Lead (only 1 at a time)
 code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
 
-# Tech Lead starts Software Engineer (only 1 at a time)
-code chat -r -m "Software Engineer" -a AGENTS.md "You are Software Engineer. Loop forever. Start now."
+# Tech Lead starts Software Engineer in WORKTREE (mandatory)
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
 ```
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
+
+## Worktrees (SE Isolation)
+
+**SE MUST work in an isolated worktree. This is NON-NEGOTIABLE.**
+
+Why worktrees?
+
+- Prevents file contention when PE/TL are in main workspace
+- Each issue gets isolated working directory
+- Main repo stays clean for coordination
+- Easy cleanup after PR merges
+
+### TL Spawns SE (Required)
+
+```powershell
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+```
+
+This script:
+
+1. Creates worktree at `C:/Dev/CMC-Go-Worktrees/wt-impl-42`
+2. Creates branch `agent/se/42-impl`
+3. Opens VS Code in that worktree
+4. Starts agent session with proper prompt
+
+### SE Pre-Flight Check
+
+Before ANY file edits, SE must verify:
+
+```powershell
+$cwd = (Get-Location).Path
+if ($cwd -match "C:\\\\Dev\\\\CMC Go$|C:/Dev/CMC Go$") {
+    Write-Error "ABORT: In main repo! SE must work in worktree."
+    # Do not proceed with edits
+}
+```
+
+### Cleanup (TL does after merge)
+
+```powershell
+git worktree remove C:/Dev/CMC-Go-Worktrees/wt-impl-42
+git branch -d agent/se/42-impl
+```
 
 ## Branch Cleanup
 
@@ -164,7 +213,8 @@ After PRs are merged, periodically clean up old branches:
 4. **Never stop** — Loop until Done or Blocked
 5. **One SE at a time** — Wait for PR merge before next assignment
 6. **Check rate limits** — Before assigning work, verify quota
-7. **Avoid interactive commands** — See "Dangerous Commands" section
+7. **SE uses worktree** — NEVER edit files in main repo
+8. **Avoid interactive commands** — See "Dangerous Commands" section
 
 ## Dangerous Commands (Avoid in Autonomous Flow)
 
@@ -179,18 +229,14 @@ Some commands hang waiting for user input. **NEVER run these directly:**
 | `npm init`                 | Interactive wizard               | `npm init -y`                    |
 | Any command with `--help`  | May page with `less`             | Pipe to `Select-Object -First N` |
 
-**If you get stuck:**
-
-1. The command will timeout after 2 minutes (db:push:yes)
-2. Human can Ctrl+C to kill the hung process
-3. Agent should detect non-zero exit code and continue loop
+**db:push:yes is safe:** Auto-confirms prompts, 2-min timeout, auto-exits on failure.
 
 **Recovery pattern for SE:**
 
 ```powershell
-# If db:push:yes fails or times out, skip and note in PR
+# If db:push:yes fails or times out, continue and note in PR
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "⚠️ db:push failed - schema changes may need manual push" -ForegroundColor Yellow
+    Write-Host "⚠️ db:push failed - noting in PR" -ForegroundColor Yellow
     # Continue with implementation, note in PR body
 }
 ```

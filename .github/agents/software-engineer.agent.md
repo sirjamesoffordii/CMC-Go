@@ -35,6 +35,25 @@ tools:
 
 **Account:** `Software-Engineer-Agent`
 
+## ⚠️ WORKTREE REQUIREMENT (CRITICAL)
+
+**You MUST work in an isolated worktree. This is NON-NEGOTIABLE.**
+
+Before ANY file edits, verify you are NOT in the main repo:
+
+```powershell
+$cwd = (Get-Location).Path
+if ($cwd -match "C:\\Dev\\CMC Go$|C:/Dev/CMC Go$") {
+    Write-Error "ABORT: In main repo! SE must work in worktree."
+    # Do NOT proceed with any file edits
+    # Wait for TL to spawn you properly via spawn-worktree-agent.ps1
+}
+```
+
+**Expected location:** `C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`
+
+If you find yourself in the main repo, STOP immediately. You were spawned incorrectly.
+
 ## Outer Loop (Continuous)
 
 ```
@@ -129,12 +148,13 @@ Examples: Test setup issues, file edit tool failures, missing patterns.
 
 ## Heartbeat
 
-Update every 3 min using the heartbeat script:
+Update every 3 min using the heartbeat script (must include worktree path):
 
 ```powershell
-.\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
-.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42
-.\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created" -Issue 42
+$wtPath = (Get-Location).Path
+.\scripts\update-heartbeat.ps1 -Role SE -Status "idle" -Worktree $wtPath
+.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42 -Worktree $wtPath
+.\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created" -Issue 42 -Worktree $wtPath
 ```
 
 ## Pre-Flight Validation

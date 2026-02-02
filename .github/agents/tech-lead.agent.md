@@ -67,30 +67,47 @@ if ($rateCheck.status -eq "wait") {
 }
 ```
 
-2. **Then assign:**
+2. **Spawn SE in worktree (MANDATORY):**
 
 ```powershell
 # Pick highest priority Todo item
 $issue = 42  # From board query
 
-# Write assignment file
-$assignment = @{
-    issue = $issue
-    priority = "high"
-    assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    assignedBy = "TechLead"
-} | ConvertTo-Json
-$assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
-
-Write-Host "Assigned issue #$issue to Software Engineer"
+# Spawn SE in isolated worktree - this is the ONLY way to start SE
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber $issue
 ```
+
+The spawn script will:
+
+- Create worktree at `C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`
+- Create branch `agent/se/<issue>-impl`
+- Open VS Code in that worktree
+- Start SE agent session with proper prompt
+
+**⚠️ NEVER spawn SE with `code chat` directly.** Always use the spawn script.
 
 **Rules:**
 
-- **Check rate limits before assigning**
-- Only assign when Software Engineer heartbeat shows "idle"
-- Only 1 assignment at a time (file exists = Software Engineer has work)
-- Update board status to "In Progress" after assigning
+- **Check rate limits before spawning**
+- Only spawn when no SE is currently running (check heartbeat)
+- Only 1 SE at a time
+- Update board status to "In Progress" after spawning
+
+## Worktree Cleanup
+
+After merging a PR, clean up the worktree:
+
+```powershell
+$issue = 42
+git worktree remove C:/Dev/CMC-Go-Worktrees/wt-impl-$issue --force
+git branch -d agent/se/$issue-impl
+```
+
+Periodically run the cleanup script:
+
+```powershell
+.\scripts\cleanup-agent-branches.ps1
+```
 
 ## Heartbeat
 
