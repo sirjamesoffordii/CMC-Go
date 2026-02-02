@@ -430,24 +430,52 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 **Note:** Model token limits (GPT 5.2 Codex) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
-## AEOS Self-Improvement
+## AEOS Self-Improvement (MANDATORY)
 
-Agents can propose improvements to the autonomous workflow itself.
+Agents **MUST** report workflow friction in real-time to issue #348.
 
-**Tracking Issue:** `[AEOS] Workflow Improvements` (pinned, stays open)
+**Tracking Issue:** `[AEOS] Workflow Improvements` (#348)
 
-**Process:**
+### How to Report (Copy-Paste Commands)
 
-1. Any agent notices friction, inefficiency, or failure pattern
-2. Tech Lead/Software Engineer add a **comment** to the tracking issue:
-   - Format: `**<role> observation:** <problem> → <suggested fix>`
-3. Principal Engineer reviews comments and promotes valid ones to checklist items:
-   - `[ ] **<title>** — <problem> → <proposed fix>`
-4. Principal Engineer checks existing items for conflicts/redundancy before adding
-5. Human reviews tracking issue periodically:
-   - Check item → approved for implementation
-   - Delete item → rejected
-   - Convert to Issue → needs dedicated work
+**Tech Lead:**
+
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
+```
+
+**Software Engineer:**
+
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>"
+```
+
+**Principal Engineer:**
+
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>"
+```
+
+### When to Report
+
+| Trigger          | Example                                                         |
+| ---------------- | --------------------------------------------------------------- |
+| CI failure/delay | "CI queued for 10+ min → Add runner status check"               |
+| Tool failure     | "File edit didn't apply → Verify with git diff after each edit" |
+| Heartbeat issue  | "SE went stale during long test run → Add mid-test checkpoint"  |
+| Board sync issue | "Item added without status → Auto-set Todo on add"              |
+| Rate limit hit   | "GraphQL quota exhausted → Add REST fallback"                   |
+
+**Report immediately when friction occurs, not at end of session.**
+
+### Process
+
+1. TL/SE adds comment to #348 (using commands above)
+2. PE reviews comments and promotes to checklist in issue body
+3. Human checks items to approve for implementation
 
 **Who contributes what:**
 
@@ -456,8 +484,6 @@ Agents can propose improvements to the autonomous workflow itself.
 | Principal Engineer | Architecture, oversight | Rate limits, agent coordination   |
 | Tech Lead          | Coordination, PR flow   | Assignment issues, merge problems |
 | Software Engineer  | Implementation, tooling | Test setup, file edits, patterns  |
-
-**Where to review:** Single issue titled `[AEOS] Workflow Improvements`
 
 ## Reference
 

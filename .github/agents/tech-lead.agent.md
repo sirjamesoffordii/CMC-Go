@@ -167,13 +167,24 @@ Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest fi
 3. **NEVER stop** — always take next action
 4. **Stuck >5 min?** — Log it, move on
 
-## AEOS Feedback
+## AEOS Feedback (MANDATORY)
 
-If you notice workflow friction, add a comment to the `[AEOS] Workflow Improvements` issue:
+When you notice workflow friction during your loop, **immediately** add a comment to issue #348:
 
-- Format: `**Tech Lead observation:** <problem> → <suggested fix>`
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
+```
 
-Examples: Board status not syncing, PR merge failures, rate limit issues.
+**Examples of when to report:**
+
+- CI was cancelled/queued for extended time → Add observation
+- SE heartbeat went stale → Add observation
+- Board status didn't sync properly → Add observation
+- PR merge failed unexpectedly → Add observation
+- Rate limit caused delays → Add observation
+
+**Do this in real-time, not at end of session.** Each friction point = one comment.
 
 ## Board Statuses
 

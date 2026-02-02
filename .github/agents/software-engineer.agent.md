@@ -138,13 +138,24 @@ pnpm db:push:yes  # Non-interactive, 2min timeout
 4. **Tests fail?** — Fix them or explain why in PR
 5. **One Issue per PR** — no scope creep, no "bonus" features
 
-## AEOS Feedback
+## AEOS Feedback (MANDATORY)
 
-If you notice workflow friction, add a comment to the `[AEOS] Workflow Improvements` issue:
+When you notice workflow friction during implementation, **immediately** add a comment to issue #348:
 
-- Format: `**Software Engineer observation:** <problem> → <suggested fix>`
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>"
+```
 
-Examples: Test setup issues, file edit tool failures, missing patterns.
+**Examples of when to report:**
+
+- File edit tool failed to apply changes → Add observation
+- Tests failed for unclear reason → Add observation
+- Missing type definitions or patterns → Add observation
+- db:push:yes timed out → Add observation
+- ESLint caught something CI missed locally → Add observation
+
+**Do this in real-time, not at end of session.** Each friction point = one comment.
 
 ## Heartbeat
 
