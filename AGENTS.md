@@ -90,9 +90,11 @@ All 3 agents run simultaneously in separate VS Code windows
 
 | Agent | Monitored By | If Stale (>6 min)                         |
 | ----- | ------------ | ----------------------------------------- |
-| PE    | Human + TL   | Human restarts PE; TL alerts              |
-| TL    | PE + SE      | PE respawns TL; SE alerts                 |
+| PE    | TL           | TL respawns PE via `code chat`            |
+| TL    | PE + SE      | PE or SE respawns TL via `code chat`      |
 | SE    | TL           | TL respawns SE via `spawn-worktree-agent` |
+
+**Self-healing principle:** Any surviving agent can respawn any other agent. This ensures the system recovers automatically without human intervention.
 
 **PE monitors TL:**
 
@@ -111,13 +113,13 @@ if ($staleMinutes -gt 6) {
 ```powershell
 $hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
 
-# Monitor PE - alert if stale (TL cannot respawn PE, but should log it)
+# Monitor PE - respawn if stale
 if ($hb.PE) {
     $peTs = [DateTime]::Parse($hb.PE.ts)
     $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
     if ($staleMinutes -gt 6) {
-        Write-Host "⚠️ PE stale ($staleMinutes min) - human intervention needed!" -ForegroundColor Red
-        # Log to AEOS improvements issue or continue operating autonomously
+        Write-Host "PE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
+        code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. Loop forever. Start now."
     }
 }
 
@@ -137,13 +139,13 @@ if ($hb.SE) {
 ```powershell
 $hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
 
-# Monitor TL - alert if stale (SE cannot respawn TL, but should log it)
+# Monitor TL - respawn if stale
 if ($hb.TL) {
     $tlTs = [DateTime]::Parse($hb.TL.ts)
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
-        Write-Host "⚠️ TL stale ($staleMinutes min) - PE should respawn TL" -ForegroundColor Red
-        # Continue working on current issue, but note TL unavailable for PR review
+        Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
+        code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
     }
 }
 ```

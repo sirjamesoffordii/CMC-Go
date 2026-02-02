@@ -157,7 +157,7 @@ $wtPath = (Get-Location).Path
 .\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created" -Issue 42 -Worktree $wtPath
 ```
 
-**Monitor TL:** Check TL heartbeat. If stale >6 min, alert (SE cannot respawn TL, but should note it and continue working).
+**Monitor TL:** Check TL heartbeat. If stale >6 min, respawn TL via `code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."`
 
 ## Pre-Flight Validation
 
