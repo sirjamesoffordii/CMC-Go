@@ -86,6 +86,64 @@ All 3 agents run simultaneously in separate VS Code windows
 - SE must include worktree path (for verification)
 - Stale = no update in 6+ min
 
+**Reading heartbeat safely:**
+
+```powershell
+# Always use the safe reader (handles corruption gracefully)
+$hb = .\scripts\read-heartbeat.ps1
+```
+
+### Mid-Work Heartbeat Checkpoints
+
+Long operations MUST include heartbeat updates at logical checkpoints to prevent false stale detection:
+
+**SE Implementation Checkpoints:**
+
+```powershell
+# After claiming assignment
+.\scripts\update-heartbeat.ps1 -Role SE -Status "claimed-$issueNum" -Issue $issueNum
+
+# After branch creation
+.\scripts\update-heartbeat.ps1 -Role SE -Status "branched-$issueNum" -Issue $issueNum
+
+# After each significant file edit (every 2-3 files)
+.\scripts\update-heartbeat.ps1 -Role SE -Status "editing-$issueNum" -Issue $issueNum
+
+# After running tests
+.\scripts\update-heartbeat.ps1 -Role SE -Status "testing-$issueNum" -Issue $issueNum
+
+# After creating PR
+.\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created-$issueNum" -Issue $issueNum
+```
+
+**TL PR Review Checkpoints:**
+
+```powershell
+# Starting review
+.\scripts\update-heartbeat.ps1 -Role TL -Status "reviewing-pr-$prNum" -PR $prNum
+
+# After reading changed files
+.\scripts\update-heartbeat.ps1 -Role TL -Status "analyzing-pr-$prNum" -PR $prNum
+
+# After merge decision
+.\scripts\update-heartbeat.ps1 -Role TL -Status "merging-pr-$prNum" -PR $prNum
+```
+
+**PE Review Checkpoints:**
+
+```powershell
+# Starting codebase review
+.\scripts\update-heartbeat.ps1 -Role PE -Status "reviewing-codebase"
+
+# Creating issues
+.\scripts\update-heartbeat.ps1 -Role PE -Status "creating-issues"
+
+# Reviewing board
+.\scripts\update-heartbeat.ps1 -Role PE -Status "reviewing-board"
+```
+
+**Rule of Thumb:** If an operation might take >3 minutes, add a checkpoint heartbeat.
+
 **Staleness Detection & Recovery:**
 
 | Agent | Monitored By | If Stale (>6 min)                         |
@@ -99,19 +157,21 @@ All 3 agents run simultaneously in separate VS Code windows
 **PE monitors TL:**
 
 ```powershell
-$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
-$tlTs = [DateTime]::Parse($hb.TL.ts)
-$staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
-if ($staleMinutes -gt 6) {
-    Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-    code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
+$hb = .\scripts\read-heartbeat.ps1
+if ($hb.TL) {
+    $tlTs = [DateTime]::Parse($hb.TL.ts)
+    $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
+    if ($staleMinutes -gt 6) {
+        Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
+        .\scripts\spawn-with-quota-check.ps1 -Role TL
+    }
 }
 ```
 
 **TL monitors PE + SE:**
 
 ```powershell
-$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+$hb = .\scripts\read-heartbeat.ps1
 
 # Monitor PE - respawn if stale
 if ($hb.PE) {
@@ -119,7 +179,7 @@ if ($hb.PE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "PE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. Loop forever. Start now."
+        .\scripts\spawn-with-quota-check.ps1 -Role PE
     }
 }
 
@@ -129,7 +189,7 @@ if ($hb.SE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $seTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "SE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-worktree-agent.ps1
+        .\scripts\spawn-with-quota-check.ps1 -Role SE
     }
 }
 ```
@@ -137,7 +197,7 @@ if ($hb.SE) {
 **SE monitors TL:**
 
 ```powershell
-$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+$hb = .\scripts\read-heartbeat.ps1
 
 # Monitor TL - respawn if stale
 if ($hb.TL) {
@@ -145,7 +205,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
+        .\scripts\spawn-with-quota-check.ps1 -Role TL
     }
 }
 ```

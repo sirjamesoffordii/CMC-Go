@@ -119,6 +119,8 @@ tmpclaude-*
 # Agent coordination files (local-only, never commit)
 .github/agents/heartbeat.json
 .github/agents/assignment.json
+.github/agents/spawn-log.json
+.github/agents/*.corrupted.*
 
 # Local scratch / analysis clones
 _external/
