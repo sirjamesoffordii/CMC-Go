@@ -60,16 +60,21 @@ If you find yourself in the main repo, STOP immediately. Wait for TL to spawn yo
 WHILE true:
     1. Update heartbeat with status "idle"
     2. Check for assignment: `.github/agents/assignment.json`
-    3. IF no assignment → Wait 30s → LOOP
-    4. IF assignment exists:
+    3. IF assignment exists:
        a. Read and delete assignment.json (claim it)
        b. Update heartbeat with status "implementing", issue number
        c. Execute Inner Loop (implementation)
        d. After PR created, update heartbeat to "idle"
        e. LOOP (back to step 1)
+    4. IF no assignment → Self-assign from board:
+       a. Query board for Todo items: gh project item-list 4 --owner sirjamesoffordii --format json
+       b. Pick highest priority issue (priority:high > priority:medium > priority:low > oldest)
+       c. Update heartbeat with status "implementing", issue number
+       d. Execute Inner Loop (implementation)
+       e. LOOP (back to step 1)
 ```
 
-**Assignment pickup:**
+**Assignment pickup (TL-assigned):**
 
 ```powershell
 $assignmentFile = ".github/agents/assignment.json"
@@ -77,6 +82,20 @@ if (Test-Path $assignmentFile) {
     $assignment = Get-Content $assignmentFile | ConvertFrom-Json
     Remove-Item $assignmentFile  # Claim it atomically
     $issueNumber = $assignment.issue
+    # Now implement issue $issueNumber
+}
+```
+
+**Self-assign from board (when no TL assignment):**
+
+```powershell
+# Query Todo items from board
+$env:GH_PAGER = "cat"
+$items = gh project item-list 4 --owner sirjamesoffordii --format json | ConvertFrom-Json
+$todo = $items.items | Where-Object { $_.status -eq "Todo" } | Select-Object -First 1
+if ($todo) {
+    $issueNumber = $todo.content.number
+    Write-Host "Self-assigning issue #$issueNumber" -ForegroundColor Cyan
     # Now implement issue $issueNumber
 }
 ```

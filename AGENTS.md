@@ -210,11 +210,11 @@ if ($hb.TL) {
 }
 ```
 
-## Assignment (Tech Lead → Software Engineer Signaling)
+## Assignment (Work Assignment)
 
 **File:** `.github/agents/assignment.json` (gitignored)
 
-Tech Lead writes this file to signal what Software Engineer should work on next. Software Engineer reads and clears it.
+Tech Lead can write this file to prioritize specific work. Software Engineer checks this first, then self-assigns from board if empty.
 
 ```json
 {
@@ -227,24 +227,12 @@ Tech Lead writes this file to signal what Software Engineer should work on next.
 
 **Protocol:**
 
-1. **Tech Lead assigns:** Write `assignment.json` with issue details
-2. **Software Engineer checks:** On loop iteration, check if file exists
-3. **Software Engineer claims:** Read issue number, then delete the file (atomic claim)
-4. **Software Engineer works:** Implement the issue, create PR
-5. **Software Engineer completes:** Update heartbeat status to "idle", loop back to step 2
+1. **Software Engineer checks:** On loop iteration, check if assignment.json exists
+2. **If assignment exists:** Claim it (read + delete), implement the issue
+3. **If no assignment:** Self-assign from board (query Todo items, pick highest priority)
+4. **Software Engineer completes:** Create PR, update heartbeat to "idle", loop
 
-**Claim pattern (Software Engineer):**
-
-```powershell
-$assignmentFile = ".github/agents/assignment.json"
-if (Test-Path $assignmentFile) {
-    $assignment = Get-Content $assignmentFile | ConvertFrom-Json
-    Remove-Item $assignmentFile  # Claim it
-    # Now work on $assignment.issue
-}
-```
-
-**Assign pattern (Tech Lead):**
+**TL assignment (optional - for priority work):**
 
 ```powershell
 $assignment = @{
@@ -254,6 +242,18 @@ $assignment = @{
     assignedBy = "TechLead"
 } | ConvertTo-Json
 $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
+```
+
+**SE self-assign from board:**
+
+```powershell
+$env:GH_PAGER = "cat"
+$items = gh project item-list 4 --owner sirjamesoffordii --format json | ConvertFrom-Json
+$todo = $items.items | Where-Object { $_.status -eq "Todo" } | Select-Object -First 1
+if ($todo) {
+    $issueNumber = $todo.content.number
+    Write-Host "Self-assigning issue #$issueNumber" -ForegroundColor Cyan
+}
 ```
 
 ## Agent Startup

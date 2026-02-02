@@ -1,5 +1,6 @@
 {
   "version": "2.0.0",
+  "_comment": "Tasks for HUMAN use only. Agents use terminal commands directly.",
   "options": {
     "shell": {
       "executable": "powershell.exe",
@@ -64,27 +65,9 @@
       "problemMatcher": []
     },
     {
-      "label": "DB: Seed database",
-      "type": "shell",
-      "command": "pnpm db:seed",
-      "problemMatcher": []
-    },
-    {
       "label": "DB: Reset database",
       "type": "shell",
       "command": "pnpm db:reset",
-      "problemMatcher": []
-    },
-    {
-      "label": "DB: Full setup",
-      "type": "shell",
-      "command": "pnpm db:setup",
-      "problemMatcher": []
-    },
-    {
-      "label": "Validate: Agent docs",
-      "type": "shell",
-      "command": "pnpm validate:agents",
       "problemMatcher": []
     },
     {
@@ -101,18 +84,6 @@
       "problemMatcher": []
     },
     {
-      "label": "Railway: Check status",
-      "type": "shell",
-      "command": "railway status",
-      "problemMatcher": []
-    },
-    {
-      "label": "Railway: View deployments",
-      "type": "shell",
-      "command": "railway deployments",
-      "problemMatcher": []
-    },
-    {
       "label": "Railway: Search logs for errors",
       "type": "shell",
       "command": "railway logs --limit 200 | Select-String -Pattern 'error|Error|ERROR|failed|Failed|exception|Exception'",
@@ -125,27 +96,9 @@
       "problemMatcher": []
     },
     {
-      "label": "Git: Fetch and status",
-      "type": "shell",
-      "command": "git fetch --prune origin; git status -sb",
-      "problemMatcher": []
-    },
-    {
       "label": "Git: Hard reset to staging",
       "type": "shell",
       "command": "git fetch --prune origin; git checkout -f staging; git reset --hard origin/staging; git clean -fd; git status -sb",
-      "problemMatcher": []
-    },
-    {
-      "label": "Agent: Health check",
-      "type": "shell",
-      "command": "Write-Host '=== Agent Health Check ==='; Write-Host ''; Write-Host '[Terminal]' -ForegroundColor Cyan; Write-Host '  echo: PASS'; Write-Host ''; Write-Host '[Git]' -ForegroundColor Cyan; $gitStatus = git status -sb 2>&1; if ($LASTEXITCODE -eq 0) { Write-Host '  git status: PASS' } else { Write-Host '  git status: FAIL' -ForegroundColor Red }; Write-Host ''; Write-Host '[GitHub CLI]' -ForegroundColor Cyan; gh auth status 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { Write-Host '  gh auth: PASS' } else { Write-Host '  gh auth: FAIL' -ForegroundColor Red }; Write-Host ''; Write-Host '[Node/pnpm]' -ForegroundColor Cyan; Write-Host ('  node: ' + (node --version)); Write-Host ('  pnpm: ' + (pnpm --version)); Write-Host ''; Write-Host '[Repo State]' -ForegroundColor Cyan; Write-Host ('  branch: ' + (git branch --show-current)); $dirty = (git status --porcelain | Measure-Object -Line).Lines; if ($dirty -eq 0) { Write-Host '  working tree: clean' } else { Write-Host ('  working tree: dirty (' + $dirty + ' files)') -ForegroundColor Yellow }; Write-Host ''; Write-Host '=== Done ===' -ForegroundColor Green",
-      "problemMatcher": []
-    },
-    {
-      "label": "Agent: Recover terminal",
-      "type": "shell",
-      "command": "Write-Host 'Resetting terminal environment...'; $env:GIT_PAGER='cat'; $env:GH_PAGER='cat'; $env:PAGER='cat'; git config --global core.pager cat; Write-Host 'Pager settings reset. Terminal should be usable now.' -ForegroundColor Green",
       "problemMatcher": []
     },
     {
@@ -155,107 +108,23 @@
       "problemMatcher": []
     },
     {
-      "label": "GH: Checkout PR (clean)",
-      "type": "shell",
-      "command": "git reset --hard; git clean -fd; gh pr checkout ${input:prNumber}; git status -sb",
-      "problemMatcher": []
-    },
-    {
       "label": "GH: Merge PR (squash)",
       "type": "shell",
       "command": "gh pr merge ${input:prNumber} --squash --delete-branch",
       "problemMatcher": []
     },
     {
-      "label": "Git: Rebase onto staging (no editor)",
+      "label": "AEOS: Full status",
       "type": "shell",
-      "command": "git fetch --prune origin; git -c core.editor=true rebase origin/staging",
-      "problemMatcher": []
-    },
-    {
-      "label": "Git: Rebase continue",
-      "type": "shell",
-      "command": "git -c core.editor=true rebase --continue",
-      "problemMatcher": []
-    },
-    {
-      "label": "Git: Rebase abort",
-      "type": "shell",
-      "command": "git rebase --abort; git status -sb",
-      "problemMatcher": []
-    },
-    {
-      "label": "Git: Push force-with-lease",
-      "type": "shell",
-      "command": "git push --force-with-lease",
-      "problemMatcher": []
-    },
-    {
-      "label": "Git: Commit (message prompt)",
-      "type": "shell",
-      "command": "git add -A; git commit -m '${input:commitMessage}' --no-verify",
-      "problemMatcher": []
-    },
-    {
-      "label": "Agent: Spawn worktree agent",
-      "type": "shell",
-      "command": ".\\scripts\\spawn-worktree-agent.ps1",
-      "detail": "Spawn persistent SE agent in worktree (runs continuously, picks up work via assignment.json)",
-      "problemMatcher": []
-    },
-    {
-      "label": "Agent: Spawn worktree agent (dry run)",
-      "type": "shell",
-      "command": ".\\scripts\\spawn-worktree-agent.ps1 -DryRun",
-      "detail": "Preview what spawn-worktree-agent would do",
-      "problemMatcher": []
-    },
-    {
-      "label": "Worktree: Create for Issue",
-      "type": "shell",
-      "command": "git fetch --prune origin; $wtPath = '..\\wt-impl-${input:issueNumber}-${input:slug}'; $branch = 'agent/swe/${input:issueNumber}-${input:slug}'; Write-Host \"Creating worktree at $wtPath with branch $branch based on origin/staging...\" -ForegroundColor Cyan; git worktree add -b $branch $wtPath origin/staging; if ($LASTEXITCODE -eq 0) { Write-Host \"Worktree created successfully!\" -ForegroundColor Green; Write-Host \"  Path: $wtPath\"; Write-Host \"  Branch: $branch\"; Write-Host ''; Write-Host 'To open: code ' + $wtPath -ForegroundColor Yellow } else { Write-Host 'Failed to create worktree' -ForegroundColor Red }",
+      "command": ".\\scripts\\aeos-status.ps1",
       "problemMatcher": [],
-      "detail": "Create implementation worktree: wt-impl-<issue>-<slug> with branch agent/swe/<issue>-<slug>"
+      "detail": "Show AEOS state: heartbeat, assignment, worktrees, PRs, rate limits"
     },
     {
-      "label": "Worktree: List all",
+      "label": "Agent: Health check",
       "type": "shell",
-      "command": "Write-Host '=== Git Worktrees ===' -ForegroundColor Cyan; git worktree list; Write-Host ''",
-      "problemMatcher": [],
-      "detail": "List all existing git worktrees"
-    },
-    {
-      "label": "Worktree: Remove by name",
-      "type": "shell",
-      "command": "$wtPath = '..\\${input:worktreeName}'; Write-Host \"Removing worktree at $wtPath...\" -ForegroundColor Cyan; git worktree remove --force $wtPath; if ($LASTEXITCODE -eq 0) { Write-Host 'Worktree removed successfully!' -ForegroundColor Green } else { Write-Host 'Failed to remove worktree (may not exist or have uncommitted changes)' -ForegroundColor Red }",
-      "problemMatcher": [],
-      "detail": "Remove a worktree by folder name (e.g., wt-impl-123-fix-bug)"
-    },
-    {
-      "label": "Worktree: Prune stale",
-      "type": "shell",
-      "command": "Write-Host 'Pruning stale worktree references...' -ForegroundColor Cyan; git worktree prune -v; Write-Host 'Done!' -ForegroundColor Green",
-      "problemMatcher": [],
-      "detail": "Remove stale worktree references (for deleted folders)"
-    },
-    {
-      "label": "Agent: List worktrees",
-      "type": "shell",
-      "command": "git worktree list",
+      "command": "Write-Host '=== Agent Health Check ==='; Write-Host ''; Write-Host '[Git]' -ForegroundColor Cyan; git status -sb 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { Write-Host '  git: PASS' } else { Write-Host '  git: FAIL' -ForegroundColor Red }; Write-Host '[GitHub CLI]' -ForegroundColor Cyan; gh auth status 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { Write-Host '  gh auth: PASS' } else { Write-Host '  gh auth: FAIL' -ForegroundColor Red }; Write-Host '[Node]' -ForegroundColor Cyan; Write-Host ('  node: ' + (node --version)); Write-Host ('  pnpm: ' + (pnpm --version)); Write-Host '=== Done ===' -ForegroundColor Green",
       "problemMatcher": []
-    },
-    {
-      "label": "Agent: Clean worktree",
-      "type": "shell",
-      "command": "git worktree remove --force C:\\Dev\\CMC-Go-Worktrees\\wt-${input:issueNumber}; Write-Host 'Worktree removed' -ForegroundColor Green",
-      "problemMatcher": []
-    },
-    {
-      "label": "Agent: Cleanup stale branches (dry run)",
-      "type": "shell",
-      "command": ".\\scripts\\cleanup-agent-branches.ps1 -DryRun",
-      "problemMatcher": [],
-      "detail": "Preview which merged agent branches would be deleted"
     },
     {
       "label": "Agent: Cleanup stale branches",
@@ -265,58 +134,19 @@
       "detail": "Delete merged agent branches and prune stale worktrees"
     },
     {
-      "label": "Utility: Keep awake while VS Code running",
+      "label": "Utility: Keep awake",
       "type": "shell",
       "command": ".\\scripts\\keep-awake-while-vscode.ps1",
       "isBackground": true,
       "problemMatcher": [],
-      "detail": "Prevents Windows sleep while VS Code (Code.exe) is running. Stop the task to revert."
-    },
-    {
-      "label": "AEOS: Full status",
-      "type": "shell",
-      "command": ".\\scripts\\aeos-status.ps1",
-      "problemMatcher": [],
-      "detail": "Show complete AEOS state: heartbeat (with staleness), assignment, worktrees, PRs, rate limits, board"
-    },
-    {
-      "label": "AEOS: Start (spawn PE)",
-      "type": "shell",
-      "command": ".\\scripts\\aeos-start-pe.ps1",
-      "problemMatcher": [],
-      "detail": "Bootstrap AEOS by spawning Principal Engineer (who spawns TL, who spawns SE)"
+      "detail": "Prevents Windows sleep while VS Code is running"
     }
   ],
   "inputs": [
     {
       "id": "prNumber",
       "type": "promptString",
-      "description": "PR number to operate on"
-    },
-    {
-      "id": "commitMessage",
-      "type": "promptString",
-      "description": "Commit message"
-    },
-    {
-      "id": "issueNumber",
-      "type": "promptString",
-      "description": "GitHub Issue number"
-    },
-    {
-      "id": "agentPrompt",
-      "type": "promptString",
-      "description": "Prompt for the cloud agent"
-    },
-    {
-      "id": "slug",
-      "type": "promptString",
-      "description": "Short slug/description (e.g., fix-login, add-filter)"
-    },
-    {
-      "id": "worktreeName",
-      "type": "promptString",
-      "description": "Worktree folder name (e.g., wt-impl-123-fix-bug)"
+      "description": "PR number"
     }
   ]
 }

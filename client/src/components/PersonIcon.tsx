@@ -139,9 +139,6 @@ export function PersonIcon({
                 onClick={e => {
                   e.stopPropagation();
                   e.preventDefault();
-                  console.log("Edit button clicked in PersonIcon", {
-                    personId: person.personId,
-                  });
                   onEdit(person);
                 }}
                 onMouseDown={e => {

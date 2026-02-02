@@ -1648,13 +1648,6 @@ export function DistrictPanel({
 
   // Handle add person
   const handleAddPerson = async () => {
-    console.log("handleAddPerson called", {
-      selectedCampusId,
-      name: personForm.name,
-      role: personForm.role,
-      district: district?.id,
-    });
-
     if (!selectedCampusId) {
       console.error("No campus selected");
       alert("Please select a campus or location first");
@@ -1779,11 +1772,6 @@ export function DistrictPanel({
     if (personForm.childrenAges.length > 0) {
       mutationData.childrenAges = JSON.stringify(personForm.childrenAges);
     }
-
-    console.log(
-      "Creating person with data:",
-      JSON.stringify(mutationData, null, 2)
-    );
 
     // Call the mutation
     createPerson.mutate(mutationData, {
@@ -3925,12 +3913,6 @@ export function DistrictPanel({
                     onClick={e => {
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log("Add Person button clicked", {
-                        name: personForm.name,
-                        role: personForm.role,
-                        selectedCampusId,
-                        isPending: createPerson.isPending,
-                      });
                       if (
                         !personForm.name.trim() ||
                         !personForm.role.trim() ||
