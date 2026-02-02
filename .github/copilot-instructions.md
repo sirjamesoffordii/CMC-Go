@@ -43,7 +43,7 @@ Ops/CI/tooling reference (as-needed):
 ## Guardrails
 
 - Use GitHub Issues/PRs as the task bus.
-- Use worktrees by default (see `AGENTS.md` for the documented low-risk exception).
+- One Software Engineer at a time to prevent merge conflicts.
 - Keep diffs small and scoped.
 - Never commit secrets (`.env*` stays local; use platform/GitHub secrets).
 
