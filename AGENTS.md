@@ -506,6 +506,7 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | `check-rate-limits.ps1`      | GitHub API quota check          | Before expensive operations |
 | `check-ci-status.ps1`        | Human-readable CI status        | Diagnose build failures     |
 | `verify-merge.ps1`           | Post-merge verification         | After `gh pr merge`         |
+| `add-board-item.ps1`         | Add issue to board with status  | Prevents limbo items        |
 | `update-heartbeat.ps1`       | Update agent heartbeat          | Every 3 min in loop         |
 | `read-heartbeat.ps1`         | Safe heartbeat reader           | Monitor other agents        |
 | `spawn-worktree-agent.ps1`   | Spawn persistent SE in worktree | TL spawns SE once           |
