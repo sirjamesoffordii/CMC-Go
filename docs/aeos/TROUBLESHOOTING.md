@@ -94,6 +94,43 @@ git config --global credential.https://github.com.helper "!gh auth git-credentia
 
 ---
 
+## File Edit Desync (VS Code Buffer vs Disk)
+
+**Symptoms:** `replace_string_in_file` fails repeatedly, or `read_file` shows different content than `Get-Content` in terminal. ESLint reports old issues after edits.
+
+**Cause:** VS Code has unsaved in-memory buffer that differs from disk file.
+
+**Detection:**
+
+```powershell
+# Compare what read_file sees vs disk
+Get-Content "path/to/file.tsx" | Select-Object -First 10
+# If different from read_file output → desync
+```
+
+**Fix:**
+
+```powershell
+# Option 1: Save all VS Code buffers
+# Run VS Code command: workbench.action.files.saveAll
+
+# Option 2: Discard VS Code buffer, use disk
+git checkout -- path/to/file.tsx
+
+# Option 3: Use PowerShell for edits (bypasses VS Code)
+$c = [System.IO.File]::ReadAllText("$PWD\path\to\file.tsx")
+$c = $c.Replace('oldString', 'newString')
+[System.IO.File]::WriteAllText("$PWD\path\to\file.tsx", $c)
+```
+
+**Prevention:**
+
+- Run `git status -sb` before editing to check for dirty files
+- After batch edits, verify with `Get-Content | Select-Object -First N`
+- If file open in VS Code, prefer terminal edits or save explicitly first
+
+---
+
 ## VS Code `acceptResponseProgress` Glitch
 
 **Symptoms:** Error about `acceptResponseProgress`, chat unresponsive.
