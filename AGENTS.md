@@ -477,13 +477,27 @@ gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** 
 2. PE reviews comments and promotes to checklist in issue body
 3. Human checks items to approve for implementation
 
+**PE Review Responsibilities (CRITICAL):**
+
+Before promoting any TL/SE observation to the checklist, PE must verify:
+
+| Check        | Question                                                         |
+| ------------ | ---------------------------------------------------------------- |
+| Coherence    | Does this fix make architectural sense?                          |
+| Conflicts    | Could this break something else or conflict with existing items? |
+| Redundancy   | Is this already covered by another item?                         |
+| Scope        | Is the fix appropriately scoped (not too broad/narrow)?          |
+| Side effects | Could fixing this hurt another area?                             |
+
+**If conflict detected:** PE adds a reply comment explaining the issue and proposing a resolution before promoting.
+
 **Who contributes what:**
 
-| Role               | Perspective             | Example Observations              |
-| ------------------ | ----------------------- | --------------------------------- |
-| Principal Engineer | Architecture, oversight | Rate limits, agent coordination   |
-| Tech Lead          | Coordination, PR flow   | Assignment issues, merge problems |
-| Software Engineer  | Implementation, tooling | Test setup, file edits, patterns  |
+| Role               | Perspective                         | Example Observations                                |
+| ------------------ | ----------------------------------- | --------------------------------------------------- |
+| Principal Engineer | Architecture, oversight, **review** | Rate limits, agent coordination, conflict detection |
+| Tech Lead          | Coordination, PR flow               | Assignment issues, merge problems                   |
+| Software Engineer  | Implementation, tooling             | Test setup, file edits, patterns                    |
 
 ## Reference
 

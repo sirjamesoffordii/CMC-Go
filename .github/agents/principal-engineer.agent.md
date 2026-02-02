@@ -51,34 +51,66 @@ WHILE true:
     6. Check "Draft" items — approve Tech Lead issues (move to Todo) or reject
     7. Set priorities on board (High > Medium > Low)
     8. Review PRs if Tech Lead is busy
-    9. AEOS self-improvement: note friction, add to tracking issue
+    9. AEOS: Add own observations + Review TL/SE observations (see below)
     10. Wait 60s → LOOP
 ```
 
-## AEOS Self-Improvement
+## AEOS Self-Improvement (CRITICAL PE RESPONSIBILITY)
 
-Principal Engineer maintains a single tracking issue for workflow improvements.
+PE has THREE duties for AEOS issue #348:
 
-**Tracking Issue:** `[AEOS] Workflow Improvements` (find or create if missing)
+### 1. Add Your Own Observations
 
-**When you notice friction, inefficiency, or failure patterns:**
+When you notice friction, inefficiency, or failure patterns:
 
-1. Open the tracking issue
-2. Check existing items for conflicts/redundancy
-3. Add a checklist item: `[ ] **<title>** — <problem> → <proposed fix>`
-4. Human reviews and checks items to approve
-
-**Checklist item format:**
-
-```
-- [ ] **Rate limit fallback** — GraphQL quota exhausted → add REST API fallback
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>"
 ```
 
-**Rules:**
+**PE-specific observations:**
 
-- One tracking issue, not many small issues
-- Check for redundancy before adding
-- Keep items atomic and actionable
+- Rate limit patterns across agents
+- Agent coordination failures (heartbeat staleness, respawn issues)
+- Board/issue lifecycle problems
+- CI/CD pipeline inefficiencies
+- Architecture concerns from code review
+
+### 2. Review TL/SE Comments for Coherence
+
+Every loop iteration, check for new TL/SE comments on #348:
+
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
+gh issue view 348 --repo sirjamesoffordii/CMC-Go --comments
+```
+
+**Review criteria:**
+
+- Does the fix make sense architecturally?
+- Could this fix break something else?
+- Is this redundant with an existing item?
+- Is the scope appropriate (not too broad/narrow)?
+
+If valid → Promote to checklist in issue body
+If problematic → Reply with concerns, do NOT promote
+
+### 3. Promote Valid Observations to Pending Review
+
+Edit issue body to add validated items to the "Pending Review" checklist:
+
+```powershell
+# After reviewing a valid TL/SE comment, add to checklist:
+# - [ ] **<title>** — <problem> → <proposed fix>
+```
+
+**Conflict check before adding:**
+
+- Does this contradict an existing item?
+- Would implementing both cause issues?
+- Is there a better combined solution?
+
+If conflict detected → Add comment explaining the conflict, propose resolution
 
 ## Heartbeat
 
