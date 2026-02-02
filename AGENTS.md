@@ -266,6 +266,18 @@ $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 | Tech Lead          | `/activate Tech Lead`          |
 | Software Engineer  | `/activate Software Engineer`  |
 
+**CLI/Task Spawning:**
+
+| Method                       | Command/Task                                      |
+| ---------------------------- | ------------------------------------------------- |
+| Spawn PE via script          | `.\scripts\spawn-agent.ps1 -Agent PE`             |
+| Spawn TL via script          | `.\scripts\spawn-agent.ps1 -Agent TL`             |
+| Spawn SE via script          | `.\scripts\spawn-agent.ps1 -Agent SE`             |
+| Spawn with VS Code profile   | `.\scripts\spawn-agent.ps1 -Agent TL -UseProfile` |
+| VS Code Task: AEOS: Spawn PE | Ctrl+Shift+P → "Tasks: Run Task"                  |
+| VS Code Task: AEOS: Spawn TL | Ctrl+Shift+P → "Tasks: Run Task"                  |
+| VS Code Task: AEOS: Spawn SE | Ctrl+Shift+P → "Tasks: Run Task"                  |
+
 **Activation message format (EXACT - used by all spawn methods):**
 
 ```
@@ -299,8 +311,9 @@ Each agent file has a `model:` field in frontmatter (e.g., `model: GPT 5.2 Codex
 **To ensure correct model:**
 
 1. **Preferred method:** Open a fresh VS Code window, select the correct model in the model picker FIRST, then use `/activate <Agent Name>` prompt
-2. **Verify after spawn:** Ask "What model are you using?" in the first message
-3. **If wrong model:** Close the window and restart with correct model selected
+2. **Use VS Code profiles:** Create profiles (PE-Profile, TL-Profile, SE-Profile) with correct models, then use `.\scripts\spawn-agent.ps1 -Agent TL -UseProfile`
+3. **Verify after spawn:** Ask "What model are you using?" in the first message
+4. **If wrong model:** Close the window and restart with correct model selected
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
@@ -521,6 +534,7 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | `update-heartbeat.ps1`       | Update agent heartbeat          | Every 3 min in loop         |
 | `read-heartbeat.ps1`         | Safe heartbeat reader           | Monitor other agents        |
 | `spawn-worktree-agent.ps1`   | Spawn persistent SE in worktree | TL spawns SE once           |
+| `spawn-agent.ps1`            | Spawn any agent (PE/TL/SE)      | Human or agent restart      |
 | `cleanup-agent-branches.ps1` | Clean merged agent branches     | After several PRs merged    |
 | `aeos-status.ps1`            | Full AEOS system status         | Debugging coordination      |
 

@@ -278,6 +278,34 @@
       "command": ".\\scripts\\aeos-status.ps1",
       "problemMatcher": [],
       "detail": "Show complete AEOS state: heartbeat (with staleness), assignment, worktrees, PRs, rate limits, board"
+    },
+    {
+      "label": "AEOS: Start (spawn PE)",
+      "type": "shell",
+      "command": ".\\scripts\\aeos-start-pe.ps1",
+      "problemMatcher": [],
+      "detail": "Bootstrap AEOS by spawning Principal Engineer (who spawns TL, who spawns SE)"
+    },
+    {
+      "label": "AEOS: Spawn PE",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-agent.ps1 -Agent PE",
+      "problemMatcher": [],
+      "detail": "Spawn Principal Engineer agent in a new VS Code window"
+    },
+    {
+      "label": "AEOS: Spawn TL",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-agent.ps1 -Agent TL",
+      "problemMatcher": [],
+      "detail": "Spawn Tech Lead agent in a new VS Code window"
+    },
+    {
+      "label": "AEOS: Spawn SE",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-agent.ps1 -Agent SE",
+      "problemMatcher": [],
+      "detail": "Spawn Software Engineer agent in worktree"
     }
   ],
   "inputs": [
