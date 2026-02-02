@@ -132,21 +132,25 @@ Agents can propose improvements to the autonomous workflow itself.
 **Process:**
 
 1. Any agent notices friction, inefficiency, or failure pattern
-2. PE adds a checklist item to the tracking issue with:
+2. TL/SE add a **comment** to the tracking issue:
+   - Format: `**<role> observation:** <problem> → <suggested fix>`
+3. PE reviews comments and promotes valid ones to checklist items:
    - `[ ] **<title>** — <problem> → <proposed fix>`
-3. PE checks existing items for conflicts/redundancy before adding
-4. Human reviews tracking issue periodically:
+4. PE checks existing items for conflicts/redundancy before adding
+5. Human reviews tracking issue periodically:
    - Check item → approved for implementation
    - Delete item → rejected
    - Convert to Issue → needs dedicated work
 
+**Who contributes what:**
+
+| Role | Perspective             | Example Observations             |
+| ---- | ----------------------- | -------------------------------- |
+| PE   | Architecture, oversight | Rate limits, agent coordination  |
+| TL   | Coordination, PR flow   | Spawn issues, merge problems     |
+| SE   | Implementation, tooling | Test setup, file edits, patterns |
+
 **Where to review:** Single issue titled `[AEOS] Workflow Improvements`
-
-**Example checklist items:**
-
-- `[ ] **Rate limit fallback** — GraphQL quota exhausted → add REST API fallback`
-- `[ ] **Heartbeat contention** — concurrent writes fail → add file locking`
-- `[ ] **Spawn validation** — SE starts in wrong dir → add pre-flight check`
 
 ## Reference
 

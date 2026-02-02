@@ -116,6 +116,20 @@ Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest fi
 4. **NEVER stop** — always take next action
 5. **Stuck >5 min?** — Log it, move on
 
+## AEOS Feedback
+
+If you notice workflow friction (spawning issues, PR problems, board sync):
+
+1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
+2. Format: `**TL observation:** <problem> → <suggested fix>`
+3. PE reviews and promotes to checklist item if valid
+
+Examples:
+
+- Worktree cleanup failing after merge
+- Board status not updating on PR close
+- SE spawning in wrong directory
+
 ## Board Statuses
 
 | Status      | TL Action                     |

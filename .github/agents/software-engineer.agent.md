@@ -79,6 +79,20 @@ npx eslint <changed-files>  # Should show improvement
 4. **Tests fail?** — Fix them or explain why in PR
 5. **One Issue per PR** — no scope creep, no "bonus" features
 
+## AEOS Feedback
+
+If you notice workflow friction (tooling, patterns, common failures):
+
+1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
+2. Format: `**SE observation:** <problem> → <suggested fix>`
+3. PE reviews and promotes to checklist item if valid
+
+Examples:
+
+- Test setup repeatedly failing
+- File edit tool not working as expected
+- Missing patterns in CMC_GO_PATTERNS.md
+
 ## Heartbeat
 
 Update `.github/agents/heartbeat.json` every 3 min:
