@@ -141,24 +141,55 @@ gh pr view <num> --json state,mergeable,statusCheckRollup
 
 # If checks pass and code LGTM
 gh pr merge <num> --squash --delete-branch
+```
 
-# Periodically clean up merged branches (run after several merges)
+### Post-Merge Verification (MANDATORY)
+
+After EVERY `gh pr merge`, run verification:
+
+```powershell
+.\scripts\verify-merge.ps1 -PRNumber <num>
+```
+
+**If verification fails:**
+
+1. Check PR state on GitHub
+2. Re-attempt merge if needed
+3. If still failing, log to issue #348 and continue
+
+**Periodically clean up merged branches (run after several merges):**
+
+```powershell
 .\scripts\cleanup-agent-branches.ps1
 ```
 
-## Picking Next Issue
+## Picking Next Issue (PRIORITY QUEUE ENFORCEMENT)
 
 When no Software Engineer is active and Verify queue is empty, pick from Todo:
 
 ```powershell
-# Get Todo items from board
-$env:GH_PAGER = "cat"; gh project item-list 4 --owner sirjamesoffordii --format json |
+# Get Todo items from board, sorted by priority
+$env:GH_PAGER = "cat"
+$items = gh project item-list 4 --owner sirjamesoffordii --format json |
   ConvertFrom-Json | ForEach-Object { $_.items } |
-  Where-Object { $_.status -eq "Todo" } |
-  Select-Object @{N='Number';E={$_.content.number}}, @{N='Title';E={$_.content.title}}
+  Where-Object { $_.status -eq "Todo" }
+
+# Sort by priority rank: high=1, medium=2, low=3, null=4
+$priorityRank = @{ 'high'=1; 'medium'=2; 'low'=3 }
+$sorted = $items | Sort-Object {
+    $rank = $priorityRank[$_.priority]
+    if (-not $rank) { $rank = 4 }
+    $rank
+}
+
+# Pick the first (highest priority) item
+$next = $sorted | Select-Object -First 1
+if ($next) {
+    Write-Host "Next issue: #$($next.content.number) - $($next.content.title)" -ForegroundColor Cyan
+}
 ```
 
-Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest first.
+**CRITICAL:** Always respect priority order: `priority:high` > `priority:medium` > `priority:low` > oldest first.
 
 ## Tech Lead Rules
 

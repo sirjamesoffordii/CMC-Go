@@ -499,6 +499,19 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | Tech Lead          | Coordination, PR flow               | Assignment issues, merge problems                   |
 | Software Engineer  | Implementation, tooling             | Test setup, file edits, patterns                    |
 
+## Utility Scripts
+
+| Script                       | Purpose                         | Usage                       |
+| ---------------------------- | ------------------------------- | --------------------------- |
+| `check-rate-limits.ps1`      | GitHub API quota check          | Before expensive operations |
+| `check-ci-status.ps1`        | Human-readable CI status        | Diagnose build failures     |
+| `verify-merge.ps1`           | Post-merge verification         | After `gh pr merge`         |
+| `update-heartbeat.ps1`       | Update agent heartbeat          | Every 3 min in loop         |
+| `read-heartbeat.ps1`         | Safe heartbeat reader           | Monitor other agents        |
+| `spawn-worktree-agent.ps1`   | Spawn persistent SE in worktree | TL spawns SE once           |
+| `cleanup-agent-branches.ps1` | Clean merged agent branches     | After several PRs merged    |
+| `aeos-status.ps1`            | Full AEOS system status         | Debugging coordination      |
+
 ## Reference
 
 | Doc                                                               | Purpose          |
