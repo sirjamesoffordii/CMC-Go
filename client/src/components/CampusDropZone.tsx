@@ -19,7 +19,7 @@ export function CampusDropZone({
   children,
   canInteract = true,
 }: CampusDropZoneProps) {
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver: _isOver, canDrop: _canDrop }, drop] = useDrop(
     () => ({
       accept: "person",
       drop: (

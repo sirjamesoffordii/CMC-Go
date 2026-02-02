@@ -39,15 +39,6 @@ interface DistrictDirectorDropZoneProps {
   maskIdentity?: boolean;
 }
 
-interface Need {
-  id: number;
-  personId: string;
-  type: string;
-  description: string;
-  amount?: number | null;
-  isActive: boolean;
-}
-
 export function DistrictDirectorDropZone({
   person,
   onDrop,
@@ -59,7 +50,7 @@ export function DistrictDirectorDropZone({
   onQuickAddNameChange,
   onQuickAddSubmit,
   onQuickAddCancel,
-  onQuickAddClick,
+  onQuickAddClick: _onQuickAddClick,
   quickAddInputRef,
   districtId = null,
   canInteract = true,
@@ -79,7 +70,7 @@ export function DistrictDirectorDropZone({
   );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver: _isOver, canDrop: _canDrop }, drop] = useDrop(
     () => ({
       accept: "person",
       drop: (item: { personId: string; campusId: string | number }) => {
