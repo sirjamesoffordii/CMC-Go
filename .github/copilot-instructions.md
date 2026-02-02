@@ -66,7 +66,12 @@ Ops/CI/tooling reference (as-needed):
 - E2E (smoke): `pnpm e2e`
 - DB (dev): `pnpm db:push:yes`, `pnpm db:seed`, `pnpm db:reset`
 - Validation: `pnpm validate:agents`
-- Local DB (Docker): `docker-compose up -d` (MySQL 8.0, see `docker-compose.yml`)
+
+## Branch Strategy
+
+- **`staging`** — Safe place to fail and recover. All agent PRs target here.
+- **`main`** — Protected branch. Merges from `staging` after verification.
+- Agents always branch from and PR into `staging`.
 
 ## Pre-commit hooks
 

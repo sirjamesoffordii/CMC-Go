@@ -97,13 +97,17 @@ npx eslint <changed-files>  # Should show improvement
 
 ## Database Schema Changes
 
-If tests fail with "Unknown column" errors, sync the schema first:
+If tests fail with "Unknown column" errors, sync the schema:
 
 ```powershell
-pnpm db:push:yes  # Non-interactive, uses --force flag
+pnpm db:push:yes  # Non-interactive, 2min timeout
 ```
 
-**Note:** `pnpm db:push:dev` is interactive and will hang — always use `pnpm db:push:yes`.
+**Rules:**
+
+- Always use `pnpm db:push:yes` (never `pnpm db:push:dev` — it hangs)
+- Database is Railway staging — safe to fail and recover
+- If push times out, retry once then continue (note in PR)
 
 ## Software Engineer Rules
 
