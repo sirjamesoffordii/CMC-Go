@@ -132,6 +132,11 @@ Update `.github/agents/heartbeat.json` every 3 min:
 code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 ```
 
+**⚠️ MODEL INHERITANCE WARNING:** The spawned TL will inherit YOUR model (Claude Opus 4.5), not the `model: GPT 5.2 Codex` from the agent file. If you need TL on a specific model:
+
+1. Close the incorrectly-spawned TL window
+2. Open fresh VS Code, select correct model, manually activate TL
+
 ## Principal Engineer Rules
 
 1. **Principal Engineer manages Tech Lead only** — never Software Engineer directly
@@ -139,6 +144,41 @@ code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'
 3. **Principal Engineer can review any PR** — especially if Tech Lead busy
 4. **Principal Engineer maintains issue pipeline** — 5-10 executable issues in Todo
 5. **Principal Engineer approves Tech Lead drafts** — move from Draft to Todo
+
+## Common Gotchas (PE Must Know)
+
+### Board Pagination
+
+Always use `--limit 200` when querying board:
+
+```powershell
+gh project item-list 4 --owner sirjamesoffordii --limit 200 --format json
+```
+
+### Phantom File Changes
+
+If `client/src/components/DistrictPanel.tsx` appears modified but you didn't edit it:
+
+```powershell
+git checkout -- client/src/components/DistrictPanel.tsx
+```
+
+### Worktree Branch Confusion
+
+If main repo is on wrong branch, a worktree may have changed it:
+
+```powershell
+git worktree list
+cat .git/HEAD
+```
+
+### Adding Issues to Board
+
+Use the helper script to prevent limbo items:
+
+```powershell
+.\scripts\add-board-item.ps1 -IssueNumber 123 -Status "Todo"
+```
 
 ## Board Statuses
 

@@ -291,6 +291,14 @@ code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULL
 .\scripts\spawn-worktree-agent.ps1
 ```
 
+**⚠️ MODEL INHERITANCE WARNING:** The `code chat` command does NOT have a `--model` flag. The spawned agent inherits the model from the **current VS Code window**. If PE is running Claude Opus 4.5 and respawns TL, the TL will also use Claude Opus 4.5 (ignoring the `model:` field in the agent file).
+
+**To verify correct model after respawn:**
+
+1. Check spawned agent's first response
+2. Ask "What model are you using?" if uncertain
+3. If wrong model, close that window and manually start from a fresh VS Code window with the correct model selected
+
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
 ## Worktrees (SE Isolation)
@@ -512,6 +520,51 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | `spawn-worktree-agent.ps1`   | Spawn persistent SE in worktree | TL spawns SE once           |
 | `cleanup-agent-branches.ps1` | Clean merged agent branches     | After several PRs merged    |
 | `aeos-status.ps1`            | Full AEOS system status         | Debugging coordination      |
+
+## Known Issues & Gotchas
+
+### Board Pagination
+
+`gh project item-list` defaults to 50 items. The board has 180+ items. **Always use `--limit 200`:**
+
+```powershell
+gh project item-list 4 --owner sirjamesoffordii --limit 200 --format json
+```
+
+### Phantom File Modifications
+
+Sometimes files (especially `client/src/components/DistrictPanel.tsx`) appear modified without any edits. This can block commits due to pre-commit hooks.
+
+**Resolution:**
+
+```powershell
+# Discard phantom changes before committing
+git checkout -- <file>
+# Or reset all unstaged changes
+git checkout -- .
+```
+
+### Worktree Branch Confusion
+
+If the main repo appears to be on the wrong branch, check worktrees:
+
+```powershell
+git worktree list
+cat .git/HEAD  # Shows actual HEAD reference
+```
+
+A worktree may have checked out the main repo to a different branch. The main workspace should typically be on `staging`.
+
+### Model Inheritance on Respawn
+
+When using `code chat -r -m "Agent Name"` to respawn an agent, the new agent inherits the **current window's model**, NOT the model specified in the agent file's frontmatter.
+
+**If wrong model is used:**
+
+1. Close the incorrectly-spawned window
+2. Open a fresh VS Code window
+3. Select the correct model in Copilot settings
+4. Then activate the agent manually via `/activate <Agent Name>`
 
 ## Reference
 
