@@ -6,10 +6,13 @@
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { checkNotDemoDatabase } from "./utils/check-demo-db.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
+
+checkNotDemoDatabase(process.env.DATABASE_URL, "db:push:yes");
 
 // Spawn drizzle-kit push with auto-confirm
 const drizzleKit = spawn("npx", ["drizzle-kit", "push"], {
