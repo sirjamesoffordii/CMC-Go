@@ -21,7 +21,7 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 ## First move (always)
 
 1. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"; gh auth status`
-2. Register in heartbeat: `.github/agents/heartbeat.json`
+2. Register heartbeat: `./scripts/update-heartbeat.ps1 -Role PE -Status "starting"`
 3. Check Tech Lead heartbeat — respawn if stale (>6 min)
 4. Check board state
 
@@ -64,7 +64,7 @@ Repeat forever:
 ## Spawning Tech Lead
 
 ```powershell
-code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully autonomous. Don't ask questions. Loop forever. Start now."
+.\scripts\spawn-with-quota-check.ps1 -Role TL
 ```
 
 Only spawn 1 Tech Lead. Never spawn Software Engineer directly.

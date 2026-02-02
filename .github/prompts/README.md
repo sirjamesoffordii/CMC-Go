@@ -13,11 +13,12 @@ All prompt files use YAML frontmatter:
 
 ## Active prompts
 
-| File                          | Purpose                                         |
-| ----------------------------- | ----------------------------------------------- |
-| `tech-lead.prompt.md`         | Coordination/triage/deconflict mode             |
-| `software-engineer.prompt.md` | Implementation + evidence, or peer verification |
-| `loop.prompt.md`              | "Stay in loop mode until Done"                  |
+| File                           | Purpose                                         |
+| ------------------------------ | ----------------------------------------------- |
+| `principal-engineer.prompt.md` | Architect/oversee/improve (top of hierarchy)    |
+| `tech-lead.prompt.md`          | Coordination/triage/deconflict mode             |
+| `software-engineer.prompt.md`  | Implementation + evidence, or peer verification |
+| `loop.prompt.md`               | "Stay in loop mode until Done"                  |
 
 ## Notes
 

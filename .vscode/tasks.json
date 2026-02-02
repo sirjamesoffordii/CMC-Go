@@ -282,7 +282,7 @@
     {
       "label": "AEOS: Start (spawn PE)",
       "type": "shell",
-      "command": "Write-Host 'Starting AEOS...' -ForegroundColor Cyan; Write-Host ''; $rateCheck = .\\scripts\\check-rate-limits.ps1; if ($rateCheck.status -eq 'stop') { Write-Host \"Rate limit critical: $($rateCheck.message)\" -ForegroundColor Red; exit 1 }; Write-Host \"Rate limits: $($rateCheck.graphql) GraphQL, $($rateCheck.core) REST\" -ForegroundColor Green; Write-Host ''; Write-Host 'Spawning Principal Engineer...' -ForegroundColor Yellow; code chat -r -m 'Principal Engineer' -a AGENTS.md 'You are Principal Engineer. You are fully autonomous. Do not ask questions. Loop forever. Start now.'",
+      "command": ".\\scripts\\aeos-start-pe.ps1",
       "problemMatcher": [],
       "detail": "Bootstrap AEOS by spawning Principal Engineer (who spawns TL, who spawns SE)"
     }

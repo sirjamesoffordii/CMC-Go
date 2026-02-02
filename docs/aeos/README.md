@@ -77,8 +77,12 @@ pnpm db:setup
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 gh auth status
 
-# 7. Boot PE
-code chat -r -m "Principal Engineer" -a AGENTS.md "You are PE-1. Start."
+# 7. Boot AEOS (spawns Principal Engineer)
+
+# Preferred: use the VS Code task "AEOS: Start (spawn PE)"
+
+# Or run the bootstrap script directly:
+.\scripts\aeos-start-pe.ps1
 ```
 
 ### Key Files
@@ -98,8 +102,8 @@ code chat -r -m "Principal Engineer" -a AGENTS.md "You are PE-1. Start."
 
 - Every 3 min: Agents update their entry
 - Stale >6 min: Senior agent respawns (PE respawns TL)
-- Core agents: `["PE-1", "TL-1", "TL-2"]`
-- Non-core (SE-\*): Ephemeral, delete if stale
+- Core agents: `["PE", "TL", "SE"]`
+- SE is persistent (runs continuously in a worktree)
 
 ---
 
