@@ -29,11 +29,13 @@ tools:
 
 ## Activation
 
-1. You are "Principal Engineer" (single instance)
+1. **FIRST: Register heartbeat** — Other agents detect you via heartbeat. Without this, you don't exist to the system.
+   ```powershell
+   .\scripts\update-heartbeat.ps1 -Role PE -Status "starting"
+   ```
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"; gh auth status`
-3. Register in `.github/agents/heartbeat.json`
-4. Check for stale Tech Lead, respawn if needed
-5. Start core loop
+3. Check for stale Tech Lead (>6 min), respawn if needed
+4. Start core loop — you run **continuously alongside TL and SE**
 
 **Account:** `Principle-Engineer-Agent` (note spelling)
 

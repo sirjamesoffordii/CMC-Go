@@ -15,17 +15,18 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ## Architecture
 
 ```
-Principal Engineer (1 instance, continuous)
- └── Tech Lead (1 instance, continuous)
-      └── Software Engineer (1 instance, continuous)
+Principal Engineer (continuous) ─┬─ Tech Lead (continuous) ─┬─ Software Engineer (continuous)
+                                 │                          │
+All 3 agents run simultaneously in separate VS Code windows
 ```
 
-**Why this structure:**
+**All 3 agents run in parallel:**
 
-- **Principal Engineer** maintains issue pipeline, respawns Tech Lead if stale
-- **Tech Lead** coordinates work via assignment file, reviews/merges PRs
-- **Software Engineer** implements issues sequentially, creates PRs, returns to idle
-- Only 1 Software Engineer at a time prevents merge conflicts
+- **Principal Engineer** — monitors heartbeats, creates issues, respawns stale TL
+- **Tech Lead** — assigns work via `assignment.json`, reviews/merges PRs
+- **Software Engineer** — implements issues, creates PRs, returns to idle
+
+**Critical invariant:** Heartbeat registration is the FIRST action on activation. Without a heartbeat, an agent doesn't exist to the system.
 
 ## Roles
 

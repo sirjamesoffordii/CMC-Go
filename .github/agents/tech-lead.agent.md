@@ -29,10 +29,12 @@ tools:
 
 ## Activation
 
-1. You are "Tech Lead" (single instance)
+1. **FIRST: Register heartbeat** — Other agents detect you via heartbeat. Without this, you don't exist to the system.
+   ```powershell
+   .\scripts\update-heartbeat.ps1 -Role TL -Status "starting"
+   ```
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"; gh auth status`
-3. Register in `.github/agents/heartbeat.json`
-4. Start core loop
+3. Start core loop — you run **continuously alongside PE and SE**
 
 ## Core Loop
 

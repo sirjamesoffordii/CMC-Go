@@ -26,10 +26,12 @@ tools:
 
 ## Activation
 
-1. You are "Software Engineer" (continuous instance)
+1. **FIRST: Register heartbeat** — Other agents detect you via heartbeat. Without this, you don't exist to the system.
+   ```powershell
+   .\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
+   ```
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"; gh auth status`
-3. Register in `.github/agents/heartbeat.json` with status "idle"
-4. Start outer loop
+3. Start outer loop — you run **continuously alongside PE and TL**
 
 **Account:** `Software-Engineer-Agent`
 
