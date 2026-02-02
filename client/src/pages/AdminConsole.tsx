@@ -27,7 +27,6 @@ import {
   CheckCircle2,
   Clock,
   Bug,
-  Settings,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -75,30 +74,9 @@ export default function AdminConsole() {
     connected: false,
     status: "checking",
   });
+  const [importModalOpen, setImportModalOpen] = useState(false);
 
-  // Redirect non-admins to home
-  useEffect(() => {
-    if (!authLoading && (!user || user.role !== "CMC_GO_ADMIN")) {
-      toast.error("Access denied - Admin privileges required");
-      setLocation("/");
-    }
-  }, [user, authLoading, setLocation]);
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Don't render if not admin (redirect will happen via useEffect)
-  if (!user || user.role !== "CMC_GO_ADMIN") {
-    return null;
-  }
-
-  // Fetch data
+  // Fetch data - must be called unconditionally (before any early returns)
   const { data: allPeople = [], isLoading: peopleLoading } =
     trpc.people.list.useQuery();
   const { data: districts = [], isLoading: districtsLoading } =
@@ -108,7 +86,7 @@ export default function AdminConsole() {
   const { data: metrics } = trpc.metrics.get.useQuery();
   const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
 
-  // Calculate stats
+  // Calculate stats - must be called unconditionally
   const stats = useMemo(() => {
     const totalPeople = allPeople.length;
     const totalDistricts = districts.length;
@@ -147,7 +125,7 @@ export default function AdminConsole() {
     };
   }, [allPeople, districts, campuses, allNeeds, metrics]);
 
-  // Check database health
+  // Check database health - must be called unconditionally
   useEffect(() => {
     const checkDbHealth = async () => {
       try {
@@ -190,10 +168,35 @@ export default function AdminConsole() {
     };
 
     checkDbHealth();
-  }, [NODE_ENV, peopleLoading, allPeople.length]);
+  }, [peopleLoading, allPeople.length]);
 
-  const [importModalOpen, setImportModalOpen] = useState(false);
+  // Redirect non-admins to home
+  useEffect(() => {
+    if (!authLoading && (!user || user.role !== "CMC_GO_ADMIN")) {
+      toast.error("Access denied - Admin privileges required");
+      setLocation("/");
+    }
+  }, [user, authLoading, setLocation]);
 
+  // Early returns AFTER all hooks
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  // Don't render if not admin (redirect will happen via useEffect)
+  if (!user || user.role !== "CMC_GO_ADMIN") {
+    return null;
+  }
+
+  // Data loading check (all hooks already called above)
+  const _isLoading = peopleLoading || districtsLoading || campusesLoading;
+
+  // Helper functions (not hooks, safe after early returns)
   const handleImportContacts = () => {
     setImportModalOpen(true);
   };
@@ -230,8 +233,9 @@ export default function AdminConsole() {
       const lines: string[] = [];
       lines.push(headers.join(","));
 
-      for (const p of allPeople as any[]) {
-        lines.push(headers.map(h => csvEscape(p?.[h])).join(","));
+      for (const p of allPeople) {
+        const record = p as Record<string, unknown>;
+        lines.push(headers.map(h => csvEscape(record[h])).join(","));
       }
 
       // Add UTF-8 BOM to help Excel open correctly
@@ -261,8 +265,8 @@ export default function AdminConsole() {
         string,
         Array<{ id: number; name: string; districtId: string }>
       >();
-      for (const c of campuses as any[]) {
-        if (!c?.districtId) continue;
+      for (const c of campuses) {
+        if (!c.districtId) continue;
         const arr = campusesByDistrictId.get(c.districtId) ?? [];
         arr.push({ id: c.id, name: c.name, districtId: c.districtId });
         campusesByDistrictId.set(c.districtId, arr);
@@ -272,8 +276,8 @@ export default function AdminConsole() {
         string,
         Array<{ id: string; name: string; region: string }>
       >();
-      for (const d of districts as any[]) {
-        const region = d?.region ?? "Unknown";
+      for (const d of districts) {
+        const region = d.region ?? "Unknown";
         const arr = regionMap.get(region) ?? [];
         arr.push({ id: d.id, name: d.name, region });
         regionMap.set(region, arr);
