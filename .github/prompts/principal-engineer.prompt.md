@@ -35,23 +35,20 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## AEOS Self-Improvement
 
-PE is responsible for improving the autonomous workflow.
+PE maintains a single tracking issue: `[AEOS] Workflow Improvements`
 
 **When you notice friction, inefficiency, or failure patterns:**
 
-1. Create a Draft issue with label `aeos-improvement`
-2. Title: `[AEOS] <improvement description>`
-3. Body: Problem observed, proposed fix, expected benefit
+1. Find the tracking issue (or create if missing)
+2. Check existing items — avoid duplicates/conflicts
+3. Add checklist item: `[ ] **<title>** — <problem> → <proposed fix>`
 
-**Human reviews** Draft column periodically and approves (→ Todo) or rejects.
+**Human reviews** the tracking issue periodically and checks items to approve.
 
-Examples:
+**Examples:**
 
-- Heartbeat protocol isn't working → propose fix
-- SE keeps failing at same step → propose guardrail
-- Rate limits hit often → propose mitigation
-
-**Location for AEOS issues:** Same board, Draft status, `aeos-improvement` label.
+- `[ ] **Rate limit fallback** — quota exhausted → REST API fallback`
+- `[ ] **Heartbeat locking** — concurrent writes fail → add mutex`
 
 ## Operating loop
 

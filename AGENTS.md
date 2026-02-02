@@ -127,20 +127,26 @@ git branch -d agent/se/<issue>-<slug>
 
 Agents can propose improvements to the autonomous workflow itself.
 
+**Tracking Issue:** `[AEOS] Workflow Improvements` (pinned, stays open)
+
 **Process:**
 
 1. Any agent notices friction, inefficiency, or failure pattern
-2. PE creates a **Draft** issue with label `aeos-improvement`
-3. Title format: `[AEOS] <improvement description>`
-4. Human reviews Draft column and approves (→ Todo) or closes
+2. PE adds a checklist item to the tracking issue with:
+   - `[ ] **<title>** — <problem> → <proposed fix>`
+3. PE checks existing items for conflicts/redundancy before adding
+4. Human reviews tracking issue periodically:
+   - Check item → approved for implementation
+   - Delete item → rejected
+   - Convert to Issue → needs dedicated work
 
-**Where to review:** Board Draft column, filter by `aeos-improvement` label.
+**Where to review:** Single issue titled `[AEOS] Workflow Improvements`
 
-**Examples:**
+**Example checklist items:**
 
-- `[AEOS] Add rate limit fallback to REST API`
-- `[AEOS] Fix heartbeat write contention`
-- `[AEOS] Improve spawn script error handling`
+- `[ ] **Rate limit fallback** — GraphQL quota exhausted → add REST API fallback`
+- `[ ] **Heartbeat contention** — concurrent writes fail → add file locking`
+- `[ ] **Spawn validation** — SE starts in wrong dir → add pre-flight check`
 
 ## Reference
 

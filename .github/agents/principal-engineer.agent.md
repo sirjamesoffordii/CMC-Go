@@ -49,27 +49,34 @@ WHILE true:
     6. Check "Draft" items — approve TL issues (move to Todo) or reject
     7. Set priorities on board (High > Medium > Low)
     8. Review PRs if TL is busy
-    9. AEOS self-improvement: note friction, create Draft issues with label `aeos-improvement`
+    9. AEOS self-improvement: note friction, add to tracking issue
     10. Wait 60s → LOOP
 ```
 
 ## AEOS Self-Improvement
 
-PE is responsible for improving the autonomous workflow.
+PE maintains a single tracking issue for workflow improvements.
+
+**Tracking Issue:** `[AEOS] Workflow Improvements` (find or create if missing)
 
 **When you notice friction, inefficiency, or failure patterns:**
 
-1. Create a Draft issue with label `aeos-improvement`
-2. Title: `[AEOS] <improvement description>`
-3. Body: Problem observed, proposed fix, expected benefit
+1. Open the tracking issue
+2. Check existing items for conflicts/redundancy
+3. Add a checklist item: `[ ] **<title>** — <problem> → <proposed fix>`
+4. Human reviews and checks items to approve
 
-**Human reviews** Draft column periodically and approves (→ Todo) or rejects.
+**Checklist item format:**
 
-Examples:
+```
+- [ ] **Rate limit fallback** — GraphQL quota exhausted → add REST API fallback
+```
 
-- Heartbeat not updating → `[AEOS] Fix heartbeat write contention`
-- SE fails worktree check → `[AEOS] Add pre-flight validation to spawn script`
-- Rate limits → `[AEOS] Add REST API fallback for board queries`
+**Rules:**
+
+- One tracking issue, not many small issues
+- Check for redundancy before adding
+- Keep items atomic and actionable
 
 ## Heartbeat
 
