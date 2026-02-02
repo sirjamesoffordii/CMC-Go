@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
@@ -6,7 +6,6 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
-import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { MobileDrawer } from "@/components/MobileDrawer";
 import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
@@ -14,10 +13,6 @@ import {
   Calendar,
   Pencil,
   Share2,
-  Copy,
-  Mail,
-  MessageCircle,
-  Check,
   Upload,
   Menu,
   LogIn,
@@ -162,7 +157,8 @@ export default function Home() {
   const [peoplePanelWidth, setPeoplePanelWidth] = useState(100); // full screen when open
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingPeople, setIsResizingPeople] = useState(false);
-  const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
+  // State maintained for future header image display feature
+  const [_headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string>("#1a1a1a");
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>("");
@@ -179,8 +175,6 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [tableButtonHovered, setTableButtonHovered] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
 
@@ -238,15 +232,16 @@ export default function Home() {
     retry: false, // Don't retry on auth errors
   });
 
-  const districts = districtsQuery.data || [];
-  const allCampuses = campusesQuery.data || [];
-  const allPeople = peopleQuery.data || [];
-
-  const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false, // Don't retry on auth errors
-  });
+  // Wrap derived data in useMemo to prevent hook dependency warnings
+  const districts = useMemo(
+    () => districtsQuery.data || [],
+    [districtsQuery.data]
+  );
+  const allCampuses = useMemo(
+    () => campusesQuery.data || [],
+    [campusesQuery.data]
+  );
+  const allPeople = useMemo(() => peopleQuery.data || [], [peopleQuery.data]);
 
   // Fetch saved header image URL (fresh presigned URL generated on each request)
   const { data: savedHeaderImage } = trpc.settings.getHeaderImageUrl.useQuery();
@@ -339,53 +334,16 @@ export default function Home() {
     },
   });
 
-  // Handle logo upload
-  const handleLogoUpload = async (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result as string;
-      // Upload logo using the same pattern as header image
-      uploadHeaderImage.mutate(
-        {
-          imageData: base64Data,
-          fileName: `logo-${Date.now()}-${file.name}`,
-          backgroundColor: "",
-        },
-        {
-          onSuccess: data => {
-            setHeaderLogoUrl(data.url);
-            // Save logo URL to settings
-            updateSetting.mutate({ key: "headerLogoUrl", value: data.url });
-          },
-        }
-      );
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Handle background color change
-  const handleBgColorChange = (color: string) => {
-    setHeaderBgColor(color);
-    updateSetting.mutate({ key: "headerBgColor", value: color });
-  };
-
   // Set header image from database on load (fresh presigned URL)
   useEffect(() => {
-    console.log(
-      "[Header] savedHeaderImage raw:",
-      JSON.stringify(savedHeaderImage)
-    );
     if (savedHeaderImage && savedHeaderImage.url) {
-      console.log("[Header] Setting header image URL:", savedHeaderImage.url);
       setHeaderImageUrl(savedHeaderImage.url);
     }
   }, [savedHeaderImage]);
 
   // Set background color from database on load
   useEffect(() => {
-    console.log("[Header] savedBgColor raw:", JSON.stringify(savedBgColor));
     if (savedBgColor && savedBgColor.value) {
-      console.log("[Header] Setting bg color:", savedBgColor.value);
       setHeaderBgColor(savedBgColor.value);
     }
   }, [savedBgColor]);
@@ -397,19 +355,19 @@ export default function Home() {
     }
   }, [savedHeaderHeight]);
 
+  // Stable reference to updateSetting.mutate for useEffect dependencies
+  const updateSettingMutate = useCallback(
+    (params: { key: string; value: string }) => updateSetting.mutate(params),
+    [updateSetting]
+  );
+
   // Clear "National Director" from saved header text if it exists (legacy default)
   useEffect(() => {
     if (savedHeaderText?.value === "National Director") {
       setHeaderText("");
-      updateSetting.mutate({ key: "headerText", value: "" });
+      updateSettingMutate({ key: "headerText", value: "" });
     }
-  }, [savedHeaderText]);
-
-  // Header resize handlers
-  const handleHeaderResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingHeader(true);
-  };
+  }, [savedHeaderText, updateSettingMutate]);
 
   useEffect(() => {
     if (!isResizingHeader) return;
@@ -435,7 +393,7 @@ export default function Home() {
           }
         );
         // Use a simple approach - just save via the mutation pattern
-      } catch (_e) {
+      } catch {
         console.error("Failed to save header height");
       }
     };
@@ -521,14 +479,6 @@ export default function Home() {
     updateURLWithViewState(viewState);
   }, [viewState]);
 
-  const handleViewStateChange = (newViewState: ViewState) => {
-    setViewState(newViewState);
-    // Keep selectedDistrictId consistent with URL/view state
-    if (newViewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(newViewState.districtId);
-    }
-  };
-
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
@@ -560,39 +510,6 @@ export default function Home() {
         panelOpen: true,
       };
       setViewState(newViewState);
-    }
-  };
-
-  // Region selection: Sets ViewMode to "region", clears district/campus scope
-  const handleRegionSelect = (regionId: string) => {
-    const newViewState: ViewState = {
-      ...viewState,
-      mode: "region",
-      regionId,
-      districtId: null,
-      campusId: null,
-      panelOpen: false,
-    };
-    setViewState(newViewState);
-    setSelectedDistrictId(null);
-  };
-
-  // Campus selection: Updates viewState with campus, district, and region
-  // Region extracted from district (database or DISTRICT_REGION_MAP fallback)
-  const handleCampusSelect = (campusId: number) => {
-    const campus = allCampuses.find(c => c.id === campusId);
-    if (campus && campus.districtId) {
-      const regionId = extractRegionForViewState(campus.districtId, districts);
-      const newViewState: ViewState = {
-        ...viewState,
-        mode: "campus",
-        campusId,
-        districtId: campus.districtId,
-        regionId: regionId,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-      setSelectedDistrictId(campus.districtId);
     }
   };
 
