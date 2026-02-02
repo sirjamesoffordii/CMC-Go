@@ -17,23 +17,23 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ```
 Principal Engineer (1 instance, continuous)
  └── Tech Lead (1 instance, continuous)
-      └── Software Engineer (1 at a time, session-based, in worktree)
+      └── Software Engineer (1 instance, continuous)
 ```
 
 **Why this structure:**
 
 - **Principal Engineer** maintains issue pipeline, respawns Tech Lead if stale
-- **Tech Lead** coordinates work, spawns Software Engineer, reviews/merges PRs
-- **Software Engineer** implements ONE issue in isolated worktree, then exits
+- **Tech Lead** coordinates work via assignment file, reviews/merges PRs
+- **Software Engineer** implements issues sequentially, creates PRs, returns to idle
 - Only 1 Software Engineer at a time prevents merge conflicts
 
 ## Roles
 
-| Role               | Account                  | Spawned By         | Purpose                       |
+| Role               | Account                  | Managed By         | Purpose                       |
 | ------------------ | ------------------------ | ------------------ | ----------------------------- |
 | Principal Engineer | Principle-Engineer-Agent | Human              | Issues, priorities, oversight |
 | Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review       |
-| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation (worktree)     |
+| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation                |
 
 **Behavior files:** `.github/agents/{role}.agent.md`
 
@@ -41,13 +41,13 @@ Principal Engineer (1 instance, continuous)
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status      | Owner                        | Action                               |
-| ----------- | ---------------------------- | ------------------------------------ |
-| Todo        | Tech Lead                    | Spawn Software Engineer to implement |
-| In Progress | Software Engineer            | Being worked in worktree             |
-| Verify      | Tech Lead/Principal Engineer | Review and merge PR                  |
-| Blocked     | Principal Engineer           | Needs architectural decision         |
-| Done        | —                            | Merged and closed                    |
+| Status      | Owner                        | Action                       |
+| ----------- | ---------------------------- | ---------------------------- |
+| Todo        | Tech Lead                    | Assign to Software Engineer  |
+| In Progress | Software Engineer            | Being implemented            |
+| Verify      | Tech Lead/Principal Engineer | Review and merge PR          |
+| Blocked     | Principal Engineer           | Needs architectural decision |
+| Done        | —                            | Merged and closed            |
 
 **IDs (for GraphQL):**
 
@@ -60,19 +60,18 @@ Principal Engineer (1 instance, continuous)
 
 ```json
 {
-  "PrincipalEngineer": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
-  "TechLead": {
-    "ts": "2026-02-02T12:00:00Z",
-    "status": "reviewing-pr",
-    "pr": 123
-  },
-  "SoftwareEngineer": {
-    "ts": "2026-02-02T12:00:00Z",
-    "status": "implementing",
-    "issue": 42,
-    "worktree": "wt-42"
-  }
+  "PE": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
+  "TL": { "ts": "2026-02-02T12:00:00Z", "status": "reviewing-pr", "pr": 123 },
+  "SE": { "ts": "2026-02-02T12:00:00Z", "status": "implementing", "issue": 42 }
 }
+```
+
+**Update via script:**
+
+```powershell
+.\scripts\update-heartbeat.ps1 -Role TL -Status "reviewing-pr-123" -PR 123
+.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42
+.\scripts\update-heartbeat.ps1 -Role PE -Status "monitoring"
 ```
 
 **Protocol:**
@@ -126,35 +125,26 @@ $assignment = @{
 $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 ```
 
-## Spawning
+## Agent Startup
 
 ```powershell
-# Principal Engineer spawns Tech Lead (only 1 Tech Lead at a time)
-code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully autonomous. Don't ask questions. Loop forever. Start now."
+# Human starts Principal Engineer
+code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. Loop forever. Start now."
 
-# Tech Lead spawns Software Engineer via worktree script (only 1 Software Engineer at a time)
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+# Principal Engineer starts Tech Lead (only 1 at a time)
+code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
+
+# Tech Lead starts Software Engineer (only 1 at a time)
+code chat -r -m "Software Engineer" -a AGENTS.md "You are Software Engineer. Loop forever. Start now."
 ```
 
-**Rules:**
+All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
-1. Principal Engineer spawns exactly 1 Tech Lead
-2. Tech Lead spawns exactly 1 Software Engineer at a time using the worktree script
-3. Tech Lead waits for Software Engineer to complete (PR merged) before spawning next Software Engineer
+## Branch Cleanup
 
-## Software Engineer Worktree Workflow
-
-Software Engineer always works in an isolated worktree, never the main repo:
+After PRs are merged, periodically clean up old branches:
 
 ```powershell
-# Worktree created by spawn script at:
-C:\Dev\CMC-Go-Worktrees\wt-<issue>
-
-# After PR merged, Tech Lead cleans up:
-git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
-git branch -d agent/se/<issue>-<slug>
-
-# Periodic cleanup (after several merges):
 .\scripts\cleanup-agent-branches.ps1
 ```
 
@@ -171,8 +161,8 @@ git branch -d agent/se/<issue>-<slug>
 2. **Small diffs** — Optimize for reviewability
 3. **Evidence in PRs** — Commands + results
 4. **Never stop** — Loop until Done or Blocked
-5. **Worktree isolation** — Software Engineer never works in main repo
-6. **Check rate limits** — Before spawning or assigning, verify quota
+5. **One SE at a time** — Wait for PR merge before next assignment
+6. **Check rate limits** — Before assigning work, verify quota
 
 ## Rate Limits
 
@@ -199,14 +189,11 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 **Scaling guidance:**
 
-| Concurrent Agents                                         | Expected GraphQL/hr | Safe?                 |
-| --------------------------------------------------------- | ------------------- | --------------------- |
-| 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer  | ~500-1000           | ✅ Yes                |
-| 1 Principal Engineer + 1 Tech Lead + 2 Software Engineers | ~1000-2000          | ⚠️ Monitor            |
-| 1 Principal Engineer + 1 Tech Lead + 3 Software Engineers | ~1500-3000          | ⚠️ Monitor closely    |
-| More than 3 Software Engineers                            | ~2000+              | ❌ Risk of rate limit |
+| Configuration                                            | Expected GraphQL/hr | Safe?  |
+| -------------------------------------------------------- | ------------------- | ------ |
+| 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer | ~500-1000           | ✅ Yes |
 
-**Note:** Model token limits (Claude Opus 4.5) are plan-dependent and not directly observable. If agents start failing with auth/quota errors, reduce concurrency.
+**Note:** Model token limits (Claude Opus 4.5) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
 ## AEOS Self-Improvement
 
@@ -229,11 +216,11 @@ Agents can propose improvements to the autonomous workflow itself.
 
 **Who contributes what:**
 
-| Role               | Perspective             | Example Observations             |
-| ------------------ | ----------------------- | -------------------------------- |
-| Principal Engineer | Architecture, oversight | Rate limits, agent coordination  |
-| Tech Lead          | Coordination, PR flow   | Spawn issues, merge problems     |
-| Software Engineer  | Implementation, tooling | Test setup, file edits, patterns |
+| Role               | Perspective             | Example Observations              |
+| ------------------ | ----------------------- | --------------------------------- |
+| Principal Engineer | Architecture, oversight | Rate limits, agent coordination   |
+| Tech Lead          | Coordination, PR flow   | Assignment issues, merge problems |
+| Software Engineer  | Implementation, tooling | Test setup, file edits, patterns  |
 
 **Where to review:** Single issue titled `[AEOS] Workflow Improvements`
 

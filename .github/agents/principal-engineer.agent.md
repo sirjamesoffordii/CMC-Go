@@ -100,7 +100,7 @@ code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully auton
 
 ## Principal Engineer Rules
 
-1. **Principal Engineer spawns Tech Lead only** — never Software Engineer directly
+1. **Principal Engineer manages Tech Lead only** — never Software Engineer directly
 2. **Principal Engineer respawns stale Tech Lead** — Tech Lead must be alive
 3. **Principal Engineer can review any PR** — especially if Tech Lead busy
 4. **Principal Engineer maintains issue pipeline** — 5-10 executable issues in Todo
@@ -119,14 +119,14 @@ code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully auton
 
 ```
 Principal Engineer (continuous) — reviews, creates issues, monitors heartbeat
-  └── Tech Lead (continuous) → spawns Software Engineer via worktree, reviews PRs
-        └── Software Engineer (session) → implements in isolated worktree
+  └── Tech Lead (continuous) → assigns work to SE, reviews PRs
+        └── Software Engineer (continuous) → implements issues sequentially
 ```
 
 **Constraints:**
 
 - Only 1 Tech Lead at a time
-- Tech Lead spawns only 1 Software Engineer at a time via `spawn-worktree-agent.ps1`
-- Software Engineer works in isolated worktree, never main repo
+- Tech Lead assigns only 1 issue at a time via `assignment.json`
+- Software Engineer runs continuously, picks up assignments
 
 **NOW START. Auth, register heartbeat, monitor Tech Lead, maintain board. Loop forever. NO QUESTIONS.**

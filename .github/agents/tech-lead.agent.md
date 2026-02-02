@@ -92,13 +92,15 @@ Write-Host "Assigned issue #$issue to Software Engineer"
 
 ## Heartbeat
 
-Update `.github/agents/heartbeat.json` every 3 min:
+Update every 3 min using the heartbeat script:
 
-```json
-{ "TechLead": { "ts": "<ISO-8601>", "status": "reviewing-pr", "pr": 123 } }
+```powershell
+.\scripts\update-heartbeat.ps1 -Role TL -Status "monitoring"
+.\scripts\update-heartbeat.ps1 -Role TL -Status "reviewing-pr" -PR 123
+.\scripts\update-heartbeat.ps1 -Role TL -Status "assigning" -Issue 42
 ```
 
-**Monitor Software Engineer:** Check Software Engineer heartbeat status. If "idle" and no assignment.json, assign next issue.
+**Monitor Software Engineer:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue.
 
 ## PR Review
 
@@ -108,9 +110,6 @@ gh pr view <num> --json state,mergeable,statusCheckRollup
 
 # If checks pass and code LGTM
 gh pr merge <num> --squash --delete-branch
-
-# Clean up worktree after merge
-git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
 
 # Periodically clean up merged branches (run after several merges)
 .\scripts\cleanup-agent-branches.ps1
@@ -133,33 +132,26 @@ Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest fi
 ## Tech Lead Rules
 
 1. **NEVER edit code** — delegate to Software Engineer
-2. **NEVER spawn Software Engineer directly** — use worktree script
-3. **Only 1 Software Engineer at a time** — wait for completion
-4. **NEVER stop** — always take next action
-5. **Stuck >5 min?** — Log it, move on
+2. **Only 1 Software Engineer at a time** — wait for PR merge before next assignment
+3. **NEVER stop** — always take next action
+4. **Stuck >5 min?** — Log it, move on
 
 ## AEOS Feedback
 
-If you notice workflow friction (spawning issues, PR problems, board sync):
+If you notice workflow friction, add a comment to the `[AEOS] Workflow Improvements` issue:
 
-1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
-2. Format: `**Tech Lead observation:** <problem> → <suggested fix>`
-3. Principal Engineer reviews and promotes to checklist item if valid
+- Format: `**Tech Lead observation:** <problem> → <suggested fix>`
 
-Examples:
-
-- Worktree cleanup failing after merge
-- Board status not updating on PR close
-- SE spawning in wrong directory
+Examples: Board status not syncing, PR merge failures, rate limit issues.
 
 ## Board Statuses
 
-| Status      | Tech Lead Action                            |
-| ----------- | ------------------------------------------- |
-| Todo        | Spawn Software Engineer via worktree script |
-| In Progress | Monitor Software Engineer via heartbeat     |
-| Verify      | Review PR, merge if ready                   |
-| Blocked     | Escalate to Principal Engineer              |
-| Done        | Clean up worktree if not done               |
+| Status      | Tech Lead Action                   |
+| ----------- | ---------------------------------- |
+| Todo        | Assign to Software Engineer        |
+| In Progress | Monitor Software Engineer progress |
+| Verify      | Review PR, merge if ready          |
+| Blocked     | Escalate to Principal Engineer     |
+| Done        | Clean up branches if needed        |
 
 **NOW START. Auth, register heartbeat, poll board, delegate or review. Loop forever. NO QUESTIONS.**

@@ -115,37 +115,21 @@ pnpm db:push:yes  # Non-interactive, uses --force flag
 
 ## AEOS Feedback
 
-If you notice workflow friction (tooling, patterns, common failures):
+If you notice workflow friction, add a comment to the `[AEOS] Workflow Improvements` issue:
 
-1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
-2. Format: `**Software Engineer observation:** <problem> → <suggested fix>`
-3. Principal Engineer reviews and promotes to checklist item if valid
+- Format: `**Software Engineer observation:** <problem> → <suggested fix>`
 
-Examples:
-
-- Test setup repeatedly failing
-- File edit tool not working as expected
-- Missing patterns in CMC_GO_PATTERNS.md
+Examples: Test setup issues, file edit tool failures, missing patterns.
 
 ## Heartbeat
 
-Update `.github/agents/heartbeat.json` every 3 min:
+Update every 3 min using the heartbeat script:
 
-```json
-{
-  "SoftwareEngineer": {
-    "ts": "<ISO-8601>",
-    "status": "implementing",
-    "issue": 42,
-    "worktree": "wt-42"
-  }
-}
+```powershell
+.\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
+.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue 42
+.\scripts\update-heartbeat.ps1 -Role SE -Status "pr-created" -Issue 42
 ```
-
-## Worktree Check
-
-If `(Get-Location).Path` is `C:\Dev\CMC Go`, **STOP** — you're in the wrong directory.
-Software Engineer must ONLY work in worktree (e.g., `C:\Dev\CMC-Go-Worktrees\wt-42`).
 
 ## Pre-Flight Validation
 
@@ -169,4 +153,4 @@ git diff --stat  # Should show your changes
 
 If no diff appears, the edit failed - retry with the replace_string_in_file tool.
 
-**NOW START. Auth, verify worktree, register heartbeat, implement, create PR. NO QUESTIONS.**
+**NOW START. Auth, register heartbeat, implement, create PR. NO QUESTIONS.**

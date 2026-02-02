@@ -273,9 +273,16 @@
     {
       "label": "AEOS: Full status",
       "type": "shell",
-      "command": "Write-Host '=== AEOS Status ===' -ForegroundColor Cyan; Write-Host ''; Write-Host '[Heartbeat]' -ForegroundColor Yellow; if (Test-Path '.github/agents/heartbeat.json') { Get-Content '.github/agents/heartbeat.json' } else { Write-Host '  No heartbeat file' -ForegroundColor Red }; Write-Host ''; Write-Host '[Worktrees]' -ForegroundColor Yellow; git worktree list; Write-Host ''; Write-Host '[Open PRs by SE]' -ForegroundColor Yellow; gh pr list --author Software-Engineer-Agent --state open --json number,title --jq '.[] | \"  #\" + (.number|tostring) + \" \" + .title' 2>&1; Write-Host ''; Write-Host '[Board: In Progress]' -ForegroundColor Yellow; gh project item-list 4 --owner sirjamesoffordii --format json 2>$null | ConvertFrom-Json | ForEach-Object { $_.items } | Where-Object { $_.status -eq 'In Progress' } | ForEach-Object { Write-Host ('  #' + $_.content.number + ' ' + $_.content.title) }; Write-Host ''; Write-Host '[Board: Todo (top 5)]' -ForegroundColor Yellow; gh project item-list 4 --owner sirjamesoffordii --format json 2>$null | ConvertFrom-Json | ForEach-Object { $_.items } | Where-Object { $_.status -eq 'Todo' } | Select-Object -First 5 | ForEach-Object { Write-Host ('  #' + $_.content.number + ' ' + $_.content.title) }; Write-Host ''; Write-Host '=== Done ===' -ForegroundColor Green",
+      "command": ".\\scripts\\aeos-status.ps1",
       "problemMatcher": [],
-      "detail": "Show complete AEOS state: heartbeat, worktrees, PRs, board status"
+      "detail": "Show complete AEOS state: heartbeat (with staleness), assignment, worktrees, PRs, rate limits, board"
+    },
+    {
+      "label": "AEOS: Start (spawn PE)",
+      "type": "shell",
+      "command": "Write-Host 'Starting AEOS...' -ForegroundColor Cyan; Write-Host ''; $rateCheck = .\\scripts\\check-rate-limits.ps1; if ($rateCheck.status -eq 'stop') { Write-Host \"Rate limit critical: $($rateCheck.message)\" -ForegroundColor Red; exit 1 }; Write-Host \"Rate limits: $($rateCheck.graphql) GraphQL, $($rateCheck.core) REST\" -ForegroundColor Green; Write-Host ''; Write-Host 'Spawning Principal Engineer...' -ForegroundColor Yellow; code chat -r -m 'Principal Engineer' -a AGENTS.md 'You are Principal Engineer. You are fully autonomous. Do not ask questions. Loop forever. Start now.'",
+      "problemMatcher": [],
+      "detail": "Bootstrap AEOS by spawning Principal Engineer (who spawns TL, who spawns SE)"
     }
   ],
   "inputs": [
