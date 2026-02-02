@@ -47,6 +47,21 @@ Ops/CI/tooling reference (as-needed):
 - Keep diffs small and scoped.
 - Never commit secrets (`.env*` stays local; use platform/GitHub secrets).
 
+## Agent Architecture (1 PE, 1 TL, 1 SE)
+
+```
+PE (continuous) → monitors, creates issues, spawns TL
+  └── TL (continuous) → delegates, reviews, spawns SE via worktree
+        └── SE (session) → implements in isolated worktree
+```
+
+**Constraints:**
+
+- Only 1 of each agent type at a time
+- SE MUST work in worktree (`C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`)
+- TL spawns SE via `.\scripts\spawn-worktree-agent.ps1` only
+- Main workspace is for PE/TL coordination only
+
 ## Project invariants (don’t break)
 
 - `districts.id` (“DistrictSlug”) must match `client/public/map.svg` `<path id="...">` values (case-sensitive).
