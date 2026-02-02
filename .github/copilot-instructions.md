@@ -50,12 +50,17 @@ Ops/CI/tooling reference (as-needed):
 ## Agent Architecture (1 PE, 1 TL, 1 SE)
 
 ```
-PE (continuous) → monitors, creates issues, respawns TL
-  └── TL (continuous) → assigns work, reviews PRs
-        └── SE (continuous) → implements issues, creates PRs
+PE (continuous) → monitors, creates issues, spawns TL
+  └── TL (continuous) → delegates, reviews, spawns SE via worktree
+        └── SE (session) → implements in isolated worktree
 ```
 
-All 3 agents run in parallel. See `AGENTS.md` for details.
+**Constraints:**
+
+- Only 1 of each agent type at a time
+- SE MUST work in worktree (`C:/Dev/CMC-Go-Worktrees/wt-impl-<issue>`)
+- TL spawns SE via `.\scripts\spawn-worktree-agent.ps1` only
+- Main workspace is for PE/TL coordination only
 
 ## Project invariants (don’t break)
 

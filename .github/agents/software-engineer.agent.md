@@ -99,13 +99,17 @@ npx eslint <changed-files>  # Should show improvement
 
 ## Database Schema Changes
 
-**Schema changes require human review.** If you modify `drizzle/schema.ts`:
+If tests fail with "Unknown column" errors, sync the schema:
 
-1. Note in PR body: "Schema modified - requires `pnpm db:push:yes` after merge"
-2. Do NOT run db:push:yes yourself (it can hang or break the DB)
-3. Human or TL will push schema after reviewing the change
+```powershell
+pnpm db:push:yes  # Non-interactive, 2min timeout
+```
 
-**If tests fail with "Unknown column":** The local DB is out of sync. Note this in PR body and continue - CI uses a fresh DB.
+**Rules:**
+
+- Always use `pnpm db:push:yes` (never `pnpm db:push:dev` — it hangs)
+- Database is Railway staging — safe to fail and recover
+- If push times out, retry once then continue (note in PR)
 
 ## Software Engineer Rules
 

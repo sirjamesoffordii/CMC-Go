@@ -86,7 +86,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 
 ```json
 {
-  "PE": {
+  "PrincipalEngineer": {
     "ts": "<ISO-8601>",
     "status": "reviewing",
     "issue": null
