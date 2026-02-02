@@ -4,15 +4,6 @@ import { PersonIcon } from "./PersonIcon";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { MoreVertical, User, Plus, Check, Edit2, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 interface CampusRowProps {
   campus: Campus;
