@@ -123,6 +123,25 @@ git branch -d agent/se/<issue>-<slug>
 4. **Never stop** — Loop until Done or Blocked
 5. **Worktree isolation** — SE never works in main repo
 
+## AEOS Self-Improvement
+
+Agents can propose improvements to the autonomous workflow itself.
+
+**Process:**
+
+1. Any agent notices friction, inefficiency, or failure pattern
+2. PE creates a **Draft** issue with label `aeos-improvement`
+3. Title format: `[AEOS] <improvement description>`
+4. Human reviews Draft column and approves (→ Todo) or closes
+
+**Where to review:** Board Draft column, filter by `aeos-improvement` label.
+
+**Examples:**
+
+- `[AEOS] Add rate limit fallback to REST API`
+- `[AEOS] Fix heartbeat write contention`
+- `[AEOS] Improve spawn script error handling`
+
 ## Reference
 
 | Doc                                                               | Purpose          |

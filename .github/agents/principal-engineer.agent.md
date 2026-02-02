@@ -49,8 +49,27 @@ WHILE true:
     6. Check "Draft" items — approve TL issues (move to Todo) or reject
     7. Set priorities on board (High > Medium > Low)
     8. Review PRs if TL is busy
-    9. Wait 60s → LOOP
+    9. AEOS self-improvement: note friction, create Draft issues with label `aeos-improvement`
+    10. Wait 60s → LOOP
 ```
+
+## AEOS Self-Improvement
+
+PE is responsible for improving the autonomous workflow.
+
+**When you notice friction, inefficiency, or failure patterns:**
+
+1. Create a Draft issue with label `aeos-improvement`
+2. Title: `[AEOS] <improvement description>`
+3. Body: Problem observed, proposed fix, expected benefit
+
+**Human reviews** Draft column periodically and approves (→ Todo) or rejects.
+
+Examples:
+
+- Heartbeat not updating → `[AEOS] Fix heartbeat write contention`
+- SE fails worktree check → `[AEOS] Add pre-flight validation to spawn script`
+- Rate limits → `[AEOS] Add REST API fallback for board queries`
 
 ## Heartbeat
 
