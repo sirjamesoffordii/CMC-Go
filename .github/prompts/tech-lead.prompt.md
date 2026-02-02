@@ -1,9 +1,9 @@
 ---
-name: Activate: Tech Lead (TL)
-description: Enter TL mode (sync/triage/deconflict). Runs first.
+name: Activate: Tech Lead
+description: Enter Tech Lead mode (sync/triage/deconflict). Runs first.
 ---
 
-You are **Tech Lead (TL)** for CMC Go.
+You are **Tech Lead** for CMC Go.
 
 ## Activation checklist (do once per session)
 

@@ -26,7 +26,7 @@ tools:
 
 ## Activation
 
-1. You are "SE" (continuous instance)
+1. You are "Software Engineer" (continuous instance)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"; gh auth status`
 3. Register in `.github/agents/heartbeat.json` with status "idle"
 4. Start outer loop
@@ -105,7 +105,7 @@ pnpm db:push:yes  # Non-interactive, uses --force flag
 
 **Note:** `pnpm db:push:dev` is interactive and will hang — always use `pnpm db:push:yes`.
 
-## SE Rules
+## Software Engineer Rules
 
 1. **NEVER ask questions** — make best judgment, document assumptions
 2. **NEVER stop mid-task** — complete the loop or set status to "Blocked"
@@ -118,8 +118,8 @@ pnpm db:push:yes  # Non-interactive, uses --force flag
 If you notice workflow friction (tooling, patterns, common failures):
 
 1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
-2. Format: `**SE observation:** <problem> → <suggested fix>`
-3. PE reviews and promotes to checklist item if valid
+2. Format: `**Software Engineer observation:** <problem> → <suggested fix>`
+3. Principal Engineer reviews and promotes to checklist item if valid
 
 Examples:
 
@@ -133,7 +133,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 
 ```json
 {
-  "SE": {
+  "SoftwareEngineer": {
     "ts": "<ISO-8601>",
     "status": "implementing",
     "issue": 42,
@@ -145,7 +145,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 ## Worktree Check
 
 If `(Get-Location).Path` is `C:\Dev\CMC Go`, **STOP** — you're in the wrong directory.
-SE must ONLY work in worktree (e.g., `C:\Dev\CMC-Go-Worktrees\wt-42`).
+Software Engineer must ONLY work in worktree (e.g., `C:\Dev\CMC-Go-Worktrees\wt-42`).
 
 ## Pre-Flight Validation
 

@@ -15,25 +15,25 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ## Architecture
 
 ```
-PE (1 instance, continuous)
- └── TL (1 instance, continuous)
-      └── SE (1 at a time, session-based, in worktree)
+Principal Engineer (1 instance, continuous)
+ └── Tech Lead (1 instance, continuous)
+      └── Software Engineer (1 at a time, session-based, in worktree)
 ```
 
 **Why this structure:**
 
-- **PE** maintains issue pipeline, respawns TL if stale
-- **TL** coordinates work, spawns SE, reviews/merges PRs
-- **SE** implements ONE issue in isolated worktree, then exits
-- Only 1 SE at a time prevents merge conflicts
+- **Principal Engineer** maintains issue pipeline, respawns Tech Lead if stale
+- **Tech Lead** coordinates work, spawns Software Engineer, reviews/merges PRs
+- **Software Engineer** implements ONE issue in isolated worktree, then exits
+- Only 1 Software Engineer at a time prevents merge conflicts
 
 ## Roles
 
-| Role | Account                  | Spawned By | Purpose                       |
-| ---- | ------------------------ | ---------- | ----------------------------- |
-| PE   | Principle-Engineer-Agent | Human      | Issues, priorities, oversight |
-| TL   | Alpha-Tech-Lead          | PE         | Coordination, PR review       |
-| SE   | Software-Engineer-Agent  | TL         | Implementation (worktree)     |
+| Role               | Account                  | Spawned By         | Purpose                       |
+| ------------------ | ------------------------ | ------------------ | ----------------------------- |
+| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, priorities, oversight |
+| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review       |
+| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation (worktree)     |
 
 **Behavior files:** `.github/agents/{role}.agent.md`
 
@@ -41,13 +41,13 @@ PE (1 instance, continuous)
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status      | Owner | Action                       |
-| ----------- | ----- | ---------------------------- |
-| Todo        | TL    | Spawn SE to implement        |
-| In Progress | SE    | Being worked in worktree     |
-| Verify      | TL/PE | Review and merge PR          |
-| Blocked     | PE    | Needs architectural decision |
-| Done        | —     | Merged and closed            |
+| Status      | Owner                        | Action                               |
+| ----------- | ---------------------------- | ------------------------------------ |
+| Todo        | Tech Lead                    | Spawn Software Engineer to implement |
+| In Progress | Software Engineer            | Being worked in worktree             |
+| Verify      | Tech Lead/Principal Engineer | Review and merge PR                  |
+| Blocked     | Principal Engineer           | Needs architectural decision         |
+| Done        | —                            | Merged and closed                    |
 
 **IDs (for GraphQL):**
 
@@ -60,9 +60,13 @@ PE (1 instance, continuous)
 
 ```json
 {
-  "PE": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
-  "TL": { "ts": "2026-02-02T12:00:00Z", "status": "reviewing-pr", "pr": 123 },
-  "SE": {
+  "PrincipalEngineer": { "ts": "2026-02-02T12:00:00Z", "status": "monitoring" },
+  "TechLead": {
+    "ts": "2026-02-02T12:00:00Z",
+    "status": "reviewing-pr",
+    "pr": 123
+  },
+  "SoftwareEngineer": {
     "ts": "2026-02-02T12:00:00Z",
     "status": "implementing",
     "issue": 42,
@@ -74,32 +78,32 @@ PE (1 instance, continuous)
 **Protocol:**
 
 - Update every 3 min with current status
-- Stale = no update in 6+ min → PE respawns TL
+- Stale = no update in 6+ min → Principal Engineer respawns Tech Lead
 
-## Assignment (TL → SE Signaling)
+## Assignment (Tech Lead → Software Engineer Signaling)
 
 **File:** `.github/agents/assignment.json` (gitignored)
 
-TL writes this file to signal what SE should work on next. SE reads and clears it.
+Tech Lead writes this file to signal what Software Engineer should work on next. Software Engineer reads and clears it.
 
 ```json
 {
   "issue": 42,
   "priority": "high",
   "assignedAt": "2026-02-02T12:00:00Z",
-  "assignedBy": "TL"
+  "assignedBy": "TechLead"
 }
 ```
 
 **Protocol:**
 
-1. **TL assigns:** Write `assignment.json` with issue details
-2. **SE checks:** On loop iteration, check if file exists
-3. **SE claims:** Read issue number, then delete the file (atomic claim)
-4. **SE works:** Implement the issue, create PR
-5. **SE completes:** Update heartbeat status to "idle", loop back to step 2
+1. **Tech Lead assigns:** Write `assignment.json` with issue details
+2. **Software Engineer checks:** On loop iteration, check if file exists
+3. **Software Engineer claims:** Read issue number, then delete the file (atomic claim)
+4. **Software Engineer works:** Implement the issue, create PR
+5. **Software Engineer completes:** Update heartbeat status to "idle", loop back to step 2
 
-**Claim pattern (SE):**
+**Claim pattern (Software Engineer):**
 
 ```powershell
 $assignmentFile = ".github/agents/assignment.json"
@@ -110,14 +114,14 @@ if (Test-Path $assignmentFile) {
 }
 ```
 
-**Assign pattern (TL):**
+**Assign pattern (Tech Lead):**
 
 ```powershell
 $assignment = @{
     issue = 42
     priority = "high"
     assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    assignedBy = "TL"
+    assignedBy = "TechLead"
 } | ConvertTo-Json
 $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 ```
@@ -125,28 +129,28 @@ $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 ## Spawning
 
 ```powershell
-# PE spawns TL (only 1 TL at a time)
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL. Start."
+# Principal Engineer spawns Tech Lead (only 1 Tech Lead at a time)
+code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully autonomous. Don't ask questions. Loop forever. Start now."
 
-# TL spawns SE via worktree script (only 1 SE at a time)
+# Tech Lead spawns Software Engineer via worktree script (only 1 Software Engineer at a time)
 .\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
 ```
 
 **Rules:**
 
-1. PE spawns exactly 1 TL
-2. TL spawns exactly 1 SE at a time using the worktree script
-3. TL waits for SE to complete (PR merged) before spawning next SE
+1. Principal Engineer spawns exactly 1 Tech Lead
+2. Tech Lead spawns exactly 1 Software Engineer at a time using the worktree script
+3. Tech Lead waits for Software Engineer to complete (PR merged) before spawning next Software Engineer
 
-## SE Worktree Workflow
+## Software Engineer Worktree Workflow
 
-SE always works in an isolated worktree, never the main repo:
+Software Engineer always works in an isolated worktree, never the main repo:
 
 ```powershell
 # Worktree created by spawn script at:
 C:\Dev\CMC-Go-Worktrees\wt-<issue>
 
-# After PR merged, TL cleans up:
+# After PR merged, Tech Lead cleans up:
 git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
 git branch -d agent/se/<issue>-<slug>
 
@@ -167,7 +171,7 @@ git branch -d agent/se/<issue>-<slug>
 2. **Small diffs** — Optimize for reviewability
 3. **Evidence in PRs** — Commands + results
 4. **Never stop** — Loop until Done or Blocked
-5. **Worktree isolation** — SE never works in main repo
+5. **Worktree isolation** — Software Engineer never works in main repo
 6. **Check rate limits** — Before spawning or assigning, verify quota
 
 ## Rate Limits
@@ -195,12 +199,12 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 **Scaling guidance:**
 
-| Concurrent Agents  | Expected GraphQL/hr | Safe?                 |
-| ------------------ | ------------------- | --------------------- |
-| 1 PE + 1 TL + 1 SE | ~500-1000           | ✅ Yes                |
-| 1 PE + 1 TL + 2 SE | ~1000-2000          | ⚠️ Monitor            |
-| 1 PE + 1 TL + 3 SE | ~1500-3000          | ⚠️ Monitor closely    |
-| More than 3 SE     | ~2000+              | ❌ Risk of rate limit |
+| Concurrent Agents                                         | Expected GraphQL/hr | Safe?                 |
+| --------------------------------------------------------- | ------------------- | --------------------- |
+| 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer  | ~500-1000           | ✅ Yes                |
+| 1 Principal Engineer + 1 Tech Lead + 2 Software Engineers | ~1000-2000          | ⚠️ Monitor            |
+| 1 Principal Engineer + 1 Tech Lead + 3 Software Engineers | ~1500-3000          | ⚠️ Monitor closely    |
+| More than 3 Software Engineers                            | ~2000+              | ❌ Risk of rate limit |
 
 **Note:** Model token limits (Claude Opus 4.5) are plan-dependent and not directly observable. If agents start failing with auth/quota errors, reduce concurrency.
 
@@ -213,11 +217,11 @@ Agents can propose improvements to the autonomous workflow itself.
 **Process:**
 
 1. Any agent notices friction, inefficiency, or failure pattern
-2. TL/SE add a **comment** to the tracking issue:
+2. Tech Lead/Software Engineer add a **comment** to the tracking issue:
    - Format: `**<role> observation:** <problem> → <suggested fix>`
-3. PE reviews comments and promotes valid ones to checklist items:
+3. Principal Engineer reviews comments and promotes valid ones to checklist items:
    - `[ ] **<title>** — <problem> → <proposed fix>`
-4. PE checks existing items for conflicts/redundancy before adding
+4. Principal Engineer checks existing items for conflicts/redundancy before adding
 5. Human reviews tracking issue periodically:
    - Check item → approved for implementation
    - Delete item → rejected
@@ -225,11 +229,11 @@ Agents can propose improvements to the autonomous workflow itself.
 
 **Who contributes what:**
 
-| Role | Perspective             | Example Observations             |
-| ---- | ----------------------- | -------------------------------- |
-| PE   | Architecture, oversight | Rate limits, agent coordination  |
-| TL   | Coordination, PR flow   | Spawn issues, merge problems     |
-| SE   | Implementation, tooling | Test setup, file edits, patterns |
+| Role               | Perspective             | Example Observations             |
+| ------------------ | ----------------------- | -------------------------------- |
+| Principal Engineer | Architecture, oversight | Rate limits, agent coordination  |
+| Tech Lead          | Coordination, PR flow   | Spawn issues, merge problems     |
+| Software Engineer  | Implementation, tooling | Test setup, file edits, patterns |
 
 **Where to review:** Single issue titled `[AEOS] Workflow Improvements`
 

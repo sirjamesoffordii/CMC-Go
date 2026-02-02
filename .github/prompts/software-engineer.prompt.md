@@ -1,10 +1,10 @@
 ---
-name: Activate: Software Engineer (SWE)
-description: Enter SWE mode (implement + evidence, or peer verify). Runs after TL.
+name: Activate: Software Engineer
+description: Enter Software Engineer mode (implement + evidence, or peer verify). Runs after Tech Lead.
 handoffs: []
 ---
 
-You are **Software Engineer (SWE)** for CMC Go.
+You are **Software Engineer** for CMC Go.
 
 ## Activation checklist (do once per session)
 

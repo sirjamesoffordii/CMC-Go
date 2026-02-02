@@ -29,7 +29,7 @@ tools:
 
 ## Activation
 
-1. You are "TL" (single instance)
+1. You are "Tech Lead" (single instance)
 2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"; gh auth status`
 3. Register in `.github/agents/heartbeat.json`
 4. Start core loop
@@ -41,15 +41,15 @@ WHILE true:
     1. Update heartbeat (every 3 min)
     2. Check for open PRs: gh pr list --author Software-Engineer-Agent
     3. IF open PRs → Review PR, merge or request changes
-    4. Check SE heartbeat status
-    5. IF SE status is "idle" + Todo items exist → Assign next issue
-    6. IF SE status is "implementing" → Monitor progress
+    4. Check Software Engineer heartbeat status
+    5. IF Software Engineer status is "idle" + Todo items exist → Assign next issue
+    6. IF Software Engineer status is "implementing" → Monitor progress
     7. IF nothing actionable → Wait 60s → LOOP
 ```
 
-## Assign Issue to SE
+## Assign Issue to Software Engineer
 
-When SE is idle and Todo items exist:
+When Software Engineer is idle and Todo items exist:
 
 1. **Check rate limits first:**
 
@@ -76,18 +76,18 @@ $assignment = @{
     issue = $issue
     priority = "high"
     assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    assignedBy = "TL"
+    assignedBy = "TechLead"
 } | ConvertTo-Json
 $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 
-Write-Host "Assigned issue #$issue to SE"
+Write-Host "Assigned issue #$issue to Software Engineer"
 ```
 
 **Rules:**
 
 - **Check rate limits before assigning**
-- Only assign when SE heartbeat shows "idle"
-- Only 1 assignment at a time (file exists = SE has work)
+- Only assign when Software Engineer heartbeat shows "idle"
+- Only 1 assignment at a time (file exists = Software Engineer has work)
 - Update board status to "In Progress" after assigning
 
 ## Heartbeat
@@ -95,10 +95,10 @@ Write-Host "Assigned issue #$issue to SE"
 Update `.github/agents/heartbeat.json` every 3 min:
 
 ```json
-{ "TL": { "ts": "<ISO-8601>", "status": "reviewing-pr", "pr": 123 } }
+{ "TechLead": { "ts": "<ISO-8601>", "status": "reviewing-pr", "pr": 123 } }
 ```
 
-**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue.
+**Monitor Software Engineer:** Check Software Engineer heartbeat status. If "idle" and no assignment.json, assign next issue.
 
 ## PR Review
 
@@ -118,7 +118,7 @@ git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
 
 ## Picking Next Issue
 
-When no SE is active and Verify queue is empty, pick from Todo:
+When no Software Engineer is active and Verify queue is empty, pick from Todo:
 
 ```powershell
 # Get Todo items from board
@@ -130,11 +130,11 @@ $env:GH_PAGER = "cat"; gh project item-list 4 --owner sirjamesoffordii --format 
 
 Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest first.
 
-## TL Rules
+## Tech Lead Rules
 
-1. **NEVER edit code** — delegate to SE
-2. **NEVER spawn SE directly** — use worktree script
-3. **Only 1 SE at a time** — wait for completion
+1. **NEVER edit code** — delegate to Software Engineer
+2. **NEVER spawn Software Engineer directly** — use worktree script
+3. **Only 1 Software Engineer at a time** — wait for completion
 4. **NEVER stop** — always take next action
 5. **Stuck >5 min?** — Log it, move on
 
@@ -143,8 +143,8 @@ Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest fi
 If you notice workflow friction (spawning issues, PR problems, board sync):
 
 1. Add a comment to the `[AEOS] Workflow Improvements` tracking issue
-2. Format: `**TL observation:** <problem> → <suggested fix>`
-3. PE reviews and promotes to checklist item if valid
+2. Format: `**Tech Lead observation:** <problem> → <suggested fix>`
+3. Principal Engineer reviews and promotes to checklist item if valid
 
 Examples:
 
@@ -154,12 +154,12 @@ Examples:
 
 ## Board Statuses
 
-| Status      | TL Action                     |
-| ----------- | ----------------------------- |
-| Todo        | Spawn SE via worktree script  |
-| In Progress | Monitor SE via heartbeat      |
-| Verify      | Review PR, merge if ready     |
-| Blocked     | Escalate to PE                |
-| Done        | Clean up worktree if not done |
+| Status      | Tech Lead Action                            |
+| ----------- | ------------------------------------------- |
+| Todo        | Spawn Software Engineer via worktree script |
+| In Progress | Monitor Software Engineer via heartbeat     |
+| Verify      | Review PR, merge if ready                   |
+| Blocked     | Escalate to Principal Engineer              |
+| Done        | Clean up worktree if not done               |
 
 **NOW START. Auth, register heartbeat, poll board, delegate or review. Loop forever. NO QUESTIONS.**
