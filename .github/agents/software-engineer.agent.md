@@ -99,28 +99,13 @@ npx eslint <changed-files>  # Should show improvement
 
 ## Database Schema Changes
 
-**ONLY run db:push:yes if:**
+**Schema changes require human review.** If you modify `drizzle/schema.ts`:
 
-1. You modified `drizzle/schema.ts`
-2. Tests fail with "Unknown column" or "ER_BAD_FIELD_ERROR"
+1. Note in PR body: "Schema modified - requires `pnpm db:push:yes` after merge"
+2. Do NOT run db:push:yes yourself (it can hang or break the DB)
+3. Human or TL will push schema after reviewing the change
 
-**DO NOT run db:push:yes:**
-
-- As a routine step (it's slow and can hang)
-- For client-only changes
-- For test file changes
-- "Just in case"
-
-```powershell
-# Only if schema was modified:
-pnpm db:push:yes  # Non-interactive, 2min timeout, auto-exits on failure
-```
-
-**Rules:**
-
-- Always use `pnpm db:push:yes` (never `npx drizzle-kit push` — it hangs)
-- If push times out or fails, **skip and continue** — note in PR body
-- Database schema changes should be rare and intentional
+**If tests fail with "Unknown column":** The local DB is out of sync. Note this in PR body and continue - CI uses a fresh DB.
 
 ## Software Engineer Rules
 
