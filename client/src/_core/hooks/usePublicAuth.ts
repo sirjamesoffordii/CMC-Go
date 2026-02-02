@@ -51,7 +51,7 @@ export function usePublicAuth() {
     login: () => {
       // Login is handled via auth.start
       // This function can trigger a login modal/dialog
-      console.log("[usePublicAuth] Login - use auth.start");
+      // removed debug log
     },
     logout: async () => {
       if (devBypass) return;
