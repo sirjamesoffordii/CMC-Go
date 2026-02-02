@@ -103,6 +103,9 @@ C:\Dev\CMC-Go-Worktrees\wt-<issue>
 # After PR merged, TL cleans up:
 git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
 git branch -d agent/se/<issue>-<slug>
+
+# Periodic cleanup (after several merges):
+.\scripts\cleanup-agent-branches.ps1
 ```
 
 ## Branch & Commit
