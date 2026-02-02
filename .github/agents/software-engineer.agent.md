@@ -71,6 +71,16 @@ npx eslint <changed-files>  # Should show improvement
 
 **If any fail:** Fix issues before committing. Do NOT push broken code.
 
+## Database Schema Changes
+
+If tests fail with "Unknown column" errors, sync the schema first:
+
+```powershell
+pnpm db:push:yes  # Non-interactive, uses --force flag
+```
+
+**Note:** `pnpm db:push:dev` is interactive and will hang — always use `pnpm db:push:yes`.
+
 ## SE Rules
 
 1. **NEVER ask questions** — make best judgment, document assumptions

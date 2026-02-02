@@ -11,14 +11,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
-// Spawn drizzle-kit push with auto-confirm
-const drizzleKit = spawn("npx", ["drizzle-kit", "push"], {
+// Spawn drizzle-kit push with --force to skip interactive prompts
+const drizzleKit = spawn("npx", ["drizzle-kit", "push", "--force"], {
   cwd: projectRoot,
   stdio: "inherit",
   shell: true,
   env: {
     ...process.env,
-    // Some tools respect CI=true to skip prompts
     CI: "true",
   },
 });
