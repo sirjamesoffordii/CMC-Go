@@ -168,6 +168,41 @@ git branch -d agent/se/<issue>-<slug>
 3. **Evidence in PRs** — Commands + results
 4. **Never stop** — Loop until Done or Blocked
 5. **Worktree isolation** — SE never works in main repo
+6. **Check rate limits** — Before spawning or assigning, verify quota
+
+## Rate Limits
+
+Agents consume two types of rate-limited resources:
+
+| Resource                | Limit          | Usage                    | Check                  |
+| ----------------------- | -------------- | ------------------------ | ---------------------- |
+| GitHub GraphQL API      | 5000/hour      | Board ops, issue queries | `gh api rate_limit`    |
+| GitHub REST API         | 5000/hour      | PR ops, file fetches     | Same                   |
+| Model tokens (Opus 4.5) | Plan-dependent | Every agent response     | Not directly checkable |
+
+**Before assigning work:**
+
+```powershell
+$check = .\scripts\check-rate-limits.ps1
+$check | Format-List  # status, graphql, core, resetIn, message
+```
+
+**Status meanings:**
+
+- `go`: Quota healthy (>500 GraphQL, >200 REST)
+- `wait`: Quota low (<500 GraphQL) - proceed with caution
+- `stop`: Quota critical (<100 GraphQL) - wait for reset
+
+**Scaling guidance:**
+
+| Concurrent Agents  | Expected GraphQL/hr | Safe?                 |
+| ------------------ | ------------------- | --------------------- |
+| 1 PE + 1 TL + 1 SE | ~500-1000           | ✅ Yes                |
+| 1 PE + 1 TL + 2 SE | ~1000-2000          | ⚠️ Monitor            |
+| 1 PE + 1 TL + 3 SE | ~1500-3000          | ⚠️ Monitor closely    |
+| More than 3 SE     | ~2000+              | ❌ Risk of rate limit |
+
+**Note:** Model token limits (Claude Opus 4.5) are plan-dependent and not directly observable. If agents start failing with auth/quota errors, reduce concurrency.
 
 ## AEOS Self-Improvement
 

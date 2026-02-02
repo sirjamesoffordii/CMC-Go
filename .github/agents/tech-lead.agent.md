@@ -49,7 +49,23 @@ WHILE true:
 
 ## Assign Issue to SE
 
-When SE is idle and Todo items exist, write an assignment file:
+When SE is idle and Todo items exist:
+
+1. **Check rate limits first:**
+
+```powershell
+$rateCheck = .\scripts\check-rate-limits.ps1
+if ($rateCheck.status -eq "stop") {
+    Write-Host "Rate limit critical: $($rateCheck.message)" -ForegroundColor Red
+    Write-Host "Waiting $($rateCheck.resetIn) minutes..."
+    Start-Sleep -Seconds ($rateCheck.resetIn * 60)
+}
+if ($rateCheck.status -eq "wait") {
+    Write-Host "Rate limit low: $($rateCheck.message)" -ForegroundColor Yellow
+}
+```
+
+2. **Then assign:**
 
 ```powershell
 # Pick highest priority Todo item
@@ -69,6 +85,7 @@ Write-Host "Assigned issue #$issue to SE"
 
 **Rules:**
 
+- **Check rate limits before assigning**
 - Only assign when SE heartbeat shows "idle"
 - Only 1 assignment at a time (file exists = SE has work)
 - Update board status to "In Progress" after assigning
