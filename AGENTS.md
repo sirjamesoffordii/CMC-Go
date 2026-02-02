@@ -163,6 +163,36 @@ After PRs are merged, periodically clean up old branches:
 4. **Never stop** — Loop until Done or Blocked
 5. **One SE at a time** — Wait for PR merge before next assignment
 6. **Check rate limits** — Before assigning work, verify quota
+7. **Avoid interactive commands** — See "Dangerous Commands" section
+
+## Dangerous Commands (Avoid in Autonomous Flow)
+
+Some commands hang waiting for user input. **NEVER run these directly:**
+
+| Command                    | Problem                          | Safe Alternative                 |
+| -------------------------- | -------------------------------- | -------------------------------- |
+| `npx drizzle-kit push`     | Prompts for column rename/create | `pnpm db:push:yes`               |
+| `npx drizzle-kit generate` | May prompt for migration name    | Use explicit `--name` flag       |
+| `git rebase -i`            | Opens editor                     | `git rebase --no-edit`           |
+| `git commit` (no -m)       | Opens editor                     | `git commit -m "message"`        |
+| `npm init`                 | Interactive wizard               | `npm init -y`                    |
+| Any command with `--help`  | May page with `less`             | Pipe to `Select-Object -First N` |
+
+**If you get stuck:**
+
+1. The command will timeout after 2 minutes (db:push:yes)
+2. Human can Ctrl+C to kill the hung process
+3. Agent should detect non-zero exit code and continue loop
+
+**Recovery pattern for SE:**
+
+```powershell
+# If db:push:yes fails or times out, skip and note in PR
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "⚠️ db:push failed - schema changes may need manual push" -ForegroundColor Yellow
+    # Continue with implementation, note in PR body
+}
+```
 
 ## Rate Limits
 
