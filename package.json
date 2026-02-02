@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:localdb": "node scripts/aeos/test-localdb.mjs",
     "e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/run-migrations.mjs",
@@ -31,6 +32,7 @@
     "db:reset": "node scripts/reset-db.mjs",
     "db:reset:drop": "node scripts/reset-db.mjs --drop-db",
     "db:reset:local": "node scripts/reset-local-db.mjs",
+    "aeos:check-precommit": "node scripts/aeos/check-precommit.mjs",
     "validate:agents": "node scripts/validate-agents.mjs",
     "agent:check": "pnpm check && pnpm test && pnpm validate:agents",
     "prepare": "husky"

@@ -19,6 +19,13 @@ pnpm check
 pnpm test
 ```
 
+If this change touches schema/DB behavior, prefer a MySQL-backed run:
+
+```
+docker-compose up -d
+pnpm test:localdb
+```
+
 ## Risk
 
 <!-- low / med / high + brief explanation -->
@@ -33,6 +40,7 @@ pnpm test
 - [ ] AC from the Issue is met
 - [ ] Evidence posted (commands + results)
 - [ ] Appropriate verify label added (`verify:v0`, `verify:v1`, or `verify:v2`)
+- [ ] If schema/db changed: migration added and MySQL-backed evidence included (local `pnpm test:localdb` or CI)
 
 ### For `verify:v2` only
 
