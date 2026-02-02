@@ -7,6 +7,7 @@ import {
 } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
+import type { InsertPerson } from "../drizzle/schema";
 import { storagePut, storageGet } from "./storage";
 import { setSessionCookie, clearSessionCookie } from "./_core/session";
 import { TRPCError } from "@trpc/server";
@@ -530,7 +531,7 @@ export const appRouter = router({
           primaryDistrictId: ctx.user.districtId ?? null,
           primaryRegion: ctx.user.regionId ?? null,
           primaryRole: ctx.user.role,
-        } as any);
+        } as InsertPerson);
 
         await db.updateUserPersonId(ctx.user.id, personId);
         return { success: true, personId } as const;
@@ -1328,7 +1329,7 @@ export const appRouter = router({
           );
 
           // Build createData object, only including fields that have values
-          const createData: any = {
+          const createData: Partial<InsertPerson> & { personId: string; name: string } = {
             personId: input.personId,
             name: input.name,
             status: input.status || "Not Invited",

@@ -146,11 +146,11 @@ Long operations MUST include heartbeat updates at logical checkpoints to prevent
 
 **Staleness Detection & Recovery:**
 
-| Agent | Monitored By | If Stale (>6 min)                         |
-| ----- | ------------ | ----------------------------------------- |
-| PE    | TL           | TL respawns PE via `code chat`            |
-| TL    | PE + SE      | PE or SE respawns TL via `code chat`      |
-| SE    | TL           | TL respawns SE via `spawn-worktree-agent` |
+| Agent | Monitored By | If Stale (>6 min)                                       |
+| ----- | ------------ | ------------------------------------------------------- |
+| PE    | TL           | TL respawns PE via `code chat`                          |
+| TL    | PE + SE      | PE or SE respawns TL via `code chat`                    |
+| SE    | TL           | TL respawns SE via `.\scripts\spawn-worktree-agent.ps1` |
 
 **Self-healing principle:** Any surviving agent can respawn any other agent. This ensures the system recovers automatically without human intervention.
 
@@ -163,7 +163,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-with-quota-check.ps1 -Role TL
+        code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
 }
 ```
@@ -179,7 +179,7 @@ if ($hb.PE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "PE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-with-quota-check.ps1 -Role PE
+        code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
 }
 
@@ -189,7 +189,7 @@ if ($hb.SE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $seTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "SE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-with-quota-check.ps1 -Role SE
+        .\scripts\spawn-worktree-agent.ps1
     }
 }
 ```
@@ -205,7 +205,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-with-quota-check.ps1 -Role TL
+        code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
 }
 ```
@@ -258,14 +258,36 @@ $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 
 ## Agent Startup
 
+**Human starts any agent using VS Code prompts:**
+
+| To Start           | Use Prompt                     |
+| ------------------ | ------------------------------ |
+| Principal Engineer | `/activate Principal Engineer` |
+| Tech Lead          | `/activate Tech Lead`          |
+| Software Engineer  | `/activate Software Engineer`  |
+
+**Activation message format (EXACT - used by all spawn methods):**
+
+```
+You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW.
+```
+
+**Examples:**
+
+- `You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW.`
+- `You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW.`
+- `You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW.`
+
+**Programmatic respawn (when agents respawn each other):**
+
 ```powershell
-# Human starts Principal Engineer
-code chat -r -m "Principal Engineer" -a AGENTS.md "You are Principal Engineer. Loop forever. Start now."
+# PE respawning TL
+code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 
-# Principal Engineer starts Tech Lead (only 1 at a time)
-code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. Loop forever. Start now."
+# TL respawning PE
+code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 
-# Tech Lead spawns Software Engineer ONCE in a worktree (persistent, not per-issue)
+# TL spawning SE in worktree
 .\scripts\spawn-worktree-agent.ps1
 ```
 
@@ -406,7 +428,7 @@ $check | Format-List  # status, graphql, core, resetIn, message
 | -------------------------------------------------------- | ------------------- | ------ |
 | 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer | ~500-1000           | ✅ Yes |
 
-**Note:** Model token limits (Claude Opus 4.5) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
+**Note:** Model token limits (GPT 5.2 Codex) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
 ## AEOS Self-Improvement
 

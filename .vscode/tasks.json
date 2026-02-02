@@ -278,13 +278,6 @@
       "command": ".\\scripts\\aeos-status.ps1",
       "problemMatcher": [],
       "detail": "Show complete AEOS state: heartbeat (with staleness), assignment, worktrees, PRs, rate limits, board"
-    },
-    {
-      "label": "AEOS: Start (spawn PE)",
-      "type": "shell",
-      "command": ".\\scripts\\aeos-start-pe.ps1",
-      "problemMatcher": [],
-      "detail": "Bootstrap AEOS by spawning Principal Engineer (who spawns TL, who spawns SE)"
     }
   ],
   "inputs": [

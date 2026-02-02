@@ -1,7 +1,7 @@
 ---
 name: Tech Lead
 description: "Project coordinator for CMC Go. Delegates to SE, reviews PRs, never edits code."
-model: Claude Opus 4.5
+model: GPT 5.2 Codex
 tools:
   [
     "vscode",
@@ -125,9 +125,13 @@ Update every 3 min using the heartbeat script:
 .\scripts\update-heartbeat.ps1 -Role TL -Status "assigning" -Issue 42
 ```
 
-**Monitor PE:** Check PE heartbeat. If stale >6 min, respawn PE via `code chat -r -m "Principal Engineer"`.
+**Monitor PE:** Check PE heartbeat. If stale >6 min, respawn PE:
 
-**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `spawn-worktree-agent.ps1`.
+```powershell
+code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+```
+
+**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `.\scripts\spawn-worktree-agent.ps1`.
 
 ## PR Review
 

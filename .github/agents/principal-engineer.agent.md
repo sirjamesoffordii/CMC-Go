@@ -1,7 +1,7 @@
 ---
 name: Principal Engineer
 description: "System architect for CMC Go. Creates issues, monitors heartbeats, respawns TLs."
-model: Claude Opus 4.5
+model: GPT 5.2 Codex
 tools:
   [
     "vscode",
@@ -97,7 +97,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 **Monitor Tech Lead:** If Tech Lead stale >6 min → respawn:
 
 ```powershell
-code chat -r -m "Tech Lead" -a AGENTS.md "You are Tech Lead. You are fully autonomous. Don't ask questions. Loop forever. Start now."
+code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 ```
 
 ## Principal Engineer Rules

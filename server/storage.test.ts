@@ -1,14 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
+// Test-only globals interface for mock ENV values
+interface TestGlobals {
+  __testForgeApiUrl?: string;
+  __testForgeApiKey?: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock pattern for globalThis
+const testGlobals = globalThis as unknown as TestGlobals;
+
 // Mock the ENV module with factory function
 vi.mock("./_core/env", () => {
   return {
     ENV: {
       get forgeApiUrl() {
-        return (globalThis as any).__testForgeApiUrl ?? "https://api.example.com/forge";
+        return testGlobals.__testForgeApiUrl ?? "https://api.example.com/forge";
       },
       get forgeApiKey() {
-        return (globalThis as any).__testForgeApiKey ?? "test-api-key-12345";
+        return testGlobals.__testForgeApiKey ?? "test-api-key-12345";
       },
     },
   };
@@ -23,13 +32,13 @@ import { storagePut, storageGet } from "./storage";
 
 // Helper to set mock ENV values
 function setMockEnv(url: string, key: string) {
-  (globalThis as any).__testForgeApiUrl = url;
-  (globalThis as any).__testForgeApiKey = key;
+  testGlobals.__testForgeApiUrl = url;
+  testGlobals.__testForgeApiKey = key;
 }
 
 function resetMockEnv() {
-  (globalThis as any).__testForgeApiUrl = "https://api.example.com/forge";
-  (globalThis as any).__testForgeApiKey = "test-api-key-12345";
+  testGlobals.__testForgeApiUrl = "https://api.example.com/forge";
+  testGlobals.__testForgeApiKey = "test-api-key-12345";
 }
 
 describe("storage", () => {

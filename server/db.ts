@@ -60,6 +60,7 @@ export async function getDb() {
         keepAliveInitialDelay: 0, // Start keep-alive immediately
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = drizzle(_pool as any);
       _db = db;
 
@@ -260,7 +261,7 @@ export async function updateUserRole(userId: number, role: string) {
   if (!db) throw new Error("Database not available");
   await db
     .update(users)
-    .set({ role: role as any })
+    .set({ role: role as InsertUser["role"] })
     .where(eq(users.id, userId));
 }
 
@@ -273,7 +274,7 @@ export async function updateUserApprovalStatus(
   if (!db) throw new Error("Database not available");
   await db
     .update(users)
-    .set({ approvalStatus: approvalStatus as any })
+    .set({ approvalStatus: approvalStatus as InsertUser["approvalStatus"] })
     .where(eq(users.id, userId));
 }
 
@@ -1165,7 +1166,8 @@ export async function getMetrics() {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
@@ -1232,7 +1234,8 @@ export async function getDistrictMetrics(districtId: string) {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
@@ -1433,7 +1436,8 @@ export async function getRegionMetrics(region: string) {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
