@@ -138,6 +138,7 @@ temp_setup_user.sql
 # Local worktree folders (local-only)
 wt-main/
 wt-impl-*/
+wt-*/
 wt-verify-*/
 
 # Historical snapshot folder (do not re-add)

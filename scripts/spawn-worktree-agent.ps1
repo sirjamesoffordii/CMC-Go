@@ -74,9 +74,9 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve paths
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$WorktreeName = if ($WorktreeName) { $WorktreeName } else { "wt-impl-$IssueNumber" }
+$WorktreeName = if ($WorktreeName) { $WorktreeName } else { "wt-$IssueNumber" }
 $WorktreePath = Join-Path $WorktreeRoot $WorktreeName
-$BranchName = "agent/swe/$IssueNumber-impl"
+$BranchName = "agent/se/$IssueNumber-impl"
 
 # Default prompt if not provided
 if (-not $Prompt) {

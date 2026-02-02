@@ -245,8 +245,22 @@
     {
       "label": "Agent: Clean worktree",
       "type": "shell",
-      "command": "git worktree remove --force C:\\Dev\\CMC-Go-Worktrees\\wt-impl-${input:issueNumber}; Write-Host 'Worktree removed' -ForegroundColor Green",
+      "command": "git worktree remove --force C:\\Dev\\CMC-Go-Worktrees\\wt-${input:issueNumber}; Write-Host 'Worktree removed' -ForegroundColor Green",
       "problemMatcher": []
+    },
+    {
+      "label": "Agent: Cleanup stale branches (dry run)",
+      "type": "shell",
+      "command": ".\\scripts\\cleanup-agent-branches.ps1 -DryRun",
+      "problemMatcher": [],
+      "detail": "Preview which merged agent branches would be deleted"
+    },
+    {
+      "label": "Agent: Cleanup stale branches",
+      "type": "shell",
+      "command": ".\\scripts\\cleanup-agent-branches.ps1",
+      "problemMatcher": [],
+      "detail": "Delete merged agent branches and prune stale worktrees"
     },
     {
       "label": "Utility: Keep awake while VS Code running",

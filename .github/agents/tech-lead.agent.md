@@ -89,7 +89,24 @@ gh pr merge <num> --squash --delete-branch
 
 # Clean up worktree after merge
 git worktree remove C:\Dev\CMC-Go-Worktrees\wt-<issue>
+
+# Periodically clean up merged branches (run after several merges)
+.\scripts\cleanup-agent-branches.ps1
 ```
+
+## Picking Next Issue
+
+When no SE is active and Verify queue is empty, pick from Todo:
+
+```powershell
+# Get Todo items from board
+$env:GH_PAGER = "cat"; gh project item-list 4 --owner sirjamesoffordii --format json |
+  ConvertFrom-Json | ForEach-Object { $_.items } |
+  Where-Object { $_.status -eq "Todo" } |
+  Select-Object @{N='Number';E={$_.content.number}}, @{N='Title';E={$_.content.title}}
+```
+
+Priority order: `priority:high` > `priority:medium` > `priority:low` > oldest first.
 
 ## TL Rules
 

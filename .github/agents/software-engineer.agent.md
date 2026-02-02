@@ -99,4 +99,26 @@ Update `.github/agents/heartbeat.json` every 3 min:
 If `(Get-Location).Path` is `C:\Dev\CMC Go`, **STOP** — you're in the wrong directory.
 SE must ONLY work in worktree (e.g., `C:\Dev\CMC-Go-Worktrees\wt-42`).
 
+## Pre-Flight Validation
+
+Before making ANY code changes, run this check:
+
+```powershell
+# Must pass all checks before editing code
+git status --porcelain  # Must be empty (no uncommitted changes)
+git branch --show-current  # Must be agent/se/<issue>-*
+```
+
+If checks fail: `git checkout -- .; git clean -fd` then verify again.
+
+## File Edit Best Practice
+
+After each edit, verify it applied:
+
+```powershell
+git diff --stat  # Should show your changes
+```
+
+If no diff appears, the edit failed - retry with the replace_string_in_file tool.
+
 **NOW START. Auth, verify worktree, register heartbeat, implement, create PR. NO QUESTIONS.**
