@@ -99,17 +99,28 @@ npx eslint <changed-files>  # Should show improvement
 
 ## Database Schema Changes
 
-If tests fail with "Unknown column" errors, sync the schema:
+**ONLY run db:push:yes if:**
+
+1. You modified `drizzle/schema.ts`
+2. Tests fail with "Unknown column" or "ER_BAD_FIELD_ERROR"
+
+**DO NOT run db:push:yes:**
+
+- As a routine step (it's slow and can hang)
+- For client-only changes
+- For test file changes
+- "Just in case"
 
 ```powershell
-pnpm db:push:yes  # Non-interactive, 2min timeout
+# Only if schema was modified:
+pnpm db:push:yes  # Non-interactive, 2min timeout, auto-exits on failure
 ```
 
 **Rules:**
 
-- Always use `pnpm db:push:yes` (never `pnpm db:push:dev` — it hangs)
-- Database is Railway staging — safe to fail and recover
-- If push times out, retry once then continue (note in PR)
+- Always use `pnpm db:push:yes` (never `npx drizzle-kit push` — it hangs)
+- If push times out or fails, **skip and continue** — note in PR body
+- Database schema changes should be rare and intentional
 
 ## Software Engineer Rules
 
