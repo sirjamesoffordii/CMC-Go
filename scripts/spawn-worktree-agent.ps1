@@ -125,6 +125,18 @@ if (Test-Path $WorktreePath) {
       git fetch --prune origin 2>&1 | Out-Null
       git worktree add -b $BranchName $WorktreePath $BaseBranch
       Write-Host "Created: $WorktreePath" -ForegroundColor Green
+      
+      # Update heartbeat with workspace info (optional, fails gracefully)
+      try {
+        & "$PSScriptRoot\aeos\update-heartbeat.ps1" `
+          -AgentKey "SE-$IssueNumber" `
+          -Status "spawning" `
+          -Issue $IssueNumber `
+          -Workspace $WorktreePath `
+          -Branch $BranchName
+      } catch {
+        Write-Host "[AEOS] Heartbeat update skipped: $($_.Exception.Message)" -ForegroundColor Yellow
+      }
     } finally {
       Pop-Location
     }

@@ -249,6 +249,34 @@
       "problemMatcher": []
     },
     {
+      "label": "AEOS: System status",
+      "type": "shell",
+      "command": ".\\scripts\\aeos\\aeos-status.ps1",
+      "problemMatcher": [],
+      "detail": "Show AEOS heartbeat, worktrees, and health at a glance"
+    },
+    {
+      "label": "AEOS: Verify worktree",
+      "type": "shell",
+      "command": ".\\scripts\\aeos\\verify-worktree.ps1",
+      "problemMatcher": [],
+      "detail": "SE pre-flight check - verify NOT in main repo"
+    },
+    {
+      "label": "AEOS: Cleanup worktrees (dry run)",
+      "type": "shell",
+      "command": ".\\scripts\\aeos\\cleanup-worktrees.ps1 -DryRun",
+      "problemMatcher": [],
+      "detail": "Preview which worktrees would be cleaned up"
+    },
+    {
+      "label": "AEOS: Cleanup worktree by issue",
+      "type": "shell",
+      "command": ".\\scripts\\aeos\\cleanup-worktrees.ps1 -IssueNumber ${input:issueNumber}",
+      "problemMatcher": [],
+      "detail": "Remove worktree and branch for a specific issue"
+    },
+    {
       "label": "Utility: Keep awake while VS Code running",
       "type": "shell",
       "command": ".\\scripts\\keep-awake-while-vscode.ps1",
