@@ -21,15 +21,30 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## First move (always)
 
-1. Identify the Issue/PR and restate acceptance criteria.
-2. Confirm execution mode:
-   - Mode A (local VS Code agent): use a correct worktree (`wt-impl-*` or `wt-verify-*`).
-   - Mode B (GitHub-hosted agent): branch-only; no worktrees.
+1. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"; gh auth status`
+2. Register heartbeat: `.\scripts\update-heartbeat.ps1 -Role SE -Status "idle"`
+3. **VERIFY WORKTREE** — You MUST be in `C:/Dev/CMC-Go-Worktrees/wt-se`, NOT the main repo
+4. Check TL heartbeat — respawn if stale (>6 min): `.\scripts\spawn-with-quota-check.ps1 -Role TL`
+5. Check for assignment: `.github/agents/assignment.json`
 
-## Operating stance
+## Operating loop
 
-- Default: implement small diffs with evidence (or verify with a verdict).
-- Keep momentum: if tightening AC or updating Projects v2 is the blocker, do it.
+Repeat forever:
+
+1. Update heartbeat (every 3 min): `.\scripts\update-heartbeat.ps1 -Role SE -Status "idle"`
+2. Check TL heartbeat — respawn if stale (>6 min)
+3. Check for assignment: `.github/agents/assignment.json`
+4. If no assignment → Wait 30s → LOOP
+5. If assignment exists:
+   a. Read and delete file (claim it)
+   b. Update heartbeat: `.\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue <num>`
+   c. Read issue: `gh issue view <num>`
+   d. Create branch: `git checkout -b agent/se/<issue>-<slug> origin/staging`
+   e. Implement smallest diff
+   f. Verify: `pnpm check && pnpm test`
+   g. Create PR: `gh pr create --base staging`
+   h. Update heartbeat to "idle"
+   i. LOOP
 
 ## Implementation mode
 
@@ -50,3 +65,5 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 ## Operational procedures (when needed)
 
 - For ops/env/CI/tooling questions, consult the archived operational procedures index: `.github/_unused/docs/agents/operational-procedures/OPERATIONAL_PROCEDURES_INDEX.md`.
+
+FULLY AUTONOMOUS. NO QUESTIONS. Loop forever. Start now.

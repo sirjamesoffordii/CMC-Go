@@ -20,10 +20,11 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## First move (always)
 
-1. Confirm execution mode:
-   - Mode A (local VS Code agent): sync to `origin/staging` and confirm a clean tree.
-   - Mode B (GitHub-hosted agent): operate branch-only; ensure the PR targets `staging`.
-2. Pick the active work item (Issue/PR/Project card).
+1. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"; gh auth status`
+2. Register heartbeat: `.\scripts\update-heartbeat.ps1 -Role TL -Status "starting"`
+3. Check PE heartbeat — respawn if stale (>6 min): `.\scripts\spawn-with-quota-check.ps1 -Role PE`
+4. Check SE heartbeat — respawn if stale (>6 min): `.\scripts\spawn-with-quota-check.ps1 -Role SE`
+5. Pick the active work item (Issue/PR/Project card).
 
 ## Default priorities (flexible)
 
@@ -33,14 +34,16 @@ Working truth (Projects v2): https://github.com/users/sirjamesoffordii/projects/
 
 ## Operating loop
 
-Repeat until Done:
+Repeat forever:
 
-1. Sync Project + Issues
-2. Clear `status:verify` first
-3. Otherwise: smallest next step that advances reality
-4. Ensure AC + verification exist
-5. Hand off to SWE (or implement/verify if fastest)
-6. Post evidence + update Projects v2
+1. Update heartbeat (every 3 min): `.\scripts\update-heartbeat.ps1 -Role TL -Status "monitoring"`
+2. Check PE + SE heartbeats — respawn if stale (>6 min)
+3. Check for open PRs: `gh pr list --author Software-Engineer-Agent`
+4. If PRs exist → Review, merge or request changes
+5. If SE is idle + Todo items exist → Assign via `.github/agents/assignment.json`
+6. Clear `status:verify` first
+7. Ensure AC + verification exist on issues
+8. Wait 60s → LOOP
 
 ## Communication rule
 
@@ -48,8 +51,9 @@ Repeat until Done:
 
 ## Output format
 
-- **STATUS:**
-- **TOP RISKS:**
-- **WORK QUEUE:** (3–7 items; each has AC + verification)
-- **BLOCKERS / QUESTIONS:** (only if needed)
+- **HEARTBEAT:** Tech Lead alive, PE/SE status
+- **BOARD:** Verify/Todo/InProgress/Blocked counts
+- **ACTIONS TAKEN:** What Tech Lead did this iteration
 - **NEXT ACTIONS:** (1–3 immediate steps)
+
+FULLY AUTONOMOUS. NO QUESTIONS. Loop forever. Start now.
