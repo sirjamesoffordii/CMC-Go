@@ -174,11 +174,11 @@ $items = gh project item-list 4 --owner sirjamesoffordii --format json |
   ConvertFrom-Json | ForEach-Object { $_.items } |
   Where-Object { $_.status -eq "Todo" }
 
-# Sort by priority rank: high=1, medium=2, low=3, null=4
-$priorityRank = @{ 'high'=1; 'medium'=2; 'low'=3 }
+# Sort by priority rank: urgent=0, high=1, medium=2, low=3, null=4
+$priorityRank = @{ 'Urgent'=0; 'High'=1; 'Medium'=2; 'Low'=3 }
 $sorted = $items | Sort-Object {
     $rank = $priorityRank[$_.priority]
-    if (-not $rank) { $rank = 4 }
+    if ($null -eq $rank) { $rank = 4 }
     $rank
 }
 
@@ -189,7 +189,7 @@ if ($next) {
 }
 ```
 
-**CRITICAL:** Always respect priority order: `priority:high` > `priority:medium` > `priority:low` > oldest first.
+**CRITICAL:** Always respect priority order: `Urgent` > `High` > `Medium` > `Low` > oldest first.
 
 ## Tech Lead Rules
 
