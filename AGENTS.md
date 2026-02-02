@@ -12,8 +12,8 @@
 | Role | Account                  | Model    | Instances | Purpose                                |
 | ---- | ------------------------ | -------- | --------- | -------------------------------------- |
 | PE   | Principle-Engineer-Agent | Opus 4.5 | 1         | Issue creation, priorities, TL respawn |
-| TL   | Alpha-Tech-Lead          | Opus 4.5 | 2         | Coordination, SE spawning, merging     |
-| SE   | Software-Engineer-Agent  | Opus 4.5 | N         | Implementation (spawned by TL)         |
+| TL   | Alpha-Tech-Lead          | Opus 4.5 | 1         | Coordination, SE spawning, merging     |
+| SE   | Software-Engineer-Agent  | Opus 4.5 | 1         | Implementation (spawned by TL)         |
 
 **Behavior:** `.github/agents/{role}.agent.md`
 
@@ -21,15 +21,16 @@
 
 ```
 PE (continuous) — reviews repo/app, creates issues, monitors heartbeats
-  ├── TL-1 (continuous) → spawns SE sessions, reviews PRs
-  └── TL-2 (continuous) → spawns SE sessions, reviews PRs
-        ├── SE-1 (session) → implements issues
-        └── SE-2 (session) → implements issues
+  └── TL (continuous) → spawns SE, reviews PRs, merges
+        └── SE (session) → implements ONE issue at a time in worktree
 ```
 
-- All agents are standalone sessions (`code chat -r`)
-- All agents self-register in heartbeat file
-- Any TL or PE can review PRs
+**Constraints:**
+
+- Only 1 SE active at a time (prevents workspace contention)
+- SE MUST work in isolated worktree (never main repo)
+- TL waits for SE completion before spawning next SE
+- Main workspace reserved for PE/TL coordination only
 
 ## Board
 
@@ -56,39 +57,62 @@ High `542f2119` | Medium `b18a1ee4` | Low `e01e814a`
 
 ```json
 {
-  "core": ["PE-1", "TL-1", "TL-2"],
+  "core": ["PE", "TL"],
   "agents": {
-    "PE-1": {
+    "PE": {
       "ts": "2026-01-28T12:00:00Z",
       "status": "reviewing",
       "issue": null
     },
-    "TL-1": {
+    "TL": {
       "ts": "2026-01-28T12:00:00Z",
-      "status": "delegating",
-      "issue": 42
+      "status": "waiting-for-se",
+      "issue": null
+    },
+    "SE": {
+      "ts": "2026-01-28T12:00:00Z",
+      "status": "implementing",
+      "issue": 42,
+      "workspace": "C:/Dev/CMC-Go-Worktrees/wt-impl-42",
+      "branch": "agent/se/42-fix-bug"
     }
   }
 }
 ```
+
+**Required Fields:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| ts | All | ISO-8601 timestamp |
+| status | All | Current activity |
+| issue | SE | Issue number being worked |
+| workspace | SE | Absolute path to worktree (MUST NOT be main repo) |
+| branch | SE | Git branch name |
 
 **Protocol:**
 
 - Every 3 min: Update your entry (timestamp + status)
 - Before major actions: Check peers for staleness
 - Core agents stale >6 min: Senior agent respawns (PE respawns TL)
-- Non-core (SE-\*) stale: Delete entry, no respawn needed
+- SE stale >6 min: TL deletes entry, issue returns to Todo
+- **Pre-flight check:** SE must verify workspace is NOT main repo before any edits
 
 ## Spawning
 
 ```powershell
-# PE spawns TLs
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-1. Start."
-code chat -r -m "Tech Lead" -a AGENTS.md "You are TL-2. Start."
+# PE spawns TL (only 1 TL at a time)
+code chat -r -m "Tech Lead" -a AGENTS.md "You are TL. Start."
 
-# TL spawns SEs
-code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue #42. Start."
+# TL spawns SE via worktree script (MANDATORY)
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
 ```
+
+**Rules:**
+
+- PE spawns exactly 1 TL
+- TL spawns exactly 1 SE at a time
+- TL MUST use `spawn-worktree-agent.ps1` (never `code chat` directly)
+- TL waits for SE to complete/fail before spawning next SE
 
 **Hierarchy:** PE → TL → SE (PE spawns TL only, TL spawns SE only)
 
@@ -99,6 +123,65 @@ code chat -r -m "Software Engineer" -a AGENTS.md "You are SE-1. Implement Issue 
 3. **Small diffs** — Optimize for reviewability
 4. **Evidence in PRs** — Commands + results
 5. **Never stop** — Loop until Done or Blocked
+6. **SE MUST use worktree** — NEVER edit files in main repo
+7. **One SE at a time** — TL waits for SE completion before spawning next
+8. **Pre-flight check** — SE verifies worktree before ANY file edits
+
+## Worktrees (SE Isolation)
+
+SE **MUST** work in an isolated worktree. This is NON-NEGOTIABLE.
+
+### TL Spawns SE (Preferred Method)
+
+```powershell
+# TL uses this script - it handles everything
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+```
+
+### Manual Worktree Creation
+
+```powershell
+# Create worktree for issue (run from main repo)
+git fetch origin
+git worktree add -b agent/se/<issue#>-<slug> C:/Dev/CMC-Go-Worktrees/wt-impl-<issue#> origin/staging
+
+# Open worktree in new VS Code window
+code C:/Dev/CMC-Go-Worktrees/wt-impl-<issue#>
+```
+
+### SE Pre-Flight Check (MANDATORY)
+
+Before ANY file edits, SE must verify:
+
+```powershell
+# Verify NOT in main repo
+$cwd = (Get-Location).Path
+if ($cwd -eq "C:\Dev\CMC Go" -or $cwd -eq "C:/Dev/CMC Go") {
+    Write-Error "ABORT: Cannot edit files in main repo. Use worktree."
+    exit 1
+}
+
+# Verify workspace is in heartbeat
+$hb = Get-Content ".github/agents/heartbeat.json" | ConvertFrom-Json
+if ($hb.agents.SE.workspace -ne $cwd) {
+    Write-Error "ABORT: Workspace mismatch. Update heartbeat first."
+    exit 1
+}
+```
+
+**Why worktrees?**
+
+- Prevents file contention between agents
+- Main repo stays clean for TL/PE coordination
+- Each issue has isolated working directory
+- Easy cleanup after PR merges
+
+### Cleanup (TL does this after merge)
+
+```powershell
+git worktree remove C:/Dev/CMC-Go-Worktrees/wt-impl-<issue#>
+git branch -d agent/se/<issue#>-<slug>
+```
 
 ## Branch & Commit
 
