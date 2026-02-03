@@ -136,7 +136,7 @@ git config credential.helper
 
 **Cloud agents are disabled** — they cannot access MCP Memory, causing drift.
 
-All work is now routed to Local SE via `code chat -r -m "Software Engineer"`.
+All work is now routed to Local SE via `.\scripts\spawn-agent.ps1 -Agent SE`.
 
 ## Audit Trail (Quick Commands)
 

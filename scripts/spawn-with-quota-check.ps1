@@ -114,20 +114,12 @@ $history | ConvertTo-Json -Depth 3 | Set-Content $spawnLogPath -Encoding utf8
 # Spawn the agent
 Write-Host "Spawning $Role..." -ForegroundColor Green
 
-# Canonical activation messages - MUST be exactly this format
-$ActivationMessages = @{
-    'PE' = "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
-    'TL' = "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
-}
-
 switch ($Role) {
     'PE' {
-        $msg = if ($Prompt) { $Prompt } else { $ActivationMessages['PE'] }
-        code chat -r -m "Principal Engineer" $msg
+        & (Join-Path $PSScriptRoot "spawn-agent.ps1") -Agent PE
     }
     'TL' {
-        $msg = if ($Prompt) { $Prompt } else { $ActivationMessages['TL'] }
-        code chat -r -m "Tech Lead" $msg
+        & (Join-Path $PSScriptRoot "spawn-agent.ps1") -Agent TL
     }
     'SE' {
         # SE uses the worktree spawner (which has its own canonical message)

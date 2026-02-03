@@ -34,7 +34,7 @@ WHILE true:
 **Respawn PE** (when PE stale >6 min):
 
 ```powershell
-code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+.\scripts\spawn-agent.ps1 -Agent PE
 ```
 
 **Spawn SE** (when SE missing or stale):

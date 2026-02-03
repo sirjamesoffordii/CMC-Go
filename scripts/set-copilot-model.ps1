@@ -4,6 +4,8 @@
 .DESCRIPTION
     Modifies VS Code's SQLite state database to set the selected model for Copilot Chat.
     This affects ALL VS Code windows - use before launching a new window.
+    Updates both VS Code Stable and Insiders state DBs when present.
+    Sets all discovered 'chat.currentLanguageModel.*' keys (panel/agent/etc).
     
     IMPORTANT: VS Code caches state in memory. For changes to take effect:
     1. Close all VS Code windows, OR
@@ -51,7 +53,13 @@ param(
 
 # SQLite path
 $sqlite = "C:\Users\sirja\AppData\Local\Microsoft\WinGet\Packages\SQLite.SQLite_Microsoft.Winget.Source_8wekyb3d8bbwe\sqlite3.exe"
-$stateDb = "$env:APPDATA\Code\User\globalStorage\state.vscdb"
+
+# VS Code state DB locations (stable + insiders)
+$stateDbCandidates = @(
+    "$env:APPDATA\Code\User\globalStorage\state.vscdb",
+    "$env:APPDATA\Code - Insiders\User\globalStorage\state.vscdb"
+)
+$stateDbs = $stateDbCandidates | Where-Object { Test-Path $_ }
 
 # Verify SQLite exists
 if (-not (Test-Path $sqlite)) {
@@ -60,30 +68,39 @@ if (-not (Test-Path $sqlite)) {
     exit 1
 }
 
-# Verify VS Code state database exists
-if (-not (Test-Path $stateDb)) {
-    Write-Host "ERROR: VS Code state database not found at $stateDb" -ForegroundColor Red
+# Verify at least one VS Code state DB exists
+if (-not $stateDbs -or $stateDbs.Count -eq 0) {
+    Write-Host "ERROR: No VS Code state database found." -ForegroundColor Red
+    Write-Host "Checked:" -ForegroundColor Yellow
+    $stateDbCandidates | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
     exit 1
 }
 
 if ($List) {
     Write-Host "=== Available Copilot Models ===" -ForegroundColor Cyan
-    $raw = & $sqlite $stateDb "SELECT value FROM ItemTable WHERE key = 'chat.cachedLanguageModels'"
-    if ($raw) {
-        $models = $raw | ConvertFrom-Json
-        $models | ForEach-Object {
-            $id = $_.identifier -replace 'copilot/', ''
-            $name = $_.metadata.name
-            Write-Host "  $id" -ForegroundColor White -NoNewline
-            Write-Host " - $name" -ForegroundColor Gray
+    foreach ($db in $stateDbs) {
+        Write-Host "`n--- DB: $db ---" -ForegroundColor DarkGray
+        $raw = & $sqlite $db "SELECT value FROM ItemTable WHERE key = 'chat.cachedLanguageModels'"
+        if ($raw) {
+            $models = $raw | ConvertFrom-Json
+            $models | ForEach-Object {
+                $id = $_.identifier -replace 'copilot/', ''
+                $name = $_.metadata.name
+                Write-Host "  $id" -ForegroundColor White -NoNewline
+                Write-Host " - $name" -ForegroundColor Gray
+            }
+        } else {
+            Write-Host "No cached models found in this DB. Open VS Code Copilot Chat first." -ForegroundColor Yellow
         }
-    } else {
-        Write-Host "No cached models found. Open VS Code Copilot Chat first." -ForegroundColor Yellow
+
+        Write-Host "`n=== Current Model Keys ===" -ForegroundColor Cyan
+        $currentKeys = & $sqlite $db "SELECT key || ' = ' || value FROM ItemTable WHERE key LIKE 'chat.currentLanguageModel.%' ORDER BY key"
+        if ($currentKeys) {
+            $currentKeys | ForEach-Object { Write-Host "  $_" -ForegroundColor Green }
+        } else {
+            Write-Host "  (none found)" -ForegroundColor Yellow
+        }
     }
-    
-    Write-Host "`n=== Current Model ===" -ForegroundColor Cyan
-    $current = & $sqlite $stateDb "SELECT value FROM ItemTable WHERE key = 'chat.currentLanguageModel.panel'"
-    Write-Host "  $current" -ForegroundColor Green
     return
 }
 
@@ -96,25 +113,56 @@ if (-not $Model) {
 # Format the model identifier
 $modelId = "copilot/$Model"
 
-# Get current model
-$currentModel = & $sqlite $stateDb "SELECT value FROM ItemTable WHERE key = 'chat.currentLanguageModel.panel'"
-Write-Host "Current model: $currentModel" -ForegroundColor Gray
-
-# Update the model
 Write-Host "Setting model to: $modelId" -ForegroundColor Yellow
-& $sqlite $stateDb "UPDATE ItemTable SET value = '$modelId' WHERE key = 'chat.currentLanguageModel.panel'"
 
-# Also reset the isDefault flag
-& $sqlite $stateDb "UPDATE ItemTable SET value = 'false' WHERE key = 'chat.currentLanguageModel.panel.isDefault'"
+foreach ($db in $stateDbs) {
+    Write-Host "`n--- Updating DB: $db ---" -ForegroundColor Cyan
 
-# Verify
-$newModel = & $sqlite $stateDb "SELECT value FROM ItemTable WHERE key = 'chat.currentLanguageModel.panel'"
-if ($newModel -eq $modelId) {
-    Write-Host "✅ Model set to: $newModel" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "NOTE: Changes apply to NEW VS Code windows." -ForegroundColor Yellow
-    Write-Host "      Existing windows will keep their current model." -ForegroundColor Yellow
-} else {
-    Write-Host "❌ Failed to set model. Current: $newModel" -ForegroundColor Red
-    exit 1
+    # Discover existing currentLanguageModel keys so we don't guess.
+    $discovered = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE 'chat.currentLanguageModel.%' AND key NOT LIKE '%.isDefault' ORDER BY key"
+
+    $keysToSet = @()
+    if ($discovered) {
+        $keysToSet += $discovered
+    }
+
+    # Always ensure these common keys exist (safe even if unused).
+    $keysToSet += @(
+        'chat.currentLanguageModel.panel',
+        'chat.currentLanguageModel.agent'
+    )
+
+    $keysToSet = $keysToSet | Where-Object { $_ } | Select-Object -Unique
+
+    foreach ($key in $keysToSet) {
+        # Upsert model value
+        & $sqlite $db "INSERT OR IGNORE INTO ItemTable(key,value) VALUES('$key','$modelId');"
+        & $sqlite $db "UPDATE ItemTable SET value = '$modelId' WHERE key = '$key';"
+
+        # Upsert isDefault=false
+        $defaultKey = "$key.isDefault"
+        & $sqlite $db "INSERT OR IGNORE INTO ItemTable(key,value) VALUES('$defaultKey','false');"
+        & $sqlite $db "UPDATE ItemTable SET value = 'false' WHERE key = '$defaultKey';"
+    }
+
+    # Verify keys were set
+    $failures = @()
+    foreach ($key in $keysToSet) {
+        $val = & $sqlite $db "SELECT value FROM ItemTable WHERE key = '$key'"
+        if ($val -ne $modelId) {
+            $failures += "$key=$val"
+        }
+    }
+
+    if ($failures.Count -gt 0) {
+        Write-Host "❌ Failed to set some model keys:" -ForegroundColor Red
+        $failures | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        exit 1
+    }
+
+    Write-Host "✅ Model keys updated in: $db" -ForegroundColor Green
 }
+
+Write-Host "" 
+Write-Host "NOTE: Changes apply to NEW VS Code windows." -ForegroundColor Yellow
+Write-Host "      Existing windows will keep their current model." -ForegroundColor Yellow

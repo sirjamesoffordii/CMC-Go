@@ -249,7 +249,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+        .\scripts\spawn-agent.ps1 -Agent TL
     }
 }
 ```
@@ -265,7 +265,7 @@ if ($hb.PE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "PE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+        .\scripts\spawn-agent.ps1 -Agent PE
     }
 }
 
@@ -291,7 +291,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+        .\scripts\spawn-agent.ps1 -Agent TL
     }
 }
 ```
@@ -759,16 +759,17 @@ cat .git/HEAD  # Shows actual HEAD reference
 
 A worktree may have checked out the main repo to a different branch. The main workspace should typically be on `staging`.
 
-### Model Inheritance on Respawn
+### Model Selection in AEOS
 
-When using `code chat -r -m "Agent Name"` to respawn an agent, the new agent inherits the **current window's model**, NOT the model specified in the agent file's frontmatter.
+**Autonomous agents use `spawn-agent.ps1`** which preselects the correct model before opening a new VS Code window. This ensures:
 
-**If wrong model is used:**
+- PE starts on Claude Opus 4.5
+- TL starts on GPT 5.2
+- SE starts on GPT 5.2 Codex
 
-1. Close the incorrectly-spawned window
-2. Open a fresh VS Code window
-3. Select the correct model in Copilot settings
-4. Then activate the agent manually via `/activate <Agent Name>`
+**Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in an Opus window, TL will run on Opus. This is fine for human use since you can select the model before clicking send.
+
+**Rule:** For autonomous AEOS, always use `spawn-agent.ps1`. For manual testing, use `/activate` prompts.
 
 ## Reference
 

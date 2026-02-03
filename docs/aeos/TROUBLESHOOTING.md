@@ -153,7 +153,7 @@ $c = $c.Replace('oldString', 'newString')
 **Recovery:**
 
 1. Check GitHub for last activity
-2. Spawn new session: `code chat -r -m "<agent>" -a AGENTS.md "Continue Issue #X"`
+2. Spawn new session: `.\scripts\spawn-agent.ps1 -Agent <PE|TL|SE>`
 3. New agent checks board and resumes
 
 ---

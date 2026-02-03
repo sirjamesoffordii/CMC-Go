@@ -203,13 +203,10 @@ Update `.github/agents/heartbeat.json` every 3 min:
 **Monitor Tech Lead:** If Tech Lead stale >6 min → respawn:
 
 ```powershell
-code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+.\scripts\spawn-agent.ps1 -Agent TL
 ```
 
-**⚠️ MODEL INHERITANCE WARNING:** The spawned TL will inherit YOUR current model, not the `model: GPT 5.2 Codex` from the agent file. If you need TL on a specific model:
-
-1. Close the incorrectly-spawned TL window
-2. Open fresh VS Code, select correct model, manually activate TL
+**Note:** `spawn-agent.ps1` preselects GPT 5.2 before opening the TL window, ensuring the correct model.
 
 ## Principal Engineer Rules
 

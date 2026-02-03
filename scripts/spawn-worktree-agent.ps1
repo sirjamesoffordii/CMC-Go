@@ -51,6 +51,8 @@ param(
 
   [string]$WorktreeRoot = 'C:\Dev\CMC-Go-Worktrees',
 
+  [string]$Model = 'gpt-5.2-codex',
+
   [switch]$DryRun
 )
 
@@ -68,7 +70,22 @@ if (-not $Prompt) {
 Write-Host "=== Spawn Persistent SE Agent ===" -ForegroundColor Cyan
 Write-Host "Worktree:  $WorktreePath"
 if ($Profile) { Write-Host "Profile:   $Profile" }
+Write-Host "Model:     $Model"
 Write-Host ""
+
+# Step 0: Set Copilot model BEFORE opening a new VS Code window.
+# This writes to VS Code's global state DB; it applies only to NEW windows.
+$setModelCmd = Join-Path $PSScriptRoot 'set-copilot-model.ps1'
+if (Test-Path $setModelCmd) {
+  if ($DryRun) {
+    Write-Host "[DryRun] Would run: $setModelCmd -Model $Model" -ForegroundColor Yellow
+  } else {
+    Write-Host "Setting Copilot model to $Model (applies to new windows)..." -ForegroundColor Cyan
+    & $setModelCmd -Model $Model
+  }
+} else {
+  Write-Host "WARNING: set-copilot-model.ps1 not found; SE may inherit current model." -ForegroundColor Yellow
+}
 
 # Step 1: Ensure worktree root exists
 if (-not (Test-Path $WorktreeRoot)) {

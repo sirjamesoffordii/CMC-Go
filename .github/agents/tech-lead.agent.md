@@ -183,7 +183,7 @@ Update every 3 min using the heartbeat script:
 **Monitor PE:** Check PE heartbeat. If stale >6 min, respawn PE:
 
 ```powershell
-code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+.\scripts\spawn-agent.ps1 -Agent PE
 ```
 
 **Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `.\scripts\spawn-worktree-agent.ps1`.

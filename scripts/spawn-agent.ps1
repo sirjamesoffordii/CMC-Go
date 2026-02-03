@@ -50,7 +50,7 @@ $agentConfig = @{
     }
     "SE" = @{
         Name = "Software Engineer"
-        Model = "gpt-5.2-codex"             # Optimized for code generation
+        Model = "gpt-5.2-codex"            # Optimized for code generation
         BackupModel = "gpt-5.1-codex-max"   # Fallback for SE
         Prompt = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC-Go-Worktrees\wt-se"

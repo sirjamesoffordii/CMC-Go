@@ -40,7 +40,7 @@ WHILE true:
 **Respawn TL** (when TL stale >6 min):
 
 ```powershell
-code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+.\scripts\spawn-agent.ps1 -Agent TL
 ```
 
 ## Key References
