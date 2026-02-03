@@ -293,31 +293,44 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 **Programmatic respawn (when agents respawn each other):**
 
 ```powershell
-# PE respawning TL
-code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+# PE respawning TL (with correct model)
+.\scripts\spawn-agent.ps1 -Agent TL
 
-# TL respawning PE
-code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+# TL respawning PE (with correct model)
+.\scripts\spawn-agent.ps1 -Agent PE
 
-# TL spawning SE in worktree
-.\scripts\spawn-worktree-agent.ps1
+# TL spawning SE in worktree (with correct model)
+.\scripts\spawn-agent.ps1 -Agent SE
 ```
 
-**Model Inheritance (AEOS Design Decision):**
+**Manual model setting (if needed):**
 
-The `code chat` CLI does NOT have a `--model` flag. When agents spawn each other:
+```powershell
+# Set model before opening VS Code
+.\scripts\set-copilot-model.ps1 -Model "gpt-5.2-codex"
 
-- Spawned agent inherits model from the **spawning window**
-- The `model:` field in agent files is NOT enforced by CLI
+# List available models
+.\scripts\set-copilot-model.ps1 -List
+```
 
-**This is acceptable for AEOS** because:
+## Model Distribution (Rate Limit Strategy)
 
-1. Agent behavior is defined by instructions (`.agent.md`), not by which model runs them
-2. All modern models (Claude Opus 4.5, GPT 5.2, Sonnet 4) are capable of following agent instructions
-3. Consistency (same model for all) is simpler than optimization (different models per role)
-4. No VS Code setting exists to set default model programmatically
+Each agent uses a different model to distribute Copilot rate limits:
 
-**Recommendation:** Start the first agent (usually PE) with your preferred model. All spawned agents will inherit it. This is **fully automated** with **no human intervention** required after initial startup.
+| Agent              | Model           | Rationale                      |
+| ------------------ | --------------- | ------------------------------ |
+| Principal Engineer | Claude Opus 4.5 | Complex architecture decisions |
+| Tech Lead          | GPT 5.2 Codex   | Fast coordination, reviews     |
+| Software Engineer  | Claude Sonnet 4 | Balanced implementation        |
+
+**How it works:**
+
+- `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
+- The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
+- New VS Code windows pick up the model from the database
+- Existing windows keep their current model (memory-cached)
+
+**Key insight:** VS Code stores the selected model in `%APPDATA%\Code\User\globalStorage\state.vscdb`. By writing to this SQLite database before opening a new window, we can pre-select the model.
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
@@ -591,6 +604,7 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
 | `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
 | `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE)               | Human or agent restart      |
+| `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
 | `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
 | `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
 | `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all windows  |
