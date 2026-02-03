@@ -14,10 +14,13 @@
     The agent to spawn: PE, TL, or SE
 .PARAMETER UseBackup
     Use the backup model instead of primary (for rate limit recovery)
+.PARAMETER UseProfile
+    Use VS Code profiles for guaranteed model isolation (recommended for autonomous operation)
 .PARAMETER WorkspacePath
     Path to the workspace (default: current directory for PE/TL, worktree for SE)
 .EXAMPLE
     .\scripts\spawn-agent.ps1 -Agent TL
+    .\scripts\spawn-agent.ps1 -Agent TL -UseProfile
     .\scripts\spawn-agent.ps1 -Agent PE -UseBackup
     .\scripts\spawn-agent.ps1 -Agent SE
 #>
@@ -27,6 +30,8 @@ param(
     [string]$Agent,
     
     [switch]$UseBackup,
+    
+    [switch]$UseProfile,
     
     [string]$WorkspacePath
 )
@@ -40,6 +45,7 @@ $agentConfig = @{
         BackupModel = "gpt-5.2"             # Fallback if Opus rate limited
         Prompt = "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
+        ProfileName = "Principal Engineer"
     }
     "TL" = @{
         Name = "Tech Lead"
@@ -47,6 +53,7 @@ $agentConfig = @{
         BackupModel = "claude-sonnet-4.5"   # Fallback for TL
         Prompt = "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
+        ProfileName = "Tech Lead"
     }
     "SE" = @{
         Name = "Software Engineer"
@@ -54,6 +61,7 @@ $agentConfig = @{
         BackupModel = "gpt-5.1-codex-max"   # Fallback for SE
         Prompt = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC-Go-Worktrees\wt-se"
+        ProfileName = "Software Engineer"
     }
 }
 
@@ -82,33 +90,45 @@ if (-not (Test-Path $path)) {
 }
 
 # SET THE MODEL BEFORE OPENING VS CODE
-# NOTE: This only works for FRESH VS Code instances. Running VS Code windows
-# cache the model in memory and won't pick up SQLite changes.
-Write-Host "Setting Copilot model to $modelToUse..." -ForegroundColor Yellow
-& "$PSScriptRoot\set-copilot-model.ps1" -Model $modelToUse
+# NOTE: When using -UseProfile, the profile's saved model is used.
+# When not using -UseProfile, we set the model in the main state DB (may be cached).
+if (-not $UseProfile) {
+    Write-Host "Setting Copilot model to $modelToUse..." -ForegroundColor Yellow
+    & "$PSScriptRoot\set-copilot-model.ps1" -Model $modelToUse
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "WARNING: Failed to set model. Agent will use current model." -ForegroundColor Yellow
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "WARNING: Failed to set model. Agent will use current model." -ForegroundColor Yellow
+    }
+    Write-Host ""
+} else {
+    Write-Host "Using profile: $($config.ProfileName)" -ForegroundColor Cyan
+    Write-Host "Expected model: $modelToUse (ensure set in profile)" -ForegroundColor Yellow
+    Write-Host ""
 }
-
-Write-Host ""
 
 $agentName = $config.Name
 $prompt = $config.Prompt
 
 # Open new VS Code window
 Write-Host "Opening VS Code..." -ForegroundColor Yellow
-code -n $path
+if ($UseProfile -and $config.ProfileName) {
+    code --profile "$($config.ProfileName)" -n $path
+} else {
+    code -n $path
+}
 Start-Sleep -Seconds 3
 
-# IMPORTANT: VS Code caches the model in memory. The `code chat` command connects
-# to an existing VS Code server that may have an old model cached.
-# The model in SQLite is only read when VS Code starts fresh.
-Write-Host ""
-Write-Host "⚠️  IMPORTANT: VS Code caches models in memory" -ForegroundColor Yellow
-Write-Host "   If model shows wrong, manually select: $modelToUse" -ForegroundColor Yellow
-Write-Host "   (Use the model dropdown in the chat input area)" -ForegroundColor Yellow
-Write-Host ""
+if (-not $UseProfile) {
+    # IMPORTANT: VS Code caches the model in memory. The `code chat` command connects
+    # to an existing VS Code server that may have an old model cached.
+    # The model in SQLite is only read when VS Code starts fresh.
+    Write-Host ""
+    Write-Host "⚠️  IMPORTANT: VS Code caches models in memory" -ForegroundColor Yellow
+    Write-Host "   If model shows wrong, manually select: $modelToUse" -ForegroundColor Yellow
+    Write-Host "   (Use the model dropdown in the chat input area)" -ForegroundColor Yellow
+    Write-Host "   TIP: Use -UseProfile for profile-based model selection" -ForegroundColor Cyan
+    Write-Host ""
+}
 
 # Start chat - uses CWD to find the right VS Code window
 Push-Location $path
