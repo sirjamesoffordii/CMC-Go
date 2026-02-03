@@ -303,17 +303,21 @@ code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULL
 .\scripts\spawn-worktree-agent.ps1
 ```
 
-**⚠️ MODEL INHERITANCE WARNING:** The `code chat` command does NOT have a `--model` flag. The spawned agent inherits the model from the **current VS Code window**, NOT from the agent file's `model:` field. If PE is running Claude Opus 4.5 and respawns TL, the TL will also use Claude Opus 4.5 (ignoring `model: GPT 5.2 Codex` in tech-lead.agent.md).
+**Model Inheritance (AEOS Design Decision):**
 
-**Agent File Model Field (Reference):**
-Each agent file has a `model:` field in frontmatter (e.g., `model: GPT 5.2 Codex`). This field SHOULD be respected when selecting the agent via the VS Code UI, but is NOT respected by `code chat` CLI.
+The `code chat` CLI does NOT have a `--model` flag. When agents spawn each other:
 
-**To ensure correct model:**
+- Spawned agent inherits model from the **spawning window**
+- The `model:` field in agent files is NOT enforced by CLI
 
-1. **Preferred method:** Open a fresh VS Code window, select the correct model in the model picker FIRST, then use `/activate <Agent Name>` prompt
-2. **Use VS Code profiles:** Create profiles (PE-Profile, TL-Profile, SE-Profile) with correct models, then use `.\scripts\spawn-agent.ps1 -Agent TL -UseProfile`
-3. **Verify after spawn:** Ask "What model are you using?" in the first message
-4. **If wrong model:** Close the window and restart with correct model selected
+**This is acceptable for AEOS** because:
+
+1. Agent behavior is defined by instructions (`.agent.md`), not by which model runs them
+2. All modern models (Claude Opus 4.5, GPT 5.2, Sonnet 4) are capable of following agent instructions
+3. Consistency (same model for all) is simpler than optimization (different models per role)
+4. No VS Code setting exists to set default model programmatically
+
+**Recommendation:** Start the first agent (usually PE) with your preferred model. All spawned agents will inherit it. This is **fully automated** with **no human intervention** required after initial startup.
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
