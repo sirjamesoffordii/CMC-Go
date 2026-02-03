@@ -20,9 +20,11 @@ WHILE true:
     1. Update heartbeat (every 3 min): .\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
     2. Check TL heartbeat — if stale >6 min, respawn TL
     3. Check for assignment: .github/agents/assignment.json
-    4. If no assignment → Wait 30s → LOOP
-    5. If assignment exists:
-       a. Read and delete file (claim it)
+    4. If no assignment → Self-assign from board (query Todo items)
+    5. If no Todo items → Wait 30s → LOOP
+    6. If issue <5 min AND more small issues → Batch with subagents
+    7. Otherwise:
+       a. Read and delete assignment file (claim it)
        b. Update heartbeat: .\scripts\update-heartbeat.ps1 -Role SE -Status "implementing" -Issue <num>
        c. Read issue: gh issue view <num>
        d. Create branch: git checkout -b agent/se/<issue>-<slug> origin/staging

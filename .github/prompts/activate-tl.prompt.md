@@ -20,9 +20,13 @@ WHILE true:
     2. Check PE heartbeat — if stale >6 min, respawn PE
     3. Check SE heartbeat — if stale >6 min, spawn SE
     4. Check for open PRs: gh pr list --author Software-Engineer-Agent
-    5. If PRs exist → Review, merge or request changes
+    5. If PRs exist:
+       - Review (use subagents for parallel)
+       - If UI/UX change: set to "UI/UX. Review" for user approval
+       - Otherwise: merge or make small fixes
     6. If SE is idle + Todo items exist → Assign via .github/agents/assignment.json
-    7. Wait 60s → LOOP
+    7. If idle >1 min → Do small issues directly OR spawn fast subagents
+    8. Wait 30s → LOOP
 ```
 
 ## Spawning Other Agents

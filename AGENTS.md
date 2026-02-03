@@ -17,7 +17,7 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ```
 Principal Engineer (continuous) ─┬─ Tech Lead (continuous) ─┬─ Software Engineer (continuous)
                                  │                          │
-All 3 agents run simultaneously in separate VS Code windows
+All 3 agents run simultaneously in separate VS Code sessions (tabs)
 ```
 
 **All 3 agents run in parallel:**
@@ -30,25 +30,56 @@ All 3 agents run simultaneously in separate VS Code windows
 
 ## Roles
 
-| Role               | Account                  | Managed By         | Purpose                       |
-| ------------------ | ------------------------ | ------------------ | ----------------------------- |
-| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, priorities, oversight |
-| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review       |
-| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation                |
+| Role               | Account                  | Managed By         | Purpose                                 |
+| ------------------ | ------------------------ | ------------------ | --------------------------------------- |
+| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, exploration, oversight          |
+| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review, small edits    |
+| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation (parallel via subagents) |
 
 **Behavior files:** `.github/agents/{role}.agent.md`
+
+### Role Capabilities Summary
+
+| Capability              | PE  | TL   | SE  |
+| ----------------------- | --- | ---- | --- |
+| Create issues           | ✅  | ✅\* | ❌  |
+| Review PRs              | ✅  | ✅   | ❌  |
+| Merge PRs               | ✅  | ✅   | ❌  |
+| Small PR edits          | ❌  | ✅   | ❌  |
+| Full implementation     | ❌  | ✅†  | ✅  |
+| Use subagents           | ✅  | ✅   | ✅  |
+| Spawn other agents      | ✅  | ✅   | ✅‡ |
+| Set UI/UX Review status | ✅  | ✅   | ❌  |
+
+\*TL issues go to Draft (TL) status for PE approval
+†TL can do small issues after 1 min idle (directly or via subagents)
+‡SE can respawn stale TL
 
 ## Board
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status      | Owner                        | Action                       |
-| ----------- | ---------------------------- | ---------------------------- |
-| Todo        | Tech Lead                    | Assign to Software Engineer  |
-| In Progress | Software Engineer            | Being implemented            |
-| Verify      | Tech Lead/Principal Engineer | Review and merge PR          |
-| Blocked     | Principal Engineer           | Needs architectural decision |
-| Done        | —                            | Merged and closed            |
+| Status        | Owner                        | Action                       |
+| ------------- | ---------------------------- | ---------------------------- |
+| Exploratory   | Human                        | User checks items they want  |
+| Draft (TL)    | Principal Engineer           | PE reviews TL suggestions    |
+| Todo          | Tech Lead                    | Assign to Software Engineer  |
+| In Progress   | Software Engineer            | Being implemented            |
+| Verify        | Tech Lead/Principal Engineer | Review and merge PR          |
+| UI/UX. Review | Human                        | User approves visual changes |
+| Blocked       | Principal Engineer           | Needs architectural decision |
+| Done          | —                            | Merged and closed            |
+| Health Check  | —                            | System health monitoring     |
+
+**Issue Flow:**
+
+```
+PE explores → Exploratory (user checks items) → PE creates Todos
+TL observes → Draft (TL) (PE approves) → Todo
+Todo → TL assigns → In Progress → PR → Verify → Done
+                                    ↓ (if UI/UX change)
+                            UI/UX. Review → User approves → Verify → Done
+```
 
 **IDs (for GraphQL):**
 
@@ -315,22 +346,35 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 
 ## Model Distribution (Rate Limit Strategy)
 
-Each agent uses a different model to distribute Copilot rate limits:
+Each agent uses a designated PRIMARY model with a BACKUP for rate limit fallback:
 
-| Agent              | Model           | Rationale                      |
-| ------------------ | --------------- | ------------------------------ |
-| Principal Engineer | Claude Opus 4.5 | Complex architecture decisions |
-| Tech Lead          | GPT 5.2 Codex   | Fast coordination, reviews     |
-| Software Engineer  | Claude Sonnet 4 | Balanced implementation        |
+| Agent              | PRIMARY Model   | BACKUP Model      | Rationale                                   |
+| ------------------ | --------------- | ----------------- | ------------------------------------------- |
+| Principal Engineer | Claude Opus 4.5 | GPT 5.2           | Best reasoning for architecture/exploration |
+| Tech Lead          | GPT 5.2         | Claude Sonnet 4.5 | Fast coordination, PR reviews               |
+| Software Engineer  | GPT 5.2 Codex   | GPT 5.1 Codex Max | Optimized for code generation               |
+
+**Why different models:**
+
+1. **Distributed rate limits** - Each model has its own quota pool
+2. **Optimized for role** - PE needs best reasoning, SE needs code optimization
+3. **Fallback diversity** - If primary exhausts, backup uses different pool
 
 **How it works:**
 
 - `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
 - The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
-- New VS Code windows pick up the model from the database
-- Existing windows keep their current model (memory-cached)
+- New VS Code sessions pick up the model from the database
+- Existing sessions keep their current model (memory-cached)
 
-**Key insight:** VS Code stores the selected model in `%APPDATA%\Code\User\globalStorage\state.vscdb`. By writing to this SQLite database before opening a new window, we can pre-select the model.
+**Rate limit recovery:**
+
+```powershell
+# If an agent hits rate limits, respawn with backup model
+.\scripts\spawn-agent.ps1 -Agent TL -UseBackup
+```
+
+**Key insight:** VS Code stores the selected model in `%APPDATA%\Code\User\globalStorage\state.vscdb`. By writing to this SQLite database before opening a new session, we can pre-select the model.
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
@@ -488,14 +532,14 @@ All Copilot errors are logged to:
 
 **Cross-Agent Monitoring:**
 
-Since all VS Code windows share the same logs directory, ANY agent can monitor ALL agents' rate limit status:
+Since all VS Code sessions share the same logs directory, ANY agent can monitor ALL agents' rate limit status:
 
 ```powershell
 # One-time check (returns structured object)
 $status = .\scripts\monitor-agent-rate-limits.ps1 -Once
 if ($status.anyRateLimited) {
     Write-Host "An agent hit rate limits!" -ForegroundColor Red
-    Write-Host "Affected windows: $($status.windowsAffected -join ', ')"
+    Write-Host "Affected sessions: $($status.windowsAffected -join ', ')"
 }
 
 # Continuous monitoring (run as background process)
@@ -506,11 +550,11 @@ if ($status.anyRateLimited) {
 
 **Model Fallback Strategy:**
 
-| Primary Model   | Fallback (0x cost) | When to Switch               |
-| --------------- | ------------------ | ---------------------------- |
-| Claude Opus 4.5 | GPT-4.1            | 429 errors or model overload |
-| GPT-5.2         | GPT-4.1            | 429 errors                   |
-| GPT-5.2-Codex   | GPT-4.1            | 429 errors                   |
+| Primary Model   | Backup Model      | When to Switch               |
+| --------------- | ----------------- | ---------------------------- |
+| Claude Opus 4.5 | GPT 5.2           | 429 errors or model overload |
+| GPT 5.2         | Claude Sonnet 4.5 | 429 errors                   |
+| GPT 5.2 Codex   | GPT 5.1 Codex Max | 429 errors                   |
 
 **Recovery Pattern:**
 
@@ -603,11 +647,11 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
 | `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
 | `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
-| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE)               | Human or agent restart      |
+| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model    | Human or agent restart      |
 | `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
 | `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
 | `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
-| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all windows  |
+| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all sessions |
 | `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
 
 ## Known Issues & Gotchas

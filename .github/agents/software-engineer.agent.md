@@ -60,12 +60,16 @@ If you find yourself in the main repo, STOP immediately. Wait for TL to spawn yo
 WHILE true:
     1. Update heartbeat with status "idle"
     2. Check for assignment: `.github/agents/assignment.json`
-    3. IF no assignment → Wait 30s → LOOP
-    4. IF assignment exists:
-       a. Read and delete assignment.json (claim it)
-       b. Update heartbeat with status "implementing", issue number
-       c. Execute Inner Loop (implementation)
-       d. After PR created, update heartbeat to "idle"
+    3. IF no assignment:
+       a. Self-assign: Query board for Todo items
+       b. IF no Todo items → Wait 30s → LOOP
+    4. IF assignment OR self-assigned issue:
+       a. Estimate issue size
+       b. IF <5 min AND more small issues available:
+          - Batch with subagents (see Subagent Usage)
+          - Main SE: Update heartbeat every 2-3 min while waiting
+       c. ELSE: Execute Inner Loop directly
+       d. After PR(s) created, update heartbeat to "idle"
        e. LOOP (back to step 1)
 ```
 
@@ -80,6 +84,71 @@ if (Test-Path $assignmentFile) {
     # Now implement issue $issueNumber
 }
 ```
+
+**Self-assignment (when no TL assignment):**
+
+```powershell
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+$env:GH_PAGER = "cat"
+$items = gh project item-list 4 --owner sirjamesoffordii --format json | ConvertFrom-Json
+$todoItems = $items.items | Where-Object { $_.status -eq "Todo" }
+if ($todoItems.Count -gt 0) {
+    $next = $todoItems | Select-Object -First 1
+    $issueNumber = $next.content.number
+    # Implement this issue
+}
+```
+
+## Subagent Usage (Parallel Issue Batching)
+
+**Key Principle:** Batch issues estimated at <5 minutes together using subagents. Main SE agent stays alive for heartbeat checks (must beat 6-min timeout).
+
+### When to Use Subagents
+
+| Task                            | Use Subagent? | Which One           |
+| ------------------------------- | ------------- | ------------------- |
+| Quick fix (<5 min)              | ✅ Yes        | `Software Engineer` |
+| Doc update (<5 min)             | ✅ Yes        | `Software Engineer` |
+| Multiple small issues in batch  | ✅ Yes        | `Software Engineer` |
+| Research/pattern analysis       | ✅ Yes        | `Plan`              |
+| Complex implementation (>5 min) | ❌ No         | Direct              |
+| Heartbeat updates               | ❌ No         | Direct              |
+
+### Parallel Batching Workflow
+
+When you have multiple small issues (<5 min each):
+
+```
+1. Main SE: Update heartbeat ("batching-issues")
+2. Main SE: Identify all <5 min issues from board/assignment
+3. Main SE: Spawn subagent for EACH issue in parallel:
+   runSubagent("Software Engineer",
+     "Implement issue #<num>: <title>.
+      Create branch agent/se/<num>-<slug>, make changes, run pnpm check,
+      commit with 'agent(se): <summary>', push, create PR.
+      Return: PR number or error.")
+4. Main SE: Update heartbeat while waiting (every 2-3 min)
+5. Main SE: Collect results from all subagents
+6. Main SE: Update heartbeat ("idle"), loop
+```
+
+**Critical:** Main SE MUST update heartbeat every 3 min while subagents work. This prevents stale detection.
+
+### Research Before Implementation
+
+**When to spawn Plan subagent (BEFORE writing code):**
+
+```
+runSubagent("Plan", "Research how <feature> is implemented elsewhere in the codebase. Return: 1) Similar patterns found, 2) Files to reference, 3) Suggested implementation approach.")
+```
+
+**Example prompts:**
+
+- "Find all existing React components that handle loading states and identify the pattern used"
+- "Research how error handling is done in existing tRPC routers"
+- "Find all usages of the `districts` table and document the query patterns"
+
+**Rule:** If unsure about codebase patterns, spawn `Plan` first. If issue is <5 min, spawn `Software Engineer` subagent.
 
 ## Inner Loop (Implementation)
 
