@@ -71,6 +71,22 @@ All 3 agents run simultaneously in separate VS Code sessions (tabs)
 | UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes               |
 | Done             | —                              | This has been completed                           | Merged and closed, auto-archived           |
 
+**Board IDs (for GraphQL mutations):**
+
+- Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
+
+| Status           | ID         |
+| ---------------- | ---------- |
+| Blocked          | `652442a1` |
+| AEOS Improvement | `adf06f76` |
+| Exploratory      | `041398cc` |
+| Draft (TL)       | `687f4500` |
+| Todo             | `f75ad846` |
+| In Progress      | `47fc9ee4` |
+| Verify           | `5351d827` |
+| UI/UX. Review    | `576c99fd` |
+| Done             | `98236657` |
+
 **Issue Flow:**
 
 ```
@@ -385,19 +401,25 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 
 ## Model Distribution (Rate Limit Strategy)
 
-Each agent uses a designated PRIMARY model with a BACKUP for rate limit fallback:
+Each agent uses a designated PRIMARY model. Backups only apply after rate limit is verified.
 
-| Agent              | PRIMARY Model | BACKUP Model      | Rationale                    |
-| ------------------ | ------------- | ----------------- | ---------------------------- |
-| Principal Engineer | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast exploration + code gen  |
-| Tech Lead          | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast coordination, PR review |
-| Software Engineer  | GPT 5.2 Codex | GPT 5.1 Codex Max | Optimized for code gen       |
+| Agent              | PRIMARY Model   | BACKUP Model      | Fallback Behavior            |
+| ------------------ | --------------- | ----------------- | ---------------------------- |
+| Principal Engineer | Claude Opus 4.5 | —                 | Retry Opus 4.5 (no fallback) |
+| Tech Lead          | GPT 5.2         | Claude Sonnet 4.5 | Switch after 429 verified    |
+| Software Engineer  | GPT 5.2 Codex   | GPT 5.1 Codex Max | Switch after 429 verified    |
 
-**Why different models:**
+**Model rationale:**
 
-1. **Distributed rate limits** - Each model has its own quota pool
-2. **Optimized for role** - PE needs best reasoning, SE needs code optimization
-3. **Fallback diversity** - If primary exhausts, backup uses different pool
+1. **PE uses Opus 4.5** - Best reasoning for architecture decisions, exploration, and oversight
+2. **TL uses GPT 5.2** - Fast coordination and PR reviews
+3. **SE uses GPT 5.2 Codex** - Optimized for code generation
+
+**Fallback rules:**
+
+- PE has NO backup - retry Opus 4.5 on rate limit (reasoning quality is critical)
+- TL/SE switch to backup ONLY after 429 is verified via logs
+- Never preemptively switch - always try primary first
 
 **How it works:**
 
@@ -589,10 +611,21 @@ if ($status.anyRateLimited) {
 
 **Model Fallback Strategy:**
 
-| Primary Model | Backup Model      | When to Switch               |
-| ------------- | ----------------- | ---------------------------- |
-| GPT 5.2 Codex | Claude Sonnet 4.5 | 429 errors or model overload |
-| GPT 5.2 Codex | GPT 5.1 Codex Max | 429 errors                   |
+| Agent | Primary         | Backup            | When to Switch                     |
+| ----- | --------------- | ----------------- | ---------------------------------- |
+| PE    | Claude Opus 4.5 | —                 | Never switch (retry primary)       |
+| TL    | GPT 5.2         | Claude Sonnet 4.5 | After 429 verified in VS Code logs |
+| SE    | GPT 5.2 Codex   | GPT 5.1 Codex Max | After 429 verified in VS Code logs |
+
+**How to verify 429:**
+
+```powershell
+# Check VS Code logs for rate limit errors
+$logPath = "$env:APPDATA\Code\logs"
+Get-ChildItem $logPath -Recurse -Filter "*.log" | Select-String "429" -List
+```
+
+**Only switch if 429 confirmed.** Model inheritance means respawned agents get current model, not the one in frontmatter.
 
 **Recovery Pattern:**
 
