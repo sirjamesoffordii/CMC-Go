@@ -454,6 +454,58 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 **Note:** Model token limits (GPT 5.2 Codex) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
+## Copilot Rate Limits (Model Quotas)
+
+Copilot Chat models have separate per-model rate limits. When exhausted, you'll see:
+
+- User message: "Sorry, you have exhausted this model's rate limit"
+- Log error: `[error] Server error: 429 too many requests`
+
+**Detection via VS Code Logs:**
+
+All Copilot errors are logged to:
+
+```
+%APPDATA%\Code\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
+```
+
+**Cross-Agent Monitoring:**
+
+Since all VS Code windows share the same logs directory, ANY agent can monitor ALL agents' rate limit status:
+
+```powershell
+# One-time check (returns structured object)
+$status = .\scripts\monitor-agent-rate-limits.ps1 -Once
+if ($status.anyRateLimited) {
+    Write-Host "An agent hit rate limits!" -ForegroundColor Red
+    Write-Host "Affected windows: $($status.windowsAffected -join ', ')"
+}
+
+# Continuous monitoring (run as background process)
+.\scripts\monitor-agent-rate-limits.ps1  # Polls every 5 seconds
+```
+
+**Alert File:** `.github/agents/rate-limit-alert.json` (auto-updated by monitor)
+
+**Model Fallback Strategy:**
+
+| Primary Model   | Fallback (0x cost) | When to Switch               |
+| --------------- | ------------------ | ---------------------------- |
+| Claude Opus 4.5 | GPT-4.1            | 429 errors or model overload |
+| GPT-5.2         | GPT-4.1            | 429 errors                   |
+| GPT-5.2-Codex   | GPT-4.1            | 429 errors                   |
+
+**Recovery Pattern:**
+
+```powershell
+# PE/TL: Before assigning work, check if any agent is rate limited
+$rl = .\scripts\monitor-agent-rate-limits.ps1 -Once
+if ($rl.anyRateLimited) {
+    Write-Host "⚠️ Rate limit detected - waiting 5 min before assignment" -ForegroundColor Yellow
+    Start-Sleep -Seconds 300
+}
+```
+
 ## AEOS Self-Improvement (MANDATORY)
 
 Agents **MUST** report workflow friction in real-time to issue #348.
@@ -525,18 +577,20 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 ## Utility Scripts
 
-| Script                       | Purpose                         | Usage                       |
-| ---------------------------- | ------------------------------- | --------------------------- |
-| `check-rate-limits.ps1`      | GitHub API quota check          | Before expensive operations |
-| `check-ci-status.ps1`        | Human-readable CI status        | Diagnose build failures     |
-| `verify-merge.ps1`           | Post-merge verification         | After `gh pr merge`         |
-| `add-board-item.ps1`         | Add issue to board with status  | Prevents limbo items        |
-| `update-heartbeat.ps1`       | Update agent heartbeat          | Every 3 min in loop         |
-| `read-heartbeat.ps1`         | Safe heartbeat reader           | Monitor other agents        |
-| `spawn-worktree-agent.ps1`   | Spawn persistent SE in worktree | TL spawns SE once           |
-| `spawn-agent.ps1`            | Spawn any agent (PE/TL/SE)      | Human or agent restart      |
-| `cleanup-agent-branches.ps1` | Clean merged agent branches     | After several PRs merged    |
-| `aeos-status.ps1`            | Full AEOS system status         | Debugging coordination      |
+| Script                          | Purpose                                  | Usage                       |
+| ------------------------------- | ---------------------------------------- | --------------------------- |
+| `check-rate-limits.ps1`         | GitHub API quota check                   | Before expensive operations |
+| `check-ci-status.ps1`           | Human-readable CI status                 | Diagnose build failures     |
+| `verify-merge.ps1`              | Post-merge verification                  | After `gh pr merge`         |
+| `add-board-item.ps1`            | Add issue to board with status           | Prevents limbo items        |
+| `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
+| `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
+| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
+| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE)               | Human or agent restart      |
+| `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
+| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
+| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all windows  |
+| `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
 
 ## Known Issues & Gotchas
 
