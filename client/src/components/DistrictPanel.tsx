@@ -32,6 +32,7 @@ import {
   useLayoutEffect,
   useCallback,
 } from "react";
+import { toast } from "sonner";
 import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -239,7 +240,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error creating campus:", error);
-      alert(
+      toast.error(
         `Failed to create ${entityName.toLowerCase()}: ${error.message || "Unknown error"}`
       );
     },
@@ -265,7 +266,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error updating person:", error);
-      alert(`Error updating person: ${error.message || "Unknown error"}`);
+      toast.error(`Error updating person: ${error.message || "Unknown error"}`);
     },
   });
   const updatePersonStatus = trpc.people.updateStatus.useMutation({
@@ -320,7 +321,7 @@ export function DistrictPanel({
     },
     onError: error => {
       console.error("Error creating person:", error);
-      alert(`Error creating person: ${error.message || "Unknown error"}`);
+      toast.error(`Error creating person: ${error.message || "Unknown error"}`);
     },
   });
   const deletePerson = trpc.people.delete.useMutation({
@@ -1639,7 +1640,7 @@ export function DistrictPanel({
       },
       onError: error => {
         console.error("Error creating person:", error);
-        alert("Failed to create person: " + error.message);
+        toast.error("Failed to create person: " + error.message);
         setQuickAddMode(null);
         setQuickAddName("");
       },
@@ -1649,22 +1650,22 @@ export function DistrictPanel({
   // Handle add person
   const handleAddPerson = async () => {
     if (!selectedCampusId) {
-      alert("Please select a campus or location first");
+      toast.error("Please select a campus or location first");
       return;
     }
 
     if (!personForm.name?.trim()) {
-      alert("Name is required");
+      toast.error("Name is required");
       return;
     }
 
     if (!personForm.role?.trim()) {
-      alert("Role is required");
+      toast.error("Role is required");
       return;
     }
 
     if (!district?.id) {
-      alert("District information is missing");
+      toast.error("District information is missing");
       return;
     }
 
@@ -1754,7 +1755,7 @@ export function DistrictPanel({
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error("Failed to create household:", error);
-          alert("Failed to create household. Please try again.");
+          toast.error("Failed to create household. Please try again.");
           return;
         }
       }
@@ -2089,7 +2090,7 @@ export function DistrictPanel({
           householdIdToUse = newHousehold.id;
         } catch (error) {
           console.error("Failed to create household:", error);
-          alert("Failed to create household. Please try again.");
+          toast.error("Failed to create household. Please try again.");
           return;
         }
       }
