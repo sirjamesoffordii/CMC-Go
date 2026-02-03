@@ -1,22 +1,23 @@
 <#
 .SYNOPSIS
-    Add issue to project board and set status to Todo.
+    Add issue to project board and set status.
 .DESCRIPTION
-    Adds an issue to the CMC Go project board and immediately sets status to Todo.
+    Adds an issue to the CMC Go project board and immediately sets status.
     This prevents items from appearing in limbo (no status).
 .PARAMETER IssueNumber
     The issue number to add to the board
 .PARAMETER Status
-    Status to set (default: Todo). Options: Todo, Draft (TL), Blocked, In Progress
+    Status to set (default: Todo). Options: Blocked, AEOS Improvement, Exploratory, Draft (TL), Todo, In Progress, Verify, UI/UX. Review, Done
 .EXAMPLE
     .\scripts\add-board-item.ps1 -IssueNumber 123
     .\scripts\add-board-item.ps1 -IssueNumber 123 -Status "Draft (TL)"
+    .\scripts\add-board-item.ps1 -IssueNumber 123 -Status "Blocked"
 #>
 param(
     [Parameter(Mandatory)]
     [int]$IssueNumber,
     
-    [ValidateSet("Todo", "Draft (TL)", "Blocked", "In Progress")]
+    [ValidateSet("Blocked", "AEOS Improvement", "Exploratory", "Draft (TL)", "Todo", "In Progress", "Verify", "UI/UX. Review", "Done")]
     [string]$Status = "Todo"
 )
 
@@ -24,10 +25,15 @@ param(
 $projectId = "PVT_kwHODqX6Qs4BNUfu"
 $statusFieldId = "PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA"
 $statusOptionIds = @{
-    "Todo" = "f75ad846"
-    "Draft (TL)" = "687f4500"
     "Blocked" = "652442a1"
+    "AEOS Improvement" = "adf06f76"
+    "Exploratory" = "041398cc"
+    "Draft (TL)" = "687f4500"
+    "Todo" = "f75ad846"
     "In Progress" = "47fc9ee4"
+    "Verify" = "5351d827"
+    "UI/UX. Review" = "576c99fd"
+    "Done" = "98236657"
 }
 
 $statusOptionId = $statusOptionIds[$Status]

@@ -59,35 +59,71 @@ All 3 agents run simultaneously in separate VS Code sessions (tabs)
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status        | Owner                        | Action                             |
-| ------------- | ---------------------------- | ---------------------------------- |
-| Exploratory   | Human                        | User checks items they want        |
-| Draft (TL)    | Principal Engineer           | PE reviews TL suggestions          |
-| Todo          | Tech Lead                    | Assign to Software Engineer        |
-| In Progress   | Software Engineer            | Being implemented                  |
-| Verify        | Tech Lead/Principal Engineer | Review PR, check for UI/UX changes |
-| UI/UX. Review | Human                        | User approves visual changes       |
-| Blocked       | Principal Engineer           | Needs architectural decision       |
-| Done          | —                            | Merged and closed                  |
+| Status           | Owner                          | Description                                       | Action                                     |
+| ---------------- | ------------------------------ | ------------------------------------------------- | ------------------------------------------ |
+| Blocked          | Tech Lead / Principal Engineer | Work cannot proceed until PE/TL action is taken   | TL blocks + comments, PE reviews           |
+| AEOS Improvement | Principal Engineer             | Workflow improvement suggestions                  | PE reviews, user checks items to approve   |
+| Exploratory      | Human                          | Needs User Approval to Become Todo                | User checks items they want implemented    |
+| Draft (TL)       | Principal Engineer             | Drafted by TL. Needs PE approval. Not executable. | PE reviews TL suggestions → Todo or reject |
+| Todo             | Tech Lead                      | This item hasn't been started                     | TL assigns to Software Engineer            |
+| In Progress      | Software Engineer              | This is actively being worked on                  | SE implements, creates PR                  |
+| Verify           | Tech Lead/Principal Engineer   | Ready for Verification                            | Review PR, check for UI/UX changes         |
+| UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes               |
+| Done             | —                              | This has been completed                           | Merged and closed, auto-archived           |
 
 **Issue Flow:**
 
 ```
-PE explores → Exploratory (user checks items) → PE creates Todos
-TL observes → Draft (TL) (PE approves) → Todo
-Todo → TL assigns → In Progress → PR → Verify
-                                         ↓
-                                   (if UI/UX change)
-                                         ↓
-                                   UI/UX. Review → User approves
-                                         ↓
-                                        Done
+                    ┌─────────────────────────────────────────────────────────┐
+                    │                    AEOS WORKFLOW                         │
+                    └─────────────────────────────────────────────────────────┘
+
+PE explores codebase ──► Exploratory (user checks items) ──► PE creates Todos
+                              │
+TL observes problems ──► Draft (TL) ──► PE approves ──► Todo
+                              │                            │
+                              │                            ▼
+TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or close)
+                                                           │
+                                                           ▼
+                                              TL assigns via assignment.json
+                                                           │
+                                                           ▼
+                                                     In Progress
+                                                           │
+                                                           ▼
+                                                SE creates PR ──► Verify
+                                                                    │
+                                               ┌────────────────────┴────────────────────┐
+                                               │                                         │
+                                               ▼                                         ▼
+                                    (no UI/UX change)                         (has UI/UX change)
+                                               │                                         │
+                                               ▼                                         ▼
+                                          TL merges                              UI/UX. Review
+                                               │                                         │
+                                               │                          User approves ──┘
+                                               ▼                                         │
+                                             Done ◄──────────────────────────────────────┘
+
+AEOS Improvement: PE/TL/SE observe friction ──► #348 comments ──► PE promotes to checklist
 ```
 
 **IDs (for GraphQL):**
 
 - Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
-- Todo: `f75ad846` | In Progress: `47fc9ee4` | Verify: `5351d827` | Done: `98236657`
+
+| Status           | ID         |
+| ---------------- | ---------- |
+| Blocked          | `652442a1` |
+| AEOS Improvement | `adf06f76` |
+| Exploratory      | `041398cc` |
+| Draft (TL)       | `687f4500` |
+| Todo             | `f75ad846` |
+| In Progress      | `47fc9ee4` |
+| Verify           | `5351d827` |
+| UI/UX. Review    | `576c99fd` |
+| Done             | `98236657` |
 
 ## Heartbeat
 
