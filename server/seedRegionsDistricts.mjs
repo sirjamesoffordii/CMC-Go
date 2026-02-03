@@ -114,14 +114,14 @@ const districtsData = [
 
 async function seedRegionsAndDistricts() {
   const connection = await mysql.createConnection(process.env.DATABASE_URL);
-  const db = drizzle(connection);
+  drizzle(connection);
 
   console.log("Seeding regions...");
 
   // Insert regions
   const regionMap = {};
   for (const region of regionsData) {
-    const [result] = await connection.execute(
+    await connection.execute(
       "INSERT INTO regions (name, color) VALUES (?, ?) ON DUPLICATE KEY UPDATE color = VALUES(color)",
       [region.name, region.color]
     );
