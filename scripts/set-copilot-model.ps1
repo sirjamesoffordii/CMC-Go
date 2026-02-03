@@ -15,10 +15,13 @@
     The model to set. Use tab completion for valid values.
 .PARAMETER List
     List all available models.
+.PARAMETER DbPath
+    Custom state database path (for isolated user-data-dir instances).
 .EXAMPLE
     .\scripts\set-copilot-model.ps1 -Model "claude-opus-4.5"
     .\scripts\set-copilot-model.ps1 -Model "gpt-5.2-codex"
     .\scripts\set-copilot-model.ps1 -List
+    .\scripts\set-copilot-model.ps1 -Model "gpt-5.2" -DbPath "C:\Dev\vscode-data-tl\User\globalStorage\state.vscdb"
 #>
 param(
     [Parameter(ParameterSetName='Set')]
@@ -48,18 +51,25 @@ param(
     [string]$Model,
     
     [Parameter(ParameterSetName='List')]
-    [switch]$List
+    [switch]$List,
+    
+    [Parameter()]
+    [string]$DbPath
 )
 
 # SQLite path
 $sqlite = "C:\Users\sirja\AppData\Local\Microsoft\WinGet\Packages\SQLite.SQLite_Microsoft.Winget.Source_8wekyb3d8bbwe\sqlite3.exe"
 
-# VS Code state DB locations (stable + insiders)
-$stateDbCandidates = @(
-    "$env:APPDATA\Code\User\globalStorage\state.vscdb",
-    "$env:APPDATA\Code - Insiders\User\globalStorage\state.vscdb"
-)
-$stateDbs = $stateDbCandidates | Where-Object { Test-Path $_ }
+# VS Code state DB locations (stable + insiders + custom)
+if ($DbPath) {
+    $stateDbs = @($DbPath)
+} else {
+    $stateDbCandidates = @(
+        "$env:APPDATA\Code\User\globalStorage\state.vscdb",
+        "$env:APPDATA\Code - Insiders\User\globalStorage\state.vscdb"
+    )
+    $stateDbs = $stateDbCandidates | Where-Object { Test-Path $_ }
+}
 
 # Verify SQLite exists
 if (-not (Test-Path $sqlite)) {
@@ -72,7 +82,11 @@ if (-not (Test-Path $sqlite)) {
 if (-not $stateDbs -or $stateDbs.Count -eq 0) {
     Write-Host "ERROR: No VS Code state database found." -ForegroundColor Red
     Write-Host "Checked:" -ForegroundColor Yellow
-    $stateDbCandidates | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    if ($DbPath) {
+        Write-Host "  $DbPath" -ForegroundColor Yellow
+    } else {
+        $stateDbCandidates | ForEach-Object { Write-Host "  $_" -ForegroundColor Yellow }
+    }
     exit 1
 }
 
@@ -119,21 +133,30 @@ foreach ($db in $stateDbs) {
     Write-Host "`n--- Updating DB: $db ---" -ForegroundColor Cyan
 
     # Update ANY existing model-selection keys in this DB.
-    # We avoid INSERTs because ItemTable schema can vary; instead we update keys that already exist.
-    $existingModelKeys = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault' ORDER BY key"
-    if (-not $existingModelKeys) {
-        Write-Host "WARNING: No '*currentLanguageModel*' keys found in this DB. Open Copilot Chat once to populate cached keys." -ForegroundColor Yellow
-    } else {
-        & $sqlite $db "UPDATE ItemTable SET value = '$modelId' WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault'"
-        & $sqlite $db "UPDATE ItemTable SET value = 'false' WHERE key LIKE '%currentLanguageModel%.isDefault'"
+    # If Copilot Chat has never been opened in this DB, the keys may not exist yet.
+    $existingModelKeys = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE 'chat.currentLanguageModel.%' AND key NOT LIKE '%.isDefault' ORDER BY key"
+    if ($existingModelKeys) {
+        & $sqlite $db "UPDATE ItemTable SET value = '$modelId' WHERE key LIKE 'chat.currentLanguageModel.%' AND key NOT LIKE '%.isDefault'"
+        & $sqlite $db "UPDATE ItemTable SET value = 'false' WHERE key LIKE 'chat.currentLanguageModel.%.isDefault'"
+    }
 
-        # Verify
-        $mismatches = & $sqlite $db "SELECT key || '=' || value FROM ItemTable WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault' AND value <> '$modelId'"
-        if ($mismatches) {
-            Write-Host "❌ Failed to set some model keys:" -ForegroundColor Red
-            $mismatches | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-            exit 1
-        }
+    # Ensure the core keys exist even if Copilot Chat hasn't populated anything yet.
+    # ItemTable schema is consistently (key TEXT, value BLOB), so INSERT OR REPLACE is safe.
+    $coreKeys = @(
+        'chat.currentLanguageModel.panel',
+        'chat.currentLanguageModel.agent'
+    )
+    foreach ($k in $coreKeys) {
+        & $sqlite $db "INSERT OR REPLACE INTO ItemTable(key, value) VALUES('$k', '$modelId');"
+        & $sqlite $db "INSERT OR REPLACE INTO ItemTable(key, value) VALUES('$k.isDefault', 'false');"
+    }
+
+    # Verify
+    $mismatches = & $sqlite $db "SELECT key || '=' || value FROM ItemTable WHERE key IN ('chat.currentLanguageModel.panel','chat.currentLanguageModel.agent') AND value <> '$modelId'"
+    if ($mismatches) {
+        Write-Host "❌ Failed to set some model keys:" -ForegroundColor Red
+        $mismatches | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+        exit 1
     }
 
     Write-Host "✅ Model keys updated in: $db" -ForegroundColor Green
