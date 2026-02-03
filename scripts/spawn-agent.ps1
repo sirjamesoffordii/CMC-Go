@@ -103,6 +103,18 @@ if ($UseProfile) {
     
     $stateDb = "$userDataDir\User\globalStorage\state.vscdb"
     $needsInit = $Init -or (-not (Test-Path $stateDb))
+
+    # Create a unique wrapper workspace per agent so `code chat` can target the correct window
+    # even when multiple VS Code windows have the same repo/worktree folder open.
+    $workspaceFile = Join-Path $userDataDir "agent.code-workspace"
+    if (-not (Test-Path $workspaceFile)) {
+        $workspaceJson = @{
+            folders = @(
+                @{ path = $path }
+            )
+        } | ConvertTo-Json -Depth 4
+        $workspaceJson | Set-Content -Path $workspaceFile -Encoding utf8
+    }
     
     # Create user-data-dir if needed
     if (-not (Test-Path $userDataDir)) {
@@ -124,7 +136,7 @@ if ($UseProfile) {
         Write-Host "Opening VS Code to create state database..." -ForegroundColor Yellow
         
         # Open VS Code with this user-data-dir to create the state DB
-        code --user-data-dir $userDataDir -n $path
+        code --user-data-dir $userDataDir -n $workspaceFile
         
         Write-Host "Waiting for VS Code to initialize (10 seconds)..." -ForegroundColor Yellow
         Start-Sleep -Seconds 10
@@ -150,11 +162,12 @@ if ($UseProfile) {
     
     # Normal spawn with isolated user-data-dir
     Write-Host "Opening VS Code with isolated environment..." -ForegroundColor Yellow
-    code --user-data-dir $userDataDir -n $path
+    code --user-data-dir $userDataDir -n $workspaceFile
     Start-Sleep -Seconds 3
     
-    # Start the chat
-    Push-Location $path
+    # Start the chat. Use the wrapper workspace directory as CWD so `code chat` targets
+    # the isolated window we just opened.
+    Push-Location $userDataDir
     try {
         # NOTE: `code chat` does not accept --user-data-dir; it targets a window based on CWD.
         # Since this agent uses an isolated user-data-dir, the opened window should have the correct model.
