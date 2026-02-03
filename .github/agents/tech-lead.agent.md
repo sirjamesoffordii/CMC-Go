@@ -102,6 +102,51 @@ Write-Host "Assigned issue #$issue to Software Engineer"
 - Only 1 assignment at a time (file exists = SE has work)
 - Update board status to "In Progress" after assigning
 
+## Block Problematic Issues
+
+TL can block issues that shouldn't proceed. **Always add a comment explaining why.**
+
+### When to Block
+
+| Reason              | Criteria                                        | Action                        |
+| ------------------- | ----------------------------------------------- | ----------------------------- |
+| **Scope Too Large** | >1 day effort, touches >5 files, multiple areas | Block, recommend splitting    |
+| **Conflicts**       | Would break or duplicate in-progress work       | Block, note conflicting issue |
+| **Stale**           | Requirements changed, superseded by other work  | Block, recommend closing      |
+| **Not Beneficial**  | Effort outweighs value, edge case <1% impact    | Block, recommend archiving    |
+
+### Blocking Commands
+
+```powershell
+# 1. Move to Blocked status
+.\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Blocked"
+
+# 2. Add explanation comment
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$body = @"
+## 🚫 Blocked by Tech Lead
+
+**Reason:** <Scope Too Large | Conflicts | Stale | Not Beneficial>
+
+**Details:**
+<explanation of why this issue is problematic>
+
+**Recommendation:**
+<what PE should do - e.g., "Break into smaller issues" or "Close as superseded">
+
+**Blocked at:** $(Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+"@
+gh issue comment <num> --repo sirjamesoffordii/CMC-Go --body $body
+```
+
+### What Happens Next
+
+PE reviews blocked items and either:
+
+- **Accepts:** Creates smaller issues, closes original
+- **Declines:** Moves back to Todo with clarification
+- **Archives:** Closes issue as won't-do
+
 ## Spawn SE (One Time Only)
 
 If no SE is running (no SE heartbeat), spawn one:
@@ -283,9 +328,11 @@ gh pr view <num> --json state,mergeable,statusCheckRollup
 gh pr merge <num> --squash --delete-branch
 ```
 
-### UI/UX Change Detection
+### UI/UX Change Detection (During Verify)
 
-If PR contains visual/UI changes, set for user review BEFORE merge:
+During Verify, if PR contains visual/UI changes, set for user review AFTER verifying code quality but BEFORE final merge:
+
+**Workflow:** `Verify` → (detect UI change) → `UI/UX. Review` → (user approves) → `Done`
 
 ```powershell
 # Check if PR touches UI files
@@ -293,22 +340,36 @@ $changedFiles = gh pr view <num> --json files -q '.files[].path'
 $uiFiles = $changedFiles | Where-Object { $_ -match '\.(tsx|css|scss)$' -and $_ -match 'client/' }
 
 if ($uiFiles) {
-    Write-Host "UI/UX changes detected - setting for user review" -ForegroundColor Yellow
+    Write-Host "UI/UX changes detected - code verified, awaiting user visual review" -ForegroundColor Yellow
 
     # Find related issue number from PR
     $prBody = gh pr view <num> --json body -q '.body'
     $issueNum = [regex]::Match($prBody, 'Closes #(\d+)').Groups[1].Value
 
-    # Set to UI/UX. Review status
+    # Move from Verify to UI/UX. Review
     .\scripts\add-board-item.ps1 -IssueNumber $issueNum -Status "UI/UX. Review"
 
     # Comment with preview instructions
-    gh pr comment <num> --body "## UI/UX Review Required\n\nThis PR contains visual changes. Please review:\n\n1. Run \`pnpm dev\`\n2. Check the affected pages\n3. Comment 'LGTM' to approve or describe issues\n\n**Files changed:**\n$($uiFiles -join "`n")"
+    gh pr comment <num> --body "## UI/UX Review Required
+
+Code has been verified ✅. This PR contains visual changes that need your approval.
+
+**To review:**
+1. Run \`pnpm dev\` locally
+2. Check the affected pages/components
+3. Comment 'LGTM' to approve, or describe any issues
+
+**Files with UI changes:**
+$($uiFiles -join \"`n\")
+
+Once approved, TL will merge."
 
     # Don't merge yet - wait for user approval
     return
 }
 ```
+
+**After user approves:** TL checks for 'LGTM' comment or status change, then merges.
 
 ### Post-Merge Verification (MANDATORY)
 
@@ -318,11 +379,27 @@ After EVERY `gh pr merge`, run verification:
 .\scripts\verify-merge.ps1 -PRNumber <num>
 ```
 
-**If verification fails:**
+### Staging Health Check (After Merge)
+
+After verification passes, check that Railway staging deployment is healthy:
+
+```powershell
+# Check staging health endpoint
+$response = Invoke-WebRequest -Uri "https://cmc-go-github-staging-staging.up.railway.app/api/health" -UseBasicParsing
+if ($response.StatusCode -eq 200) {
+    Write-Host "✅ Staging healthy: $($response.Content)" -ForegroundColor Green
+} else {
+    Write-Host "⚠️ Staging unhealthy: $($response.StatusCode)" -ForegroundColor Yellow
+    # Log to #348 if deployment issues persist
+}
+```
+
+**If verification or health check fails:**
 
 1. Check PR state on GitHub
 2. Re-attempt merge if needed
-3. If still failing, log to issue #348 and continue
+3. Check Railway logs: `railway logs --environment staging`
+4. If still failing, log to issue #348 and continue
 
 **Periodically clean up merged branches (run after several merges):**
 

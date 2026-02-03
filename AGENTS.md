@@ -59,26 +59,29 @@ All 3 agents run simultaneously in separate VS Code sessions (tabs)
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status        | Owner                        | Action                       |
-| ------------- | ---------------------------- | ---------------------------- |
-| Exploratory   | Human                        | User checks items they want  |
-| Draft (TL)    | Principal Engineer           | PE reviews TL suggestions    |
-| Todo          | Tech Lead                    | Assign to Software Engineer  |
-| In Progress   | Software Engineer            | Being implemented            |
-| Verify        | Tech Lead/Principal Engineer | Review and merge PR          |
-| UI/UX. Review | Human                        | User approves visual changes |
-| Blocked       | Principal Engineer           | Needs architectural decision |
-| Done          | —                            | Merged and closed            |
-| Health Check  | —                            | System health monitoring     |
+| Status        | Owner                        | Action                             |
+| ------------- | ---------------------------- | ---------------------------------- |
+| Exploratory   | Human                        | User checks items they want        |
+| Draft (TL)    | Principal Engineer           | PE reviews TL suggestions          |
+| Todo          | Tech Lead                    | Assign to Software Engineer        |
+| In Progress   | Software Engineer            | Being implemented                  |
+| Verify        | Tech Lead/Principal Engineer | Review PR, check for UI/UX changes |
+| UI/UX. Review | Human                        | User approves visual changes       |
+| Blocked       | Principal Engineer           | Needs architectural decision       |
+| Done          | —                            | Merged and closed                  |
 
 **Issue Flow:**
 
 ```
 PE explores → Exploratory (user checks items) → PE creates Todos
 TL observes → Draft (TL) (PE approves) → Todo
-Todo → TL assigns → In Progress → PR → Verify → Done
-                                    ↓ (if UI/UX change)
-                            UI/UX. Review → User approves → Verify → Done
+Todo → TL assigns → In Progress → PR → Verify
+                                         ↓
+                                   (if UI/UX change)
+                                         ↓
+                                   UI/UX. Review → User approves
+                                         ↓
+                                        Done
 ```
 
 **IDs (for GraphQL):**
@@ -348,11 +351,11 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 
 Each agent uses a designated PRIMARY model with a BACKUP for rate limit fallback:
 
-| Agent              | PRIMARY Model   | BACKUP Model      | Rationale                                   |
-| ------------------ | --------------- | ----------------- | ------------------------------------------- |
-| Principal Engineer | Claude Opus 4.5 | GPT 5.2           | Best reasoning for architecture/exploration |
-| Tech Lead          | GPT 5.2         | Claude Sonnet 4.5 | Fast coordination, PR reviews               |
-| Software Engineer  | GPT 5.2 Codex   | GPT 5.1 Codex Max | Optimized for code generation               |
+| Agent              | PRIMARY Model | BACKUP Model      | Rationale                    |
+| ------------------ | ------------- | ----------------- | ---------------------------- |
+| Principal Engineer | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast exploration + code gen  |
+| Tech Lead          | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast coordination, PR review |
+| Software Engineer  | GPT 5.2 Codex | GPT 5.1 Codex Max | Optimized for code gen       |
 
 **Why different models:**
 
@@ -550,11 +553,10 @@ if ($status.anyRateLimited) {
 
 **Model Fallback Strategy:**
 
-| Primary Model   | Backup Model      | When to Switch               |
-| --------------- | ----------------- | ---------------------------- |
-| Claude Opus 4.5 | GPT 5.2           | 429 errors or model overload |
-| GPT 5.2         | Claude Sonnet 4.5 | 429 errors                   |
-| GPT 5.2 Codex   | GPT 5.1 Codex Max | 429 errors                   |
+| Primary Model | Backup Model      | When to Switch               |
+| ------------- | ----------------- | ---------------------------- |
+| GPT 5.2 Codex | Claude Sonnet 4.5 | 429 errors or model overload |
+| GPT 5.2 Codex | GPT 5.1 Codex Max | 429 errors                   |
 
 **Recovery Pattern:**
 

@@ -50,11 +50,12 @@ WHILE true:
        - Collect results into single Exploratory issue with checkboxes
     5. Review app: Run Playwright screenshots, check UX/bugs
     6. Check "Draft" items — approve TL issues (move to Todo) or reject
-    7. Check "UI/UX. Review" items — provide screenshot/link for user to approve
-    8. Set priorities on board (Urgent > High > Medium > Low)
-    9. Review PRs if Tech Lead is busy
-    10. AEOS: Add own observations + Review TL/SE observations (see below)
-    11. Wait 30s → LOOP
+    7. Check "Blocked" items — review TL block reasons, accept/decline/archive
+    8. Check "UI/UX. Review" items — provide screenshot/link for user to approve
+    9. Set priorities on board (Urgent > High > Medium > Low)
+    10. Review PRs if Tech Lead is busy
+    11. AEOS: Add own observations + Review TL/SE observations (see below)
+    12. Wait 30s → LOOP
 ```
 
 ## AEOS Self-Improvement (CRITICAL PE RESPONSIBILITY)
@@ -205,7 +206,7 @@ Update `.github/agents/heartbeat.json` every 3 min:
 code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
 ```
 
-**⚠️ MODEL INHERITANCE WARNING:** The spawned TL will inherit YOUR model (Claude Opus 4.5), not the `model: GPT 5.2 Codex` from the agent file. If you need TL on a specific model:
+**⚠️ MODEL INHERITANCE WARNING:** The spawned TL will inherit YOUR current model, not the `model: GPT 5.2 Codex` from the agent file. If you need TL on a specific model:
 
 1. Close the incorrectly-spawned TL window
 2. Open fresh VS Code, select correct model, manually activate TL
@@ -266,10 +267,10 @@ gh pr comment <num> --body "## UI/UX Change Description\n\n**What changed:**\n- 
 
 ### After User Approval
 
-When user approves (comments or moves status):
+When user approves (comments 'LGTM' or moves status):
 
-1. Move issue from "UI/UX. Review" to "Verify"
-2. TL can proceed with merge
+1. TL can proceed with merge
+2. Issue moves to Done after merge
 
 ## Common Gotchas (PE Must Know)
 
