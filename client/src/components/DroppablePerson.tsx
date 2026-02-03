@@ -202,11 +202,6 @@ export function DroppablePerson({
       if (!canInteract) return;
       e.stopPropagation();
       e.preventDefault();
-      console.log("Edit button clicked", {
-        campusId,
-        personId: person.personId,
-        personName: person.name || person.personId,
-      });
       onEdit(campusId, person);
     },
     [campusId, person, onEdit, canInteract]
@@ -277,10 +272,6 @@ export function DroppablePerson({
                 onClick={e => {
                   e.stopPropagation();
                   e.preventDefault();
-                  console.log("Edit button clicked directly", {
-                    campusId,
-                    personId: person.personId,
-                  });
                   onEdit(campusId, person);
                 }}
                 onMouseDown={e => {
