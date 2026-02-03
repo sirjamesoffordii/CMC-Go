@@ -134,27 +134,33 @@ if ($DryRun) {
   & code @codeArgs
 }
 
-# Step 4: Wait for VS Code to initialize
-$waitSeconds = 3
+# Step 4: Wait for VS Code to initialize and load the model from SQLite
+$waitSeconds = 5
 if ($DryRun) {
   Write-Host "[DryRun] Would wait $waitSeconds seconds for VS Code init" -ForegroundColor Yellow
 } else {
-  Write-Host "Waiting $waitSeconds seconds for VS Code to initialize..."
+  Write-Host "Waiting $waitSeconds seconds for VS Code to initialize and load model..."
   Start-Sleep -Seconds $waitSeconds
 }
 
 # Step 5: Trigger Copilot chat with Software Engineer agent
-$chatArgs = @('chat', '-r', '-m', 'Software Engineer', $Prompt)
+# Change to the worktree directory so `code chat` targets that window
+$chatArgs = @('chat', '-m', 'Software Engineer', $Prompt)
 $chatCmd = "code " + ($chatArgs -join ' ')
 
 if ($DryRun) {
-  Write-Host "[DryRun] Would run: code chat -r -m 'Software Engineer' '<prompt>'" -ForegroundColor Yellow
+  Write-Host "[DryRun] Would run: code chat -m 'Software Engineer' '<prompt>'" -ForegroundColor Yellow
   Write-Host ""
   Write-Host "Prompt content:" -ForegroundColor Cyan
   Write-Host $Prompt
 } else {
   Write-Host "Triggering Copilot chat with Software Engineer agent..." -ForegroundColor Cyan
-  & code @chatArgs
+  Push-Location $WorktreePath
+  try {
+    & code @chatArgs
+  } finally {
+    Pop-Location
+  }
   Write-Host ""
   Write-Host "Persistent SE agent started!" -ForegroundColor Green
   Write-Host "Worktree: $WorktreePath"

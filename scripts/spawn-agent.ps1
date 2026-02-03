@@ -95,12 +95,18 @@ Write-Host "Opening VS Code and starting chat..." -ForegroundColor Yellow
 $agentName = $config.Name
 $prompt = $config.Prompt
 
-# Open VS Code with new window, then start chat
+# Open VS Code with new window pointing to the workspace
 code -n $path
-Start-Sleep -Seconds 3  # Wait for VS Code to fully load
+Start-Sleep -Seconds 5  # Wait for VS Code to fully load and become active
 
-# Start the chat in that window
-code chat -r -m $agentName $prompt
+# Change to the workspace directory so `code chat` targets that window
+Push-Location $path
+try {
+    # Start the chat - it will go to the window with this working directory
+    code chat -m $agentName $prompt
+} finally {
+    Pop-Location
+}
 
 Write-Host ""
 Write-Host "✅ Agent spawned with model: $modelToUse ($modelType)" -ForegroundColor Green

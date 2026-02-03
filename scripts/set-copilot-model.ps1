@@ -118,46 +118,22 @@ Write-Host "Setting model to: $modelId" -ForegroundColor Yellow
 foreach ($db in $stateDbs) {
     Write-Host "`n--- Updating DB: $db ---" -ForegroundColor Cyan
 
-    # Discover existing currentLanguageModel keys so we don't guess.
-    $discovered = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE 'chat.currentLanguageModel.%' AND key NOT LIKE '%.isDefault' ORDER BY key"
+    # Update ANY existing model-selection keys in this DB.
+    # We avoid INSERTs because ItemTable schema can vary; instead we update keys that already exist.
+    $existingModelKeys = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault' ORDER BY key"
+    if (-not $existingModelKeys) {
+        Write-Host "WARNING: No '*currentLanguageModel*' keys found in this DB. Open Copilot Chat once to populate cached keys." -ForegroundColor Yellow
+    } else {
+        & $sqlite $db "UPDATE ItemTable SET value = '$modelId' WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault'"
+        & $sqlite $db "UPDATE ItemTable SET value = 'false' WHERE key LIKE '%currentLanguageModel%.isDefault'"
 
-    $keysToSet = @()
-    if ($discovered) {
-        $keysToSet += $discovered
-    }
-
-    # Always ensure these common keys exist (safe even if unused).
-    $keysToSet += @(
-        'chat.currentLanguageModel.panel',
-        'chat.currentLanguageModel.agent'
-    )
-
-    $keysToSet = $keysToSet | Where-Object { $_ } | Select-Object -Unique
-
-    foreach ($key in $keysToSet) {
-        # Upsert model value
-        & $sqlite $db "INSERT OR IGNORE INTO ItemTable(key,value) VALUES('$key','$modelId');"
-        & $sqlite $db "UPDATE ItemTable SET value = '$modelId' WHERE key = '$key';"
-
-        # Upsert isDefault=false
-        $defaultKey = "$key.isDefault"
-        & $sqlite $db "INSERT OR IGNORE INTO ItemTable(key,value) VALUES('$defaultKey','false');"
-        & $sqlite $db "UPDATE ItemTable SET value = 'false' WHERE key = '$defaultKey';"
-    }
-
-    # Verify keys were set
-    $failures = @()
-    foreach ($key in $keysToSet) {
-        $val = & $sqlite $db "SELECT value FROM ItemTable WHERE key = '$key'"
-        if ($val -ne $modelId) {
-            $failures += "$key=$val"
+        # Verify
+        $mismatches = & $sqlite $db "SELECT key || '=' || value FROM ItemTable WHERE key LIKE '%currentLanguageModel%' AND key NOT LIKE '%.isDefault' AND value <> '$modelId'"
+        if ($mismatches) {
+            Write-Host "❌ Failed to set some model keys:" -ForegroundColor Red
+            $mismatches | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
+            exit 1
         }
-    }
-
-    if ($failures.Count -gt 0) {
-        Write-Host "❌ Failed to set some model keys:" -ForegroundColor Red
-        $failures | ForEach-Object { Write-Host "  $_" -ForegroundColor Red }
-        exit 1
     }
 
     Write-Host "✅ Model keys updated in: $db" -ForegroundColor Green
