@@ -39,7 +39,48 @@ param(
     [string]$WorkspacePath
 )
 
-# Agent configurations with designated models and backups
+function Stop-VSCodeForUserDataDir {
+    param(
+        [Parameter(Mandatory)]
+        [string]$UserDataDir
+    )
+
+    $escaped = [regex]::Escape($UserDataDir)
+    $procs = Get-CimInstance Win32_Process -Filter "Name = 'Code.exe'" -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.CommandLine -and
+            ($_.CommandLine -match '--user-data-dir') -and
+            ($_.CommandLine -match $escaped)
+        }
+
+    if ($procs) {
+        Write-Host "Stopping existing VS Code instances for user-data-dir: $UserDataDir" -ForegroundColor Yellow
+        foreach ($p in $procs) {
+            try {
+                Stop-Process -Id $p.ProcessId -Force -ErrorAction Stop
+            } catch {
+                Write-Host "WARNING: Failed to stop Code.exe PID $($p.ProcessId): $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+        }
+        Start-Sleep -Seconds 2
+    }
+}
+
+# Agent configurations
+# Each agent uses its own user-data-dir with a dedicated GitHub account logged in.
+# This provides per-agent Copilot rate limits, allowing all agents to use Opus 4.5.
+#
+# ONE-TIME SETUP per agent:
+#   1. Run: code --user-data-dir <UserDataDir>
+#   2. Sign out of any existing GitHub account
+#   3. Sign in with the agent's GitHub account (see GH_CONFIG_DIR below)
+#   4. Close VS Code
+#
+# GitHub accounts:
+#   PE: Principal-Engineer-Agent  (GH_CONFIG_DIR: C:/Users/sirja/.gh-principal-engineer-agent)
+#   TL: Alpha-Tech-Lead           (GH_CONFIG_DIR: C:/Users/sirja/.gh-alpha-tech-lead)
+#   SE: Software-Engineer-Agent   (GH_CONFIG_DIR: C:/Users/sirja/.gh-software-engineer-agent)
+#
 $agentConfig = @{
     "PE" = @{
         Name = "Principal Engineer"
@@ -48,22 +89,25 @@ $agentConfig = @{
         Prompt = "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
         UserDataDir = "C:\Dev\vscode-data-pe"
+        GitHubAccount = "Principal-Engineer-Agent"
     }
     "TL" = @{
         Name = "Tech Lead"
-        Model = "gpt-5.2"
-        BackupModel = "claude-sonnet-4.5"
+        Model = "claude-opus-4.5"
+        BackupModel = "gpt-5.2"
         Prompt = "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
         UserDataDir = "C:\Dev\vscode-data-tl"
+        GitHubAccount = "Alpha-Tech-Lead"
     }
     "SE" = @{
         Name = "Software Engineer"
-        Model = "gpt-5.2-codex"
-        BackupModel = "gpt-5.1-codex-max"
+        Model = "claude-opus-4.5"
+        BackupModel = "gpt-5.2"
         Prompt = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC-Go-Worktrees\wt-se"
         UserDataDir = "C:\Dev\vscode-data-se"
+        GitHubAccount = "Software-Engineer-Agent"
     }
 }
 
@@ -94,7 +138,7 @@ if (-not (Test-Path $path)) {
     }
 }
 
-$agentName = $config.Name
+$chatParticipant = $config.Name
 $prompt = $config.Prompt
 
 if ($UseProfile) {
@@ -103,6 +147,12 @@ if ($UseProfile) {
     
     $stateDb = "$userDataDir\User\globalStorage\state.vscdb"
     $needsInit = $Init -or (-not (Test-Path $stateDb))
+    
+    # Create user-data-dir if needed
+    if (-not (Test-Path $userDataDir)) {
+        Write-Host "Creating user-data-dir: $userDataDir" -ForegroundColor Yellow
+        New-Item -ItemType Directory -Path $userDataDir -Force | Out-Null
+    }
 
     # Create a unique wrapper workspace per agent so `code chat` can target the correct window
     # even when multiple VS Code windows have the same repo/worktree folder open.
@@ -114,12 +164,6 @@ if ($UseProfile) {
             )
         } | ConvertTo-Json -Depth 4
         $workspaceJson | Set-Content -Path $workspaceFile -Encoding utf8
-    }
-    
-    # Create user-data-dir if needed
-    if (-not (Test-Path $userDataDir)) {
-        Write-Host "Creating user-data-dir: $userDataDir" -ForegroundColor Yellow
-        New-Item -ItemType Directory -Path $userDataDir -Force | Out-Null
     }
     
     # Symlink extensions from main profile (share extensions, save space)
@@ -134,6 +178,9 @@ if ($UseProfile) {
         Write-Host ""
         Write-Host "=== Initializing $($config.Name) environment ===" -ForegroundColor Magenta
         Write-Host "Opening VS Code to create state database..." -ForegroundColor Yellow
+
+        # Ensure we start clean so VS Code can't reuse an existing instance with cached settings.
+        Stop-VSCodeForUserDataDir -UserDataDir $userDataDir
         
         # Open VS Code with this user-data-dir to create the state DB
         code --user-data-dir $userDataDir -n $workspaceFile
@@ -147,6 +194,9 @@ if ($UseProfile) {
             Write-Host "Then run: .\scripts\spawn-agent.ps1 -Agent $Agent -UseProfile" -ForegroundColor Yellow
             exit 1
         }
+
+        # Close the init window so the next run picks up the DB changes.
+        Stop-VSCodeForUserDataDir -UserDataDir $userDataDir
         
         # Set the model in this agent's state DB
         Write-Host "Setting model to $modelToUse in agent's state DB..." -ForegroundColor Yellow
@@ -162,16 +212,27 @@ if ($UseProfile) {
     
     # Normal spawn with isolated user-data-dir
     Write-Host "Opening VS Code with isolated environment..." -ForegroundColor Yellow
-    code --user-data-dir $userDataDir -n $workspaceFile
+
+    # Ensure VS Code reloads settings from disk (model selection is cached in-memory).
+    Stop-VSCodeForUserDataDir -UserDataDir $userDataDir
+
+    # Re-apply the configured model every time (also seeds cached models for isolated DBs).
+    & "$PSScriptRoot\set-copilot-model.ps1" -Model $modelToUse -DbPath $stateDb
+
+    $openTarget = if ($Agent -eq "SE") { $path } else { $workspaceFile }
+    code --user-data-dir $userDataDir -n $openTarget
     Start-Sleep -Seconds 3
     
-    # Start the chat. Use the wrapper workspace directory as CWD so `code chat` targets
-    # the isolated window we just opened.
-    Push-Location $userDataDir
+    # Start the chat.
+    # - SE: CWD is the SE worktree (unique), so `code chat` targets the correct window.
+    # - PE/TL: CWD is the isolated user-data-dir (unique), so `code chat` targets the correct window.
+    $chatCwd = if ($Agent -eq "SE") { $path } else { $userDataDir }
+    Push-Location $chatCwd
     try {
         # NOTE: `code chat` does not accept --user-data-dir; it targets a window based on CWD.
         # Since this agent uses an isolated user-data-dir, the opened window should have the correct model.
-        code chat -m $agentName $prompt
+        $chatPrompt = "@$chatParticipant $prompt"
+        code chat -m agent $chatPrompt
     } finally {
         Pop-Location
     }
@@ -200,7 +261,8 @@ if ($UseProfile) {
     # Start chat
     Push-Location $path
     try {
-        code chat -m $agentName $prompt
+        $chatPrompt = "@$chatParticipant $prompt"
+        code chat -m agent $chatPrompt
     } finally {
         Pop-Location
     }

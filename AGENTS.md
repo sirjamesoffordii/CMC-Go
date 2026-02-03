@@ -17,7 +17,7 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ```
 Principal Engineer (continuous) ─┬─ Tech Lead (continuous) ─┬─ Software Engineer (continuous)
                                  │                          │
-All 3 agents run simultaneously in separate VS Code sessions (tabs)
+All 3 agents run simultaneously in separate VS Code windows (isolated user-data-dirs)
 ```
 
 **All 3 agents run in parallel:**
@@ -27,6 +27,34 @@ All 3 agents run simultaneously in separate VS Code sessions (tabs)
 - **Software Engineer** — implements issues, creates PRs, returns to idle
 
 **Critical invariant:** Heartbeat registration is the FIRST action on activation. Without a heartbeat, an agent doesn't exist to the system.
+
+### VS Code Isolation (Per-Agent Copilot Accounts)
+
+Each agent runs in an **isolated VS Code instance** with its own GitHub account signed in.
+This gives each agent **separate Copilot Pro rate limits**, allowing all agents to use **Claude Opus 4.5**.
+
+| Agent | VS Code User-Data-Dir   | GitHub Account           | Model           |
+| ----- | ----------------------- | ------------------------ | --------------- |
+| PE    | `C:\Dev\vscode-data-pe` | Principal-Engineer-Agent | Claude Opus 4.5 |
+| TL    | `C:\Dev\vscode-data-tl` | Alpha-Tech-Lead          | Claude Opus 4.5 |
+| SE    | `C:\Dev\vscode-data-se` | Software-Engineer-Agent  | Claude Opus 4.5 |
+
+**One-time setup (per agent):**
+
+```powershell
+# Run the setup script to sign each agent into its own GitHub account
+.\scripts\setup-agent-vscode-auth.ps1 -Agent All
+```
+
+Or manually per agent:
+
+1. Run: `code --user-data-dir C:\Dev\vscode-data-{pe|tl|se} -n "C:\Dev\CMC Go"`
+2. Click Accounts icon → Sign out of existing GitHub account
+3. Sign in with the agent's GitHub account
+4. Verify Copilot works → Close window
+
+**Why this works:** Each GitHub account has its own Copilot Pro subscription and rate limits.
+By isolating VS Code instances per account, agents don't share quota.
 
 ## Roles
 
@@ -589,54 +617,38 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 ## Copilot Rate Limits (Model Quotas)
 
-Copilot Chat models have separate per-model rate limits. When exhausted, you'll see:
+**With per-agent GitHub accounts, rate limits are isolated per agent.**
+
+Each agent's VS Code instance is signed into a different GitHub account with its own Copilot Pro subscription.
+This means PE, TL, and SE each have **independent rate limits** and can all use Claude Opus 4.5 simultaneously.
+
+| Agent | GitHub Account           | VS Code User-Data-Dir   | Model           |
+| ----- | ------------------------ | ----------------------- | --------------- |
+| PE    | Principal-Engineer-Agent | `C:\Dev\vscode-data-pe` | Claude Opus 4.5 |
+| TL    | Alpha-Tech-Lead          | `C:\Dev\vscode-data-tl` | Claude Opus 4.5 |
+| SE    | Software-Engineer-Agent  | `C:\Dev\vscode-data-se` | Claude Opus 4.5 |
+
+**If a single agent hits rate limits:**
 
 - User message: "Sorry, you have exhausted this model's rate limit"
 - Log error: `[error] Server error: 429 too many requests`
+- **This only affects that agent's account** — other agents continue unaffected
 
 **Detection via VS Code Logs:**
 
-All Copilot errors are logged to:
+Each agent's logs are in its own user-data-dir:
 
 ```
-%APPDATA%\Code\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
+C:\Dev\vscode-data-{pe|tl|se}\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
 ```
-
-**Cross-Agent Monitoring:**
-
-Since all VS Code sessions share the same logs directory, ANY agent can monitor ALL agents' rate limit status:
-
-```powershell
-# One-time check (returns structured object)
-$status = .\scripts\monitor-agent-rate-limits.ps1 -Once
-if ($status.anyRateLimited) {
-    Write-Host "An agent hit rate limits!" -ForegroundColor Red
-    Write-Host "Affected sessions: $($status.windowsAffected -join ', ')"
-}
-
-# Continuous monitoring (run as background process)
-.\scripts\monitor-agent-rate-limits.ps1  # Polls every 5 seconds
-```
-
-**Alert File:** `.github/agents/rate-limit-alert.json` (auto-updated by monitor)
 
 **Model Fallback Strategy:**
 
-| Agent | Primary         | Backup            | When to Switch                     |
-| ----- | --------------- | ----------------- | ---------------------------------- |
-| PE    | Claude Opus 4.5 | —                 | Never switch (retry primary)       |
-| TL    | GPT 5.2         | Claude Sonnet 4.5 | After 429 verified in VS Code logs |
-| SE    | GPT 5.2 Codex   | GPT 5.1 Codex Max | After 429 verified in VS Code logs |
-
-**How to verify 429:**
-
-```powershell
-# Check VS Code logs for rate limit errors
-$logPath = "$env:APPDATA\Code\logs"
-Get-ChildItem $logPath -Recurse -Filter "*.log" | Select-String "429" -List
-```
-
-**Only switch if 429 confirmed.** Model inheritance means respawned agents get current model, not the one in frontmatter.
+| Agent | Primary         | Backup  | When to Switch                  |
+| ----- | --------------- | ------- | ------------------------------- |
+| PE    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
+| TL    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
+| SE    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
 
 **Recovery Pattern:**
 

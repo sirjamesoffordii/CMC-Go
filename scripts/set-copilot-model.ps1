@@ -132,6 +132,26 @@ Write-Host "Setting model to: $modelId" -ForegroundColor Yellow
 foreach ($db in $stateDbs) {
     Write-Host "`n--- Updating DB: $db ---" -ForegroundColor Cyan
 
+    # If this DB has an incomplete model cache (common in isolated user-data-dirs),
+    # seed it from the main VS Code stable DB so model selection can be validated.
+    $mainStableDb = "$env:APPDATA\Code\User\globalStorage\state.vscdb"
+    if ((Test-Path $mainStableDb) -and ($db -ne $mainStableDb)) {
+        $cachedLen = & $sqlite $db "SELECT ifnull(length(value),0) FROM ItemTable WHERE key = 'chat.cachedLanguageModels'"
+        $cachedLenNum = 0
+        [int]::TryParse(($cachedLen | Select-Object -First 1), [ref]$cachedLenNum) | Out-Null
+
+        if ($cachedLenNum -lt 5000) {
+            $seed = & $sqlite $mainStableDb "SELECT value FROM ItemTable WHERE key = 'chat.cachedLanguageModels'"
+            if ($seed) {
+                $seedText = ($seed | Out-String).Trim()
+                if ($seedText) {
+                    $seedEscaped = $seedText -replace "'", "''"
+                    & $sqlite $db "INSERT OR REPLACE INTO ItemTable(key, value) VALUES('chat.cachedLanguageModels', '$seedEscaped');"
+                }
+            }
+        }
+    }
+
     # Update ANY existing model-selection keys in this DB.
     # If Copilot Chat has never been opened in this DB, the keys may not exist yet.
     $existingModelKeys = & $sqlite $db "SELECT key FROM ItemTable WHERE key LIKE 'chat.currentLanguageModel.%' AND key NOT LIKE '%.isDefault' ORDER BY key"
