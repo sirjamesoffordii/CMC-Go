@@ -108,12 +108,14 @@ TL can block issues that shouldn't proceed. **Always add a comment explaining wh
 
 ### When to Block
 
-| Reason              | Criteria                                        | Action                        |
-| ------------------- | ----------------------------------------------- | ----------------------------- |
-| **Scope Too Large** | >1 day effort, touches >5 files, multiple areas | Block, recommend splitting    |
-| **Conflicts**       | Would break or duplicate in-progress work       | Block, note conflicting issue |
-| **Stale**           | Requirements changed, superseded by other work  | Block, recommend closing      |
-| **Not Beneficial**  | Effort outweighs value, edge case <1% impact    | Block, recommend archiving    |
+| Reason              | Criteria                                                           | Action                        |
+| ------------------- | ------------------------------------------------------------------ | ----------------------------- |
+| **Scope Too Large** | >30 min agent effort, touches >3 files, spans multiple workstreams | Block, recommend splitting    |
+| **Conflicts**       | Would break or duplicate in-progress work                          | Block, note conflicting issue |
+| **Stale**           | Requirements changed, superseded by other work                     | Block, recommend closing      |
+| **Not Beneficial**  | Effort outweighs value, edge case <1% impact                       | Block, recommend archiving    |
+
+**Note:** Scope limits are calibrated for agent work speed, not human timescales.
 
 ### Blocking Commands
 
@@ -237,11 +239,11 @@ When TL identifies improvements during review:
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
 gh issue create --title "<title>" --body "<description>" --repo sirjamesoffordii/CMC-Go
 
-# Then set status to Draft on board (for PE to review)
-.\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Draft"
+# Then set status to Draft (TL) on board (for PE to review)
+.\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Draft (TL)"
 ```
 
-**Rule:** TL-created issues go to `Draft` status. PE reviews and promotes to `Todo` or rejects.
+**Rule:** TL-created issues go to `Draft (TL)` status. PE reviews and promotes to `Todo` or rejects.
 
 ### 2. Small PR Edits (Quick Fixes)
 
@@ -450,10 +452,12 @@ if ($next) {
 
 | Status        | Tech Lead Action                             |
 | ------------- | -------------------------------------------- |
+| Draft (TL)    | PE will review (TL created these)            |
 | Todo          | Assign to SE or do directly (if idle >1 min) |
 | In Progress   | Monitor SE progress                          |
 | Verify        | Review PR, merge (unless UI/UX change)       |
 | UI/UX. Review | Wait for user approval, then merge           |
+| Blocked       | Escalate to Principal Engineer               |
 | Done          | Clean up branches if needed                  |
 
 ## AEOS Feedback (MANDATORY)
@@ -474,15 +478,5 @@ gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observat
 - Rate limit caused delays → Add observation
 
 **Do this in real-time, not at end of session.** Each friction point = one comment.
-
-## Board Statuses
-
-| Status      | Tech Lead Action                   |
-| ----------- | ---------------------------------- |
-| Todo        | Assign to Software Engineer        |
-| In Progress | Monitor Software Engineer progress |
-| Verify      | Review PR, merge if ready          |
-| Blocked     | Escalate to Principal Engineer     |
-| Done        | Clean up branches if needed        |
 
 **NOW START. Auth, register heartbeat, poll board, delegate or review. Loop forever. NO QUESTIONS.**
