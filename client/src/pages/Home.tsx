@@ -281,22 +281,11 @@ export default function Home() {
     setHeaderBgColor(backgroundColor);
     setCropModalOpen(false);
 
-    console.log(
-      "[handleCropComplete] Starting upload, blob size:",
-      croppedImageBlob.size
-    );
-
     // Convert blob to base64 and upload to S3
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
-      console.log(
-        "[handleCropComplete] Base64 data length:",
-        base64Data.length
-      );
-
       const fileName = selectedFileName || `header-${Date.now()}.jpg`;
-      console.log("[handleCropComplete] Uploading with fileName:", fileName);
 
       uploadHeaderImage.mutate(
         {
@@ -305,9 +294,6 @@ export default function Home() {
           backgroundColor: backgroundColor,
         },
         {
-          onSuccess: data => {
-            console.log("[handleCropComplete] Upload successful:", data.url);
-          },
           onError: error => {
             console.error("[handleCropComplete] Upload failed:", error);
           },
@@ -678,53 +664,7 @@ export default function Home() {
     }
   }, [isResizingDistrict, isResizingPeople]);
 
-  // Diagnostic: Log if queries are failing
-  if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
-    console.error("[Home] Query errors:", {
-      districts: districtsQuery.error,
-      campuses: campusesQuery.error,
-      people: peopleQuery.error,
-    });
-  }
-
-  // Safety check: ensure component always returns something
-  if (!districtsQuery && !campusesQuery && !peopleQuery) {
-    console.warn("[Home] Queries not initialized yet");
-  }
-
-  // Debug: Log data when it loads
-  useEffect(() => {
-    if (districtsQuery.data) {
-      console.log(
-        "[Home] Districts loaded:",
-        districtsQuery.data.length,
-        districtsQuery.data.slice(0, 5).map(d => d.id)
-      );
-    }
-    if (peopleQuery.data) {
-      console.log("[Home] People loaded:", peopleQuery.data.length);
-      const peopleWithDistricts = peopleQuery.data.filter(
-        p => p.primaryDistrictId
-      );
-      console.log("[Home] People with districts:", peopleWithDistricts.length);
-      if (peopleWithDistricts.length > 0) {
-        const districtCounts = peopleWithDistricts.reduce(
-          (acc, p) => {
-            acc[p.primaryDistrictId!] = (acc[p.primaryDistrictId!] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-        console.log(
-          "[Home] People by district (top 5):",
-          Object.entries(districtCounts).slice(0, 5)
-        );
-      }
-    }
-    if (campusesQuery.data) {
-      console.log("[Home] Campuses loaded:", campusesQuery.data.length);
-    }
-  }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
+  // Query errors are tracked via Sentry and error boundaries
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
