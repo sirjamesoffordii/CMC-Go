@@ -1,7 +1,7 @@
 ---
 name: Principal Engineer
 description: "System architect for CMC Go. Creates issues, monitors heartbeats, respawns TLs."
-model: Claude Opus 4.5
+model: claude-opus-4.5
 tools:
   [
     "vscode",

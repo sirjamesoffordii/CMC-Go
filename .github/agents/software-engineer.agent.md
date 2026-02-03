@@ -1,7 +1,7 @@
 ---
 name: Software Engineer
 description: "Implements Issues autonomously. Creates PRs with evidence. Never stops, never asks questions."
-model: GPT 5.2 Codex
+model: gpt-5.2-codex
 tools:
   [
     "vscode",
