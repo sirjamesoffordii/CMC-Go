@@ -48,7 +48,10 @@ test.describe("Responsive Design", () => {
     // On mobile, the hamburger menu should be visible (desktop nav buttons are hidden)
     // The page should load successfully with the map visible
     await expect(page.locator("body")).toBeVisible();
-    await expect(page.locator('[class*="map"], svg')).toBeVisible({
+    // Look for the main map SVG specifically (has id="svg1" and data-map-scale-key)
+    await expect(
+      page.locator("svg#svg1[data-map-scale-key]").first()
+    ).toBeVisible({
       timeout: 10000,
     });
   });

@@ -17,7 +17,7 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20
 ```
 Principal Engineer (continuous) ─┬─ Tech Lead (continuous) ─┬─ Software Engineer (continuous)
                                  │                          │
-All 3 agents run simultaneously in separate VS Code windows
+All 3 agents run simultaneously in separate VS Code sessions (tabs)
 ```
 
 **All 3 agents run in parallel:**
@@ -30,30 +30,100 @@ All 3 agents run simultaneously in separate VS Code windows
 
 ## Roles
 
-| Role               | Account                  | Managed By         | Purpose                       |
-| ------------------ | ------------------------ | ------------------ | ----------------------------- |
-| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, priorities, oversight |
-| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review       |
-| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation                |
+| Role               | Account                  | Managed By         | Purpose                                 |
+| ------------------ | ------------------------ | ------------------ | --------------------------------------- |
+| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, exploration, oversight          |
+| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review, small edits    |
+| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation (parallel via subagents) |
 
 **Behavior files:** `.github/agents/{role}.agent.md`
+
+### Role Capabilities Summary
+
+| Capability              | PE  | TL   | SE  |
+| ----------------------- | --- | ---- | --- |
+| Create issues           | ✅  | ✅\* | ❌  |
+| Review PRs              | ✅  | ✅   | ❌  |
+| Merge PRs               | ✅  | ✅   | ❌  |
+| Small PR edits          | ❌  | ✅   | ❌  |
+| Full implementation     | ❌  | ✅†  | ✅  |
+| Use subagents           | ✅  | ✅   | ✅  |
+| Spawn other agents      | ✅  | ✅   | ✅‡ |
+| Set UI/UX Review status | ✅  | ✅   | ❌  |
+
+\*TL issues go to Draft (TL) status for PE approval
+†TL can do small issues after 1 min idle (directly or via subagents)
+‡SE can respawn stale TL
 
 ## Board
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status      | Owner                        | Action                       |
-| ----------- | ---------------------------- | ---------------------------- |
-| Todo        | Tech Lead                    | Assign to Software Engineer  |
-| In Progress | Software Engineer            | Being implemented            |
-| Verify      | Tech Lead/Principal Engineer | Review and merge PR          |
-| Blocked     | Principal Engineer           | Needs architectural decision |
-| Done        | —                            | Merged and closed            |
+| Status           | Owner                          | Description                                       | Action                                     |
+| ---------------- | ------------------------------ | ------------------------------------------------- | ------------------------------------------ |
+| Blocked          | Tech Lead / Principal Engineer | Work cannot proceed until PE/TL action is taken   | TL blocks + comments, PE reviews           |
+| AEOS Improvement | Principal Engineer             | Workflow improvement suggestions                  | PE reviews, user checks items to approve   |
+| Exploratory      | Human                          | Needs User Approval to Become Todo                | User checks items they want implemented    |
+| Draft (TL)       | Principal Engineer             | Drafted by TL. Needs PE approval. Not executable. | PE reviews TL suggestions → Todo or reject |
+| Todo             | Tech Lead                      | This item hasn't been started                     | TL assigns to Software Engineer            |
+| In Progress      | Software Engineer              | This is actively being worked on                  | SE implements, creates PR                  |
+| Verify           | Tech Lead/Principal Engineer   | Ready for Verification                            | Review PR, check for UI/UX changes         |
+| UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes               |
+| Done             | —                              | This has been completed                           | Merged and closed, auto-archived           |
+
+**Issue Flow:**
+
+```
+                    ┌─────────────────────────────────────────────────────────┐
+                    │                    AEOS WORKFLOW                         │
+                    └─────────────────────────────────────────────────────────┘
+
+PE explores codebase ──► Exploratory (user checks items) ──► PE creates Todos
+                              │
+TL observes problems ──► Draft (TL) ──► PE approves ──► Todo
+                              │                            │
+                              │                            ▼
+TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or close)
+                                                           │
+                                                           ▼
+                                              TL assigns via assignment.json
+                                                           │
+                                                           ▼
+                                                     In Progress
+                                                           │
+                                                           ▼
+                                                SE creates PR ──► Verify
+                                                                    │
+                                               ┌────────────────────┴────────────────────┐
+                                               │                                         │
+                                               ▼                                         ▼
+                                    (no UI/UX change)                         (has UI/UX change)
+                                               │                                         │
+                                               ▼                                         ▼
+                                          TL merges                              UI/UX. Review
+                                               │                                         │
+                                               │                          User approves ──┘
+                                               ▼                                         │
+                                             Done ◄──────────────────────────────────────┘
+
+AEOS Improvement: PE/TL/SE observe friction ──► #348 comments ──► PE promotes to checklist
+```
 
 **IDs (for GraphQL):**
 
 - Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
-- Todo: `f75ad846` | In Progress: `47fc9ee4` | Verify: `5351d827` | Done: `98236657`
+
+| Status           | ID         |
+| ---------------- | ---------- |
+| Blocked          | `652442a1` |
+| AEOS Improvement | `adf06f76` |
+| Exploratory      | `041398cc` |
+| Draft (TL)       | `687f4500` |
+| Todo             | `f75ad846` |
+| In Progress      | `47fc9ee4` |
+| Verify           | `5351d827` |
+| UI/UX. Review    | `576c99fd` |
+| Done             | `98236657` |
 
 ## Heartbeat
 
@@ -266,6 +336,18 @@ $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 | Tech Lead          | `/activate Tech Lead`          |
 | Software Engineer  | `/activate Software Engineer`  |
 
+**CLI/Task Spawning:**
+
+| Method                       | Command/Task                                      |
+| ---------------------------- | ------------------------------------------------- |
+| Spawn PE via script          | `.\scripts\spawn-agent.ps1 -Agent PE`             |
+| Spawn TL via script          | `.\scripts\spawn-agent.ps1 -Agent TL`             |
+| Spawn SE via script          | `.\scripts\spawn-agent.ps1 -Agent SE`             |
+| Spawn with VS Code profile   | `.\scripts\spawn-agent.ps1 -Agent TL -UseProfile` |
+| VS Code Task: AEOS: Spawn PE | Ctrl+Shift+P → "Tasks: Run Task"                  |
+| VS Code Task: AEOS: Spawn TL | Ctrl+Shift+P → "Tasks: Run Task"                  |
+| VS Code Task: AEOS: Spawn SE | Ctrl+Shift+P → "Tasks: Run Task"                  |
+
 **Activation message format (EXACT - used by all spawn methods):**
 
 ```
@@ -281,15 +363,57 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 **Programmatic respawn (when agents respawn each other):**
 
 ```powershell
-# PE respawning TL
-code chat -r -m "Tech Lead" "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+# PE respawning TL (with correct model)
+.\scripts\spawn-agent.ps1 -Agent TL
 
-# TL respawning PE
-code chat -r -m "Principal Engineer" "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
+# TL respawning PE (with correct model)
+.\scripts\spawn-agent.ps1 -Agent PE
 
-# TL spawning SE in worktree
-.\scripts\spawn-worktree-agent.ps1
+# TL spawning SE in worktree (with correct model)
+.\scripts\spawn-agent.ps1 -Agent SE
 ```
+
+**Manual model setting (if needed):**
+
+```powershell
+# Set model before opening VS Code
+.\scripts\set-copilot-model.ps1 -Model "gpt-5.2-codex"
+
+# List available models
+.\scripts\set-copilot-model.ps1 -List
+```
+
+## Model Distribution (Rate Limit Strategy)
+
+Each agent uses a designated PRIMARY model with a BACKUP for rate limit fallback:
+
+| Agent              | PRIMARY Model | BACKUP Model      | Rationale                    |
+| ------------------ | ------------- | ----------------- | ---------------------------- |
+| Principal Engineer | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast exploration + code gen  |
+| Tech Lead          | GPT 5.2 Codex | Claude Sonnet 4.5 | Fast coordination, PR review |
+| Software Engineer  | GPT 5.2 Codex | GPT 5.1 Codex Max | Optimized for code gen       |
+
+**Why different models:**
+
+1. **Distributed rate limits** - Each model has its own quota pool
+2. **Optimized for role** - PE needs best reasoning, SE needs code optimization
+3. **Fallback diversity** - If primary exhausts, backup uses different pool
+
+**How it works:**
+
+- `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
+- The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
+- New VS Code sessions pick up the model from the database
+- Existing sessions keep their current model (memory-cached)
+
+**Rate limit recovery:**
+
+```powershell
+# If an agent hits rate limits, respawn with backup model
+.\scripts\spawn-agent.ps1 -Agent TL -UseBackup
+```
+
+**Key insight:** VS Code stores the selected model in `%APPDATA%\Code\User\globalStorage\state.vscdb`. By writing to this SQLite database before opening a new session, we can pre-select the model.
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
@@ -430,6 +554,57 @@ $check | Format-List  # status, graphql, core, resetIn, message
 
 **Note:** Model token limits (GPT 5.2 Codex) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
+## Copilot Rate Limits (Model Quotas)
+
+Copilot Chat models have separate per-model rate limits. When exhausted, you'll see:
+
+- User message: "Sorry, you have exhausted this model's rate limit"
+- Log error: `[error] Server error: 429 too many requests`
+
+**Detection via VS Code Logs:**
+
+All Copilot errors are logged to:
+
+```
+%APPDATA%\Code\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
+```
+
+**Cross-Agent Monitoring:**
+
+Since all VS Code sessions share the same logs directory, ANY agent can monitor ALL agents' rate limit status:
+
+```powershell
+# One-time check (returns structured object)
+$status = .\scripts\monitor-agent-rate-limits.ps1 -Once
+if ($status.anyRateLimited) {
+    Write-Host "An agent hit rate limits!" -ForegroundColor Red
+    Write-Host "Affected sessions: $($status.windowsAffected -join ', ')"
+}
+
+# Continuous monitoring (run as background process)
+.\scripts\monitor-agent-rate-limits.ps1  # Polls every 5 seconds
+```
+
+**Alert File:** `.github/agents/rate-limit-alert.json` (auto-updated by monitor)
+
+**Model Fallback Strategy:**
+
+| Primary Model | Backup Model      | When to Switch               |
+| ------------- | ----------------- | ---------------------------- |
+| GPT 5.2 Codex | Claude Sonnet 4.5 | 429 errors or model overload |
+| GPT 5.2 Codex | GPT 5.1 Codex Max | 429 errors                   |
+
+**Recovery Pattern:**
+
+```powershell
+# PE/TL: Before assigning work, check if any agent is rate limited
+$rl = .\scripts\monitor-agent-rate-limits.ps1 -Once
+if ($rl.anyRateLimited) {
+    Write-Host "⚠️ Rate limit detected - waiting 5 min before assignment" -ForegroundColor Yellow
+    Start-Sleep -Seconds 300
+}
+```
+
 ## AEOS Self-Improvement (MANDATORY)
 
 Agents **MUST** report workflow friction in real-time to issue #348.
@@ -498,6 +673,69 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 | Principal Engineer | Architecture, oversight, **review** | Rate limits, agent coordination, conflict detection |
 | Tech Lead          | Coordination, PR flow               | Assignment issues, merge problems                   |
 | Software Engineer  | Implementation, tooling             | Test setup, file edits, patterns                    |
+
+## Utility Scripts
+
+| Script                          | Purpose                                  | Usage                       |
+| ------------------------------- | ---------------------------------------- | --------------------------- |
+| `check-rate-limits.ps1`         | GitHub API quota check                   | Before expensive operations |
+| `check-ci-status.ps1`           | Human-readable CI status                 | Diagnose build failures     |
+| `verify-merge.ps1`              | Post-merge verification                  | After `gh pr merge`         |
+| `add-board-item.ps1`            | Add issue to board with status           | Prevents limbo items        |
+| `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
+| `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
+| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
+| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model    | Human or agent restart      |
+| `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
+| `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
+| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
+| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all sessions |
+| `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
+
+## Known Issues & Gotchas
+
+### Board Pagination
+
+`gh project item-list` defaults to 50 items. The board has 180+ items. **Always use `--limit 200`:**
+
+```powershell
+gh project item-list 4 --owner sirjamesoffordii --limit 200 --format json
+```
+
+### Phantom File Modifications
+
+Sometimes files (especially `client/src/components/DistrictPanel.tsx`) appear modified without any edits. This can block commits due to pre-commit hooks.
+
+**Resolution:**
+
+```powershell
+# Discard phantom changes before committing
+git checkout -- <file>
+# Or reset all unstaged changes
+git checkout -- .
+```
+
+### Worktree Branch Confusion
+
+If the main repo appears to be on the wrong branch, check worktrees:
+
+```powershell
+git worktree list
+cat .git/HEAD  # Shows actual HEAD reference
+```
+
+A worktree may have checked out the main repo to a different branch. The main workspace should typically be on `staging`.
+
+### Model Inheritance on Respawn
+
+When using `code chat -r -m "Agent Name"` to respawn an agent, the new agent inherits the **current window's model**, NOT the model specified in the agent file's frontmatter.
+
+**If wrong model is used:**
+
+1. Close the incorrectly-spawned window
+2. Open a fresh VS Code window
+3. Select the correct model in Copilot settings
+4. Then activate the agent manually via `/activate <Agent Name>`
 
 ## Reference
 
