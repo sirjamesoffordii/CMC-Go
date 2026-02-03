@@ -82,6 +82,8 @@ if (-not (Test-Path $path)) {
 }
 
 # SET THE MODEL BEFORE OPENING VS CODE
+# NOTE: This only works for FRESH VS Code instances. Running VS Code windows
+# cache the model in memory and won't pick up SQLite changes.
 Write-Host "Setting Copilot model to $modelToUse..." -ForegroundColor Yellow
 & "$PSScriptRoot\set-copilot-model.ps1" -Model $modelToUse
 
@@ -90,19 +92,27 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host ""
-Write-Host "Opening VS Code and starting chat..." -ForegroundColor Yellow
 
 $agentName = $config.Name
 $prompt = $config.Prompt
 
-# Open VS Code with new window pointing to the workspace
+# Open new VS Code window
+Write-Host "Opening VS Code..." -ForegroundColor Yellow
 code -n $path
-Start-Sleep -Seconds 5  # Wait for VS Code to fully load and become active
+Start-Sleep -Seconds 3
 
-# Change to the workspace directory so `code chat` targets that window
+# IMPORTANT: VS Code caches the model in memory. The `code chat` command connects
+# to an existing VS Code server that may have an old model cached.
+# The model in SQLite is only read when VS Code starts fresh.
+Write-Host ""
+Write-Host "⚠️  IMPORTANT: VS Code caches models in memory" -ForegroundColor Yellow
+Write-Host "   If model shows wrong, manually select: $modelToUse" -ForegroundColor Yellow
+Write-Host "   (Use the model dropdown in the chat input area)" -ForegroundColor Yellow
+Write-Host ""
+
+# Start chat - uses CWD to find the right VS Code window
 Push-Location $path
 try {
-    # Start the chat - it will go to the window with this working directory
     code chat -m $agentName $prompt
 } finally {
     Pop-Location

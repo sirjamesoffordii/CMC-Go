@@ -425,8 +425,21 @@ Each agent uses a designated PRIMARY model. Backups only apply after rate limit 
 
 - `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
 - The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
-- New VS Code sessions pick up the model from the database
-- Existing sessions keep their current model (memory-cached)
+- **LIMITATION:** VS Code caches the model in memory after startup
+- Only FRESH VS Code instances read from the SQLite database
+- Existing windows ignore SQLite changes until restarted
+
+**⚠️ Known Limitation - Model Caching:**
+
+VS Code's Copilot extension caches the selected model in memory. The `code chat` CLI command connects to an existing VS Code server process that may have an old model cached.
+
+**Workarounds:**
+
+1. **Fresh start:** Close ALL VS Code windows, then run `spawn-agent.ps1` - new window reads from SQLite
+2. **Manual selection:** If model is wrong, manually select from the dropdown in chat input
+3. **Agent frontmatter:** Agent files specify `model:` in frontmatter - user must click correct model before sending
+
+**For autonomous AEOS:** The spawn scripts set SQLite, but if other VS Code windows are open, the model may be wrong. Human may need to verify model selection on first spawn.
 
 **Rate limit recovery:**
 
@@ -434,8 +447,6 @@ Each agent uses a designated PRIMARY model. Backups only apply after rate limit 
 # If an agent hits rate limits, respawn with backup model
 .\scripts\spawn-agent.ps1 -Agent TL -UseBackup
 ```
-
-**Key insight:** VS Code stores the selected model in `%APPDATA%\Code\User\globalStorage\state.vscdb`. By writing to this SQLite database before opening a new session, we can pre-select the model.
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
 
