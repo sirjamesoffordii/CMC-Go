@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { useDrop, useDrag } from "react-dnd";
 import { User, Plus, Edit2 } from "lucide-react";
 import { Person } from "../../../drizzle/schema";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { Input } from "./ui/input";
@@ -102,6 +101,16 @@ export function DistrictDirectorDropZone({
     [person, canInteract]
   );
 
+  // Callback refs for react-dnd
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        drop(node);
+      }
+    },
+    [drop]
+  );
+
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
     if (person && canInteract) {
       setIsHovered(true);
@@ -135,7 +144,7 @@ export function DistrictDirectorDropZone({
     // Show add button when no district director (only in interactive mode)
     return (
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
@@ -238,7 +247,7 @@ export function DistrictDirectorDropZone({
   return (
     <>
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         {/* Name Label with Edit Button */}
