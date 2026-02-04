@@ -183,6 +183,49 @@ AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──�
 
 ## Heartbeat
 
+AEOS uses a **dual heartbeat system** for reliable agent liveness detection:
+
+1. **Script Heartbeat** — Agents explicitly update `heartbeat.json` with status
+2. **Live Heartbeat** — Process + log monitoring detects running VS Code instances
+
+### Live Heartbeat Detection (Recommended)
+
+The `live-heartbeat.ps1` script provides real-time agent status without requiring agents to explicitly update:
+
+```powershell
+# Show current live status of all agents
+.\scripts\live-heartbeat.ps1
+
+# Output example:
+# === AEOS Live Heartbeat Status ===
+# PE  [ACTIVE     ]  Process: PID 62132  Chat: 0.5 min ago
+# TL  [IDLE       ]  Process: PID 55044  Chat: 4.2 min ago
+# SE  [OFFLINE    ]  Process: not running  Chat: no log
+```
+
+**Status meanings:**
+| Status | Description |
+|--------|-------------|
+| `ACTIVE` | VS Code running + Copilot generating responses (<2 min since last log update) |
+| `HUNG` | VS Code running but Copilot stuck/spinning (2-10 min since log update) — **needs respawn** |
+| `STALE` | VS Code running but no activity for 10+ min (agent may have finished or crashed) |
+| `OFFLINE` | VS Code not running |
+
+**Hung Detection Logic:**
+For autonomous agents, the Copilot Chat log is the heartbeat. When an agent is actively working, Copilot writes to its log file. When an agent gets stuck (spinning on one line), the log stops updating. If VS Code is running but the log hasn't been modified in 2+ minutes, the agent is considered hung and needs a respawn.
+
+**Monitor mode (continuous):**
+
+```powershell
+.\scripts\live-heartbeat.ps1 -Monitor -Interval 30
+```
+
+### Extension Auto-Heartbeat
+
+The AEOS Activator extension automatically updates heartbeat every 2 minutes when running in an agent VS Code instance. This provides passive heartbeat without agents needing to remember to update.
+
+### Script Heartbeat (Explicit Updates)
+
 **Protocol:** Always use the heartbeat scripts. The underlying heartbeat file is stored in a shared coordination directory (derived from `git rev-parse --git-common-dir`) so it works across worktrees.
 
 ```json
@@ -447,8 +490,8 @@ Each agent uses a designated PRIMARY model. Backups only apply after rate limit 
 
 **How it works:**
 
-- `aeos-spawn.ps1` opens VS Code with isolated user-data-dirs per agent
-- Each agent's model is pre-configured in their user-data-dir's state database
+- `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
+- The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
 - **LIMITATION:** VS Code caches the model in memory after startup
 - Only FRESH VS Code instances read from the SQLite database
 - Existing windows ignore SQLite changes until restarted
@@ -459,17 +502,17 @@ VS Code's Copilot extension caches the selected model in memory. The `code chat`
 
 **Workarounds:**
 
-1. **Fresh start:** `aeos-spawn.ps1` now closes existing windows before spawning - this ensures fresh model selection
+1. **Fresh start:** Close ALL VS Code windows, then run `spawn-agent.ps1` - new window reads from SQLite
 2. **Manual selection:** If model is wrong, manually select from the dropdown in chat input
 3. **Agent frontmatter:** Agent files specify `model:` in frontmatter - user must click correct model before sending
 
-**For autonomous AEOS:** Use `aeos-spawn.ps1` which auto-closes existing windows to ensure correct model.
+**For autonomous AEOS:** The spawn scripts set SQLite, but if other VS Code windows are open, the model may be wrong. Human may need to verify model selection on first spawn.
 
 **Rate limit recovery:**
 
 ```powershell
-# If an agent hits rate limits, wait for quota reset or switch account
-.\scripts\aeos-spawn.ps1 -Agent TL -Force
+# If an agent hits rate limits, respawn with backup model
+.\scripts\spawn-agent.ps1 -Agent TL -UseBackup
 ```
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
@@ -667,55 +710,27 @@ Agents **MUST** report workflow friction in real-time to the AEOS Improvement is
 
 **Tracking Issue:** `[AEOS] Workflow Improvements` (currently #348)
 
-### Observation Format (REQUIRED)
-
-Every observation **MUST** include:
-
-- **Recommendation Level:** `High` | `Medium` | `Low`
-- **Risk Level:** `High` | `Medium` | `Low`
-
-| Recommendation | Meaning                                             |
-| -------------- | --------------------------------------------------- |
-| High           | Critical blocker, agents cannot proceed effectively |
-| Medium         | Significant friction, slows work but not blocking   |
-| Low            | Nice-to-have improvement, minor convenience         |
-
-| Risk   | Meaning                                               |
-| ------ | ----------------------------------------------------- |
-| High   | Could break agents, coordination, or existing code    |
-| Medium | Moderate side effects possible, needs careful testing |
-| Low    | Safe change, isolated impact                          |
-
 ### How to Report (Copy-Paste Commands)
 
 **Tech Lead:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>
-
-**Recommendation:** High|Medium|Low
-**Risk:** High|Medium|Low"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
 ```
 
 **Software Engineer:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>
-
-**Recommendation:** High|Medium|Low
-**Risk:** High|Medium|Low"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>"
 ```
 
 **Principal Engineer:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>
-
-**Recommendation:** High|Medium|Low
-**Risk:** High|Medium|Low"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>"
 ```
 
 ### When to Report
@@ -762,44 +777,22 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 | Script                          | Purpose                                  | Usage                       |
 | ------------------------------- | ---------------------------------------- | --------------------------- |
-| `aeos-spawn.ps1`                | **Primary** spawn script for all agents  | Respawn any agent           |
-| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
 | `check-rate-limits.ps1`         | GitHub API quota check                   | Before expensive operations |
 | `check-ci-status.ps1`           | Human-readable CI status                 | Diagnose build failures     |
 | `verify-merge.ps1`              | Post-merge verification                  | After `gh pr merge`         |
 | `add-board-item.ps1`            | Add issue to board with status           | Prevents limbo items        |
 | `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
 | `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
+| `live-heartbeat.ps1`            | Live process + log activity detection    | Real-time agent status      |
+| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
+| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model    | Human or agent restart      |
+| `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
 | `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
+| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
 | `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all sessions |
 | `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
 
-**Deprecated scripts (use `aeos-spawn.ps1` instead):**
-
-- `spawn-worktree-agent.ps1` → use `aeos-spawn.ps1 -Agent SE`
-- `spawn-agent.ps1` → use `aeos-spawn.ps1 -Agent <PE|TL|SE>`
-- `aeos-open-all.ps1` → use `aeos-spawn.ps1 -All`
-- `aeos-activate.ps1` → auto-activated by AEOS Activator extension
-
 ## Known Issues & Gotchas
-
-### Agent Respawn Not Activating
-
-**Problem:** When respawning an agent (PE/TL/SE), the VS Code window opens but the chat doesn't start.
-
-**Root Cause:** VS Code was reusing an existing window. The AEOS Activator extension only triggers on `onStartupFinished`, which doesn't fire when VS Code reuses a window.
-
-**Solution (implemented in `aeos-spawn.ps1`):**
-
-1. The spawn script now **closes existing VS Code windows** for that agent before spawning
-2. The extension now has a **file watcher** that triggers activation when the config file is created
-3. A manual command `AEOS: Activate Agent` is available as backup
-
-**If respawn still fails:**
-
-1. Click "Reload Window" if VS Code prompts about extension changes
-2. Run the manual command: F1 → "AEOS: Activate Agent"
-3. Or manually paste the activation message in chat
 
 ### Board Pagination
 
@@ -835,7 +828,7 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 ### Model Selection in AEOS
 
-**Autonomous agents use `aeos-spawn.ps1`** which opens VS Code with isolated user-data-dirs. This ensures:
+**Autonomous agents use `spawn-agent.ps1`** which preselects the correct model before opening a new VS Code window. This ensures:
 
 - PE starts on GPT 5.2
 - TL starts on GPT 5.2
@@ -843,7 +836,7 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 **Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in a window configured with a different model, TL will run on that model. This is fine for human use since you can select the model before clicking send.
 
-**Rule:** For autonomous AEOS, always use `aeos-spawn.ps1`. For manual testing, use `/activate` prompts.
+**Rule:** For autonomous AEOS, always use `spawn-agent.ps1`. For manual testing, use `/activate` prompts.
 
 ## Reference
 

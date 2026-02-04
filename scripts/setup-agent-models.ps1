@@ -13,7 +13,7 @@
     
 .NOTES
     Run this ONCE during initial AEOS setup.
-    After setup, use aeos-spawn.ps1 to start agents.
+    After setup, use spawn-agent.ps1 to start agents.
 #>
 
 param(
@@ -30,8 +30,8 @@ $agents = @{
         Name = "Principal Engineer"
         UserDataDir = "C:\Dev\vscode-agent-pe"
         Folder = "C:\Dev\CMC Go"
-        Model = "copilot/gpt-5.2"
-        ModelDisplay = "GPT 5.2"
+        Model = "copilot/claude-opus-4.5"
+        ModelDisplay = "Claude Opus 4.5"
     }
     TL = @{
         Name = "Tech Lead"
@@ -44,8 +44,8 @@ $agents = @{
         Name = "Software Engineer"
         UserDataDir = "C:\Dev\vscode-agent-se"
         Folder = "C:\Dev\CMC-Go-worktrees\wt-se"
-        Model = "copilot/gpt-5.2"
-        ModelDisplay = "GPT 5.2"
+        Model = "copilot/gpt-5.2-codex"
+        ModelDisplay = "GPT 5.2 Codex"
     }
 }
 

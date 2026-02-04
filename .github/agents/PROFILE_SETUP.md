@@ -69,18 +69,18 @@ Check each profile has the correct model:
 3. Check model dropdown shows **"GPT-5.2"**
 4. Repeat for other profiles
 
-## Using Spawn Scripts
+## Using Profiles with Spawn Scripts
 
-With isolated user-data-dirs, use `aeos-spawn.ps1`:
+Once profiles are set up, use the `-UseProfile` flag:
 
 ```powershell
-# Spawn agents with auto-activation
-.\scripts\aeos-spawn.ps1 -Agent PE
-.\scripts\aeos-spawn.ps1 -Agent TL
-.\scripts\aeos-spawn.ps1 -Agent SE
+# Spawn with profile (guaranteed correct model)
+.\scripts\spawn-agent.ps1 -Agent PE -UseProfile
+.\scripts\spawn-agent.ps1 -Agent TL -UseProfile
+.\scripts\spawn-agent.ps1 -Agent SE -UseProfile
 
-# Spawn all agents at once
-.\scripts\aeos-spawn.ps1 -All
+# Without profile (may use cached model from other windows)
+.\scripts\spawn-agent.ps1 -Agent TL  # Not recommended for autonomous operation
 ```
 
 ## Troubleshooting
@@ -105,4 +105,4 @@ The spawn script expects these exact profile names:
 - `Tech Lead`
 - `Software Engineer`
 
-These are configured in `scripts/aeos-spawn.ps1`.
+If you use different names, update the `ProfileName` values in `scripts/spawn-agent.ps1`.

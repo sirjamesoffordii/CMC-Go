@@ -258,7 +258,7 @@ gh project item-list 4 --owner sirjamesoffordii --limit 20 --format json | Conve
 
 **Tags:** agent-spawning
 **Problem:** TL needs to delegate implementation without blocking.
-**Solution:** TL spawns SE via `.\scripts\aeos-spawn.ps1 -Agent SE`. SE runs as standalone session in isolated worktree, self-registers in heartbeat. TL monitors via heartbeat file.
+**Solution:** TL spawns SE via `.\scripts\spawn-worktree-agent.ps1`. SE runs as standalone session in isolated worktree, self-registers in heartbeat. TL monitors via heartbeat file.
 **Prevention:** Never use blocking subagents for implementation. SE is always a standalone session.
 
 ### SE spawn reliability protocol

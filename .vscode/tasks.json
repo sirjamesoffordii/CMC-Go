@@ -197,10 +197,17 @@
       "problemMatcher": []
     },
     {
-      "label": "Agent: Spawn SE",
+      "label": "Agent: Spawn worktree agent",
       "type": "shell",
-      "command": ".\\scripts\\aeos-spawn.ps1 -Agent SE",
-      "detail": "Spawn persistent SE agent in worktree with auto-activation",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1",
+      "detail": "Spawn persistent SE agent in worktree (runs continuously, picks up work via assignment.json)",
+      "problemMatcher": []
+    },
+    {
+      "label": "Agent: Spawn worktree agent (dry run)",
+      "type": "shell",
+      "command": ".\\scripts\\spawn-worktree-agent.ps1 -DryRun",
+      "detail": "Preview what spawn-worktree-agent would do",
       "problemMatcher": []
     },
     {

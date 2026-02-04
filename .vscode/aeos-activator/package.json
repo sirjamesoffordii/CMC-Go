@@ -17,6 +17,14 @@
       {
         "command": "aeos.activate",
         "title": "AEOS: Activate Agent"
+      },
+      {
+        "command": "aeos.heartbeat",
+        "title": "AEOS: Send Heartbeat"
+      },
+      {
+        "command": "aeos.terminalStatus",
+        "title": "AEOS: Check Terminal Status (Hung Detection)"
       }
     ]
   },

@@ -16,7 +16,7 @@
 
 .EXAMPLE
   $check = .\scripts\check-rate-limits.ps1
-  if ($check.status -eq "go") { .\scripts\aeos-spawn.ps1 -Agent SE }
+  if ($check.status -eq "go") { .\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 }
 #>
 
 [CmdletBinding()]

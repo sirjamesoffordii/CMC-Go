@@ -8,8 +8,6 @@ This directory contains scripts for database management, agent automation, data 
 
 | Script                       | Category   | Purpose                                                           |
 | ---------------------------- | ---------- | ----------------------------------------------------------------- |
-| `aeos-spawn.ps1`             | Agent      | **Primary** — Spawn AEOS agents (PE/TL/SE) with auto-activation   |
-| `aeos-status.ps1`            | Agent      | Full AEOS status (heartbeat, assignment, worktrees, PRs)          |
 | `seed-database.mjs`          | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
 | `reset-db.mjs`               | Database   | Drop all tables and reseed (with production safeguards)           |
 | `reset-local-db.mjs`         | Database   | Safe local-only database reset with multiple safety checks        |
@@ -38,6 +36,8 @@ This directory contains scripts for database management, agent automation, data 
 | `git-credential-gh.ps1`      | Agent      | Git credential helper for multi-identity                          |
 | `set-gh-secret.ps1`          | Agent      | Set GitHub repository secrets                                     |
 | `setup-agent-identities.ps1` | Agent      | Configure git identities for agent worktrees                      |
+| `spawn-parallel-agents.ps1`  | Agent      | Spawn multiple VS Code agent sessions                             |
+| `spawn-worktree-agent.ps1`   | Agent      | Spawn Copilot agent in a new worktree                             |
 | `post-merge-evidence.ps1`    | Agent      | Post merge evidence to GitHub issues                              |
 | `populate-db.sql`            | Data       | SQL script to populate database (legacy)                          |
 | `seed-data.sql`              | Data       | Simple SQL seed script (legacy)                                   |
@@ -289,37 +289,29 @@ Removes the stored GitHub token from local DPAPI storage.
 
 Cloud agents are disabled (no MCP Memory = drift). Cloud-agent scripts were removed.
 
-#### `aeos-spawn.ps1` (PRIMARY)
+#### `spawn-worktree-agent.ps1`
 
-**The primary script for spawning AEOS agents.** Spawns agents in isolated VS Code instances with auto-activation.
-
-```powershell
-# Spawn a single agent
-.\scripts\aeos-spawn.ps1 -Agent PE    # Principal Engineer
-.\scripts\aeos-spawn.ps1 -Agent TL    # Tech Lead
-.\scripts\aeos-spawn.ps1 -Agent SE    # Software Engineer (in worktree)
-
-# Spawn all 3 agents
-.\scripts\aeos-spawn.ps1 -All
-```
-
-**Features:**
-
-- Closes existing VS Code windows for the agent before spawning (ensures fresh start)
-- Writes auto-activate.json config for the AEOS Activator extension
-- Uses isolated user-data-dirs for per-agent Copilot rate limits
-- SE is automatically spawned in the worktree at `C:\Dev\CMC-Go-Worktrees\wt-se`
-- **Quota exhaustion detection:** Prevents rapid respawn loops (3+ spawns in 10 min)
-
-#### `aeos-status.ps1`
-
-Full AEOS system status including heartbeat, assignment, worktrees, PRs, and rate limits.
+Spawn a Copilot agent session in a new VS Code window with its own worktree.
 
 ```powershell
-.\scripts\aeos-status.ps1
+# Basic usage
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+
+# With custom prompt
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 -Prompt "Implement feature X"
+
+# Dry run
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 -DryRun
 ```
 
----
+#### `spawn-parallel-agents.ps1`
+
+Spawn multiple VS Code windows, each with its own worktree and Copilot chat session.
+
+```powershell
+.\scripts\spawn-parallel-agents.ps1 -Issues 42,43,44
+.\scripts\spawn-parallel-agents.ps1 -Issues 42,43 -Profile "Agent-SWE"
+```
 
 #### `agent-quick.ps1`
 
@@ -453,14 +445,10 @@ node scripts/verify-database.mjs
 pnpm validate:agents
 ```
 
-### Spawn Agent
+### Spawn Agent for Issue
 
 ```powershell
-# Spawn any agent (PE, TL, or SE)
-.\scripts\aeos-spawn.ps1 -Agent SE
-
-# Spawn all agents
-.\scripts\aeos-spawn.ps1 -All
+.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
 ```
 
 ---
