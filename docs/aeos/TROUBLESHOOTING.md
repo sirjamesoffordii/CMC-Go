@@ -153,8 +153,10 @@ $c = $c.Replace('oldString', 'newString')
 **Recovery:**
 
 1. Check GitHub for last activity
-2. Spawn new session: `.\scripts\spawn-agent.ps1 -Agent <PE|TL|SE>`
+2. Spawn new session: `.\scripts\aeos-spawn.ps1 -Agent <PE|TL|SE>`
 3. New agent checks board and resumes
+
+**Note:** `aeos-spawn.ps1` automatically closes existing windows and triggers auto-activation via the AEOS Activator extension.
 
 ---
 

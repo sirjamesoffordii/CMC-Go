@@ -135,7 +135,7 @@ git config credential.helper
 
 **Cloud agents are disabled** — they cannot access MCP Memory, causing drift.
 
-All work is now routed to Local SE via `.\scripts\spawn-agent.ps1 -Agent SE`.
+All work is now routed to Local agents via `.\scripts\aeos-spawn.ps1 -Agent <PE|TL|SE>`.
 
 ## Audit Trail (Quick Commands)
 

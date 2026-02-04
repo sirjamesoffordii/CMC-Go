@@ -8,6 +8,8 @@ This directory contains scripts for database management, agent automation, data 
 
 | Script                       | Category   | Purpose                                                           |
 | ---------------------------- | ---------- | ----------------------------------------------------------------- |
+| `aeos-spawn.ps1`             | Agent      | **Primary** — Spawn AEOS agents (PE/TL/SE) with auto-activation   |
+| `aeos-status.ps1`            | Agent      | Full AEOS status (heartbeat, assignment, worktrees, PRs)          |
 | `seed-database.mjs`          | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
 | `reset-db.mjs`               | Database   | Drop all tables and reseed (with production safeguards)           |
 | `reset-local-db.mjs`         | Database   | Safe local-only database reset with multiple safety checks        |
@@ -289,19 +291,50 @@ Removes the stored GitHub token from local DPAPI storage.
 
 Cloud agents are disabled (no MCP Memory = drift). Cloud-agent scripts were removed.
 
+#### `aeos-spawn.ps1` (PRIMARY)
+
+**The primary script for spawning AEOS agents.** Spawns agents in isolated VS Code instances with auto-activation.
+
+```powershell
+# Spawn a single agent
+.\scripts\aeos-spawn.ps1 -Agent PE    # Principal Engineer
+.\scripts\aeos-spawn.ps1 -Agent TL    # Tech Lead
+.\scripts\aeos-spawn.ps1 -Agent SE    # Software Engineer (in worktree)
+
+# Spawn all 3 agents
+.\scripts\aeos-spawn.ps1 -All
+```
+
+**Features:**
+
+- Closes existing VS Code windows for the agent before spawning (ensures fresh start)
+- Writes auto-activate.json config for the AEOS Activator extension
+- Uses isolated user-data-dirs for per-agent Copilot rate limits
+- SE is automatically spawned in the worktree at `C:\Dev\CMC-Go-Worktrees\wt-se`
+
+#### `aeos-status.ps1`
+
+Full AEOS system status including heartbeat, assignment, worktrees, PRs, and rate limits.
+
+```powershell
+.\scripts\aeos-status.ps1
+```
+
+---
+
+### Deprecated Scripts
+
+The following scripts are deprecated and should not be used. Use `aeos-spawn.ps1` instead.
+
 #### `spawn-worktree-agent.ps1`
+
+> **DEPRECATED:** Use `aeos-spawn.ps1 -Agent SE` instead. This script does not use auto-activation.
 
 Spawn a Copilot agent session in a new VS Code window with its own worktree.
 
 ```powershell
-# Basic usage
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
-
-# With custom prompt
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 -Prompt "Implement feature X"
-
-# Dry run
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 -DryRun
+# DEPRECATED — use instead:
+.\scripts\aeos-spawn.ps1 -Agent SE
 ```
 
 #### `spawn-parallel-agents.ps1`
