@@ -74,7 +74,11 @@ WHILE true:
     11. Set priorities on board (Urgent > High > Medium > Low)
     12. Review PRs if Tech Lead is busy
     13. Add own PE observations to AEOS Improvement issue when friction observed
-    14. Wait 30s → LOOP
+    14. **BOARD HYGIENE (once per session, not every loop):**
+        - Close duplicate/obsolete issues
+        - Group related small issues into batched issues
+        - If Done column > 50 items: .\scripts\archive-old-done.ps1
+    15. Wait 30s → LOOP
 ```
 
 ## AEOS Self-Improvement (#348 — NEVER CLOSE)

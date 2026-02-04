@@ -181,6 +181,30 @@ AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──�
 | UI/UX. Review    | `576c99fd` |
 | Done             | `98236657` |
 
+## Board Hygiene
+
+The board has **built-in auto-archive** enabled that automatically archives Done items after ~2 weeks.
+
+**Additional cleanup:**
+
+- Script: `.\scripts\archive-old-done.ps1` — Archives old Done items, keeps last 50
+- Run with `-DryRun` to preview: `.\scripts\archive-old-done.ps1 -DryRun`
+
+**Issue grouping best practices:**
+
+| Instead of...                         | Do this...                                    |
+| ------------------------------------- | --------------------------------------------- |
+| 10 separate "fix lint warning" issues | 1 issue: "Fix all lint warnings in X"         |
+| Individual issues per file            | 1 issue per feature/concept that spans files  |
+| Duplicate issues for same problem     | Close duplicates, reference original          |
+| Epic + all sub-issues on board        | Only Todo items on board; epic tracks in body |
+
+**PE responsibilities:**
+
+- Close duplicate/obsolete issues promptly
+- Consolidate related small issues into batched issues
+- Run `archive-old-done.ps1` if Done column exceeds 50 items
+
 ## Heartbeat
 
 AEOS uses a **dual heartbeat system** for reliable agent liveness detection:
