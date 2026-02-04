@@ -137,8 +137,9 @@ function Spawn-Agent {
     
     Write-Host "  ✓ Model: $modelToUse ($modelReason)" -ForegroundColor $(if ($modelReason -eq "primary") { "Green" } else { "Yellow" })
     
-    # Write the auto-activate config file
-    $configPath = Join-Path $ag.WorkspacePath ".github\agents\auto-activate.json"
+    # Write the auto-activate config file - use per-agent file to avoid overwrites when spawning multiple
+    # PE and TL share the same workspace, so we use role-specific filenames
+    $configPath = Join-Path $ag.WorkspacePath ".github\agents\auto-activate-$Key.json"
     $configDir = Split-Path $configPath -Parent
     
     if (-not (Test-Path $configDir)) {

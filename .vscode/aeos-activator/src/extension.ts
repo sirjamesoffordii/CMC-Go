@@ -3,7 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as cp from 'child_process';
 
-const CONFIG_PATH = '.github/agents/auto-activate.json';
+// Config path is now per-agent to avoid overwrites when multiple agents share workspace
+const CONFIG_PATH_TEMPLATE = '.github/agents/auto-activate-{ROLE}.json';
 const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000; // 2 minutes
 const TERMINAL_HUNG_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes without output = potentially hung
 
@@ -84,17 +85,18 @@ function setupConfigWatcher(context: vscode.ExtensionContext) {
     return;
   }
 
-  const pattern = new vscode.RelativePattern(workspaceFolders[0], CONFIG_PATH);
+  // Watch for all auto-activate config files (any role)
+  const pattern = new vscode.RelativePattern(workspaceFolders[0], '.github/agents/auto-activate-*.json');
   configWatcher = vscode.workspace.createFileSystemWatcher(pattern);
 
   // When config file is created or changed, trigger activation
-  configWatcher.onDidCreate(() => {
-    outputChannel.appendLine('[AEOS] Config file created - triggering activation');
+  configWatcher.onDidCreate((uri) => {
+    outputChannel.appendLine(`[AEOS] Config file created: ${uri.fsPath} - triggering activation`);
     setTimeout(() => checkAndActivateAgent(), 500); // Small delay to ensure file is written
   });
 
-  configWatcher.onDidChange(() => {
-    outputChannel.appendLine('[AEOS] Config file changed - triggering activation');
+  configWatcher.onDidChange((uri) => {
+    outputChannel.appendLine(`[AEOS] Config file changed: ${uri.fsPath} - triggering activation`);
     setTimeout(() => checkAndActivateAgent(), 500);
   });
 
@@ -110,12 +112,20 @@ async function checkAndActivateAgent(): Promise<void> {
   }
 
   const workspaceRoot = workspaceFolders[0].uri.fsPath;
-  const configFilePath = path.join(workspaceRoot, CONFIG_PATH);
+  
+  // Use detected role to find the correct config file
+  // This ensures PE reads auto-activate-PE.json, TL reads auto-activate-TL.json, etc.
+  if (!currentRole) {
+    outputChannel.appendLine('[AEOS] No role detected - cannot determine config file');
+    return;
+  }
+  
+  const configFilePath = path.join(workspaceRoot, `.github/agents/auto-activate-${currentRole}.json`);
 
   outputChannel.appendLine(`[AEOS] Checking for config at: ${configFilePath}`);
 
   if (!fs.existsSync(configFilePath)) {
-    outputChannel.appendLine('[AEOS] No auto-activate config found - skipping activation');
+    outputChannel.appendLine(`[AEOS] No auto-activate config found for ${currentRole} - skipping activation`);
     return;
   }
 
@@ -123,6 +133,12 @@ async function checkAndActivateAgent(): Promise<void> {
     // Read the config file
     const configContent = fs.readFileSync(configFilePath, 'utf-8');
     const config: AutoActivateConfig = JSON.parse(configContent);
+
+    // Verify the config is for this role
+    if (config.role !== currentRole) {
+      outputChannel.appendLine(`[AEOS] Config role mismatch: expected ${currentRole}, got ${config.role} - skipping`);
+      return;
+    }
 
     outputChannel.appendLine(`[AEOS] Found config for role: ${config.role} (${config.agent})`);
     outputChannel.appendLine(`[AEOS] Activation message: ${config.message}`);
