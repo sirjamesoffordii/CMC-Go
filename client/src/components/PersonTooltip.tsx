@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Person } from "../../../drizzle/schema";
 import { Check } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
@@ -23,9 +22,6 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
     {
       enabled: !!person.householdId && person.householdId !== null,
       retry: false,
-      onError: error => {
-        console.error("Error fetching household:", error);
-      },
     }
   );
   // Fetch all people to get household members
@@ -60,6 +56,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
                   {household.label ||
                     (() => {
                       const members = allPeople.filter(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (p: any) => p.householdId === household.id
                       );
                       return members.length > 0
