@@ -57,8 +57,7 @@ function toFormData(
   const blob =
     typeof data === "string"
       ? new Blob([data], { type: contentType })
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        new Blob([data as unknown as BlobPart], { type: contentType });
+      : new Blob([data as unknown as BlobPart], { type: contentType });
   const form = new FormData();
   form.append("file", blob, fileName || "file");
   return form;

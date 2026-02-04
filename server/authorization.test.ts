@@ -17,8 +17,9 @@ import {
   getPeopleScope,
   canAccessPerson,
   peopleScopeWhereClause,
-  type UserRole,
-  type PeopleScope,
+  // Types imported for reference but not directly used in test expressions
+  // type UserRole,
+  // type PeopleScope,
   type PersonAnchors,
   type UserScopeAnchors,
 } from "./_core/authorization";

@@ -76,7 +76,7 @@ async function startServer() {
   if (ENV.DATABASE_URL) {
     try {
       await startupDbHealthCheck();
-    } catch (_error) {
+    } catch {
       if (!isDevelopment) {
         console.error(
           "[Startup] Database health check failed. Server will not start."
@@ -202,7 +202,7 @@ async function startServer() {
       const duration = Date.now() - start;
       console.log(`[Health] /healthz responded OK in ${duration}ms`);
       res.status(200).send("OK");
-    } catch (_err) {
+    } catch {
       // If the DB connection fails or health check throws, return a
       // 503 to signal that the service is unhealthy. We do not include
       // error details for security reasons.

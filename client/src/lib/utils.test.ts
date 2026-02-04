@@ -7,6 +7,7 @@ describe("cn utility", () => {
   });
 
   it("handles conditional classes", () => {
+    // eslint-disable-next-line no-constant-binary-expression -- Testing cn() behavior with false values
     expect(cn("foo", false && "bar", "baz")).toBe("foo baz");
   });
 

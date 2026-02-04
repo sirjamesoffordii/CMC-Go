@@ -49,7 +49,7 @@ export function NationalPanel({
   });
 
   // Generate name suggestions from existing people and common names
-  const nameSuggestions = useMemo(() => {
+  const _nameSuggestions = useMemo(() => {
     const existingNames = new Set<string>();
     allPeople.forEach(p => {
       if (p.name) {

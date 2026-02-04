@@ -198,7 +198,7 @@ async function tableExists(tableName: string): Promise<boolean> {
 
     const rows = asRows(result);
     return rows.length > 0 && (rows[0] as CountResult).count > 0;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -230,7 +230,10 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
 
     const columnRows = asRows(columnsResult);
     const columns = columnRows.map(
-      (row) => (row as Record<string, string>).column_name || (row as Record<string, string>).COLUMN_NAME || ""
+      row =>
+        (row as Record<string, string>).column_name ||
+        (row as Record<string, string>).COLUMN_NAME ||
+        ""
     );
 
     // Get row count - use pool directly for dynamic table names
@@ -265,7 +268,7 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       columns,
       sampleRow,
     };
-  } catch (_error) {
+  } catch {
     return {
       exists: true,
       columnCount: undefined,
@@ -313,7 +316,7 @@ async function verifyCriticalColumns(
         missing.push(col);
       }
     }
-  } catch (_error) {
+  } catch {
     // If we can't check, assume all are missing
     return requiredColumns;
   }
@@ -368,7 +371,8 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
     try {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
-      databaseName = dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : null;
+      databaseName =
+        dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : null;
 
       if (!databaseName) {
         errors.push(
@@ -569,7 +573,8 @@ export async function startupDbHealthCheck(): Promise<void> {
     if (db) {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
-      const dbName = dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : "unknown";
+      const dbName =
+        dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : "unknown";
       console.log(`[DB Health] Database: ${dbName}`);
     }
   } catch {

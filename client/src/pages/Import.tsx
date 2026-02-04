@@ -12,14 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Upload,
-  FileText,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Download,
-} from "lucide-react";
+import { Upload, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
@@ -39,14 +32,14 @@ interface ImportResult {
 }
 
 export default function Import() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated: _isAuthenticated, loading } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
   // Check if user is a leader
-  const isLeader =
+  const _isLeader =
     user &&
     [
       "CO_DIRECTOR",

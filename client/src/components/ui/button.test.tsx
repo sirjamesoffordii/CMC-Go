@@ -17,9 +17,7 @@ describe("Button", () => {
   });
 
   it("renders with different variants", () => {
-    const { rerender, unmount } = render(
-      <Button variant="destructive">Delete</Button>
-    );
+    const { unmount } = render(<Button variant="destructive">Delete</Button>);
     expect(screen.getByRole("button")).toHaveClass("bg-destructive");
     unmount();
 

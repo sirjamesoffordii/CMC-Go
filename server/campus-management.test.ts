@@ -7,7 +7,7 @@
  * Tests that require creating new campuses use raw SQL to avoid
  * the displayOrder column until migration 0006 is applied everywhere.
  */
-import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import * as db from "./db";
@@ -44,7 +44,9 @@ function createAdminContext(): TrpcContext {
   };
 }
 
-function createDistrictDirectorContext(
+// createDistrictDirectorContext is defined but not yet used in tests
+// Keeping for future test expansion
+function _createDistrictDirectorContext(
   districtId: string,
   campusId: number
 ): TrpcContext {

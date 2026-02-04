@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
  * Prevents these test paths from crashing the app or poisoning history
  */
 export function SentryTestRedirect() {
-  const [location, setLocation] = useLocation();
+  const [location, _setLocation] = useLocation();
 
   useEffect(() => {
     // Only redirect in non-production environments

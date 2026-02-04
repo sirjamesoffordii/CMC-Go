@@ -21,6 +21,7 @@ export default [
       "design/figma/**",
       ".worktrees/**",
       ".claude-worktrees/**",
+      ".vscode/**",
     ],
   },
   {

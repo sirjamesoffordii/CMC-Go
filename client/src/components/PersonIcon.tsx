@@ -25,7 +25,8 @@ const STATUS_COLORS = {
   "Not Invited": "text-slate-500",
 };
 
-interface Need {
+// Interface kept for type reference
+interface _Need {
   id: number;
   personId: string;
   type: string;
@@ -37,10 +38,10 @@ interface Need {
 export function PersonIcon({
   person,
   onStatusChange,
-  onClick,
+  onClick: _onClick,
   onEdit,
 }: PersonIconProps) {
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
