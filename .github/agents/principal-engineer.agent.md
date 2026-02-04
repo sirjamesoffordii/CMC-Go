@@ -89,7 +89,13 @@ WHILE true:
         - Group related small issues into batched issues
         - If Done column > 50: .\scripts\archive-old-done.ps1
 
-    13. Wait 30s → LOOP
+    13. **PROACTIVE EXPLORATION (NEVER SIT IDLE):**
+        - If board has <5 Todo items → spawn Plan subagents to find more work
+        - If no TL/SE activity in 2 min → check their heartbeats, respawn if stale
+        - Review recent code commits for improvement opportunities
+        - Always have something to contribute each loop iteration
+
+    14. Brief pause (30s max) → LOOP
 ```
 
 ## Writing Clear User-Facing Descriptions

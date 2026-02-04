@@ -65,7 +65,8 @@ WHILE true:
     3. Check for assignment: $assignment = .\scripts\claim-assignment.ps1
     4. IF no assignment:
        a. Self-assign: Query board for Todo items
-       b. IF no Todo items → Wait 30s → LOOP
+       b. IF no Todo items → Execute PROACTIVE WORK (see below)
+       c. NEVER just wait — always find the next best action
     5. IF assignment OR self-assigned issue:
        a. Estimate issue size
        b. IF <5 min AND more small issues available:
@@ -106,6 +107,49 @@ if ($todoItems.Count -gt 0) {
     # Implement this issue
 }
 ```
+
+## Proactive Work (NEVER SIT IDLE >1 MINUTE)
+
+**When there are no assignments and no Todo items on board:**
+
+1. **Find work yourself** (priority order):
+
+   ```powershell
+   # Find @ts-nocheck files to fix
+   $files = git grep -l "@ts-nocheck" -- "*.ts" "*.tsx"
+   if ($files) {
+       $file = $files | Select-Object -First 1
+       Write-Host "Self-assigning: Remove @ts-nocheck from $file"
+       # Create branch, implement fix, create PR
+   }
+
+   # Find console.log statements to remove
+   $logs = git grep -l "console\.log" -- "client/src/**/*.tsx" "server/**/*.ts"
+
+   # Find TODO/FIXME comments to address
+   $todos = git grep -n "TODO\|FIXME" -- "*.ts" "*.tsx" | Select-Object -First 5
+   ```
+
+2. **Create quick-win PRs**:
+   - Remove unused imports
+   - Fix typos in comments
+   - Add missing type annotations
+   - Improve error messages
+
+3. **Research via subagents**:
+
+   ```
+   runSubagent("Plan", "Find small code quality improvements in client/src/components")
+   ```
+
+4. **Self-create issues and implement**:
+   ```powershell
+   $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
+   gh issue create --title "<quick fix title>" --body "Quick fix identified during idle time" --repo sirjamesoffordii/CMC-Go
+   # Then implement immediately
+   ```
+
+**CRITICAL: Never sit idle waiting for TL. Find the next best action yourself.**
 
 ## Subagent Usage (Parallel Issue Batching)
 

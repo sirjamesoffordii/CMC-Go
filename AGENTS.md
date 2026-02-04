@@ -601,11 +601,73 @@ After PRs are merged, periodically clean up old branches:
 2. **Small diffs** — Optimize for reviewability
 3. **Evidence in PRs** — Commands + results
 4. **Never stop** — Loop until Done or Blocked
-5. **Never wait for instructions** — If idle, take the next best action
+5. **Never idle >1 minute** — Always find the next best action (see Proactive Work below)
 6. **One SE at a time** — Wait for PR merge before next assignment
 7. **Check rate limits** — Before assigning work, verify quota
 8. **SE uses worktree** — NEVER edit files in main repo
 9. **Avoid interactive commands** — See "Dangerous Commands" section
+
+## Proactive Work (NEVER SIT IDLE)
+
+**CRITICAL: No agent should ever sit idle for more than 1 minute.** When primary work is exhausted, agents must find the next best action:
+
+### Priority Order for Finding Work
+
+| Priority | Action                                    | Who        |
+| -------- | ----------------------------------------- | ---------- |
+| 1        | Review/merge open PRs                     | PE, TL     |
+| 2        | Assign Todo items to SE                   | TL         |
+| 3        | Implement assigned issues                 | SE         |
+| 4        | Self-assign from Todo queue               | SE         |
+| 5        | Create issues from @ts-nocheck files      | TL, SE     |
+| 6        | Create issues from TODO/FIXME comments    | TL, SE     |
+| 7        | Create issues from console.log removals   | TL, SE     |
+| 8        | Spawn Plan subagent for code quality scan | PE, TL, SE |
+| 9        | Self-implement small fixes directly       | TL, SE     |
+| 10       | Research and document codebase patterns   | PE, TL     |
+| 11       | Review recent commits for improvements    | PE         |
+| 12       | Update Exploratory issue with new ideas   | PE         |
+
+### Quick Commands to Find Work
+
+```powershell
+# Find @ts-nocheck files (create issues)
+git grep -l "@ts-nocheck" -- "*.ts" "*.tsx"
+
+# Find TODO/FIXME comments (create issues)
+git grep -n "TODO\|FIXME" -- "*.ts" "*.tsx" | Select-Object -First 10
+
+# Find console.log statements to remove
+git grep -l "console\.log" -- "client/src/**/*.tsx" "server/**/*.ts"
+
+# Find files with excessive complexity (potential refactors)
+Get-ChildItem -Recurse -Include "*.ts","*.tsx" | Where-Object { (Get-Content $_ | Measure-Object -Line).Lines -gt 500 }
+```
+
+### Self-Implementation Pattern
+
+When no assigned work exists:
+
+```powershell
+# 1. Find something to fix
+$file = git grep -l "@ts-nocheck" -- "*.ts" "*.tsx" | Select-Object -First 1
+
+# 2. Create issue
+$issue = gh issue create --title "Remove @ts-nocheck from $file" --body "Quick fix" --repo sirjamesoffordii/CMC-Go
+$issueNum = [regex]::Match($issue, '/issues/(\d+)').Groups[1].Value
+
+# 3. Add to board and implement immediately
+.\scripts\add-board-item.ps1 -IssueNumber $issueNum -Status "In Progress"
+
+# 4. Create branch and fix
+git checkout -b agent/<role>/$issueNum-quick-fix origin/staging
+# ... make changes ...
+git add -A && git commit -m "agent(<role>): <fix>"
+git push -u origin HEAD
+gh pr create --base staging --title "[#$issueNum] <title>" --body "Closes #$issueNum"
+```
+
+**The project should always be moving forward. Idle time is wasted time.**
 
 ## Dangerous Commands (Avoid in Autonomous Flow)
 

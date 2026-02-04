@@ -55,16 +55,57 @@ WHILE true:
     6. IF SE idle + Todo items exist → Assign next issue
     7. IF SE implementing → Monitor progress
     8. IF friction/problem observed → Comment on AEOS Improvement issue immediately
-    9. IF nothing actionable:
-       a. Track idle time (start idle timer if not running)
-       b. IF idle >1 min → Do small issues directly OR spawn fast subagents
-       c. Create draft issues from any observations
-       d. Wait 30s → LOOP
+    9. IF nothing actionable → Execute PROACTIVE WORK (see below)
+       - NEVER just wait — always find the next best action
+       - 30s wait ONLY after completing a proactive task
 ```
 
 > **⚠️ AEOS Improvement issue (currently #348)** — Comment there whenever you hit friction!
 > This is a LIVING issue that tracks agent workflow problems. NEVER close it.
 > Format: `**Tech Lead observation:** <problem> → <suggested fix>`
+
+## Proactive Work (NEVER SIT IDLE >1 MINUTE)
+
+**When there are no PRs to review, no Todo items to assign, and SE is busy:**
+
+1. **Create new issues** (priority order):
+
+   ```powershell
+   # Find @ts-nocheck files and create issues
+   git grep -l "@ts-nocheck" -- "*.ts" "*.tsx" | ForEach-Object {
+       Write-Host "Potential issue: Remove @ts-nocheck from $_"
+   }
+
+   # Find TODO/FIXME comments
+   git grep -n "TODO\|FIXME" -- "*.ts" "*.tsx" | Select-Object -First 10
+
+   # Check for console.log statements in production code
+   git grep -l "console\.log" -- "client/src/**/*.tsx" "server/**/*.ts"
+   ```
+
+2. **Research and document**:
+   - Spawn `Plan` subagent: "Find code quality issues in the codebase"
+   - Spawn `Plan` subagent: "Identify missing test coverage"
+   - Spawn `Plan` subagent: "Find accessibility gaps"
+
+3. **Create issues from findings**:
+
+   ```powershell
+   $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
+   gh issue create --title "<title>" --body "<description>" --repo sirjamesoffordii/CMC-Go
+   .\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Todo"
+   ```
+
+4. **Self-implement small issues** (if idle >1 min and SE busy):
+   - Doc updates, typo fixes, simple refactors
+   - Create PR on `agent/tl/<issue>-<slug>` branch
+
+5. **Review codebase health**:
+   - Check for inconsistent patterns
+   - Look for deprecated dependencies
+   - Verify error handling coverage
+
+**CRITICAL: The goal is to keep the project moving forward at all times.**
 
 ## Assign Issue to Software Engineer
 
