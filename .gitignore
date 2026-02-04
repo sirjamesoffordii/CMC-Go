@@ -120,6 +120,8 @@ tmpclaude-*
 .github/agents/heartbeat.json
 .github/agents/assignment.json
 .github/agents/spawn-log.json
+.github/agents/auto-activate.json
+.github/agents/workspace-ready.signal
 .github/agents/*.corrupted.*
 
 # Local scratch / analysis clones

@@ -1,7 +1,7 @@
 ---
 name: Software Engineer
 description: "Implements Issues autonomously. Creates PRs with evidence. Never stops, never asks questions."
-model: gpt-5.2
+model: claude-opus-4.5
 tools:
   [
     "vscode",

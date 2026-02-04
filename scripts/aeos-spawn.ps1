@@ -3,38 +3,44 @@
     Spawn an AEOS agent with FULL AUTOMATION - no human intervention required.
 .DESCRIPTION
     This script:
-    1. Writes an auto-activate.json config file
-    2. Opens VS Code with the agent's isolated user-data-dir
-    3. The AEOS Activator extension reads the config and auto-starts the chat session
+    1. Checks model rate limit status (uses backup if primary rate limited)
+    2. Writes an auto-activate.json config file
+    3. Opens VS Code with the agent's isolated user-data-dir
+    4. The AEOS Activator extension reads the config and auto-starts the chat session
     
-    Models (persisted in each agent's state.vscdb):
-    - PE: GPT-5.2
-    - TL: GPT-5.2
-    - SE: GPT-5.2
+    Models (with automatic fallback):
+    - PRIMARY: Claude Opus 4.5 (all agents)
+    - BACKUP: GPT 5.2 (used when Opus rate limited)
     
 .PARAMETER Agent
     Which agent to spawn: PE, TL, or SE
 .PARAMETER All
     Spawn all 3 agents
+.PARAMETER UseBackup
+    Force use of backup model (skip rate limit check)
 .EXAMPLE
     .\scripts\aeos-spawn.ps1 -Agent PE
     .\scripts\aeos-spawn.ps1 -All
+    .\scripts\aeos-spawn.ps1 -Agent TL -UseBackup
 #>
 param(
     [ValidateSet("PE", "TL", "SE")]
     [string]$Agent,
     
-    [switch]$All
+    [switch]$All,
+    
+    [switch]$UseBackup
 )
 
-# Agent configurations - models are persisted in each user-data-dir's state.vscdb
+# Agent configurations - models determined dynamically via get-model-status.ps1
 $agents = @{
     "PE" = @{
         Name = "Principal Engineer"
         UserDataDir = "C:\Dev\vscode-agent-pe"
         WorkspacePath = "C:\Dev\CMC Go"
         AgentName = "Principal Engineer"
-        Model = "gpt-5.2"
+        PrimaryModel = "claude-opus-4.5"
+        BackupModel = "gpt-5.2"
         GitHubAccount = "Principal-Engineer-Agent"
         Activation = "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
@@ -43,7 +49,8 @@ $agents = @{
         UserDataDir = "C:\Dev\vscode-agent-tl"
         WorkspacePath = "C:\Dev\CMC Go"
         AgentName = "Tech Lead"
-        Model = "gpt-5.2"
+        PrimaryModel = "claude-opus-4.5"
+        BackupModel = "gpt-5.2"
         GitHubAccount = "Tech-Lead-Agent"
         Activation = "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
@@ -52,14 +59,18 @@ $agents = @{
         UserDataDir = "C:\Dev\vscode-agent-se"
         WorkspacePath = "C:\Dev\CMC-Go-Worktrees\wt-se"
         AgentName = "Software Engineer"
-        Model = "gpt-5.2"
+        PrimaryModel = "claude-opus-4.5"
+        BackupModel = "gpt-5.2"
         GitHubAccount = "Software-Engineer-Agent"
         Activation = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
     }
 }
 
 function Spawn-Agent {
-    param([string]$Key)
+    param(
+        [string]$Key,
+        [switch]$ForceBackup
+    )
     
     $ag = $agents[$Key]
     Write-Host ""
@@ -76,6 +87,27 @@ function Spawn-Agent {
         return $false
     }
     
+    # Determine which model to use
+    $modelToUse = $ag.PrimaryModel
+    $modelReason = "primary"
+    
+    if ($ForceBackup) {
+        $modelToUse = $ag.BackupModel
+        $modelReason = "backup (forced)"
+    } else {
+        # Check rate limit status
+        $getStatusScript = Join-Path $PSScriptRoot "get-model-status.ps1"
+        if (Test-Path $getStatusScript) {
+            $status = & $getStatusScript -Agent $Key
+            if (-not $status.isPrimary) {
+                $modelToUse = $status.model
+                $modelReason = "backup (rate limited until $($status.rateLimitedUntil))"
+            }
+        }
+    }
+    
+    Write-Host "  ✓ Model: $modelToUse ($modelReason)" -ForegroundColor $(if ($modelReason -eq "primary") { "Green" } else { "Yellow" })
+    
     # Write the auto-activate config file
     $configPath = Join-Path $ag.WorkspacePath ".github\agents\auto-activate.json"
     $configDir = Split-Path $configPath -Parent
@@ -88,6 +120,7 @@ function Spawn-Agent {
         role = $Key
         agent = $ag.AgentName
         message = $ag.Activation
+        model = $modelToUse
         timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     }
     
@@ -95,12 +128,11 @@ function Spawn-Agent {
     Write-Host "  ✓ Config written: $configPath" -ForegroundColor Green
 
     # Pre-set the agent's Copilot model in its isolated VS Code state DB.
-    # This applies only to NEW VS Code windows and avoids inheriting a cached model.
     $stateDb = Join-Path $ag.UserDataDir "User\globalStorage\state.vscdb"
     $setModelScript = Join-Path $PSScriptRoot "set-copilot-model.ps1"
     if ((Test-Path $setModelScript) -and (Test-Path $stateDb)) {
-        Write-Host "  ✓ Setting Copilot model in agent DB: $($ag.Model)" -ForegroundColor Green
-        & $setModelScript -Model $ag.Model -DbPath $stateDb
+        Write-Host "  ✓ Setting Copilot model in agent DB: $modelToUse" -ForegroundColor Green
+        & $setModelScript -Model $modelToUse -DbPath $stateDb
     } else {
         Write-Host "  ⚠ Could not set model (missing script or state DB): $stateDb" -ForegroundColor Yellow
     }
@@ -115,7 +147,7 @@ function Spawn-Agent {
 
 # Determine which agents to spawn
 $toSpawn = if ($All) { @("PE", "TL", "SE") } elseif ($Agent) { @($Agent) } else {
-    Write-Host "Usage: .\scripts\aeos-spawn.ps1 -Agent PE|TL|SE" -ForegroundColor Yellow
+    Write-Host "Usage: .\scripts\aeos-spawn.ps1 -Agent PE|TL|SE [-UseBackup]" -ForegroundColor Yellow
     Write-Host "       .\scripts\aeos-spawn.ps1 -All" -ForegroundColor Yellow
     return
 }
@@ -124,13 +156,13 @@ Write-Host ""
 Write-Host "╔══════════════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
 Write-Host "║                    AEOS AUTONOMOUS SPAWN                         ║" -ForegroundColor Magenta
 Write-Host "║                                                                  ║" -ForegroundColor Magenta
-Write-Host "║  The AEOS Activator extension will auto-start chat sessions.     ║" -ForegroundColor Magenta
-Write-Host "║  No manual intervention required!                                ║" -ForegroundColor Magenta
+Write-Host "║  PRIMARY: Claude Opus 4.5  |  BACKUP: GPT 5.2                    ║" -ForegroundColor Magenta
+Write-Host "║  Auto-fallback when rate limited (15 min cooldown)               ║" -ForegroundColor Magenta
 Write-Host "╚══════════════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
 
 $success = 0
 foreach ($key in $toSpawn) {
-    if (Spawn-Agent -Key $key) {
+    if (Spawn-Agent -Key $key -ForceBackup:$UseBackup) {
         $success++
     }
     Start-Sleep -Milliseconds 1500

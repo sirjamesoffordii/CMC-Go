@@ -1,7 +1,7 @@
 ---
 name: Tech Lead
 description: "Project coordinator for CMC Go. Delegates to SE, reviews PRs, small edits."
-model: gpt-5.2
+model: claude-opus-4.5
 tools:
   [
     "vscode",

@@ -41,11 +41,11 @@ All 3 agents run simultaneously in separate VS Code windows (isolated user-data-
 Each agent runs in an **isolated VS Code instance** with its own GitHub account signed in.
 This gives each agent **separate Copilot rate limits** (4 accounts = 4x quota).
 
-| Agent | VS Code User-Data-Dir    | GitHub Account           | Email                            | Model   | Theme     |
-| ----- | ------------------------ | ------------------------ | -------------------------------- | ------- | --------- |
-| PE    | `C:\Dev\vscode-agent-pe` | Principal-Engineer-Agent | principalengineer@pvchialpha.com | GPT 5.2 | 🔵 Blue   |
-| TL    | `C:\Dev\vscode-agent-tl` | Tech-Lead-Agent          | techlead@pvchialpha.com          | GPT 5.2 | 🟢 Green  |
-| SE    | `C:\Dev\vscode-agent-se` | Software-Engineer-Agent  | bravo@pvchialpha.com             | GPT 5.2 | 🟣 Purple |
+| Agent | VS Code User-Data-Dir    | GitHub Account           | Email                            | Model           | Theme     |
+| ----- | ------------------------ | ------------------------ | -------------------------------- | --------------- | --------- |
+| PE    | `C:\Dev\vscode-agent-pe` | Principal-Engineer-Agent | principalengineer@pvchialpha.com | Claude Opus 4.5 | 🔵 Blue   |
+| TL    | `C:\Dev\vscode-agent-tl` | Tech-Lead-Agent          | techlead@pvchialpha.com          | Claude Opus 4.5 | 🟢 Green  |
+| SE    | `C:\Dev\vscode-agent-se` | Software-Engineer-Agent  | bravo@pvchialpha.com             | Claude Opus 4.5 | 🟣 Purple |
 
 **User account (human):** sirjamesoffordII (sirjamesoffordii@gmail.com)
 
@@ -164,22 +164,6 @@ TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or cl
 
 AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──► PE promotes to checklist
 ```
-
-**IDs (for GraphQL):**
-
-- Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
-
-| Status           | ID         |
-| ---------------- | ---------- |
-| Blocked          | `652442a1` |
-| AEOS Improvement | `adf06f76` |
-| Exploratory      | `041398cc` |
-| Draft (TL)       | `687f4500` |
-| Todo             | `f75ad846` |
-| In Progress      | `47fc9ee4` |
-| Verify           | `5351d827` |
-| UI/UX. Review    | `576c99fd` |
-| Done             | `98236657` |
 
 ## Heartbeat
 
@@ -409,13 +393,13 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 **Programmatic respawn (when agents respawn each other):**
 
 ```powershell
-# PE respawning TL (opens TL in isolated VS Code with GPT 5.2)
+# PE respawning TL (opens TL in isolated VS Code with Opus 4.5)
 .\scripts\aeos-spawn.ps1 -Agent TL
 
-# TL respawning PE (opens PE in isolated VS Code with GPT 5.2)
+# TL respawning PE (opens PE in isolated VS Code with Opus 4.5)
 .\scripts\aeos-spawn.ps1 -Agent PE
 
-# TL spawning SE in worktree (opens SE in isolated VS Code with GPT 5.2)
+# TL spawning SE in worktree (opens SE in isolated VS Code with Opus 4.5)
 .\scripts\aeos-spawn.ps1 -Agent SE
 ```
 
@@ -428,48 +412,45 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 
 ## Model Distribution (Rate Limit Strategy)
 
-Each agent uses a designated PRIMARY model. Backups only apply after rate limit is verified.
+All agents use **Claude Opus 4.5** as primary model with **GPT 5.2** as automatic fallback.
 
-| Agent              | PRIMARY Model | BACKUP Model      | Fallback Behavior         |
-| ------------------ | ------------- | ----------------- | ------------------------- |
-| Principal Engineer | GPT 5.2       | Claude Opus 4.5   | Switch after 429 verified |
-| Tech Lead          | GPT 5.2       | Claude Sonnet 4.5 | Switch after 429 verified |
-| Software Engineer  | GPT 5.2       | GPT 5.2 Codex     | Switch after 429 verified |
+| Agent              | PRIMARY Model   | BACKUP Model | Fallback Trigger              |
+| ------------------ | --------------- | ------------ | ----------------------------- |
+| Principal Engineer | Claude Opus 4.5 | GPT 5.2      | Auto-switch on 429 for 15 min |
+| Tech Lead          | Claude Opus 4.5 | GPT 5.2      | Auto-switch on 429 for 15 min |
+| Software Engineer  | Claude Opus 4.5 | GPT 5.2      | Auto-switch on 429 for 15 min |
 
-**Model rationale:**
+**How automatic fallback works:**
 
-1. **All agents use GPT 5.2** - Unified baseline model across clients
+1. Agent hits rate limit (429 error detected in VS Code logs)
+2. `record-rate-limit.ps1` writes to `.git/aeos/model-status.json`
+3. Next spawn via `aeos-spawn.ps1` reads status and uses backup model
+4. After 15 min cooldown, spawn returns to primary model
 
-**Fallback rules:**
+**Rate limit tracking file:** `.git/aeos/model-status.json`
 
-- Agents switch to backup ONLY after 429 is verified via logs
-- Never preemptively switch - always try primary first
+```json
+{
+  "PE": {
+    "currentModel": "gpt-5.2",
+    "rateLimitedModel": "claude-opus-4.5",
+    "rateLimitedAt": "2026-02-04T05:30:00Z",
+    "rateLimitedUntil": "2026-02-04T05:45:00Z"
+  }
+}
+```
 
-**How it works:**
-
-- `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
-- The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
-- **LIMITATION:** VS Code caches the model in memory after startup
-- Only FRESH VS Code instances read from the SQLite database
-- Existing windows ignore SQLite changes until restarted
-
-**⚠️ Known Limitation - Model Caching:**
-
-VS Code's Copilot extension caches the selected model in memory. The `code chat` CLI command connects to an existing VS Code server process that may have an old model cached.
-
-**Workarounds:**
-
-1. **Fresh start:** Close ALL VS Code windows, then run `spawn-agent.ps1` - new window reads from SQLite
-2. **Manual selection:** If model is wrong, manually select from the dropdown in chat input
-3. **Agent frontmatter:** Agent files specify `model:` in frontmatter - user must click correct model before sending
-
-**For autonomous AEOS:** The spawn scripts set SQLite, but if other VS Code windows are open, the model may be wrong. Human may need to verify model selection on first spawn.
-
-**Rate limit recovery:**
+**Manual override:**
 
 ```powershell
-# If an agent hits rate limits, respawn with backup model
-.\scripts\spawn-agent.ps1 -Agent TL -UseBackup
+# Force backup model (skip rate limit check)
+.\scripts\aeos-spawn.ps1 -Agent PE -UseBackup
+
+# Record a rate limit manually (15 min cooldown)
+.\scripts\record-rate-limit.ps1 -Agent PE -Model "claude-opus-4.5"
+
+# Check current model status
+.\scripts\get-model-status.ps1 -Agent PE
 ```
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
@@ -610,53 +591,7 @@ $check | Format-List  # status, graphql, core, resetIn, message
 | -------------------------------------------------------- | ------------------- | ------ |
 | 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer | ~500-1000           | ✅ Yes |
 
-**Note:** Model token limits (GPT 5.2) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
-
-## Copilot Rate Limits (Model Quotas)
-
-**With per-agent GitHub accounts, rate limits are isolated per agent.**
-
-Each agent's VS Code instance is signed into a different GitHub account with its own Copilot Pro subscription.
-This means PE, TL, and SE each have **independent rate limits** and can all use GPT 5.2 simultaneously.
-
-| Agent | GitHub Account           | VS Code User-Data-Dir    | Model   |
-| ----- | ------------------------ | ------------------------ | ------- |
-| PE    | Principal-Engineer-Agent | `C:\Dev\vscode-agent-pe` | GPT 5.2 |
-| TL    | Tech-Lead-Agent          | `C:\Dev\vscode-agent-tl` | GPT 5.2 |
-| SE    | Software-Engineer-Agent  | `C:\Dev\vscode-agent-se` | GPT 5.2 |
-
-**If a single agent hits rate limits:**
-
-- User message: "Sorry, you have exhausted this model's rate limit"
-- Log error: `[error] Server error: 429 too many requests`
-- **This only affects that agent's account** — other agents continue unaffected
-
-**Detection via VS Code Logs:**
-
-Each agent's logs are in its own user-data-dir:
-
-```
-C:\Dev\vscode-agent-{pe|tl|se}\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
-```
-
-**Model Fallback Strategy:**
-
-| Agent | Primary | Backup            | When to Switch                  |
-| ----- | ------- | ----------------- | ------------------------------- |
-| PE    | GPT 5.2 | Claude Opus 4.5   | After 429 verified in agent log |
-| TL    | GPT 5.2 | Claude Sonnet 4.5 | After 429 verified in agent log |
-| SE    | GPT 5.2 | GPT 5.2 Codex     | After 429 verified in agent log |
-
-**Recovery Pattern:**
-
-```powershell
-# PE/TL: Before assigning work, check if any agent is rate limited
-$rl = .\scripts\monitor-agent-rate-limits.ps1 -Once
-if ($rl.anyRateLimited) {
-    Write-Host "⚠️ Rate limit detected - waiting 5 min before assignment" -ForegroundColor Yellow
-    Start-Sleep -Seconds 300
-}
-```
+**Note:** Model token limits are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
 ## AEOS Self-Improvement (MANDATORY)
 
@@ -732,21 +667,23 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 ## Utility Scripts
 
-| Script                          | Purpose                                  | Usage                       |
-| ------------------------------- | ---------------------------------------- | --------------------------- |
-| `check-rate-limits.ps1`         | GitHub API quota check                   | Before expensive operations |
-| `check-ci-status.ps1`           | Human-readable CI status                 | Diagnose build failures     |
-| `verify-merge.ps1`              | Post-merge verification                  | After `gh pr merge`         |
-| `add-board-item.ps1`            | Add issue to board with status           | Prevents limbo items        |
-| `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
-| `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
-| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
-| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model    | Human or agent restart      |
-| `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
-| `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
-| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
-| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all sessions |
-| `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
+| Script                          | Purpose                                   | Usage                       |
+| ------------------------------- | ----------------------------------------- | --------------------------- |
+| `check-rate-limits.ps1`         | GitHub API quota check                    | Before expensive operations |
+| `check-ci-status.ps1`           | Human-readable CI status                  | Diagnose build failures     |
+| `verify-merge.ps1`              | Post-merge verification                   | After `gh pr merge`         |
+| `add-board-item.ps1`            | Add issue to board with status            | Prevents limbo items        |
+| `update-heartbeat.ps1`          | Update agent heartbeat                    | Every 3 min in loop         |
+| `read-heartbeat.ps1`            | Safe heartbeat reader                     | Monitor other agents        |
+| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree           | TL spawns SE once           |
+| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model     | Human or agent restart      |
+| `set-copilot-model.ps1`         | Set Copilot model via SQLite              | Before spawning agents      |
+| `cleanup-agent-branches.ps1`    | Clean merged agent branches               | After several PRs merged    |
+| `aeos-status.ps1`               | Full AEOS system status                   | Debugging coordination      |
+| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection  | PE/TL monitors all sessions |
+| `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check          | Quick self-check            |
+| `get-model-status.ps1`          | Get agent's current model (with fallback) | Spawn script uses this      |
+| `record-rate-limit.ps1`         | Record rate limit, trigger fallback       | When 429 detected           |
 
 ## Known Issues & Gotchas
 
@@ -784,15 +721,15 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 ### Model Selection in AEOS
 
-**Autonomous agents use `spawn-agent.ps1`** which preselects the correct model before opening a new VS Code window. This ensures:
+**Autonomous agents use `aeos-spawn.ps1`** which:
 
-- PE starts on GPT 5.2
-- TL starts on GPT 5.2
-- SE starts on GPT 5.2
+1. Checks rate limit status via `get-model-status.ps1`
+2. Uses primary model (Claude Opus 4.5) unless rate limited
+3. Auto-switches to backup (GPT 5.2) when needed
 
 **Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in a window configured with a different model, TL will run on that model. This is fine for human use since you can select the model before clicking send.
 
-**Rule:** For autonomous AEOS, always use `spawn-agent.ps1`. For manual testing, use `/activate` prompts.
+**Rule:** For autonomous AEOS, always use `aeos-spawn.ps1`. For manual testing, use `/activate` prompts.
 
 ## Reference
 
