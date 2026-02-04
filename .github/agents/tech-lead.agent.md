@@ -1,7 +1,7 @@
 ---
 name: Tech Lead
 description: "Project coordinator for CMC Go. Delegates to SE, reviews PRs, small edits."
-model: claude-opus-4.5
+model: gpt-5.2
 tools:
   [
     "vscode",
@@ -33,7 +33,7 @@ tools:
    ```powershell
    .\scripts\update-heartbeat.ps1 -Role TL -Status "starting"
    ```
-2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"; gh auth status`
+2. Auth: `$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"; gh auth status`
 3. Start core loop — you run **continuously alongside PE and SE**
 
 ## Core Loop
@@ -50,12 +50,16 @@ WHILE true:
     4. Check SE heartbeat status
     5. IF SE idle + Todo items exist → Assign next issue
     6. IF SE implementing → Monitor progress
-    7. IF nothing actionable:
+    7. IF friction/problem observed → Comment on #348 immediately (see AEOS Feedback)
+    8. IF nothing actionable:
        a. Track idle time (start idle timer if not running)
        b. IF idle >1 min → Do small issues directly OR spawn fast subagents
        c. Create draft issues from any observations
        d. Wait 30s → LOOP
 ```
+
+> **⚠️ #348 is the AEOS Improvement issue** — Comment there whenever you hit friction!
+> Format: `**Tech Lead observation:** <problem> → <suggested fix>`
 
 ## Assign Issue to Software Engineer
 
@@ -124,7 +128,7 @@ TL can block issues that shouldn't proceed. **Always add a comment explaining wh
 .\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Blocked"
 
 # 2. Add explanation comment
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
 $body = @"
 ## 🚫 Blocked by Tech Lead
 
@@ -183,10 +187,10 @@ Update every 3 min using the heartbeat script:
 **Monitor PE:** Check PE heartbeat. If stale >6 min, respawn PE:
 
 ```powershell
-.\scripts\spawn-agent.ps1 -Agent PE
+.\scripts\aeos-spawn.ps1 -Agent PE
 ```
 
-**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `.\scripts\spawn-worktree-agent.ps1`.
+**Monitor SE:** Check SE heartbeat status. If "idle" and no assignment.json, assign next issue. If stale >6 min, respawn via `.\scripts\aeos-spawn.ps1 -Agent SE`.
 
 ## Subagent Usage (Parallel PR Review)
 
@@ -236,7 +240,7 @@ TL can now perform these actions directly when appropriate:
 When TL identifies improvements during review:
 
 ```powershell
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
 gh issue create --title "<title>" --body "<description>" --repo sirjamesoffordii/CMC-Go
 
 # Then set status to Draft (TL) on board (for PE to review)
@@ -465,7 +469,7 @@ if ($next) {
 When you notice workflow friction during your loop, **immediately** add a comment to issue #348:
 
 ```powershell
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
 gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
 ```
 

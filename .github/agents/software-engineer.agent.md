@@ -1,7 +1,7 @@
 ---
 name: Software Engineer
 description: "Implements Issues autonomously. Creates PRs with evidence. Never stops, never asks questions."
-model: claude-opus-4.5
+model: gpt-5.2
 tools:
   [
     "vscode",
@@ -71,7 +71,11 @@ WHILE true:
        c. ELSE: Execute Inner Loop directly
        d. After PR(s) created, update heartbeat to "idle"
        e. LOOP (back to step 1)
+    5. IF friction/problem observed → Comment on #348 immediately (see AEOS Feedback)
 ```
+
+> **⚠️ #348 is the AEOS Improvement issue** — Comment there whenever you hit friction!
+> Format: `**Software Engineer observation:** <problem> → <suggested fix>`
 
 **Assignment pickup:**
 
@@ -240,7 +244,7 @@ $wtPath = (Get-Location).Path
 **Monitor TL:** Check TL heartbeat. If stale >6 min, respawn TL via:
 
 ```powershell
-.\scripts\spawn-agent.ps1 -Agent TL
+.\scripts\aeos-spawn.ps1 -Agent TL
 ```
 
 ## Pre-Flight Validation
