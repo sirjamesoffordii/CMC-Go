@@ -1,5 +1,3 @@
-// @ts-nocheck
-// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import {
   Card,

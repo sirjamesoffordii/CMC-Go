@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { adminProcedure, router } from "./trpc";
 
 /**
@@ -9,6 +10,19 @@ interface ApiEndpoint {
   path: string;
   description: string;
   isPublic: boolean;
+}
+
+/**
+ * Activity log entry for admin console
+ */
+interface ActivityLog {
+  id: number;
+  action: string;
+  resource: string | null;
+  details: string | null;
+  createdAt: Date;
+  userId: number | null;
+  ipAddress: string | null;
 }
 
 /**
@@ -223,5 +237,41 @@ export const consoleRouter = router({
         },
       ];
     }),
+  }),
+
+  /**
+   * Activity logs router for admin console
+   * Returns activity/audit logs for system monitoring
+   *
+   * Note: Currently returns empty arrays as a placeholder.
+   * When activity logging is implemented, this will query the activity_logs table.
+   */
+  activityLogs: router({
+    /**
+     * List recent activity logs
+     */
+    list: adminProcedure
+      .input(z.object({ limit: z.number().optional().default(100) }))
+      .query((): ActivityLog[] => {
+        // TODO: Query activity_logs table when implemented
+        // For now, return empty array - UI handles empty state gracefully
+        return [];
+      }),
+
+    /**
+     * Search activity logs by term
+     */
+    search: adminProcedure
+      .input(
+        z.object({
+          searchTerm: z.string(),
+          limit: z.number().optional().default(100),
+        })
+      )
+      .query((): ActivityLog[] => {
+        // TODO: Query activity_logs table with search when implemented
+        // For now, return empty array - UI handles empty state gracefully
+        return [];
+      }),
   }),
 });
