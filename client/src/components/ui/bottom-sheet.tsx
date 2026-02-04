@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { X } from "lucide-react";
@@ -27,9 +26,9 @@ export function BottomSheet({
   className,
 }: BottomSheetProps) {
   const [currentSnap, setCurrentSnap] = useState(defaultSnap);
-  const [isDragging, setIsDragging] = useState(false);
+  const [_isDragging, setIsDragging] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const startY = useRef(0);
+  const _startY = useRef(0);
   const startHeight = useRef(0);
 
   // Reset to default snap when opening
@@ -126,20 +125,16 @@ export function BottomSheet({
             </div>
 
             {/* Header */}
-            {(title || onOpenChange) && (
-              <div className="flex-shrink-0 flex items-center justify-between px-4 pb-2 border-b">
-                {title && <h2 className="text-lg font-semibold">{title}</h2>}
-                {onOpenChange && (
-                  <button
-                    onClick={() => onOpenChange(false)}
-                    className="p-2 -mr-2 touch-target"
-                    aria-label="Close"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="flex-shrink-0 flex items-center justify-between px-4 pb-2 border-b">
+              {title && <h2 className="text-lg font-semibold">{title}</h2>}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="p-2 -mr-2 touch-target"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
             {/* Snap Point Indicators (optional) */}
             <div className="flex-shrink-0 flex items-center justify-center gap-1 px-4 py-1">
