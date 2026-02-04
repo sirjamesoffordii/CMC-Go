@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Card,
@@ -25,7 +24,7 @@ export default function Admin() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
 
-  const allUsers = trpc.admin.getAllUsers.useQuery();
+  const allUsers = trpc.admin.users.list.useQuery();
 
   if (loading) {
     return (
@@ -58,7 +57,9 @@ export default function Admin() {
     {
       title: "Admin Users",
       value:
-        allUsers.data?.filter(u => u.role === "admin").length.toString() || "0",
+        allUsers.data
+          ?.filter(u => u.role === "ADMIN" || u.role === "CMC_GO_ADMIN")
+          .length.toString() || "0",
       description: "Administrator accounts",
       icon: Shield,
       color: "text-purple-600",
@@ -155,10 +156,14 @@ export default function Admin() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-medium">
-                          {u.name || "Unnamed User"}
+                          {u.fullName || "Unnamed User"}
                         </p>
                         <Badge
-                          variant={u.role === "admin" ? "default" : "secondary"}
+                          variant={
+                            u.role === "ADMIN" || u.role === "CMC_GO_ADMIN"
+                              ? "default"
+                              : "secondary"
+                          }
                           className="h-5 text-xs"
                         >
                           {u.role}
