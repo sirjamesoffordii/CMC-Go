@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState, useRef } from "react";
 import {
   Dialog,
@@ -31,9 +30,9 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
   const [parsedData, setParsedData] = useState<CSVRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [results, setResults] = useState<{
-    success: number;
+    imported: number;
     skipped: number;
-    errors: Array<{ row: number; name: string; error: string }>;
+    errors: string[];
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const utils = trpc.useUtils();
@@ -70,6 +69,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
       header: true,
       skipEmptyLines: true,
       complete: result => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = result.data as any[];
         const mapped: CSVRow[] = rows
           .map(row => ({
@@ -221,7 +221,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
               <div className="grid grid-cols-3 gap-4">
                 <div className="border rounded-lg p-4 text-center">
                   <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                  <div className="text-2xl font-bold">{results.success}</div>
+                  <div className="text-2xl font-bold">{results.imported}</div>
                   <div className="text-sm text-muted-foreground">Imported</div>
                 </div>
                 <div className="border rounded-lg p-4 text-center">
@@ -244,7 +244,7 @@ export function ImportModal({ open, onOpenChange }: ImportModalProps) {
                   <ul className="space-y-1 text-sm">
                     {results.errors.map((error, i) => (
                       <li key={i} className="text-red-600">
-                        Row {error.row} ({error.name}): {error.error}
+                        {error}
                       </li>
                     ))}
                   </ul>
