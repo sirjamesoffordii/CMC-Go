@@ -1,4 +1,3 @@
-// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +14,7 @@ import { toast } from "sonner";
 
 export default function ConsoleDatabase() {
   const [query, setQuery] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [results, setResults] = useState<any>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
