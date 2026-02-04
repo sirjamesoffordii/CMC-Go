@@ -108,6 +108,7 @@ function Get-AgentChatActivity {
     
     # Parse log content for request-level tracking
     $requestInfo = @{ HasPendingRequest = $false; LastRequestId = $null; LastFinishReason = $null }
+    $rateLimitInfo = @{ IsRateLimited = $false; RateLimitedModel = $null; CurrentModel = $null }
     try {
         # Read last 50KB of log to check for incomplete requests
         $logContent = Get-Content -Path $latestLog.FullName -Tail 200 -ErrorAction SilentlyContinue
@@ -133,6 +134,19 @@ function Get-AgentChatActivity {
             if ($finishReasons.Count -gt 0) {
                 $requestInfo.LastFinishReason = $finishReasons[-1].Groups[1].Value
             }
+            
+            # Detect rate limit errors and current model
+            $rateLimitMatch = [regex]::Match($allContent, '\[error\] Server error: 429.*rate_limited')
+            $rateLimitedModelMatch = [regex]::Match($allContent, 'ccreq:[a-f0-9]+\.copilotmd \| rateLimited \| ([a-zA-Z0-9.-]+)')
+            $currentModelMatches = [regex]::Matches($allContent, 'ccreq:[a-f0-9]+\.copilotmd \| success \| ([a-zA-Z0-9.-]+) \|.*\| \[panel/editAgent\]')
+            
+            $rateLimitInfo.IsRateLimited = $rateLimitMatch.Success -or $rateLimitedModelMatch.Success
+            if ($rateLimitedModelMatch.Success) {
+                $rateLimitInfo.RateLimitedModel = $rateLimitedModelMatch.Groups[1].Value
+            }
+            if ($currentModelMatches.Count -gt 0) {
+                $rateLimitInfo.CurrentModel = $currentModelMatches[-1].Groups[1].Value
+            }
         }
     } catch {
         # Log parsing failed, continue with time-based detection
@@ -153,12 +167,15 @@ function Get-AgentChatActivity {
     return @{
         Active           = ($ageMinutes -lt 2)
         Status           = $status
-        LastLogTime      = $latestLog.LastWriteTime
-        AgeMinutes       = [Math]::Round($ageMinutes, 1)
-        LogPath          = $latestLog.FullName
-        LastRequestId    = $requestInfo.LastRequestId
+        LastLogTime       = $latestLog.LastWriteTime
+        AgeMinutes        = [Math]::Round($ageMinutes, 1)
+        LogPath           = $latestLog.FullName
+        LastRequestId     = $requestInfo.LastRequestId
         HasPendingRequest = $requestInfo.HasPendingRequest
-        LastFinishReason = $requestInfo.LastFinishReason
+        LastFinishReason  = $requestInfo.LastFinishReason
+        IsRateLimited     = $rateLimitInfo.IsRateLimited
+        RateLimitedModel  = $rateLimitInfo.RateLimitedModel
+        CurrentModel      = $rateLimitInfo.CurrentModel
     }
 }
 
@@ -196,7 +213,12 @@ function Get-LiveAgentStatus {
         # The key insight: "pending request" is the definitive hung signal.
         # "Log stale" alone could just mean a long terminal command is running.
         if ($processStatus.Running) {
-            if ($chatActivity.HasPendingRequest -and $chatActivity.AgeMinutes -ge 2) {
+            if ($chatActivity.IsRateLimited) {
+                # Rate limited - needs respawn with different model
+                $isHung = $true
+                $hungMinutes = [int]$chatActivity.AgeMinutes
+                $hungReason = 'rate-limited'
+            } elseif ($chatActivity.HasPendingRequest -and $chatActivity.AgeMinutes -ge 2) {
                 # Request started but never got "request done:" - agent is stuck spinning
                 $isHung = $true
                 $hungMinutes = [int]$chatActivity.AgeMinutes
@@ -209,32 +231,38 @@ function Get-LiveAgentStatus {
             }
         }
         
-        # Determine overall status - two failure modes:
+        # Determine overall status - three failure modes:
         # 1. OFFLINE = process dead (VS Code not running)
-        # 2. HUNG = stuck spinning (VS Code running but request pending or log stale)
+        # 2. RATE-LIMITED = hit model quota (needs respawn with backup model)
+        # 3. HUNG = stuck spinning (VS Code running but request pending or log stale)
         $overallStatus = if (-not $processStatus.Running) {
-            'offline'  # Process dead - definitely needs respawn
+            'offline'       # Process dead - definitely needs respawn
+        } elseif ($chatActivity.IsRateLimited) {
+            'rate-limited'  # Model quota hit - respawn with backup
         } elseif ($isHung) {
-            'hung'     # Stuck spinning - needs respawn
+            'hung'          # Stuck spinning - needs respawn
         } else {
-            'active'   # Agent is actively working
+            'active'        # Agent is actively working
         }
         
         $results[$agent] = [PSCustomObject]@{
-            Agent            = $agent
-            OverallStatus    = $overallStatus
-            ProcessRunning   = $processStatus.Running
-            ProcessId        = $processStatus.ProcessId
-            ChatActive       = $chatActivity.Active
-            ChatStatus       = $chatActivity.Status
-            LastChatAge      = $chatActivity.AgeMinutes
-            LastChatTime     = $chatActivity.LastLogTime
-            IsHung           = $isHung
-            HungMinutes      = $hungMinutes
-            HungReason       = $hungReason
-            LastRequestId    = $chatActivity.LastRequestId
+            Agent             = $agent
+            OverallStatus     = $overallStatus
+            ProcessRunning    = $processStatus.Running
+            ProcessId         = $processStatus.ProcessId
+            ChatActive        = $chatActivity.Active
+            ChatStatus        = $chatActivity.Status
+            LastChatAge       = $chatActivity.AgeMinutes
+            LastChatTime      = $chatActivity.LastLogTime
+            IsHung            = $isHung
+            HungMinutes       = $hungMinutes
+            HungReason        = $hungReason
+            LastRequestId     = $chatActivity.LastRequestId
             HasPendingRequest = $chatActivity.HasPendingRequest
-            LastFinishReason = $chatActivity.LastFinishReason
+            LastFinishReason  = $chatActivity.LastFinishReason
+            IsRateLimited     = $chatActivity.IsRateLimited
+            RateLimitedModel  = $chatActivity.RateLimitedModel
+            CurrentModel      = $chatActivity.CurrentModel
         }
     }
     
@@ -290,35 +318,41 @@ function Show-LiveStatus {
     foreach ($agent in @('PE', 'TL', 'SE')) {
         $s = $Status[$agent]
         $color = switch ($s.OverallStatus) {
-            'active'  { 'Green' }
-            'hung'    { 'Magenta' }
-            'stale'   { 'Yellow' }
-            'offline' { 'Red' }
-            default   { 'Gray' }
+            'active'       { 'Green' }
+            'rate-limited' { 'Red' }
+            'hung'         { 'Magenta' }
+            'stale'        { 'Yellow' }
+            'offline'      { 'Red' }
+            default        { 'Gray' }
         }
         
         $processInfo = if ($s.ProcessRunning) { "PID $($s.ProcessId)" } else { "not running" }
         $chatInfo = if ($s.LastChatAge) { "$($s.LastChatAge) min ago" } else { "no log" }
+        $modelInfo = if ($s.CurrentModel) { " [$($s.CurrentModel)]" } else { "" }
         
-        # Build hung warning with reason
-        $hungWarning = ""
-        if ($s.IsHung) {
+        # Build status warning
+        $statusWarning = ""
+        if ($s.IsRateLimited) {
+            $statusWarning = " 🚫 RATE LIMITED on $($s.RateLimitedModel) - respawn with backup!"
+        } elseif ($s.IsHung) {
             $reasonText = switch ($s.HungReason) {
+                'rate-limited'    { 'rate limited' }
                 'pending-request' { 'request stuck' }
                 'log-stale'       { 'log stale' }
                 default           { 'unknown' }
             }
-            $hungWarning = " ⚠️ HUNG $($s.HungMinutes)m ($reasonText)"
+            $statusWarning = " ⚠️ HUNG $($s.HungMinutes)m ($reasonText)"
         }
         
         Write-Host "$agent  " -NoNewline -ForegroundColor White
-        Write-Host "[$($s.OverallStatus.ToUpper().PadRight(7))]" -NoNewline -ForegroundColor $color
+        Write-Host "[$($s.OverallStatus.ToUpper().PadRight(12))]" -NoNewline -ForegroundColor $color
+        Write-Host "$modelInfo" -NoNewline -ForegroundColor Cyan
         Write-Host "  Process: $processInfo" -NoNewline -ForegroundColor DarkGray
         Write-Host "  Chat: $chatInfo" -NoNewline -ForegroundColor DarkGray
-        Write-Host $hungWarning -ForegroundColor Magenta
+        Write-Host $statusWarning -ForegroundColor $(if ($s.IsRateLimited) { 'Red' } else { 'Magenta' })
         
-        # Show request-level info if hung OR if -Detailed is specified
-        if ($s.LastRequestId -and ($s.IsHung -or $Detailed)) {
+        # Show request-level info if hung/rate-limited OR if -Detailed is specified
+        if ($s.LastRequestId -and ($s.IsHung -or $s.IsRateLimited -or $Detailed)) {
             $reqShort = $s.LastRequestId.Substring(0, 8)
             $pendingMark = if ($s.HasPendingRequest) { "⏳ PENDING" } else { "✓ done" }
             $finishInfo = if ($s.LastFinishReason) { " ($($s.LastFinishReason))" } else { "" }
