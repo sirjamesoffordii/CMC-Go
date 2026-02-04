@@ -9,15 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Person } from "../../../drizzle/schema";
 import {
   MapPin,
-  Calendar,
   Pencil,
   Search,
   X,
   Share2,
-  Copy,
-  Mail,
-  MessageCircle,
-  Check,
   Upload,
   Menu,
   LogIn,
