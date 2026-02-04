@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { useDrop } from "react-dnd";
+import { useCallback } from "react";
 
 interface CampusOrderDropZoneProps {
   index: number;
@@ -14,7 +14,7 @@ export function CampusOrderDropZone({
   position = "before",
   canInteract = true,
 }: CampusOrderDropZoneProps) {
-  const [{ isOver }, drop] = useDrop(
+  const [{ isOver: _isOver }, drop] = useDrop(
     () => ({
       accept: "campus",
       drop: (item: { campusId: number }) => {
@@ -29,9 +29,18 @@ export function CampusOrderDropZone({
     [index, onDrop, canInteract]
   );
 
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        drop(node);
+      }
+    },
+    [drop]
+  );
+
   return (
     <div
-      ref={drop}
+      ref={setDropRef}
       className={`absolute left-0 right-0 z-0 pointer-events-auto ${
         position === "before" ? "top-0" : "bottom-0"
       }`}
