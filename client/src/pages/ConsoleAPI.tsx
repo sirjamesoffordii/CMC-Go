@@ -1,5 +1,3 @@
-// @ts-nocheck
-// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -188,7 +186,10 @@ export default function ConsoleAPI() {
             <div className="grid gap-4 md:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="method">Method</Label>
-                <Select value={method} onValueChange={v => setMethod(v as any)}>
+                <Select
+                  value={method}
+                  onValueChange={v => setMethod(v as typeof method)}
+                >
                   <SelectTrigger id="method">
                     <SelectValue />
                   </SelectTrigger>
