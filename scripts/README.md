@@ -214,10 +214,10 @@ PowerShell scripts for GitHub authentication, agent identity management, and aut
 
 #### `agent-login-gh.ps1`
 
-Interactive GitHub login for agent accounts (`alpha-tech-lead` or `software-engineer-agent`).
+Interactive GitHub login for agent accounts (`tech-lead-agent` or `software-engineer-agent`).
 
 ```powershell
-.\scripts\agent-login-gh.ps1 -Account alpha-tech-lead
+.\scripts\agent-login-gh.ps1 -Account tech-lead-agent
 .\scripts\agent-login-gh.ps1 -Account software-engineer-agent
 ```
 
@@ -226,7 +226,7 @@ Interactive GitHub login for agent accounts (`alpha-tech-lead` or `software-engi
 Run `gh` CLI commands as a specific agent account.
 
 ```powershell
-.\scripts\gh-as.ps1 -Account alpha-tech-lead issue list
+.\scripts\gh-as.ps1 -Account tech-lead-agent issue list
 .\scripts\gh-as.ps1 -Account software-engineer-agent pr view 42
 ```
 

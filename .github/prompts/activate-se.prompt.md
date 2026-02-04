@@ -40,7 +40,7 @@ WHILE true:
 **Respawn TL** (when TL stale >6 min):
 
 ```powershell
-.\scripts\spawn-agent.ps1 -Agent TL
+.\scripts\aeos-spawn.ps1 -Agent TL
 ```
 
 ## Key References

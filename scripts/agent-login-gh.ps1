@@ -1,18 +1,19 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('alpha-tech-lead','software-engineer-agent')]
+  [ValidateSet('principal-engineer-agent','tech-lead-agent','software-engineer-agent')]
   [string]$Account
 )
 
 $ErrorActionPreference = 'Stop'
 
 $base = $env:USERPROFILE
-$configDir = if ($Account -eq 'alpha-tech-lead') {
-  Join-Path $base '.gh-alpha-tech-lead'
-} else {
-  Join-Path $base '.gh-software-engineer-agent'
+$configDirs = @{
+  'principal-engineer-agent' = Join-Path $base '.gh-principal-engineer-agent'
+  'tech-lead-agent' = Join-Path $base '.gh-tech-lead-agent'
+  'software-engineer-agent' = Join-Path $base '.gh-software-engineer-agent'
 }
+$configDir = $configDirs[$Account]
 
 $env:GH_CONFIG_DIR = $configDir
 $env:GH_PAGER = 'cat'

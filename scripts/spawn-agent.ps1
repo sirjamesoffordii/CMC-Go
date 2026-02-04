@@ -6,9 +6,9 @@
     Each agent has its own state database with a pre-configured model.
     
     Each agent has a designated PRIMARY model + BACKUP for rate limit fallback:
-    - PE: Claude Opus 4.5 (best reasoning for architecture)
-    - TL: GPT 5.2 (fast coordination)
-    - SE: GPT 5.2 Codex (optimized for code)
+    - PE: GPT-5.2
+    - TL: GPT-5.2
+    - SE: GPT-5.2
     
 .PARAMETER Agent
     The agent to spawn: PE, TL, or SE
@@ -78,35 +78,35 @@ function Stop-VSCodeForUserDataDir {
 #
 # GitHub accounts:
 #   PE: Principal-Engineer-Agent  (GH_CONFIG_DIR: C:/Users/sirja/.gh-principal-engineer-agent)
-#   TL: Alpha-Tech-Lead           (GH_CONFIG_DIR: C:/Users/sirja/.gh-alpha-tech-lead)
+#   TL: Tech-Lead-Agent           (GH_CONFIG_DIR: C:/Users/sirja/.gh-tech-lead-agent)
 #   SE: Software-Engineer-Agent   (GH_CONFIG_DIR: C:/Users/sirja/.gh-software-engineer-agent)
 #
 $agentConfig = @{
     "PE" = @{
         Name = "Principal Engineer"
-        Model = "claude-opus-4.5"
-        BackupModel = "gpt-5.2"
+        Model = "gpt-5.2"
+        BackupModel = "claude-opus-4.5"
         Prompt = "You are Principal Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
-        UserDataDir = "C:\Dev\vscode-data-pe"
+        UserDataDir = "C:\Dev\vscode-agent-pe"
         GitHubAccount = "Principal-Engineer-Agent"
     }
     "TL" = @{
         Name = "Tech Lead"
-        Model = "claude-opus-4.5"
-        BackupModel = "gpt-5.2"
+        Model = "gpt-5.2"
+        BackupModel = "claude-sonnet-4.5"
         Prompt = "You are Tech Lead 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC Go"
-        UserDataDir = "C:\Dev\vscode-data-tl"
-        GitHubAccount = "Alpha-Tech-Lead"
+        UserDataDir = "C:\Dev\vscode-agent-tl"
+        GitHubAccount = "Tech-Lead-Agent"
     }
     "SE" = @{
         Name = "Software Engineer"
-        Model = "claude-opus-4.5"
-        BackupModel = "gpt-5.2"
+        Model = "gpt-5.2"
+        BackupModel = "gpt-5.2-codex"
         Prompt = "You are Software Engineer 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. START NOW."
         DefaultPath = "C:\Dev\CMC-Go-Worktrees\wt-se"
-        UserDataDir = "C:\Dev\vscode-data-se"
+        UserDataDir = "C:\Dev\vscode-agent-se"
         GitHubAccount = "Software-Engineer-Agent"
     }
 }

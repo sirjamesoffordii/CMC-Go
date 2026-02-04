@@ -27,11 +27,13 @@ param(
     [Parameter(ParameterSetName='Set')]
     [ValidateSet(
         "auto",
+        # Claude models (Pro tier)
         "claude-haiku-4.5",
         "claude-opus-4.5",
         "claude-opus-41",
         "claude-sonnet-4",
         "claude-sonnet-4.5",
+        # GPT models
         "gpt-4.1",
         "gpt-4o",
         "gpt-4o-mini",
@@ -44,9 +46,13 @@ param(
         "gpt-5.1-codex-mini",
         "gpt-5.2",
         "gpt-5.2-codex",
+        # Gemini models
         "gemini-2.5-pro",
         "gemini-3-flash-preview",
-        "gemini-3-pro-preview"
+        "gemini-3-pro-preview",
+        # Free tier models
+        "grok-code-fast-1",
+        "raptor-mini"
     )]
     [string]$Model,
     

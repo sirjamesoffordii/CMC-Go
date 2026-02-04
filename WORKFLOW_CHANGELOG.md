@@ -24,7 +24,7 @@ Tracks changes to the Autonomous Agent System workflow. This is a human-readable
 
 ### PE Account Created
 
-- **Account:** `Principle-Engineer-Agent`
+- **Account:** `Principal-Engineer-Agent`
 - **Auth config:** `C:/Users/sirja/.gh-principal-engineer-agent`
 - **Purpose:** Clear audit trail separating PE decisions from TL execution
 

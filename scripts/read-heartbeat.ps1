@@ -29,9 +29,21 @@ param(
     [string]$HeartbeatPath
 )
 
+function Get-AeosCoordDir {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    $commonDirRel = (& git -C $repoRoot rev-parse --git-common-dir 2>$null)
+    if (-not $commonDirRel) {
+        return (Join-Path $repoRoot ".github" "agents")
+    }
+
+    $commonDirPath = (Resolve-Path (Join-Path $repoRoot $commonDirRel)).Path
+    return (Join-Path $commonDirPath "aeos")
+}
+
 # Resolve path
 if (-not $HeartbeatPath) {
-    $HeartbeatPath = Join-Path $PSScriptRoot ".." ".github" "agents" "heartbeat.json"
+    $coordDir = Get-AeosCoordDir
+    $HeartbeatPath = Join-Path $coordDir "heartbeat.json"
 }
 
 function Read-HeartbeatSafe {

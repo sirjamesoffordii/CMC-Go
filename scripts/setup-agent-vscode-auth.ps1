@@ -30,8 +30,8 @@ $agents = @{
     "TL" = @{
         Name = "Tech Lead"
         UserDataDir = "C:\Dev\vscode-data-tl"
-        GitHubAccount = "Alpha-Tech-Lead"
-        GhConfigDir = "C:/Users/sirja/.gh-alpha-tech-lead"
+        GitHubAccount = "Tech-Lead-Agent"
+        GhConfigDir = "C:/Users/sirja/.gh-tech-lead-agent"
     }
     "SE" = @{
         Name = "Software Engineer"

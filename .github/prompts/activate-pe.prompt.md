@@ -32,7 +32,7 @@ WHILE true:
 When TL is missing or stale:
 
 ```powershell
-.\scripts\spawn-agent.ps1 -Agent TL
+.\scripts\aeos-spawn.ps1 -Agent TL
 ```
 
 ## Key References

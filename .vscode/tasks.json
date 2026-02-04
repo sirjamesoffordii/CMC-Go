@@ -289,23 +289,38 @@
     {
       "label": "AEOS: Spawn PE",
       "type": "shell",
-      "command": ".\\scripts\\spawn-agent.ps1 -Agent PE",
+      "command": ".\\scripts\\aeos-spawn.ps1 -Agent PE",
       "problemMatcher": [],
-      "detail": "Spawn Principal Engineer agent in a new VS Code window"
+      "detail": "Spawn Principal Engineer agent in isolated VS Code with Opus 4.5"
     },
     {
       "label": "AEOS: Spawn TL",
       "type": "shell",
-      "command": ".\\scripts\\spawn-agent.ps1 -Agent TL",
+      "command": ".\\scripts\\aeos-spawn.ps1 -Agent TL",
       "problemMatcher": [],
-      "detail": "Spawn Tech Lead agent in a new VS Code window"
+      "detail": "Spawn Tech Lead agent in isolated VS Code with GPT 5.2"
     },
     {
       "label": "AEOS: Spawn SE",
       "type": "shell",
-      "command": ".\\scripts\\spawn-agent.ps1 -Agent SE",
+      "command": ".\\scripts\\aeos-spawn.ps1 -Agent SE",
       "problemMatcher": [],
-      "detail": "Spawn Software Engineer agent in worktree"
+      "detail": "Spawn Software Engineer agent in worktree with GPT 5.2 Codex"
+    },
+    {
+      "label": "AEOS: Workspace Ready Signal",
+      "type": "shell",
+      "command": "$signalFile = '.github/agents/workspace-ready.signal'; $ts = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'); $content = @{ timestamp = $ts; workspace = $PWD.Path; pid = $PID } | ConvertTo-Json; New-Item -Path (Split-Path $signalFile) -ItemType Directory -Force | Out-Null; $content | Set-Content $signalFile -Encoding utf8; Write-Host \"Workspace ready signal written: $ts\"",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "never",
+        "panel": "shared",
+        "close": true
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "detail": "Auto-runs on folder open to signal workspace is ready for AEOS"
     }
   ],
   "inputs": [
@@ -341,3 +356,4 @@
     }
   ]
 }
+

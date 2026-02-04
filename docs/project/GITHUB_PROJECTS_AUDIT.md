@@ -212,7 +212,7 @@ PE either:
 <what PE should do - e.g., "Break into 3 smaller issues: X, Y, Z" or "Close as superseded by #123">
 
 **Blocked at:** <timestamp>
-**Blocked by:** @Alpha-Tech-Lead
+**Blocked by:** @Tech-Lead-Agent
 ```
 
 ### Board Status Clarification

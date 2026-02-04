@@ -51,7 +51,7 @@ param(
 
   [string]$WorktreeRoot = 'C:\Dev\CMC-Go-Worktrees',
 
-  [string]$Model = 'gpt-5.2-codex',
+  [string]$Model = 'gpt-5.2',
 
   [switch]$DryRun
 )

@@ -15,6 +15,17 @@ param()
 
 $StaleThresholdMinutes = 6
 
+function Get-AeosCoordDir {
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+    $commonDirRel = (& git -C $repoRoot rev-parse --git-common-dir 2>$null)
+    if (-not $commonDirRel) {
+        return (Join-Path $repoRoot ".github" "agents")
+    }
+
+    $commonDirPath = (Resolve-Path (Join-Path $repoRoot $commonDirRel)).Path
+    return (Join-Path $commonDirPath "aeos")
+}
+
 Write-Host "╔══════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║           AEOS System Status             ║" -ForegroundColor Cyan  
 Write-Host "╚══════════════════════════════════════════╝" -ForegroundColor Cyan
@@ -22,9 +33,16 @@ Write-Host ""
 
 # ===== Heartbeat =====
 Write-Host "[Heartbeat]" -ForegroundColor Yellow
-$heartbeatPath = ".github/agents/heartbeat.json"
+$coordDir = Get-AeosCoordDir
+$heartbeatPath = Join-Path $coordDir "heartbeat.json"
+$legacyHeartbeatPath = ".github/agents/heartbeat.json"
+if (-not (Test-Path $heartbeatPath) -and (Test-Path $legacyHeartbeatPath)) {
+    $heartbeatPath = $legacyHeartbeatPath
+}
+
 if (Test-Path $heartbeatPath) {
-    $hb = Get-Content $heartbeatPath -Raw | ConvertFrom-Json
+    $readHeartbeat = Join-Path $PSScriptRoot "read-heartbeat.ps1"
+    $hb = & $readHeartbeat -HeartbeatPath $heartbeatPath
     $now = (Get-Date).ToUniversalTime()
     
     foreach ($prop in $hb.PSObject.Properties) {
@@ -61,7 +79,11 @@ Write-Host ""
 
 # ===== Assignment =====
 Write-Host "[Assignment]" -ForegroundColor Yellow
-$assignmentPath = ".github/agents/assignment.json"
+$assignmentPath = Join-Path $coordDir "assignment.json"
+$legacyAssignmentPath = ".github/agents/assignment.json"
+if (-not (Test-Path $assignmentPath) -and (Test-Path $legacyAssignmentPath)) {
+    $assignmentPath = $legacyAssignmentPath
+}
 if (Test-Path $assignmentPath) {
     $assignment = Get-Content $assignmentPath -Raw | ConvertFrom-Json
     Write-Host "  Issue #$($assignment.issue) assigned by $($assignment.assignedBy)" -ForegroundColor Cyan

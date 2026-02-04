@@ -6,13 +6,12 @@ Single source of truth for **auth + identity**: which GitHub account an actor us
 
 Each role is a distinct GitHub account with a distinct GH CLI config directory. This keeps audit trails clean and prevents cross-account mistakes.
 
-| Role      | GitHub Account             | GH CLI config dir (`GH_CONFIG_DIR`)           | Primary purpose                |
-| --------- | -------------------------- | --------------------------------------------- | ------------------------------ |
-| Human     | `sirjamesoffordii`         | _(default)_ `C:/Users/sirja/.config/gh`       | Oversight, admin, Plus owner   |
-| PE        | `Principle-Engineer-Agent` | `C:/Users/sirja/.gh-principal-engineer-agent` | Planning, coherence            |
-| TL        | `Alpha-Tech-Lead`          | `C:/Users/sirja/.gh-alpha-tech-lead`          | Coordination, board management |
-| SE        | `Software-Engineer-Agent`  | `C:/Users/sirja/.gh-software-engineer-agent`  | Implementation, PRs, commits   |
-| Cloud Bot | `copilot-SE-agent[bot]`    | _(GitHub-hosted)_                             | Async overflow work            |
+| Role  | GitHub Account             | Email                            | GH CLI config dir (`GH_CONFIG_DIR`)           | Primary purpose                |
+| ----- | -------------------------- | -------------------------------- | --------------------------------------------- | ------------------------------ |
+| Human | `sirjamesoffordii`         | sirjamesoffordii@gmail.com       | _(default)_ `C:/Users/sirja/.config/gh`       | Oversight, admin, Plus owner   |
+| PE    | `Principal-Engineer-Agent` | principalengineer@pvchialpha.com | `C:/Users/sirja/.gh-principal-engineer-agent` | Planning, coherence            |
+| TL    | `Tech-Lead-Agent`          | techlead@pvchialpha.com          | `C:/Users/sirja/.gh-tech-lead-agent`          | Coordination, board management |
+| SE    | `Software-Engineer-Agent`  | bravo@pvchialpha.com             | `C:/Users/sirja/.gh-software-engineer-agent`  | Implementation, PRs, commits   |
 
 ## Switching Identities (Per Terminal)
 
@@ -23,7 +22,7 @@ You must set `GH_CONFIG_DIR` in **every new terminal** before running `gh` or gi
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
 
 # TL
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
 
 # SE
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
@@ -142,8 +141,8 @@ All work is now routed to Local SE via `.\scripts\spawn-agent.ps1 -Agent SE`.
 
 ```powershell
 git log --author="Software-Engineer-Agent"
-gh pr list --author="Alpha-Tech-Lead" --state all
-gh issue list --author="Principle-Engineer-Agent" --state all
+gh pr list --author="Tech-Lead-Agent" --state all
+gh issue list --author="Principal-Engineer-Agent" --state all
 ```
 
 ## Troubleshooting

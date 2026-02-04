@@ -1,3 +1,8 @@
+---
+name: Profile Setup
+description: VS Code profile setup for AEOS agents and model isolation.
+---
+
 # VS Code Profile Setup for AEOS Agents
 
 VS Code profiles provide guaranteed model isolation for each agent. Each profile saves its own Copilot model selection independently.
@@ -18,8 +23,8 @@ VS Code profiles provide guaranteed model isolation for each agent. Each profile
 1. Make sure you're on "Principal Engineer" profile (check bottom-left)
 2. Open **Copilot Chat** (Ctrl+Shift+I or click chat icon)
 3. In the chat input area, click the **model dropdown** (shows current model)
-4. Select **"Claude Opus 4.5"**
-5. ✅ Done! This profile will always use Claude Opus 4.5
+4. Select **"GPT-5.2"**
+5. ✅ Done! This profile will always use GPT-5.2
 
 ### 3. Create Tech Lead Profile
 
@@ -52,8 +57,8 @@ VS Code profiles provide guaranteed model isolation for each agent. Each profile
 1. Make sure you're on "Software Engineer" profile
 2. Open Copilot Chat
 3. Click the model dropdown
-4. Select **"GPT-5.2-Codex"**
-5. ✅ Done! This profile will always use GPT-5.2-Codex
+4. Select **"GPT-5.2"**
+5. ✅ Done! This profile will always use GPT-5.2
 
 ## How to Verify Profile Setup
 
@@ -61,7 +66,7 @@ Check each profile has the correct model:
 
 1. Click profile icon → Select "Principal Engineer"
 2. Open Copilot Chat
-3. Check model dropdown shows **"Claude Opus 4.5"**
+3. Check model dropdown shows **"GPT-5.2"**
 4. Repeat for other profiles
 
 ## Using Profiles with Spawn Scripts

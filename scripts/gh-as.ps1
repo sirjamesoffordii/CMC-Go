@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)]
-  [ValidateSet('alpha-tech-lead','software-engineer-agent')]
+  [ValidateSet('principal-engineer-agent','tech-lead-agent','software-engineer-agent')]
   [string]$Account,
 
   [Parameter(ValueFromRemainingArguments = $true)]
@@ -12,7 +12,8 @@ $ErrorActionPreference = 'Stop'
 
 $base = $env:USERPROFILE
 $map = @{
-  'alpha-tech-lead' = Join-Path $base '.gh-alpha-tech-lead'
+  'principal-engineer-agent' = Join-Path $base '.gh-principal-engineer-agent'
+  'tech-lead-agent' = Join-Path $base '.gh-tech-lead-agent'
   'software-engineer-agent' = Join-Path $base '.gh-software-engineer-agent'
 }
 
