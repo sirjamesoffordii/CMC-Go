@@ -1,6 +1,6 @@
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-import { User, Edit2, Check } from "lucide-react";
+import { User, Edit2 } from "lucide-react";
 import { NeedIndicator } from "./NeedIndicator";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getEmptyImage } from "react-dnd-html5-backend";
@@ -10,8 +10,8 @@ import { trpc } from "../lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { StatusChangeConfirmationDialog } from "./StatusChangeConfirmationDialog";
 
-// Map Figma status to database status
-const statusMap = {
+// Map Figma status to database status (kept for reference)
+const _statusMap = {
   director: "Yes" as const,
   staff: "Maybe" as const,
   "co-director": "No" as const,
@@ -53,7 +53,8 @@ interface DroppablePersonProps {
   maskIdentity?: boolean;
 }
 
-interface Need {
+// Interface kept for future use
+interface _Need {
   id: number;
   personId: string;
   type: string;
@@ -67,7 +68,7 @@ export function DroppablePerson({
   campusId,
   index,
   onEdit,
-  onClick,
+  onClick: _onClick,
   onMove,
   hasNeeds = false,
   onPersonStatusChange,
@@ -91,7 +92,7 @@ export function DroppablePerson({
 
   // Fetch all needs (including inactive) to show met needs with checkmark
   const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+  const { data: _allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
     enabled: needsEnabled,
     retry: false,
   });
@@ -160,7 +161,7 @@ export function DroppablePerson({
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
-  const [{ isOver }, drop] = useDrop(
+  const [{ isOver: _isOver }, drop] = useDrop(
     () => ({
       accept: "person",
       canDrop: () => canInteract,
@@ -195,8 +196,8 @@ export function DroppablePerson({
     [drop, drag]
   );
 
-  // Stable edit button click handler
-  const handleEditClick = useCallback(
+  // Stable edit button click handler (kept for future use)
+  const _handleEditClick = useCallback(
     (e: React.MouseEvent) => {
       // Only allow edit if canInteract
       if (!canInteract) return;
