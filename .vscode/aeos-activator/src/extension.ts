@@ -11,6 +11,7 @@ interface AutoActivateConfig {
 }
 
 let outputChannel: vscode.OutputChannel;
+let configWatcher: vscode.FileSystemWatcher | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   outputChannel = vscode.window.createOutputChannel('AEOS Activator');
@@ -20,6 +21,40 @@ export function activate(context: vscode.ExtensionContext) {
   setTimeout(() => {
     checkAndActivateAgent();
   }, 2000);
+
+  // Set up file watcher for config changes (handles respawn without VS Code restart)
+  setupConfigWatcher(context);
+
+  // Register manual activation command
+  const activateCommand = vscode.commands.registerCommand('aeos.activate', () => {
+    outputChannel.appendLine('[AEOS] Manual activation triggered');
+    checkAndActivateAgent();
+  });
+  context.subscriptions.push(activateCommand);
+}
+
+function setupConfigWatcher(context: vscode.ExtensionContext) {
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders || workspaceFolders.length === 0) {
+    return;
+  }
+
+  const pattern = new vscode.RelativePattern(workspaceFolders[0], CONFIG_PATH);
+  configWatcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+  // When config file is created or changed, trigger activation
+  configWatcher.onDidCreate(() => {
+    outputChannel.appendLine('[AEOS] Config file created - triggering activation');
+    setTimeout(() => checkAndActivateAgent(), 500); // Small delay to ensure file is written
+  });
+
+  configWatcher.onDidChange(() => {
+    outputChannel.appendLine('[AEOS] Config file changed - triggering activation');
+    setTimeout(() => checkAndActivateAgent(), 500);
+  });
+
+  context.subscriptions.push(configWatcher);
+  outputChannel.appendLine('[AEOS] File watcher set up for config changes');
 }
 
 async function checkAndActivateAgent(): Promise<void> {
@@ -52,12 +87,16 @@ async function checkAndActivateAgent(): Promise<void> {
     outputChannel.appendLine('[AEOS] Config file deleted');
 
     // Execute the chat open command with the activation message
-    outputChannel.appendLine('[AEOS] Opening chat with activation message...');
+    // Prefix with agent mention to select the specific custom agent
+    const agentSlug = config.agent.toLowerCase().replace(/\s+/g, '-');
+    const queryWithAgent = `@${agentSlug} ${config.message}`;
+    
+    outputChannel.appendLine(`[AEOS] Opening chat with agent: @${agentSlug}`);
+    outputChannel.appendLine(`[AEOS] Full query: ${queryWithAgent}`);
     
     await vscode.commands.executeCommand('workbench.action.chat.open', {
-      query: config.message,
-      isPartialQuery: false,
-      mode: 'agent'
+      query: queryWithAgent,
+      isPartialQuery: false
     });
 
     outputChannel.appendLine(`[AEOS] ✓ Agent ${config.role} activated successfully`);

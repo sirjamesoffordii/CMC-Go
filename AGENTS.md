@@ -750,6 +750,24 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 ## Known Issues & Gotchas
 
+### Agent Respawn Not Activating
+
+**Problem:** When respawning an agent (PE/TL/SE), the VS Code window opens but the chat doesn't start.
+
+**Root Cause:** VS Code was reusing an existing window. The AEOS Activator extension only triggers on `onStartupFinished`, which doesn't fire when VS Code reuses a window.
+
+**Solution (implemented in `aeos-spawn.ps1`):**
+
+1. The spawn script now **closes existing VS Code windows** for that agent before spawning
+2. The extension now has a **file watcher** that triggers activation when the config file is created
+3. A manual command `AEOS: Activate Agent` is available as backup
+
+**If respawn still fails:**
+
+1. Click "Reload Window" if VS Code prompts about extension changes
+2. Run the manual command: F1 → "AEOS: Activate Agent"
+3. Or manually paste the activation message in chat
+
 ### Board Pagination
 
 `gh project item-list` defaults to 50 items. The board has 180+ items. **Always use `--limit 200`:**

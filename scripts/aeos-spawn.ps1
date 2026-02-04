@@ -67,6 +67,35 @@ function Spawn-Agent {
     Write-Host "║  Spawning: $($ag.Name.PadRight(45))    ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     
+    # CRITICAL: Close existing VS Code window for this agent first!
+    # The AEOS Activator extension only runs on VS Code startup (onStartupFinished).
+    # If we don't close the existing window, VS Code reuses it and the extension
+    # never sees the new config file.
+    $userDataDir = $ag.UserDataDir
+    Write-Host "  ⏳ Closing existing VS Code window for $Key..." -ForegroundColor Yellow
+    
+    # Find and kill Code processes using this user-data-dir
+    $closedAny = $false
+    Get-Process -Name "Code" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+            if ($cmdLine -and $cmdLine -match [regex]::Escape($userDataDir)) {
+                Write-Host "    Closing PID $($_.Id)..." -ForegroundColor DarkGray
+                $_.Kill()
+                $closedAny = $true
+            }
+        } catch {
+            # Ignore errors (process may have already exited)
+        }
+    }
+    
+    if ($closedAny) {
+        Write-Host "  ✓ Closed existing window" -ForegroundColor Green
+        Start-Sleep -Seconds 2  # Wait for VS Code to fully close
+    } else {
+        Write-Host "  ✓ No existing window to close" -ForegroundColor Green
+    }
+    
     # Check workspace exists
     if (-not (Test-Path $ag.WorkspacePath)) {
         Write-Host "  ✗ Workspace not found: $($ag.WorkspacePath)" -ForegroundColor Red
