@@ -189,18 +189,20 @@ function Get-LiveAgentStatus {
         $hungMinutes = 0
         $hungReason = $null
         
-        # HUNG detection (priority order):
-        # 1. Request pending (started but never finished) + log stale = definitely stuck
-        # 2. Log stale 2+ min = likely stuck (but could be between cycles)
-        # In autonomous mode, agents never wait - they always loop. If log stops, something's wrong.
+        # HUNG detection thresholds (tuned for terminal command tolerance):
+        # - Pending request: 2 min (stuck spinning on a response)
+        # - Log stale: 5 min (allows for git, tests, builds up to 5 min)
+        # 
+        # The key insight: "pending request" is the definitive hung signal.
+        # "Log stale" alone could just mean a long terminal command is running.
         if ($processStatus.Running) {
-            if ($chatActivity.HasPendingRequest -and $chatActivity.AgeMinutes -ge 1) {
+            if ($chatActivity.HasPendingRequest -and $chatActivity.AgeMinutes -ge 2) {
                 # Request started but never got "request done:" - agent is stuck spinning
                 $isHung = $true
                 $hungMinutes = [int]$chatActivity.AgeMinutes
                 $hungReason = 'pending-request'
-            } elseif ($chatActivity.AgeMinutes -ge 2) {
-                # Log stale but last request completed - agent may have crashed between cycles
+            } elseif ($chatActivity.AgeMinutes -ge 5) {
+                # Log stale 5+ min with no pending request - likely crashed between cycles
                 $isHung = $true
                 $hungMinutes = [int]$chatActivity.AgeMinutes
                 $hungReason = 'log-stale'
@@ -282,7 +284,7 @@ function Show-LiveStatus {
     
     Write-Host "`n=== AEOS Live Heartbeat Status ===" -ForegroundColor Cyan
     Write-Host "Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor DarkGray
-    Write-Host "Hung = pending request (1m+) or stale log (2m+)" -ForegroundColor DarkGray
+    Write-Host "Hung = pending request (2m+) or stale log (5m+)" -ForegroundColor DarkGray
     Write-Host ""
     
     foreach ($agent in @('PE', 'TL', 'SE')) {
