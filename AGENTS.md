@@ -41,11 +41,15 @@ All 3 agents run simultaneously in separate VS Code windows (isolated user-data-
 Each agent runs in an **isolated VS Code instance** with its own GitHub account signed in.
 This gives each agent **separate Copilot rate limits** (4 accounts = 4x quota).
 
-| Agent | VS Code User-Data-Dir    | GitHub Account           | Email                            | Model   | Theme     |
-| ----- | ------------------------ | ------------------------ | -------------------------------- | ------- | --------- |
-| PE    | `C:\Dev\vscode-agent-pe` | Principal-Engineer-Agent | principalengineer@pvchialpha.com | GPT 5.2 | 🔵 Blue   |
-| TL    | `C:\Dev\vscode-agent-tl` | Tech-Lead-Agent          | techlead@pvchialpha.com          | GPT 5.2 | 🟢 Green  |
-| SE    | `C:\Dev\vscode-agent-se` | Software-Engineer-Agent  | bravo@pvchialpha.com             | GPT 5.2 | 🟣 Purple |
+> **⚠️ CRITICAL: Each agent has its OWN VS Code window. Never mix agents in the same window.**
+> If you're in the PE window, you ARE Principal Engineer. Don't invoke `@tech-lead` or `@software-engineer`.
+> To activate another agent, use `.\scripts\aeos-spawn.ps1 -Agent <PE|TL|SE>` to open their dedicated window.
+
+| Agent | VS Code User-Data-Dir    | GitHub Account           | Email                            | Model   | Theme     | Workspace                       |
+| ----- | ------------------------ | ------------------------ | -------------------------------- | ------- | --------- | ------------------------------- |
+| PE    | `C:\Dev\vscode-agent-pe` | Principal-Engineer-Agent | principalengineer@pvchialpha.com | GPT 5.2 | 🔵 Blue   | `C:\Dev\CMC Go`                 |
+| TL    | `C:\Dev\vscode-agent-tl` | Tech-Lead-Agent          | techlead@pvchialpha.com          | GPT 5.2 | 🟢 Green  | `C:\Dev\CMC Go`                 |
+| SE    | `C:\Dev\vscode-agent-se` | Software-Engineer-Agent  | bravo@pvchialpha.com             | GPT 5.2 | 🟣 Purple | `C:\Dev\CMC-Go-Worktrees\wt-se` |
 
 **User account (human):** sirjamesoffordII (sirjamesoffordii@gmail.com)
 
