@@ -131,9 +131,18 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 
          ┌──────────────────────────────────────────────────────────────────┐
          │  LIVING ISSUES (never close, continuously updated by PE):        │
-         │  • AEOS Improvement issue — agent friction → user checks to fix  │
-         │  • Exploratory issue — app improvements → user checks to build   │
+         │  • AEOS Improvement issue — agent friction → PE promotes checked │
+         │  • Exploratory issue — app ideas by category → user checks items │
          └──────────────────────────────────────────────────────────────────┘
+
+                              EXPLORATORY WORKFLOW
+         ┌────────────────────────────────────────────────────────────────┐
+         │ 1. PE adds ideas to Exploratory issue (up to 50, by category)  │
+         │ 2. User browses categories, checks items they want built       │
+         │ 3. PE creates individual Todo issues for checked items         │
+         │ 4. Unchecked items stay for future consideration               │
+         │ 5. The Exploratory issue NEVER closes - it's always available  │
+         └────────────────────────────────────────────────────────────────┘
 
 PE explores codebase ──► Exploratory (user checks items) ──► PE creates Todos
                               │
@@ -154,17 +163,37 @@ TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or cl
                                                ┌────────────────────┴────────────────────┐
                                                │                                         │
                                                ▼                                         ▼
-                                    (no UI/UX change)                         (has UI/UX change)
+                                    (no UI/UX change)                    (⚠️ has UI/UX change)
                                                │                                         │
                                                ▼                                         ▼
                                           TL merges                              UI/UX. Review
                                                │                                         │
-                                               │                          User approves ──┘
+                                               │                    User approves (LGTM) ─┘
                                                ▼                                         │
                                              Done ◄──────────────────────────────────────┘
 
 AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──► PE promotes to checklist
 ```
+
+## UI/UX Review (MANDATORY for Visual Changes)
+
+> **⚠️ PRs that change how the app looks MUST get user approval before merge.**
+
+**What requires UI/UX Review:**
+
+- Any `.tsx` file changes in `client/src/`
+- CSS/SCSS changes
+- Accessibility changes (keyboard nav, focus indicators, screen reader)
+- Layout, button, or component changes
+- Toast/alert message changes
+
+**Workflow:**
+
+1. SE creates PR → TL reviews code quality (Verify)
+2. TL detects UI changes → moves issue to "UI/UX. Review"
+3. TL comments on PR with preview instructions
+4. **User reviews and comments "LGTM"** (or requests changes)
+5. TL merges after user approval → Done
 
 ## Board Hygiene
 

@@ -380,19 +380,30 @@ gh pr view <num> --json state,mergeable,statusCheckRollup
 gh pr merge <num> --squash --delete-branch
 ```
 
-### UI/UX Change Detection (During Verify)
+### UI/UX Change Detection (MANDATORY — During Verify)
 
-During Verify, if PR contains visual/UI changes, set for user review AFTER verifying code quality but BEFORE final merge:
+> **⚠️ CRITICAL: PRs with visual changes MUST go through UI/UX. Review before merge.**
+> Never merge a PR that changes how the app looks without user approval.
+
+During Verify, **ALWAYS check** if PR contains visual/UI changes:
 
 **Workflow:** `Verify` → (detect UI change) → `UI/UX. Review` → (user approves) → `Done`
 
+**What counts as UI/UX change:**
+
+- Any `.tsx` file in `client/src/` (even "just removing @ts-nocheck" — it could change behavior)
+- CSS/SCSS files
+- Accessibility changes (keyboard nav, screen reader, focus indicators)
+- Layout changes, new components, button changes
+- Toast/alert changes
+
 ```powershell
-# Check if PR touches UI files
+# ALWAYS run this check before merging any PR
 $changedFiles = gh pr view <num> --json files -q '.files[].path'
 $uiFiles = $changedFiles | Where-Object { $_ -match '\.(tsx|css|scss)$' -and $_ -match 'client/' }
 
 if ($uiFiles) {
-    Write-Host "UI/UX changes detected - code verified, awaiting user visual review" -ForegroundColor Yellow
+    Write-Host "⚠️ UI/UX changes detected - REQUIRES user review before merge" -ForegroundColor Yellow
 
     # Find related issue number from PR
     $prBody = gh pr view <num> --json body -q '.body'
