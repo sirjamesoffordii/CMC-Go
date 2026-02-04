@@ -89,11 +89,12 @@ export function CampusColumn({
     const peopleCopy = [...people];
 
     switch (sortBy) {
-      case "status":
+      case "status": {
         const statusOrder = { Yes: 0, Maybe: 1, No: 2, "Not Invited": 3 };
         return peopleCopy.sort(
           (a, b) => statusOrder[a.status] - statusOrder[b.status]
         );
+      }
 
       case "name":
         return peopleCopy.sort((a, b) => a.name.localeCompare(b.name));
