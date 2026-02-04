@@ -307,9 +307,10 @@ async function verifyCriticalColumns(
     `);
 
     const columnRows = asRows(columnsResult);
-    const existingColumns = columnRows.map(
-      (row: any) => row.column_name || row.COLUMN_NAME || ""
-    );
+    const existingColumns = columnRows.map(row => {
+      const r = row as { column_name?: string; COLUMN_NAME?: string };
+      return r.column_name || r.COLUMN_NAME || "";
+    });
 
     for (const col of requiredColumns) {
       if (!existingColumns.includes(col)) {
