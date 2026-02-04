@@ -88,17 +88,22 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 
 **URL:** https://github.com/users/sirjamesoffordii/projects/4
 
-| Status           | Owner                          | Description                                       | Action                                     |
-| ---------------- | ------------------------------ | ------------------------------------------------- | ------------------------------------------ |
-| Blocked          | Tech Lead / Principal Engineer | Work cannot proceed until PE/TL action is taken   | TL blocks + comments, PE reviews           |
-| AEOS Improvement | Principal Engineer             | Workflow improvement suggestions                  | PE reviews, user checks items to approve   |
-| Exploratory      | Human                          | Needs User Approval to Become Todo                | User checks items they want implemented    |
-| Draft (TL)       | Principal Engineer             | Drafted by TL. Needs PE approval. Not executable. | PE reviews TL suggestions → Todo or reject |
-| Todo             | Tech Lead                      | This item hasn't been started                     | TL assigns to Software Engineer            |
-| In Progress      | Software Engineer              | This is actively being worked on                  | SE implements, creates PR                  |
-| Verify           | Tech Lead/Principal Engineer   | Ready for Verification                            | Review PR, check for UI/UX changes         |
-| UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes               |
-| Done             | —                              | This has been completed                           | Merged and closed, auto-archived           |
+| Status           | Owner                          | Description                                       | Action                                       |
+| ---------------- | ------------------------------ | ------------------------------------------------- | -------------------------------------------- |
+| Blocked          | Tech Lead / Principal Engineer | Work cannot proceed until PE/TL action is taken   | TL blocks + comments, PE reviews             |
+| AEOS Improvement | Principal Engineer             | **LIVING ISSUE #348** — Agent workflow friction   | PE reviews comments, updates checklist       |
+| Exploratory      | Principal Engineer             | **LIVING ISSUE** — App improvements for user      | PE continuously adds, user checks to approve |
+| Draft (TL)       | Principal Engineer             | Drafted by TL. Needs PE approval. Not executable. | PE reviews TL suggestions → Todo or reject   |
+| Todo             | Tech Lead                      | This item hasn't been started                     | TL assigns to Software Engineer              |
+| In Progress      | Software Engineer              | This is actively being worked on                  | SE implements, creates PR                    |
+| Verify           | Tech Lead/Principal Engineer   | Ready for Verification                            | Review PR, check for UI/UX changes           |
+| UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes                 |
+| Done             | —                              | This has been completed                           | Merged and closed, auto-archived             |
+
+> **⚠️ LIVING ISSUES (NEVER CLOSE):**
+>
+> - **#348 (AEOS Improvement)** — Agent workflow improvements. PE evaluates TL/SE comments, adds to checklist.
+> - **Exploratory issue** — App improvements. PE continuously adds new suggestions for user to check.
 
 **Board IDs (for GraphQL mutations):**
 
@@ -122,6 +127,12 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
                     ┌─────────────────────────────────────────────────────────┐
                     │                    AEOS WORKFLOW                         │
                     └─────────────────────────────────────────────────────────┘
+
+         ┌──────────────────────────────────────────────────────────────────┐
+         │  LIVING ISSUES (never close, continuously updated by PE):        │
+         │  • #348 AEOS Improvement — agent friction → user checks to fix   │
+         │  • Exploratory issue — app improvements → user checks to build   │
+         └──────────────────────────────────────────────────────────────────┘
 
 PE explores codebase ──► Exploratory (user checks items) ──► PE creates Todos
                               │

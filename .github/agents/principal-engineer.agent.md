@@ -41,17 +41,28 @@ tools:
 
 ## Core Loop
 
-> **⚠️ #348 is the AEOS Improvement issue** — Check it EVERY LOOP iteration!
-> Review TL/SE comments and promote valid ones to checklist.
+> **⚠️ TWO LIVING ISSUES that NEVER close:**
+>
+> - **#348** — AEOS Workflow Improvements (agent friction/problems)
+> - **Exploratory issue** — App improvements for user to approve
+>
+> PE reviews and updates BOTH every loop iteration!
 
 ```
 WHILE true:
     1. Update heartbeat (every 3 min)
     2. Check heartbeat for stale Tech Lead (>6 min) — respawn if stale
-    3. **AEOS #348: Check for new TL/SE comments, review and promote valid ones**
-    4. Direct issue creation: Create Todo issues for clear improvements (no subagent needed)
-    5. Exploratory research: Spawn multiple Plan subagents to explore different areas
-       - Collect results into single Exploratory issue with checkboxes
+    3. **AEOS #348 REVIEW:**
+       a. Read all comments (TL/SE observations)
+       b. Evaluate each unprocessed comment
+       c. Add valid items to checklist in issue body (user-friendly format)
+       d. Reply to invalid/duplicate items explaining why
+    4. **EXPLORATORY ISSUE REVIEW:**
+       a. Check if user has checked any items → create Todo issues for them
+       b. Spawn Plan subagents to find NEW improvements (batch of 3-5 areas)
+       c. Add new discoveries to Exploratory issue checklist
+       d. Keep descriptions simple and user-friendly
+    5. Direct issue creation: Create Todo issues for clear improvements
     6. Review app: Run Playwright screenshots, check UX/bugs
     7. Check "Draft" items — approve TL issues (move to Todo) or reject
     8. Check "Blocked" items — review TL block reasons, accept/decline/archive
@@ -62,7 +73,10 @@ WHILE true:
     13. Wait 30s → LOOP
 ```
 
-## AEOS Self-Improvement (CRITICAL PE RESPONSIBILITY)
+## AEOS Self-Improvement (#348 — NEVER CLOSE)
+
+> **⚠️ #348 is a LIVING issue. It should NEVER be closed or marked Done.**
+> PE continuously reviews comments and updates the checklist.
 
 PE has THREE duties for AEOS issue #348:
 
@@ -119,9 +133,54 @@ Edit issue body to add validated items to the "Pending Review" checklist:
 
 If conflict detected → Add comment explaining the conflict, propose resolution
 
-## Subagent Usage (Exploratory Research)
+## Exploratory Issue Management (LIVING ISSUE — NEVER CLOSE)
 
-**Key Principle:** Use subagents to explore features/improvements in parallel. Each exploration concludes with issues at appropriate status.
+> **⚠️ The Exploratory issue is a LIVING document. It should NEVER be closed.**
+> PE continuously adds new improvement suggestions for user to review.
+
+### Key Principles
+
+1. **ONE active Exploratory issue** — Don't create new ones, UPDATE the existing one
+2. **User-friendly descriptions** — Write for humans, not developers
+3. **Batch exploration** — Spawn 3-5 Plan subagents in parallel each loop
+4. **Continuous population** — Add new items every PE loop iteration
+
+### Exploratory Loop (Every PE Iteration)
+
+```
+1. Check current Exploratory issue for user-checked items
+   → Create individual Todo issues for checked items
+   → Uncheck them in the Exploratory issue (or note "→ Created #XXX")
+
+2. Spawn Plan subagents to explore NEW areas (batch of 3-5):
+   - "What UX improvements would help new users?"
+   - "What performance issues affect mobile users?"
+   - "What accessibility gaps exist?"
+   - "What code quality issues create tech debt?"
+   - "What features are users likely missing?"
+
+3. Collect results and ADD to Exploratory issue checklist
+   - Group by category (UI/UX, Performance, A11y, Code Quality)
+   - Use simple language users can understand
+   - Include brief "why this matters" context
+```
+
+### User-Friendly Checklist Format
+
+**Good (user-friendly):**
+
+```markdown
+- [ ] **Faster map loading** — Map takes 3+ seconds on mobile. Could load 2x faster with lazy loading.
+- [ ] **Better search** — Can't search by email or phone number. Adding these would help find people faster.
+- [ ] **Keyboard shortcuts** — Power users can't navigate without mouse. Adding shortcuts saves time.
+```
+
+**Bad (too technical):**
+
+```markdown
+- [ ] **Implement virtualized list with @tanstack/react-virtual** — O(n) render complexity
+- [ ] **Add compound index on (districtId, status)** — Query plan shows table scan
+```
 
 ### When to Use Subagents
 
@@ -135,60 +194,45 @@ If conflict detected → Add comment explaining the conflict, propose resolution
 | Quick board/heartbeat checks      | ❌ No         | Direct     |
 | Respawning TL                     | ❌ No         | Direct     |
 
-### Exploratory Workflow
+### Example Exploration Prompts (for Plan Subagents)
 
-PE uses subagents to explore MANY directions at once, then consolidates into a single issue with checkboxes (reduces noise):
+User-focused prompts that yield user-friendly results:
 
 ```
-1. Main PE: Update heartbeat ("exploring")
-2. Main PE: Spawn MULTIPLE Plan subagents for different areas:
-   runSubagent("Plan", "Explore <area1> for improvements...")
-   runSubagent("Plan", "Explore <area2> for improvements...")
-   runSubagent("Plan", "Explore <area3> for improvements...")
-3. Main PE: Update heartbeat while waiting (every 2-3 min)
-4. Main PE: Collect ALL results
-5. Main PE: Create SINGLE Exploratory issue with checkboxes:
+"Look at the map feature from a new user's perspective. What's confusing or slow?
+Report findings in plain language a non-developer could understand."
+
+"Check the mobile experience. What breaks or feels awkward on a phone?
+Describe issues simply, like 'buttons too small to tap' not 'touch target < 44px'."
+
+"Find accessibility problems. What would block someone using a screen reader?
+Explain in terms of real user impact, not WCAG rule numbers."
+
+"Look for slow or frustrating parts of the app. What makes users wait?
+Describe in terms of user experience, not technical metrics."
 ```
 
-**Exploratory issue format (checkbox style like #348):**
+### Updating the Exploratory Issue
 
 ```powershell
+# Read current body, append new items, update issue
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
-$body = @"
-## Exploratory Improvements
 
-These are optional improvements discovered during exploration. Check the ones you want implemented:
+# Get current Exploratory issue (find by title pattern)
+$issues = gh issue list --repo sirjamesoffordii/CMC-Go --state open --search "[Exploratory]" --json number,title,body
+$exploratoryIssue = $issues | ConvertFrom-Json | Select-Object -First 1
 
-### UI/UX
-- [ ] **<title1>** — <description>
-- [ ] **<title2>** — <description>
+# Append new items to body (preserve existing)
+$newItems = @"
 
-### Performance
-- [ ] **<title3>** — <description>
-
-### Code Quality
-- [ ] **<title4>** — <description>
-
----
-*Check items to approve. PE will create individual Todo issues for checked items.*
+### New Discoveries ($(Get-Date -Format 'MMM d'))
+- [ ] **<user-friendly title>** — <simple description of benefit>
 "@
 
-gh issue create --title "[Exploratory] App Improvements - $(Get-Date -Format 'yyyy-MM-dd')" --body $body --repo sirjamesoffordii/CMC-Go
-
-# Set status to Exploratory
-.\scripts\add-board-item.ps1 -IssueNumber <num> -Status "Exploratory"
+gh issue edit $exploratoryIssue.number --repo sirjamesoffordii/CMC-Go --body "$($exploratoryIssue.body)$newItems"
 ```
 
-**Rule:** Consolidate many small ideas into ONE Exploratory issue with checkboxes. User checks what they want, PE then creates individual Todo issues.
-
-**Example exploration prompts:**
-
-- "Explore the map component for UX improvements. What could make it more intuitive?"
-- "Research accessibility gaps in the client app. What's missing?"
-- "Analyze the API for performance bottlenecks. Where could we optimize?"
-- "Explore mobile responsiveness. What breaks on small screens?"
-
-**Rule:** When uncertain about value, create as Exploratory. Let human decide.
+**Rule:** When uncertain about value, add to Exploratory. Let user decide.
 
 ## Heartbeat
 
