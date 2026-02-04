@@ -355,11 +355,7 @@ export const appRouter = router({
           expiresAt,
         });
 
-        // In production, send email here. For now, log to console.
-        console.log(`[ForgotPassword] Reset code for ${input.email}: ${code}`);
-        console.log(
-          `[ForgotPassword] Code expires at: ${expiresAt.toISOString()}`
-        );
+        // In production, send email here.
 
         return { success: true };
       }),
@@ -884,7 +880,10 @@ export const appRouter = router({
             "[campuses.list] Error:",
             error instanceof Error ? error.message : String(error)
           );
-          if (error instanceof Error && error.message.includes("DATABASE_URL")) {
+          if (
+            error instanceof Error &&
+            error.message.includes("DATABASE_URL")
+          ) {
             throw new TRPCError({
               code: "INTERNAL_SERVER_ERROR",
               message:
@@ -1329,7 +1328,10 @@ export const appRouter = router({
           );
 
           // Build createData object, only including fields that have values
-          const createData: Partial<InsertPerson> & { personId: string; name: string } = {
+          const createData: Partial<InsertPerson> & {
+            personId: string;
+            name: string;
+          } = {
             personId: input.personId,
             name: input.name,
             status: input.status || "Not Invited",
