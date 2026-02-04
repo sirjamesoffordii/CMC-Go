@@ -1,12 +1,8 @@
 import {
-  X,
   Plus,
   User,
   Edit2,
-  Check,
-  Archive,
   Trash2,
-  Download,
   MoreVertical,
   ChevronDown,
 } from "lucide-react";
@@ -68,7 +64,7 @@ import {
   calculateDistrictStats,
   toDistrictPanelStats,
 } from "@/utils/districtStats";
-import { deriveHouseholdLabel } from "@/lib/householdLabel";
+import { deriveHouseholdLabel as _deriveHouseholdLabel } from "@/lib/householdLabel";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
 
@@ -107,10 +103,10 @@ export function DistrictPanel({
   campuses,
   people,
   isOutOfScope = false,
-  onClose,
+  onClose: _onClose,
   onPersonStatusChange,
-  onPersonAdd,
-  onPersonClick,
+  onPersonAdd: _onPersonAdd,
+  onPersonClick: _onPersonClick,
   onDistrictUpdate,
 }: DistrictPanelProps) {
   const { isAuthenticated } = usePublicAuth();
@@ -130,8 +126,8 @@ export function DistrictPanel({
   // XAN is Chi Alpha National Team, not a district
   const isNationalTeam = district?.id === "XAN";
   const entityName = isNationalTeam ? "Category" : "Campus";
-  const entityNamePlural = isNationalTeam ? "Categories" : "Campuses";
-  const organizationName = isNationalTeam ? "National Team" : "District";
+  const _entityNamePlural = isNationalTeam ? "Categories" : "Campuses";
+  const _organizationName = isNationalTeam ? "National Team" : "District";
 
   // Public-safe data sources (always available)
   const districtId = district?.id ?? null;
@@ -213,14 +209,14 @@ export function DistrictPanel({
   );
 
   // PR 5: Filter state
-  const [statusFilter, setStatusFilter] = useState<
+  const [statusFilter, _setStatusFilter] = useState<
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-  const [myCampusOnly, setMyCampusOnly] = useState(false);
+  const [searchQuery, _setSearchQuery] = useState("");
+  const [myCampusOnly, _setMyCampusOnly] = useState(false);
 
   // List view state - expanded campuses
-  const [expandedCampuses, setExpandedCampuses] = useState<Set<number>>(
+  const [_expandedCampuses, _setExpandedCampuses] = useState<Set<number>>(
     new Set()
   );
 
@@ -269,7 +265,7 @@ export function DistrictPanel({
       toast.error(`Error updating person: ${error.message || "Unknown error"}`);
     },
   });
-  const updatePersonStatus = trpc.people.updateStatus.useMutation({
+  const _updatePersonStatus = trpc.people.updateStatus.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
@@ -339,7 +335,7 @@ export function DistrictPanel({
       onDistrictUpdate();
     },
   });
-  const archiveCampus = trpc.campuses.archive.useMutation({
+  const _archiveCampus = trpc.campuses.archive.useMutation({
     onSuccess: () => {
       utils.campuses.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: district!.id });
@@ -394,10 +390,10 @@ export function DistrictPanel({
   const campusDirectorRef = useRef<HTMLDivElement>(null);
   const [pieChartOffset, setPieChartOffset] = useState(0);
   const [labelsOffset, setLabelsOffset] = useState(0);
-  const pieChartPadding = Math.max(0, pieChartOffset);
+  const _pieChartPadding = Math.max(0, pieChartOffset);
   // Stats grid offset: position first circle under district director
   // labelsOffset is already set to align the circle with director center
-  const statsGridOffset = labelsOffset > 0 ? labelsOffset : 0;
+  const _statsGridOffset = labelsOffset > 0 ? labelsOffset : 0;
 
   // Note: Needs and notes are now fetched directly in handleEditPerson to avoid infinite loops
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -544,17 +540,17 @@ export function DistrictPanel({
   });
 
   // Validation state
-  const [householdValidationError, setHouseholdValidationError] = useState<
+  const [_householdValidationError, setHouseholdValidationError] = useState<
     string | null
   >(null);
-  const [householdNameError, setHouseholdNameError] = useState<string | null>(
+  const [_householdNameError, setHouseholdNameError] = useState<string | null>(
     null
   );
 
   // Household combobox state
   const [householdInputValue, setHouseholdInputValue] = useState("");
   const [householdDropdownOpen, setHouseholdDropdownOpen] = useState(false);
-  const [isEditingHousehold, setIsEditingHousehold] = useState(false);
+  const [_isEditingHousehold, _setIsEditingHousehold] = useState(false);
   const householdInputRef = useRef<HTMLDivElement>(null);
   const householdDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -586,12 +582,12 @@ export function DistrictPanel({
   });
 
   // Fetch households for dropdown
-  const { data: allHouseholds = [], error: householdsError } =
+  const { data: allHouseholds = [], error: _householdsError } =
     trpc.households.list.useQuery(undefined, {
       retry: false,
     });
-  const [householdSearchQuery, setHouseholdSearchQuery] = useState("");
-  const { data: searchedHouseholds = [] } = trpc.households.search.useQuery(
+  const [householdSearchQuery, _setHouseholdSearchQuery] = useState("");
+  const { data: _searchedHouseholds = [] } = trpc.households.search.useQuery(
     { query: householdSearchQuery },
     { enabled: householdSearchQuery.length > 0 }
   );
@@ -657,6 +653,7 @@ export function DistrictPanel({
       // Clear input when dialog closes
       setHouseholdInputValue("");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit householdInputValue to prevent infinite loop
   }, [
     personForm.householdId,
     allHouseholds,
@@ -687,6 +684,7 @@ export function DistrictPanel({
           ? selectedCampusId
           : null;
     runHouseholdMatchByLastName(contextCampusId, lastName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runHouseholdMatchByLastName is stable, only run on external deps
   }, [
     isPersonDialogOpen,
     isEditPersonDialogOpen,
@@ -795,7 +793,7 @@ export function DistrictPanel({
   };
 
   // Helper to get household members for display
-  const getHouseholdDisplayName = (householdId: number) => {
+  const _getHouseholdDisplayName = (householdId: number) => {
     const household = allHouseholds.find(h => h.id === householdId);
     if (!household) return `Household ${householdId}`;
     // Always append "Household" to the label
@@ -816,7 +814,7 @@ export function DistrictPanel({
   // Validation: Check if household is required
   const isHouseholdRequired =
     personForm.spouseAttending || personForm.childrenCount > 0;
-  const hasHouseholdValidationError =
+  const _hasHouseholdValidationError =
     isHouseholdRequired && !personForm.householdId;
 
   const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
@@ -826,7 +824,7 @@ export function DistrictPanel({
       onDistrictUpdate();
     },
   });
-  const deleteNeed = trpc.needs.delete.useMutation({
+  const _deleteNeed = trpc.needs.delete.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
       utils.followUp.list.invalidate();
@@ -1030,7 +1028,7 @@ export function DistrictPanel({
         return false;
       })
       .sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
-  }, [peopleWithNeeds]);
+  }, [peopleWithNeeds, district?.id]);
 
   const publicDistrictDirectorPerson = useMemo(() => {
     if (!isPublicSafeMode) return null;
@@ -1102,7 +1100,7 @@ export function DistrictPanel({
     user?.campusId,
   ]);
 
-  const districtLevelPeople = isPublicSafeMode
+  const _districtLevelPeople = isPublicSafeMode
     ? buildPublicPlaceholderPeople(publicUnassignedCount, null)
     : filteredPeople.filter(p => p.primaryCampusId == null);
 
@@ -1130,7 +1128,7 @@ export function DistrictPanel({
     publicUnassignedCount,
   ]);
 
-  const sortedUnassignedPeople = useMemo(() => {
+  const _sortedUnassignedPeople = useMemo(() => {
     const statusOrder: Record<Person["status"], number> = {
       "Not Invited": 0,
       Yes: 1,
@@ -1157,7 +1155,7 @@ export function DistrictPanel({
       if (savedOrderJson) {
         try {
           savedOrder = JSON.parse(savedOrderJson);
-        } catch (_e) {
+        } catch {
           // Invalid JSON, ignore
         }
       }
@@ -1406,7 +1404,7 @@ export function DistrictPanel({
     safeStats.maybe +
     safeStats.notGoing +
     safeStats.notInvited;
-  const invitedPercentage =
+  const _invitedPercentage =
     totalPeople > 0
       ? Math.round(((totalPeople - safeStats.notInvited) / totalPeople) * 100)
       : 0;
@@ -1495,7 +1493,7 @@ export function DistrictPanel({
   };
 
   // Handle household input blur - match to existing household in same context (same campus/header) or create
-  const handleHouseholdInputBlur = () => {
+  const _handleHouseholdInputBlur = () => {
     const inputValue = householdInputValue.trim();
     if (!inputValue) {
       setPersonForm({ ...personForm, householdId: null });
@@ -1588,6 +1586,7 @@ export function DistrictPanel({
     const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Build mutation data with defaults
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation data built dynamically based on target
     const mutationData: any = {
       personId,
       name: name.trim(),
@@ -1672,6 +1671,7 @@ export function DistrictPanel({
     const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Build mutation data - use 'any' type to allow conditional fields
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mutation data built dynamically based on selected campus/role
     const mutationData: any = {
       personId,
       name: personForm.name.trim(),
@@ -1882,7 +1882,7 @@ export function DistrictPanel({
       if (person.childrenAges) {
         try {
           childrenAges = JSON.parse(person.childrenAges);
-        } catch (_e) {
+        } catch {
           childrenAges = [];
         }
       }
@@ -1906,6 +1906,7 @@ export function DistrictPanel({
       // Also check notes table for request notes (noteType="REQUEST")
       try {
         const safeNotes = notesResult || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- notes result type varies
         const needNotes = safeNotes.filter((n: any) => {
           if (!n) return false;
           return n.noteType === "REQUEST" || n.note_type === "REQUEST";
@@ -2391,7 +2392,7 @@ export function DistrictPanel({
 
   const handleDistrictDirectorDrop = (
     personId: string,
-    fromCampusId: number | string
+    _fromCampusId: number | string
   ) => {
     const person = districtPeople.find(p => p.personId === personId);
     if (!person) return;
@@ -2405,7 +2406,7 @@ export function DistrictPanel({
 
   const handleDistrictStaffDrop = (
     personId: string,
-    fromCampusId: number | string
+    _fromCampusId: number | string
   ) => {
     const person = districtPeople.find(p => p.personId === personId);
     if (!person) return;
@@ -2419,7 +2420,7 @@ export function DistrictPanel({
 
   const getPerson = (
     personId: string,
-    campusId: number | string
+    _campusId: number | string
   ): Person | undefined => {
     return districtPeople.find(p => p.personId === personId);
   };
@@ -2438,16 +2439,16 @@ export function DistrictPanel({
   // Handle campus reordering
   const handleCampusReorder = (
     draggedCampusId: number,
-    targetIndex: number
+    _targetIndex: number
   ) => {
     const currentIndex = campusOrder.indexOf(draggedCampusId);
     if (currentIndex === -1) return;
-    if (currentIndex === targetIndex) return;
+    if (currentIndex === _targetIndex) return;
 
     const newOrder = [...campusOrder];
     newOrder.splice(currentIndex, 1);
     const adjustedTargetIndex =
-      currentIndex < targetIndex ? targetIndex - 1 : targetIndex;
+      currentIndex < _targetIndex ? _targetIndex - 1 : _targetIndex;
     newOrder.splice(adjustedTargetIndex, 0, draggedCampusId);
     setCampusOrder(newOrder);
 
@@ -2512,7 +2513,7 @@ export function DistrictPanel({
     draggedId: string,
     draggedCampusId: number | string,
     targetCampusId: number | string,
-    targetIndex: number
+    _targetIndex: number
   ) => {
     // Find the person
     const person = peopleWithNeeds.find(p => p.personId === draggedId);
