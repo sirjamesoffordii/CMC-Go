@@ -1,4 +1,4 @@
-import { eq, and, or, sql, isNull } from "drizzle-orm";
+import { eq, and, or, sql, isNull, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import {
@@ -627,6 +627,17 @@ export async function getPersonByPersonId(personId: string) {
     .where(eq(people.personId, personId))
     .limit(1);
   return result[0] || null;
+}
+
+/**
+ * Batch fetch people by personIds (avoids N+1 queries).
+ * Returns array of people matching the given personIds.
+ */
+export async function getPeopleByPersonIds(personIds: string[]) {
+  if (personIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(people).where(inArray(people.personId, personIds));
 }
 
 export async function personExists(personId: string) {
