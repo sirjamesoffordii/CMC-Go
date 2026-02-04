@@ -2,14 +2,22 @@
  * Unit tests for server/db-additions.ts
  * Tests all exported functions with comprehensive coverage
  */
-import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mock,
+} from "vitest";
 
 // Mock the db module before importing the functions under test
 vi.mock("./db", () => ({
   getDb: vi.fn(),
 }));
 
-// Mock the schema module for userSessions
+// Mock the schema module
 vi.mock("../drizzle/schema", () => ({
   users: {
     id: { name: "id" },
@@ -38,23 +46,9 @@ vi.mock("../drizzle/schema", () => ({
     roleTitle: { name: "roleTitle" },
     linkedPersonId: { name: "linkedPersonId" },
   },
-  userSessions: {
-    id: { name: "id" },
-    userId: { name: "userId" },
-    sessionId: { name: "sessionId" },
-    userAgent: { name: "userAgent" },
-    ipAddress: { name: "ipAddress" },
-    lastSeenAt: { name: "lastSeenAt" },
-    revokedAt: { name: "revokedAt" },
-    createdAt: { name: "createdAt" },
-  },
 }));
 
 import {
-  createOrUpdateSession,
-  updateSessionLastSeen,
-  revokeSession,
-  getActiveSessions,
   updateUserLastLogin,
   getAllUsers,
   updateUserRole,
@@ -134,228 +128,15 @@ describe("db-additions.ts", () => {
   });
 
   // ==========================================================================
-  // createOrUpdateSession Tests
-  // ==========================================================================
-  describe("createOrUpdateSession", () => {
-    it("throws error when database is not available", async () => {
-      (getDb as Mock).mockResolvedValue(null);
-
-      await expect(
-        createOrUpdateSession({
-          userId: 1,
-          sessionId: "test-session-123",
-          userAgent: "Test Agent",
-          ipAddress: "127.0.0.1",
-        })
-      ).rejects.toThrow("Database not available");
-    });
-
-    it("updates existing session when sessionId exists", async () => {
-      const mockDb = createMockDb();
-      const existingSession = {
-        id: 42,
-        userId: 1,
-        sessionId: "test-session-123",
-        userAgent: "Old Agent",
-        ipAddress: "127.0.0.1",
-        lastSeenAt: new Date("2026-01-31T11:00:00Z"),
-        revokedAt: null,
-      };
-
-      // First call: select().from().where().limit() returns existing session
-      mockDb.limit.mockResolvedValueOnce([existingSession]);
-
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      const result = await createOrUpdateSession({
-        userId: 1,
-        sessionId: "test-session-123",
-        userAgent: "Test Agent",
-        ipAddress: "127.0.0.1",
-      });
-
-      expect(result).toEqual(existingSession);
-      expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalledWith({ lastSeenAt: expect.any(Date) });
-    });
-
-    it("creates new session when sessionId does not exist", async () => {
-      const mockDb = createMockDb();
-
-      // Mock select to return empty array (session doesn't exist)
-      mockDb.limit.mockResolvedValueOnce([]);
-      // Mock insert to return insertId
-      mockDb.values.mockResolvedValueOnce([{ insertId: BigInt(99) }]);
-
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      const result = await createOrUpdateSession({
-        userId: 1,
-        sessionId: "new-session-456",
-        userAgent: "Test Agent",
-        ipAddress: "192.168.1.1",
-      });
-
-      expect(result).toEqual({
-        id: 99,
-        userId: 1,
-        sessionId: "new-session-456",
-        userAgent: "Test Agent",
-        ipAddress: "192.168.1.1",
-      });
-      expect(mockDb.insert).toHaveBeenCalled();
-      expect(mockDb.values).toHaveBeenCalledWith({
-        userId: 1,
-        sessionId: "new-session-456",
-        userAgent: "Test Agent",
-        ipAddress: "192.168.1.1",
-        lastSeenAt: expect.any(Date),
-      });
-    });
-
-    it("handles null userAgent and ipAddress", async () => {
-      const mockDb = createMockDb();
-      mockDb.limit.mockResolvedValueOnce([]);
-      mockDb.values.mockResolvedValueOnce([{ insertId: BigInt(1) }]);
-
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      const result = await createOrUpdateSession({
-        userId: 5,
-        sessionId: "session-no-meta",
-        userAgent: null,
-        ipAddress: null,
-      });
-
-      expect(result).toEqual({
-        id: 1,
-        userId: 5,
-        sessionId: "session-no-meta",
-        userAgent: null,
-        ipAddress: null,
-      });
-      expect(mockDb.values).toHaveBeenCalledWith({
-        userId: 5,
-        sessionId: "session-no-meta",
-        userAgent: null,
-        ipAddress: null,
-        lastSeenAt: expect.any(Date),
-      });
-    });
-  });
-
-  // ==========================================================================
-  // updateSessionLastSeen Tests
-  // ==========================================================================
-  describe("updateSessionLastSeen", () => {
-    it("throws error when database is not available", async () => {
-      (getDb as Mock).mockResolvedValue(null);
-
-      await expect(updateSessionLastSeen("test-session-123")).rejects.toThrow(
-        "Database not available"
-      );
-    });
-
-    it("updates lastSeenAt timestamp for session", async () => {
-      const mockDb = createMockDb();
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      await updateSessionLastSeen("test-session-123");
-
-      expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalledWith({ lastSeenAt: expect.any(Date) });
-      expect(mockDb.where).toHaveBeenCalled();
-    });
-  });
-
-  // ==========================================================================
-  // revokeSession Tests
-  // ==========================================================================
-  describe("revokeSession", () => {
-    it("throws error when database is not available", async () => {
-      (getDb as Mock).mockResolvedValue(null);
-
-      await expect(revokeSession("test-session-123")).rejects.toThrow(
-        "Database not available"
-      );
-    });
-
-    it("sets revokedAt timestamp for session", async () => {
-      const mockDb = createMockDb();
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      await revokeSession("test-session-123");
-
-      expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalledWith({ revokedAt: expect.any(Date) });
-      expect(mockDb.where).toHaveBeenCalled();
-    });
-  });
-
-  // ==========================================================================
-  // getActiveSessions Tests
-  // ==========================================================================
-  describe("getActiveSessions", () => {
-    it("returns empty array when database is not available", async () => {
-      (getDb as Mock).mockResolvedValue(null);
-
-      const result = await getActiveSessions();
-
-      expect(result).toEqual([]);
-    });
-
-    it("returns active sessions within 30 minute window", async () => {
-      const mockDb = createMockDb();
-      const activeSessions = [
-        {
-          id: 1,
-          userId: 10,
-          sessionId: "session-1",
-          lastSeenAt: new Date("2026-01-31T11:45:00Z"),
-          revokedAt: null,
-        },
-        {
-          id: 2,
-          userId: 20,
-          sessionId: "session-2",
-          lastSeenAt: new Date("2026-01-31T11:50:00Z"),
-          revokedAt: null,
-        },
-      ];
-
-      // Override the where to return sessions directly (no limit call)
-      mockDb.where.mockResolvedValueOnce(activeSessions);
-
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      const result = await getActiveSessions();
-
-      expect(result).toEqual(activeSessions);
-      expect(mockDb.select).toHaveBeenCalled();
-      expect(mockDb.from).toHaveBeenCalled();
-      expect(mockDb.where).toHaveBeenCalled();
-    });
-
-    it("returns empty array when no active sessions exist", async () => {
-      const mockDb = createMockDb();
-      mockDb.where.mockResolvedValueOnce([]);
-
-      (getDb as Mock).mockResolvedValue(mockDb);
-
-      const result = await getActiveSessions();
-
-      expect(result).toEqual([]);
-    });
-  });
-
-  // ==========================================================================
   // updateUserLastLogin Tests
   // ==========================================================================
   describe("updateUserLastLogin", () => {
     it("throws error when database is not available", async () => {
       (getDb as Mock).mockResolvedValue(null);
 
-      await expect(updateUserLastLogin(1)).rejects.toThrow("Database not available");
+      await expect(updateUserLastLogin(1)).rejects.toThrow(
+        "Database not available"
+      );
     });
 
     it("updates lastLoginAt timestamp for user", async () => {
@@ -365,7 +146,9 @@ describe("db-additions.ts", () => {
       await updateUserLastLogin(42);
 
       expect(mockDb.update).toHaveBeenCalled();
-      expect(mockDb.set).toHaveBeenCalledWith({ lastLoginAt: expect.any(Date) });
+      expect(mockDb.set).toHaveBeenCalledWith({
+        lastLoginAt: expect.any(Date),
+      });
       expect(mockDb.where).toHaveBeenCalled();
     });
   });
@@ -419,7 +202,9 @@ describe("db-additions.ts", () => {
     it("throws error when database is not available", async () => {
       (getDb as Mock).mockResolvedValue(null);
 
-      await expect(updateUserRole(1, "ADMIN")).rejects.toThrow("Database not available");
+      await expect(updateUserRole(1, "ADMIN")).rejects.toThrow(
+        "Database not available"
+      );
     });
 
     it("updates user role to ADMIN", async () => {
@@ -508,7 +293,9 @@ describe("db-additions.ts", () => {
 
       await updateUserStatus(2, "PENDING_APPROVAL");
 
-      expect(mockDb.set).toHaveBeenCalledWith({ approvalStatus: "PENDING_APPROVAL" });
+      expect(mockDb.set).toHaveBeenCalledWith({
+        approvalStatus: "PENDING_APPROVAL",
+      });
     });
 
     it("updates user status to REJECTED", async () => {
