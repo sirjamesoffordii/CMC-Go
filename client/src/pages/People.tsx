@@ -19,11 +19,8 @@ import {
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+// Tooltip imports removed - not currently used
+// import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +29,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { EditableText } from "@/components/EditableText";
+// EditableText import removed - not currently used
+// import { EditableText } from "@/components/EditableText";
 import { formatStatusLabel } from "@/utils/statusLabel";
 import { exportToCsv, formatDateForFilename } from "@/utils/csvExport";
 
@@ -399,7 +397,7 @@ export default function People() {
     };
 
     // Sort people within each campus and sort campuses within each district
-    districtMap.forEach((data, districtId) => {
+    districtMap.forEach((data, _districtId) => {
       const sortedCampuses = Array.from(data.campuses.values())
         .map(item => {
           const sortBy = campusSortBy[item.campus.id] ?? "status";
@@ -439,14 +437,14 @@ export default function People() {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses, campusById, campusSortBy]);
+  }, [filteredPeople, allDistricts, campusById, campusSortBy]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
     setDialogOpen(true);
   };
 
-  const handlePersonStatusChange = (
+  const _handlePersonStatusChange = (
     personId: string,
     newStatus: "Yes" | "Maybe" | "No" | "Not Invited"
   ) => {
@@ -697,9 +695,7 @@ export default function People() {
 
             {/* Needs Filter */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">
-                Needs:
-              </span>
+              <span className="text-sm text-gray-600 font-medium">Needs:</span>
               <button
                 onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
                 className={`
@@ -722,7 +718,16 @@ export default function People() {
               </span>
               <select
                 value={needTypeFilter}
-                onChange={e => setNeedTypeFilter(e.target.value as any)}
+                onChange={e =>
+                  setNeedTypeFilter(
+                    e.target.value as
+                      | "All"
+                      | "Financial"
+                      | "Housing"
+                      | "Transportation"
+                      | "Other"
+                  )
+                }
                 className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-black border border-gray-300 hover:bg-red-600 hover:text-white"
               >
                 <option value="All">All</option>

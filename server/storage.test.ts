@@ -6,7 +6,6 @@ interface TestGlobals {
   __testForgeApiKey?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Test mock pattern for globalThis
 const testGlobals = globalThis as unknown as TestGlobals;
 
 // Mock the ENV module with factory function
