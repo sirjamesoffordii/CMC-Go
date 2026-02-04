@@ -1,13 +1,18 @@
 # CMC Go — Agent Manual
 
+> **⚠️ CRITICAL: Issue #348 is the AEOS Improvement tracking issue.**  
+> All agents MUST report friction/problems there. It is a **living issue** that should NEVER be closed.  
+> See [AEOS Self-Improvement](#aeos-self-improvement-mandatory) section for details.
+
 ## Quick Start
 
 ```powershell
 # 1. Auth (replace <account> with your account name)
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status
 
-# 2. Check board
+# 2. Check board + AEOS improvement issue
 gh project item-list 4 --owner sirjamesoffordii --limit 20
+gh issue view 348 --repo sirjamesoffordii/CMC-Go  # AEOS improvements
 
 # 3. Execute your role (see Roles below)
 ```
@@ -26,43 +31,39 @@ All 3 agents run simultaneously in separate VS Code windows (isolated user-data-
 - **Tech Lead** — assigns work via `assignment.json`, reviews/merges PRs
 - **Software Engineer** — implements issues, creates PRs, returns to idle
 
-**Critical invariant:** Heartbeat registration is the FIRST action on activation. Without a heartbeat, an agent doesn't exist to the system.
+**Critical invariants:**
+
+1. Heartbeat registration is the FIRST action on activation. Without a heartbeat, an agent doesn't exist to the system.
+2. **NEVER WAIT FOR INSTRUCTIONS** — If no explicit task, take the next best action (review PRs, create issues, explore codebase, etc.)
 
 ### VS Code Isolation (Per-Agent Copilot Accounts)
 
 Each agent runs in an **isolated VS Code instance** with its own GitHub account signed in.
-This gives each agent **separate Copilot Pro rate limits**, allowing all agents to use **Claude Opus 4.5**.
+This gives each agent **separate Copilot rate limits** (4 accounts = 4x quota).
 
-| Agent | VS Code User-Data-Dir   | GitHub Account           | Model           |
-| ----- | ----------------------- | ------------------------ | --------------- |
-| PE    | `C:\Dev\vscode-data-pe` | Principal-Engineer-Agent | Claude Opus 4.5 |
-| TL    | `C:\Dev\vscode-data-tl` | Alpha-Tech-Lead          | Claude Opus 4.5 |
-| SE    | `C:\Dev\vscode-data-se` | Software-Engineer-Agent  | Claude Opus 4.5 |
+| Agent | VS Code User-Data-Dir    | GitHub Account           | Email                            | Model   | Theme     |
+| ----- | ------------------------ | ------------------------ | -------------------------------- | ------- | --------- |
+| PE    | `C:\Dev\vscode-agent-pe` | Principal-Engineer-Agent | principalengineer@pvchialpha.com | GPT 5.2 | 🔵 Blue   |
+| TL    | `C:\Dev\vscode-agent-tl` | Tech-Lead-Agent          | techlead@pvchialpha.com          | GPT 5.2 | 🟢 Green  |
+| SE    | `C:\Dev\vscode-agent-se` | Software-Engineer-Agent  | bravo@pvchialpha.com             | GPT 5.2 | 🟣 Purple |
 
-**One-time setup (per agent):**
+**User account (human):** sirjamesoffordII (sirjamesoffordii@gmail.com)
+
+**Spawn all agents (fully autonomous):**
 
 ```powershell
-# Run the setup script to sign each agent into its own GitHub account
-.\scripts\setup-agent-vscode-auth.ps1 -Agent All
+.\scripts\aeos-spawn.ps1 -All
 ```
 
-Or manually per agent:
-
-1. Run: `code --user-data-dir C:\Dev\vscode-data-{pe|tl|se} -n "C:\Dev\CMC Go"`
-2. Click Accounts icon → Sign out of existing GitHub account
-3. Sign in with the agent's GitHub account
-4. Verify Copilot works → Close window
-
-**Why this works:** Each GitHub account has its own Copilot Pro subscription and rate limits.
-By isolating VS Code instances per account, agents don't share quota.
+The AEOS Activator extension auto-starts chat sessions - no manual intervention required!
 
 ## Roles
 
-| Role               | Account                  | Managed By         | Purpose                                 |
-| ------------------ | ------------------------ | ------------------ | --------------------------------------- |
-| Principal Engineer | Principle-Engineer-Agent | Human              | Issues, exploration, oversight          |
-| Tech Lead          | Alpha-Tech-Lead          | Principal Engineer | Coordination, PR review, small edits    |
-| Software Engineer  | Software-Engineer-Agent  | Tech Lead          | Implementation (parallel via subagents) |
+| Role               | Account                  | Email                            | Managed By         | Purpose                                 |
+| ------------------ | ------------------------ | -------------------------------- | ------------------ | --------------------------------------- |
+| Principal Engineer | Principal-Engineer-Agent | principalengineer@pvchialpha.com | Human              | Issues, exploration, oversight          |
+| Tech Lead          | Tech-Lead-Agent          | techlead@pvchialpha.com          | Principal Engineer | Coordination, PR review, small edits    |
+| Software Engineer  | Software-Engineer-Agent  | bravo@pvchialpha.com             | Tech Lead          | Implementation (parallel via subagents) |
 
 **Behavior files:** `.github/agents/{role}.agent.md`
 
@@ -171,7 +172,7 @@ AEOS Improvement: PE/TL/SE observe friction ──► #348 comments ──► PE
 
 ## Heartbeat
 
-**File:** `.github/agents/heartbeat.json` (gitignored)
+**Protocol:** Always use the heartbeat scripts. The underlying heartbeat file is stored in a shared coordination directory (derived from `git rev-parse --git-common-dir`) so it works across worktrees.
 
 ```json
 {
@@ -260,11 +261,11 @@ Long operations MUST include heartbeat updates at logical checkpoints to prevent
 
 **Staleness Detection & Recovery:**
 
-| Agent | Monitored By | If Stale (>6 min)                                       |
-| ----- | ------------ | ------------------------------------------------------- |
-| PE    | TL           | TL respawns PE via `code chat`                          |
-| TL    | PE + SE      | PE or SE respawns TL via `code chat`                    |
-| SE    | TL           | TL respawns SE via `.\scripts\spawn-worktree-agent.ps1` |
+| Agent | Monitored By | If Stale (>6 min)                                             |
+| ----- | ------------ | ------------------------------------------------------------- |
+| PE    | TL           | TL respawns PE via `.\scripts\aeos-spawn.ps1 -Agent PE`       |
+| TL    | PE + SE      | PE or SE respawns TL via `.\scripts\aeos-spawn.ps1 -Agent TL` |
+| SE    | TL           | TL respawns SE via `.\scripts\aeos-spawn.ps1 -Agent SE`       |
 
 **Self-healing principle:** Any surviving agent can respawn any other agent. This ensures the system recovers automatically without human intervention.
 
@@ -277,7 +278,7 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-agent.ps1 -Agent TL
+        .\scripts\aeos-spawn.ps1 -Agent TL
     }
 }
 ```
@@ -293,7 +294,7 @@ if ($hb.PE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $peTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "PE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-agent.ps1 -Agent PE
+        .\scripts\aeos-spawn.ps1 -Agent PE
     }
 }
 
@@ -303,7 +304,7 @@ if ($hb.SE) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $seTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "SE stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-worktree-agent.ps1
+        .\scripts\aeos-spawn.ps1 -Agent SE
     }
 }
 ```
@@ -319,16 +320,14 @@ if ($hb.TL) {
     $staleMinutes = ((Get-Date).ToUniversalTime() - $tlTs).TotalMinutes
     if ($staleMinutes -gt 6) {
         Write-Host "TL stale ($staleMinutes min) - respawning..." -ForegroundColor Yellow
-        .\scripts\spawn-agent.ps1 -Agent TL
+        .\scripts\aeos-spawn.ps1 -Agent TL
     }
 }
 ```
 
 ## Assignment (Tech Lead → Software Engineer Signaling)
 
-**File:** `.github/agents/assignment.json` (gitignored)
-
-Tech Lead writes this file to signal what Software Engineer should work on next. Software Engineer reads and clears it.
+**Protocol:** Always use the assignment scripts. The underlying assignment file is stored in a shared coordination directory (derived from `git rev-parse --git-common-dir`) so TL (main workspace) and SE (worktree) see the same assignment.
 
 ```json
 {
@@ -341,19 +340,17 @@ Tech Lead writes this file to signal what Software Engineer should work on next.
 
 **Protocol:**
 
-1. **Tech Lead assigns:** Write `assignment.json` with issue details
-2. **Software Engineer checks:** On loop iteration, check if file exists
-3. **Software Engineer claims:** Read issue number, then delete the file (atomic claim)
+1. **Tech Lead assigns:** Write an assignment using `scripts/write-assignment.ps1`
+2. **Software Engineer checks:** On loop iteration, check via `scripts/read-assignment.ps1`
+3. **Software Engineer claims:** Claim via `scripts/claim-assignment.ps1` (read + delete)
 4. **Software Engineer works:** Implement the issue, create PR
 5. **Software Engineer completes:** Update heartbeat status to "idle", loop back to step 2
 
 **Claim pattern (Software Engineer):**
 
 ```powershell
-$assignmentFile = ".github/agents/assignment.json"
-if (Test-Path $assignmentFile) {
-    $assignment = Get-Content $assignmentFile | ConvertFrom-Json
-    Remove-Item $assignmentFile  # Claim it
+$assignment = .\scripts\claim-assignment.ps1
+if ($assignment) {
     # Now work on $assignment.issue
 }
 ```
@@ -361,13 +358,7 @@ if (Test-Path $assignmentFile) {
 **Assign pattern (Tech Lead):**
 
 ```powershell
-$assignment = @{
-    issue = 42
-    priority = "high"
-    assignedAt = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-    assignedBy = "TechLead"
-} | ConvertTo-Json
-$assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
+.\scripts\write-assignment.ps1 -Issue 42 -Priority high -AssignedBy "TechLead"
 ```
 
 ## Agent Startup
@@ -380,17 +371,17 @@ $assignment | Set-Content ".github/agents/assignment.json" -Encoding utf8
 | Tech Lead          | `/activate Tech Lead`          |
 | Software Engineer  | `/activate Software Engineer`  |
 
-**CLI/Task Spawning:**
+**CLI/Task Spawning (RECOMMENDED):**
 
-| Method                       | Command/Task                                      |
-| ---------------------------- | ------------------------------------------------- |
-| Spawn PE via script          | `.\scripts\spawn-agent.ps1 -Agent PE`             |
-| Spawn TL via script          | `.\scripts\spawn-agent.ps1 -Agent TL`             |
-| Spawn SE via script          | `.\scripts\spawn-agent.ps1 -Agent SE`             |
-| Spawn with VS Code profile   | `.\scripts\spawn-agent.ps1 -Agent TL -UseProfile` |
-| VS Code Task: AEOS: Spawn PE | Ctrl+Shift+P → "Tasks: Run Task"                  |
-| VS Code Task: AEOS: Spawn TL | Ctrl+Shift+P → "Tasks: Run Task"                  |
-| VS Code Task: AEOS: Spawn SE | Ctrl+Shift+P → "Tasks: Run Task"                  |
+| Method                        | Command/Task                         |
+| ----------------------------- | ------------------------------------ |
+| **Spawn ALL agents**          | `.\scripts\aeos-spawn.ps1 -All`      |
+| Spawn PE (isolated user-data) | `.\scripts\aeos-spawn.ps1 -Agent PE` |
+| Spawn TL (isolated user-data) | `.\scripts\aeos-spawn.ps1 -Agent TL` |
+| Spawn SE (isolated user-data) | `.\scripts\aeos-spawn.ps1 -Agent SE` |
+| VS Code Task: AEOS: Spawn PE  | Ctrl+Shift+P → "Tasks: Run Task"     |
+
+**Why `aeos-spawn.ps1`?** It opens each agent in its dedicated VS Code instance with the correct GitHub account logged in, ensuring proper Copilot rate limit isolation and model persistence.
 
 **Activation message format (EXACT - used by all spawn methods):**
 
@@ -407,46 +398,40 @@ You are <Role> 1. YOU ARE FULLY AUTONOMOUS. DON'T ASK QUESTIONS. LOOP FOREVER. S
 **Programmatic respawn (when agents respawn each other):**
 
 ```powershell
-# PE respawning TL (with correct model)
-.\scripts\spawn-agent.ps1 -Agent TL
+# PE respawning TL (opens TL in isolated VS Code with GPT 5.2)
+.\scripts\aeos-spawn.ps1 -Agent TL
 
-# TL respawning PE (with correct model)
-.\scripts\spawn-agent.ps1 -Agent PE
+# TL respawning PE (opens PE in isolated VS Code with GPT 5.2)
+.\scripts\aeos-spawn.ps1 -Agent PE
 
-# TL spawning SE in worktree (with correct model)
-.\scripts\spawn-agent.ps1 -Agent SE
+# TL spawning SE in worktree (opens SE in isolated VS Code with GPT 5.2)
+.\scripts\aeos-spawn.ps1 -Agent SE
 ```
 
-**Manual model setting (if needed):**
+**CRITICAL:** Always use `aeos-spawn.ps1` for respawning. This ensures:
 
-```powershell
-# Set model before opening VS Code
-.\scripts\set-copilot-model.ps1 -Model "gpt-5.2-codex"
-
-# List available models
-.\scripts\set-copilot-model.ps1 -List
-```
+1. Each agent opens in its own VS Code instance (`--user-data-dir`)
+2. Each agent is signed into its own GitHub account (separate Copilot quotas)
+3. The AEOS Activator extension auto-starts the chat session
+4. Models are pre-configured per agent's state database
 
 ## Model Distribution (Rate Limit Strategy)
 
 Each agent uses a designated PRIMARY model. Backups only apply after rate limit is verified.
 
-| Agent              | PRIMARY Model   | BACKUP Model      | Fallback Behavior            |
-| ------------------ | --------------- | ----------------- | ---------------------------- |
-| Principal Engineer | Claude Opus 4.5 | —                 | Retry Opus 4.5 (no fallback) |
-| Tech Lead          | GPT 5.2         | Claude Sonnet 4.5 | Switch after 429 verified    |
-| Software Engineer  | GPT 5.2 Codex   | GPT 5.1 Codex Max | Switch after 429 verified    |
+| Agent              | PRIMARY Model | BACKUP Model      | Fallback Behavior         |
+| ------------------ | ------------- | ----------------- | ------------------------- |
+| Principal Engineer | GPT 5.2       | Claude Opus 4.5   | Switch after 429 verified |
+| Tech Lead          | GPT 5.2       | Claude Sonnet 4.5 | Switch after 429 verified |
+| Software Engineer  | GPT 5.2       | GPT 5.2 Codex     | Switch after 429 verified |
 
 **Model rationale:**
 
-1. **PE uses Opus 4.5** - Best reasoning for architecture decisions, exploration, and oversight
-2. **TL uses GPT 5.2** - Fast coordination and PR reviews
-3. **SE uses GPT 5.2 Codex** - Optimized for code generation
+1. **All agents use GPT 5.2** - Unified baseline model across clients
 
 **Fallback rules:**
 
-- PE has NO backup - retry Opus 4.5 on rate limit (reasoning quality is critical)
-- TL/SE switch to backup ONLY after 429 is verified via logs
+- Agents switch to backup ONLY after 429 is verified via logs
 - Never preemptively switch - always try primary first
 
 **How it works:**
@@ -493,14 +478,14 @@ Why worktrees?
 
 ```powershell
 # Spawn SE once - it runs continuously and picks up work via assignment.json
-.\scripts\spawn-worktree-agent.ps1
+.\scripts\aeos-spawn.ps1 -Agent SE
 ```
 
 This script:
 
-1. Creates worktree at `C:/Dev/CMC-Go-Worktrees/wt-se`
-2. Opens VS Code in that worktree
-3. Starts SE agent session with proper prompt
+1. Creates worktree at `C:/Dev/CMC-Go-Worktrees/wt-se` (if needed)
+2. Opens VS Code in that worktree with SE's isolated user-data-dir
+3. AEOS Activator auto-starts the chat session with proper prompt
 
 **SE is persistent:** Once spawned, SE loops forever checking for assignments. TL does NOT spawn SE per-issue.
 
@@ -554,10 +539,11 @@ After PRs are merged, periodically clean up old branches:
 2. **Small diffs** — Optimize for reviewability
 3. **Evidence in PRs** — Commands + results
 4. **Never stop** — Loop until Done or Blocked
-5. **One SE at a time** — Wait for PR merge before next assignment
-6. **Check rate limits** — Before assigning work, verify quota
-7. **SE uses worktree** — NEVER edit files in main repo
-8. **Avoid interactive commands** — See "Dangerous Commands" section
+5. **Never wait for instructions** — If idle, take the next best action
+6. **One SE at a time** — Wait for PR merge before next assignment
+7. **Check rate limits** — Before assigning work, verify quota
+8. **SE uses worktree** — NEVER edit files in main repo
+9. **Avoid interactive commands** — See "Dangerous Commands" section
 
 ## Dangerous Commands (Avoid in Autonomous Flow)
 
@@ -588,11 +574,11 @@ if ($LASTEXITCODE -ne 0) {
 
 Agents consume two types of rate-limited resources:
 
-| Resource                | Limit          | Usage                    | Check                  |
-| ----------------------- | -------------- | ------------------------ | ---------------------- |
-| GitHub GraphQL API      | 5000/hour      | Board ops, issue queries | `gh api rate_limit`    |
-| GitHub REST API         | 5000/hour      | PR ops, file fetches     | Same                   |
-| Model tokens (Opus 4.5) | Plan-dependent | Every agent response     | Not directly checkable |
+| Resource               | Limit          | Usage                    | Check                  |
+| ---------------------- | -------------- | ------------------------ | ---------------------- |
+| GitHub GraphQL API     | 5000/hour      | Board ops, issue queries | `gh api rate_limit`    |
+| GitHub REST API        | 5000/hour      | PR ops, file fetches     | Same                   |
+| Model tokens (Copilot) | Plan-dependent | Every agent response     | Not directly checkable |
 
 **Before assigning work:**
 
@@ -613,20 +599,20 @@ $check | Format-List  # status, graphql, core, resetIn, message
 | -------------------------------------------------------- | ------------------- | ------ |
 | 1 Principal Engineer + 1 Tech Lead + 1 Software Engineer | ~500-1000           | ✅ Yes |
 
-**Note:** Model token limits (GPT 5.2 Codex) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
+**Note:** Model token limits (GPT 5.2) are plan-dependent and not directly observable. If agents fail with quota errors, check plan limits.
 
 ## Copilot Rate Limits (Model Quotas)
 
 **With per-agent GitHub accounts, rate limits are isolated per agent.**
 
 Each agent's VS Code instance is signed into a different GitHub account with its own Copilot Pro subscription.
-This means PE, TL, and SE each have **independent rate limits** and can all use Claude Opus 4.5 simultaneously.
+This means PE, TL, and SE each have **independent rate limits** and can all use GPT 5.2 simultaneously.
 
-| Agent | GitHub Account           | VS Code User-Data-Dir   | Model           |
-| ----- | ------------------------ | ----------------------- | --------------- |
-| PE    | Principal-Engineer-Agent | `C:\Dev\vscode-data-pe` | Claude Opus 4.5 |
-| TL    | Alpha-Tech-Lead          | `C:\Dev\vscode-data-tl` | Claude Opus 4.5 |
-| SE    | Software-Engineer-Agent  | `C:\Dev\vscode-data-se` | Claude Opus 4.5 |
+| Agent | GitHub Account           | VS Code User-Data-Dir    | Model   |
+| ----- | ------------------------ | ------------------------ | ------- |
+| PE    | Principal-Engineer-Agent | `C:\Dev\vscode-agent-pe` | GPT 5.2 |
+| TL    | Tech-Lead-Agent          | `C:\Dev\vscode-agent-tl` | GPT 5.2 |
+| SE    | Software-Engineer-Agent  | `C:\Dev\vscode-agent-se` | GPT 5.2 |
 
 **If a single agent hits rate limits:**
 
@@ -639,16 +625,16 @@ This means PE, TL, and SE each have **independent rate limits** and can all use 
 Each agent's logs are in its own user-data-dir:
 
 ```
-C:\Dev\vscode-data-{pe|tl|se}\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
+C:\Dev\vscode-agent-{pe|tl|se}\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
 ```
 
 **Model Fallback Strategy:**
 
-| Agent | Primary         | Backup  | When to Switch                  |
-| ----- | --------------- | ------- | ------------------------------- |
-| PE    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
-| TL    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
-| SE    | Claude Opus 4.5 | GPT 5.2 | After 429 verified in agent log |
+| Agent | Primary | Backup            | When to Switch                  |
+| ----- | ------- | ----------------- | ------------------------------- |
+| PE    | GPT 5.2 | Claude Opus 4.5   | After 429 verified in agent log |
+| TL    | GPT 5.2 | Claude Sonnet 4.5 | After 429 verified in agent log |
+| SE    | GPT 5.2 | GPT 5.2 Codex     | After 429 verified in agent log |
 
 **Recovery Pattern:**
 
@@ -663,6 +649,9 @@ if ($rl.anyRateLimited) {
 
 ## AEOS Self-Improvement (MANDATORY)
 
+> **⚠️ NEVER CLOSE ISSUE #348** — It is a living tracking issue that persists across all sessions.  
+> Status should always be "AEOS Improvement" on the board, NEVER "Done".
+
 Agents **MUST** report workflow friction in real-time to issue #348.
 
 **Tracking Issue:** `[AEOS] Workflow Improvements` (#348)
@@ -672,7 +661,7 @@ Agents **MUST** report workflow friction in real-time to issue #348.
 **Tech Lead:**
 
 ```powershell
-$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-alpha-tech-lead"
+$env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
 gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
 ```
 
@@ -786,11 +775,11 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 **Autonomous agents use `spawn-agent.ps1`** which preselects the correct model before opening a new VS Code window. This ensures:
 
-- PE starts on Claude Opus 4.5
+- PE starts on GPT 5.2
 - TL starts on GPT 5.2
-- SE starts on GPT 5.2 Codex
+- SE starts on GPT 5.2
 
-**Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in an Opus window, TL will run on Opus. This is fine for human use since you can select the model before clicking send.
+**Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in a window configured with a different model, TL will run on that model. This is fine for human use since you can select the model before clicking send.
 
 **Rule:** For autonomous AEOS, always use `spawn-agent.ps1`. For manual testing, use `/activate` prompts.
 

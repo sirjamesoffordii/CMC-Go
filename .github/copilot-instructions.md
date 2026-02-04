@@ -2,6 +2,9 @@
 
 CMC Go is a **map-first coordination app**: React client in `client/`, tRPC+Express server in `server/`, MySQL via Drizzle in `drizzle/`.
 
+> **⚠️ CRITICAL: Issue #348 is the AEOS Improvement tracking issue.**  
+> All agents MUST report friction/problems there. It is a **living issue** that should NEVER be closed.
+
 ## 5-Second Decision Tree
 
 ```
@@ -24,6 +27,7 @@ START
 
 ## Read-first (once per session)
 
+- **AEOS Improvements:** https://github.com/sirjamesoffordii/CMC-Go/issues/348 (report friction here!)
 - **CMC Go Project (command center):** https://github.com/users/sirjamesoffordii/projects/4
 - Policy: `AGENTS.md`
 - Your role: `.github/agents/tech-lead.agent.md` or `.github/agents/software-engineer.agent.md`
