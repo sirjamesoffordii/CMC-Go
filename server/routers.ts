@@ -2108,32 +2108,37 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
         const allNeeds = await db.getAllActiveNeeds();
 
-        // Filter needs by scope - need to check each need's person
-        const filteredNeeds = [];
-        for (const need of allNeeds) {
-          const person = await db.getPersonByPersonId(need.personId);
-          if (!person) continue;
+        // Batch fetch all people for the needs (avoids N+1 query)
+        const personIds = [...new Set(allNeeds.map(n => n.personId))];
+        const allPeople = await db.getPeopleByPersonIds(personIds);
+        const personMap = new Map(allPeople.map(p => [p.personId, p]));
+
+        // Filter needs by scope
+        const filteredNeeds = allNeeds.filter(need => {
+          const person = personMap.get(need.personId);
+          if (!person) return false;
 
           // Check if person is in scope
           if (scope.level === "ALL") {
-            filteredNeeds.push(need);
+            return true;
           } else if (
             scope.level === "REGION" &&
             person.primaryRegion === scope.regionId
           ) {
-            filteredNeeds.push(need);
+            return true;
           } else if (
             scope.level === "DISTRICT" &&
             person.primaryDistrictId === scope.districtId
           ) {
-            filteredNeeds.push(need);
+            return true;
           } else if (
             scope.level === "CAMPUS" &&
             person.primaryCampusId === scope.campusId
           ) {
-            filteredNeeds.push(need);
+            return true;
           }
-        }
+          return false;
+        });
 
         return filteredNeeds;
       } catch (error) {
