@@ -1816,7 +1816,7 @@ export async function consumeAuthToken(token: string) {
 // USER APPROVALS
 // ============================================================================
 
-export async function getPendingApprovals(role: string) {
+export async function getPendingApprovals(_role: string) {
   const db = await getDb();
   if (!db) return [];
   return await db
@@ -1843,7 +1843,7 @@ export async function approveUser(
 
 export async function rejectUser(
   userId: number,
-  rejectedByUserId: number | null
+  _rejectedByUserId: number | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1897,7 +1897,7 @@ export async function getStatusHistory(personId: string, limit: number = 20) {
 
 export async function revertStatusChange(
   statusChangeId: number,
-  revertedByUserId: number | null
+  _revertedByUserId: number | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
