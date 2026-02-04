@@ -105,6 +105,22 @@ export default [
     },
   },
   {
+    files: [
+      "server/**/*.ts",
+      "server/**/*.tsx",
+      "server/**/*.js",
+      "server/**/*.mjs",
+    ],
+    languageOptions: {
+      globals: {
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+      },
+    },
+  },
+  {
     files: ["**/*.mjs", "**/*.js"],
     languageOptions: {
       ecmaVersion: "latest",
