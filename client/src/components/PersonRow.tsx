@@ -94,18 +94,6 @@ export function PersonRow({
     onStatusChange(person.personId, nextStatus);
   };
 
-  // Authentication disabled - always show full person row
-  if (false) {
-    return (
-      <div className="flex items-center gap-1.5 bg-slate-50 rounded-lg border border-slate-200 pointer-events-none">
-        <div className="w-1.5 h-8 rounded-l bg-slate-400 opacity-30 flex-shrink-0" />
-        <div className="flex-1 py-1.5 pr-2 min-w-0">
-          <div className="w-16 h-3 bg-slate-300 opacity-30 rounded" />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       ref={setNodeRef}

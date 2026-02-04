@@ -85,20 +85,6 @@ export default function Needs() {
     );
   }
 
-  // Authentication disabled - allow all users to view needs
-  if (false) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please log in to view requests.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="container max-w-6xl py-8">
       <div className="flex items-center justify-between mb-6">

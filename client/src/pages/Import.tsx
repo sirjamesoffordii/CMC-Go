@@ -60,20 +60,6 @@ export default function Import() {
     );
   }
 
-  // Authentication disabled - allow all users to import
-  if (false) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Only leaders can import data.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
