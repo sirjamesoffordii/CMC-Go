@@ -41,24 +41,29 @@ tools:
 ```
 WHILE true:
     1. Update heartbeat (every 3 min)
-    2. Check for open PRs: gh pr list --author Software-Engineer-Agent
-    3. IF open PRs → Review PRs (use subagents for parallel review)
+    2. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
+       - Show percentage: "GraphQL: $($rl.graphql)/5000 ($([math]::Round($rl.graphql/50))%)"
+       - IF exhausted → Continue loop but skip API-heavy operations
+       - NEVER STOP — just wait and retry non-API tasks
+    3. Check for open PRs: gh pr list --author Software-Engineer-Agent
+    4. IF open PRs → Review PRs (use subagents for parallel review)
        - APPROVE: merge PR
        - SMALL FIX NEEDED: make edit directly, then merge
        - REQUEST_CHANGES: comment on PR
        - UI/UX CHANGE: Set status to "UI/UX. Review" for user approval
-    4. Check SE heartbeat status
-    5. IF SE idle + Todo items exist → Assign next issue
-    6. IF SE implementing → Monitor progress
-    7. IF friction/problem observed → Comment on #348 immediately (see AEOS Feedback)
-    8. IF nothing actionable:
+    5. Check SE heartbeat status
+    6. IF SE idle + Todo items exist → Assign next issue
+    7. IF SE implementing → Monitor progress
+    8. IF friction/problem observed → Comment on AEOS Improvement issue immediately
+    9. IF nothing actionable:
        a. Track idle time (start idle timer if not running)
        b. IF idle >1 min → Do small issues directly OR spawn fast subagents
        c. Create draft issues from any observations
        d. Wait 30s → LOOP
 ```
 
-> **⚠️ #348 is the AEOS Improvement issue** — Comment there whenever you hit friction!
+> **⚠️ AEOS Improvement issue (currently #348)** — Comment there whenever you hit friction!
+> This is a LIVING issue that tracks agent workflow problems. NEVER close it.
 > Format: `**Tech Lead observation:** <problem> → <suggested fix>`
 
 ## Assign Issue to Software Engineer

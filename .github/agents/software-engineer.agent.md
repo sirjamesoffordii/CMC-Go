@@ -59,11 +59,14 @@ If you find yourself in the main repo, STOP immediately. Wait for TL to spawn yo
 ```
 WHILE true:
     1. Update heartbeat with status "idle": .\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
-    2. Check for assignment: $assignment = .\scripts\claim-assignment.ps1
-    3. IF no assignment:
+    2. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
+       - Show percentage: "GraphQL: $($rl.graphql)/5000 ($([math]::Round($rl.graphql/50))%)"
+       - IF exhausted → Continue loop but skip API-heavy operations (NEVER STOP)
+    3. Check for assignment: $assignment = .\scripts\claim-assignment.ps1
+    4. IF no assignment:
        a. Self-assign: Query board for Todo items
        b. IF no Todo items → Wait 30s → LOOP
-    4. IF assignment OR self-assigned issue:
+    5. IF assignment OR self-assigned issue:
        a. Estimate issue size
        b. IF <5 min AND more small issues available:
           - Batch with subagents (see Subagent Usage)
@@ -71,10 +74,11 @@ WHILE true:
        c. ELSE: Execute Inner Loop directly
        d. After PR(s) created, update heartbeat to "idle"
        e. LOOP (back to step 1)
-    5. IF friction/problem observed → Comment on #348 immediately (see AEOS Feedback)
+    6. IF friction/problem observed → Comment on AEOS Improvement issue immediately
 ```
 
-> **⚠️ #348 is the AEOS Improvement issue** — Comment there whenever you hit friction!
+> **⚠️ AEOS Improvement issue (currently #348)** — Comment there whenever you hit friction!
+> This is a LIVING issue that tracks agent workflow problems. NEVER close it.
 > Format: `**Software Engineer observation:** <problem> → <suggested fix>`
 
 **Assignment pickup:**

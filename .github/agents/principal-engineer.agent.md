@@ -43,7 +43,7 @@ tools:
 
 > **⚠️ TWO LIVING ISSUES that NEVER close:**
 >
-> - **#348** — AEOS Workflow Improvements (agent friction/problems)
+> - **AEOS Improvement issue (currently #348)** — Agent workflow friction/problems
 > - **Exploratory issue** — App improvements for user to approve
 >
 > PE reviews and updates BOTH every loop iteration!
@@ -51,26 +51,30 @@ tools:
 ```
 WHILE true:
     1. Update heartbeat (every 3 min)
-    2. Check heartbeat for stale Tech Lead (>6 min) — respawn if stale
-    3. **AEOS #348 REVIEW:**
+    2. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
+       - Show percentage: "GraphQL: $($rl.graphql)/5000 ($([math]::Round($rl.graphql/50))%)"
+       - IF exhausted → Continue loop but skip API-heavy operations
+       - NEVER STOP — just wait and retry non-API tasks
+    3. Check heartbeat for stale Tech Lead (>6 min) — respawn if stale
+    4. **AEOS IMPROVEMENT ISSUE REVIEW:**
        a. Read all comments (TL/SE observations)
        b. Evaluate each unprocessed comment
        c. Add valid items to checklist in issue body (user-friendly format)
        d. Reply to invalid/duplicate items explaining why
-    4. **EXPLORATORY ISSUE REVIEW:**
+    5. **EXPLORATORY ISSUE REVIEW:**
        a. Check if user has checked any items → create Todo issues for them
        b. Spawn Plan subagents to find NEW improvements (batch of 3-5 areas)
        c. Add new discoveries to Exploratory issue checklist
        d. Keep descriptions simple and user-friendly
-    5. Direct issue creation: Create Todo issues for clear improvements
-    6. Review app: Run Playwright screenshots, check UX/bugs
-    7. Check "Draft" items — approve TL issues (move to Todo) or reject
-    8. Check "Blocked" items — review TL block reasons, accept/decline/archive
-    9. Check "UI/UX. Review" items — provide screenshot/link for user to approve
-    10. Set priorities on board (Urgent > High > Medium > Low)
-    11. Review PRs if Tech Lead is busy
-    12. Add own PE observations to #348 when friction observed
-    13. Wait 30s → LOOP
+    6. Direct issue creation: Create Todo issues for clear improvements
+    7. Review app: Run Playwright screenshots, check UX/bugs
+    8. Check "Draft" items — approve TL issues (move to Todo) or reject
+    9. Check "Blocked" items — review TL block reasons, accept/decline/archive
+    10. Check "UI/UX. Review" items — provide screenshot/link for user to approve
+    11. Set priorities on board (Urgent > High > Medium > Low)
+    12. Review PRs if Tech Lead is busy
+    13. Add own PE observations to AEOS Improvement issue when friction observed
+    14. Wait 30s → LOOP
 ```
 
 ## AEOS Self-Improvement (#348 — NEVER CLOSE)

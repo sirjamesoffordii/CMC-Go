@@ -1,6 +1,6 @@
 # CMC Go — Agent Manual
 
-> **⚠️ CRITICAL: Issue #348 is the AEOS Improvement tracking issue.**  
+> **⚠️ CRITICAL: The AEOS Improvement issue (currently #348) is the living tracking issue for agent workflow friction.**  
 > All agents MUST report friction/problems there. It is a **living issue** that should NEVER be closed.  
 > See [AEOS Self-Improvement](#aeos-self-improvement-mandatory) section for details.
 
@@ -10,9 +10,9 @@
 # 1. Auth (replace <account> with your account name)
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-<account>"; gh auth status
 
-# 2. Check board + AEOS improvement issue
+# 2. Check board + AEOS Improvement issue (currently #348)
 gh project item-list 4 --owner sirjamesoffordii --limit 20
-gh issue view 348 --repo sirjamesoffordii/CMC-Go  # AEOS improvements
+gh issue view 348 --repo sirjamesoffordii/CMC-Go  # AEOS Improvement issue
 
 # 3. Execute your role (see Roles below)
 ```
@@ -91,7 +91,7 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 | Status           | Owner                          | Description                                       | Action                                       |
 | ---------------- | ------------------------------ | ------------------------------------------------- | -------------------------------------------- |
 | Blocked          | Tech Lead / Principal Engineer | Work cannot proceed until PE/TL action is taken   | TL blocks + comments, PE reviews             |
-| AEOS Improvement | Principal Engineer             | **LIVING ISSUE #348** — Agent workflow friction   | PE reviews comments, updates checklist       |
+| AEOS Improvement | Principal Engineer             | **LIVING ISSUE** — Agent workflow friction        | PE reviews comments, updates checklist       |
 | Exploratory      | Principal Engineer             | **LIVING ISSUE** — App improvements for user      | PE continuously adds, user checks to approve |
 | Draft (TL)       | Principal Engineer             | Drafted by TL. Needs PE approval. Not executable. | PE reviews TL suggestions → Todo or reject   |
 | Todo             | Tech Lead                      | This item hasn't been started                     | TL assigns to Software Engineer              |
@@ -102,7 +102,7 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 
 > **⚠️ LIVING ISSUES (NEVER CLOSE):**
 >
-> - **#348 (AEOS Improvement)** — Agent workflow improvements. PE evaluates TL/SE comments, adds to checklist.
+> - **AEOS Improvement (currently #348)** — Agent workflow improvements. PE evaluates TL/SE comments, adds to checklist.
 > - **Exploratory issue** — App improvements. PE continuously adds new suggestions for user to check.
 
 **Board IDs (for GraphQL mutations):**
@@ -130,7 +130,7 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 
          ┌──────────────────────────────────────────────────────────────────┐
          │  LIVING ISSUES (never close, continuously updated by PE):        │
-         │  • #348 AEOS Improvement — agent friction → user checks to fix   │
+         │  • AEOS Improvement issue — agent friction → user checks to fix  │
          │  • Exploratory issue — app improvements → user checks to build   │
          └──────────────────────────────────────────────────────────────────┘
 
@@ -162,7 +162,7 @@ TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or cl
                                                ▼                                         │
                                              Done ◄──────────────────────────────────────┘
 
-AEOS Improvement: PE/TL/SE observe friction ──► #348 comments ──► PE promotes to checklist
+AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──► PE promotes to checklist
 ```
 
 **IDs (for GraphQL):**
@@ -660,12 +660,12 @@ if ($rl.anyRateLimited) {
 
 ## AEOS Self-Improvement (MANDATORY)
 
-> **⚠️ NEVER CLOSE ISSUE #348** — It is a living tracking issue that persists across all sessions.  
+> **⚠️ NEVER CLOSE the AEOS Improvement issue (currently #348)** — It is a living tracking issue that persists across all sessions.  
 > Status should always be "AEOS Improvement" on the board, NEVER "Done".
 
-Agents **MUST** report workflow friction in real-time to issue #348.
+Agents **MUST** report workflow friction in real-time to the AEOS Improvement issue.
 
-**Tracking Issue:** `[AEOS] Workflow Improvements` (#348)
+**Tracking Issue:** `[AEOS] Workflow Improvements` (currently #348)
 
 ### How to Report (Copy-Paste Commands)
 
@@ -704,7 +704,7 @@ gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** 
 
 ### Process
 
-1. TL/SE adds comment to #348 (using commands above)
+1. TL/SE adds comment to AEOS Improvement issue (using commands above)
 2. PE reviews comments and promotes to checklist in issue body
 3. Human checks items to approve for implementation
 
