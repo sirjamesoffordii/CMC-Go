@@ -734,19 +734,24 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 | Script                          | Purpose                                  | Usage                       |
 | ------------------------------- | ---------------------------------------- | --------------------------- |
+| `aeos-spawn.ps1`                | **Primary** spawn script for all agents  | Respawn any agent           |
+| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
 | `check-rate-limits.ps1`         | GitHub API quota check                   | Before expensive operations |
 | `check-ci-status.ps1`           | Human-readable CI status                 | Diagnose build failures     |
 | `verify-merge.ps1`              | Post-merge verification                  | After `gh pr merge`         |
 | `add-board-item.ps1`            | Add issue to board with status           | Prevents limbo items        |
 | `update-heartbeat.ps1`          | Update agent heartbeat                   | Every 3 min in loop         |
 | `read-heartbeat.ps1`            | Safe heartbeat reader                    | Monitor other agents        |
-| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree          | TL spawns SE once           |
-| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model    | Human or agent restart      |
-| `set-copilot-model.ps1`         | Set Copilot model via SQLite             | Before spawning agents      |
 | `cleanup-agent-branches.ps1`    | Clean merged agent branches              | After several PRs merged    |
-| `aeos-status.ps1`               | Full AEOS system status                  | Debugging coordination      |
 | `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection | PE/TL monitors all sessions |
 | `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check         | Quick self-check            |
+
+**Deprecated scripts (use `aeos-spawn.ps1` instead):**
+
+- `spawn-worktree-agent.ps1` → use `aeos-spawn.ps1 -Agent SE`
+- `spawn-agent.ps1` → use `aeos-spawn.ps1 -Agent <PE|TL|SE>`
+- `aeos-open-all.ps1` → use `aeos-spawn.ps1 -All`
+- `aeos-activate.ps1` → auto-activated by AEOS Activator extension
 
 ## Known Issues & Gotchas
 
