@@ -1,3 +1,4 @@
+import { consoleRouter } from "./_core/consoleRouter";
 import { systemRouter } from "./_core/systemRouter";
 import {
   publicProcedure,
@@ -104,6 +105,7 @@ const ROLES_REQUIRING_OVERSEE_REGION = [
 ] as const;
 
 export const appRouter = router({
+  console: consoleRouter,
   system: systemRouter,
   auth: router({
     // PR 2: Get current user with district/region/campus names
