@@ -1210,11 +1210,18 @@ export function InteractiveMap({
       if (isHiddenByScope) {
         path.style.cursor = "default";
         path.style.pointerEvents = "none";
+        path.removeAttribute("tabindex");
+        path.removeAttribute("role");
         return; // Skip adding event handlers for hidden districts
       }
 
       path.style.cursor = "pointer";
       path.style.pointerEvents = "auto";
+
+      // A11y: Make district paths keyboard accessible
+      path.setAttribute("tabindex", "0");
+      path.setAttribute("role", "button");
+      path.setAttribute("aria-label", `Select district ${pathId}`);
 
       // Click handler - allow clicking even if district not in database
       const clickHandler = (e: MouseEvent) => {
@@ -1222,6 +1229,16 @@ export function InteractiveMap({
         onDistrictSelect(pathId);
       };
       path.addEventListener("click", clickHandler);
+
+      // A11y: Keyboard handler for Enter/Space activation
+      const keydownHandler = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onDistrictSelect(pathId);
+        }
+      };
+      path.addEventListener("keydown", keydownHandler);
 
       // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
