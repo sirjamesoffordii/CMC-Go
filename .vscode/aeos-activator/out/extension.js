@@ -101,16 +101,21 @@ function setupConfigWatcher(context) {
     if (!workspaceFolders || workspaceFolders.length === 0) {
         return;
     }
-    // Watch for all auto-activate config files (any role)
-    const pattern = new vscode.RelativePattern(workspaceFolders[0], '.github/agents/auto-activate-*.json');
+    // Only watch for THIS agent's config file (not all roles)
+    if (!currentRole) {
+        outputChannel.appendLine('[AEOS] No role detected - cannot set up config watcher');
+        return;
+    }
+    const pattern = new vscode.RelativePattern(workspaceFolders[0], `.github/agents/auto-activate-${currentRole}.json`);
     configWatcher = vscode.workspace.createFileSystemWatcher(pattern);
+    outputChannel.appendLine(`[AEOS] Watching for config: auto-activate-${currentRole}.json only`);
     // When config file is created or changed, trigger activation
     configWatcher.onDidCreate((uri) => {
-        outputChannel.appendLine(`[AEOS] Config file created: ${uri.fsPath} - triggering activation`);
+        outputChannel.appendLine(`[AEOS] Config file created: ${uri.fsPath} - triggering activation for ${currentRole}`);
         setTimeout(() => checkAndActivateAgent(), 500); // Small delay to ensure file is written
     });
     configWatcher.onDidChange((uri) => {
-        outputChannel.appendLine(`[AEOS] Config file changed: ${uri.fsPath} - triggering activation`);
+        outputChannel.appendLine(`[AEOS] Config file changed: ${uri.fsPath} - triggering activation for ${currentRole}`);
         setTimeout(() => checkAndActivateAgent(), 500);
     });
     context.subscriptions.push(configWatcher);
