@@ -259,6 +259,24 @@ pnpm db:push:yes  # Non-interactive, 2min timeout
 4. **Tests fail?** — Fix them or explain why in PR
 5. **One Issue per PR** — no scope creep, no "bonus" features
 
+## Board Statuses (SE View)
+
+> **⚠️ LIVING ISSUES (Always present, NEVER complete as entire issue):**
+>
+> - **AEOS Improvement (#348)** — Comment your observations here. PE promotes to checklist.
+> - **Exploratory** — PE adds ideas. User checks items they want built.
+
+| Status           | Software Engineer Action                                  |
+| ---------------- | --------------------------------------------------------- |
+| AEOS Improvement | **LIVING** — Comment observations when you hit friction   |
+| Exploratory      | **LIVING** — PE owns; not for SE to modify                |
+| Blocked          | SE can block issues with comment explaining why           |
+| Todo             | Pick from here when no assignment (self-assign)           |
+| In Progress      | Your active work (update heartbeat, implement, create PR) |
+| Verify           | TL reviews your PR (wait or work on next issue)           |
+| UI/UX. Review    | User reviews visual changes (not SE concern)              |
+| Done             | Your PR was merged! Move to next issue.                   |
+
 ## AEOS Feedback (MANDATORY)
 
 When you notice workflow friction during implementation, **immediately** add a comment to issue #348.

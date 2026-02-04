@@ -500,15 +500,22 @@ if ($next) {
 
 ## Board Statuses (TL View)
 
-| Status        | Tech Lead Action                             |
-| ------------- | -------------------------------------------- |
-| Draft (TL)    | PE will review (TL created these)            |
-| Todo          | Assign to SE or do directly (if idle >1 min) |
-| In Progress   | Monitor SE progress                          |
-| Verify        | Review PR, merge (unless UI/UX change)       |
-| UI/UX. Review | Wait for user approval, then merge           |
-| Blocked       | Escalate to Principal Engineer               |
-| Done          | Clean up branches if needed                  |
+> **⚠️ LIVING ISSUES (Always present, NEVER complete as entire issue):**
+>
+> - **AEOS Improvement (#348)** — Comment your observations here. PE promotes to checklist.
+> - **Exploratory** — PE adds ideas. User checks items they want built.
+
+| Status           | Tech Lead Action                                           |
+| ---------------- | ---------------------------------------------------------- |
+| AEOS Improvement | **LIVING** — Comment observations, never move/close        |
+| Exploratory      | **LIVING** — PE owns; user checks items → become Todos     |
+| Blocked          | Comment reason, escalate to PE                             |
+| Draft (TL)       | TL created these — PE will review                          |
+| Todo             | Assign to SE or do directly (if idle >1 min)               |
+| In Progress      | Monitor SE progress                                        |
+| Verify           | Review PR, merge (unless UI/UX change)                     |
+| UI/UX. Review    | Wait for user approval, then merge                         |
+| Done             | Clean up branches if needed (auto-archived after ~2 weeks) |
 
 ## AEOS Feedback (MANDATORY)
 

@@ -100,10 +100,11 @@ The AEOS Activator extension auto-starts chat sessions - no manual intervention 
 | UI/UX. Review    | Human                          | Need user approval to Merge                       | User approves visual changes                 |
 | Done             | —                              | This has been completed                           | Merged and closed, auto-archived             |
 
-> **⚠️ LIVING ISSUES (NEVER CLOSE):**
+> **⚠️ LIVING ISSUES (NEVER CLOSE, NEVER mark Done):**
 >
-> - **AEOS Improvement (currently #348)** — Agent workflow improvements. PE evaluates TL/SE comments, adds to checklist.
-> - **Exploratory issue** — App improvements. PE continuously adds new suggestions for user to check.
+> - **AEOS Improvement (currently #348)** — Agent workflow improvements. PE evaluates TL/SE comments, adds to checklist. Status MUST always be "AEOS Improvement".
+> - **Exploratory issue** — App improvements. PE continuously adds new suggestions for user to check. Status MUST always be "Exploratory".
+> - **These issues are checked-list based** — only individual checked items get extracted as new Todo issues, the parent issue stays open forever.
 
 **Board IDs (for GraphQL mutations):**
 

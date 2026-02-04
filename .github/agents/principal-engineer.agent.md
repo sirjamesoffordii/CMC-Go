@@ -401,14 +401,22 @@ Use the helper script to prevent limbo items:
 
 ## Board Statuses
 
-| Status        | Principal Engineer Action                        |
-| ------------- | ------------------------------------------------ |
-| Exploratory   | User checks items they want → PE creates Todos   |
-| Draft         | Review, approve (→ Todo) or reject               |
-| Todo          | Ensure 5-10 ready                                |
-| Blocked       | Architectural decision needed                    |
-| Verify        | Review if Tech Lead busy                         |
-| UI/UX. Review | Provide screenshot/link for user visual approval |
+> **⚠️ LIVING ISSUES (Always present, NEVER complete as entire issue):**
+>
+> - **AEOS Improvement** — Always status "AEOS Improvement". Only checked items get extracted.
+> - **Exploratory** — Always status "Exploratory". Only checked items become Todos.
+
+| Status           | Principal Engineer Action                                        |
+| ---------------- | ---------------------------------------------------------------- |
+| AEOS Improvement | **LIVING** — Review TL/SE comments, promote to checklist         |
+| Exploratory      | **LIVING** — User checks items → PE creates Todos, add new ideas |
+| Blocked          | Review and unblock (split/clarify) or archive                    |
+| Draft (TL)       | Review TL drafts, approve (→ Todo) or reject                     |
+| Todo             | Ensure 5-10 ready, maintain priority order                       |
+| In Progress      | Monitor (TL/SE own this)                                         |
+| Verify           | Review if Tech Lead busy                                         |
+| UI/UX. Review    | Provide screenshot/link for user visual approval                 |
+| Done             | Auto-archived after ~2 weeks. Run archive script if >50 items    |
 
 ## Hierarchy
 
