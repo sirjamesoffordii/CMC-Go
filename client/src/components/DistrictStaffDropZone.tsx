@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { useDrop, useDrag } from "react-dnd";
 import { User, Plus, Edit2 } from "lucide-react";
 import { Person } from "../../../drizzle/schema";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { Input } from "./ui/input";
@@ -41,7 +40,7 @@ interface DistrictStaffDropZoneProps {
   maskIdentity?: boolean;
 }
 
-interface Need {
+interface _Need {
   id: number;
   personId: string;
   type: string;
@@ -80,7 +79,7 @@ export function DistrictStaffDropZone({
   );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver: _isOver, canDrop: _canDrop }, drop] = useDrop(
     () => ({
       accept: "person",
       drop: (item: { personId: string; campusId: string | number }) => {
@@ -97,6 +96,13 @@ export function DistrictStaffDropZone({
       }),
     }),
     [onDrop, canInteract]
+  );
+
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      drop(node);
+    },
+    [drop]
   );
 
   const [{ isDragging }, drag] = useDrag(
@@ -144,7 +150,7 @@ export function DistrictStaffDropZone({
     // Show add tile when no district staff (only in interactive mode)
     return (
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -mt-2"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
@@ -249,7 +255,7 @@ export function DistrictStaffDropZone({
   return (
     <>
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -mt-2"
       >
         {/* Name Label with Edit Button */}
