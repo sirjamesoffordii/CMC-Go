@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
-    Open all AEOS agent windows ready for activation.
+    DEPRECATED: Use aeos-spawn.ps1 -All instead.
 .DESCRIPTION
+    This script has been superseded by aeos-spawn.ps1 which includes auto-activation.
+    
     Opens PE, TL, and SE windows with isolated user-data-dirs.
     Each window will have the correct GitHub account and model pre-selected.
     
@@ -13,9 +15,11 @@
 .PARAMETER All
     Open all agent windows (default)
 .EXAMPLE
-    .\scripts\aeos-open-all.ps1           # Opens all 3 windows
-    .\scripts\aeos-open-all.ps1 -Agent PE # Opens only PE window
+    # DEPRECATED - use instead:
+    .\scripts\aeos-spawn.ps1 -All
 #>
+
+Write-Warning "DEPRECATED: Use aeos-spawn.ps1 -All instead. This script does not auto-activate agents."
 param(
     [ValidateSet("PE", "TL", "SE")]
     [string]$Agent,

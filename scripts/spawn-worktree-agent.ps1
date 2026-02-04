@@ -1,8 +1,10 @@
 <#
 .SYNOPSIS
-  Spawn a persistent Software Engineer agent in an isolated worktree.
+  DEPRECATED: Use aeos-spawn.ps1 -Agent SE instead.
 
 .DESCRIPTION
+  This script has been superseded by aeos-spawn.ps1 -Agent SE which includes auto-activation.
+  
   This script creates a persistent SE workspace by:
   1. Creating a Git worktree (if it doesn't exist) at a fixed location
   2. Opening VS Code in a new window with that worktree
@@ -31,13 +33,11 @@
   Show what would be done without executing.
 
 .EXAMPLE
-  # Spawn persistent SE agent
-  .\spawn-worktree-agent.ps1
-
-.EXAMPLE
-  # Dry run to see commands
-  .\spawn-worktree-agent.ps1 -DryRun
+  # DEPRECATED - use instead:
+  .\scripts\aeos-spawn.ps1 -Agent SE
 #>
+
+Write-Warning "DEPRECATED: Use aeos-spawn.ps1 -Agent SE instead. This script does not auto-activate agents."
 
 [CmdletBinding()]
 param(

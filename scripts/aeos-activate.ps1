@@ -1,12 +1,21 @@
 <#
 .SYNOPSIS
-    Copy agent activation message to clipboard.
+    DEPRECATED: Activation is now automatic via AEOS Activator extension.
+.DESCRIPTION
+    This script has been superseded by the AEOS Activator VS Code extension
+    which automatically activates agents when spawned via aeos-spawn.ps1.
+    
+    If manual activation is needed, use VS Code command: "AEOS: Activate Agent"
+    
 .PARAMETER Agent
     PE, TL, or SE
 .EXAMPLE
-    .\scripts\aeos-activate.ps1 PE
-    # Then paste (Ctrl+V) in the PE window's chat
+    # DEPRECATED - use instead:
+    .\scripts\aeos-spawn.ps1 -Agent PE
 #>
+
+Write-Warning "DEPRECATED: Agents now auto-activate when spawned via aeos-spawn.ps1"
+Write-Warning "If manual activation is needed, use VS Code command: AEOS: Activate Agent"
 param(
     [Parameter(Mandatory)]
     [ValidateSet("PE", "TL", "SE")]

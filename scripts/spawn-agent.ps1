@@ -1,7 +1,9 @@
 <#
 .SYNOPSIS
-    Spawn an AEOS agent with its designated Copilot model.
+    DEPRECATED: Use aeos-spawn.ps1 instead.
 .DESCRIPTION
+    This script has been superseded by aeos-spawn.ps1 which includes auto-activation.
+    
     Uses separate VS Code user-data-dirs for each agent to guarantee model isolation.
     Each agent has its own state database with a pre-configured model.
     
@@ -21,10 +23,11 @@
 .PARAMETER WorkspacePath
     Path to the workspace (default: current directory for PE/TL, worktree for SE)
 .EXAMPLE
-    .\scripts\spawn-agent.ps1 -Agent TL -UseProfile           # Spawn with isolated model
-    .\scripts\spawn-agent.ps1 -Agent TL -UseProfile -Init     # First-time setup
-    .\scripts\spawn-agent.ps1 -Agent PE -UseBackup -UseProfile
+    # DEPRECATED - use instead:
+    .\scripts\aeos-spawn.ps1 -Agent TL
 #>
+
+Write-Warning "DEPRECATED: Use aeos-spawn.ps1 instead. This script does not auto-activate agents."
 param(
     [Parameter(Mandatory)]
     [ValidateSet("PE", "TL", "SE")]
