@@ -51,35 +51,68 @@ tools:
 ```
 WHILE true:
     1. Update heartbeat (every 3 min)
+
     2. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
-       - Show percentage: "GraphQL: $($rl.graphql)/5000 ($([math]::Round($rl.graphql/50))%)"
-       - IF exhausted → Continue loop but skip API-heavy operations
-       - NEVER STOP — just wait and retry non-API tasks
+       - IF exhausted → skip API-heavy ops, continue with local tasks
+
     3. Check heartbeat for stale Tech Lead (>6 min) — respawn if stale
-    4. **AEOS IMPROVEMENT ISSUE REVIEW:**
-       a. Read all comments (TL/SE observations)
-       b. Evaluate each unprocessed comment
-       c. Add valid items to checklist in issue body (user-friendly format)
-       d. Reply to invalid/duplicate items explaining why
-    5. **EXPLORATORY ISSUE REVIEW:**
-       a. Check if user has checked any items → create Todo issues for them
-       b. Spawn Plan subagents to find NEW improvements (batch of 3-5 areas)
-       c. Add new discoveries to Exploratory issue checklist
-       d. Keep descriptions simple and user-friendly
-    6. Direct issue creation: Create Todo issues for clear improvements
-    7. Review app: Run Playwright screenshots, check UX/bugs
-    8. Check "Draft" items — approve TL issues (move to Todo) or reject
-    9. Check "Blocked" items — review TL block reasons, accept/decline/archive
-    10. Check "UI/UX. Review" items — provide screenshot/link for user to approve
-    11. Set priorities on board (Urgent > High > Medium > Low)
-    12. Review PRs if Tech Lead is busy
-    13. Add own PE observations to AEOS Improvement issue when friction observed
-    14. **BOARD HYGIENE (once per session, not every loop):**
+
+    4. **CODEBASE HEALTH CHECK (brief scan each loop):**
+       a. Review recent commits on staging (last 5-10)
+       b. Ensure code quality, patterns, and architecture are consistent
+       c. Flag any concerning patterns for future issues
+
+    5. **HISTORY REVIEW (understand where we came from):**
+       a. Scan recently closed issues/PRs (last 10-20)
+       b. Understand what was just completed
+       c. Use this context to guide future priorities
+
+    6. **AEOS IMPROVEMENT ISSUE REVIEW (#348):**
+       a. Read new TL/SE comments
+       b. Evaluate each for coherence and conflicts
+       c. Promote valid items to checklist (use CLEAR language - see below)
+       d. Reply to duplicates/invalid items explaining why
+
+    7. **EXPLORATORY ISSUE REVIEW:**
+       a. Check if user checked any items → create Todo issues
+       b. Review existing items for staleness or incoherence
+       c. Remove/update stale items that no longer apply
+       d. Add new discoveries (use CLEAR user-friendly language)
+
+    8. Check "Draft" items — approve TL issues (→ Todo) or reject
+    9. Check "Blocked" items — review and unblock or archive
+    10. Check "UI/UX. Review" items — provide preview for user
+    11. Review PRs if Tech Lead is busy
+
+    12. **BOARD HYGIENE (once per session):**
         - Close duplicate/obsolete issues
         - Group related small issues into batched issues
-        - If Done column > 50 items: .\scripts\archive-old-done.ps1
-    15. Wait 30s → LOOP
+        - If Done column > 50: .\scripts\archive-old-done.ps1
+
+    13. Wait 30s → LOOP
 ```
+
+## Writing Clear User-Facing Descriptions
+
+When writing Exploratory items or AEOS Improvement items, use language that clearly
+explains the **benefit to users** or **impact on workflow**. More words for clarity is okay.
+
+**BAD (too technical):**
+
+- "Add compound index on (districtId, status)"
+- "Implement virtualized list with @tanstack/react-virtual"
+- "Fix N+1 query in getMembers"
+
+**GOOD (explains the benefit):**
+
+- "Make the People list load faster — currently it can take 2-3 seconds to show all people when there are many entries. This would make it nearly instant."
+- "Speed up map loading on mobile — the map currently takes 3+ seconds to appear on phones. This would cut that in half."
+- "Add keyboard shortcuts for power users — people who use the app frequently can't navigate without a mouse. Adding Tab/Enter/Escape shortcuts would save them time."
+
+**For AEOS Improvements:**
+
+- "Agents sometimes get stuck waiting for CI — add a way for agents to check CI status and retry failed runs automatically."
+- "TL doesn't always respawn stale SE — ensure the TL loop explicitly checks SE staleness every iteration and respawns if needed."
 
 ## AEOS Self-Improvement (#348 — NEVER CLOSE)
 

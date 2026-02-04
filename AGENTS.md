@@ -165,22 +165,6 @@ TL/SE blocks issue ──► Blocked ──► PE reviews ──►  Todo (or cl
 AEOS Improvement: PE/TL/SE observe friction ──► comments on issue ──► PE promotes to checklist
 ```
 
-**IDs (for GraphQL):**
-
-- Project: `PVT_kwHODqX6Qs4BNUfu` | Status Field: `PVTSSF_lAHODqX6Qs4BNUfuzg8WaYA`
-
-| Status           | ID         |
-| ---------------- | ---------- |
-| Blocked          | `652442a1` |
-| AEOS Improvement | `adf06f76` |
-| Exploratory      | `041398cc` |
-| Draft (TL)       | `687f4500` |
-| Todo             | `f75ad846` |
-| In Progress      | `47fc9ee4` |
-| Verify           | `5351d827` |
-| UI/UX. Review    | `576c99fd` |
-| Done             | `98236657` |
-
 ## Board Hygiene
 
 The board has **built-in auto-archive** enabled that automatically archives Done items after ~2 weeks.
@@ -705,14 +689,6 @@ Each agent's logs are in its own user-data-dir:
 ```
 C:\Dev\vscode-agent-{pe|tl|se}\logs\<session>\<window>\exthost\GitHub.copilot-chat\GitHub Copilot Chat.log
 ```
-
-**Model Fallback Strategy:**
-
-| Agent | Primary | Backup            | When to Switch                  |
-| ----- | ------- | ----------------- | ------------------------------- |
-| PE    | GPT 5.2 | Claude Opus 4.5   | After 429 verified in agent log |
-| TL    | GPT 5.2 | Claude Sonnet 4.5 | After 429 verified in agent log |
-| SE    | GPT 5.2 | GPT 5.2 Codex     | After 429 verified in agent log |
 
 **Recovery Pattern:**
 
