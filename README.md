@@ -13,6 +13,7 @@ CMC Go is a map-first coordination app for CMC conference attendance management.
 
 - Install: `pnpm install`
 - Local DB + seed (dev only): `pnpm db:setup`
+- After pulling new migrations: `pnpm db:push:yes`
 - Dev server: `pnpm dev`
 - Tests: `pnpm test`
 - E2E smoke: `pnpm e2e`

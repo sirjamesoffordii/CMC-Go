@@ -240,8 +240,11 @@ VITE_FRONTEND_FORGE_API_KEY=
 # Install dependencies
 pnpm install
 
-# Push database schema (if needed)
-pnpm db:push
+# Push database schema (runs pending migrations)
+pnpm db:push:yes
+
+# Re-run after pulling new migrations
+pnpm db:push:yes
 
 # Seed database (if starting fresh)
 node scripts/seed-db.mjs
