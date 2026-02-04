@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Approvals Page - PR 2
  * For Region Directors to approve District Directors
@@ -21,7 +20,7 @@ import { useLocation } from "wouter";
 
 export default function Approvals() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = usePublicAuth();
+  const { user } = usePublicAuth();
   const utils = trpc.useUtils();
 
   const { data: pendingApprovals = [], isLoading } =
@@ -39,19 +38,7 @@ export default function Approvals() {
     },
   });
 
-  // Authentication disabled - allow all users to view approvals
-  if (false) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>Please sign in to view approvals</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  // Note: Authentication check was intentionally disabled in this codebase
 
   const canViewApprovals =
     user &&
