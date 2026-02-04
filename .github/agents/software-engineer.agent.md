@@ -58,8 +58,8 @@ If you find yourself in the main repo, STOP immediately. Wait for TL to spawn yo
 
 ```
 WHILE true:
-    1. Update heartbeat with status "idle"
-    2. Check for assignment: `.github/agents/assignment.json`
+    1. Update heartbeat with status "idle": .\scripts\update-heartbeat.ps1 -Role SE -Status "idle"
+    2. Check for assignment: $assignment = .\scripts\claim-assignment.ps1
     3. IF no assignment:
        a. Self-assign: Query board for Todo items
        b. IF no Todo items → Wait 30s → LOOP
@@ -80,11 +80,11 @@ WHILE true:
 **Assignment pickup:**
 
 ```powershell
-$assignmentFile = ".github/agents/assignment.json"
-if (Test-Path $assignmentFile) {
-    $assignment = Get-Content $assignmentFile | ConvertFrom-Json
-    Remove-Item $assignmentFile  # Claim it atomically
+# Use the claim-assignment script (reads from git common dir, works across worktrees)
+$assignment = .\scripts\claim-assignment.ps1
+if ($assignment) {
     $issueNumber = $assignment.issue
+    Write-Host "Claimed assignment: Issue #$issueNumber" -ForegroundColor Green
     # Now implement issue $issueNumber
 }
 ```
