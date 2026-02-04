@@ -217,12 +217,23 @@ pnpm db:push:yes  # Non-interactive, 2min timeout
 
 ## AEOS Feedback (MANDATORY)
 
-When you notice workflow friction during implementation, **immediately** add a comment to issue #348:
+When you notice workflow friction during implementation, **immediately** add a comment to issue #348.
+
+**Every observation MUST include Recommendation Level and Risk Level:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>
+
+**Recommendation:** High|Medium|Low
+**Risk:** High|Medium|Low"
 ```
+
+| Level  | Recommendation Meaning           | Risk Meaning                         |
+| ------ | -------------------------------- | ------------------------------------ |
+| High   | Critical blocker, cannot proceed | Could break agents or existing code  |
+| Medium | Significant friction, slows work | Moderate side effects, needs testing |
+| Low    | Nice-to-have, minor convenience  | Safe change, isolated impact         |
 
 **Examples of when to report:**
 

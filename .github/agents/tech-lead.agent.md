@@ -40,18 +40,21 @@ tools:
 
 ```
 WHILE true:
-    1. Update heartbeat (every 3 min)
-    2. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
+    1. **CHECK HEARTBEATS FIRST** (CRITICAL - before any other action):
+       $hb = .\scripts\read-heartbeat.ps1
+       - IF PE stale >6 min → Respawn PE: .\scripts\aeos-spawn.ps1 -Agent PE
+       - IF SE stale >6 min → Respawn SE: .\scripts\aeos-spawn.ps1 -Agent SE
+    2. Update YOUR heartbeat (every 3 min)
+    3. Check rate limits: $rl = .\scripts\check-rate-limits.ps1
        - Show percentage: "GraphQL: $($rl.graphql)/5000 ($([math]::Round($rl.graphql/50))%)"
        - IF exhausted → Continue loop but skip API-heavy operations
        - NEVER STOP — just wait and retry non-API tasks
-    3. Check for open PRs: gh pr list --author Software-Engineer-Agent
-    4. IF open PRs → Review PRs (use subagents for parallel review)
+    4. Check for open PRs: gh pr list --author Software-Engineer-Agent
+    5. IF open PRs → Review PRs (use subagents for parallel review)
        - APPROVE: merge PR
        - SMALL FIX NEEDED: make edit directly, then merge
        - REQUEST_CHANGES: comment on PR
        - UI/UX CHANGE: Set status to "UI/UX. Review" for user approval
-    5. Check SE heartbeat status
     6. IF SE idle + Todo items exist → Assign next issue
     7. IF SE implementing → Monitor progress
     8. IF friction/problem observed → Comment on AEOS Improvement issue immediately
@@ -163,10 +166,10 @@ PE reviews blocked items and either:
 If no SE is running (no SE heartbeat), spawn one:
 
 ```powershell
-.\scripts\spawn-worktree-agent.ps1
+.\scripts\aeos-spawn.ps1 -Agent SE
 ```
 
-This creates a persistent SE in a worktree. SE then loops forever checking for assignments.
+This creates a persistent SE in a worktree with auto-activation. SE then loops forever checking for assignments.
 
 ## Branch Cleanup
 
@@ -471,12 +474,23 @@ if ($next) {
 
 ## AEOS Feedback (MANDATORY)
 
-When you notice workflow friction during your loop, **immediately** add a comment to issue #348:
+When you notice workflow friction during your loop, **immediately** add a comment to issue #348.
+
+**Every observation MUST include Recommendation Level and Risk Level:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>
+
+**Recommendation:** High|Medium|Low
+**Risk:** High|Medium|Low"
 ```
+
+| Level  | Recommendation Meaning           | Risk Meaning                         |
+| ------ | -------------------------------- | ------------------------------------ |
+| High   | Critical blocker, cannot proceed | Could break agents or existing code  |
+| Medium | Significant friction, slows work | Moderate side effects, needs testing |
+| Low    | Nice-to-have, minor convenience  | Safe change, isolated impact         |
 
 **Examples of when to report:**
 

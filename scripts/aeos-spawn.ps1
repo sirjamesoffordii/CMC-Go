@@ -3,9 +3,10 @@
     Spawn an AEOS agent with FULL AUTOMATION - no human intervention required.
 .DESCRIPTION
     This script:
-    1. Writes an auto-activate.json config file
-    2. Opens VS Code with the agent's isolated user-data-dir
-    3. The AEOS Activator extension reads the config and auto-starts the chat session
+    1. Checks for rapid respawn patterns (quota exhaustion detection)
+    2. Writes an auto-activate.json config file
+    3. Opens VS Code with the agent's isolated user-data-dir
+    4. The AEOS Activator extension reads the config and auto-starts the chat session
     
     Models (persisted in each agent's state.vscdb):
     - PE: GPT-5.2
@@ -16,16 +17,111 @@
     Which agent to spawn: PE, TL, or SE
 .PARAMETER All
     Spawn all 3 agents
+.PARAMETER Force
+    Skip quota exhaustion check and spawn anyway
 .EXAMPLE
     .\scripts\aeos-spawn.ps1 -Agent PE
     .\scripts\aeos-spawn.ps1 -All
+    .\scripts\aeos-spawn.ps1 -Agent TL -Force
 #>
 param(
     [ValidateSet("PE", "TL", "SE")]
     [string]$Agent,
     
-    [switch]$All
+    [switch]$All,
+    
+    [switch]$Force
 )
+
+# Spawn log for quota exhaustion detection
+$spawnLogPath = Join-Path $PSScriptRoot ".." ".github" "agents" "spawn-log.json"
+
+function Test-QuotaExhaustion {
+    param([string]$Role)
+    
+    if ($Force) { return $false }
+    
+    # Read spawn history
+    $history = @()
+    if (Test-Path $spawnLogPath) {
+        try {
+            $content = Get-Content $spawnLogPath -Raw
+            if (-not [string]::IsNullOrWhiteSpace($content)) {
+                $history = @($content | ConvertFrom-Json)
+            }
+        } catch {
+            $history = @()
+        }
+    }
+    
+    # Check for rapid respawn pattern (3+ spawns in 10 minutes = quota exhaustion)
+    $tenMinutesAgo = (Get-Date).ToUniversalTime().AddMinutes(-10)
+    $recentSpawns = @($history | Where-Object { 
+        $_.role -eq $Role -and 
+        $_.action -eq 'spawn' -and
+        ([DateTime]::Parse($_.ts)) -gt $tenMinutesAgo
+    })
+    
+    if ($recentSpawns.Count -ge 3) {
+        Write-Host ""
+        Write-Host "⚠️  QUOTA EXHAUSTION DETECTED" -ForegroundColor Red
+        Write-Host "   $Role spawned $($recentSpawns.Count) times in last 10 minutes" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "   This pattern indicates model token quota exhaustion." -ForegroundColor Yellow
+        Write-Host "   Spawning again would waste resources." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "   Options:" -ForegroundColor Cyan
+        Write-Host "   1. Wait 30+ minutes for quota to reset" -ForegroundColor White
+        Write-Host "   2. Check your Copilot plan limits" -ForegroundColor White
+        Write-Host "   3. Use -Force to spawn anyway (not recommended)" -ForegroundColor White
+        Write-Host ""
+        
+        # Log the backoff
+        $history += @{
+            ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+            role = $Role
+            action = "backoff-quota"
+        }
+        $logDir = Split-Path $spawnLogPath -Parent
+        if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+        $history | ConvertTo-Json -Depth 3 | Set-Content $spawnLogPath -Encoding utf8
+        
+        return $true
+    }
+    
+    return $false
+}
+
+function Write-SpawnLog {
+    param([string]$Role)
+    
+    $history = @()
+    if (Test-Path $spawnLogPath) {
+        try {
+            $content = Get-Content $spawnLogPath -Raw
+            if (-not [string]::IsNullOrWhiteSpace($content)) {
+                $history = @($content | ConvertFrom-Json)
+            }
+        } catch {
+            $history = @()
+        }
+    }
+    
+    $history += @{
+        ts = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+        role = $Role
+        action = "spawn"
+    }
+    
+    # Keep only last 50 entries
+    if ($history.Count -gt 50) {
+        $history = $history | Select-Object -Last 50
+    }
+    
+    $logDir = Split-Path $spawnLogPath -Parent
+    if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+    $history | ConvertTo-Json -Depth 3 | Set-Content $spawnLogPath -Encoding utf8
+}
 
 # Agent configurations - models are persisted in each user-data-dir's state.vscdb
 $agents = @{
@@ -61,11 +157,19 @@ $agents = @{
 function Spawn-Agent {
     param([string]$Key)
     
+    # Check for quota exhaustion before spawning
+    if (Test-QuotaExhaustion -Role $Key) {
+        return $false
+    }
+    
     $ag = $agents[$Key]
     Write-Host ""
     Write-Host "╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
     Write-Host "║  Spawning: $($ag.Name.PadRight(45))    ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+    
+    # Log this spawn attempt
+    Write-SpawnLog -Role $Key
     
     # CRITICAL: Close existing VS Code window for this agent first!
     # The AEOS Activator extension only runs on VS Code startup (onStartupFinished).
@@ -100,9 +204,16 @@ function Spawn-Agent {
     if (-not (Test-Path $ag.WorkspacePath)) {
         Write-Host "  ✗ Workspace not found: $($ag.WorkspacePath)" -ForegroundColor Red
         if ($Key -eq "SE") {
-            Write-Host "  → Run: .\scripts\spawn-worktree-agent.ps1 first" -ForegroundColor Yellow
+            Write-Host "  → Creating SE worktree..." -ForegroundColor Yellow
+            git worktree add $ag.WorkspacePath origin/staging 2>&1 | Out-Null
+            if (-not (Test-Path $ag.WorkspacePath)) {
+                Write-Host "  ✗ Failed to create worktree" -ForegroundColor Red
+                return $false
+            }
+            Write-Host "  ✓ Created worktree at $($ag.WorkspacePath)" -ForegroundColor Green
+        } else {
+            return $false
         }
-        return $false
     }
     
     # Write the auto-activate config file

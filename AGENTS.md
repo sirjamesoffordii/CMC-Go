@@ -447,8 +447,8 @@ Each agent uses a designated PRIMARY model. Backups only apply after rate limit 
 
 **How it works:**
 
-- `spawn-agent.ps1` modifies VS Code's SQLite state database before launching
-- The `set-copilot-model.ps1` script writes to `chat.currentLanguageModel.panel` key
+- `aeos-spawn.ps1` opens VS Code with isolated user-data-dirs per agent
+- Each agent's model is pre-configured in their user-data-dir's state database
 - **LIMITATION:** VS Code caches the model in memory after startup
 - Only FRESH VS Code instances read from the SQLite database
 - Existing windows ignore SQLite changes until restarted
@@ -459,17 +459,17 @@ VS Code's Copilot extension caches the selected model in memory. The `code chat`
 
 **Workarounds:**
 
-1. **Fresh start:** Close ALL VS Code windows, then run `spawn-agent.ps1` - new window reads from SQLite
+1. **Fresh start:** `aeos-spawn.ps1` now closes existing windows before spawning - this ensures fresh model selection
 2. **Manual selection:** If model is wrong, manually select from the dropdown in chat input
 3. **Agent frontmatter:** Agent files specify `model:` in frontmatter - user must click correct model before sending
 
-**For autonomous AEOS:** The spawn scripts set SQLite, but if other VS Code windows are open, the model may be wrong. Human may need to verify model selection on first spawn.
+**For autonomous AEOS:** Use `aeos-spawn.ps1` which auto-closes existing windows to ensure correct model.
 
 **Rate limit recovery:**
 
 ```powershell
-# If an agent hits rate limits, respawn with backup model
-.\scripts\spawn-agent.ps1 -Agent TL -UseBackup
+# If an agent hits rate limits, wait for quota reset or switch account
+.\scripts\aeos-spawn.ps1 -Agent TL -Force
 ```
 
 All agents run continuously. Tech Lead assigns work via `assignment.json`.
@@ -667,27 +667,55 @@ Agents **MUST** report workflow friction in real-time to the AEOS Improvement is
 
 **Tracking Issue:** `[AEOS] Workflow Improvements` (currently #348)
 
+### Observation Format (REQUIRED)
+
+Every observation **MUST** include:
+
+- **Recommendation Level:** `High` | `Medium` | `Low`
+- **Risk Level:** `High` | `Medium` | `Low`
+
+| Recommendation | Meaning                                             |
+| -------------- | --------------------------------------------------- |
+| High           | Critical blocker, agents cannot proceed effectively |
+| Medium         | Significant friction, slows work but not blocking   |
+| Low            | Nice-to-have improvement, minor convenience         |
+
+| Risk   | Meaning                                               |
+| ------ | ----------------------------------------------------- |
+| High   | Could break agents, coordination, or existing code    |
+| Medium | Moderate side effects possible, needs careful testing |
+| Low    | Safe change, isolated impact                          |
+
 ### How to Report (Copy-Paste Commands)
 
 **Tech Lead:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-tech-lead-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Tech Lead observation:** <problem> → <suggested fix>
+
+**Recommendation:** High|Medium|Low
+**Risk:** High|Medium|Low"
 ```
 
 **Software Engineer:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-software-engineer-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**Software Engineer observation:** <problem> → <suggested fix>
+
+**Recommendation:** High|Medium|Low
+**Risk:** High|Medium|Low"
 ```
 
 **Principal Engineer:**
 
 ```powershell
 $env:GH_CONFIG_DIR = "C:/Users/sirja/.gh-principal-engineer-agent"
-gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>"
+gh issue comment 348 --repo sirjamesoffordii/CMC-Go --body "**PE observation:** <problem> → <suggested fix>
+
+**Recommendation:** High|Medium|Low
+**Risk:** High|Medium|Low"
 ```
 
 ### When to Report
@@ -807,7 +835,7 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 ### Model Selection in AEOS
 
-**Autonomous agents use `spawn-agent.ps1`** which preselects the correct model before opening a new VS Code window. This ensures:
+**Autonomous agents use `aeos-spawn.ps1`** which opens VS Code with isolated user-data-dirs. This ensures:
 
 - PE starts on GPT 5.2
 - TL starts on GPT 5.2
@@ -815,7 +843,7 @@ A worktree may have checked out the main repo to a different branch. The main wo
 
 **Human-activated agents (via `/activate` prompts)** inherit the current window's model. If you use `/activate Tech Lead` in a window configured with a different model, TL will run on that model. This is fine for human use since you can select the model before clicking send.
 
-**Rule:** For autonomous AEOS, always use `spawn-agent.ps1`. For manual testing, use `/activate` prompts.
+**Rule:** For autonomous AEOS, always use `aeos-spawn.ps1`. For manual testing, use `/activate` prompts.
 
 ## Reference
 

@@ -13,7 +13,7 @@
     
 .NOTES
     Run this ONCE during initial AEOS setup.
-    After setup, use spawn-agent.ps1 to start agents.
+    After setup, use aeos-spawn.ps1 to start agents.
 #>
 
 param(

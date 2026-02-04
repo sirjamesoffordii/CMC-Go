@@ -63,7 +63,7 @@ PE (continuous) → monitors, creates issues, spawns TL
 
 - Only 1 of each agent type at a time
 - SE MUST work in worktree (`C:/Dev/CMC-Go-Worktrees/wt-se`)
-- TL spawns SE via `.\scripts\spawn-worktree-agent.ps1` only
+- TL spawns SE via `.\scripts\aeos-spawn.ps1 -Agent SE`
 - Main workspace is for PE/TL coordination only
 
 ## Project invariants (don’t break)

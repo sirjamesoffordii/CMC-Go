@@ -38,8 +38,6 @@ This directory contains scripts for database management, agent automation, data 
 | `git-credential-gh.ps1`      | Agent      | Git credential helper for multi-identity                          |
 | `set-gh-secret.ps1`          | Agent      | Set GitHub repository secrets                                     |
 | `setup-agent-identities.ps1` | Agent      | Configure git identities for agent worktrees                      |
-| `spawn-parallel-agents.ps1`  | Agent      | Spawn multiple VS Code agent sessions                             |
-| `spawn-worktree-agent.ps1`   | Agent      | Spawn Copilot agent in a new worktree                             |
 | `post-merge-evidence.ps1`    | Agent      | Post merge evidence to GitHub issues                              |
 | `populate-db.sql`            | Data       | SQL script to populate database (legacy)                          |
 | `seed-data.sql`              | Data       | Simple SQL seed script (legacy)                                   |
@@ -311,6 +309,7 @@ Cloud agents are disabled (no MCP Memory = drift). Cloud-agent scripts were remo
 - Writes auto-activate.json config for the AEOS Activator extension
 - Uses isolated user-data-dirs for per-agent Copilot rate limits
 - SE is automatically spawned in the worktree at `C:\Dev\CMC-Go-Worktrees\wt-se`
+- **Quota exhaustion detection:** Prevents rapid respawn loops (3+ spawns in 10 min)
 
 #### `aeos-status.ps1`
 
@@ -321,30 +320,6 @@ Full AEOS system status including heartbeat, assignment, worktrees, PRs, and rat
 ```
 
 ---
-
-### Deprecated Scripts
-
-The following scripts are deprecated and should not be used. Use `aeos-spawn.ps1` instead.
-
-#### `spawn-worktree-agent.ps1`
-
-> **DEPRECATED:** Use `aeos-spawn.ps1 -Agent SE` instead. This script does not use auto-activation.
-
-Spawn a Copilot agent session in a new VS Code window with its own worktree.
-
-```powershell
-# DEPRECATED — use instead:
-.\scripts\aeos-spawn.ps1 -Agent SE
-```
-
-#### `spawn-parallel-agents.ps1`
-
-Spawn multiple VS Code windows, each with its own worktree and Copilot chat session.
-
-```powershell
-.\scripts\spawn-parallel-agents.ps1 -Issues 42,43,44
-.\scripts\spawn-parallel-agents.ps1 -Issues 42,43 -Profile "Agent-SWE"
-```
 
 #### `agent-quick.ps1`
 
@@ -478,10 +453,14 @@ node scripts/verify-database.mjs
 pnpm validate:agents
 ```
 
-### Spawn Agent for Issue
+### Spawn Agent
 
 ```powershell
-.\scripts\spawn-worktree-agent.ps1 -IssueNumber 42
+# Spawn any agent (PE, TL, or SE)
+.\scripts\aeos-spawn.ps1 -Agent SE
+
+# Spawn all agents
+.\scripts\aeos-spawn.ps1 -All
 ```
 
 ---
