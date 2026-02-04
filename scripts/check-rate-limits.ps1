@@ -5,6 +5,10 @@
 .DESCRIPTION
   Returns a simple go/wait/stop signal based on current API quota.
   TL should run this before spawning an SE.
+  
+  IMPORTANT: When GraphQL is exhausted but REST is available, agents can
+  still perform REST-based operations (reading issues, checking PRs via gh commands).
+  Only board mutations require GraphQL.
 
 .OUTPUTS
   PSObject with:
@@ -13,10 +17,12 @@
     - core: remaining/limit
     - resetIn: minutes until reset
     - message: human-readable summary
+    - canUseRest: boolean - whether REST operations are available
 
 .EXAMPLE
   $check = .\scripts\check-rate-limits.ps1
   if ($check.status -eq "go") { .\scripts\spawn-worktree-agent.ps1 -IssueNumber 42 }
+  # Even if status is "stop", check canUseRest for read-only operations
 #>
 
 [CmdletBinding()]
@@ -36,14 +42,22 @@ try {
     $resetTime = [DateTimeOffset]::FromUnixTimeSeconds($graphql.reset).LocalDateTime
     $resetIn = [math]::Ceiling(($resetTime - (Get-Date)).TotalMinutes)
     
+    # Check if REST is still available even when GraphQL is exhausted
+    $canUseRest = $core.remaining -gt $CoreMin
+    
     # Determine status
     $status = "go"
     $message = "Rate limits OK"
     
     if ($graphql.remaining -lt $GraphQLMin) {
         if ($graphql.remaining -lt 100) {
-            $status = "stop"
-            $message = "CRITICAL: GraphQL quota exhausted ($($graphql.remaining) remaining). Wait $resetIn min."
+            if ($canUseRest) {
+                $status = "wait"
+                $message = "GraphQL exhausted but REST available. Skip board ops, continue with PRs/issues."
+            } else {
+                $status = "stop"
+                $message = "CRITICAL: Both GraphQL and REST exhausted. Wait $resetIn min."
+            }
         } else {
             $status = "wait"
             $message = "LOW: GraphQL at $($graphql.remaining)/$($graphql.limit). Reset in $resetIn min."
@@ -57,8 +71,11 @@ try {
     [PSCustomObject]@{
         status = $status
         graphql = "$($graphql.remaining)/$($graphql.limit)"
+        graphqlRemaining = $graphql.remaining
         core = "$($core.remaining)/$($core.limit)"
+        coreRemaining = $core.remaining
         resetIn = $resetIn
+        canUseRest = $canUseRest
         message = $message
         timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     }

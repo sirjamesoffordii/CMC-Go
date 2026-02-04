@@ -667,23 +667,27 @@ Before promoting any TL/SE observation to the checklist, PE must verify:
 
 ## Utility Scripts
 
-| Script                          | Purpose                                   | Usage                       |
-| ------------------------------- | ----------------------------------------- | --------------------------- |
-| `check-rate-limits.ps1`         | GitHub API quota check                    | Before expensive operations |
-| `check-ci-status.ps1`           | Human-readable CI status                  | Diagnose build failures     |
-| `verify-merge.ps1`              | Post-merge verification                   | After `gh pr merge`         |
-| `add-board-item.ps1`            | Add issue to board with status            | Prevents limbo items        |
-| `update-heartbeat.ps1`          | Update agent heartbeat                    | Every 3 min in loop         |
-| `read-heartbeat.ps1`            | Safe heartbeat reader                     | Monitor other agents        |
-| `spawn-worktree-agent.ps1`      | Spawn persistent SE in worktree           | TL spawns SE once           |
-| `spawn-agent.ps1`               | Spawn any agent (PE/TL/SE) with model     | Human or agent restart      |
-| `set-copilot-model.ps1`         | Set Copilot model via SQLite              | Before spawning agents      |
-| `cleanup-agent-branches.ps1`    | Clean merged agent branches               | After several PRs merged    |
-| `aeos-status.ps1`               | Full AEOS system status                   | Debugging coordination      |
-| `monitor-agent-rate-limits.ps1` | Cross-agent Copilot rate limit detection  | PE/TL monitors all sessions |
-| `check-copilot-rate-limits.ps1` | Single-agent Copilot quota check          | Quick self-check            |
-| `get-model-status.ps1`          | Get agent's current model (with fallback) | Spawn script uses this      |
-| `record-rate-limit.ps1`         | Record rate limit, trigger fallback       | When 429 detected           |
+| Script                          | Purpose                                     | Usage                       |
+| ------------------------------- | ------------------------------------------- | --------------------------- |
+| `aeos-spawn.ps1`                | Spawn agents with auto model fallback       | Primary spawn method        |
+| `aeos-status.ps1`               | Full AEOS system status                     | Debugging coordination      |
+| `check-rate-limits.ps1`         | GitHub API quota + REST availability        | Before expensive operations |
+| `track-usage.ps1`               | All rate limits (API + model) in one view   | Monitor overall health      |
+| `monitor-agent-rate-limits.ps1` | Auto-detect 429 and trigger model fallback  | PE/TL monitors all sessions |
+| `get-model-status.ps1`          | Get agent's current model (with fallback)   | Spawn script uses this      |
+| `record-rate-limit.ps1`         | Record rate limit, trigger fallback         | Auto-called on 429          |
+| `update-heartbeat.ps1`          | Update agent heartbeat                      | Every 3 min in loop         |
+| `read-heartbeat.ps1`            | Safe heartbeat reader                       | Monitor other agents        |
+| `write-assignment.ps1`          | TL assigns issue to SE                      | TL workflow                 |
+| `claim-assignment.ps1`          | SE claims assigned issue                    | SE workflow                 |
+| `add-board-item.ps1`            | Add issue to board with status              | Prevents limbo items        |
+| `spawn-worktree-agent.ps1`      | Spawn SE in worktree (called by aeos-spawn) | Alternative SE spawn        |
+| `cleanup-agent-branches.ps1`    | Clean merged agent branches                 | After several PRs merged    |
+| `check-ci-status.ps1`           | Human-readable CI status                    | Diagnose build failures     |
+| `verify-merge.ps1`              | Post-merge verification                     | After `gh pr merge`         |
+| `set-copilot-model.ps1`         | Set Copilot model via SQLite                | Before spawning agents      |
+
+**Archived scripts** (in `scripts/_archive/`): `spawn-agent.ps1`, `spawn-with-quota-check.ps1`, `aeos-open-all.ps1`, `setup-agent-models.ps1`, `auth-pe.ps1`, `agent-quick.ps1`, `gh-as.ps1`, `git-grep.ps1`, `agent-login-gh.ps1`
 
 ## Known Issues & Gotchas
 

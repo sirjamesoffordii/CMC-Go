@@ -185,15 +185,63 @@ function Show-Status {
     }
 }
 
+# Map VS Code window to agent role
+function Get-AgentFromWindow {
+    param([string]$WindowName)
+    
+    # Window names from user-data-dir logs
+    # PE: C:\Dev\vscode-agent-pe  → window1 typically
+    # TL: C:\Dev\vscode-agent-tl  → window1 typically
+    # SE: C:\Dev\vscode-agent-se  → window1 typically
+    # We detect by checking which user-data-dir the log came from
+    param([string]$LogPath)
+    
+    if ($LogPath -match "vscode-agent-pe") { return "PE" }
+    if ($LogPath -match "vscode-agent-tl") { return "TL" }
+    if ($LogPath -match "vscode-agent-se") { return "SE" }
+    return $null
+}
+
+function Trigger-ModelFallback {
+    param(
+        [string]$Agent,
+        [string]$ErrorType
+    )
+    
+    if (-not $Agent) { return }
+    
+    $recordScript = Join-Path $PSScriptRoot "record-rate-limit.ps1"
+    if (Test-Path $recordScript) {
+        Write-Host "  → Auto-triggering model fallback for $Agent..." -ForegroundColor Yellow
+        & $recordScript -Agent $Agent -Model "claude-opus-4.5"
+    }
+}
+
 # Main execution
 if ($Once) {
     $allErrors = @()
+    $agentsAffected = @{}
+    
     Get-AllCopilotLogs | ForEach-Object {
-        $allErrors += Scan-LogForErrors -LogPath $_.FullName -LookbackMinutes 5
+        $logErrors = Scan-LogForErrors -LogPath $_.FullName -LookbackMinutes 5
+        foreach ($err in $logErrors) {
+            $err.logPath = $_.FullName
+            $agent = Get-AgentFromWindow -LogPath $_.FullName
+            $err.agent = $agent
+            if ($agent -and $err.type -eq "rate_limit") {
+                $agentsAffected[$agent] = $true
+            }
+        }
+        $allErrors += $logErrors
     }
     
     Show-Status -AllErrors $allErrors
     Write-Alert -Errors $allErrors
+    
+    # Auto-trigger model fallback for rate-limited agents
+    foreach ($agent in $agentsAffected.Keys) {
+        Trigger-ModelFallback -Agent $agent -ErrorType "rate_limit"
+    }
     
     # Return structured object
     return @{
@@ -201,25 +249,45 @@ if ($Once) {
         anyOverloaded = ($allErrors | Where-Object { $_.type -eq "model_overloaded" }).Count -gt 0
         errorCount = $allErrors.Count
         windowsAffected = ($allErrors | Select-Object -ExpandProperty window -Unique)
+        agentsAffected = $agentsAffected.Keys
         errors = $allErrors
     }
 }
 else {
     Write-Host "🔍 Monitoring ALL Copilot windows for rate limits..." -ForegroundColor Cyan
     Write-Host "   Poll interval: ${PollInterval}s | Alert file: $AlertFile" -ForegroundColor Gray
+    Write-Host "   Auto-fallback: ENABLED (triggers record-rate-limit.ps1)" -ForegroundColor Green
     Write-Host "   Press Ctrl+C to stop" -ForegroundColor Gray
     Write-Host ""
+    
+    $triggeredAgents = @{}  # Track which agents we've triggered fallback for (avoid duplicates)
     
     while ($true) {
         $allErrors = @()
         Get-AllCopilotLogs | ForEach-Object {
-            $allErrors += Scan-LogForErrors -LogPath $_.FullName -LookbackMinutes 1
+            $logErrors = Scan-LogForErrors -LogPath $_.FullName -LookbackMinutes 1
+            foreach ($err in $logErrors) {
+                $agent = Get-AgentFromWindow -LogPath $_.FullName
+                $err.agent = $agent
+                
+                # Auto-trigger fallback if not already triggered this session
+                if ($agent -and $err.type -eq "rate_limit" -and -not $triggeredAgents[$agent]) {
+                    Trigger-ModelFallback -Agent $agent -ErrorType "rate_limit"
+                    $triggeredAgents[$agent] = (Get-Date)
+                }
+            }
+            $allErrors += $logErrors
         }
         
         if ($allErrors.Count -gt 0) {
             Show-Status -AllErrors $allErrors -Continuous
             Write-Alert -Errors $allErrors
         }
+        
+        # Clear triggered agents after 15 min (cooldown expired)
+        $cutoff = (Get-Date).AddMinutes(-15)
+        $toRemove = $triggeredAgents.Keys | Where-Object { $triggeredAgents[$_] -lt $cutoff }
+        foreach ($key in $toRemove) { $triggeredAgents.Remove($key) }
         
         Start-Sleep -Seconds $PollInterval
     }
