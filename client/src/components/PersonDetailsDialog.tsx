@@ -1,12 +1,10 @@
-// @ts-nocheck
 import { useState } from "react";
-import { Person, Note, Need } from "../../../drizzle/schema";
+import { Person } from "../../../drizzle/schema";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { Switch } from "./ui/switch";
 import {
   Select,
   SelectContent,
@@ -123,8 +121,7 @@ export function PersonDetailsDialog({
 
   const handleAddNeed = () => {
     if (!person || !needDescription.trim()) return;
-    const amount =
-      needAmount ? parseFloat(needAmount) * 100 : undefined;
+    const amount = needAmount ? parseFloat(needAmount) * 100 : undefined;
     createNeed.mutate({
       personId: person.personId,
       type: needType,
@@ -133,9 +130,6 @@ export function PersonDetailsDialog({
       visibility: needVisibility,
     });
   };
-
-  // PR 2: Check if user can view needs (staff can see DISTRICT_VISIBLE needs)
-  const canViewNeeds = isAuthenticated;
 
   // CRITICAL: All hooks must be called before any conditional returns.
   // React requires hooks to be called in the same order on every render.
@@ -203,11 +197,6 @@ export function PersonDetailsDialog({
                       {new Date(change.changedAt).toLocaleString()}
                     </span>
                   </div>
-                  {change.changedBy && (
-                    <div className="text-gray-500 mt-1">
-                      by {change.changedBy}
-                    </div>
-                  )}
                   {change.note && (
                     <div className="text-gray-600 mt-1 italic">
                       {change.note}
@@ -254,7 +243,6 @@ export function PersonDetailsDialog({
                 <p className="text-sm text-gray-900">{note.content}</p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                   <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                  {note.createdBy && <span>by {note.createdBy}</span>}
                 </div>
               </div>
             ))
@@ -297,7 +285,7 @@ export function PersonDetailsDialog({
                 </Select>
               </div>
               <div>
-                <Label className="text-sm">Amount ($)</Label>
+                <Label className="text-sm">Funds Needed ($)</Label>
                 <Input
                   type="number"
                   step="0.01"

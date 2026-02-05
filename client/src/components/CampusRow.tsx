@@ -4,15 +4,6 @@ import { PersonIcon } from "./PersonIcon";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { MoreVertical, User, Plus, Check, Edit2, Trash2 } from "lucide-react";
-import { Button } from "./ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
 
 interface CampusRowProps {
   campus: Campus;
@@ -71,11 +62,12 @@ export function CampusRow({
     const peopleCopy = [...people];
 
     switch (sortBy) {
-      case "status":
+      case "status": {
         const statusOrder = { Yes: 0, Maybe: 1, No: 2, "Not Invited": 3 };
         return peopleCopy.sort(
           (a, b) => statusOrder[a.status] - statusOrder[b.status]
         );
+      }
 
       case "name":
         return peopleCopy.sort((a, b) => a.name.localeCompare(b.name));
@@ -237,11 +229,18 @@ export function CampusRow({
                 onClick={handleAddPerson}
                 className="flex flex-col items-center w-[50px]"
               >
-                <div className="h-[18px]"></div>{" "}
-                {/* Spacer to match name label height */}
-                <div className="relative">
+                {/* Plus above head - matches district panel add person design */}
+                <div className="relative flex items-center justify-center mb-1 h-[18px] w-full overflow-visible">
+                  <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all hover:bg-slate-100 hover:scale-110">
+                    <Plus className="w-3 h-3 text-black" strokeWidth={1.5} />
+                    <span className="absolute left-full top-1/2 -translate-y-1/2 text-[8px] text-slate-400 whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity z-10">
+                      Quick Add
+                    </span>
+                  </span>
+                </div>
+                <div className="relative inline-block transition-transform hover:scale-105 active:scale-95 -mt-0.5">
                   <User
-                    className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
+                    className="w-10 h-10 text-gray-300 transition-all"
                     strokeWidth={1}
                     fill="none"
                     stroke="currentColor"
@@ -259,10 +258,6 @@ export function CampusRow({
                     style={{
                       filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
                     }}
-                  />
-                  <Plus
-                    className="w-5 h-5 text-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover/add:opacity-100 transition-opacity"
-                    strokeWidth={1.5}
                   />
                 </div>
               </button>
