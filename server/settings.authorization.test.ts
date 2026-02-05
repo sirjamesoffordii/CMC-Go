@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { TRPCError } from "@trpc/server";
+import type { InsertUser } from "../drizzle/schema";
 
 function createTestContext(role: string = "STAFF"): TrpcContext {
   return {
@@ -9,7 +10,7 @@ function createTestContext(role: string = "STAFF"): TrpcContext {
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: role as any,
+      role: role as InsertUser["role"],
       campusId: 1,
       districtId: "TEST_DISTRICT",
       regionId: "TEST_REGION",

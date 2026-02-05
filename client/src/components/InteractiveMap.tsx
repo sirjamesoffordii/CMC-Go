@@ -440,59 +440,6 @@ const getDynamicPosition = (
   return { labelX, labelY, labelDirection: base.labelDirection };
 };
 
-// District centroids for pie chart positioning (based on new SVG)
-const districtCentroids: Record<string, { x: number; y: number }> = {
-  Alabama: { x: 646, y: 376 },
-  Alaska: { x: 110, y: 92 },
-  Appalachian: { x: 707, y: 266 },
-  Arizona: { x: 284, y: 330 },
-  Arkansas: { x: 577, y: 333 },
-  Colorado: { x: 406, y: 274 },
-  Georgia: { x: 698, y: 363 },
-  Hawaii: { x: 122, y: 380 },
-  Illinois: { x: 600, y: 254 },
-  Indiana: { x: 638, y: 257 },
-  Iowa: { x: 560, y: 216 },
-  Kansas: { x: 498, y: 274 },
-  Kentucky: { x: 645, y: 279 },
-  Louisiana: { x: 585, y: 408 },
-  Michigan: { x: 649, y: 166 },
-  Minnesota: { x: 543, y: 133 },
-  Mississippi: { x: 602, y: 373 },
-  Montana: { x: 322, y: 134 },
-  Nebraska: { x: 475, y: 223 },
-  NewJersey: { x: 781, y: 223 },
-  NewMexico: { x: 370, y: 353 },
-  NewYork: { x: 762, y: 178 },
-  NorthCarolina: { x: 742, y: 302 },
-  NorthDakota: { x: 478, y: 126 },
-  "NorthernCal-Nevada": { x: 199, y: 246 },
-  NorthernNewEnglend: { x: 818, y: 122 },
-  NorthernNewEngland: { x: 818, y: 122 },
-  NorthernMissouri: { x: 557, y: 262 },
-  NorthTexas: { x: 501, y: 367 },
-  Ohio: { x: 686, y: 235 },
-  Oklahoma: { x: 494, y: 335 },
-  Oregon: { x: 230, y: 139 },
-  PeninsularFlorida: { x: 725, y: 428 },
-  "Penn-Del": { x: 750, y: 207 },
-  Potomac: { x: 757, y: 254 },
-  SouthCarolina: { x: 719, y: 337 },
-  SouthDakota: { x: 480, y: 185 },
-  SouthernCalifornia: { x: 228, y: 313 },
-  SouthernNewEngland: { x: 806, y: 180 },
-  SouthIdaho: { x: 299, y: 156 },
-  SouthernMissouri: { x: 581, y: 291 },
-  SouthTexas: { x: 503, y: 430 },
-  Tennessee: { x: 650, y: 312 },
-  Utah: { x: 323, y: 239 },
-  Washington: { x: 238, y: 100 },
-  WestFlorida: { x: 666, y: 401 },
-  WestTexas: { x: 422, y: 390 },
-  "Wisconsin-NorthMichigan": { x: 597, y: 154 },
-  Wyoming: { x: 377, y: 195 },
-};
-
 export function InteractiveMap({
   districts,
   selectedDistrictId,
@@ -508,7 +455,6 @@ export function InteractiveMap({
   const isMobile = useIsMobile();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
-  const pieContainerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>("");
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
@@ -521,7 +467,7 @@ export function InteractiveMap({
   const originalViewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
 
   // Filter districts based on scope
-  const filteredDistricts = useMemo(() => {
+  const _filteredDistricts = useMemo(() => {
     if (scopeFilter === "NATIONAL") {
       return districts; // Show all
     }
@@ -676,18 +622,6 @@ export function InteractiveMap({
     !isAuthenticated && allRegionMetrics.length === 0;
   const showOverlayPlaceholder =
     !isAuthenticated && allDistrictMetrics.length === 0;
-  const invitedPercent =
-    nationalTotals.total > 0
-      ? Math.round((nationalTotals.invited / nationalTotals.total) * 100)
-      : 0;
-
-  // Calculate days until CMC
-  const cmcDate = new Date("2026-07-06");
-  const today = new Date();
-  const daysUntilCMC = Math.abs(
-    Math.ceil((cmcDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  );
-
   // Calculate regional totals using aggregate metrics (preferred) or fallback to allPeople
   // Everyone can see regional aggregate numbers
   const regionalTotals = useMemo(() => {
@@ -796,7 +730,7 @@ export function InteractiveMap({
     }
 
     return totals;
-  }, [districts, allPeople, allRegionMetrics, nationalTotals.total]);
+  }, [districts, allPeople, allRegionMetrics]);
 
   // Calculate stats for each district using aggregate metrics (preferred) or fallback to allPeople
   const districtStats = useMemo(() => {
@@ -878,10 +812,6 @@ export function InteractiveMap({
       }
       return next;
     });
-  };
-
-  const clearAllMetrics = () => {
-    setActiveMetrics(new Set());
   };
 
   useEffect(() => {
@@ -1072,8 +1002,6 @@ export function InteractiveMap({
     // Selected district - slightly more prominent
     const SELECTED_FILTER =
       "brightness(1.08) drop-shadow(0 4px 8px rgba(0,0,0,0.18))";
-    const GREYED_OUT_FILTER = "brightness(0.6)";
-    const GREYED_OUT_OPACITY = "1";
 
     // View mode dimming logic
     // Determine which districts should be fully visible based on viewState
@@ -1281,11 +1209,18 @@ export function InteractiveMap({
       if (isHiddenByScope) {
         path.style.cursor = "default";
         path.style.pointerEvents = "none";
+        path.removeAttribute("tabindex");
+        path.removeAttribute("role");
         return; // Skip adding event handlers for hidden districts
       }
 
       path.style.cursor = "pointer";
       path.style.pointerEvents = "auto";
+
+      // A11y: Make district paths keyboard accessible
+      path.setAttribute("tabindex", "0");
+      path.setAttribute("role", "button");
+      path.setAttribute("aria-label", `Select district ${pathId}`);
 
       // Click handler - allow clicking even if district not in database
       const clickHandler = (e: MouseEvent) => {
@@ -1293,6 +1228,16 @@ export function InteractiveMap({
         onDistrictSelect(pathId);
       };
       path.addEventListener("click", clickHandler);
+
+      // A11y: Keyboard handler for Enter/Space activation
+      const keydownHandler = (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          onDistrictSelect(pathId);
+        }
+      };
+      path.addEventListener("keydown", keydownHandler);
 
       // Hover behavior: focus district, highlight region, dim others
       const mouseEnterHandler = (e: MouseEvent) => {
@@ -1390,6 +1335,15 @@ export function InteractiveMap({
 
     // XAN button will be added as a separate element in JSX that transforms with the map
 
+    // Add container-level mouseleave handler to ensure tooltip is cleared
+    // when mouse leaves the SVG area quickly (edge case with fast mouse movement)
+    const containerMouseLeave = () => {
+      setHoveredDistrict(null);
+      setHoveredRegion(null);
+      setTooltipPos(null);
+    };
+    clickSvg.addEventListener("mouseleave", containerMouseLeave);
+
     // Calculate zoom viewBox based on visible districts for scope filtering
     const shouldZoom =
       (scopeFilter === "REGION" && userRegionId) ||
@@ -1484,6 +1438,8 @@ export function InteractiveMap({
 
     // Cleanup
     return () => {
+      // Remove container-level mouseleave handler
+      clickSvg.removeEventListener("mouseleave", containerMouseLeave);
       // Remove all event listeners by cloning paths
       clickPaths.forEach(path => {
         const newPath = path.cloneNode(true);
@@ -1507,6 +1463,8 @@ export function InteractiveMap({
     userRegionId,
     userDistrictId,
     originalViewBox,
+    allCampuses,
+    viewState,
   ]);
 
   // Generate pie chart SVG
@@ -1622,7 +1580,7 @@ export function InteractiveMap({
 
     return (
       <div
-        className="fixed z-50 bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
+        className="fixed z-[100] bg-white backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate"
         style={{
           left: tooltipPos.x + 15,
           top: tooltipPos.y + 15,
@@ -2123,10 +2081,10 @@ export function InteractiveMap({
           </div>
         )}
 
-        {/* Invisible SVG click zones */}
+        {/* Invisible SVG click zones - must be above metric overlays (z-35) */}
         <div
           ref={svgContainerRef}
-          className="absolute inset-0 z-30"
+          className="absolute inset-0 z-[36]"
           style={{
             opacity: 0,
             pointerEvents: "auto",
@@ -2148,6 +2106,12 @@ export function InteractiveMap({
                 onBackgroundClick();
               }
             }
+          }}
+          onMouseLeave={() => {
+            // Clear tooltip and hover states when mouse leaves the map container entirely
+            setHoveredDistrict(null);
+            setHoveredRegion(null);
+            setTooltipPos(null);
           }}
         />
 

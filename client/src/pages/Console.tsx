@@ -1,5 +1,3 @@
-// @ts-nocheck
-// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import {
   Card,
@@ -13,11 +11,14 @@ import { Activity, Database, Terminal, Users, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Console() {
-  const { data: healthData } = trpc.console.health.check.useQuery(undefined, {
-    refetchInterval: 10000, // Refresh every 10 seconds
-  });
+  const { data: healthData } = trpc.system.health.useQuery(
+    { timestamp: Date.now() },
+    {
+      refetchInterval: 10000, // Refresh every 10 seconds
+    }
+  );
 
-  const { data: users } = trpc.console.users.list.useQuery({ limit: 5 });
+  const { data: users } = trpc.admin.users.list.useQuery();
   const { data: logs } = trpc.console.activityLogs.list.useQuery({ limit: 5 });
 
   const quickStats = [
@@ -37,11 +38,10 @@ export default function Console() {
     },
     {
       title: "System Status",
-      value: healthData?.database === "healthy" ? "Healthy" : "Error",
+      value: healthData?.ok ? "Healthy" : "Error",
       icon: Zap,
       href: "/console/monitoring",
-      color:
-        healthData?.database === "healthy" ? "text-green-500" : "text-red-500",
+      color: healthData?.ok ? "text-green-500" : "text-red-500",
     },
     {
       title: "API Endpoints",
@@ -107,9 +107,7 @@ export default function Console() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`h-3 w-3 rounded-full ${
-                      healthData?.database === "healthy"
-                        ? "bg-green-500"
-                        : "bg-red-500"
+                      healthData?.ok ? "bg-green-500" : "bg-red-500"
                     }`}
                   />
                   <div>
@@ -121,12 +119,10 @@ export default function Console() {
                 </div>
                 <span
                   className={`text-sm font-medium ${
-                    healthData?.database === "healthy"
-                      ? "text-green-500"
-                      : "text-red-500"
+                    healthData?.ok ? "text-green-500" : "text-red-500"
                   }`}
                 >
-                  {healthData?.database === "healthy" ? "Healthy" : "Error"}
+                  {healthData?.ok ? "Healthy" : "Error"}
                 </span>
               </div>
 
@@ -161,18 +157,18 @@ export default function Console() {
             <CardContent>
               {users && users.length > 0 ? (
                 <div className="space-y-3">
-                  {users.map(user => (
+                  {users.slice(0, 5).map(user => (
                     <div
                       key={user.id}
                       className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
                     >
                       <div className="flex items-center gap-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                          {user.name?.charAt(0).toUpperCase() || "U"}
+                          {user.fullName?.charAt(0).toUpperCase() || "U"}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-foreground">
-                            {user.name}
+                            {user.fullName}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {user.email}

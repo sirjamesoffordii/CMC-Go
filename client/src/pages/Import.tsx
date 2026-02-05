@@ -12,14 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Upload,
-  FileText,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Download,
-} from "lucide-react";
+import { Upload, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
@@ -39,14 +32,14 @@ interface ImportResult {
 }
 
 export default function Import() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, isAuthenticated: _isAuthenticated, loading } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState("");
   const [importing, setImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
 
   // Check if user is a leader
-  const isLeader =
+  const _isLeader =
     user &&
     [
       "CO_DIRECTOR",
@@ -63,20 +56,6 @@ export default function Import() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
-      </div>
-    );
-  }
-
-  // Authentication disabled - allow all users to import
-  if (false) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Only leaders can import data.</CardDescription>
-          </CardHeader>
-        </Card>
       </div>
     );
   }

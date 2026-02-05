@@ -1,5 +1,3 @@
-// @ts-nocheck
-import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   Card,
@@ -22,18 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Users,
-  Trash2,
-  Shield,
-  Activity,
-  Ban,
-  Globe,
-  Map,
-  MapPin,
-  Eye,
-  Edit,
-} from "lucide-react";
+import { Users, Trash2, Activity, Ban, Globe, Eye, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 // Authorization level constants
@@ -216,7 +203,10 @@ export function UserManagement() {
                       {session.user?.email} • {session.user?.role}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Last seen: {new Date(session.lastSeenAt).toLocaleString()}
+                      Last seen:{" "}
+                      {session.lastSeenAt
+                        ? new Date(session.lastSeenAt).toLocaleString()
+                        : "Unknown"}
                     </p>
                   </div>
                   <Badge variant="default" className="bg-green-500">

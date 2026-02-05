@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useDrop } from "react-dnd";
-import { ReactNode } from "react";
+import { ReactNode, useCallback } from "react";
 
 interface CampusDropZoneProps {
   campusId: string | number;
@@ -19,7 +18,7 @@ export function CampusDropZone({
   children,
   canInteract = true,
 }: CampusDropZoneProps) {
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver: _isOver, canDrop: _canDrop }, drop] = useDrop(
     () => ({
       accept: "person",
       drop: (
@@ -41,8 +40,17 @@ export function CampusDropZone({
     [campusId, onDrop, canInteract]
   );
 
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        drop(node);
+      }
+    },
+    [drop]
+  );
+
   return (
-    <div ref={drop} className="flex-1 transition-colors">
+    <div ref={setDropRef} className="flex-1 transition-colors">
       {children}
     </div>
   );

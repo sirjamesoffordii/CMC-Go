@@ -1,8 +1,7 @@
-// @ts-nocheck
 import { useDrop, useDrag } from "react-dnd";
 import { User, Plus, Edit2 } from "lucide-react";
 import { Person } from "../../../drizzle/schema";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { Input } from "./ui/input";
@@ -39,15 +38,6 @@ interface DistrictDirectorDropZoneProps {
   maskIdentity?: boolean;
 }
 
-interface Need {
-  id: number;
-  personId: string;
-  type: string;
-  description: string;
-  amount?: number | null;
-  isActive: boolean;
-}
-
 export function DistrictDirectorDropZone({
   person,
   onDrop,
@@ -59,7 +49,7 @@ export function DistrictDirectorDropZone({
   onQuickAddNameChange,
   onQuickAddSubmit,
   onQuickAddCancel,
-  onQuickAddClick,
+  onQuickAddClick: _onQuickAddClick,
   quickAddInputRef,
   districtId = null,
   canInteract = true,
@@ -79,7 +69,7 @@ export function DistrictDirectorDropZone({
   );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
-  const [{ isOver, canDrop }, drop] = useDrop(
+  const [{ isOver: _isOver, canDrop: _canDrop }, drop] = useDrop(
     () => ({
       accept: "person",
       drop: (item: { personId: string; campusId: string | number }) => {
@@ -109,6 +99,16 @@ export function DistrictDirectorDropZone({
       }),
     }),
     [person, canInteract]
+  );
+
+  // Callback refs for react-dnd
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        drop(node);
+      }
+    },
+    [drop]
   );
 
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
@@ -144,7 +144,7 @@ export function DistrictDirectorDropZone({
     // Show add button when no district director (only in interactive mode)
     return (
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
@@ -158,7 +158,7 @@ export function DistrictDirectorDropZone({
             className="flex flex-col items-center w-[60px]"
           >
             {/* Plus sign in name position - clickable for quick add */}
-            <div className="relative flex items-center justify-center mb-1">
+            <div className="relative flex items-center justify-center mb-1 overflow-visible">
               {quickAddMode ? (
                 <div className="relative">
                   <Input
@@ -180,34 +180,54 @@ export function DistrictDirectorDropZone({
                     className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
                     autoFocus
                     spellCheck={true}
-                    autoComplete="name"
+                    autoComplete="off"
                   />
                   <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
                     Quick Add
                   </div>
                 </div>
               ) : (
-                <Plus
-                  className="w-3 h-3 text-black opacity-0 group-hover/add:opacity-100 transition-all group-hover/add:scale-110 cursor-pointer"
-                  strokeWidth={1.5}
-                  onClick={e => {
-                    e.stopPropagation();
-                    // This will be handled by parent
-                  }}
-                />
+                <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110">
+                  <Plus
+                    className="w-3 h-3 text-black"
+                    strokeWidth={1.5}
+                    onClick={e => {
+                      e.stopPropagation();
+                      // This will be handled by parent
+                    }}
+                  />
+                  <span className="absolute left-full top-1/2 -translate-y-1/2 text-[8px] text-slate-400 whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity z-10">
+                    Quick Add
+                  </span>
+                </span>
               )}
             </div>
-            {/* Icon - solid */}
-            <div className="relative">
+            {/* Icon - outline User only; plus is above head in name position */}
+            <div className="relative inline-block transition-transform hover:scale-105 active:scale-95">
               <User
-                className="w-10 h-10 text-gray-300 transition-all group-hover/add:scale-110 active:scale-95"
-                strokeWidth={1.5}
+                className="w-10 h-10 text-gray-300 transition-all"
+                strokeWidth={1}
+                fill="none"
+                stroke="currentColor"
+              />
+              <User
+                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                strokeWidth={1}
+                fill="none"
+                stroke="currentColor"
+              />
+              <User
+                className="w-10 h-10 text-gray-400 absolute top-0 left-0 opacity-0 group-hover/add:opacity-100 transition-all pointer-events-none"
+                strokeWidth={0}
                 fill="currentColor"
+                style={{
+                  filter: "drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1))",
+                }}
               />
             </div>
           </button>
           {/* Label - Absolutely positioned, shown on hover */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             Add
           </div>
         </div>
@@ -227,7 +247,7 @@ export function DistrictDirectorDropZone({
   return (
     <>
       <div
-        ref={drop}
+        ref={setDropRef}
         className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
       >
         {/* Name Label with Edit Button */}
@@ -238,22 +258,24 @@ export function DistrictDirectorDropZone({
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
         >
-          <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-            {maskIdentity ? "\u00A0" : truncatedName}
+          <div className="relative inline-flex items-center justify-center">
+            <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+              {maskIdentity ? "\u00A0" : truncatedName}
+            </div>
+            {canInteract && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  onEdit("district", person);
+                }}
+                onMouseDown={e => e.stopPropagation()}
+                className="absolute left-full top-0 -translate-y-0.5 ml-1.5 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
+                title="Edit person"
+              >
+                <Edit2 className="w-2.5 h-2.5 text-slate-500" />
+              </button>
+            )}
           </div>
-          {canInteract && (
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                onEdit("district", person);
-              }}
-              onMouseDown={e => e.stopPropagation()}
-              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-10"
-              title="Edit person"
-            >
-              <Edit2 className="w-2.5 h-2.5 text-slate-500" />
-            </button>
-          )}
         </div>
 
         <div
@@ -295,9 +317,9 @@ export function DistrictDirectorDropZone({
 
           {/* Role Label - Absolutely positioned, shown on hover */}
           {!maskIdentity && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
               {(() => {
-                // For XAN, always show "National Director" even if primaryRole is "District Director"
+                // For XAN, first person in header is always National Director
                 if (districtId === "XAN") {
                   return person.primaryRole === "District Director" ||
                     !person.primaryRole

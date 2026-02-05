@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
@@ -6,23 +6,13 @@ import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
 import { PeoplePanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
-import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { MobileDrawer } from "@/components/MobileDrawer";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
 import { Person } from "../../../drizzle/schema";
 import {
   Calendar,
   Pencil,
   Share2,
-  Copy,
-  Mail,
-  MessageCircle,
-  Check,
   Upload,
   Menu,
   LogIn,
@@ -167,7 +157,8 @@ export default function Home() {
   const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingPeople, setIsResizingPeople] = useState(false);
-  const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
+  // State maintained for future header image display feature
+  const [_headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
   const [headerBgColor, setHeaderBgColor] = useState<string>("#1a1a1a");
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>("");
@@ -183,8 +174,7 @@ export default function Home() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [tableButtonHovered, setTableButtonHovered] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -242,15 +232,16 @@ export default function Home() {
     retry: false, // Don't retry on auth errors
   });
 
-  const districts = districtsQuery.data || [];
-  const allCampuses = campusesQuery.data || [];
-  const allPeople = peopleQuery.data || [];
-
-  const { data: metrics } = trpc.metrics.get.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false, // Don't retry on auth errors
-  });
+  // Wrap derived data in useMemo to prevent hook dependency warnings
+  const districts = useMemo(
+    () => districtsQuery.data || [],
+    [districtsQuery.data]
+  );
+  const allCampuses = useMemo(
+    () => campusesQuery.data || [],
+    [campusesQuery.data]
+  );
+  const allPeople = useMemo(() => peopleQuery.data || [], [peopleQuery.data]);
 
   // Fetch saved header image URL (fresh presigned URL generated on each request)
   const { data: savedHeaderImage } = trpc.settings.getHeaderImageUrl.useQuery();
@@ -290,22 +281,11 @@ export default function Home() {
     setHeaderBgColor(backgroundColor);
     setCropModalOpen(false);
 
-    console.log(
-      "[handleCropComplete] Starting upload, blob size:",
-      croppedImageBlob.size
-    );
-
     // Convert blob to base64 and upload to S3
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
-      console.log(
-        "[handleCropComplete] Base64 data length:",
-        base64Data.length
-      );
-
       const fileName = selectedFileName || `header-${Date.now()}.jpg`;
-      console.log("[handleCropComplete] Uploading with fileName:", fileName);
 
       uploadHeaderImage.mutate(
         {
@@ -314,9 +294,6 @@ export default function Home() {
           backgroundColor: backgroundColor,
         },
         {
-          onSuccess: data => {
-            console.log("[handleCropComplete] Upload successful:", data.url);
-          },
           onError: error => {
             console.error("[handleCropComplete] Upload failed:", error);
           },
@@ -343,53 +320,16 @@ export default function Home() {
     },
   });
 
-  // Handle logo upload
-  const handleLogoUpload = async (file: File) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64Data = reader.result as string;
-      // Upload logo using the same pattern as header image
-      uploadHeaderImage.mutate(
-        {
-          imageData: base64Data,
-          fileName: `logo-${Date.now()}-${file.name}`,
-          backgroundColor: "",
-        },
-        {
-          onSuccess: data => {
-            setHeaderLogoUrl(data.url);
-            // Save logo URL to settings
-            updateSetting.mutate({ key: "headerLogoUrl", value: data.url });
-          },
-        }
-      );
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Handle background color change
-  const handleBgColorChange = (color: string) => {
-    setHeaderBgColor(color);
-    updateSetting.mutate({ key: "headerBgColor", value: color });
-  };
-
   // Set header image from database on load (fresh presigned URL)
   useEffect(() => {
-    console.log(
-      "[Header] savedHeaderImage raw:",
-      JSON.stringify(savedHeaderImage)
-    );
     if (savedHeaderImage && savedHeaderImage.url) {
-      console.log("[Header] Setting header image URL:", savedHeaderImage.url);
       setHeaderImageUrl(savedHeaderImage.url);
     }
   }, [savedHeaderImage]);
 
   // Set background color from database on load
   useEffect(() => {
-    console.log("[Header] savedBgColor raw:", JSON.stringify(savedBgColor));
     if (savedBgColor && savedBgColor.value) {
-      console.log("[Header] Setting bg color:", savedBgColor.value);
       setHeaderBgColor(savedBgColor.value);
     }
   }, [savedBgColor]);
@@ -401,19 +341,19 @@ export default function Home() {
     }
   }, [savedHeaderHeight]);
 
+  // Stable reference to updateSetting.mutate for useEffect dependencies
+  const updateSettingMutate = useCallback(
+    (params: { key: string; value: string }) => updateSetting.mutate(params),
+    [updateSetting]
+  );
+
   // Clear "National Director" from saved header text if it exists (legacy default)
   useEffect(() => {
     if (savedHeaderText?.value === "National Director") {
       setHeaderText("");
-      updateSetting.mutate({ key: "headerText", value: "" });
+      updateSettingMutate({ key: "headerText", value: "" });
     }
-  }, [savedHeaderText]);
-
-  // Header resize handlers
-  const handleHeaderResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizingHeader(true);
-  };
+  }, [savedHeaderText, updateSettingMutate]);
 
   useEffect(() => {
     if (!isResizingHeader) return;
@@ -439,7 +379,7 @@ export default function Home() {
           }
         );
         // Use a simple approach - just save via the mutation pattern
-      } catch (_e) {
+      } catch {
         console.error("Failed to save header height");
       }
     };
@@ -525,80 +465,71 @@ export default function Home() {
     updateURLWithViewState(viewState);
   }, [viewState]);
 
-  const handleViewStateChange = (newViewState: ViewState) => {
-    setViewState(newViewState);
-    // Keep selectedDistrictId consistent with URL/view state
-    if (newViewState.districtId !== selectedDistrictId) {
-      setSelectedDistrictId(newViewState.districtId);
-    }
-  };
-
   // District selection: Updates selectedDistrictId and viewState.regionId
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
-  const handleDistrictSelect = (districtId: string) => {
-    setSelectedDistrictId(districtId);
+  // Memoized to prevent InteractiveMap useEffect from re-running on every render.
+  const handleDistrictSelect = useCallback(
+    (districtId: string) => {
+      setSelectedDistrictId(districtId);
 
-    const selectedDistrict = districts.find(d => d.id === districtId);
-    if (selectedDistrict) {
-      // Extract region: database first, then fallback map
-      const regionId =
-        selectedDistrict.region ||
-        extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-    } else {
-      // If district not in database, still update viewState but use fallback region
-      const regionId = extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-    }
-  };
+      const selectedDistrict = districts.find(d => d.id === districtId);
+      if (selectedDistrict) {
+        // Extract region: database first, then fallback map
+        const regionId =
+          selectedDistrict.region ||
+          extractRegionForViewState(districtId, districts);
+        const newViewState: ViewState = {
+          mode: "district",
+          districtId: districtId,
+          regionId: regionId,
+          campusId: null,
+          panelOpen: true,
+        };
+        setViewState(newViewState);
+      } else {
+        // If district not in database, still update viewState but use fallback region
+        const regionId = extractRegionForViewState(districtId, districts);
+        const newViewState: ViewState = {
+          mode: "district",
+          districtId: districtId,
+          regionId: regionId,
+          campusId: null,
+          panelOpen: true,
+        };
+        setViewState(newViewState);
+      }
+    },
+    [districts]
+  );
 
-  // Region selection: Sets ViewMode to "region", clears district/campus scope
-  const handleRegionSelect = (regionId: string) => {
-    const newViewState: ViewState = {
-      ...viewState,
-      mode: "region",
-      regionId,
+  // Memoized background click handler for InteractiveMap
+  const handleBackgroundClick = useCallback(() => {
+    setSelectedDistrictId(null);
+    setPeoplePanelOpen(false);
+    setNationalPanelOpen(false);
+    setViewState(prev => ({
+      ...prev,
       districtId: null,
+      regionId: null,
       campusId: null,
       panelOpen: false,
-    };
-    setViewState(newViewState);
-    setSelectedDistrictId(null);
-  };
+    }));
+  }, []);
 
-  // Campus selection: Updates viewState with campus, district, and region
-  // Region extracted from district (database or DISTRICT_REGION_MAP fallback)
-  const handleCampusSelect = (campusId: number) => {
-    const campus = allCampuses.find(c => c.id === campusId);
-    if (campus && campus.districtId) {
-      const regionId = extractRegionForViewState(campus.districtId, districts);
-      const newViewState: ViewState = {
-        ...viewState,
-        mode: "campus",
-        campusId,
-        districtId: campus.districtId,
-        regionId: regionId,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-      setSelectedDistrictId(campus.districtId);
-    }
-  };
+  // Memoized national (XAN) click handler for InteractiveMap
+  const handleNationalClick = useCallback(() => {
+    setSelectedDistrictId("XAN");
+    setNationalPanelOpen(false);
+    setPeoplePanelOpen(false);
+    setViewState({
+      mode: "district",
+      districtId: "XAN",
+      regionId: "NATIONAL",
+      campusId: null,
+      panelOpen: true,
+    });
+  }, []);
 
   const handlePersonStatusChange = (
     personId: string,
@@ -765,59 +696,13 @@ export default function Home() {
     }
   }, [isResizingDistrict, isResizingPeople]);
 
-  // Diagnostic: Log if queries are failing
-  if (districtsQuery.isError || campusesQuery.isError || peopleQuery.isError) {
-    console.error("[Home] Query errors:", {
-      districts: districtsQuery.error,
-      campuses: campusesQuery.error,
-      people: peopleQuery.error,
-    });
-  }
-
-  // Safety check: ensure component always returns something
-  if (!districtsQuery && !campusesQuery && !peopleQuery) {
-    console.warn("[Home] Queries not initialized yet");
-  }
-
-  // Debug: Log data when it loads
-  useEffect(() => {
-    if (districtsQuery.data) {
-      console.log(
-        "[Home] Districts loaded:",
-        districtsQuery.data.length,
-        districtsQuery.data.slice(0, 5).map(d => d.id)
-      );
-    }
-    if (peopleQuery.data) {
-      console.log("[Home] People loaded:", peopleQuery.data.length);
-      const peopleWithDistricts = peopleQuery.data.filter(
-        p => p.primaryDistrictId
-      );
-      console.log("[Home] People with districts:", peopleWithDistricts.length);
-      if (peopleWithDistricts.length > 0) {
-        const districtCounts = peopleWithDistricts.reduce(
-          (acc, p) => {
-            acc[p.primaryDistrictId!] = (acc[p.primaryDistrictId!] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-        console.log(
-          "[Home] People by district (top 5):",
-          Object.entries(districtCounts).slice(0, 5)
-        );
-      }
-    }
-    if (campusesQuery.data) {
-      console.log("[Home] Campuses loaded:", campusesQuery.data.length);
-    }
-  }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
+  // Query errors are tracked via Sentry and error boundaries
 
   return (
     <div className="min-h-screen bg-slate-50 paper-texture">
-      {/* Header - Chi Alpha Toolbar Style */}
+      {/* Header - Chi Alpha Toolbar Style (high z so dropdowns sit above map/metrics) */}
       <div
-        className="relative flex items-center px-2 sm:px-4 group flex-shrink-0"
+        className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "48px" : `${headerHeight}px`,
           minHeight: isMobile ? "48px" : "52px",
@@ -929,10 +814,10 @@ export default function Home() {
             {menuOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-[100]"
+                  className="fixed inset-0 z-[205]"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
+                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[206] py-1 max-h-[80vh] overflow-y-auto">
                   {!isAuthenticated && (
                     <>
                       <button
@@ -1219,33 +1104,8 @@ export default function Home() {
                   ? scopeSelectedDistrict
                   : user?.districtId
               }
-              onBackgroundClick={() => {
-                setSelectedDistrictId(null);
-                setPeoplePanelOpen(false);
-                setNationalPanelOpen(false);
-                setViewState({
-                  ...viewState,
-                  districtId: null,
-                  regionId: null,
-                  campusId: null,
-                  panelOpen: false,
-                });
-              }}
-              onNationalClick={() => {
-                // Deliverable 2: Treat XAN as a real district with full DistrictPanel parity.
-                // Candidate for View Modes refactor: XAN hardcoded region "NATIONAL" may need
-                // special handling in region-scoped views.
-                setSelectedDistrictId("XAN");
-                setNationalPanelOpen(false);
-                setPeoplePanelOpen(false);
-                setViewState({
-                  mode: "district",
-                  districtId: "XAN",
-                  regionId: "NATIONAL",
-                  campusId: null,
-                  panelOpen: true,
-                });
-              }}
+              onBackgroundClick={handleBackgroundClick}
+              onNationalClick={handleNationalClick}
             />
           </div>
         </div>
@@ -1254,9 +1114,9 @@ export default function Home() {
         {!isMobile && (
           <div
             className={[
-              "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
+              "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col min-w-0",
               !isResizingPeople
-                ? "transition-all duration-300 ease-in-out"
+                ? "transition-[width] duration-500 ease-in-out"
                 : "",
             ]
               .filter(Boolean)
@@ -1267,16 +1127,17 @@ export default function Home() {
               overflow: "hidden",
             }}
           >
-            {peoplePanelOpen && (
-              <>
-                {/* Resize Handle */}
-                <div
-                  className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
-                  onMouseDown={handlePeopleMouseDown}
-                />
+            {/* Content always mounted so slide-out/slide-back animation is smooth */}
+            <>
+              {/* Resize Handle - only interactive when open */}
+              <div
+                className={`absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10 ${peoplePanelOpen ? "" : "pointer-events-none"}`}
+                onMouseDown={handlePeopleMouseDown}
+              />
+              <div className="flex-1 flex flex-col min-w-0 w-full overflow-hidden h-full">
                 <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
-              </>
-            )}
+              </div>
+            </>
           </div>
         )}
 
@@ -1295,10 +1156,33 @@ export default function Home() {
 
       {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile */}
       {!peoplePanelOpen && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {isMobile ? (
-              /* Mobile: FAB-style button in bottom right */
+        <>
+          {isMobile ? (
+            /* Mobile: FAB-style button in bottom right */
+            <button
+              onClick={() => {
+                if (!user) {
+                  setLoginModalOpen(true);
+                  return;
+                }
+                setPeoplePanelOpen(true);
+              }}
+              title={!user ? "Please log in to view table" : undefined}
+              className={`
+                fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
+                ${!user ? "opacity-70" : ""}
+              `}
+            >
+              <span className="whitespace-nowrap select-none">Table</span>
+            </button>
+          ) : (
+            /* Desktop: Slide-out tab on right edge */
+            <div
+              className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16"
+              style={{ right: 0 }}
+              onMouseEnter={() => setTableButtonHovered(true)}
+              onMouseLeave={() => setTableButtonHovered(false)}
+            >
               <button
                 onClick={() => {
                   if (!user) {
@@ -1308,44 +1192,22 @@ export default function Home() {
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
+                  relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
                   ${!user ? "opacity-70" : ""}
                 `}
               >
-                <span className="whitespace-nowrap select-none">Table</span>
+                <span className="inline-block whitespace-nowrap select-none">
+                  Table
+                </span>
               </button>
-            ) : (
-              /* Desktop: Slide-out tab on right edge */
-              <div
-                className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16"
-                style={{ right: 0 }}
-              >
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      setLoginModalOpen(true);
-                      return;
-                    }
-                    setPeoplePanelOpen(true);
-                  }}
-                  className={`
-                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
-                    ${!user ? "opacity-70" : ""}
-                  `}
-                >
-                  <span className="inline-block whitespace-nowrap select-none">
-                    Table
-                  </span>
-                </button>
-              </div>
-            )}
-          </TooltipTrigger>
-          {!user && (
-            <TooltipContent side="left">
-              <p>Please log in to view table</p>
-            </TooltipContent>
+              {!user && tableButtonHovered && (
+                <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap pointer-events-none">
+                  Please log in to view table
+                </div>
+              )}
+            </div>
           )}
-        </Tooltip>
+        </>
       )}
 
       <PersonDetailsDialog

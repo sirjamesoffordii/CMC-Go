@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from "vitest";
 import { TRPCError } from "@trpc/server";
+import type { InsertUser } from "../drizzle/schema";
 import {
   canAccessPerson,
   canEditCampus,
@@ -498,7 +499,7 @@ describe("canEditCampus", () => {
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: role as any,
+      role: role as InsertUser["role"],
       campusId: 1,
       districtId: "DIST-001",
       regionId: "REG-001",
@@ -589,6 +590,7 @@ describe("canEditCampus", () => {
     });
 
     it("null user returns false", () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Testing null edge case
       expect(canEditCampus(null as any, 1)).toBe(false);
     });
   });
@@ -611,7 +613,7 @@ describe("canEditDistrict", () => {
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: role as any,
+      role: role as InsertUser["role"],
       campusId: 1,
       districtId: "DIST-001",
       regionId: "REG-001",
@@ -697,7 +699,7 @@ describe("canEditRegion", () => {
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: role as any,
+      role: role as InsertUser["role"],
       campusId: 1,
       districtId: "DIST-001",
       regionId: "REG-001",
@@ -774,7 +776,7 @@ describe("canEditNational", () => {
       id: 1,
       fullName: "Test User",
       email: "test@example.com",
-      role: role as any,
+      role: role as InsertUser["role"],
       campusId: 1,
       districtId: "DIST-001",
       regionId: "REG-001",

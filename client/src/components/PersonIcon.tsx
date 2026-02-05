@@ -25,7 +25,8 @@ const STATUS_COLORS = {
   "Not Invited": "text-slate-500",
 };
 
-interface Need {
+// Interface kept for type reference
+interface _Need {
   id: number;
   personId: string;
   type: string;
@@ -37,10 +38,10 @@ interface Need {
 export function PersonIcon({
   person,
   onStatusChange,
-  onClick,
+  onClick: _onClick,
   onEdit,
 }: PersonIconProps) {
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
@@ -130,39 +131,38 @@ export function PersonIcon({
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
         >
-          <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-            {capitalizedFirstName}
+          <div className="relative inline-flex items-center justify-center">
+            <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+              {capitalizedFirstName}
+            </div>
+            {onEdit && (
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onEdit(person);
+                }}
+                onMouseDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onDragStart={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                className="absolute left-full top-0 -translate-y-0.5 ml-1.5 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
+                title="Edit person"
+                type="button"
+                draggable={false}
+              >
+                <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
+              </button>
+            )}
           </div>
-          {onEdit && (
-            <button
-              onClick={e => {
-                e.stopPropagation();
-                e.preventDefault();
-                console.log("Edit button clicked in PersonIcon", {
-                  personId: person.personId,
-                });
-                onEdit(person);
-              }}
-              onMouseDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onPointerDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onDragStart={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
-              title="Edit person"
-              type="button"
-              draggable={false}
-            >
-              <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
-            </button>
-          )}
         </div>
 
         <div className="relative">
@@ -194,7 +194,7 @@ export function PersonIcon({
 
           {/* Role Label - Hidden until hover */}
           {person.primaryRole && (
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
               {person.primaryRole}
             </div>
           )}

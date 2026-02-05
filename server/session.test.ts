@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Request, Response } from "express";
 import { COOKIE_NAME } from "@shared/const";
 import {
@@ -10,6 +10,9 @@ import {
   clearSessionCookie,
 } from "./_core/session";
 
+// Extended request type for tests that need to modify cookies
+type TestRequest = Request & { cookies?: Record<string, string> };
+
 // Mock request factory
 function createMockRequest(
   overrides: Partial<{
@@ -18,13 +21,13 @@ function createMockRequest(
     cookies: Record<string, string>;
     hostname: string;
   }> = {}
-): Request {
+): TestRequest {
   return {
     protocol: overrides.protocol ?? "https",
     headers: overrides.headers ?? {},
     cookies: overrides.cookies ?? {},
     hostname: overrides.hostname ?? "example.com",
-  } as unknown as Request;
+  } as unknown as TestRequest;
 }
 
 // Mock response factory

@@ -11,7 +11,6 @@ import {
   Italic,
   Underline as UnderlineIcon,
   Pencil,
-  X,
   Upload,
   Type,
   ChevronDown,
@@ -88,9 +87,9 @@ export function HeaderEditorModal({
   const [logoPreview, setLogoPreview] = useState<string | null>(initialLogoUrl);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [bgColor, setBgColor] = useState(initialBgColor || "#000000");
-  const [currentFontFamily, setCurrentFontFamily] =
-    useState("Inter, sans-serif");
-  const [currentFontSize, setCurrentFontSize] = useState("18px");
+  // State values unused but setters needed for dropdown callbacks
+  const [, setCurrentFontFamily] = useState("Inter, sans-serif");
+  const [, setCurrentFontSize] = useState("18px");
 
   const editor = useEditor({
     extensions: [StarterKit, Underline, TextStyle, FontFamily, Color],
@@ -186,7 +185,7 @@ export function HeaderEditorModal({
                         (e.target as HTMLImageElement).src = "/xa-logo.png";
                       }}
                       onLoad={() => {
-                        console.log("Logo preview loaded successfully");
+                        // removed debug log
                       }}
                     />
                   ) : (
@@ -364,7 +363,6 @@ export function HeaderEditorModal({
                       key={size.value}
                       onClick={() => {
                         // Apply font size by wrapping in span with style
-                        const content = editor?.getHTML() || "";
                         const text = editor?.getText() || "";
                         editor?.commands.setContent(
                           `<p style="font-size: ${size.value}; color: ${textColor};">${text}</p>`

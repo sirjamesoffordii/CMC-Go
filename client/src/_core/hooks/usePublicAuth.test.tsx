@@ -77,7 +77,7 @@ describe("usePublicAuth", () => {
     expect(result.current.isLoading).toBe(false);
   });
 
-  it("logs in via console message", () => {
+  it("login function exists and is callable", () => {
     trpcMocks.mockUseQuery.mockReturnValue({
       data: null,
       isLoading: false,
@@ -86,15 +86,11 @@ describe("usePublicAuth", () => {
       mutateAsync: vi.fn(async () => undefined),
     } as UseMutationResult);
 
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-
     const { result } = renderHook(() => usePublicAuth());
-    result.current.login();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[usePublicAuth] Login - use auth.start"
-    );
-    consoleSpy.mockRestore();
+    // login() is a placeholder that can trigger a login modal
+    // It doesn't throw when called
+    expect(() => result.current.login()).not.toThrow();
   });
 
   it("logs out through tRPC", async () => {

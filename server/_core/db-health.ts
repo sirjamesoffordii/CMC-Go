@@ -1,11 +1,20 @@
 import { getDb, getPool } from "../db";
 import { sql } from "drizzle-orm";
 
+// Result types for SQL queries
+interface CountResult {
+  count: number;
+}
+
+interface DbNameResult {
+  db_name: string;
+}
+
 /**
  * Helper to extract rows from mysql2 result format
  * mysql2 returns [rows, fields] tuple, but drizzle may wrap it differently
  */
-function asRows(result: any): any[] {
+function asRows(result: unknown): unknown[] {
   // If it's already an array of rows
   if (Array.isArray(result) && result.length > 0 && !Array.isArray(result[0])) {
     return result;
@@ -19,8 +28,13 @@ function asRows(result: any): any[] {
     return result[0];
   }
   // If it's an object with rows property
-  if (result && Array.isArray(result.rows)) {
-    return result.rows;
+  if (
+    result &&
+    typeof result === "object" &&
+    "rows" in result &&
+    Array.isArray((result as { rows: unknown[] }).rows)
+  ) {
+    return (result as { rows: unknown[] }).rows;
   }
   // If it's wrapped in another array
   if (
@@ -156,7 +170,7 @@ export interface TableInfo {
   columnCount?: number;
   rowCount?: number;
   columns?: string[];
-  sampleRow?: Record<string, any>;
+  sampleRow?: Record<string, unknown>;
 }
 
 export interface DbHealthCheckResult {
@@ -183,8 +197,8 @@ async function tableExists(tableName: string): Promise<boolean> {
     `);
 
     const rows = asRows(result);
-    return rows.length > 0 && (rows[0] as any).count > 0;
-  } catch (_error) {
+    return rows.length > 0 && (rows[0] as CountResult).count > 0;
+  } catch {
     return false;
   }
 }
@@ -216,7 +230,10 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
 
     const columnRows = asRows(columnsResult);
     const columns = columnRows.map(
-      (row: any) => row.column_name || row.COLUMN_NAME || ""
+      row =>
+        (row as Record<string, string>).column_name ||
+        (row as Record<string, string>).COLUMN_NAME ||
+        ""
     );
 
     // Get row count - use pool directly for dynamic table names
@@ -230,17 +247,17 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
     );
     const rowCount =
       Array.isArray(countResult) && countResult.length > 0
-        ? (countResult[0] as any).count
+        ? (countResult[0] as CountResult).count
         : 0;
 
     // Get a sample row (if any exist)
-    let sampleRow: Record<string, any> | undefined;
+    let sampleRow: Record<string, unknown> | undefined;
     if (rowCount > 0) {
       const [sampleResult] = await pool.execute(
         `SELECT * FROM \`${tableName}\` LIMIT 1`
       );
       if (Array.isArray(sampleResult) && sampleResult.length > 0) {
-        sampleRow = sampleResult[0] as Record<string, any>;
+        sampleRow = sampleResult[0] as Record<string, unknown>;
       }
     }
 
@@ -251,7 +268,7 @@ async function getTableInfo(tableName: string): Promise<TableInfo> {
       columns,
       sampleRow,
     };
-  } catch (_error) {
+  } catch {
     return {
       exists: true,
       columnCount: undefined,
@@ -290,16 +307,17 @@ async function verifyCriticalColumns(
     `);
 
     const columnRows = asRows(columnsResult);
-    const existingColumns = columnRows.map(
-      (row: any) => row.column_name || row.COLUMN_NAME || ""
-    );
+    const existingColumns = columnRows.map(row => {
+      const r = row as { column_name?: string; COLUMN_NAME?: string };
+      return r.column_name || r.COLUMN_NAME || "";
+    });
 
     for (const col of requiredColumns) {
       if (!existingColumns.includes(col)) {
         missing.push(col);
       }
     }
-  } catch (_error) {
+  } catch {
     // If we can't check, assume all are missing
     return requiredColumns;
   }
@@ -354,7 +372,8 @@ export async function checkDbHealth(): Promise<DbHealthCheckResult> {
     try {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
-      databaseName = dbRows.length > 0 ? (dbRows[0] as any).db_name : null;
+      databaseName =
+        dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : null;
 
       if (!databaseName) {
         errors.push(
@@ -555,7 +574,8 @@ export async function startupDbHealthCheck(): Promise<void> {
     if (db) {
       const dbResult = await db.execute(sql`SELECT DATABASE() as db_name`);
       const dbRows = asRows(dbResult);
-      const dbName = dbRows.length > 0 ? (dbRows[0] as any).db_name : "unknown";
+      const dbName =
+        dbRows.length > 0 ? (dbRows[0] as DbNameResult).db_name : "unknown";
       console.log(`[DB Health] Database: ${dbName}`);
     }
   } catch {

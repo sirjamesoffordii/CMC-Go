@@ -131,14 +131,14 @@ export function canViewPerson(
     return isNationalTeamMember(user);
   }
 
-  const userViewLevel = (user as any).viewLevel || "CAMPUS";
+  const userViewLevel = user.viewLevel || "CAMPUS";
 
   // NATIONAL view level can see everyone
   if (userViewLevel === "NATIONAL") return true;
 
   // REGION view level: user can see people in their region
   if (userViewLevel === "REGION") {
-    const userRegion = (user as any).overseeRegionId || user.regionId;
+    const userRegion = user.overseeRegionId || user.regionId;
     return person.primaryRegion === userRegion;
   }
 
@@ -174,7 +174,7 @@ export function canEditPerson(
     return true;
   }
 
-  const userEditLevel = (user as any).editLevel || "CAMPUS";
+  const userEditLevel = user.editLevel || "CAMPUS";
 
   // NATIONAL edit level can edit everyone
   if (userEditLevel === "NATIONAL") return true;
@@ -186,7 +186,7 @@ export function canEditPerson(
 
   // REGION edit level: user can edit people in their region
   if (userEditLevel === "REGION") {
-    const userRegion = (user as any).overseeRegionId || user.regionId;
+    const userRegion = user.overseeRegionId || user.regionId;
     return person.primaryRegion === userRegion;
   }
 

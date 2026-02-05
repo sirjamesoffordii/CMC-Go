@@ -1,4 +1,4 @@
-import { eq, and, or, sql, isNull } from "drizzle-orm";
+import { eq, and, or, sql, isNull, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import {
@@ -60,6 +60,7 @@ export async function getDb() {
         keepAliveInitialDelay: 0, // Start keep-alive immediately
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = drizzle(_pool as any);
       _db = db;
 
@@ -260,7 +261,7 @@ export async function updateUserRole(userId: number, role: string) {
   if (!db) throw new Error("Database not available");
   await db
     .update(users)
-    .set({ role: role as any })
+    .set({ role: role as InsertUser["role"] })
     .where(eq(users.id, userId));
 }
 
@@ -273,7 +274,7 @@ export async function updateUserApprovalStatus(
   if (!db) throw new Error("Database not available");
   await db
     .update(users)
-    .set({ approvalStatus: approvalStatus as any })
+    .set({ approvalStatus: approvalStatus as InsertUser["approvalStatus"] })
     .where(eq(users.id, userId));
 }
 
@@ -445,19 +446,58 @@ export async function updateDistrictRegion(id: string, region: string) {
 // CAMPUSES
 // ============================================================================
 
-export async function getAllCampuses() {
+export async function getAllCampuses(includeArchived = false) {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(campuses);
+  try {
+    if (includeArchived) {
+      return await db.select().from(campuses);
+    }
+    return await db.select().from(campuses).where(eq(campuses.archived, false));
+  } catch (error) {
+    // Fallback if 'archived' column doesn't exist yet (migration not run)
+    if (error instanceof Error && error.message.includes("archived")) {
+      console.warn(
+        "[getAllCampuses] 'archived' column not found, returning all campuses"
+      );
+      return await db.select().from(campuses);
+    }
+    throw error;
+  }
 }
 
-export async function getCampusesByDistrictId(districtId: string) {
+export async function getCampusesByDistrictId(
+  districtId: string,
+  includeArchived = false
+) {
   const db = await getDb();
   if (!db) return [];
-  return await db
-    .select()
-    .from(campuses)
-    .where(eq(campuses.districtId, districtId));
+  try {
+    if (includeArchived) {
+      return await db
+        .select()
+        .from(campuses)
+        .where(eq(campuses.districtId, districtId));
+    }
+    return await db
+      .select()
+      .from(campuses)
+      .where(
+        and(eq(campuses.districtId, districtId), eq(campuses.archived, false))
+      );
+  } catch (error) {
+    // Fallback if 'archived' column doesn't exist yet (migration not run)
+    if (error instanceof Error && error.message.includes("archived")) {
+      console.warn(
+        "[getCampusesByDistrictId] 'archived' column not found, ignoring filter"
+      );
+      return await db
+        .select()
+        .from(campuses)
+        .where(eq(campuses.districtId, districtId));
+    }
+    throw error;
+  }
 }
 
 // Alias for backward compatibility
@@ -553,6 +593,32 @@ export async function deleteCampus(id: number) {
   await db.delete(campuses).where(eq(campuses.id, id));
 }
 
+export async function archiveCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(campuses)
+    .set({
+      archived: true,
+      archivedAt: new Date(),
+    })
+    .where(eq(campuses.id, id));
+}
+
+export async function unarchiveCampus(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(campuses)
+    .set({
+      archived: false,
+      archivedAt: null,
+    })
+    .where(eq(campuses.id, id));
+}
+
 // ============================================================================
 // PEOPLE
 // ============================================================================
@@ -586,6 +652,17 @@ export async function getPersonByPersonId(personId: string) {
     .where(eq(people.personId, personId))
     .limit(1);
   return result[0] || null;
+}
+
+/**
+ * Batch fetch people by personIds (avoids N+1 queries).
+ * Returns array of people matching the given personIds.
+ */
+export async function getPeopleByPersonIds(personIds: string[]) {
+  if (personIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(people).where(inArray(people.personId, personIds));
 }
 
 export async function personExists(personId: string) {
@@ -1125,7 +1202,8 @@ export async function getMetrics() {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
@@ -1192,7 +1270,8 @@ export async function getDistrictMetrics(districtId: string) {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
@@ -1393,7 +1472,8 @@ export async function getRegionMetrics(region: string) {
 
   for (const row of statusCounts) {
     const status = row.status;
-    const count = Number((row as any).count) || 0;
+    // count is typed as number from the sql<number> template
+    const count = Number(row.count) || 0;
     countedTotal += count;
     switch (status) {
       case "Yes":
@@ -1772,7 +1852,7 @@ export async function consumeAuthToken(token: string) {
 // USER APPROVALS
 // ============================================================================
 
-export async function getPendingApprovals(role: string) {
+export async function getPendingApprovals(_role: string) {
   const db = await getDb();
   if (!db) return [];
   return await db
@@ -1799,7 +1879,7 @@ export async function approveUser(
 
 export async function rejectUser(
   userId: number,
-  rejectedByUserId: number | null
+  _rejectedByUserId: number | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1853,7 +1933,7 @@ export async function getStatusHistory(personId: string, limit: number = 20) {
 
 export async function revertStatusChange(
   statusChangeId: number,
-  revertedByUserId: number | null
+  _revertedByUserId: number | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

@@ -198,7 +198,7 @@ export function getDatabaseInfo() {
     }
 
     return { host, database, isDemoDb, connectionPath };
-  } catch (_error) {
+  } catch {
     return {
       host: null,
       database: null,
