@@ -6,6 +6,27 @@ import { ENV } from "./env";
 
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    // Never leak internal errors (SQL queries, stack traces) to clients
+    const isTRPCError = error.cause instanceof TRPCError;
+    const isProduction = ENV.isProduction;
+
+    // In production, sanitize non-TRPCError messages
+    if (isProduction && !isTRPCError) {
+      console.error("[tRPC Error]", error);
+      return {
+        ...shape,
+        message: "An unexpected error occurred. Please try again.",
+        data: {
+          ...shape.data,
+          // Remove stack traces in production
+          stack: undefined,
+        },
+      };
+    }
+
+    return shape;
+  },
 });
 
 export const router = t.router;
