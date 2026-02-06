@@ -480,6 +480,7 @@ export default function Home() {
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+      utils.metrics.district.invalidate();
       utils.followUp.list.invalidate();
     },
   });
@@ -817,7 +818,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 paper-texture">
       {/* Header - Chi Alpha Toolbar Style */}
       <div
-        className="relative flex items-center px-2 sm:px-4 group flex-shrink-0"
+        className="relative z-50 flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "48px" : `${headerHeight}px`,
           minHeight: isMobile ? "48px" : "52px",
@@ -877,11 +878,14 @@ export default function Home() {
           Edit
         </button>
 
-        {/* PR 4: Editing badge - mobile only */}
+        {/* PR 4: Editing badge - mobile only, compact */}
         {user && isMobile && (
-          <div className="flex-shrink-0 mr-2 z-10 text-white/80 text-sm">
-            <span className="px-2 py-1 bg-white/20 rounded text-xs whitespace-nowrap">
-              Editing as: {user.districtName || user.campusName || user.role}
+          <div className="flex-shrink-0 mr-1 z-10 text-white/90 text-sm max-w-[140px] sm:max-w-none">
+            <span
+              className="editing-badge-mobile inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-full"
+              title={user.districtName || user.campusName || user.role}
+            >
+              {user.districtName || user.campusName || user.role}
             </span>
           </div>
         )}
@@ -932,7 +936,7 @@ export default function Home() {
                   className="fixed inset-0 z-[100]"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
+                <div className="mobile-menu-dropdown absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
                   {!isAuthenticated && (
                     <>
                       <button
@@ -1047,7 +1051,9 @@ export default function Home() {
       {/* Main Content Area Below Header */}
       <div
         className="flex main-content-area md:flex-row flex-col"
-        style={{ height: "calc(100vh - 120px)" }}
+        style={{
+          height: isMobile ? "calc(100vh - 48px)" : "calc(100vh - 120px)",
+        }}
       >
         {/* Left District/National Panel - Desktop */}
         {!isMobile && (
@@ -1298,7 +1304,7 @@ export default function Home() {
         <Tooltip>
           <TooltipTrigger asChild>
             {isMobile ? (
-              /* Mobile: FAB-style button in bottom right */
+              /* Mobile: FAB with safe area for notched devices */
               <button
                 onClick={() => {
                   if (!user) {
@@ -1308,7 +1314,7 @@ export default function Home() {
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all
+                  mobile-fab-safe fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
                   ${!user ? "opacity-70" : ""}
                 `}
               >

@@ -16,6 +16,8 @@ interface PersonIconProps {
   ) => void;
   onClick: (person: Person) => void;
   onEdit?: (person: Person) => void;
+  /** When false, status click is disabled and cursor shows not-allowed */
+  canInteract?: boolean;
 }
 
 const STATUS_COLORS = {
@@ -40,6 +42,7 @@ export function PersonIcon({
   onStatusChange,
   onClick: _onClick,
   onEdit,
+  canInteract = true,
 }: PersonIconProps) {
   const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
@@ -99,13 +102,14 @@ export function PersonIcon({
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!canInteract || !onStatusChange) return;
     const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
       "Not Invited",
       "Yes",
       "Maybe",
       "No",
     ];
-    const currentIndex = STATUS_CYCLE.indexOf(person.status);
+    const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
     const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
     const nextStatus = STATUS_CYCLE[nextIndex];
     onStatusChange(person.personId, nextStatus);
@@ -119,7 +123,7 @@ export function PersonIcon({
           setNodeRef(node);
         }}
         style={style}
-        className="relative group/person flex flex-col items-center w-[60px] flex-shrink-0 cursor-grab active:cursor-grabbing"
+        className={`relative group/person flex flex-col items-center w-[60px] flex-shrink-0 ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed"}`}
         {...attributes}
         {...listeners}
       >
@@ -168,7 +172,7 @@ export function PersonIcon({
         <div className="relative">
           <button
             onClick={handleStatusClick}
-            className={`relative transition-all ${isDragging ? "ring-2 ring-slate-200/70 rounded-full" : "hover:scale-110 active:scale-95"}`}
+            className={`relative transition-all ${isDragging ? "ring-2 ring-slate-200/70 rounded-full" : canInteract ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-not-allowed"}`}
           >
             {/* Gray spouse icon behind - shown when person has spouse */}
             {person.spouse && (

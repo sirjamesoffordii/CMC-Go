@@ -87,34 +87,39 @@ export function MobileDrawer({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-2xl shadow-2xl flex flex-col"
-            style={{ height, maxHeight: "90vh" }}
+            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-2xl shadow-2xl flex flex-col mobile-drawer-bottom"
+            style={{
+              height,
+              maxHeight: "90vh",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            }}
           >
-            {/* Drag Handle Indicator */}
-            <div className="flex justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none">
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            {/* Drag Handle Indicator - clear affordance */}
+            <div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none shrink-0">
+              <div
+                className="w-12 h-1.5 bg-slate-300 rounded-full"
+                aria-hidden
+              />
             </div>
 
-            {/* Header */}
-            <div className="px-4 py-2 flex items-center justify-between shrink-0 border-b border-gray-100">
+            {/* Header - touch-friendly */}
+            <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/50">
               {title && (
-                <h2 className="text-lg font-semibold text-gray-900 truncate pr-2">
+                <h2 className="text-lg font-semibold text-slate-900 truncate pr-2 flex-1">
                   {title}
                 </h2>
               )}
-              {/* Touch-friendly close button */}
               <button
                 onClick={onClose}
-                className="ml-auto p-2 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors flex items-center justify-center"
-                style={{ minWidth: 44, minHeight: 44 }}
+                className="ml-auto p-2.5 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
                 aria-label="Close panel"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-slate-600" />
               </button>
             </div>
 
-            {/* Content - scrollable */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Content - scrollable with momentum on iOS */}
+            <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
               {children}
             </div>
           </motion.div>

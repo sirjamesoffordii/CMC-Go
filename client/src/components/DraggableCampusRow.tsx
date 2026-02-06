@@ -48,7 +48,7 @@ export function DraggableCampusRow({
     <div
       ref={setDragRef}
       style={{ opacity }}
-      className={`relative z-10 ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+      className={`relative z-10 ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed"}`}
     >
       {children}
     </div>

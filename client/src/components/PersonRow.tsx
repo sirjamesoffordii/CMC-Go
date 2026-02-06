@@ -17,6 +17,8 @@ interface PersonRowProps {
   hasNotes?: boolean;
   hasNeeds?: boolean;
   onPersonUpdate: () => void;
+  /** When false, status click is disabled and cursor shows not-allowed */
+  canInteract?: boolean;
 }
 
 // Universal response language for editing
@@ -41,6 +43,7 @@ export function PersonRow({
   hasNotes,
   hasNeeds,
   onPersonUpdate,
+  canInteract = true,
 }: PersonRowProps) {
   const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
@@ -88,6 +91,7 @@ export function PersonRow({
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!canInteract) return;
     const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
     const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
     const nextStatus = STATUS_CYCLE[nextIndex];
@@ -98,7 +102,11 @@ export function PersonRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-1.5 bg-slate-50 hover:bg-white rounded-lg border hover:border-slate-300 hover:shadow-sm transition-all duration-200 cursor-pointer group relative ${
+      className={`flex items-center gap-1.5 bg-slate-50 rounded-lg border transition-all duration-200 group relative ${
+        canInteract
+          ? "hover:bg-white hover:border-slate-300 hover:shadow-sm cursor-pointer"
+          : "cursor-not-allowed"
+      } ${
         person.depositPaid
           ? "border-emerald-400 ring-2 ring-emerald-300/50 shadow-emerald-100"
           : "border-slate-200"
@@ -108,9 +116,13 @@ export function PersonRow({
     >
       {/* Status Bar - Compact - NOT draggable, only clickable */}
       <div
-        className={`w-1.5 h-8 rounded-l cursor-pointer ${STATUS_COLORS[person.status || "Not Invited"]} hover:brightness-110 transition-all flex-shrink-0`}
+        className={`w-1.5 h-8 rounded-l flex-shrink-0 ${STATUS_COLORS[person.status || "Not Invited"]} transition-all ${canInteract ? "cursor-pointer hover:brightness-110" : "cursor-not-allowed"}`}
         onClick={handleStatusClick}
-        title={`Click to cycle status (current: ${person.status || "Not Invited"})`}
+        title={
+          canInteract
+            ? `Click to cycle status (current: ${person.status || "Not Invited"})`
+            : "You don't have permission to edit"
+        }
       />
 
       {/* Person Info - Compact - Draggable area */}

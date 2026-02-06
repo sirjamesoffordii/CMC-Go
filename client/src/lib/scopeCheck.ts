@@ -92,6 +92,7 @@ export function getPeopleScope(
 
 /**
  * Check if a district is within the user's scope.
+ * Campus staff (CAMPUS scope) can view identity for their own district only.
  */
 export function isDistrictInScope(
   districtId: string,
@@ -101,6 +102,7 @@ export function isDistrictInScope(
   const scope = getPeopleScope(user);
   if (!scope) return false;
   if (scope.level === "ALL") return true;
+  if (scope.level === "CAMPUS") return user?.districtId === districtId;
   if (scope.level === "DISTRICT") return scope.districtId === districtId;
   if (scope.level === "REGION") return scope.regionId === districtRegion;
   return false;

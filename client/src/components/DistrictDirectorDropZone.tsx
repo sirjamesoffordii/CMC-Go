@@ -253,7 +253,7 @@ export function DistrictDirectorDropZone({
         {/* Name Label with Edit Button */}
         <div
           ref={nameRef}
-          className="relative flex items-center justify-center mb-1 group/name w-full min-w-0 cursor-pointer"
+          className={`relative flex items-center justify-center mb-1 group/name w-full min-w-0 ${canInteract ? "cursor-pointer" : "cursor-not-allowed"}`}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
@@ -285,7 +285,7 @@ export function DistrictDirectorDropZone({
               drag(node);
             }
           }}
-          className={`relative ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+          className={`relative ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed"}`}
           style={{ opacity: isDragging ? 0.5 : 1 }}
         >
           <button
@@ -293,7 +293,7 @@ export function DistrictDirectorDropZone({
               if (maskIdentity || !canInteract) return;
               onClick();
             }}
-            className="relative transition-all hover:scale-110 active:scale-95"
+            className={`relative transition-all ${canInteract ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-not-allowed"}`}
           >
             {/* Gray spouse icon behind - shown when person has a spouse */}
             {!maskIdentity && person.spouse && (

@@ -1,12 +1,13 @@
-/* Mobile-responsive overrides for CMC Go */
+/* ============================================
+   CMC Go — Mobile UI/UX (Premium & Professional)
+   ============================================ */
 
-/* Main content area - stack vertically on mobile */
+/* --- Breakpoint: Mobile (phones) --- */
 @media (max-width: 768px) {
   .main-content-area {
     flex-direction: column !important;
   }
 
-  /* Left panel (district/national) - full width, partial height on mobile */
   .left-panel-mobile {
     width: 100% !important;
     height: 45vh !important;
@@ -18,7 +19,6 @@
     height: 0 !important;
   }
 
-  /* Right panel (people) - full width bottom drawer on mobile */
   .right-panel-mobile {
     width: 100% !important;
     height: 50vh !important;
@@ -35,7 +35,6 @@
     height: 0 !important;
   }
 
-  /* People tab button - adjust for mobile */
   .people-tab-mobile {
     bottom: 16px !important;
     right: 16px !important;
@@ -48,98 +47,122 @@
     font-size: 14px !important;
   }
 
-  /* Map container - adjust for mobile panels */
   .map-container-mobile {
     flex: 1 !important;
     overflow: hidden !important;
+    min-height: 0 !important;
   }
 
-  /* Header - make more compact on mobile */
   .header-mobile {
     padding: 6px 10px !important;
   }
 
-  /* Search bar - full width on mobile */
   .search-mobile {
     max-width: 100% !important;
   }
 
-  /* Make touch targets larger on mobile */
+  /* Touch targets: minimum 44px for accessibility */
   .touch-target {
     min-height: 44px !important;
     min-width: 44px !important;
   }
 
-  /* Remove hover-only interactions on mobile */
   .hover-only {
     display: none !important;
   }
 
-  /* Make all interactive elements tap-friendly */
   button,
   a,
   [role="button"] {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Ensure buttons have proper touch feedback */
   button:active,
   a:active,
   [role="button"]:active {
-    opacity: 0.8;
+    opacity: 0.85;
   }
 
-  /* Compact the header bar on mobile */
   header {
     padding-top: 6px !important;
     padding-bottom: 6px !important;
   }
 
-  /* Make dropdown menus full width on mobile */
   .dropdown-menu-mobile {
     left: 8px !important;
     right: 8px !important;
     width: auto !important;
   }
 
-  /* Improve scrolling on mobile */
   .scrollbar-hide {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* District panel adjustments for mobile */
+  /* Mobile drawer content - smooth scroll */
+  .mobile-drawer-bottom > div:last-child {
+    -webkit-overflow-scrolling: touch;
+  }
+
   .district-panel-mobile {
     padding: 8px !important;
   }
 
-  /* Pie chart smaller on mobile */
   .pie-chart-mobile {
     width: 80px !important;
     height: 80px !important;
   }
+
+  /* Scope selector: dropdown fits viewport on mobile */
+  .scope-selector-dropdown {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    min-width: min(280px, calc(100vw - 24px)) !important;
+    max-height: min(70vh, 400px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+    border-radius: 12px !important;
+  }
+
+  /* Hamburger menu: don't overflow viewport */
+  .mobile-menu-dropdown {
+    max-width: calc(100vw - 16px) !important;
+    right: 8px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Menu items: comfortable touch targets */
+  .mobile-menu-dropdown button {
+    min-height: 44px !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
 }
 
-/* Small mobile adjustments (phones) */
+/* --- Small phones --- */
 @media (max-width: 480px) {
-  /* Even more compact header */
   header {
     padding-left: 8px !important;
     padding-right: 8px !important;
   }
 
-  /* Smaller Going Together text */
   .header-title-mobile {
     font-size: 1.25rem !important;
   }
 
-  /* People tab even more compact */
   .people-tab-mobile {
     padding: 12px 16px !important;
     font-size: 13px !important;
   }
+
+  .editing-badge-mobile {
+    max-width: 100px !important;
+    font-size: 11px !important;
+  }
 }
 
-/* Tablet adjustments */
+/* --- Tablet --- */
 @media (min-width: 769px) and (max-width: 1024px) {
   .left-panel-mobile {
     width: 40% !important;
@@ -150,15 +173,23 @@
   }
 }
 
-/* Improve safe area handling for notched devices */
+/* --- Safe area insets (notched devices / home indicator) --- */
 @supports (padding-top: env(safe-area-inset-top)) {
   @media (max-width: 768px) {
     header {
       padding-top: max(6px, env(safe-area-inset-top)) !important;
+      padding-left: max(8px, env(safe-area-inset-left)) !important;
+      padding-right: max(8px, env(safe-area-inset-right)) !important;
     }
 
     .mobile-drawer-bottom {
       padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+    }
+
+    /* FAB: above home indicator */
+    .mobile-fab-safe {
+      bottom: max(16px, env(safe-area-inset-bottom)) !important;
+      right: max(16px, env(safe-area-inset-right)) !important;
     }
   }
 }
