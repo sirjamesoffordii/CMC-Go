@@ -8,7 +8,6 @@
  *    - Region but No District = Regional level
  *    - District but No Campus = District level
  *    - Campus = Campus level
- *    - "Other" = External affiliate (view-only aggregate access)
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -29,7 +28,6 @@ import {
   Users,
   Check,
   X,
-  Plus,
 } from "lucide-react";
 
 interface LoginModalProps {
@@ -66,10 +64,9 @@ type RegistrationStep =
   | "district" // Select district or "Regional level"
   | "campus" // Select campus or "District level"
   | "role" // Select role based on scope
-  | "affiliation" // For "Other" - external affiliates
   | "confirm"; // Final confirmation
 
-type ScopeLevel = "national" | "regional" | "district" | "campus" | "other";
+type ScopeLevel = "national" | "regional" | "district" | "campus";
 
 type AuthMode = "login" | "register" | "forgotPassword" | "resetPassword";
 
@@ -100,7 +97,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
   );
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [affiliation, setAffiliation] = useState("");
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +207,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     setSelectedDistrictId(null);
     setSelectedCampusId(null);
     setSelectedRole(null);
-    setAffiliation("");
     setError(null);
     setRegionQuery("");
     setDistrictQuery("");
@@ -284,16 +279,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     }
   };
 
-  const handleCampusSelect = (
-    campusId: number | null,
-    isOther: boolean = false
-  ) => {
-    if (isOther) {
-      // External affiliate
-      setScopeLevel("other");
-      setSelectedCampusId(null);
-      goToStep("affiliation");
-    } else if (campusId === null) {
+  const handleCampusSelect = (campusId: number | null) => {
+    if (campusId === null) {
       // District level
       setScopeLevel("district");
       setSelectedCampusId(null);
@@ -316,14 +303,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       return;
     }
 
-    // For "other" scope, affiliation is required
-    if (scopeLevel === "other" && !affiliation.trim()) {
-      setError("Please enter your affiliation");
-      return;
-    }
-
-    // For all other scopes, role is required
-    if (scopeLevel !== "other" && !selectedRole) {
+    if (!selectedRole) {
       setError("Please select a role");
       return;
     }
@@ -335,8 +315,12 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       password,
       fullName: fullName.trim(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      role: (scopeLevel === "other" ? "STAFF" : selectedRole!) as any,
+      role: selectedRole as any,
       campusId: selectedCampusId ?? undefined,
+      districtId:
+        scopeLevel === "district"
+          ? (selectedDistrictId ?? undefined)
+          : undefined,
       overseeRegionId:
         scopeLevel === "regional" ? (selectedRegion ?? undefined) : undefined,
     });
@@ -373,8 +357,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
         const campus = campuses.find(c => c.id === selectedCampusId);
         return `You'll have access to ${campus?.name || "your campus"}.`;
       }
-      case "other":
-        return "You'll have view-only access to aggregate statistics.";
       default:
         return "";
     }
@@ -390,8 +372,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       steps.push("district", "campus", "role", "confirm");
     else if (scopeLevel === "campus")
       steps.push("district", "campus", "role", "confirm");
-    else if (scopeLevel === "other")
-      steps.push("district", "campus", "affiliation", "confirm");
     else steps.push("district", "campus", "role", "confirm");
 
     const currentIndex = steps.indexOf(step);
@@ -1229,23 +1209,14 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     <span className="text-sm">No campuses found</span>
                   </div>
                 )}
-                {/* Add campus and No campus options at bottom */}
-                <div className="border-t border-slate-100 mt-1 pt-2 space-y-1">
-                  <button
-                    onClick={() => handleCampusSelect(null, true)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-green-50"
-                  >
-                    <Plus className="h-4 w-4 text-green-500" />
-                    <span className="text-sm text-green-700">Add campus</span>
-                  </button>
-                  <button
-                    onClick={() => handleCampusSelect(null)}
-                    className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all hover:bg-slate-50"
-                  >
-                    <Building2 className="h-4 w-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">No campus</span>
-                  </button>
-                </div>
+                {/* No campus option at bottom */}
+                <button
+                  onClick={() => handleCampusSelect(null)}
+                  className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
+                >
+                  <Building2 className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-600">No campus</span>
+                </button>
               </div>
 
               <button
@@ -1294,57 +1265,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                   else if (scopeLevel === "district") goToStep("campus");
                   else if (scopeLevel === "campus") goToStep("campus");
                 }}
-                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
-              >
-                <ArrowLeft className="h-4 w-4" /> Back
-              </button>
-            </div>
-          )}
-
-          {/* REGISTER: AFFILIATION (for Other) */}
-          {mode === "register" && step === "affiliation" && (
-            <div className="space-y-5">
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-slate-900">
-                  Your Affiliation
-                </h2>
-                <p className="text-sm text-slate-600">
-                  How are you connected to Chi Alpha?
-                </p>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-slate-700">
-                  Affiliation / Organization
-                </Label>
-                <Input
-                  type="text"
-                  value={affiliation}
-                  onChange={e => setAffiliation(e.target.value)}
-                  placeholder="e.g., Partner church, Donor, Assemblies of God"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
-                />
-              </div>
-
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm text-amber-900">
-                  <strong>Note:</strong> As an external affiliate, you'll have
-                  view-only access to aggregate statistics. You won't be able to
-                  see or edit individual records.
-                </p>
-              </div>
-
-              {error && <p className="text-sm text-red-700">{error}</p>}
-
-              <Button
-                onClick={() => goToStep("confirm")}
-                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
-              >
-                Continue <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-
-              <button
-                onClick={() => goToStep("campus")}
                 className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" /> Back
@@ -1401,24 +1321,15 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </span>
                   </div>
                 )}
-                {scopeLevel === "other" ? (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Affiliation</span>
-                    <span className="text-sm font-medium text-slate-900">
-                      {affiliation}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-slate-600">Role</span>
-                    <span className="text-sm font-medium text-slate-900">
-                      {
-                        getAvailableRoles().find(r => r.value === selectedRole)
-                          ?.label
-                      }
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-600">Role</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {
+                      getAvailableRoles().find(r => r.value === selectedRole)
+                        ?.label
+                    }
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-600">Access Level</span>
                   <span className="text-sm font-medium capitalize text-red-700">
