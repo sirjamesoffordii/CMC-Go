@@ -266,6 +266,9 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   corsOrigin: process.env.CORS_ORIGIN ?? "",
+  // Email configuration (Resend API)
+  RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
+  FROM_EMAIL: process.env.FROM_EMAIL ?? "CMC Go <noreply@cmcgo.org>",
   // Dev-only: bypass auth requirements in local development when set
   devBypassAuth:
     (

@@ -5,7 +5,6 @@ import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
-import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Scope filter type for map filtering
 type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";
@@ -505,7 +504,6 @@ export function InteractiveMap({
   userDistrictId,
 }: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
-  const isMobile = useIsMobile();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -1607,9 +1605,9 @@ export function InteractiveMap({
       .replace(/^./, str => str.toUpperCase());
   };
 
-  // Render tooltip - disabled on mobile
+  // Render tooltip
   const renderTooltip = () => {
-    if (!hoveredDistrict || !tooltipPos || isMobile) return null;
+    if (!hoveredDistrict || !tooltipPos) return null;
 
     const district = districts.find(d => d.id === hoveredDistrict);
     // Calculate stats using shared utility to ensure consistency with DistrictPanel

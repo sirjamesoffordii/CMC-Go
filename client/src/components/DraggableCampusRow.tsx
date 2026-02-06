@@ -1,6 +1,5 @@
-// @ts-nocheck
 import { useDrag } from "react-dnd";
-import { ReactNode } from "react";
+import { ReactNode, useCallback } from "react";
 import { getEmptyImage } from "react-dnd-html5-backend";
 import { useEffect } from "react";
 
@@ -34,13 +33,22 @@ export function DraggableCampusRow({
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
+  const setDragRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node && canInteract) {
+        drag(node);
+      }
+    },
+    [drag, canInteract]
+  );
+
   const opacity = isDragging || dragState ? 0.5 : 1;
 
   return (
     <div
-      ref={canInteract ? drag : undefined}
+      ref={setDragRef}
       style={{ opacity }}
-      className={`relative z-10 ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+      className={`relative z-10 ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed"}`}
     >
       {children}
     </div>

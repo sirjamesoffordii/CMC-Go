@@ -1,6 +1,6 @@
 import { useDrag, useDrop } from "react-dnd";
 import { motion } from "framer-motion";
-import { User, Edit2, Check } from "lucide-react";
+import { User, Edit2 } from "lucide-react";
 import { NeedIndicator } from "./NeedIndicator";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getEmptyImage } from "react-dnd-html5-backend";
@@ -8,10 +8,9 @@ import { Person } from "../../../drizzle/schema";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
-import { StatusChangeConfirmationDialog } from "./StatusChangeConfirmationDialog";
 
-// Map Figma status to database status
-const statusMap = {
+// Map Figma status to database status (kept for reference)
+const _statusMap = {
   director: "Yes" as const,
   staff: "Maybe" as const,
   "co-director": "No" as const,
@@ -53,7 +52,8 @@ interface DroppablePersonProps {
   maskIdentity?: boolean;
 }
 
-interface Need {
+// Interface kept for future use
+interface _Need {
   id: number;
   personId: string;
   type: string;
@@ -67,7 +67,7 @@ export function DroppablePerson({
   campusId,
   index,
   onEdit,
-  onClick,
+  onClick: _onClick,
   onMove,
   hasNeeds = false,
   onPersonStatusChange,
@@ -83,15 +83,9 @@ export function DroppablePerson({
   const nameRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
-  // State for status change confirmation
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingStatus, setPendingStatus] = useState<
-    "Yes" | "Maybe" | "No" | "Not Invited" | null
-  >(null);
-
   // Fetch all needs (including inactive) to show met needs with checkmark
   const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
+  const { data: _allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
     enabled: needsEnabled,
     retry: false,
   });
@@ -107,11 +101,10 @@ export function DroppablePerson({
     ? reverseStatusMap[person.status] || "not-invited"
     : "not-invited";
 
-  // Handle status click to cycle through statuses
+  // Handle status click to cycle through statuses (immediate change, no confirmation)
   const handleStatusClick = useCallback(
     (e: React.MouseEvent) => {
-      // Only allow status change if canInteract
-      if (!canInteract) return;
+      if (!canInteract || !onPersonStatusChange) return;
       e.stopPropagation();
       const STATUS_CYCLE: Array<"Yes" | "Maybe" | "No" | "Not Invited"> = [
         "Not Invited",
@@ -122,26 +115,10 @@ export function DroppablePerson({
       const currentIndex = STATUS_CYCLE.indexOf(person.status || "Not Invited");
       const nextIndex = (currentIndex + 1) % STATUS_CYCLE.length;
       const nextStatus = STATUS_CYCLE[nextIndex];
-
-      // Show confirmation dialog instead of immediately changing status
-      setPendingStatus(nextStatus);
-      setShowConfirmDialog(true);
+      onPersonStatusChange(person.personId, nextStatus);
     },
-    [person.status, canInteract]
+    [person.status, person.personId, canInteract, onPersonStatusChange]
   );
-
-  // Handle confirmation of status change
-  const handleConfirmStatusChange = useCallback(() => {
-    if (pendingStatus && onPersonStatusChange) {
-      onPersonStatusChange(person.personId, pendingStatus);
-    }
-    setPendingStatus(null);
-  }, [pendingStatus, person.personId, onPersonStatusChange]);
-
-  // Handle cancellation of status change
-  const handleCancelStatusChange = useCallback(() => {
-    setPendingStatus(null);
-  }, []);
 
   const [{ isDragging }, drag, preview] = useDrag(
     () => ({
@@ -160,7 +137,7 @@ export function DroppablePerson({
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
-  const [{ isOver }, drop] = useDrop(
+  const [{ isOver: _isOver }, drop] = useDrop(
     () => ({
       accept: "person",
       canDrop: () => canInteract,
@@ -195,18 +172,13 @@ export function DroppablePerson({
     [drop, drag]
   );
 
-  // Stable edit button click handler
-  const handleEditClick = useCallback(
+  // Stable edit button click handler (kept for future use)
+  const _handleEditClick = useCallback(
     (e: React.MouseEvent) => {
       // Only allow edit if canInteract
       if (!canInteract) return;
       e.stopPropagation();
       e.preventDefault();
-      console.log("Edit button clicked", {
-        campusId,
-        personId: person.personId,
-        personName: person.name || person.personId,
-      });
       onEdit(campusId, person);
     },
     [campusId, person, onEdit, canInteract]
@@ -267,50 +239,48 @@ export function DroppablePerson({
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
         >
-          <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
-            {maskIdentity ? "\u00A0" : capitalizedFirstName}
+          <div className="relative inline-flex items-center justify-center">
+            <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
+              {maskIdentity ? "\u00A0" : capitalizedFirstName}
+            </div>
+            {canInteract && (
+              <button
+                ref={editButtonRef}
+                onClick={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onEdit(campusId, person);
+                }}
+                onMouseDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onPointerDown={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                onDragStart={e => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}
+                className="absolute left-full top-0 -translate-y-0.5 ml-1.5 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
+                title="Edit person"
+                type="button"
+                draggable={false}
+              >
+                <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
+              </button>
+            )}
           </div>
-          {canInteract && (
-            <button
-              ref={editButtonRef}
-              onClick={e => {
-                e.stopPropagation();
-                e.preventDefault();
-                console.log("Edit button clicked directly", {
-                  campusId,
-                  personId: person.personId,
-                });
-                onEdit(campusId, person);
-              }}
-              onMouseDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onPointerDown={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              onDragStart={e => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              className="absolute -top-1.5 -right-2 opacity-0 group-hover/name:opacity-100 group-hover/person:opacity-100 transition-opacity p-0.5 hover:bg-slate-100 rounded z-50 cursor-pointer"
-              title="Edit person"
-              type="button"
-              draggable={false}
-            >
-              <Edit2 className="w-2.5 h-2.5 text-slate-500 pointer-events-none" />
-            </button>
-          )}
         </div>
 
         <div
           ref={canInteract ? setDragDropRef : undefined}
-          className={`relative ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-default"}`}
+          className={`relative ${canInteract ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed"}`}
           style={
             canInteract
               ? { cursor: isDragging ? "grabbing" : "grab" }
-              : { cursor: "default" }
+              : { cursor: "not-allowed" }
           }
         >
           <button
@@ -320,7 +290,7 @@ export function DroppablePerson({
             className={`relative transition-all ${
               canInteract
                 ? "hover:scale-110 active:scale-95 cursor-pointer"
-                : "cursor-default"
+                : "cursor-not-allowed"
             }`}
           >
             {/* Gray spouse icon behind - shown when person has spouse */}
@@ -370,18 +340,6 @@ export function DroppablePerson({
               : null
           }
           position={tooltipPos}
-        />
-      )}
-      {/* Status Change Confirmation Dialog */}
-      {pendingStatus && (
-        <StatusChangeConfirmationDialog
-          open={showConfirmDialog}
-          onOpenChange={setShowConfirmDialog}
-          currentStatus={person.status || "Not Invited"}
-          newStatus={pendingStatus}
-          personName={person.name || undefined}
-          onConfirm={handleConfirmStatusChange}
-          onCancel={handleCancelStatusChange}
         />
       )}
     </>

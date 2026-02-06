@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import {
@@ -33,9 +33,9 @@ interface PeoplePanelProps {
 export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { isAuthenticated } = usePublicAuth();
+  const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
-  const utils = trpc.useUtils();
+  const _utils = trpc.useUtils();
 
   // Filter state
   const [statusFilter, setStatusFilter] = useState<
@@ -53,6 +53,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   ); // null = no filter, true = paid, false = not paid
   const [searchQuery, setSearchQuery] = useState("");
   const [myCampusOnly, setMyCampusOnly] = useState(false);
+  // Last updated filter: show people not updated in X days (for follow-ups). Uses lastEdited or statusLastUpdated.
+  const [lastUpdatedFilter, setLastUpdatedFilter] = useState<
+    "any" | "7" | "14" | "30"
+  >("any");
   const [sortBy, setSortBy] = useState<
     "Region" | "District" | "Campus" | "Individual" | "Update"
   >("District");
@@ -181,6 +185,22 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       );
     }
 
+    // Last updated filter: show people not updated in X days (lastEdited or statusLastUpdated)
+    if (lastUpdatedFilter !== "any") {
+      const days = parseInt(lastUpdatedFilter, 10);
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      cutoff.setHours(0, 0, 0, 0);
+      filtered = filtered.filter((p: Person) => {
+        const lastEdited = p.lastEdited ? new Date(p.lastEdited).getTime() : 0;
+        const statusLast = p.statusLastUpdated
+          ? new Date(p.statusLastUpdated).getTime()
+          : 0;
+        const last = Math.max(lastEdited, statusLast);
+        return last === 0 || last < cutoff.getTime();
+      });
+    }
+
     return filtered;
   }, [
     allPeople,
@@ -190,16 +210,20 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     roleFilter,
     familyGuestFilter,
     depositPaidFilter,
+    lastUpdatedFilter,
     searchQuery,
     myCampusOnly,
     user?.campusId,
   ]);
 
   // Helper function to get region for a district
-  const getRegionForDistrict = (districtId: string): string => {
-    const district = allDistricts.find(d => d.id === districtId);
-    return district?.region || DISTRICT_REGION_MAP[districtId] || "Unknown";
-  };
+  const getRegionForDistrict = useCallback(
+    (districtId: string): string => {
+      const district = allDistricts.find(d => d.id === districtId);
+      return district?.region || DISTRICT_REGION_MAP[districtId] || "Unknown";
+    },
+    [allDistricts]
+  );
 
   // Group and sort people based on sortBy and order
   const groupedData = useMemo(() => {
@@ -265,8 +289,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         string,
         {
           district: District;
-          campuses: Map<number, { campus: Campus; people: any[] }>;
-          unassigned: any[];
+          campuses: Map<number, { campus: Campus; people: Person[] }>;
+          unassigned: Person[];
         }
       >();
 
@@ -323,7 +347,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               return a.campus.name.localeCompare(b.campus.name);
             }
           );
-          const newMap = new Map<number, { campus: Campus; people: any[] }>();
+          const newMap = new Map<
+            number,
+            { campus: Campus; people: Person[] }
+          >();
           sortedCampuses.forEach(item => {
             newMap.set(item.campus.id, item);
           });
@@ -361,8 +388,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           string,
           {
             district: District;
-            campuses: Map<number, { campus: Campus; people: any[] }>;
-            unassigned: any[];
+            campuses: Map<number, { campus: Campus; people: Person[] }>;
+            unassigned: Person[];
           }
         >;
       }
@@ -432,7 +459,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               }
               return a.campus.name.localeCompare(b.campus.name);
             });
-            const newMap = new Map<number, { campus: Campus; people: any[] }>();
+            const newMap = new Map<
+              number,
+              { campus: Campus; people: Person[] }
+            >();
             sortedCampuses.forEach(item => {
               newMap.set(item.campus.id, item);
             });
@@ -486,7 +516,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       });
 
     return { type: "region" as const, regions };
-  }, [filteredPeople, allDistricts, allCampuses, sortBy, order]);
+  }, [
+    filteredPeople,
+    allDistricts,
+    allCampuses,
+    sortBy,
+    order,
+    getRegionForDistrict,
+  ]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person as Person);
@@ -593,7 +630,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
-      <div className="w-full bg-white border-l border-gray-300 flex flex-col">
+      <div className="h-full w-full min-w-0 bg-white border-l border-gray-300 flex flex-col">
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
           <div>
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -615,7 +652,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   }
 
   return (
-    <div className="h-full bg-white border-l border-gray-300 flex flex-col">
+    <div className="h-full w-full min-w-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
         <div>
@@ -639,24 +676,31 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="p-3 sm:p-4 border-b border-gray-200 bg-gray-50">
-        <div className="space-y-3">
+      {/* Filters Section - horizontal, professional layout */}
+      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50/80">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="relative flex-shrink-0 min-w-[200px] max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             <Input
               type="text"
               placeholder="Search people by name or role..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9"
+              className="pl-9 h-9 bg-white border-gray-200"
             />
           </div>
 
+          <div
+            className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
+            aria-hidden
+          />
+
           {/* Status Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">Status:</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Status
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -714,8 +758,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           </div>
 
           {/* Need Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">Need:</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Need
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -792,8 +838,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           </div>
 
           {/* Role Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">Role:</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Role
+            </span>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -817,7 +865,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 <div className="space-y-1">
                   {uniqueRoles.map(role => {
                     const count = allPeople.filter(
-                      (p: any) => p.primaryRole === role
+                      (p: Person) => p.primaryRole === role
                     ).length;
                     const isChecked = roleFilter.has(role);
                     return (
@@ -848,9 +896,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           </div>
 
           {/* Family & Guest Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">
-              Family & Guest:
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Family & Guest
             </span>
             <Popover>
               <PopoverTrigger asChild>
@@ -879,7 +927,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     { key: "children" as const, label: "Children" },
                     { key: "guest" as const, label: "Guest" },
                   ].map(({ key, label }) => {
-                    const count = allPeople.filter((p: any) => {
+                    const count = allPeople.filter((p: Person) => {
                       if (key === "spouse") return p.spouseAttending;
                       if (key === "children")
                         return p.childrenCount && p.childrenCount > 0;
@@ -916,9 +964,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           </div>
 
           {/* Deposit Paid Filter Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">
-              Deposit Paid:
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Deposit paid
             </span>
             <Popover>
               <PopoverTrigger asChild>
@@ -942,7 +990,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     { value: true, label: "Paid" },
                     { value: false, label: "Not Paid" },
                   ].map(({ value, label }) => {
-                    const count = allPeople.filter((p: any) => {
+                    const count = allPeople.filter((p: Person) => {
                       const hasDepositPaid = p.depositPaid === true;
                       return hasDepositPaid === value;
                     }).length;
@@ -968,9 +1016,16 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             </Popover>
           </div>
 
+          <div
+            className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
+            aria-hidden
+          />
+
           {/* Sort By Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">Sort by:</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Sort by
+            </span>
             <Select
               value={sortBy}
               onValueChange={value => setSortBy(value as typeof sortBy)}
@@ -1005,13 +1060,41 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             </Select>
           </div>
 
+          {/* Last updated filter (for follow-ups) */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+              Last updated
+            </span>
+            <Select
+              value={lastUpdatedFilter}
+              onValueChange={(v: "any" | "7" | "14" | "30") =>
+                setLastUpdatedFilter(v)
+              }
+            >
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                <SelectItem value="7">Not updated in 7 days</SelectItem>
+                <SelectItem value="14">Not updated in 14 days</SelectItem>
+                <SelectItem value="30">Not updated in 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* My Campus Filter */}
           {user?.campusId &&
             (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setMyCampusOnly(!myCampusOnly)}
-                  className={`
+              <>
+                <div
+                  className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
+                  aria-hidden
+                />
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setMyCampusOnly(!myCampusOnly)}
+                    className={`
                   px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
                   ${
                     myCampusOnly
@@ -1019,27 +1102,31 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
                   }
                 `}
-                >
-                  <Filter className="w-4 h-4 inline mr-1" />
-                  My Campus Only
-                </button>
-              </div>
+                  >
+                    <Filter className="w-4 h-4 inline mr-1" />
+                    My Campus Only
+                  </button>
+                </div>
+              </>
             )}
         </div>
       </div>
 
       {/* Content - Hierarchical List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0 flex flex-col">
         {/* Helper function to render a person */}
         {(() => {
-          const renderPerson = (person: any, indentClass: string = "px-12") => {
+          const renderPerson = (
+            person: Person,
+            indentClass: string = "px-12"
+          ) => {
             const personNeeds = allNeeds.filter(
               n => n.personId === person.personId && n.isActive
             );
             return (
               <div
                 key={person.personId}
-                className={`${indentClass} py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0`}
+                className={`w-full min-w-0 ${indentClass} py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0`}
                 onClick={() => handlePersonClick(person)}
               >
                 <div className="flex items-center justify-between">
@@ -1067,6 +1154,18 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {(person.lastEdited || person.statusLastUpdated) && (
+                      <span className="text-xs text-gray-500">
+                        Updated:{" "}
+                        {person.lastEdited
+                          ? new Date(person.lastEdited).toLocaleDateString()
+                          : person.statusLastUpdated
+                            ? new Date(
+                                person.statusLastUpdated
+                              ).toLocaleDateString()
+                            : ""}
+                      </span>
+                    )}
                     <span
                       className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
                         person.status === "Yes"
@@ -1101,8 +1200,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               );
             }
             return (
-              <div className="divide-y divide-gray-200">
-                {groupedData.people.map((person: any) =>
+              <div className="divide-y divide-gray-200 w-full min-w-0">
+                {groupedData.people.map((person: Person) =>
                   renderPerson(person, "px-4")
                 )}
               </div>
@@ -1151,7 +1250,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       </div>
                       {isCampusExpanded && people.length > 0 && (
                         <div className="bg-gray-50">
-                          {people.map((person: any) =>
+                          {people.map((person: Person) =>
                             renderPerson(person, "px-8")
                           )}
                         </div>
@@ -1172,7 +1271,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               );
             }
             return (
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 w-full min-w-0">
                 {groupedData.districts.map(
                   ({ district, campuses, unassigned }) => {
                     const isDistrictExpanded = expandedDistricts.has(
@@ -1259,7 +1358,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                     </div>
                                     {isCampusExpanded && people.length > 0 && (
                                       <div className="bg-white">
-                                        {people.map((person: any) =>
+                                        {people.map((person: Person) =>
                                           renderPerson(person, "px-12")
                                         )}
                                       </div>
@@ -1274,7 +1373,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                   Unassigned ({unassigned.length})
                                 </h4>
                                 <div className="bg-white rounded border border-gray-200">
-                                  {unassigned.map((person: any) =>
+                                  {unassigned.map((person: Person) =>
                                     renderPerson(person, "px-4")
                                   )}
                                 </div>
@@ -1299,7 +1398,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             );
           }
           return (
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 w-full min-w-0">
               {groupedData.regions.map(({ region, districts }) => {
                 const isRegionExpanded = expandedRegions.has(region);
                 const totalPeople = districts.reduce(
@@ -1426,7 +1525,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                           {isCampusExpanded &&
                                             people.length > 0 && (
                                               <div className="bg-gray-50">
-                                                {people.map((person: any) =>
+                                                {people.map((person: Person) =>
                                                   renderPerson(person, "px-16")
                                                 )}
                                               </div>
@@ -1441,7 +1540,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                         Unassigned ({unassigned.length})
                                       </h4>
                                       <div className="bg-gray-50 rounded border border-gray-200">
-                                        {unassigned.map((person: any) =>
+                                        {unassigned.map((person: Person) =>
                                           renderPerson(person, "px-4")
                                         )}
                                       </div>

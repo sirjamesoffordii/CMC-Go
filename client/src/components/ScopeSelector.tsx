@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { Globe, ChevronRight, ChevronDown } from "lucide-react";
 import { ALL_REGIONS, DISTRICT_REGION_MAP } from "@/lib/regions";
 
@@ -72,8 +73,11 @@ export function ScopeSelector({
   className = "",
 }: ScopeSelectorProps) {
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
+  /** On mobile, tap-to-expand region to show districts (no hover) */
+  const [expandedRegion, setExpandedRegion] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimeoutRef = useRef<number | null>(null);
 
@@ -82,6 +86,12 @@ export function ScopeSelector({
   // Determine user's scope level from their authorization
   const userScopeLevel: ScopeLevel = user?.scopeLevel || "DISTRICT";
   const accessibleScopes = getAccessibleScopes(userScopeLevel);
+
+  // Region-scoped users see only their region (and its districts) in the dropdown, not National
+  const userRegionId = user?.regionId || user?.overseeRegionId || null;
+  const isRegionScoped = userRegionId && userScopeLevel !== "NATIONAL";
+  const regionsToShow = isRegionScoped ? [userRegionId] : ALL_REGIONS;
+  const showNationalOption = !isRegionScoped;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -92,6 +102,7 @@ export function ScopeSelector({
       ) {
         setIsOpen(false);
         setHoveredRegion(null);
+        setExpandedRegion(null);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -161,26 +172,29 @@ export function ScopeSelector({
         />
       </button>
 
-      {/* Dropdown */}
+      {/* Dropdown - scope-selector-dropdown for mobile CSS */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 z-50 min-w-[180px] bg-white rounded-md shadow-lg border border-gray-200 py-1">
-          {/* National option */}
-          <button
-            onClick={handleNationalClick}
-            className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-              currentScope === "NATIONAL"
-                ? "bg-red-50 text-red-700 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Globe className="h-4 w-4" />
-            <span>National</span>
-          </button>
+        <div className="scope-selector-dropdown absolute top-full left-0 mt-1 z-[100] min-w-[180px] bg-white rounded-md shadow-lg border border-gray-200 py-1">
+          {/* National option - only for national-scope users */}
+          {showNationalOption && (
+            <>
+              <button
+                onClick={handleNationalClick}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                  currentScope === "NATIONAL"
+                    ? "bg-red-50 text-red-700 font-medium"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <Globe className="h-4 w-4" />
+                <span>National</span>
+              </button>
+              <div className="border-t border-gray-100 my-1" />
+            </>
+          )}
 
-          <div className="border-t border-gray-100 my-1" />
-
-          {/* Regions with nested districts */}
-          {ALL_REGIONS.map(region => {
+          {/* Regions with nested districts (only user's region when region-scoped) */}
+          {regionsToShow.map(region => {
             const districts = regionDistrictsMap[region] || [];
             const isRegionActive =
               currentScope === "REGION" && selectedRegion === region;
@@ -189,17 +203,25 @@ export function ScopeSelector({
               selectedRegion === region &&
               selectedDistrict;
             const isHovered = hoveredRegion === region;
+            const isExpanded = isMobile ? expandedRegion === region : isHovered;
+            const hasDistricts = districts.length > 0;
 
             return (
               <div
                 key={region}
                 className="relative"
-                onMouseEnter={() => handleRegionHover(region)}
-                onMouseLeave={() => handleRegionHover(null)}
+                onMouseEnter={() => !isMobile && handleRegionHover(region)}
+                onMouseLeave={() => !isMobile && handleRegionHover(null)}
               >
                 <button
-                  onClick={() => handleRegionClick(region)}
-                  className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
+                  onClick={() => {
+                    if (isMobile && hasDistricts) {
+                      setExpandedRegion(r => (r === region ? null : region));
+                      return;
+                    }
+                    handleRegionClick(region);
+                  }}
+                  className={`w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-2 transition-colors min-h-[44px] ${
                     isRegionActive || isDistrictInRegion
                       ? "bg-red-50 text-red-700"
                       : "text-gray-700 hover:bg-gray-100"
@@ -208,20 +230,29 @@ export function ScopeSelector({
                   <span className={isRegionActive ? "font-medium" : ""}>
                     {region}
                   </span>
-                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                  {hasDistricts && (
+                    <ChevronRight
+                      className={`h-4 w-4 text-gray-400 transition-transform ${
+                        isExpanded ? "rotate-90" : ""
+                      }`}
+                    />
+                  )}
                 </button>
 
-                {/* Districts submenu */}
-                {isHovered && districts.length > 0 && (
+                {/* Districts submenu: flyout on desktop, inline on mobile */}
+                {isExpanded && hasDistricts && (
                   <div
-                    className="absolute left-full top-0 ml-1 min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 py-1 max-h-[350px] overflow-y-auto"
-                    onMouseEnter={() => handleRegionHover(region)}
-                    onMouseLeave={() => handleRegionHover(null)}
+                    className={
+                      isMobile
+                        ? "bg-slate-50 border-t border-slate-100 py-1 max-h-[280px] overflow-y-auto"
+                        : "absolute left-full top-0 ml-1 min-w-[200px] bg-white rounded-md shadow-lg border border-gray-200 py-1 max-h-[350px] overflow-y-auto"
+                    }
+                    onMouseEnter={() => !isMobile && handleRegionHover(region)}
+                    onMouseLeave={() => !isMobile && handleRegionHover(null)}
                   >
-                    {/* Region header - click to select whole region */}
                     <button
                       onClick={() => handleRegionClick(region)}
-                      className={`w-full px-3 py-2 text-left text-sm font-medium border-b border-gray-100 transition-colors ${
+                      className={`w-full px-3 py-2.5 text-left text-sm font-medium border-b border-gray-100 transition-colors min-h-[44px] ${
                         isRegionActive
                           ? "bg-red-50 text-red-700"
                           : "text-gray-800 hover:bg-gray-100"
@@ -230,12 +261,11 @@ export function ScopeSelector({
                       All of {region}
                     </button>
 
-                    {/* Districts in region */}
                     {districts.map(districtId => (
                       <button
                         key={districtId}
                         onClick={() => handleDistrictClick(region, districtId)}
-                        className={`w-full px-3 py-1.5 text-left text-sm transition-colors ${
+                        className={`w-full px-3 py-2.5 text-left text-sm transition-colors min-h-[44px] ${
                           selectedDistrict === districtId
                             ? "bg-red-50 text-red-700 font-medium"
                             : "text-gray-600 hover:bg-gray-100"
@@ -260,19 +290,12 @@ export function useScopeFilter() {
   const { user } = useAuth();
   const userScopeLevel: ScopeLevel = user?.scopeLevel || "DISTRICT";
 
-  // Get persisted scope from localStorage
+  // Get persisted scope from localStorage (cannot use user here - initial render may not have it)
   const getInitialScope = (): ScopeLevel => {
     const stored = localStorage.getItem("cmc-scope-filter");
     if (stored && SCOPE_LEVELS.includes(stored as ScopeLevel)) {
-      const storedScope = stored as ScopeLevel;
-      // Ensure user has access to stored scope
-      const userIndex = SCOPE_LEVELS.indexOf(userScopeLevel);
-      const storedIndex = SCOPE_LEVELS.indexOf(storedScope);
-      if (storedIndex >= userIndex) {
-        return storedScope;
-      }
+      return stored as ScopeLevel;
     }
-    // Default to NATIONAL
     return "NATIONAL";
   };
 
@@ -320,7 +343,7 @@ export function useScopeFilter() {
     }
   };
 
-  // Reset to user's default when user changes
+  // Reset to user's default when user changes, or scope is invalid
   useEffect(() => {
     const accessibleScopes = getAccessibleScopes(userScopeLevel);
     if (!accessibleScopes.includes(currentScope)) {
@@ -332,6 +355,31 @@ export function useScopeFilter() {
       setSelectedDistrict(null);
     }
   }, [userScopeLevel, currentScope]);
+
+  // Region-scoped users (REGION or DISTRICT level with regionId): default to their region instead of National
+  useEffect(() => {
+    const userRegionId = user?.regionId || user?.overseeRegionId || null;
+    if (!userRegionId || userScopeLevel === "NATIONAL") return;
+    const isRegionOrDistrict =
+      userScopeLevel === "REGION" || userScopeLevel === "DISTRICT";
+    if (
+      isRegionOrDistrict &&
+      (currentScope === "NATIONAL" || !selectedRegion)
+    ) {
+      setCurrentScope("REGION");
+      setSelectedRegion(userRegionId);
+      setSelectedDistrict(null);
+      localStorage.setItem("cmc-scope-filter", "REGION");
+      localStorage.setItem("cmc-scope-region", userRegionId);
+      localStorage.removeItem("cmc-scope-district");
+    }
+  }, [
+    user?.regionId,
+    user?.overseeRegionId,
+    userScopeLevel,
+    currentScope,
+    selectedRegion,
+  ]);
 
   return {
     currentScope,

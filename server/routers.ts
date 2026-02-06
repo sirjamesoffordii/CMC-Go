@@ -96,6 +96,9 @@ const NATIONAL_TEAM_ROLES = [
   "REGIONAL_STAFF",
 ] as const;
 
+// District-level roles (need districtId but not campusId)
+const DISTRICT_LEVEL_ROLES = ["DISTRICT_DIRECTOR", "DISTRICT_STAFF"] as const;
+
 // Roles that require overseeRegionId
 const ROLES_REQUIRING_OVERSEE_REGION = [
   "REGION_DIRECTOR",
@@ -201,6 +204,8 @@ export const appRouter = router({
           role: z.enum(REGISTERABLE_ROLES),
           // For campus-based roles
           campusId: z.number().optional(),
+          // For district-level roles (DISTRICT_DIRECTOR, DISTRICT_STAFF)
+          districtId: z.string().optional(),
           // For Regional Directors/Staff - which region they oversee
           overseeRegionId: z.string().optional(),
         })
@@ -218,6 +223,9 @@ export const appRouter = router({
         const isNationalTeamRole = (
           NATIONAL_TEAM_ROLES as readonly string[]
         ).includes(input.role);
+        const isDistrictLevelRole = (
+          DISTRICT_LEVEL_ROLES as readonly string[]
+        ).includes(input.role);
         const requiresOverseeRegion = (
           ROLES_REQUIRING_OVERSEE_REGION as readonly string[]
         ).includes(input.role);
@@ -232,6 +240,14 @@ export const appRouter = router({
                 "Regional Directors and Regional Staff must specify which region they oversee",
             });
           }
+        } else if (isDistrictLevelRole) {
+          // District-level roles need districtId but not campusId
+          if (!input.districtId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "District is required for this role",
+            });
+          }
         } else {
           // Campus-based roles need campus
           if (!input.campusId) {
@@ -242,12 +258,13 @@ export const appRouter = router({
           }
         }
 
-        // Get campus/district/region info if campus-based
+        // Get campus/district/region info based on role type
         let campusId: number | null = null;
         let districtId: string | null = null;
         let regionId: string | null = null;
 
         if (input.campusId) {
+          // Campus-based roles
           const campus = await db.getCampusById(input.campusId);
           if (!campus) {
             throw new TRPCError({
@@ -264,6 +281,17 @@ export const appRouter = router({
           }
           campusId = campus.id;
           districtId = campus.districtId;
+          regionId = district.region;
+        } else if (input.districtId) {
+          // District-level roles (DISTRICT_DIRECTOR, DISTRICT_STAFF)
+          const district = await db.getDistrictById(input.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "District not found",
+            });
+          }
+          districtId = district.id;
           regionId = district.region;
         }
 
@@ -354,8 +382,69 @@ export const appRouter = router({
           expiresAt,
         });
 
-        // In production, send email here. For now, log to console.
-        console.log(`[ForgotPassword] Reset code for ${input.email}: ${code}`);
+        // Import ENV for email configuration
+        const { ENV } = await import("./_core/env");
+
+        // Send email via Resend API if configured
+        if (ENV.RESEND_API_KEY) {
+          try {
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${ENV.RESEND_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                from: ENV.FROM_EMAIL,
+                to: [input.email],
+                subject: "CMC Go - Password Reset Code",
+                html: `
+                  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2 style="color: #dc2626;">CMC Go Password Reset</h2>
+                    <p>You requested a password reset for your CMC Go account.</p>
+                    <p>Your reset code is:</p>
+                    <div style="background: #f1f5f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                      <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0f172a;">${code}</span>
+                    </div>
+                    <p style="color: #64748b; font-size: 14px;">This code expires in 15 minutes.</p>
+                    <p style="color: #64748b; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+                  </div>
+                `,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({}));
+              console.error(
+                `[ForgotPassword] Resend API error: ${response.status}`,
+                errorData
+              );
+              // Fall back to console log
+              console.log(
+                `[ForgotPassword] Reset code for ${input.email}: ${code}`
+              );
+            } else {
+              console.log(
+                `[ForgotPassword] Email sent successfully to ${input.email}`
+              );
+            }
+          } catch (error) {
+            console.error(`[ForgotPassword] Failed to send email:`, error);
+            // Fall back to console log
+            console.log(
+              `[ForgotPassword] Reset code for ${input.email}: ${code}`
+            );
+          }
+        } else {
+          // No email service configured - log to console
+          console.log(
+            `[ForgotPassword] RESEND_API_KEY not configured. Reset code for ${input.email}: ${code}`
+          );
+          console.log(
+            `[ForgotPassword] To enable email, add RESEND_API_KEY to your environment`
+          );
+        }
+
         console.log(
           `[ForgotPassword] Code expires at: ${expiresAt.toISOString()}`
         );
