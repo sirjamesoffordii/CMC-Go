@@ -11,12 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Deploy to Railway
+
+      - name: Verify source files
+        run: |
+          echo "=== Commit ==="
+          git log --oneline -1
+          echo "=== Key client changes ==="
+          grep -c "showClose" client/src/components/LoginModal.tsx && echo "showClose FOUND" || echo "showClose NOT found"
+          grep -c "ACTION NEEDED" client/src/components/LoginModal.tsx && echo "ACTION NEEDED still present!" || echo "ACTION NEEDED removed (good)"
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install and pre-build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          echo "=== Built assets ==="
+          ls -la dist/public/assets/
+
+      - name: Deploy to Railway (with pre-built dist)
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli
-          # Write commit SHA to bust railpack build cache
-          echo "$GITHUB_SHA" > .build-version
+          # Remove dist/ from .gitignore so railway up includes the pre-built output
+          sed -i '/^dist\//d' .gitignore
           railway up --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b
