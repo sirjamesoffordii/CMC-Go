@@ -26,7 +26,7 @@ describe("people visibility helpers", () => {
       ).toBe(true);
     });
 
-    it("enforces CAMPUS scope by primaryCampusId", () => {
+    it("enforces REGION scope for STAFF (campus roles see their region)", () => {
       const user: UserScopeAnchors = {
         role: "STAFF",
         campusId: 5,
@@ -34,11 +34,12 @@ describe("people visibility helpers", () => {
         regionId: "R-1",
       };
 
+      // STAFF now gets REGION scope per auth spec (can see all people in region)
       expect(
         canAccessPerson(user, {
           primaryCampusId: 5,
           primaryDistrictId: "D-999",
-          primaryRegion: "R-999",
+          primaryRegion: "R-1",
         })
       ).toBe(true);
 
@@ -48,7 +49,7 @@ describe("people visibility helpers", () => {
           primaryDistrictId: "D-1",
           primaryRegion: "R-1",
         })
-      ).toBe(false);
+      ).toBe(true);
 
       expect(
         canAccessPerson(user, {
@@ -56,10 +57,19 @@ describe("people visibility helpers", () => {
           primaryDistrictId: "D-1",
           primaryRegion: "R-1",
         })
+      ).toBe(true);
+
+      // Different region is denied
+      expect(
+        canAccessPerson(user, {
+          primaryCampusId: 5,
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-2",
+        })
       ).toBe(false);
     });
 
-    it("enforces DISTRICT scope by primaryDistrictId (CAMPUS_DIRECTOR)", () => {
+    it("enforces REGION scope for CAMPUS_DIRECTOR (campus roles see their region)", () => {
       const user: UserScopeAnchors = {
         role: "CAMPUS_DIRECTOR",
         campusId: 5,
@@ -67,11 +77,12 @@ describe("people visibility helpers", () => {
         regionId: "R-1",
       };
 
+      // CAMPUS_DIRECTOR now gets REGION scope per auth spec
       expect(
         canAccessPerson(user, {
           primaryCampusId: 999,
           primaryDistrictId: "D-1",
-          primaryRegion: "R-999",
+          primaryRegion: "R-1",
         })
       ).toBe(true);
 
@@ -81,13 +92,14 @@ describe("people visibility helpers", () => {
           primaryDistrictId: "D-2",
           primaryRegion: "R-1",
         })
-      ).toBe(false);
+      ).toBe(true);
 
+      // Different region is denied
       expect(
         canAccessPerson(user, {
           primaryCampusId: 5,
-          primaryDistrictId: null,
-          primaryRegion: "R-1",
+          primaryDistrictId: "D-1",
+          primaryRegion: "R-2",
         })
       ).toBe(false);
     });
@@ -160,7 +172,7 @@ describe("people visibility helpers", () => {
       expect(built.params).toEqual([]);
     });
 
-    it("returns primaryCampusId filter for CAMPUS scope", () => {
+    it("returns primaryRegion filter for STAFF (REGION scope per auth spec)", () => {
       const user: UserScopeAnchors = {
         role: "STAFF",
         campusId: 42,
@@ -169,11 +181,11 @@ describe("people visibility helpers", () => {
       };
 
       const built = toSql(user);
-      expect(built.sql).toContain("primaryCampusId");
-      expect(built.params).toEqual([42]);
+      expect(built.sql).toContain("primaryRegion");
+      expect(built.params).toEqual(["R-1"]);
     });
 
-    it("returns primaryDistrictId filter for DISTRICT scope", () => {
+    it("returns primaryRegion filter for CAMPUS_DIRECTOR (REGION scope per auth spec)", () => {
       const user: UserScopeAnchors = {
         role: "CAMPUS_DIRECTOR",
         campusId: 42,
@@ -182,8 +194,8 @@ describe("people visibility helpers", () => {
       };
 
       const built = toSql(user);
-      expect(built.sql).toContain("primaryDistrictId");
-      expect(built.params).toEqual(["D-42"]);
+      expect(built.sql).toContain("primaryRegion");
+      expect(built.params).toEqual(["R-1"]);
     });
 
     it("returns primaryRegion filter for REGION scope", () => {
@@ -199,7 +211,7 @@ describe("people visibility helpers", () => {
       expect(built.params).toEqual(["R-42"]);
     });
 
-    it("normalizes campus-level aliases to CAMPUS scope", () => {
+    it("normalizes campus-level aliases to REGION scope (per auth spec)", () => {
       const aliases = [
         "CAMPUS_VOLUNTEER",
         "Campus Volunteer",
@@ -217,8 +229,8 @@ describe("people visibility helpers", () => {
           regionId: "R-7",
         });
 
-        expect(built.sql).toContain("primaryCampusId");
-        expect(built.params).toEqual([7]);
+        expect(built.sql).toContain("primaryRegion");
+        expect(built.params).toEqual(["R-7"]);
       }
     });
 

@@ -477,23 +477,27 @@ const FULL_ACCESS = new Set([
   "ADMIN",
 ]);
 
-const CAMPUS_SCOPED_ROLES = new Set(["STAFF", "CO_DIRECTOR"]);
-
 /**
- * Get people scope for a user based on their role and assignments
- * Determines what people data the user can access
+ * Get people scope for a user based on their scopeLevel (3-tier auth) with role fallback.
+ * Determines what people data the user can access (Scope = geographic area on map).
+ *
+ * Priority: user.scopeLevel (DB field) → role-based fallback
+ * The scopeLevel DB field is set during registration via getDefaultAuthorization()
+ * and can be overridden by admins in User Management.
  */
 export function getPeopleScope(user: {
   role: string;
+  scopeLevel?: string | null;
   campusId?: number | null;
   districtId?: string | null;
   regionId?: string | null;
 }): PeopleScope {
-  const role = normalizeRole(user.role);
+  // Use DB-stored scopeLevel when available (authoritative 3-tier auth)
+  const scope = user.scopeLevel || getScopeLevelFallback(user.role);
 
-  if (FULL_ACCESS.has(role)) return { level: "ALL" };
+  if (scope === "NATIONAL") return { level: "ALL" };
 
-  if (role === "DISTRICT_DIRECTOR") {
+  if (scope === "REGION") {
     if (!user.regionId) {
       throw new TRPCError({
         code: "FORBIDDEN",
@@ -503,7 +507,7 @@ export function getPeopleScope(user: {
     return { level: "REGION", regionId: user.regionId };
   }
 
-  if (role === "CAMPUS_DIRECTOR") {
+  if (scope === "DISTRICT") {
     if (!user.districtId) {
       throw new TRPCError({
         code: "FORBIDDEN",
@@ -513,20 +517,24 @@ export function getPeopleScope(user: {
     return { level: "DISTRICT", districtId: user.districtId };
   }
 
-  if (CAMPUS_SCOPED_ROLES.has(role)) {
-    if (user.campusId != null)
-      return { level: "CAMPUS", campusId: user.campusId };
-
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Access denied: missing campusId",
-    });
-  }
-
   throw new TRPCError({
     code: "FORBIDDEN",
-    message: "Access denied: role not permitted",
+    message: "Access denied: invalid scope level",
   });
+}
+
+/**
+ * Fallback scope level derived from role (used when scopeLevel DB field is not available).
+ * Matches the getDefaultAuthorization() mapping in routers.ts.
+ */
+function getScopeLevelFallback(role: string): ScopeLevel {
+  const normalized = normalizeRole(role);
+
+  if (FULL_ACCESS.has(normalized)) return "NATIONAL";
+  if (normalized === "DISTRICT_DIRECTOR") return "REGION";
+  // Campus-level roles (CAMPUS_DIRECTOR, CO_DIRECTOR, STAFF, etc.) get REGION scope
+  // per the authorization spec: all campus roles see their entire region on the map
+  return "REGION";
 }
 
 export type PersonAnchors = Pick<

@@ -70,9 +70,14 @@ async function main() {
           "sirjamesoffordII@gmail.com",
           passwordHash,
           "CMC_GO_ADMIN",
-          "NATIONAL", "NATIONAL", "NATIONAL",
-          null, null, null,
-          "ACTIVE", false,
+          "NATIONAL",
+          "NATIONAL",
+          "NATIONAL",
+          null,
+          null,
+          null,
+          "ACTIVE",
+          false,
         ]
       );
       console.log("✅ CMC Go Admin account created successfully");
@@ -84,7 +89,9 @@ async function main() {
       ["Arodriguez@ag.org"]
     );
     if (Array.isArray(existingAlex) && existingAlex.length > 0) {
-      console.log("✅ Alex Rodriguez (National Director) already exists (skipping)");
+      console.log(
+        "✅ Alex Rodriguez (National Director) already exists (skipping)"
+      );
     } else {
       const alexHash = await hashPassword("National Director");
       await connection.execute(
@@ -99,9 +106,14 @@ async function main() {
           "Arodriguez@ag.org",
           alexHash,
           "NATIONAL_DIRECTOR",
-          "NATIONAL", "NATIONAL", "NATIONAL",
-          null, null, null,
-          "ACTIVE", false,
+          "NATIONAL",
+          "NATIONAL",
+          "NATIONAL",
+          null,
+          null,
+          null,
+          "ACTIVE",
+          false,
         ]
       );
       console.log("✅ Alex Rodriguez (National Director) created");
@@ -128,9 +140,14 @@ async function main() {
           "dan@nwxa.org",
           danHash,
           "FIELD_DIRECTOR",
-          "NATIONAL", "NATIONAL", "NATIONAL",
-          null, null, null,
-          "ACTIVE", false,
+          "NATIONAL",
+          "NATIONAL",
+          "NATIONAL",
+          null,
+          null,
+          null,
+          "ACTIVE",
+          false,
         ]
       );
       console.log("✅ Dan Guenther (Field Director) created");
@@ -142,7 +159,9 @@ async function main() {
       ["mkhoogendoorn@gmail.com"]
     );
     if (Array.isArray(existingMatt) && existingMatt.length > 0) {
-      console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (skipping)");
+      console.log(
+        "✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (skipping)"
+      );
     } else {
       const mattHash = await hashPassword("Regional Director");
       await connection.execute(
@@ -157,9 +176,15 @@ async function main() {
           "mkhoogendoorn@gmail.com",
           mattHash,
           "REGION_DIRECTOR",
-          "NATIONAL", "NATIONAL", "REGION",
-          null, null, "Texico", "Texico",
-          "ACTIVE", false,
+          "NATIONAL",
+          "NATIONAL",
+          "REGION",
+          null,
+          null,
+          "Texico",
+          "Texico",
+          "ACTIVE",
+          false,
         ]
       );
       console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) created");
@@ -186,9 +211,14 @@ async function main() {
           "Admin@cmcgo.app",
           demoHash,
           "CMC_GO_ADMIN",
-          "NATIONAL", "NATIONAL", "NATIONAL",
-          null, null, null,
-          "ACTIVE", false,
+          "NATIONAL",
+          "NATIONAL",
+          "NATIONAL",
+          null,
+          null,
+          null,
+          "ACTIVE",
+          false,
         ]
       );
       console.log("✅ Admin@cmcgo.app (CMC_GO_ADMIN) created");
