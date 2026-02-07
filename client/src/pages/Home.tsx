@@ -1442,6 +1442,7 @@ export default function Home() {
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}
         onAuthSuccess={handleAuthSuccess}
+        showClose
       />
     </div>
   );
