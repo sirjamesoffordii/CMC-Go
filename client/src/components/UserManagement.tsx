@@ -333,7 +333,7 @@ export function UserManagement() {
                             District Staff
                           </SelectItem>
                           <SelectItem value="REGION_DIRECTOR">
-                            Region Director
+                            Region Director (seeded)
                           </SelectItem>
                           <SelectItem value="REGIONAL_STAFF">
                             Regional Staff
@@ -342,10 +342,10 @@ export function UserManagement() {
                             National Staff
                           </SelectItem>
                           <SelectItem value="NATIONAL_DIRECTOR">
-                            National Director
+                            National Director (seeded)
                           </SelectItem>
                           <SelectItem value="FIELD_DIRECTOR">
-                            Field Director
+                            Field Director (seeded)
                           </SelectItem>
                           <SelectItem value="CMC_GO_ADMIN">
                             CMC Go Admin

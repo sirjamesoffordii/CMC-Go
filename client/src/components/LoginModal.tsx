@@ -42,14 +42,12 @@ interface LoginModalProps {
 }
 
 // Role configuration based on scope level
+// NATIONAL_DIRECTOR, FIELD_DIRECTOR, REGION_DIRECTOR are pre-seeded and not self-registerable
 const NATIONAL_ROLES = [
-  { value: "NATIONAL_DIRECTOR", label: "National Director" },
-  { value: "FIELD_DIRECTOR", label: "Field Director" },
   { value: "NATIONAL_STAFF", label: "National Staff" },
 ] as const;
 
 const REGIONAL_ROLES = [
-  { value: "REGION_DIRECTOR", label: "Regional Director" },
   { value: "REGIONAL_STAFF", label: "Regional Staff" },
 ] as const;
 

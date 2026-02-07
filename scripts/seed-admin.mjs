@@ -48,51 +48,124 @@ async function main() {
   });
 
   try {
-    // Check if admin already exists
-    const [existingRows] = await connection.execute(
+    // --- CMC Go Admin (Sir James Offord) ---
+    const [existingAdmin] = await connection.execute(
       "SELECT id FROM users WHERE email = ?",
       ["sirjamesoffordII@gmail.com"]
     );
 
-    if (Array.isArray(existingRows) && existingRows.length > 0) {
+    if (Array.isArray(existingAdmin) && existingAdmin.length > 0) {
       console.log("✅ CMC Go Admin account already exists (skipping)");
-      await connection.end();
-      return;
+    } else {
+      const passwordHash = await hashPassword("Wow#24123");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "Sir James Offord",
+          "sirjamesoffordII@gmail.com",
+          passwordHash,
+          "CMC_GO_ADMIN",
+          "NATIONAL", "NATIONAL", "NATIONAL",
+          null, null, null,
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ CMC Go Admin account created successfully");
     }
 
-    // Hash the password
-    const passwordHash = await hashPassword("Wow#24123");
-
-    // Insert the admin user
-    await connection.execute(
-      `INSERT INTO users (
-        fullName, email, passwordHash, role,
-        scopeLevel, viewLevel, editLevel,
-        campusId, districtId, regionId,
-        approvalStatus, isBanned
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        "Sir James Offord",
-        "sirjamesoffordII@gmail.com",
-        passwordHash,
-        "CMC_GO_ADMIN",
-        "NATIONAL",
-        "NATIONAL",
-        "NATIONAL",
-        null, // No campus (National Team)
-        null,
-        null,
-        "ACTIVE",
-        false,
-      ]
+    // --- Alex Rodriguez (National Director) ---
+    const [existingAlex] = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      ["alex.rodriguez@chialpha.com"]
     );
+    if (Array.isArray(existingAlex) && existingAlex.length > 0) {
+      console.log("✅ Alex Rodriguez (National Director) already exists (skipping)");
+    } else {
+      const alexHash = await hashPassword("Wow#24123");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "Alex Rodriguez",
+          "alex.rodriguez@chialpha.com",
+          alexHash,
+          "NATIONAL_DIRECTOR",
+          "NATIONAL", "NATIONAL", "NATIONAL",
+          null, null, null,
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ Alex Rodriguez (National Director) created");
+    }
 
-    console.log("✅ CMC Go Admin account created successfully");
-    console.log("   Email: sirjamesoffordII@gmail.com");
-    console.log("   Role: CMC_GO_ADMIN");
-    console.log("   Scope/View/Edit: NATIONAL");
+    // --- Dan Guenther (Field Director) ---
+    const [existingDan] = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      ["dan.guenther@chialpha.com"]
+    );
+    if (Array.isArray(existingDan) && existingDan.length > 0) {
+      console.log("✅ Dan Guenther (Field Director) already exists (skipping)");
+    } else {
+      const danHash = await hashPassword("Wow#24123");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "Dan Guenther",
+          "dan.guenther@chialpha.com",
+          danHash,
+          "FIELD_DIRECTOR",
+          "NATIONAL", "NATIONAL", "NATIONAL",
+          null, null, null,
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ Dan Guenther (Field Director) created");
+    }
+
+    // --- Matthew Hoogendoorn (Regional Director, Texico) ---
+    const [existingMatt] = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      ["matthew.hoogendoorn@chialpha.com"]
+    );
+    if (Array.isArray(existingMatt) && existingMatt.length > 0) {
+      console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (skipping)");
+    } else {
+      const mattHash = await hashPassword("Wow#24123");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId, overseeRegionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "Matthew Hoogendoorn",
+          "matthew.hoogendoorn@chialpha.com",
+          mattHash,
+          "REGION_DIRECTOR",
+          "NATIONAL", "NATIONAL", "REGION",
+          null, null, "Texico", "Texico",
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) created");
+    }
   } catch (error) {
-    console.error("❌ Error seeding admin:", error.message);
+    console.error("❌ Error seeding:", error.message);
     process.exit(1);
   } finally {
     await connection.end();

@@ -83,7 +83,8 @@ function getDefaultAuthorization(role: string) {
   }
 }
 
-// Roles available for registration (excludes CMC_GO_ADMIN which is pre-seeded)
+// Roles available for registration
+// NATIONAL_DIRECTOR, FIELD_DIRECTOR, REGION_DIRECTOR are pre-seeded (not self-registerable)
 const REGISTERABLE_ROLES = [
   "STAFF",
   "CO_DIRECTOR",
@@ -92,19 +93,13 @@ const REGISTERABLE_ROLES = [
   "CAMPUS_VOLUNTEER",
   "DISTRICT_DIRECTOR",
   "DISTRICT_STAFF",
-  "REGION_DIRECTOR",
   "REGIONAL_STAFF",
   "NATIONAL_STAFF",
-  "NATIONAL_DIRECTOR",
-  "FIELD_DIRECTOR",
 ] as const;
 
 // National Team roles (for registration flow - no campus required)
 const NATIONAL_TEAM_ROLES = [
   "NATIONAL_STAFF",
-  "NATIONAL_DIRECTOR",
-  "FIELD_DIRECTOR",
-  "REGION_DIRECTOR",
   "REGIONAL_STAFF",
 ] as const;
 
@@ -113,7 +108,11 @@ const DISTRICT_LEVEL_ROLES = ["DISTRICT_DIRECTOR", "DISTRICT_STAFF"] as const;
 
 // Roles that require overseeRegionId
 const ROLES_REQUIRING_OVERSEE_REGION = [
-  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+] as const;
+
+// Roles that require admin approval before access is granted
+const ROLES_REQUIRING_APPROVAL = [
   "REGIONAL_STAFF",
 ] as const;
 
@@ -342,7 +341,9 @@ export const appRouter = router({
           regionId,
           overseeRegionId,
           ...authLevels,
-          approvalStatus: "PENDING_APPROVAL", // Require admin approval
+          approvalStatus: (ROLES_REQUIRING_APPROVAL as readonly string[]).includes(input.role)
+            ? "PENDING_APPROVAL"
+            : "ACTIVE",
         });
 
         const user = await db.getUserById(userId);
