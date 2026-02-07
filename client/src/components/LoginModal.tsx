@@ -37,6 +37,8 @@ interface LoginModalProps {
   onOpenChange: (open: boolean) => void;
   /** Called after successful login/register with the user's districtId (if any) */
   onAuthSuccess?: (districtId: string | null) => void;
+  /** Show the close (X) button. Default false — the /login page hides it. */
+  showClose?: boolean;
 }
 
 // Role configuration based on scope level
@@ -78,6 +80,7 @@ export function LoginModal({
   open,
   onOpenChange,
   onAuthSuccess,
+  showClose = false,
 }: LoginModalProps) {
   const utils = trpc.useUtils();
 
@@ -141,8 +144,12 @@ export function LoginModal({
         setUserError("Wrong password.");
         return;
       }
-      if (code === "FORBIDDEN" || code === "BAD_REQUEST") {
+      if (code === "FORBIDDEN") {
         setUserError(err.message);
+        return;
+      }
+      if (code === "BAD_REQUEST") {
+        setUserError("Please enter a valid email address.");
         return;
       }
     }
@@ -155,6 +162,10 @@ export function LoginModal({
       const code = err.data?.code;
       if (code === "INTERNAL_SERVER_ERROR") {
         setSystemError("Something went wrong on our side. Please try again.");
+        return;
+      }
+      if (code === "BAD_REQUEST") {
+        setUserError("Please check your input and try again.");
         return;
       }
       setUserError(err.message);
@@ -623,26 +634,28 @@ export function LoginModal({
       </div>
 
       {/* Close */}
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={() => onOpenChange(false)}
-        className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
-      >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+      {showClose && (
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => onOpenChange(false)}
+          className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
-      </button>
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      )}
 
       {/* CSS Animations */}
       <style>{`
