@@ -119,6 +119,31 @@ export default function People() {
     getHasActiveNeedsInitial()
   );
 
+  type OrderByOption =
+    | "lastUpdated"
+    | "nameAsc"
+    | "nameDesc"
+    | "status"
+    | "role";
+  const getOrderByInitial = (): OrderByOption => {
+    if (typeof window === "undefined") return "status";
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get("orderBy");
+    if (
+      v === "lastUpdated" ||
+      v === "nameAsc" ||
+      v === "nameDesc" ||
+      v === "status" ||
+      v === "role"
+    )
+      return v;
+    return "status";
+  };
+  const [orderBy, setOrderBy] = useState<OrderByOption>(getOrderByInitial());
+
+  const [depositPaidFilter, setDepositPaidFilter] = useState<boolean>(false);
+  const [familyGuestFilter, setFamilyGuestFilter] = useState<boolean>(false);
+
   // Expansion state - districts and campuses
   const [expandedDistricts, setExpandedDistricts] = useState<Set<string>>(
     new Set()
@@ -132,9 +157,10 @@ export default function People() {
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
   const [isEditCampusDialogOpen, setIsEditCampusDialogOpen] = useState(false);
   const [campusForm, setCampusForm] = useState({ name: "" });
-  const [campusSortBy, setCampusSortBy] = useState<
-    Record<number, "status" | "name" | "role">
-  >({});
+  // Filter dropdown open state (Scope, Order, Sort by)
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const [sortByOpen, setSortByOpen] = useState(false);
 
   // Data queries - ONLY run when authenticated
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -290,6 +316,21 @@ export default function People() {
       filtered = filtered.filter(p => p.primaryCampusId === user.campusId);
     }
 
+    // Deposit paid filter
+    if (depositPaidFilter) {
+      filtered = filtered.filter(p => p.depositPaid === true);
+    }
+
+    // Family & guests filter (has spouse attending, children, or guests)
+    if (familyGuestFilter) {
+      filtered = filtered.filter(
+        p =>
+          p.spouseAttending === true ||
+          (p.childrenCount ?? 0) > 0 ||
+          (p.guestsCount ?? 0) > 0
+      );
+    }
+
     return filtered;
   }, [
     allPeople,
@@ -299,6 +340,8 @@ export default function People() {
     user?.campusId,
     needTypeFilter,
     hasActiveNeeds,
+    depositPaidFilter,
+    familyGuestFilter,
     needsByPersonId,
     campusById,
     districtById,
@@ -369,47 +412,48 @@ export default function People() {
       "Not Invited": 3,
     };
 
-    const comparePeople = (
-      a: Person,
-      b: Person,
-      sortBy: "status" | "name" | "role"
-    ) => {
-      if (sortBy === "name") {
-        const aName = a.name?.trim() || a.personId;
-        const bName = b.name?.trim() || b.personId;
-        return aName.localeCompare(bName);
-      }
+    const comparePeople = (a: Person, b: Person, sortBy: OrderByOption) => {
+      const aName = a.name?.trim() || a.personId;
+      const bName = b.name?.trim() || b.personId;
+      const nameCompare = aName.localeCompare(bName);
 
+      if (sortBy === "lastUpdated") {
+        const aTs = (a as Person & { lastEdited?: Date | null }).lastEdited
+          ? new Date(
+              (a as Person & { lastEdited?: Date | null }).lastEdited!
+            ).getTime()
+          : 0;
+        const bTs = (b as Person & { lastEdited?: Date | null }).lastEdited
+          ? new Date(
+              (b as Person & { lastEdited?: Date | null }).lastEdited!
+            ).getTime()
+          : 0;
+        if (bTs !== aTs) return bTs - aTs;
+        return nameCompare;
+      }
+      if (sortBy === "nameAsc") return nameCompare;
+      if (sortBy === "nameDesc") return -nameCompare;
       if (sortBy === "role") {
         const aRole = a.primaryRole?.trim() || "";
         const bRole = b.primaryRole?.trim() || "";
         const roleCompare = aRole.localeCompare(bRole);
         if (roleCompare !== 0) return roleCompare;
-        const aName = a.name?.trim() || a.personId;
-        const bName = b.name?.trim() || b.personId;
-        return aName.localeCompare(bName);
+        return nameCompare;
       }
-
+      // status
       const statusCompare =
         statusSortOrder[a.status] - statusSortOrder[b.status];
       if (statusCompare !== 0) return statusCompare;
-      const aName = a.name?.trim() || a.personId;
-      const bName = b.name?.trim() || b.personId;
-      return aName.localeCompare(bName);
+      return nameCompare;
     };
 
-    // Sort people within each campus and sort campuses within each district
+    // Sort people within each campus (global order) and sort campuses within each district
     districtMap.forEach((data, districtId) => {
       const sortedCampuses = Array.from(data.campuses.values())
-        .map(item => {
-          const sortBy = campusSortBy[item.campus.id] ?? "status";
-          return {
-            ...item,
-            people: [...item.people].sort((a, b) =>
-              comparePeople(a, b, sortBy)
-            ),
-          };
-        })
+        .map(item => ({
+          ...item,
+          people: [...item.people].sort((a, b) => comparePeople(a, b, orderBy)),
+        }))
         .sort((a, b) => a.campus.name.localeCompare(b.campus.name));
       const newMap = new Map<number, { campus: Campus; people: Person[] }>();
       sortedCampuses.forEach(item => {
@@ -439,7 +483,7 @@ export default function People() {
       .sort((a, b) => a.region.localeCompare(b.region));
 
     return sortedRegions;
-  }, [filteredPeople, allDistricts, allCampuses, campusById, campusSortBy]);
+  }, [filteredPeople, allDistricts, allCampuses, campusById, orderBy]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -491,16 +535,6 @@ export default function People() {
     }
   };
 
-  const handleCampusSortChange = (
-    campusId: number,
-    sortBy: "status" | "name" | "role"
-  ) => {
-    setCampusSortBy(prev => ({
-      ...prev,
-      [campusId]: sortBy,
-    }));
-  };
-
   // Sync filter state to URL query parameters
   useEffect(() => {
     const params = new URLSearchParams();
@@ -536,7 +570,14 @@ export default function People() {
       ? `${window.location.pathname}?${newSearch}`
       : window.location.pathname;
     window.history.replaceState({}, "", newUrl);
-  }, [statusFilter, searchQuery, myCampus, needTypeFilter, hasActiveNeeds]);
+  }, [
+    statusFilter,
+    searchQuery,
+    myCampus,
+    needTypeFilter,
+    hasActiveNeeds,
+    orderBy,
+  ]);
 
   useEffect(() => {
     if (!searchOpen) return;
@@ -651,108 +692,234 @@ export default function People() {
           </div>
         </div>
 
-        {/* Filters Section */}
+        {/* Filters: Scope, Order, Sort by (3 dropdowns only) */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="space-y-3">
-            {/* Status Filter Chips */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">Status:</span>
-              {(["Yes", "Maybe", "No", "Not Invited"] as const).map(status => {
-                const count = filteredPeople.filter(
-                  p => p.status === status
-                ).length;
-                const isActive = statusFilter.has(status);
-                return (
-                  <button
-                    key={status}
-                    onClick={() => {
-                      const newFilter = new Set(statusFilter);
-                      if (isActive) {
-                        newFilter.delete(status);
-                      } else {
-                        newFilter.add(status);
-                      }
-                      setStatusFilter(newFilter);
-                    }}
-                    className={`
-                      px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                      ${
-                        isActive
-                          ? status === "Yes"
-                            ? "bg-emerald-100 text-emerald-700 border-2 border-emerald-300"
-                            : status === "Maybe"
-                              ? "bg-yellow-100 text-yellow-700 border-2 border-yellow-300"
-                              : status === "No"
-                                ? "bg-red-100 text-red-700 border-2 border-red-300"
-                                : "bg-slate-100 text-slate-700 border-2 border-slate-300"
-                          : "bg-white text-black border border-gray-300 hover:bg-red-600 hover:text-white"
-                      }
-                    `}
-                  >
-                    {formatStatusLabel(status)} ({count})
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Needs Filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">
-                Needs:
-              </span>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* 1. Scope */}
+            <div className="relative">
               <button
-                onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                  ${
-                    hasActiveNeeds
-                      ? "bg-orange-100 text-orange-700 border-2 border-orange-300"
-                      : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                  }
-                `}
+                type="button"
+                onClick={() => {
+                  setScopeOpen(!scopeOpen);
+                  setOrderOpen(false);
+                  setSortByOpen(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
               >
-                Has active needs
+                Scope
+                <ChevronDown className="w-4 h-4" />
               </button>
-            </div>
-
-            {/* Need Type Filter */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-gray-600 font-medium">
-                Need Type:
-              </span>
-              <select
-                value={needTypeFilter}
-                onChange={e => setNeedTypeFilter(e.target.value as any)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-black border border-gray-300 hover:bg-red-600 hover:text-white"
-              >
-                <option value="All">All</option>
-                <option value="Financial">Financial</option>
-                <option value="Housing">Housing</option>
-                <option value="Transportation">Transportation</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            {/* My Campus Filter */}
-            {user?.campusId &&
-              (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setMyCampus(!myCampus)}
-                    className={`
-                    px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
-                    ${
-                      myCampus
-                        ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                        : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
-                    }
-                  `}
-                  >
-                    <Filter className="w-4 h-4 inline mr-1" />
-                    My Campus Only
-                  </button>
-                </div>
+              {scopeOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setScopeOpen(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {user?.campusId &&
+                    (user.role === "STAFF" || user.role === "CO_DIRECTOR") ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMyCampus(!myCampus);
+                          setScopeOpen(false);
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-2 ${
+                          myCampus
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <Filter className="w-4 h-4" />
+                        My Campus Only
+                        {myCampus && <Check className="w-4 h-4 ml-auto" />}
+                      </button>
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        All districts
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
+            </div>
+
+            {/* 2. Order */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setOrderOpen(!orderOpen);
+                  setScopeOpen(false);
+                  setSortByOpen(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
+              >
+                Order
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {orderOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setOrderOpen(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    {(
+                      [
+                        ["lastUpdated", "Last updated"],
+                        ["nameAsc", "Name A–Z"],
+                        ["nameDesc", "Name Z–A"],
+                        ["status", "Status"],
+                        ["role", "Role"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          setOrderBy(value);
+                          setOrderOpen(false);
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-sm flex items-center justify-between ${
+                          orderBy === value
+                            ? "bg-red-50 text-red-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {label}
+                        {orderBy === value && <Check className="w-4 h-4" />}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* 3. Sort by (filter categories: status, needs, need type, deposit paid, family & guests) */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortByOpen(!sortByOpen);
+                  setScopeOpen(false);
+                  setOrderOpen(false);
+                }}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
+              >
+                Sort by
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              {sortByOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setSortByOpen(false)}
+                  />
+                  <div className="absolute left-0 top-full mt-1 w-72 max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Status
+                    </div>
+                    {(["Yes", "Maybe", "No", "Not Invited"] as const).map(
+                      status => {
+                        const isActive = statusFilter.has(status);
+                        return (
+                          <button
+                            key={status}
+                            type="button"
+                            onClick={() => {
+                              const next = new Set(statusFilter);
+                              if (isActive) next.delete(status);
+                              else next.add(status);
+                              setStatusFilter(next);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
+                              isActive
+                                ? "bg-slate-100 text-slate-800 font-medium"
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {formatStatusLabel(status)}
+                            {isActive && <Check className="w-4 h-4" />}
+                          </button>
+                        );
+                      }
+                    )}
+                    <div className="border-t border-gray-100 my-2" />
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Needs
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setHasActiveNeeds(!hasActiveNeeds)}
+                      className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
+                        hasActiveNeeds
+                          ? "bg-orange-50 text-orange-700 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Has active needs
+                      {hasActiveNeeds && <Check className="w-4 h-4" />}
+                    </button>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 mt-1">
+                      Need type
+                    </div>
+                    <select
+                      value={needTypeFilter}
+                      onChange={e =>
+                        setNeedTypeFilter(
+                          e.target.value as
+                            | "All"
+                            | "Financial"
+                            | "Housing"
+                            | "Transportation"
+                            | "Other"
+                        )
+                      }
+                      className="mx-3 mt-0.5 w-[calc(100%-24px)] px-3 py-2 rounded border border-gray-200 text-sm"
+                    >
+                      <option value="All">All</option>
+                      <option value="Financial">Financial</option>
+                      <option value="Housing">Housing</option>
+                      <option value="Transportation">Transportation</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <div className="border-t border-gray-100 my-2" />
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      Other
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDepositPaidFilter(!depositPaidFilter);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
+                        depositPaidFilter
+                          ? "bg-emerald-50 text-emerald-700 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Deposit paid
+                      {depositPaidFilter && <Check className="w-4 h-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFamilyGuestFilter(!familyGuestFilter);
+                      }}
+                      className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
+                        familyGuestFilter
+                          ? "bg-indigo-50 text-indigo-700 font-medium"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      Family & guests
+                      {familyGuestFilter && <Check className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -858,8 +1025,6 @@ export default function People() {
                                 const isCampusExpanded = expandedCampuses.has(
                                   campus.id
                                 );
-                                const campusSort =
-                                  campusSortBy[campus.id] ?? "status";
                                 const campusNeeds = allNeeds.filter(n =>
                                   people.some(
                                     p => p.personId === n.personId && n.isActive
@@ -939,56 +1104,6 @@ export default function People() {
                                                   >
                                                     <Edit2 className="w-4 h-4" />
                                                     Edit Campus Name
-                                                  </button>
-                                                  <div className="border-t border-gray-200 my-1"></div>
-                                                  <div className="px-4 py-1 text-xs text-gray-500 font-medium">
-                                                    Sort by
-                                                  </div>
-                                                  <button
-                                                    onClick={() => {
-                                                      handleCampusSortChange(
-                                                        campus.id,
-                                                        "status"
-                                                      );
-                                                      setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
-                                                  >
-                                                    <span>Status</span>
-                                                    {campusSort ===
-                                                      "status" && (
-                                                      <Check className="w-4 h-4" />
-                                                    )}
-                                                  </button>
-                                                  <button
-                                                    onClick={() => {
-                                                      handleCampusSortChange(
-                                                        campus.id,
-                                                        "name"
-                                                      );
-                                                      setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
-                                                  >
-                                                    <span>Name</span>
-                                                    {campusSort === "name" && (
-                                                      <Check className="w-4 h-4" />
-                                                    )}
-                                                  </button>
-                                                  <button
-                                                    onClick={() => {
-                                                      handleCampusSortChange(
-                                                        campus.id,
-                                                        "role"
-                                                      );
-                                                      setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center justify-between transition-colors"
-                                                  >
-                                                    <span>Role</span>
-                                                    {campusSort === "role" && (
-                                                      <Check className="w-4 h-4" />
-                                                    )}
                                                   </button>
                                                 </div>
                                               </>

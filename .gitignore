@@ -118,6 +118,11 @@ tmpclaude-*
 
 # Agent heartbeat file (local-only, never commit)
 .github/agents/heartbeat.json
+.github/agents/assignment.json
+.github/agents/spawn-log.json
+
+# Accidental / local-only file at repo root
+/Go
 
 # Local scratch / analysis clones
 _external/
