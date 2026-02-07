@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { TRPCClientError } from "@trpc/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -107,7 +108,81 @@ export function LoginModal({
 
   // UI state
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"user" | "system" | null>(null);
+  const [highlightCreateUser, setHighlightCreateUser] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const clearError = () => {
+    setError(null);
+    setErrorType(null);
+    setHighlightCreateUser(false);
+  };
+
+  const setUserError = (message: string) => {
+    setError(message);
+    setErrorType("user");
+  };
+
+  const setSystemError = (message: string) => {
+    setError(message);
+    setErrorType("system");
+  };
+
+  const handleLoginError = (err: unknown) => {
+    setHighlightCreateUser(false);
+    if (err instanceof TRPCClientError) {
+      const code = err.data?.code;
+      if (code === "NOT_FOUND") {
+        setUserError("User doesn't exist. Create a new user.");
+        setHighlightCreateUser(true);
+        return;
+      }
+      if (code === "UNAUTHORIZED") {
+        setUserError("Wrong password.");
+        return;
+      }
+      if (code === "FORBIDDEN" || code === "BAD_REQUEST") {
+        setUserError(err.message);
+        return;
+      }
+    }
+
+    setSystemError("Something went wrong on our side. Please try again.");
+  };
+
+  const handleMutationError = (err: unknown) => {
+    if (err instanceof TRPCClientError) {
+      const code = err.data?.code;
+      if (code === "INTERNAL_SERVER_ERROR") {
+        setSystemError("Something went wrong on our side. Please try again.");
+        return;
+      }
+      setUserError(err.message);
+      return;
+    }
+
+    setSystemError("Something went wrong on our side. Please try again.");
+  };
+
+  const renderError = () => {
+    if (!error) return null;
+    const isSystem = errorType === "system";
+    return (
+      <div
+        className={cn(
+          "rounded-lg border px-3 py-2 text-sm",
+          isSystem
+            ? "border-amber-300 bg-amber-50 text-amber-900"
+            : "border-red-200 bg-red-50 text-red-700"
+        )}
+      >
+        <span className="text-xs font-semibold uppercase tracking-wide">
+          {isSystem ? "System issue" : "Action needed"}
+        </span>
+        <p className="mt-1">{error}</p>
+      </div>
+    );
+  };
 
   // Typeahead search state
   const [regionQuery, setRegionQuery] = useState("");
@@ -169,7 +244,7 @@ export function LoginModal({
       goToStep("role");
     },
     onError: err => {
-      setError(err.message);
+      handleMutationError(err);
       setIsCreatingCampus(false);
     },
   });
@@ -192,7 +267,7 @@ export function LoginModal({
       resetForm();
       onAuthSuccess?.(districtId);
     },
-    onError: err => setError(err.message),
+    onError: err => handleLoginError(err),
   });
 
   const registerMutation = trpc.auth.register.useMutation({
@@ -203,20 +278,20 @@ export function LoginModal({
       resetForm();
       onAuthSuccess?.(districtId);
     },
-    onError: err => setError(err.message),
+    onError: err => handleMutationError(err),
   });
 
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
     onSuccess: () => {
-      setError(null);
+      clearError();
       setMode("resetPassword");
     },
-    onError: err => setError(err.message),
+    onError: err => handleMutationError(err),
   });
 
   const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
-      setError(null);
+      clearError();
       setResetSuccess(true);
       // After 2 seconds, go back to login
       setTimeout(() => {
@@ -226,7 +301,7 @@ export function LoginModal({
         setResetSuccess(false);
       }, 2000);
     },
-    onError: err => setError(err.message),
+    onError: err => handleMutationError(err),
   });
 
   const resetForm = () => {
@@ -245,7 +320,7 @@ export function LoginModal({
     setSelectedDistrictId(null);
     setSelectedCampusId(null);
     setSelectedRole(null);
-    setError(null);
+    clearError();
     setRegionQuery("");
     setDistrictQuery("");
     setCampusQuery("");
@@ -259,37 +334,44 @@ export function LoginModal({
   const goToStep = (newStep: RegistrationStep) => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    setError(null);
+    clearError();
     setTimeout(() => {
       setStep(newStep);
       setTimeout(() => setIsTransitioning(false), 150);
     }, 150);
   };
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (highlightCreateUser) {
+      setHighlightCreateUser(false);
+    }
+  };
+
   // Handlers
   const handleLogin = () => {
     if (!email.trim() || !password) {
-      setError("Please enter your email and password");
+      setUserError("Please enter your email and password");
       return;
     }
-    setError(null);
+    clearError();
     loginMutation.mutate({ email: email.trim(), password });
   };
 
   const handleCredentialsNext = () => {
     if (!email.trim()) {
-      setError("Please enter your email");
+      setUserError("Please enter your email");
       return;
     }
     if (!password) {
-      setError("Please enter a password");
+      setUserError("Please enter a password");
       return;
     }
     if (!fullName.trim()) {
-      setError("Please enter your full name");
+      setUserError("Please enter your full name");
       return;
     }
-    setError(null);
+    clearError();
     goToStep("region");
   };
 
@@ -337,16 +419,16 @@ export function LoginModal({
 
   const handleRegister = () => {
     if (!email.trim() || !password || !fullName.trim()) {
-      setError("Missing required fields");
+      setUserError("Missing required fields");
       return;
     }
 
     if (!selectedRole) {
-      setError("Please select a role");
+      setUserError("Please select a role");
       return;
     }
 
-    setError(null);
+    clearError();
 
     registerMutation.mutate({
       email: email.trim(),
@@ -642,7 +724,7 @@ export function LoginModal({
                   spellCheck={false}
                   inputMode="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => handleEmailChange(e.target.value)}
                   placeholder="you@example.com"
                   className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   onKeyDown={e => e.key === "Enter" && handleLogin()}
@@ -682,13 +764,13 @@ export function LoginModal({
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-700">{error}</p>}
+              {renderError()}
 
               <div className="flex justify-end">
                 <button
                   type="button"
                   onClick={() => {
-                    setError(null);
+                    clearError();
                     setMode("forgotPassword");
                   }}
                   className="text-sm font-medium text-red-700 hover:text-red-600"
@@ -719,7 +801,11 @@ export function LoginModal({
                     setMode("register");
                     setStep("credentials");
                   }}
-                  className="font-medium text-red-700 hover:text-red-600"
+                  className={cn(
+                    "font-medium text-red-700 hover:text-red-600",
+                    highlightCreateUser &&
+                      "rounded-md bg-amber-100 px-2 py-1 text-amber-900 ring-1 ring-amber-300"
+                  )}
                 >
                   Create one
                 </button>
@@ -749,7 +835,7 @@ export function LoginModal({
                   type="email"
                   autoComplete="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => handleEmailChange(e.target.value)}
                   placeholder="you@example.com"
                   className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   onKeyDown={e => {
@@ -760,7 +846,7 @@ export function LoginModal({
                 />
               </div>
 
-              {error && <p className="text-sm text-red-700">{error}</p>}
+              {renderError()}
 
               <Button
                 onClick={() => {
@@ -784,7 +870,7 @@ export function LoginModal({
               <p className="text-center text-sm text-slate-600">
                 <button
                   onClick={() => {
-                    setError(null);
+                    clearError();
                     setMode("login");
                   }}
                   className="font-medium text-red-700 hover:text-red-600"
@@ -884,7 +970,7 @@ export function LoginModal({
                     </div>
                   </div>
 
-                  {error && <p className="text-sm text-red-700">{error}</p>}
+                  {renderError()}
 
                   <Button
                     onClick={() => {
@@ -914,7 +1000,7 @@ export function LoginModal({
                   <div className="flex justify-between text-sm text-slate-600">
                     <button
                       onClick={() => {
-                        setError(null);
+                        clearError();
                         setMode("forgotPassword");
                         setResetCode("");
                         setNewPassword("");
@@ -925,7 +1011,7 @@ export function LoginModal({
                     </button>
                     <button
                       onClick={() => {
-                        setError(null);
+                        clearError();
                         setMode("login");
                         setResetCode("");
                         setNewPassword("");
@@ -979,7 +1065,7 @@ export function LoginModal({
                   spellCheck={false}
                   inputMode="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={e => handleEmailChange(e.target.value)}
                   placeholder="you@example.com"
                   className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                 />
@@ -1017,7 +1103,7 @@ export function LoginModal({
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-700">{error}</p>}
+              {renderError()}
 
               <Button
                 onClick={handleCredentialsNext}
@@ -1412,7 +1498,7 @@ export function LoginModal({
                 </div>
               </div>
 
-              {error && <p className="text-sm text-red-700">{error}</p>}
+              {renderError()}
 
               <Button
                 onClick={handleRegister}

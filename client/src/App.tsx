@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AuthGate } from "./components/AuthGate";
 import { SentryTestRedirect } from "./components/SentryTestRedirect";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -69,14 +70,33 @@ function Router() {
   );
 }
 
+// Routes that don't require authentication
+const PUBLIC_ROUTES = new Set([
+  "/",
+  "/login",
+  "/app-auth",
+  "/why-invitations-matter",
+  "/more-info",
+  "/404",
+]);
+
 function App() {
+  const [location] = useLocation();
+  const isPublicRoute = PUBLIC_ROUTES.has(location);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
           <SentryTestRedirect />
-          <Router />
+          {isPublicRoute ? (
+            <Router />
+          ) : (
+            <AuthGate>
+              <Router />
+            </AuthGate>
+          )}
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

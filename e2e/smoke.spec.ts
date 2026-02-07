@@ -11,6 +11,6 @@ test("home page renders core navigation", async ({ page }) => {
 
 test("admin console redirects when unauthenticated", async ({ page }) => {
   await page.goto("/admin");
-  // Admin console requires CMC_GO_ADMIN role and redirects to home when not authenticated
-  await expect(page).toHaveURL("/", { timeout: 5000 });
+  // Admin console requires authentication and redirects to login when not authenticated
+  await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
 });

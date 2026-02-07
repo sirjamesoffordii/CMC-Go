@@ -150,10 +150,17 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         const user = await db.getUserByEmail(input.email);
 
-        if (!user || !user.passwordHash) {
+        if (!user) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "User doesn't exist. Create a new user.",
+          });
+        }
+
+        if (!user.passwordHash) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Invalid email or password",
+            message: "Wrong password.",
           });
         }
 
@@ -169,7 +176,7 @@ export const appRouter = router({
         if (!isValid) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
-            message: "Invalid email or password",
+            message: "Wrong password.",
           });
         }
 
