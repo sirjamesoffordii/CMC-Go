@@ -199,7 +199,7 @@ export const appRouter = router({
       .input(
         z.object({
           email: z.string().email(),
-          password: z.string().min(8),
+          password: z.string().min(1),
           fullName: z.string().min(1),
           role: z.enum(REGISTERABLE_ROLES),
           // For campus-based roles
@@ -334,6 +334,28 @@ export const appRouter = router({
           });
         }
 
+        // Auto-create a person record so the user shows up in the district panel
+        const personId = `user-${userId}`;
+        try {
+          await db.createPerson({
+            personId,
+            name: input.fullName,
+            primaryRole: input.role,
+            primaryCampusId: campusId,
+            primaryDistrictId: districtId,
+            primaryRegion: regionId,
+            status: "Not Invited",
+          });
+          // Link user to person record
+          await db.updateUserPersonId(userId, personId);
+        } catch (personError) {
+          // Non-fatal: user can still function without a person record
+          console.error(
+            "[register] Failed to create person record:",
+            personError
+          );
+        }
+
         // Set session
         await db.updateUserLastLoginAt(user.id);
         setSessionCookie(ctx.req, ctx.res, user.id);
@@ -458,7 +480,7 @@ export const appRouter = router({
         z.object({
           email: z.string().email(),
           code: z.string().length(6),
-          newPassword: z.string().min(8),
+          newPassword: z.string().min(1),
         })
       )
       .mutation(async ({ input }) => {
