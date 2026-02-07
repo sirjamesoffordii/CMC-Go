@@ -108,7 +108,9 @@ export function LoginModal({
     null
   );
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
-  const [newlyCreatedCampusName, setNewlyCreatedCampusName] = useState<string | null>(null);
+  const [newlyCreatedCampusName, setNewlyCreatedCampusName] = useState<
+    string | null
+  >(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   // UI state
@@ -330,6 +332,7 @@ export function LoginModal({
     setSelectedRegion(null);
     setSelectedDistrictId(null);
     setSelectedCampusId(null);
+    setNewlyCreatedCampusName(null);
     setSelectedRole(null);
     clearError();
     setRegionQuery("");
@@ -1490,7 +1493,8 @@ export function LoginModal({
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Campus</span>
                     <span className="text-sm font-medium text-slate-900">
-                      {campuses.find(c => c.id === selectedCampusId)?.name ?? newlyCreatedCampusName}
+                      {campuses.find(c => c.id === selectedCampusId)?.name ??
+                        newlyCreatedCampusName}
                     </span>
                   </div>
                 )}
