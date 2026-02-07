@@ -18,6 +18,14 @@ import {
 } from "./_core/authorization";
 import { hashPassword, verifyPassword } from "./_core/password";
 
+/** Strip sensitive fields before sending user data to clients */
+function sanitizeUser<T extends Record<string, unknown>>(
+  user: T
+): Omit<T, "passwordHash"> {
+  const { passwordHash: _, ...safe } = user as any;
+  return safe;
+}
+
 /**
  * Get default authorization levels based on role
  * Phase 2: Authorization matrix from design spec
@@ -128,7 +136,7 @@ export const appRouter = router({
         : null;
 
       return {
-        ...ctx.user,
+        ...sanitizeUser(ctx.user),
         campusName: campus?.name || null,
         districtName: district?.name || null,
         regionName: ctx.user.regionId || ctx.user.overseeRegionId || null,
@@ -197,7 +205,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -334,7 +342,7 @@ export const appRouter = router({
           regionId,
           overseeRegionId,
           ...authLevels,
-          approvalStatus: "ACTIVE", // Auto-approve for now
+          approvalStatus: "PENDING_APPROVAL", // Require admin approval
         });
 
         const user = await db.getUserById(userId);
@@ -382,7 +390,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -604,7 +612,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -740,7 +748,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,

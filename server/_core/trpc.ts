@@ -66,6 +66,22 @@ const requireUser = t.middleware(async opts => {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
+  // Block banned or non-active users from all protected endpoints
+  if (ctx.user) {
+    if (ctx.user.isBanned) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account has been suspended",
+      });
+    }
+    if (ctx.user.approvalStatus !== "ACTIVE") {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "Your account is pending approval",
+      });
+    }
+  }
+
   return next({
     ctx: {
       ...ctx,
@@ -82,7 +98,10 @@ export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
 
-    if (!ctx.user || ctx.user.role !== "ADMIN") {
+    if (
+      !ctx.user ||
+      (ctx.user.role !== "ADMIN" && ctx.user.role !== "CMC_GO_ADMIN")
+    ) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
