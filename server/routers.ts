@@ -411,9 +411,6 @@ export const appRouter = router({
 
         // Always return success to prevent email enumeration
         if (!user) {
-          console.log(
-            `[ForgotPassword] No user found for email: ${input.email}`
-          );
           return { success: true };
         }
 
@@ -465,35 +462,15 @@ export const appRouter = router({
                 `[ForgotPassword] Resend API error: ${response.status}`,
                 errorData
               );
-              // Fall back to console log
-              console.log(
-                `[ForgotPassword] Reset code for ${input.email}: ${code}`
-              );
-            } else {
-              console.log(
-                `[ForgotPassword] Email sent successfully to ${input.email}`
-              );
             }
           } catch (error) {
             console.error(`[ForgotPassword] Failed to send email:`, error);
-            // Fall back to console log
-            console.log(
-              `[ForgotPassword] Reset code for ${input.email}: ${code}`
-            );
           }
         } else {
-          // No email service configured - log to console
-          console.log(
-            `[ForgotPassword] RESEND_API_KEY not configured. Reset code for ${input.email}: ${code}`
-          );
-          console.log(
-            `[ForgotPassword] To enable email, add RESEND_API_KEY to your environment`
+          console.warn(
+            `[ForgotPassword] RESEND_API_KEY not configured — reset code was stored but no email sent`
           );
         }
-
-        console.log(
-          `[ForgotPassword] Code expires at: ${expiresAt.toISOString()}`
-        );
 
         return { success: true };
       }),
@@ -1408,11 +1385,6 @@ export const appRouter = router({
         }
 
         try {
-          console.log(
-            "[people.create] Received input:",
-            JSON.stringify(input, null, 2)
-          );
-
           // Build createData object, only including fields that have values
           const createData: any = {
             personId: input.personId,
@@ -2622,42 +2594,25 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         try {
-          console.log(
-            "[uploadHeaderImage] Starting upload for:",
-            input.fileName
-          );
-
           // Convert base64 to buffer
           const base64Data = input.imageData.split(",")[1];
           if (!base64Data) {
             throw new Error("Invalid base64 image data");
           }
           const buffer = Buffer.from(base64Data, "base64");
-          console.log("[uploadHeaderImage] Buffer size:", buffer.length);
 
           // Upload to S3
           const fileKey = `header-images/${Date.now()}-${input.fileName}`;
-          console.log("[uploadHeaderImage] Uploading to S3 with key:", fileKey);
           const { url } = await storagePut(fileKey, buffer, "image/jpeg");
-          console.log("[uploadHeaderImage] S3 upload successful, URL:", url);
 
           // Save the file KEY (not URL) to database - URLs are presigned and expire
           // The key is used to generate fresh presigned URLs on retrieval
-          console.log(
-            "[uploadHeaderImage] Saving file key to database:",
-            fileKey
-          );
           await db.setSetting("headerImageKey", fileKey);
 
           // Save background color if provided
           if (input.backgroundColor) {
-            console.log(
-              "[uploadHeaderImage] Saving background color:",
-              input.backgroundColor
-            );
             await db.setSetting("headerBgColor", input.backgroundColor);
           }
-          console.log("[uploadHeaderImage] Database save successful");
 
           return { url, backgroundColor: input.backgroundColor };
         } catch (error) {

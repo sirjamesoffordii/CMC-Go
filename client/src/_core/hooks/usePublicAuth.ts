@@ -50,8 +50,6 @@ export function usePublicAuth() {
     isLoading: devBypass ? false : meQuery.isLoading,
     login: () => {
       // Login is handled via auth.start
-      // This function can trigger a login modal/dialog
-      console.log("[usePublicAuth] Login - use auth.start");
     },
     logout: async () => {
       if (devBypass) return;

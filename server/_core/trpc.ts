@@ -94,22 +94,17 @@ const requireUser = t.middleware(async opts => {
 
 export const protectedProcedure = t.procedure.use(requireUser);
 
-export const adminProcedure = t.procedure.use(
+export const adminProcedure = protectedProcedure.use(
   t.middleware(async opts => {
     const { ctx, next } = opts;
+    // ctx.user is guaranteed non-null here because protectedProcedure uses requireUser
+    // which throws if user is null (unless dev bypass is enabled)
+    const user = ctx.user!;
 
-    if (
-      !ctx.user ||
-      (ctx.user.role !== "ADMIN" && ctx.user.role !== "CMC_GO_ADMIN")
-    ) {
+    if (user.role !== "ADMIN" && user.role !== "CMC_GO_ADMIN") {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 
-    return next({
-      ctx: {
-        ...ctx,
-        user: ctx.user as NonNullable<TrpcContext["user"]>,
-      },
-    });
+    return next({ ctx });
   })
 );
