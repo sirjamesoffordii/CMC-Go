@@ -5,6 +5,7 @@ import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Scope filter type for map filtering
 type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";
@@ -1605,9 +1606,11 @@ export function InteractiveMap({
       .replace(/^./, str => str.toUpperCase());
   };
 
-  // Render tooltip
+  const isMobile = useIsMobile();
+
+  // Render tooltip (hidden on mobile to avoid overlap and improve touch UX)
   const renderTooltip = () => {
-    if (!hoveredDistrict || !tooltipPos) return null;
+    if (isMobile || !hoveredDistrict || !tooltipPos) return null;
 
     const district = districts.find(d => d.id === hoveredDistrict);
     // Calculate stats using shared utility to ensure consistency with DistrictPanel
