@@ -23,7 +23,6 @@ import {
   Mail,
   MessageCircle,
   Check,
-  Upload,
   Menu,
   LogIn,
   LogOut,
@@ -32,7 +31,6 @@ import {
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
-import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
@@ -180,7 +178,7 @@ export default function Home() {
   const [cropModalOpen, setCropModalOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string>("");
   const [selectedFileName, setSelectedFileName] = useState<string>("");
-  const [importModalOpen, setImportModalOpen] = useState(false);
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -653,9 +651,8 @@ export default function Home() {
           return;
         }
         // Close all hamburger menu related modals and menu
-        if (shareModalOpen || importModalOpen || loginModalOpen || menuOpen) {
+        if (shareModalOpen || loginModalOpen || menuOpen) {
           if (shareModalOpen) setShareModalOpen(false);
-          if (importModalOpen) setImportModalOpen(false);
           if (loginModalOpen) setLoginModalOpen(false);
           if (menuOpen) setMenuOpen(false);
           e.preventDefault();
@@ -725,7 +722,6 @@ export default function Home() {
     headerEditorOpen,
     shareModalOpen,
     cropModalOpen,
-    importModalOpen,
     loginModalOpen,
     menuOpen,
     districts,
@@ -985,18 +981,6 @@ export default function Home() {
                     <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
                     Share
                   </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      setImportModalOpen(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
-                  >
-                    <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
-                    Import
-                  </button>
-
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -1437,7 +1421,6 @@ export default function Home() {
         open={shareModalOpen}
         onClose={() => setShareModalOpen(false)}
       />
-      <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
       <LoginModal
         open={loginModalOpen}
         onOpenChange={setLoginModalOpen}

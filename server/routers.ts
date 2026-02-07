@@ -43,9 +43,9 @@ function getDefaultAuthorization(role: string) {
     case "REGION_DIRECTOR":
     case "REGIONAL_STAFF":
       return {
-        scopeLevel: "REGION" as const,
+        scopeLevel: "NATIONAL" as const, // Can access National scope to see everything
         viewLevel: "NATIONAL" as const,
-        editLevel: "REGION" as const,
+        editLevel: "REGION" as const, // Can only edit their region
       };
 
     case "DISTRICT_DIRECTOR":
