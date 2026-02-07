@@ -28,11 +28,14 @@ import {
   Users,
   Check,
   X,
+  Plus,
 } from "lucide-react";
 
 interface LoginModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after successful login/register with the user's districtId (if any) */
+  onAuthSuccess?: (districtId: string | null) => void;
 }
 
 // Role configuration based on scope level
@@ -70,7 +73,11 @@ type ScopeLevel = "national" | "regional" | "district" | "campus";
 
 type AuthMode = "login" | "register" | "forgotPassword" | "resetPassword";
 
-export function LoginModal({ open, onOpenChange }: LoginModalProps) {
+export function LoginModal({
+  open,
+  onOpenChange,
+  onAuthSuccess,
+}: LoginModalProps) {
   const utils = trpc.useUtils();
 
   // Mode
@@ -149,21 +156,52 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
     return campuses.filter(c => c.name.toLowerCase().includes(q));
   }, [campuses, campusQuery]);
 
+  // State for "Add Campus" flow
+  const [isCreatingCampus, setIsCreatingCampus] = useState(false);
+
+  // Mutation: create campus during registration
+  const createCampusMutation = trpc.campuses.createPublic.useMutation({
+    onSuccess: data => {
+      // Select the newly created campus and proceed
+      setScopeLevel("campus");
+      setSelectedCampusId(data.id);
+      setIsCreatingCampus(false);
+      goToStep("role");
+    },
+    onError: err => {
+      setError(err.message);
+      setIsCreatingCampus(false);
+    },
+  });
+
+  const handleAddCampus = () => {
+    if (!campusQuery.trim() || !selectedDistrictId) return;
+    setIsCreatingCampus(true);
+    createCampusMutation.mutate({
+      name: campusQuery.trim(),
+      districtId: selectedDistrictId,
+    });
+  };
+
   // Mutations
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: async () => {
+    onSuccess: async data => {
       await utils.auth.me.invalidate();
       onOpenChange(false);
+      const districtId = data.user?.districtId ?? null;
       resetForm();
+      onAuthSuccess?.(districtId);
     },
     onError: err => setError(err.message),
   });
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: async () => {
+    onSuccess: async data => {
       await utils.auth.me.invalidate();
       onOpenChange(false);
+      const districtId = data.user?.districtId ?? null;
       resetForm();
+      onAuthSuccess?.(districtId);
     },
     onError: err => setError(err.message),
   });
@@ -1201,11 +1239,50 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     </button>
                   ))
                 ) : (
-                  <div className="flex items-center gap-3 px-3 py-4 text-slate-500">
-                    <Users className="h-4 w-4 text-slate-300" />
-                    <span className="text-sm">No campuses found</span>
+                  <div className="flex flex-col items-center gap-3 px-3 py-4 text-slate-500">
+                    <div className="flex items-center gap-3">
+                      <Users className="h-4 w-4 text-slate-300" />
+                      <span className="text-sm">No campuses found</span>
+                    </div>
+                    {campusQuery.trim() && selectedDistrictId && (
+                      <button
+                        onClick={handleAddCampus}
+                        disabled={isCreatingCampus}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-50 px-3 py-2.5 text-sm font-medium text-red-700 transition-all hover:bg-red-100 disabled:opacity-50"
+                      >
+                        {isCreatingCampus ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        Add &ldquo;{campusQuery.trim()}&rdquo; as new campus
+                      </button>
+                    )}
                   </div>
                 )}
+                {/* Add campus button when searching (even with results) */}
+                {filteredCampuses.length > 0 &&
+                  campusQuery.trim() &&
+                  selectedDistrictId &&
+                  !filteredCampuses.some(
+                    c =>
+                      c.name.toLowerCase() === campusQuery.trim().toLowerCase()
+                  ) && (
+                    <button
+                      onClick={handleAddCampus}
+                      disabled={isCreatingCampus}
+                      className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-red-50 mt-1 pt-3"
+                    >
+                      {isCreatingCampus ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                      ) : (
+                        <Plus className="h-4 w-4 text-red-500" />
+                      )}
+                      <span className="text-sm font-medium text-red-700">
+                        Add &ldquo;{campusQuery.trim()}&rdquo; as new campus
+                      </span>
+                    </button>
+                  )}
                 {/* No campus option at bottom */}
                 <button
                   onClick={() => handleCampusSelect(null)}
