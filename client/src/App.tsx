@@ -72,7 +72,6 @@ function Router() {
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = new Set([
-  "/",
   "/login",
   "/app-auth",
   "/why-invitations-matter",

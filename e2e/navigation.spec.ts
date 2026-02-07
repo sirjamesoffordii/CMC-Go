@@ -9,13 +9,17 @@ test.describe("Navigation", () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test("needs page redirects to login when unauthenticated", async ({ page }) => {
+  test("needs page redirects to login when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/needs");
     // Needs page requires authentication
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test("follow-up page redirects to login when unauthenticated", async ({ page }) => {
+  test("follow-up page redirects to login when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/follow-up");
     // Follow-up page requires authentication
     await expect(page).toHaveURL(/\/login/);
@@ -23,13 +27,12 @@ test.describe("Navigation", () => {
 });
 
 test.describe("Home Page Map", () => {
-  test("map container renders", async ({ page }) => {
+  test("home page redirects to login when unauthenticated", async ({
+    page,
+  }) => {
     await page.goto("/");
-    // The map is an SVG-based interactive component
-    const mapContainer = page.locator(
-      '[class*="map"], svg, [data-testid="map"]'
-    );
-    await expect(mapContainer.first()).toBeVisible({ timeout: 10000 });
+    // Home page requires authentication and redirects to /login
+    await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
   });
 });
 
@@ -44,23 +47,18 @@ test.describe("Admin Console Pages", () => {
 });
 
 test.describe("Responsive Design", () => {
-  test("mobile viewport renders", async ({ page }) => {
+  test("mobile viewport redirects to login", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto("/");
-    // On mobile, the layout may collapse some elements; verify page loads
-    await expect(page.locator("body")).toBeVisible();
-    // The map or main content area should still render
-    await expect(
-      page.locator('[class*="map"], svg, [data-testid="map"]').first()
-    ).toBeVisible({ timeout: 10000 });
+    // Home page requires authentication, redirects to /login on all viewports
+    await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
   });
 
-  test("tablet viewport renders", async ({ page }) => {
+  test("tablet viewport redirects to login", async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto("/");
-    await expect(
-      page.getByRole("button", { name: "Why Personal Invitations Matter" })
-    ).toBeVisible();
+    // Home page requires authentication, redirects to /login on all viewports
+    await expect(page).toHaveURL(/\/login/, { timeout: 5000 });
   });
 });
 

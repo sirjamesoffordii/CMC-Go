@@ -150,10 +150,18 @@ async function startServer() {
             directives: {
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Vite HMR in dev
-              styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
+              styleSrc: [
+                "'self'",
+                "'unsafe-inline'",
+                "https://fonts.googleapis.com",
+              ], // Allow inline styles + Google Fonts CSS
               imgSrc: ["'self'", "data:", "https:"],
-              connectSrc: ["'self'"],
-              fontSrc: ["'self'", "https:"],
+              connectSrc: [
+                "'self'",
+                "https://fonts.googleapis.com",
+                "https://fonts.gstatic.com",
+              ],
+              fontSrc: ["'self'", "https://fonts.gstatic.com", "https:"],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
               frameSrc: ["'none'"],

@@ -4,22 +4,47 @@ import superjson from "superjson";
 import type { TrpcContext } from "./context";
 import { ENV } from "./env";
 
+// Error codes whose messages are intentionally user-facing and safe to expose.
+// INTERNAL_SERVER_ERROR and anything else get sanitized in production.
+const CLIENT_SAFE_CODES = new Set([
+  "BAD_REQUEST",
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "CONFLICT",
+  "TOO_MANY_REQUESTS",
+  "PARSE_ERROR",
+  "METHOD_NOT_SUPPORTED",
+  "UNPROCESSABLE_CONTENT",
+  "PAYLOAD_TOO_LARGE",
+]);
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
-    // Never leak internal errors (SQL queries, stack traces) to clients
-    const isTRPCError = error.cause instanceof TRPCError;
     const isProduction = ENV.isProduction;
 
-    // In production, sanitize non-TRPCError messages
-    if (isProduction && !isTRPCError) {
+    // In production, pass through intentionally thrown client-safe errors
+    // (NOT_FOUND, UNAUTHORIZED, etc.) and sanitize everything else
+    // to avoid leaking SQL queries, stack traces, or internal details.
+    if (isProduction && !CLIENT_SAFE_CODES.has(error.code)) {
       console.error("[tRPC Error]", error);
       return {
         ...shape,
         message: "An unexpected error occurred. Please try again.",
         data: {
           ...shape.data,
-          // Remove stack traces in production
+          stack: undefined,
+        },
+      };
+    }
+
+    // Strip stack traces in production even for safe codes
+    if (isProduction) {
+      return {
+        ...shape,
+        data: {
+          ...shape.data,
           stack: undefined,
         },
       };

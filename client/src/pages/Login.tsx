@@ -13,9 +13,17 @@ export function Login() {
     }
   };
 
+  const handleAuthSuccess = () => {
+    setLocation("/");
+  };
+
   return (
     <div className="min-h-screen bg-black">
-      <LoginModal open={open} onOpenChange={handleOpenChange} />
+      <LoginModal
+        open={open}
+        onOpenChange={handleOpenChange}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

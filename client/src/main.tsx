@@ -102,6 +102,11 @@ queryClient.getMutationCache().subscribe(event => {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
 
+    // Skip toast for auth mutations — LoginModal handles its own error display
+    const mutationKey = event.mutation.options.mutationKey;
+    const pathParts = Array.isArray(mutationKey) ? mutationKey[0] : null;
+    if (Array.isArray(pathParts) && pathParts[0] === "auth") return;
+
     // PR 6: Show user-friendly toast instead of console.error
     const message = getErrorMessage(error);
     if (message !== UNAUTHED_ERR_MSG) {
