@@ -4,16 +4,17 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli
-          railway up --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b
+          railway up --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b --no-cache
