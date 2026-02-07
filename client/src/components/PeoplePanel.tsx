@@ -253,6 +253,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     })).filter(r => r.districts.length > 0);
   }, [allDistricts, allCampuses]);
 
+  // User's region: either their direct regionId or overseeRegionId
+  // IMPORTANT: This must be declared BEFORE userPeopleScope which references it.
+  const userRegionId =
+    (user as { regionId?: string | null; overseeRegionId?: string | null })
+      ?.regionId ||
+    (user as { overseeRegionId?: string | null })?.overseeRegionId ||
+    null;
+
   // User's effective people-scope for filtering the scope dropdown (mirror server getPeopleScope)
   const userPeopleScope = useMemo(():
     | "ALL"
@@ -286,7 +294,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     if (["STAFF", "CO_DIRECTOR"].includes(role) && cId != null)
       return { level: "CAMPUS", campusId: cId };
     return "ALL";
-  }, [user]);
+  }, [user, userRegionId]);
 
   // Scope menu tree filtered to what the user is authorized to see
   const scopeMenuTreeFiltered = useMemo(() => {
@@ -336,11 +344,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         String(user.role)
       ))
   );
-  const userRegionId =
-    (user as { regionId?: string | null; overseeRegionId?: string | null })
-      ?.regionId ||
-    (user as { overseeRegionId?: string | null })?.overseeRegionId ||
-    null;
 
   const scopeFilterLabel = scopeFilterPersonId
     ? (allPeople.find((p: Person) => p.personId === scopeFilterPersonId)
