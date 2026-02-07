@@ -17,4 +17,6 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           npm install -g @railway/cli
-          railway up --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b --no-cache
+          # Write commit SHA to bust railpack build cache
+          echo "$GITHUB_SHA" > .build-version
+          railway up --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b
