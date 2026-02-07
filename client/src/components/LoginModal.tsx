@@ -60,8 +60,10 @@ const DISTRICT_ROLES = [
 
 const CAMPUS_ROLES = [
   { value: "CAMPUS_DIRECTOR", label: "Campus Director" },
-  { value: "CO_DIRECTOR", label: "Co-Director" },
-  { value: "STAFF", label: "Staff" },
+  { value: "CO_DIRECTOR", label: "Campus Co-Director" },
+  { value: "STAFF", label: "Campus Staff" },
+  { value: "CAMPUS_INTERN", label: "Campus Intern" },
+  { value: "CAMPUS_VOLUNTEER", label: "Campus Volunteer" },
 ] as const;
 
 type RegistrationStep =

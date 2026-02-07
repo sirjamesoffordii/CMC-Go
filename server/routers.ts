@@ -64,6 +64,8 @@ function getDefaultAuthorization(role: string) {
         editLevel: "CAMPUS" as const,
       };
 
+    case "CAMPUS_INTERN":
+    case "CAMPUS_VOLUNTEER":
     default: // STAFF and below
       return {
         scopeLevel: "REGION" as const,
@@ -78,6 +80,8 @@ const REGISTERABLE_ROLES = [
   "STAFF",
   "CO_DIRECTOR",
   "CAMPUS_DIRECTOR",
+  "CAMPUS_INTERN",
+  "CAMPUS_VOLUNTEER",
   "DISTRICT_DIRECTOR",
   "DISTRICT_STAFF",
   "REGION_DIRECTOR",
@@ -533,6 +537,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "REGION_DIRECTOR",
             ])
@@ -667,6 +673,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "REGION_DIRECTOR",
             ])
@@ -771,6 +779,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "DISTRICT_STAFF",
               "REGION_DIRECTOR",

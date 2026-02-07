@@ -717,7 +717,10 @@ export default function People() {
                   />
                   <div className="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     {user?.campusId &&
-                    (user.role === "STAFF" || user.role === "CO_DIRECTOR") ? (
+                    (user.role === "STAFF" ||
+                      user.role === "CO_DIRECTOR" ||
+                      user.role === "CAMPUS_INTERN" ||
+                      user.role === "CAMPUS_VOLUNTEER") ? (
                       <button
                         type="button"
                         onClick={() => {
