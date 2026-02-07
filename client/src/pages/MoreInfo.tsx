@@ -45,31 +45,31 @@ export default function MoreInfo() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-yellow-50">
-      <div className="max-w-4xl mx-auto p-8">
+      <div className="max-w-4xl mx-auto px-3 py-4 sm:p-8">
         {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => setLocation("/")}
-          className="mb-6"
+          className="mb-4 sm:mb-6"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Map
         </Button>
 
         {/* Hero Section */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
-          <div className="relative h-[300px]">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-5 sm:mb-8">
+          <div className="relative h-[200px] sm:h-[300px]">
             <img
               src="/cmc-2026-hero.png"
               alt="CMC 2026"
               className="w-full h-full object-cover object-center"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-              <h1 className="text-5xl font-bold mb-2 drop-shadow-lg">
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8 text-white">
+              <h1 className="text-3xl sm:text-5xl font-bold mb-1 sm:mb-2 drop-shadow-lg">
                 CMC 2026
               </h1>
-              <p className="text-xl drop-shadow-md">
+              <p className="text-base sm:text-xl drop-shadow-md">
                 Campus Missions Conference
               </p>
               <div className="mt-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-sm backdrop-blur-sm">
@@ -80,8 +80,8 @@ export default function MoreInfo() {
         </div>
 
         {/* Event Details */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8 mb-5 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">
             Event Details
           </h2>
 
@@ -123,8 +123,10 @@ export default function MoreInfo() {
         </div>
 
         {/* About CMC */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">About CMC</h2>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-6">
+            About CMC
+          </h2>
 
           <div className="prose prose-lg max-w-none">
             <p className="text-gray-700 mb-4">

@@ -70,7 +70,7 @@ export default function Import() {
   // Authentication disabled - allow all users to import
   if (false) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-4xl px-3 sm:px-4 py-4 sm:py-8">
         <Card>
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -157,7 +157,7 @@ export default function Import() {
   };
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-4xl px-3 sm:px-4 py-4 sm:py-8">
       <Card>
         <CardHeader>
           <CardTitle>Import People from CSV</CardTitle>

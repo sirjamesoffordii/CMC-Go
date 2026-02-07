@@ -80,32 +80,32 @@ export default function Admin() {
   ];
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
+    <div className="container max-w-7xl px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col gap-5 sm:gap-8">
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setLocation("/")}
-              className="mr-2 text-black hover:bg-red-600 hover:text-white"
+              className="mr-1 sm:mr-2 text-black hover:bg-red-600 hover:text-white"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
+              <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+              Back
             </Button>
-            <h1 className="text-3xl font-semibold tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               Admin Panel
             </h1>
             <Badge variant="default" className="h-6">
-              Administrator
+              Admin
             </Badge>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Manage users, settings, and system configuration
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4">
           {adminStats.map(stat => (
             <Card
               key={stat.title}
@@ -150,11 +150,11 @@ export default function Admin() {
                 {allUsers.data?.map(u => (
                   <div
                     key={u.id}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg border hover:bg-accent/50 transition-colors gap-1 sm:gap-4"
                   >
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-medium truncate">
                           {u.name || "Unnamed User"}
                         </p>
                         <Badge
@@ -164,13 +164,13 @@ export default function Admin() {
                           {u.role}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {u.email || "No email"}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-shrink-0">
                       <span>ID: {u.id}</span>
-                      <span>•</span>
+                      <span>·</span>
                       <span>
                         Joined{" "}
                         {new Date(u.createdAt).toLocaleDateString("en-US", {

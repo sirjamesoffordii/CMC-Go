@@ -383,21 +383,26 @@ export default function AdminConsole() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header matching app style */}
       <div className="bg-white border-b border-slate-200">
-        <div className="container max-w-7xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-8 h-8 text-slate-700" />
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+        <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-slate-700 flex-shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-3xl font-semibold tracking-tight text-slate-900">
                   Admin Console
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5 sm:mt-1 hidden sm:block">
                   System administration and data management
                 </p>
               </div>
             </div>
-            <Button variant="outline" onClick={() => setLocation("/")}>
-              Back to Home
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLocation("/")}
+              className="flex-shrink-0"
+            >
+              Back
             </Button>
           </div>
         </div>
@@ -406,22 +411,28 @@ export default function AdminConsole() {
       {/* Tabs for Dashboard and User Management */}
       <Tabs
         defaultValue="dashboard"
-        className="container max-w-7xl mx-auto px-4 py-6"
+        className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6"
       >
-        <TabsList className="mb-6">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <Activity className="w-4 h-4" />
+        <TabsList className="mb-4 sm:mb-6">
+          <TabsTrigger
+            value="dashboard"
+            className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+          >
+            <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             Dashboard
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            User Management
+          <TabsTrigger
+            value="users"
+            className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
+          >
+            <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            Users
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6">
+        <TabsContent value="dashboard" className="space-y-4 sm:space-y-6">
           {/* Stats Grid */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
             {statCards.map(stat => (
               <Card key={stat.title} className="transition-all hover:shadow-md">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -443,7 +454,7 @@ export default function AdminConsole() {
           </div>
 
           {/* Main Content Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* Imports Section */}
             <Card className="lg:col-span-1">
               <CardHeader>

@@ -165,10 +165,12 @@ export function ScopeSelector({
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${className}`}
       >
-        <Globe className="h-4 w-4" />
-        <span className="text-sm font-medium">{getDisplayLabel()}</span>
+        <Globe className="h-4 w-4 flex-shrink-0" />
+        <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">
+          {getDisplayLabel()}
+        </span>
         <ChevronDown
-          className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 flex-shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 

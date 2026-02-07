@@ -620,7 +620,7 @@ export function LoginModal({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(255,255,255,0.4)_60%,rgba(248,250,252,0.8)_100%)]" />
 
       {/* Top-left branding */}
-      <div className="absolute left-6 top-6 z-10 flex items-center gap-3">
+      <div className="absolute left-3 top-3 sm:left-6 sm:top-6 z-10 flex items-center gap-3">
         <div className="flex items-center gap-2">
           <div className="h-11 w-11 rotate-12 rounded-full border-2 border-white bg-black shadow-lg flex items-center justify-center">
             <div className="flex flex-col items-center justify-center text-white font-bold leading-none">
@@ -639,7 +639,7 @@ export function LoginModal({
           type="button"
           aria-label="Close"
           onClick={() => onOpenChange(false)}
-          className="absolute right-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
+          className="absolute right-3 top-3 sm:right-6 sm:top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
         >
           <svg
             className="h-5 w-5"
@@ -670,10 +670,10 @@ export function LoginModal({
       `}</style>
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-md px-6">
+      <div className="relative z-10 w-full max-w-md px-4 sm:px-6 max-h-screen overflow-y-auto py-4">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-black uppercase tracking-tight text-slate-900">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-slate-900">
             {mode === "login" && "Go Together"}
             {mode === "register" && "Create Account"}
             {mode === "forgotPassword" && "Forgot Password"}
@@ -710,7 +710,7 @@ export function LoginModal({
         {/* Form container */}
         <div
           className={cn(
-            "rounded-2xl border border-slate-200/60 bg-white/70 p-8 backdrop-blur-xl shadow-xl shadow-slate-900/5 transition-all duration-150",
+            "rounded-2xl border border-slate-200/60 bg-white/70 p-5 sm:p-8 backdrop-blur-xl shadow-xl shadow-slate-900/5 transition-all duration-150",
             isTransitioning ? "opacity-0 scale-98" : "opacity-100 scale-100"
           )}
         >

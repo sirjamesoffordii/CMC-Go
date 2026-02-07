@@ -49,11 +49,11 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">
+    <div className="container max-w-7xl px-3 sm:px-4 py-4 sm:py-8">
+      <div className="flex flex-col gap-5 sm:gap-8">
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               Welcome back{user?.name ? `, ${user.name}` : ""}
             </h1>
             {user?.role === "admin" && (
@@ -67,7 +67,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-6 grid-cols-2 lg:grid-cols-4">
           {stats.map(stat => (
             <Card
               key={stat.title}
@@ -91,7 +91,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>

@@ -587,7 +587,7 @@ export default function People() {
   // Authentication gate - prevent data leak when logged out
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -602,7 +602,7 @@ export default function People() {
 
   if (peopleLoading || campusesLoading || districtsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -611,37 +611,39 @@ export default function People() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="mb-4"
+            className="mb-3 sm:mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Map
           </Button>
 
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">People</h1>
-              <p className="text-gray-600 mt-2">
-                Hierarchical list view of all districts, campuses, and people
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                People
+              </h1>
+              <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
+                All districts, campuses, and people
               </p>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportCsv}
                 className="bg-white"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
               </Button>
               <div className="relative">
                 <Button
@@ -650,8 +652,8 @@ export default function People() {
                   onClick={() => setSearchOpen(!searchOpen)}
                   className="bg-white"
                 >
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
+                  <Search className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Search</span>
                 </Button>
 
                 {searchOpen && (
@@ -660,13 +662,13 @@ export default function People() {
                       className="fixed inset-0 z-40"
                       onClick={() => setSearchOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
+                    <div className="fixed left-3 right-3 top-auto sm:absolute sm:left-auto sm:right-0 sm:top-full mt-2 sm:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <Input
                           ref={searchInputRef}
                           type="text"
-                          placeholder="Search people by name, role, ID, or requests..."
+                          placeholder="Search people by name, role, ID..."
                           value={searchQuery}
                           onChange={e => setSearchQuery(e.target.value)}
                           className="pl-9 pr-9"
@@ -693,8 +695,8 @@ export default function People() {
         </div>
 
         {/* Filters: Scope, Order, Sort by (3 dropdowns only) */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* 1. Scope */}
             <div className="relative">
               <button
@@ -704,7 +706,7 @@ export default function People() {
                   setOrderOpen(false);
                   setSortByOpen(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
               >
                 Scope
                 <ChevronDown className="w-4 h-4" />
@@ -753,7 +755,7 @@ export default function People() {
                   setScopeOpen(false);
                   setSortByOpen(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
               >
                 Order
                 <ChevronDown className="w-4 h-4" />
@@ -805,7 +807,7 @@ export default function People() {
                   setScopeOpen(false);
                   setOrderOpen(false);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 min-h-[40px]"
               >
                 Sort by
                 <ChevronDown className="w-4 h-4" />
@@ -816,7 +818,7 @@ export default function People() {
                     className="fixed inset-0 z-40"
                     onClick={() => setSortByOpen(false)}
                   />
-                  <div className="absolute left-0 top-full mt-1 w-72 max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="absolute left-0 sm:left-0 top-full mt-1 w-[calc(100vw-24px)] sm:w-72 max-w-72 max-h-[70vh] sm:max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Status
                     </div>
@@ -927,7 +929,7 @@ export default function People() {
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
           <div className="divide-y divide-gray-200">
             {filteredPeople.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-500">
+              <div className="px-4 sm:px-6 py-6 sm:py-8 text-center text-gray-500">
                 {debouncedSearchQuery.trim() ? (
                   <>
                     <Search className="h-8 w-8 mx-auto mb-3 text-gray-400" />
@@ -968,7 +970,7 @@ export default function People() {
               regionsWithDistricts.map(({ region, districts }) => (
                 <div key={region}>
                   {/* Region Header */}
-                  <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
+                  <div className="px-3 sm:px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
                     <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wide">
                       {region}
                     </h2>
@@ -992,7 +994,7 @@ export default function People() {
                       >
                         {/* District Row */}
                         <div
-                          className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                          className="px-3 sm:px-6 py-3 sm:py-4 hover:bg-gray-50 cursor-pointer transition-colors"
                           onClick={() => toggleDistrictExpansion(district.id)}
                         >
                           <div className="flex items-center gap-3">
@@ -1001,15 +1003,15 @@ export default function People() {
                             ) : (
                               <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
                             )}
-                            <div className="flex-1">
-                              <h2 className="text-lg font-semibold text-gray-900">
+                            <div className="flex-1 min-w-0">
+                              <h2 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                                 {district.name}
                               </h2>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-xs sm:text-sm text-gray-500">
                                 {district.region}
                               </p>
                             </div>
-                            <div className="text-sm text-gray-600">
+                            <div className="text-xs sm:text-sm text-gray-600 flex-shrink-0">
                               {totalPeople}{" "}
                               {totalPeople === 1 ? "person" : "people"}
                             </div>
@@ -1037,7 +1039,7 @@ export default function People() {
                                     className="divide-y divide-gray-100"
                                   >
                                     {/* Campus Row */}
-                                    <div className="px-12 py-3 hover:bg-gray-100 cursor-pointer transition-colors">
+                                    <div className="px-5 sm:px-12 py-3 hover:bg-gray-100 cursor-pointer transition-colors">
                                       <div className="flex items-center gap-3">
                                         <button
                                           onClick={e => {
@@ -1126,26 +1128,26 @@ export default function People() {
                                           return (
                                             <div
                                               key={person.personId}
-                                              className="px-20 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
+                                              className="px-7 sm:px-20 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
                                               onClick={() =>
                                                 handlePersonClick(person)
                                               }
                                             >
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                  <div className="font-medium text-gray-900">
+                                              <div className="flex items-center justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="font-medium text-gray-900 text-sm sm:text-base truncate">
                                                     {person.name ||
                                                       person.personId}
                                                   </div>
                                                   {person.primaryRole && (
-                                                    <div className="text-sm text-gray-500">
+                                                    <div className="text-xs sm:text-sm text-gray-500 truncate">
                                                       {person.primaryRole}
                                                     </div>
                                                   )}
                                                 </div>
-                                                <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                                                   <span
-                                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                                                    className={`px-2 py-0.5 sm:py-1 text-xs font-semibold rounded-full whitespace-nowrap ${
                                                       person.status === "Yes"
                                                         ? "bg-green-100 text-green-800"
                                                         : person.status ===
@@ -1160,7 +1162,7 @@ export default function People() {
                                                     {person.status}
                                                   </span>
                                                   {personNeeds.length > 0 && (
-                                                    <span className="text-xs text-yellow-600 font-medium">
+                                                    <span className="text-xs text-yellow-600 font-medium whitespace-nowrap hidden sm:inline">
                                                       {personNeeds.length}{" "}
                                                       request
                                                       {personNeeds.length === 1
@@ -1182,7 +1184,7 @@ export default function People() {
 
                             {/* Unassigned People */}
                             {unassigned.length > 0 && (
-                              <div className="px-12 py-3">
+                              <div className="px-5 sm:px-12 py-3">
                                 <h3 className="font-medium text-gray-500 italic mb-2">
                                   Unassigned ({unassigned.length})
                                 </h3>

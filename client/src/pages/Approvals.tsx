@@ -74,9 +74,9 @@ export default function Approvals() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 px-3 py-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
@@ -85,7 +85,7 @@ export default function Approvals() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-3xl font-bold">Approvals</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Approvals</h1>
         </div>
 
         {isLoading ? (
@@ -102,32 +102,36 @@ export default function Approvals() {
           <div className="space-y-4">
             {pendingApprovals.map(pendingUser => (
               <Card key={pendingUser.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold">
                           {pendingUser.fullName}
                         </h3>
-                        <Badge variant="outline">{pendingUser.role}</Badge>
-                        <Badge variant="secondary">Pending Approval</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {pendingUser.role}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Pending
+                        </Badge>
                       </div>
-                      <p className="text-sm text-slate-600 mb-1">
+                      <p className="text-sm text-slate-600 mb-1 truncate">
                         {pendingUser.email}
                       </p>
                       {pendingUser.campusId && (
                         <p className="text-xs text-slate-500">
-                          Campus ID: {pendingUser.campusId} • District:{" "}
-                          {pendingUser.districtId} • Region:{" "}
+                          Campus: {pendingUser.campusId} · District:{" "}
+                          {pendingUser.districtId} · Region:{" "}
                           {pendingUser.regionId}
                         </p>
                       )}
-                      <p className="text-xs text-slate-500 mt-2">
+                      <p className="text-xs text-slate-500 mt-1 sm:mt-2">
                         Registered:{" "}
                         {new Date(pendingUser.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"

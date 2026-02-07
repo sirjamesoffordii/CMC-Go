@@ -105,7 +105,7 @@ export default function FollowUpView() {
 
   if (peopleLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -114,26 +114,28 @@ export default function FollowUpView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="mb-4"
+            className="mb-3 sm:mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Follow-Up View</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Follow-Up View
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
             People with status "Maybe" ({filteredPeople.length})
           </p>
         </div>
 
         {/* Filter */}
-        <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+        <div className="mb-4 sm:mb-6 bg-white rounded-lg shadow-sm p-3 sm:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-6 space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -143,8 +145,11 @@ export default function FollowUpView() {
                   setShowOnlyWithNeeds(checked === true)
                 }
               />
-              <Label htmlFor="showOnlyWithNeeds" className="cursor-pointer">
-                Show only people with active requests
+              <Label
+                htmlFor="showOnlyWithNeeds"
+                className="cursor-pointer text-sm"
+              >
+                Show only with active requests
               </Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -155,88 +160,137 @@ export default function FollowUpView() {
                   setDepositPaidFilter(checked === true)
                 }
               />
-              <Label htmlFor="depositPaidFilter" className="cursor-pointer">
+              <Label
+                htmlFor="depositPaidFilter"
+                className="cursor-pointer text-sm"
+              >
                 Deposit Paid
               </Label>
             </div>
           </div>
         </div>
 
-        {/* People Table */}
+        {/* People List - Cards on mobile, Table on desktop */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {filteredPeople.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-6 sm:p-8 text-center text-gray-500">
               No people found with status "Maybe"
               {showOnlyWithNeeds && " with active needs"}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      District
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Campus
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Needs
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPeople.map(person => {
-                    const needCount = needsByPersonId.get(person.personId) ?? 0;
-                    return (
-                      <tr
-                        key={person.id}
-                        onClick={() => handlePersonClick(person)}
-                        className="hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
+            <>
+              {/* Mobile: Card layout */}
+              <div className="sm:hidden divide-y divide-gray-200">
+                {filteredPeople.map(person => {
+                  const needCount = needsByPersonId.get(person.personId) ?? 0;
+                  return (
+                    <div
+                      key={person.id}
+                      onClick={() => handlePersonClick(person)}
+                      className="p-3 hover:bg-gray-50 cursor-pointer transition-colors active:bg-gray-100"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">
                             {person.name}
                           </div>
                           {person.primaryRole && (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs text-gray-500 truncate">
                               {person.primaryRole}
                             </div>
                           )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {getDistrictName(person.primaryDistrictId)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {getCampusName(person.primaryCampusId)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <div className="text-xs text-gray-400 mt-1">
+                            {getDistrictName(person.primaryDistrictId)} ·{" "}
+                            {getCampusName(person.primaryCampusId)}
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                             {person.status}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {needCount > 0 ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          {needCount > 0 && (
+                            <span className="text-xs text-red-600 font-medium">
                               {needCount}{" "}
                               {needCount === 1 ? "request" : "requests"}
                             </span>
-                          ) : (
-                            "—"
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        District
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Campus
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Needs
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredPeople.map(person => {
+                      const needCount =
+                        needsByPersonId.get(person.personId) ?? 0;
+                      return (
+                        <tr
+                          key={person.id}
+                          onClick={() => handlePersonClick(person)}
+                          className="hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {person.name}
+                            </div>
+                            {person.primaryRole && (
+                              <div className="text-sm text-gray-500">
+                                {person.primaryRole}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {getDistrictName(person.primaryDistrictId)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {getCampusName(person.primaryCampusId)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {person.status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {needCount > 0 ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {needCount}{" "}
+                                {needCount === 1 ? "request" : "requests"}
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </div>

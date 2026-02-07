@@ -1043,7 +1043,9 @@ export default function Home() {
       <div
         className="flex main-content-area md:flex-row flex-col"
         style={{
-          height: isMobile ? "calc(100vh - 48px)" : "calc(100vh - 120px)",
+          height: isMobile
+            ? "calc(100vh - 48px)"
+            : `calc(100vh - ${headerHeight}px)`,
         }}
       >
         {/* Left District/National Panel - Desktop */}
@@ -1181,7 +1183,7 @@ export default function Home() {
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              padding: "1rem",
+              padding: isMobile ? "0.25rem" : "1rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map

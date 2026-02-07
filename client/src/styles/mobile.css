@@ -138,9 +138,65 @@
     padding-top: 12px !important;
     padding-bottom: 12px !important;
   }
+
+  /* ---- Dialog / Modal containment ---- */
+  /* Ensure dialogs don't overflow on mobile */
+  [role="dialog"] {
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100vh - 32px) !important;
+    margin: 8px !important;
+  }
+
+  /* Dialog content - scroll within viewport */
+  [role="dialog"] > div {
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+  }
+
+  /* ---- Popover & Select containment ---- */
+  [data-radix-popper-content-wrapper] {
+    max-width: calc(100vw - 16px) !important;
+  }
+
+  /* ---- Card improvements ---- */
+  /* Reduce card padding on mobile */
+  .card-content-mobile {
+    padding: 12px !important;
+  }
+
+  /* ---- Table improvements ---- */
+  /* Allow horizontal scroll for tables */
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Text truncation prevention ---- */
+  /* Ensure long text doesn't cause horizontal overflow */
+  body {
+    overflow-x: hidden;
+  }
+
+  /* ---- Form elements ---- */
+  /* Proper sizing for form inputs on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+  }
+
+  /* ---- Badge wrapping ---- */
+  /* Prevent badge rows from overflowing */
+  .flex-wrap {
+    gap: 4px;
+  }
 }
 
-/* --- Small phones --- */
+/* --- Small phones (< 480px) --- */
 @media (max-width: 480px) {
   header {
     padding-left: 8px !important;
@@ -159,6 +215,12 @@
   .editing-badge-mobile {
     max-width: 100px !important;
     font-size: 11px !important;
+  }
+
+  /* Even tighter spacing for very small phones */
+  [role="dialog"] {
+    margin: 4px !important;
+    max-width: calc(100vw - 8px) !important;
   }
 }
 
@@ -190,6 +252,11 @@
     .mobile-fab-safe {
       bottom: max(16px, env(safe-area-inset-bottom)) !important;
       right: max(16px, env(safe-area-inset-right)) !important;
+    }
+
+    /* Ensure page content respects safe areas */
+    .min-h-screen {
+      padding-bottom: env(safe-area-inset-bottom);
     }
   }
 }

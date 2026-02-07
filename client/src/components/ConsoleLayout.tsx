@@ -42,7 +42,10 @@ export default function ConsoleLayout({
 }) {
   const { user, loading, isAuthenticated } = useAuth();
   const [location] = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Default sidebar closed on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.href = "/";
@@ -68,10 +71,20 @@ export default function ConsoleLayout({
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`flex flex-col border-r border-border bg-card transition-all duration-300 ${
-          sidebarOpen ? "w-64" : "w-0 overflow-hidden"
+          sidebarOpen
+            ? "fixed inset-y-0 left-0 z-50 w-64 md:relative md:z-auto"
+            : "w-0 overflow-hidden"
         }`}
       >
         <div className="flex h-16 items-center gap-3 border-b border-border px-6">
@@ -143,7 +156,7 @@ export default function ConsoleLayout({
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
+        <header className="flex h-14 sm:h-16 items-center justify-between border-b border-border bg-card px-3 sm:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -165,7 +178,7 @@ export default function ConsoleLayout({
 
         {/* Content Area */}
         <main className="flex-1 overflow-auto">
-          <div className="p-6">{children}</div>
+          <div className="p-3 sm:p-6">{children}</div>
         </main>
       </div>
     </div>
