@@ -199,7 +199,7 @@ export const appRouter = router({
       .input(
         z.object({
           email: z.string().email(),
-          password: z.string().min(8),
+          password: z.string().min(1),
           fullName: z.string().min(1),
           role: z.enum(REGISTERABLE_ROLES),
           // For campus-based roles
@@ -458,7 +458,7 @@ export const appRouter = router({
         z.object({
           email: z.string().email(),
           code: z.string().length(6),
-          newPassword: z.string().min(8),
+          newPassword: z.string().min(1),
         })
       )
       .mutation(async ({ input }) => {
