@@ -333,7 +333,7 @@ export function UserManagement() {
                             District Staff
                           </SelectItem>
                           <SelectItem value="REGION_DIRECTOR">
-                            Region Director (seeded)
+                            Region Director
                           </SelectItem>
                           <SelectItem value="REGIONAL_STAFF">
                             Regional Staff

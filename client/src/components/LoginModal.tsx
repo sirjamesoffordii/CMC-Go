@@ -42,12 +42,13 @@ interface LoginModalProps {
 }
 
 // Role configuration based on scope level
-// NATIONAL_DIRECTOR, FIELD_DIRECTOR, REGION_DIRECTOR are pre-seeded and not self-registerable
+// NATIONAL_DIRECTOR and FIELD_DIRECTOR are pre-seeded and not self-registerable
 const NATIONAL_ROLES = [
   { value: "NATIONAL_STAFF", label: "National Staff" },
 ] as const;
 
 const REGIONAL_ROLES = [
+  { value: "REGION_DIRECTOR", label: "Regional Director" },
   { value: "REGIONAL_STAFF", label: "Regional Staff" },
 ] as const;
 
@@ -107,6 +108,7 @@ export function LoginModal({
     null
   );
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
+  const [newlyCreatedCampusName, setNewlyCreatedCampusName] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   // UI state
@@ -248,6 +250,7 @@ export function LoginModal({
       // Select the newly created campus and proceed
       setScopeLevel("campus");
       setSelectedCampusId(data.id);
+      setNewlyCreatedCampusName(data.name);
       setIsCreatingCampus(false);
       goToStep("role");
     },
@@ -1487,7 +1490,7 @@ export function LoginModal({
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Campus</span>
                     <span className="text-sm font-medium text-slate-900">
-                      {campuses.find(c => c.id === selectedCampusId)?.name}
+                      {campuses.find(c => c.id === selectedCampusId)?.name ?? newlyCreatedCampusName}
                     </span>
                   </div>
                 )}
