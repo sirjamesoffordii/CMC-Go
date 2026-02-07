@@ -176,10 +176,7 @@ export function LoginModal({
             : "border-red-200 bg-red-50 text-red-700"
         )}
       >
-        <span className="text-xs font-semibold uppercase tracking-wide">
-          {isSystem ? "System issue" : "Action needed"}
-        </span>
-        <p className="mt-1">{error}</p>
+        <p>{error}</p>
       </div>
     );
   };
@@ -802,12 +799,12 @@ export function LoginModal({
                     setStep("credentials");
                   }}
                   className={cn(
-                    "font-medium text-red-700 hover:text-red-600",
+                    "font-medium text-red-700 hover:text-red-600 transition-all duration-200",
                     highlightCreateUser &&
-                      "rounded-md bg-amber-100 px-2 py-1 text-amber-900 ring-1 ring-amber-300"
+                      "text-base font-bold text-red-800 underline underline-offset-2 decoration-2"
                   )}
                 >
-                  Create one
+                  Create New User
                 </button>
               </p>
             </div>
@@ -1295,7 +1292,7 @@ export function LoginModal({
                   type="text"
                   value={campusQuery}
                   onChange={e => setCampusQuery(e.target.value)}
-                  placeholder="Type to search campuses..."
+                  placeholder="Type to search or add new campus..."
                   className="border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   autoFocus
                 />
