@@ -81,12 +81,12 @@ async function main() {
     // --- Alex Rodriguez (National Director) ---
     const [existingAlex] = await connection.execute(
       "SELECT id FROM users WHERE email = ?",
-      ["alex.rodriguez@chialpha.com"]
+      ["Arodriguez@ag.org"]
     );
     if (Array.isArray(existingAlex) && existingAlex.length > 0) {
       console.log("✅ Alex Rodriguez (National Director) already exists (skipping)");
     } else {
-      const alexHash = await hashPassword("Wow#24123");
+      const alexHash = await hashPassword("National Director");
       await connection.execute(
         `INSERT INTO users (
           fullName, email, passwordHash, role,
@@ -96,7 +96,7 @@ async function main() {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "Alex Rodriguez",
-          "alex.rodriguez@chialpha.com",
+          "Arodriguez@ag.org",
           alexHash,
           "NATIONAL_DIRECTOR",
           "NATIONAL", "NATIONAL", "NATIONAL",
@@ -110,12 +110,12 @@ async function main() {
     // --- Dan Guenther (Field Director) ---
     const [existingDan] = await connection.execute(
       "SELECT id FROM users WHERE email = ?",
-      ["dan.guenther@chialpha.com"]
+      ["dan@nwxa.org"]
     );
     if (Array.isArray(existingDan) && existingDan.length > 0) {
       console.log("✅ Dan Guenther (Field Director) already exists (skipping)");
     } else {
-      const danHash = await hashPassword("Wow#24123");
+      const danHash = await hashPassword("Field Director");
       await connection.execute(
         `INSERT INTO users (
           fullName, email, passwordHash, role,
@@ -125,7 +125,7 @@ async function main() {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "Dan Guenther",
-          "dan.guenther@chialpha.com",
+          "dan@nwxa.org",
           danHash,
           "FIELD_DIRECTOR",
           "NATIONAL", "NATIONAL", "NATIONAL",
@@ -139,12 +139,12 @@ async function main() {
     // --- Matthew Hoogendoorn (Regional Director, Texico) ---
     const [existingMatt] = await connection.execute(
       "SELECT id FROM users WHERE email = ?",
-      ["matthew.hoogendoorn@chialpha.com"]
+      ["mkhoogendoorn@gmail.com"]
     );
     if (Array.isArray(existingMatt) && existingMatt.length > 0) {
       console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (skipping)");
     } else {
-      const mattHash = await hashPassword("Wow#24123");
+      const mattHash = await hashPassword("Regional Director");
       await connection.execute(
         `INSERT INTO users (
           fullName, email, passwordHash, role,
@@ -154,7 +154,7 @@ async function main() {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           "Matthew Hoogendoorn",
-          "matthew.hoogendoorn@chialpha.com",
+          "mkhoogendoorn@gmail.com",
           mattHash,
           "REGION_DIRECTOR",
           "NATIONAL", "NATIONAL", "REGION",
@@ -163,6 +163,35 @@ async function main() {
         ]
       );
       console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) created");
+    }
+
+    // --- CMC Go Admin (Demo/Shared) ---
+    const [existingDemo] = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      ["Admin@cmcgo.app"]
+    );
+    if (Array.isArray(existingDemo) && existingDemo.length > 0) {
+      console.log("✅ Admin@cmcgo.app already exists (skipping)");
+    } else {
+      const demoHash = await hashPassword("Admin1234");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "CMC Go Admin",
+          "Admin@cmcgo.app",
+          demoHash,
+          "CMC_GO_ADMIN",
+          "NATIONAL", "NATIONAL", "NATIONAL",
+          null, null, null,
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ Admin@cmcgo.app (CMC_GO_ADMIN) created");
     }
   } catch (error) {
     console.error("❌ Error seeding:", error.message);
