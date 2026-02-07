@@ -243,8 +243,8 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
       setError("Please enter your email");
       return;
     }
-    if (!password || password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (!password) {
+      setError("Please enter a password");
       return;
     }
     if (!fullName.trim()) {
@@ -816,13 +816,13 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                         autoComplete="new-password"
                         value={newPassword}
                         onChange={e => setNewPassword(e.target.value)}
-                        placeholder="Enter new password (min. 8 characters)"
+                        placeholder="Enter new password"
                         className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                         onKeyDown={e => {
                           if (
                             e.key === "Enter" &&
                             resetCode.length === 6 &&
-                            newPassword.length >= 8
+                            newPassword.length > 0
                           ) {
                             resetPasswordMutation.mutate({
                               email: email.trim(),
@@ -859,7 +859,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     disabled={
                       resetPasswordMutation.isPending ||
                       resetCode.length !== 6 ||
-                      newPassword.length < 8
+                      newPassword.length < 1
                     }
                     className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
                   >
@@ -962,7 +962,7 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     autoComplete="new-password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Minimum 8 characters"
+                    placeholder="Enter password"
                     className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
                   />
                   <button
@@ -977,9 +977,6 @@ export function LoginModal({ open, onOpenChange }: LoginModalProps) {
                     )}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
-                  Minimum 8 characters
-                </p>
               </div>
 
               {error && <p className="text-sm text-red-700">{error}</p>}
