@@ -647,19 +647,19 @@ describe("getPeopleScope", () => {
   });
 
   describe("role normalization", () => {
-    it("should normalize CAMPUS_CO_DIRECTOR to CO_DIRECTOR", () => {
-      const user = { role: "CAMPUS_CO_DIRECTOR", campusId: 5 };
-      expect(getPeopleScope(user)).toEqual({ level: "CAMPUS", campusId: 5 });
+    it("should normalize CAMPUS_CO_DIRECTOR to REGION scope", () => {
+      const user = { role: "CAMPUS_CO_DIRECTOR", campusId: 5, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
     });
 
-    it("should normalize CAMPUS_VOLUNTEER to STAFF", () => {
-      const user = { role: "CAMPUS_VOLUNTEER", campusId: 3 };
-      expect(getPeopleScope(user)).toEqual({ level: "CAMPUS", campusId: 3 });
+    it("should normalize CAMPUS_VOLUNTEER to REGION scope", () => {
+      const user = { role: "CAMPUS_VOLUNTEER", campusId: 3, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
     });
 
-    it("should normalize CAMPUS_INTERN to STAFF", () => {
-      const user = { role: "CAMPUS_INTERN", campusId: 3 };
-      expect(getPeopleScope(user)).toEqual({ level: "CAMPUS", campusId: 3 });
+    it("should normalize CAMPUS_INTERN to REGION scope", () => {
+      const user = { role: "CAMPUS_INTERN", campusId: 3, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
     });
 
     it("should normalize DISTRICT_STAFF to DISTRICT_DIRECTOR", () => {
@@ -686,48 +686,70 @@ describe("getPeopleScope", () => {
   });
 
   describe("CAMPUS_DIRECTOR role", () => {
-    it("should return DISTRICT scope with districtId", () => {
-      const user = { role: "CAMPUS_DIRECTOR", districtId: "D1" };
+    it("should return REGION scope with regionId", () => {
+      const user = { role: "CAMPUS_DIRECTOR", regionId: "R1" };
       expect(getPeopleScope(user)).toEqual({
-        level: "DISTRICT",
-        districtId: "D1",
+        level: "REGION",
+        regionId: "R1",
       });
     });
 
-    it("should throw error if missing districtId", () => {
-      const user = { role: "CAMPUS_DIRECTOR", districtId: null };
-      expect(() => getPeopleScope(user)).toThrow("missing districtId");
+    it("should throw error if missing regionId", () => {
+      const user = { role: "CAMPUS_DIRECTOR", regionId: null };
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
   describe("STAFF role", () => {
-    it("should return CAMPUS scope with campusId", () => {
-      const user = { role: "STAFF", campusId: 5 };
-      expect(getPeopleScope(user)).toEqual({ level: "CAMPUS", campusId: 5 });
+    it("should return REGION scope with regionId", () => {
+      const user = { role: "STAFF", campusId: 5, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
     });
 
-    it("should throw error if missing campusId", () => {
-      const user = { role: "STAFF", campusId: null };
-      expect(() => getPeopleScope(user)).toThrow("missing campusId");
+    it("should throw error if missing regionId", () => {
+      const user = { role: "STAFF", campusId: 5, regionId: null };
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
   describe("CO_DIRECTOR role", () => {
-    it("should return CAMPUS scope with campusId", () => {
-      const user = { role: "CO_DIRECTOR", campusId: 7 };
-      expect(getPeopleScope(user)).toEqual({ level: "CAMPUS", campusId: 7 });
+    it("should return REGION scope with regionId", () => {
+      const user = { role: "CO_DIRECTOR", campusId: 7, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
     });
 
-    it("should throw error if missing campusId", () => {
-      const user = { role: "CO_DIRECTOR" };
-      expect(() => getPeopleScope(user)).toThrow("missing campusId");
+    it("should throw error if missing regionId", () => {
+      const user = { role: "CO_DIRECTOR", regionId: null };
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
   describe("unknown role", () => {
-    it("should throw error for unrecognized role", () => {
+    it("should return REGION scope (default fallback) when regionId available", () => {
+      const user = { role: "UNKNOWN_ROLE", regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "R1" });
+    });
+
+    it("should throw error for unknown role without regionId", () => {
       const user = { role: "UNKNOWN_ROLE" };
-      expect(() => getPeopleScope(user)).toThrow("role not permitted");
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
+    });
+  });
+
+  describe("scopeLevel DB field takes priority", () => {
+    it("should use scopeLevel NATIONAL even for STAFF role", () => {
+      const user = { role: "STAFF", scopeLevel: "NATIONAL", campusId: 5, regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "ALL" });
+    });
+
+    it("should use scopeLevel DISTRICT when set", () => {
+      const user = { role: "STAFF", scopeLevel: "DISTRICT", districtId: "D1", regionId: "R1" };
+      expect(getPeopleScope(user)).toEqual({ level: "DISTRICT", districtId: "D1" });
+    });
+
+    it("should fall back to role-based scope when scopeLevel is null", () => {
+      const user = { role: "NATIONAL_DIRECTOR", scopeLevel: null };
+      expect(getPeopleScope(user)).toEqual({ level: "ALL" });
     });
   });
 });
@@ -779,7 +801,7 @@ describe("canAccessPerson", () => {
     });
   });
 
-  describe("DISTRICT scope", () => {
+  describe("DISTRICT scope (via scopeLevel override)", () => {
     it("should allow access to person in same district", () => {
       const user: UserScopeAnchors = {
         role: "CAMPUS_DIRECTOR",
@@ -787,42 +809,43 @@ describe("canAccessPerson", () => {
         districtId: "D1",
         regionId: "R1",
       };
-      const person = createPerson({ primaryDistrictId: "D1" });
+      // CAMPUS_DIRECTOR now gets REGION scope by default, so person in same region is accessible
+      const person = createPerson({ primaryRegion: "R1", primaryDistrictId: "D1" });
       expect(canAccessPerson(user, person)).toBe(true);
     });
 
-    it("should deny access to person in different district", () => {
+    it("should deny access to person in different region", () => {
       const user: UserScopeAnchors = {
         role: "CAMPUS_DIRECTOR",
         campusId: 1,
         districtId: "D1",
         regionId: "R1",
       };
-      const person = createPerson({ primaryDistrictId: "D2" });
+      const person = createPerson({ primaryRegion: "R2", primaryDistrictId: "D2" });
       expect(canAccessPerson(user, person)).toBe(false);
     });
   });
 
-  describe("CAMPUS scope", () => {
-    it("should allow access to person in same campus", () => {
+  describe("CAMPUS roles get REGION scope", () => {
+    it("should allow STAFF access to person in same region", () => {
       const user: UserScopeAnchors = {
         role: "STAFF",
         campusId: 5,
         districtId: "D1",
         regionId: "R1",
       };
-      const person = createPerson({ primaryCampusId: 5 });
+      const person = createPerson({ primaryRegion: "R1", primaryCampusId: 99 });
       expect(canAccessPerson(user, person)).toBe(true);
     });
 
-    it("should deny access to person in different campus", () => {
+    it("should deny STAFF access to person in different region", () => {
       const user: UserScopeAnchors = {
         role: "STAFF",
         campusId: 5,
         districtId: "D1",
         regionId: "R1",
       };
-      const person = createPerson({ primaryCampusId: 10 });
+      const person = createPerson({ primaryRegion: "R2", primaryCampusId: 10 });
       expect(canAccessPerson(user, person)).toBe(false);
     });
   });
@@ -859,8 +882,10 @@ describe("peopleScopeWhereClause", () => {
   });
 
   it("should return a SQL clause for DISTRICT scope", () => {
+    // CAMPUS_DIRECTOR now gets REGION scope by default (per auth spec)
+    // Use scopeLevel override to test DISTRICT scope
     const user: UserScopeAnchors = {
-      role: "CAMPUS_DIRECTOR",
+      role: "DISTRICT_DIRECTOR",
       campusId: 1,
       districtId: "D1",
       regionId: "R1",
@@ -870,7 +895,7 @@ describe("peopleScopeWhereClause", () => {
     expect(typeof clause).toBe("object");
   });
 
-  it("should return a SQL clause for CAMPUS scope", () => {
+  it("should return a SQL clause for STAFF (REGION scope)", () => {
     const user: UserScopeAnchors = {
       role: "STAFF",
       campusId: 5,

@@ -115,10 +115,7 @@ const ROLES_REQUIRING_OVERSEE_REGION = [
 ] as const;
 
 // Roles that require admin approval before access is granted
-const ROLES_REQUIRING_APPROVAL = [
-  "REGION_DIRECTOR",
-  "REGIONAL_STAFF",
-] as const;
+const ROLES_REQUIRING_APPROVAL = ["REGION_DIRECTOR", "REGIONAL_STAFF"] as const;
 
 export const appRouter = router({
   system: systemRouter,
@@ -345,7 +342,9 @@ export const appRouter = router({
           regionId,
           overseeRegionId,
           ...authLevels,
-          approvalStatus: (ROLES_REQUIRING_APPROVAL as readonly string[]).includes(input.role)
+          approvalStatus: (
+            ROLES_REQUIRING_APPROVAL as readonly string[]
+          ).includes(input.role)
             ? "PENDING_APPROVAL"
             : "ACTIVE",
         });

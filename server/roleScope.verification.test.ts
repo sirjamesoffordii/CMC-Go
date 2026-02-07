@@ -53,50 +53,50 @@ function createPerson(overrides: Partial<PersonAnchors> = {}): PersonAnchors {
 
 describe("getPeopleScope", () => {
   describe("STAFF role", () => {
-    it("returns CAMPUS scope with user's campusId", () => {
-      const user = createUser("STAFF", { campusId: 42 });
+    it("returns REGION scope with user's regionId (per auth spec)", () => {
+      const user = createUser("STAFF", { campusId: 42, regionId: "REG-042" });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 42 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-042" });
     });
 
-    it("throws FORBIDDEN when missing campusId (fail-closed)", () => {
-      const user = createUser("STAFF", { campusId: null });
+    it("throws FORBIDDEN when missing regionId (fail-closed)", () => {
+      const user = createUser("STAFF", { campusId: 42, regionId: null });
 
       expect(() => getPeopleScope(user)).toThrow(TRPCError);
-      expect(() => getPeopleScope(user)).toThrow("missing campusId");
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
   describe("CO_DIRECTOR role", () => {
-    it("returns CAMPUS scope with user's campusId", () => {
-      const user = createUser("CO_DIRECTOR", { campusId: 99 });
+    it("returns REGION scope with user's regionId (per auth spec)", () => {
+      const user = createUser("CO_DIRECTOR", { campusId: 99, regionId: "REG-099" });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 99 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-099" });
     });
 
-    it("throws FORBIDDEN when missing campusId (fail-closed)", () => {
-      const user = createUser("CO_DIRECTOR", { campusId: null });
+    it("throws FORBIDDEN when missing regionId (fail-closed)", () => {
+      const user = createUser("CO_DIRECTOR", { campusId: null, regionId: null });
 
       expect(() => getPeopleScope(user)).toThrow(TRPCError);
-      expect(() => getPeopleScope(user)).toThrow("missing campusId");
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
   describe("CAMPUS_DIRECTOR role", () => {
-    it("returns DISTRICT scope with user's districtId", () => {
-      const user = createUser("CAMPUS_DIRECTOR", { districtId: "DIST-042" });
+    it("returns REGION scope with user's regionId (per auth spec)", () => {
+      const user = createUser("CAMPUS_DIRECTOR", { regionId: "REG-042" });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "DISTRICT", districtId: "DIST-042" });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-042" });
     });
 
-    it("throws FORBIDDEN when missing districtId (fail-closed)", () => {
-      const user = createUser("CAMPUS_DIRECTOR", { districtId: null });
+    it("throws FORBIDDEN when missing regionId (fail-closed)", () => {
+      const user = createUser("CAMPUS_DIRECTOR", { regionId: null });
 
       expect(() => getPeopleScope(user)).toThrow(TRPCError);
-      expect(() => getPeopleScope(user)).toThrow("missing districtId");
+      expect(() => getPeopleScope(user)).toThrow("missing regionId");
     });
   });
 
@@ -157,25 +157,25 @@ describe("getPeopleScope", () => {
   });
 
   describe("role normalization", () => {
-    it("normalizes CAMPUS_CO_DIRECTOR to CO_DIRECTOR (CAMPUS scope)", () => {
+    it("normalizes CAMPUS_CO_DIRECTOR to REGION scope", () => {
       const user = createUser("CAMPUS_CO_DIRECTOR", { campusId: 7 });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 7 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
-    it("normalizes CAMPUS_VOLUNTEER to STAFF (CAMPUS scope)", () => {
+    it("normalizes CAMPUS_VOLUNTEER to REGION scope", () => {
       const user = createUser("CAMPUS_VOLUNTEER", { campusId: 8 });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 8 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
-    it("normalizes CAMPUS_INTERN to STAFF (CAMPUS scope)", () => {
+    it("normalizes CAMPUS_INTERN to REGION scope", () => {
       const user = createUser("CAMPUS_INTERN", { campusId: 9 });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 9 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
     it("normalizes DISTRICT_STAFF to DISTRICT_DIRECTOR (REGION scope)", () => {
@@ -214,16 +214,15 @@ describe("getPeopleScope", () => {
     });
   });
 
-  describe("unknown roles (fail-closed)", () => {
-    it("throws FORBIDDEN for unknown role", () => {
+  describe("unknown roles (fallback to REGION scope)", () => {
+    it("returns REGION scope for unknown role with regionId", () => {
       const user = createUser("UNKNOWN_ROLE");
 
-      expect(() => getPeopleScope(user)).toThrow(TRPCError);
-      expect(() => getPeopleScope(user)).toThrow("role not permitted");
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
-    it("throws FORBIDDEN for empty role", () => {
-      const user = createUser("");
+    it("throws FORBIDDEN for unknown role without regionId", () => {
+      const user = createUser("", { regionId: null });
 
       expect(() => getPeopleScope(user)).toThrow(TRPCError);
     });
@@ -235,84 +234,83 @@ describe("getPeopleScope", () => {
 // ============================================================================
 
 describe("canAccessPerson", () => {
-  describe("STAFF role - CAMPUS scope", () => {
-    const staff = createUser("STAFF", { campusId: 10 });
+  describe("STAFF role - REGION scope (per auth spec)", () => {
+    const staff = createUser("STAFF", { campusId: 10, regionId: "REG-100" });
 
     it("allows access to person at same campus (inside-scope)", () => {
-      const person = createPerson({ primaryCampusId: 10 });
+      const person = createPerson({ primaryCampusId: 10, primaryRegion: "REG-100" });
 
       expect(canAccessPerson(staff, person)).toBe(true);
     });
 
-    it("denies access to person at different campus (outside-scope)", () => {
-      const person = createPerson({ primaryCampusId: 99 });
+    it("allows access to person at different campus in same region", () => {
+      const person = createPerson({ primaryCampusId: 99, primaryRegion: "REG-100" });
+
+      expect(canAccessPerson(staff, person)).toBe(true);
+    });
+
+    it("denies access to person in different region", () => {
+      const person = createPerson({ primaryRegion: "REG-999" });
 
       expect(canAccessPerson(staff, person)).toBe(false);
     });
 
-    it("denies access when person has null primaryCampusId", () => {
-      const person = createPerson({ primaryCampusId: null });
-
-      expect(canAccessPerson(staff, person)).toBe(false);
-    });
-
-    it("ignores person's district/region - only checks campus", () => {
-      // Same campus, different district and region
+    it("allows access to person with null campus but same region", () => {
       const person = createPerson({
-        primaryCampusId: 10,
-        primaryDistrictId: "DIFFERENT-DIST",
-        primaryRegion: "DIFFERENT-REG",
+        primaryCampusId: null,
+        primaryDistrictId: "D-1",
+        primaryRegion: "REG-100",
       });
 
       expect(canAccessPerson(staff, person)).toBe(true);
     });
   });
 
-  describe("CO_DIRECTOR role - CAMPUS scope", () => {
-    const coDirector = createUser("CO_DIRECTOR", { campusId: 20 });
+  describe("CO_DIRECTOR role - REGION scope (per auth spec)", () => {
+    const coDirector = createUser("CO_DIRECTOR", { campusId: 20, regionId: "REG-200" });
 
     it("allows access to person at same campus (inside-scope)", () => {
-      const person = createPerson({ primaryCampusId: 20 });
+      const person = createPerson({ primaryCampusId: 20, primaryRegion: "REG-200" });
 
       expect(canAccessPerson(coDirector, person)).toBe(true);
     });
 
-    it("denies access to person at different campus (outside-scope)", () => {
-      const person = createPerson({ primaryCampusId: 99 });
+    it("denies access to person in different region", () => {
+      const person = createPerson({ primaryCampusId: 99, primaryRegion: "REG-999" });
 
       expect(canAccessPerson(coDirector, person)).toBe(false);
     });
   });
 
-  describe("CAMPUS_DIRECTOR role - DISTRICT scope", () => {
+  describe("CAMPUS_DIRECTOR role - REGION scope (per auth spec)", () => {
     const campusDirector = createUser("CAMPUS_DIRECTOR", {
       districtId: "DIST-100",
+      regionId: "REG-100",
     });
 
-    it("allows access to person in same district (inside-scope)", () => {
-      const person = createPerson({ primaryDistrictId: "DIST-100" });
+    it("allows access to person in same region (inside-scope)", () => {
+      const person = createPerson({ primaryRegion: "REG-100" });
 
       expect(canAccessPerson(campusDirector, person)).toBe(true);
     });
 
-    it("denies access to person in different district (outside-scope)", () => {
-      const person = createPerson({ primaryDistrictId: "DIST-999" });
+    it("denies access to person in different region (outside-scope)", () => {
+      const person = createPerson({ primaryRegion: "REG-999" });
 
       expect(canAccessPerson(campusDirector, person)).toBe(false);
     });
 
-    it("denies access when person has null primaryDistrictId", () => {
-      const person = createPerson({ primaryDistrictId: null });
+    it("denies access when person has null primaryRegion", () => {
+      const person = createPerson({ primaryRegion: null });
 
       expect(canAccessPerson(campusDirector, person)).toBe(false);
     });
 
-    it("ignores person's campus/region - only checks district", () => {
-      // Same district, different campus and region
+    it("allows access regardless of district - checks region only", () => {
       const person = createPerson({
         primaryCampusId: 999,
         primaryDistrictId: "DIST-100",
-        primaryRegion: "DIFFERENT-REG",
+        primaryRegion: "REG-100",
       });
 
       expect(canAccessPerson(campusDirector, person)).toBe(true);
@@ -409,28 +407,28 @@ describe("canAccessPerson", () => {
 
 describe("fail-closed behavior", () => {
   describe("canAccessPerson throws when user missing required anchor", () => {
-    it("throws FORBIDDEN for STAFF without campusId", () => {
-      const user = createUser("STAFF", { campusId: null });
+    it("throws FORBIDDEN for STAFF without regionId", () => {
+      const user = createUser("STAFF", { campusId: 5, regionId: null });
       const person = createPerson();
 
       expect(() => canAccessPerson(user, person)).toThrow(TRPCError);
-      expect(() => canAccessPerson(user, person)).toThrow("missing campusId");
+      expect(() => canAccessPerson(user, person)).toThrow("missing regionId");
     });
 
-    it("throws FORBIDDEN for CO_DIRECTOR without campusId", () => {
-      const user = createUser("CO_DIRECTOR", { campusId: null });
+    it("throws FORBIDDEN for CO_DIRECTOR without regionId", () => {
+      const user = createUser("CO_DIRECTOR", { campusId: 5, regionId: null });
       const person = createPerson();
 
       expect(() => canAccessPerson(user, person)).toThrow(TRPCError);
-      expect(() => canAccessPerson(user, person)).toThrow("missing campusId");
+      expect(() => canAccessPerson(user, person)).toThrow("missing regionId");
     });
 
-    it("throws FORBIDDEN for CAMPUS_DIRECTOR without districtId", () => {
-      const user = createUser("CAMPUS_DIRECTOR", { districtId: null });
+    it("throws FORBIDDEN for CAMPUS_DIRECTOR without regionId", () => {
+      const user = createUser("CAMPUS_DIRECTOR", { regionId: null });
       const person = createPerson();
 
       expect(() => canAccessPerson(user, person)).toThrow(TRPCError);
-      expect(() => canAccessPerson(user, person)).toThrow("missing districtId");
+      expect(() => canAccessPerson(user, person)).toThrow("missing regionId");
     });
 
     it("throws FORBIDDEN for DISTRICT_DIRECTOR without regionId", () => {
@@ -838,30 +836,34 @@ describe("canEditNational", () => {
 
 describe("edge cases and integration scenarios", () => {
   describe("scope hierarchy is correctly enforced", () => {
-    it("CAMPUS scope is narrowest - cannot access other campuses", () => {
-      const staff = createUser("STAFF", { campusId: 1 });
-      const sameCampus = createPerson({ primaryCampusId: 1 });
-      const differentCampus = createPerson({ primaryCampusId: 2 });
+    it("REGION scope for STAFF - can access across campuses in region", () => {
+      const staff = createUser("STAFF", { campusId: 1, regionId: "R-1" });
+      const sameRegion = createPerson({ primaryCampusId: 1, primaryRegion: "R-1" });
+      const differentCampusSameRegion = createPerson({ primaryCampusId: 2, primaryRegion: "R-1" });
+      const differentRegion = createPerson({ primaryCampusId: 2, primaryRegion: "R-2" });
 
-      expect(canAccessPerson(staff, sameCampus)).toBe(true);
-      expect(canAccessPerson(staff, differentCampus)).toBe(false);
+      expect(canAccessPerson(staff, sameRegion)).toBe(true);
+      expect(canAccessPerson(staff, differentCampusSameRegion)).toBe(true);
+      expect(canAccessPerson(staff, differentRegion)).toBe(false);
     });
 
-    it("DISTRICT scope includes all campuses in district", () => {
-      const campusDir = createUser("CAMPUS_DIRECTOR", { districtId: "D-1" });
-      const sameDistrict1 = createPerson({
+    it("REGION scope for CAMPUS_DIRECTOR - can access all in region", () => {
+      const campusDir = createUser("CAMPUS_DIRECTOR", { districtId: "D-1", regionId: "R-1" });
+      const sameRegion1 = createPerson({
         primaryCampusId: 1,
         primaryDistrictId: "D-1",
+        primaryRegion: "R-1",
       });
-      const sameDistrict2 = createPerson({
+      const sameRegion2 = createPerson({
         primaryCampusId: 99,
-        primaryDistrictId: "D-1",
+        primaryDistrictId: "D-99",
+        primaryRegion: "R-1",
       });
-      const diffDistrict = createPerson({ primaryDistrictId: "D-999" });
+      const diffRegion = createPerson({ primaryRegion: "R-999" });
 
-      expect(canAccessPerson(campusDir, sameDistrict1)).toBe(true);
-      expect(canAccessPerson(campusDir, sameDistrict2)).toBe(true);
-      expect(canAccessPerson(campusDir, diffDistrict)).toBe(false);
+      expect(canAccessPerson(campusDir, sameRegion1)).toBe(true);
+      expect(canAccessPerson(campusDir, sameRegion2)).toBe(true);
+      expect(canAccessPerson(campusDir, diffRegion)).toBe(false);
     });
 
     it("REGION scope includes all districts in region", () => {
@@ -907,13 +909,13 @@ describe("edge cases and integration scenarios", () => {
 
   describe("role variations are handled consistently", () => {
     const testCases = [
-      { role: "STAFF", expectedLevel: "CAMPUS" },
-      { role: "staff", expectedLevel: "CAMPUS" }, // lowercase
-      { role: " STAFF ", expectedLevel: "CAMPUS" }, // whitespace
-      { role: "Co-Director", expectedLevel: "CAMPUS" }, // mixed case with dash
-      { role: "CO_DIRECTOR", expectedLevel: "CAMPUS" },
-      { role: "Campus Director", expectedLevel: "DISTRICT" }, // space separator
-      { role: "CAMPUS_DIRECTOR", expectedLevel: "DISTRICT" },
+      { role: "STAFF", expectedLevel: "REGION" },
+      { role: "staff", expectedLevel: "REGION" }, // lowercase
+      { role: " STAFF ", expectedLevel: "REGION" }, // whitespace
+      { role: "Co-Director", expectedLevel: "REGION" }, // mixed case with dash
+      { role: "CO_DIRECTOR", expectedLevel: "REGION" },
+      { role: "Campus Director", expectedLevel: "REGION" }, // space separator
+      { role: "CAMPUS_DIRECTOR", expectedLevel: "REGION" },
       { role: "District-Director", expectedLevel: "REGION" }, // dash separator
       { role: "DISTRICT_DIRECTOR", expectedLevel: "REGION" },
       { role: "Region Director", expectedLevel: "ALL" },
@@ -933,19 +935,18 @@ describe("edge cases and integration scenarios", () => {
   });
 
   describe("boundary conditions", () => {
-    it("campusId: 0 is valid (not treated as null/missing)", () => {
+    it("campusId: 0 is valid (STAFF still gets REGION scope)", () => {
       const user = createUser("STAFF", { campusId: 0 });
       const scope = getPeopleScope(user);
 
-      expect(scope).toEqual({ level: "CAMPUS", campusId: 0 });
+      expect(scope).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
-    it("empty string districtId is treated as falsy - throws FORBIDDEN (fail-closed)", () => {
+    it("empty string districtId still works (CAMPUS_DIRECTOR gets REGION scope)", () => {
       const user = createUser("CAMPUS_DIRECTOR", { districtId: "" });
 
-      // Empty string is falsy, so fails closed correctly
-      expect(() => getPeopleScope(user)).toThrow(TRPCError);
-      expect(() => getPeopleScope(user)).toThrow("missing districtId");
+      // CAMPUS_DIRECTOR gets REGION scope, needs regionId not districtId
+      expect(getPeopleScope(user)).toEqual({ level: "REGION", regionId: "REG-001" });
     });
 
     it("empty string regionId is treated as falsy - throws FORBIDDEN (fail-closed)", () => {

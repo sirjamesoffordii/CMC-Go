@@ -59,15 +59,15 @@ function createTestContext(
 }
 
 describe("getPeopleScope fail-closed (missing anchors)", () => {
-  it("STAFF without campusId -> FORBIDDEN", () => {
+  it("STAFF without regionId -> FORBIDDEN", () => {
     expectForbiddenSync(() =>
-      getPeopleScope({ role: "STAFF", campusId: null })
+      getPeopleScope({ role: "STAFF", campusId: 1, regionId: null })
     );
   });
 
-  it("CAMPUS_DIRECTOR without districtId -> FORBIDDEN (even if campusId present)", () => {
+  it("CAMPUS_DIRECTOR without regionId -> FORBIDDEN (even if districtId present)", () => {
     expectForbiddenSync(() =>
-      getPeopleScope({ role: "CAMPUS_DIRECTOR", campusId: 1, districtId: null })
+      getPeopleScope({ role: "CAMPUS_DIRECTOR", campusId: 1, districtId: "D1", regionId: null })
     );
   });
 
@@ -81,19 +81,20 @@ describe("getPeopleScope fail-closed (missing anchors)", () => {
     );
   });
 
-  it("unmapped role -> FORBIDDEN", () => {
+  it("unmapped role without regionId -> FORBIDDEN", () => {
     expectForbiddenSync(() =>
-      getPeopleScope({ role: "SOME_UNKNOWN_ROLE", campusId: 1 })
+      getPeopleScope({ role: "SOME_UNKNOWN_ROLE", campusId: 1, regionId: null })
     );
   });
 });
 
 describe("API fail-closed (bad user state)", () => {
-  it("peopleScope rejects CAMPUS_DIRECTOR without districtId", async () => {
+  it("peopleScope rejects CAMPUS_DIRECTOR without regionId", async () => {
     const ctx = createTestContext({
       role: "CAMPUS_DIRECTOR" as any,
       campusId: 1,
       districtId: null,
+      regionId: null,
     });
 
     const caller = testRouter.createCaller(ctx);
@@ -111,10 +112,11 @@ describe("API fail-closed (bad user state)", () => {
     await expectForbidden(caller.peopleScope());
   });
 
-  it("peopleScope rejects unmapped roles", async () => {
+  it("peopleScope rejects unmapped roles without regionId", async () => {
     const ctx = createTestContext({
       role: "SOME_UNKNOWN_ROLE" as any,
       campusId: 1,
+      regionId: null,
     });
 
     const caller = testRouter.createCaller(ctx);
