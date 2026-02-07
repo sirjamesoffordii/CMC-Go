@@ -9,10 +9,17 @@ import {
   Filter,
   ChevronDown,
   ChevronRight,
+  MoreVertical,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Popover, PopoverTrigger, PopoverContent } from "./ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Checkbox } from "./ui/checkbox";
 import {
   Select,
@@ -21,7 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { ALL_REGIONS, DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { formatStatusLabel } from "@/utils/statusLabel";
@@ -52,17 +59,42 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     null
   ); // null = no filter, true = paid, false = not paid
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [myCampusOnly, setMyCampusOnly] = useState(false);
-  // Last updated filter: show people not updated in X days (for follow-ups). Uses lastEdited or statusLastUpdated.
-  const [lastUpdatedFilter, setLastUpdatedFilter] = useState<
-    "any" | "7" | "14" | "30"
-  >("any");
-  const [sortBy, setSortBy] = useState<
-    "Region" | "District" | "Campus" | "Individual" | "Update"
-  >("District");
-  const [order, setOrder] = useState<"Greatest first" | "Least first">(
-    "Greatest first"
+  // Scope: how to group the table when no scope filter is set
+  const [scope, setScope] = useState<"Region" | "District" | "Campus">(
+    "Region"
   );
+  // Scope filter: show only this region / district / campus (null = all)
+  const [scopeFilterRegionId, setScopeFilterRegionId] = useState<string | null>(
+    null
+  );
+  const [scopeFilterDistrictId, setScopeFilterDistrictId] = useState<
+    string | null
+  >(null);
+  const [scopeFilterCampusId, setScopeFilterCampusId] = useState<number | null>(
+    null
+  );
+  const [scopeFilterPersonId, setScopeFilterPersonId] = useState<string | null>(
+    null
+  );
+  const [scopeMenuExpandedCampus, setScopeMenuExpandedCampus] = useState<
+    number | null
+  >(null);
+  // Scope dropdown expand state (like main toolbar)
+  const [scopeMenuOpen, setScopeMenuOpen] = useState(false);
+  const [scopeMenuHoverRegion, setScopeMenuHoverRegion] = useState<
+    string | null
+  >(null);
+  const [scopeMenuExpandedRegion, setScopeMenuExpandedRegion] = useState<
+    string | null
+  >(null);
+  const [scopeMenuExpandedDistrict, setScopeMenuExpandedDistrict] = useState<
+    string | null
+  >(null);
+  const [order, setOrder] = useState<
+    "Greatest first" | "Least first" | "Last Updated" | "Alphabetical"
+  >("Greatest first");
 
   // Expansion state - regions, districts, and campuses
   const [expandedRegions, setExpandedRegions] = useState<Set<string>>(
@@ -185,22 +217,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       );
     }
 
-    // Last updated filter: show people not updated in X days (lastEdited or statusLastUpdated)
-    if (lastUpdatedFilter !== "any") {
-      const days = parseInt(lastUpdatedFilter, 10);
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - days);
-      cutoff.setHours(0, 0, 0, 0);
-      filtered = filtered.filter((p: Person) => {
-        const lastEdited = p.lastEdited ? new Date(p.lastEdited).getTime() : 0;
-        const statusLast = p.statusLastUpdated
-          ? new Date(p.statusLastUpdated).getTime()
-          : 0;
-        const last = Math.max(lastEdited, statusLast);
-        return last === 0 || last < cutoff.getTime();
-      });
-    }
-
     return filtered;
   }, [
     allPeople,
@@ -210,7 +226,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     roleFilter,
     familyGuestFilter,
     depositPaidFilter,
-    lastUpdatedFilter,
     searchQuery,
     myCampusOnly,
     user?.campusId,
@@ -225,40 +240,217 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     [allDistricts]
   );
 
-  // Group and sort people based on sortBy and order
+  // Region -> District -> Campus tree for Scope dropdown (like main toolbar)
+  const scopeMenuTree = useMemo(() => {
+    return ALL_REGIONS.map(region => ({
+      region,
+      districts: allDistricts
+        .filter(d => (d.region || DISTRICT_REGION_MAP[d.id] || "") === region)
+        .map(district => ({
+          district,
+          campuses: allCampuses.filter(c => c.districtId === district.id),
+        })),
+    })).filter(r => r.districts.length > 0);
+  }, [allDistricts, allCampuses]);
+
+  // User's effective people-scope for filtering the scope dropdown (mirror server getPeopleScope)
+  const userPeopleScope = useMemo(():
+    | "ALL"
+    | { level: "REGION"; regionId: string }
+    | { level: "DISTRICT"; districtId: string }
+    | { level: "CAMPUS"; campusId: number } => {
+    const role = user?.role
+      ? String(user.role)
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]+/g, "_")
+      : "";
+    const fullAccess = [
+      "NATIONAL_DIRECTOR",
+      "NATIONAL_STAFF",
+      "REGION_DIRECTOR",
+      "REGIONAL_DIRECTOR",
+      "FIELD_DIRECTOR",
+      "CMC_GO_ADMIN",
+      "ADMIN",
+    ].includes(role);
+    if (fullAccess) return "ALL";
+    const rId =
+      userRegionId ?? (user as { regionId?: string | null })?.regionId ?? null;
+    if (role === "DISTRICT_DIRECTOR" && rId)
+      return { level: "REGION", regionId: rId };
+    const dId = (user as { districtId?: string | null })?.districtId ?? null;
+    if (role === "CAMPUS_DIRECTOR" && dId)
+      return { level: "DISTRICT", districtId: dId };
+    const cId = (user as { campusId?: number | null })?.campusId ?? null;
+    if (["STAFF", "CO_DIRECTOR"].includes(role) && cId != null)
+      return { level: "CAMPUS", campusId: cId };
+    return "ALL";
+  }, [user]);
+
+  // Scope menu tree filtered to what the user is authorized to see
+  const scopeMenuTreeFiltered = useMemo(() => {
+    if (userPeopleScope === "ALL") return scopeMenuTree;
+    if (userPeopleScope.level === "REGION") {
+      return scopeMenuTree.filter(r => r.region === userPeopleScope.regionId);
+    }
+    if (userPeopleScope.level === "DISTRICT") {
+      const districtId = userPeopleScope.districtId;
+      return scopeMenuTree
+        .map(r => ({
+          region: r.region,
+          districts: r.districts.filter(d => d.district.id === districtId),
+        }))
+        .filter(r => r.districts.length > 0);
+    }
+    if (userPeopleScope.level === "CAMPUS") {
+      const campusId = userPeopleScope.campusId;
+      const campus = allCampuses.find(c => c.id === campusId);
+      if (!campus) return [];
+      const districtId = campus.districtId;
+      const district = allDistricts.find(d => d.id === districtId);
+      const region = district
+        ? district.region || DISTRICT_REGION_MAP[district.id] || ""
+        : "";
+      if (!region) return [];
+      return scopeMenuTree
+        .filter(r => r.region === region)
+        .map(r => ({
+          region: r.region,
+          districts: r.districts
+            .map(d => ({
+              district: d.district,
+              campuses: d.campuses.filter(c => c.id === campusId),
+            }))
+            .filter(d => d.campuses.length > 0),
+        }))
+        .filter(r => r.districts.length > 0);
+    }
+    return scopeMenuTree;
+  }, [scopeMenuTree, userPeopleScope, allCampuses, allDistricts]);
+
+  const isNationalScope = Boolean(
+    user?.scopeLevel === "NATIONAL" ||
+    (user?.role &&
+      ["ADMIN", "NATIONAL_DIRECTOR", "NATIONAL_STAFF"].includes(
+        String(user.role)
+      ))
+  );
+  const userRegionId =
+    (user as { regionId?: string | null; overseeRegionId?: string | null })
+      ?.regionId ||
+    (user as { overseeRegionId?: string | null })?.overseeRegionId ||
+    null;
+
+  const scopeFilterLabel = scopeFilterPersonId
+    ? (allPeople.find((p: Person) => p.personId === scopeFilterPersonId)
+        ?.name ?? "Person")
+    : scopeFilterCampusId != null
+      ? (allCampuses.find(c => c.id === scopeFilterCampusId)?.name ?? "Campus")
+      : scopeFilterDistrictId
+        ? (allDistricts.find(d => d.id === scopeFilterDistrictId)?.name ??
+          "District")
+        : scopeFilterRegionId
+          ? scopeFilterRegionId
+          : isNationalScope
+            ? "All Regions"
+            : (userRegionId ?? "All Regions");
+
+  const clearScopeFilter = () => {
+    setScopeFilterRegionId(null);
+    setScopeFilterDistrictId(null);
+    setScopeFilterCampusId(null);
+    setScopeFilterPersonId(null);
+  };
+
+  // Apply scope filter (region / district / campus / person) so table shows only selected scope
+  const scopeFilteredPeople = useMemo(() => {
+    if (scopeFilterPersonId) {
+      return filteredPeople.filter(
+        (p: Person) => p.personId === scopeFilterPersonId
+      );
+    }
+    if (scopeFilterCampusId !== null && scopeFilterCampusId !== undefined) {
+      const campusId = Number(scopeFilterCampusId);
+      return filteredPeople.filter(
+        (p: Person) =>
+          p.primaryCampusId != null && Number(p.primaryCampusId) === campusId
+      );
+    }
+    if (scopeFilterDistrictId) {
+      return filteredPeople.filter(
+        (p: Person) => p.primaryDistrictId === scopeFilterDistrictId
+      );
+    }
+    const effectiveRegionId =
+      scopeFilterRegionId ||
+      (!isNationalScope && userRegionId ? userRegionId : null);
+    if (effectiveRegionId) {
+      return filteredPeople.filter((p: Person) => {
+        const districtId = p.primaryDistrictId;
+        if (!districtId) return false;
+        return getRegionForDistrict(districtId) === effectiveRegionId;
+      });
+    }
+    return filteredPeople;
+  }, [
+    filteredPeople,
+    scopeFilterPersonId,
+    scopeFilterCampusId,
+    scopeFilterDistrictId,
+    isNationalScope,
+    userRegionId,
+    scopeFilterRegionId,
+    getRegionForDistrict,
+  ]);
+
+  type SortByOption = "Name" | "Last updated";
+
+  // Helper: sort people by name or last updated, respecting order
+  const sortPeopleBy = useCallback(
+    (people: Person[], by: SortByOption) => {
+      const sorted = [...people];
+      const rev = order === "Least first" ? -1 : 1;
+      if (by === "Name") {
+        sorted.sort((a, b) => {
+          const nameA = (a.name || a.personId || "").toLowerCase();
+          const nameB = (b.name || b.personId || "").toLowerCase();
+          return rev * nameA.localeCompare(nameB);
+        });
+      } else {
+        // Last updated
+        sorted.sort((a, b) => {
+          const dateA = (a as Person & { lastEdited?: string | Date })
+            .lastEdited
+            ? new Date(
+                (a as Person & { lastEdited?: string | Date }).lastEdited!
+              ).getTime()
+            : a.statusLastUpdated
+              ? new Date(a.statusLastUpdated).getTime()
+              : 0;
+          const dateB = (b as Person & { lastEdited?: string | Date })
+            .lastEdited
+            ? new Date(
+                (b as Person & { lastEdited?: string | Date }).lastEdited!
+              ).getTime()
+            : b.statusLastUpdated
+              ? new Date(b.statusLastUpdated).getTime()
+              : 0;
+          return rev * (dateA - dateB);
+        });
+      }
+      return sorted;
+    },
+    [order]
+  );
+
+  // Group by scope (3 categories only); sort people within each group by name or last updated
   const groupedData = useMemo(() => {
-    if (sortBy === "Individual") {
-      // Flat list of people
-      const sorted = [...filteredPeople].sort((a, b) => {
-        const nameA = (a.name || a.personId || "").toLowerCase();
-        const nameB = (b.name || b.personId || "").toLowerCase();
-        return order === "Greatest first"
-          ? nameB.localeCompare(nameA)
-          : nameA.localeCompare(nameB);
-      });
-      return { type: "individual" as const, people: sorted };
-    }
-
-    if (sortBy === "Update") {
-      // Flat list of people sorted by statusLastUpdated
-      const sorted = [...filteredPeople].sort((a, b) => {
-        const dateA = a.statusLastUpdated
-          ? new Date(a.statusLastUpdated).getTime()
-          : 0;
-        const dateB = b.statusLastUpdated
-          ? new Date(b.statusLastUpdated).getTime()
-          : 0;
-        // Greatest first = most recent first, Least first = oldest first
-        return order === "Greatest first" ? dateB - dateA : dateA - dateB;
-      });
-      return { type: "individual" as const, people: sorted };
-    }
-
-    if (sortBy === "Campus") {
+    if (scope === "Campus") {
       // Group by Campus -> People
       const campusMap = new Map<number, { campus: Campus; people: Person[] }>();
 
-      filteredPeople.forEach((person: Person) => {
+      scopeFilteredPeople.forEach((person: Person) => {
         const campusId = person.primaryCampusId;
         if (campusId) {
           const campus = allCampuses.find(c => c.id === campusId);
@@ -270,12 +462,18 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           }
         }
       });
+      campusMap.forEach(c => {
+        c.people = sortPeopleBy(
+          c.people,
+          order === "Last Updated" ? "Last updated" : "Name"
+        );
+      });
 
       const campuses = Array.from(campusMap.values()).sort((a, b) => {
         const countA = a.people.length;
         const countB = b.people.length;
         if (countA !== countB) {
-          return order === "Greatest first" ? countB - countA : countA - countB;
+          return order === "Least first" ? countA - countB : countB - countA;
         }
         return a.campus.name.localeCompare(b.campus.name);
       });
@@ -283,7 +481,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       return { type: "campus" as const, campuses };
     }
 
-    if (sortBy === "District") {
+    if (scope === "District") {
       // Group by District -> Campus -> People
       const districtMap = new Map<
         string,
@@ -295,7 +493,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       >();
 
       const districtIdsWithPeople = new Set(
-        filteredPeople
+        scopeFilteredPeople
           .map((p: Person) => p.primaryDistrictId)
           .filter((id): id is string => Boolean(id))
       );
@@ -310,7 +508,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         });
       });
 
-      filteredPeople.forEach((person: Person) => {
+      scopeFilteredPeople.forEach((person: Person) => {
         const districtId = person.primaryDistrictId;
         if (!districtId) return;
 
@@ -340,9 +538,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               const countA = a.people.length;
               const countB = b.people.length;
               if (countA !== countB) {
-                return order === "Greatest first"
-                  ? countB - countA
-                  : countA - countB;
+                return order === "Least first"
+                  ? countA - countB
+                  : countB - countA;
               }
               return a.campus.name.localeCompare(b.campus.name);
             }
@@ -352,7 +550,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             { campus: Campus; people: Person[] }
           >();
           sortedCampuses.forEach(item => {
-            newMap.set(item.campus.id, item);
+            newMap.set(item.campus.id, {
+              ...item,
+              people: sortPeopleBy(
+                item.people,
+                order === "Last Updated" ? "Last updated" : "Name"
+              ),
+            });
           });
           return { ...data, campuses: newMap };
         })
@@ -368,9 +572,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               0
             ) + b.unassigned.length;
           if (countA !== countB) {
-            return order === "Greatest first"
-              ? countB - countA
-              : countA - countB;
+            return order === "Least first" ? countA - countB : countB - countA;
           }
           return a.district.name.localeCompare(b.district.name);
         });
@@ -378,7 +580,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       return { type: "district" as const, districts };
     }
 
-    // sortBy === "Region"
+    // scope === "Region"
     // Group by Region -> District -> Campus -> People
     const regionMap = new Map<
       string,
@@ -395,28 +597,59 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       }
     >();
 
-    const districtIdsWithPeople = new Set(
-      filteredPeople
-        .map((p: Person) => p.primaryDistrictId)
-        .filter((id): id is string => Boolean(id))
-    );
+    const noScopeFilter =
+      !scopeFilterRegionId &&
+      !scopeFilterDistrictId &&
+      scopeFilterCampusId == null &&
+      !scopeFilterPersonId;
 
-    districtIdsWithPeople.forEach(districtId => {
-      const district = allDistricts.find(d => d.id === districtId);
-      if (!district) return;
-      const region =
-        district.region || DISTRICT_REGION_MAP[district.id] || "Unknown";
-      if (!regionMap.has(region)) {
+    if (noScopeFilter) {
+      // All Regions selected: seed every region and its districts/campuses so all regions are output
+      ALL_REGIONS.forEach(region => {
         regionMap.set(region, { region, districts: new Map() });
-      }
-      regionMap.get(region)!.districts.set(district.id, {
-        district,
-        campuses: new Map(),
-        unassigned: [],
       });
-    });
+      allDistricts.forEach(district => {
+        const region =
+          district.region || DISTRICT_REGION_MAP[district.id] || "Unknown";
+        const regionData = regionMap.get(region);
+        if (!regionData) return;
+        regionData.districts.set(district.id, {
+          district,
+          campuses: new Map(
+            allCampuses
+              .filter(c => c.districtId === district.id)
+              .map(c => [c.id, { campus: c, people: [] }])
+          ),
+          unassigned: [],
+        });
+      });
+    } else {
+      const districtIdsWithPeople = new Set(
+        scopeFilteredPeople
+          .map((p: Person) => p.primaryDistrictId)
+          .filter((id): id is string => Boolean(id))
+      );
+      districtIdsWithPeople.forEach(districtId => {
+        const district = allDistricts.find(d => d.id === districtId);
+        if (!district) return;
+        const region =
+          district.region || DISTRICT_REGION_MAP[district.id] || "Unknown";
+        if (!regionMap.has(region)) {
+          regionMap.set(region, { region, districts: new Map() });
+        }
+        const regionData = regionMap.get(region)!;
+        const campuses = allCampuses.filter(c => c.districtId === district.id);
+        regionData.districts.set(district.id, {
+          district,
+          campuses: new Map(
+            campuses.map(c => [c.id, { campus: c, people: [] }])
+          ),
+          unassigned: [],
+        });
+      });
+    }
 
-    filteredPeople.forEach((person: Person) => {
+    scopeFilteredPeople.forEach((person: Person) => {
       const districtId = person.primaryDistrictId;
       if (!districtId) return;
 
@@ -453,9 +686,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               const countA = a.people.length;
               const countB = b.people.length;
               if (countA !== countB) {
-                return order === "Greatest first"
-                  ? countB - countA
-                  : countA - countB;
+                return order === "Least first"
+                  ? countA - countB
+                  : countB - countA;
               }
               return a.campus.name.localeCompare(b.campus.name);
             });
@@ -464,7 +697,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               { campus: Campus; people: Person[] }
             >();
             sortedCampuses.forEach(item => {
-              newMap.set(item.campus.id, item);
+              newMap.set(item.campus.id, {
+                ...item,
+                people: sortPeopleBy(
+                  item.people,
+                  order === "Last Updated" ? "Last updated" : "Name"
+                ),
+              });
             });
             return { ...districtData, campuses: newMap };
           })
@@ -480,9 +719,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 0
               ) + b.unassigned.length;
             if (countA !== countB) {
-              return order === "Greatest first"
-                ? countB - countA
-                : countA - countB;
+              return order === "Least first"
+                ? countA - countB
+                : countB - countA;
             }
             return a.district.name.localeCompare(b.district.name);
           });
@@ -510,19 +749,24 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           0
         );
         if (countA !== countB) {
-          return order === "Greatest first" ? countB - countA : countA - countB;
+          return order === "Least first" ? countA - countB : countB - countA;
         }
         return a.region.localeCompare(b.region);
       });
 
     return { type: "region" as const, regions };
   }, [
-    filteredPeople,
+    scopeFilteredPeople,
     allDistricts,
     allCampuses,
-    sortBy,
+    scope,
     order,
+    sortPeopleBy,
     getRegionForDistrict,
+    scopeFilterRegionId,
+    scopeFilterDistrictId,
+    scopeFilterCampusId,
+    scopeFilterPersonId,
   ]);
 
   const handlePersonClick = (person: Person) => {
@@ -531,7 +775,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   };
 
   const handleExport = () => {
-    if (filteredPeople.length === 0) return;
+    if (scopeFilteredPeople.length === 0) return;
 
     // Create CSV headers
     const headers = [
@@ -632,11 +876,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     return (
       <div className="h-full w-full min-w-0 bg-white border-l border-gray-300 flex flex-col">
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              People
-            </h2>
-          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">People</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors hidden sm:block"
@@ -653,72 +893,398 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
   return (
     <div className="h-full w-full min-w-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">People</h2>
-        </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            onClick={handleExport}
-            disabled={filteredPeople.length === 0}
-            className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Export to CSV"
-          >
-            <Download className="h-5 w-5 text-gray-500" />
-          </button>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors hidden sm:block"
-          >
-            <X className="h-5 w-5 text-gray-500" />
-          </button>
-        </div>
-      </div>
-
-      {/* Filters Section - horizontal, professional layout */}
-      <div className="px-4 py-3 border-b border-gray-200 bg-gray-50/80">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-          {/* Search Input */}
-          <div className="relative flex-shrink-0 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+      {/* Header: search, Scope, Filter, Sort By, kebab — minimal on mobile, premium on desktop */}
+      <div className="flex items-center flex-nowrap gap-0.5 sm:gap-2.5 px-1.5 py-0.5 sm:px-4 sm:py-2.5 min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0">
+        {/* Search */}
+        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-6 w-6 sm:h-9 sm:w-9 flex-shrink-0 rounded border-gray-200/80 bg-gray-50/50 hover:bg-gray-100/80 hover:border-gray-300/80 sm:rounded-lg"
+              aria-label="Search people"
+            >
+              <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2" align="start">
             <Input
               type="text"
               placeholder="Search people by name or role..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-white border-gray-200"
+              className="h-9"
+              autoFocus
             />
-          </div>
+          </PopoverContent>
+        </Popover>
 
-          <div
-            className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
-            aria-hidden
-          />
+        <div
+          className="h-2.5 w-px sm:h-5 bg-gray-200/80 flex-shrink-0 rounded-full"
+          aria-hidden
+        />
 
-          {/* Status Filter Dropdown */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Status
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 justify-between min-w-[140px]"
-                >
-                  <span>
-                    {statusFilter.size === 0
-                      ? "All Statuses"
-                      : statusFilter.size === 1
-                        ? formatStatusLabel(Array.from(statusFilter)[0])
-                        : `${statusFilter.size} selected`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
+        {/* Scope */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:inline">
+            Scope
+          </span>
+          <Popover
+            open={scopeMenuOpen}
+            onOpenChange={open => {
+              setScopeMenuOpen(open);
+              if (!open) {
+                setScopeMenuHoverRegion(null);
+                setScopeMenuExpandedRegion(null);
+                setScopeMenuExpandedDistrict(null);
+                setScopeMenuExpandedCampus(null);
+              }
+            }}
+          >
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-6 sm:h-9 justify-between min-w-0 w-[72px] sm:w-[100px] rounded sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[11px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+              >
+                <span className="truncate">{scopeFilterLabel}</span>
+                <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto"
+              align="start"
+              onOpenAutoFocus={e => e.preventDefault()}
+            >
+              <div className="py-1">
+                {isNationalScope ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearScopeFilter();
+                      setScopeMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      !scopeFilterRegionId &&
+                      !scopeFilterDistrictId &&
+                      scopeFilterCampusId == null &&
+                      !scopeFilterPersonId
+                        ? "bg-red-50 text-red-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    All Regions
+                  </button>
+                ) : userRegionId ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setScopeFilterRegionId(userRegionId);
+                      setScopeFilterDistrictId(null);
+                      setScopeFilterCampusId(null);
+                      setScopeFilterPersonId(null);
+                      setScopeMenuOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                      scopeFilterRegionId === userRegionId ||
+                      (!scopeFilterRegionId &&
+                        !scopeFilterDistrictId &&
+                        scopeFilterCampusId == null &&
+                        !scopeFilterPersonId)
+                        ? "bg-red-50 text-red-700 font-medium"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
+                  >
+                    {userRegionId}
+                  </button>
+                ) : null}
+                {scopeMenuTreeFiltered.map(({ region, districts }) => {
+                  const isRegionSelected =
+                    scopeFilterRegionId === region &&
+                    !scopeFilterDistrictId &&
+                    scopeFilterCampusId == null &&
+                    !scopeFilterPersonId;
+                  const isRegionExpanded =
+                    scopeMenuHoverRegion === region ||
+                    scopeMenuExpandedRegion === region;
+                  return (
+                    <div
+                      key={region}
+                      className="border-b border-gray-100 last:border-b-0"
+                      onMouseEnter={() => setScopeMenuHoverRegion(region)}
+                      onMouseLeave={() => setScopeMenuHoverRegion(null)}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (districts.length > 0) {
+                            setScopeMenuExpandedRegion(r =>
+                              r === region ? null : region
+                            );
+                            return;
+                          }
+                          setScopeFilterRegionId(region);
+                          setScopeFilterDistrictId(null);
+                          setScopeFilterCampusId(null);
+                          setScopeMenuOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
+                          isRegionSelected
+                            ? "bg-red-50 text-red-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <span>{region}</span>
+                        {districts.length > 0 && (
+                          <ChevronRight
+                            className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
+                              isRegionExpanded ? "rotate-90" : ""
+                            }`}
+                          />
+                        )}
+                      </button>
+                      {isRegionExpanded && districts.length > 0 && (
+                        <div className="bg-gray-50/80 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setScopeFilterRegionId(region);
+                              setScopeFilterDistrictId(null);
+                              setScopeFilterCampusId(null);
+                              setScopeFilterPersonId(null);
+                              setScopeMenuOpen(false);
+                            }}
+                            className={`w-full pl-6 pr-3 py-2 text-left text-sm font-medium ${
+                              isRegionSelected
+                                ? "bg-red-50 text-red-700"
+                                : "text-gray-800 hover:bg-gray-100"
+                            }`}
+                          >
+                            All of {region}
+                          </button>
+                          {districts.map(({ district, campuses }) => {
+                            const isDistrictSelected =
+                              scopeFilterDistrictId === district.id &&
+                              scopeFilterCampusId == null &&
+                              !scopeFilterPersonId;
+                            const isDistrictExpanded =
+                              scopeMenuExpandedDistrict === district.id;
+                            return (
+                              <div key={district.id}>
+                                <div
+                                  className={`flex items-center w-full pl-6 pr-2 py-2 gap-1 ${
+                                    isDistrictSelected
+                                      ? "bg-red-50 text-red-700"
+                                      : "text-gray-700 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={e => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (campuses.length > 0) {
+                                        setScopeMenuExpandedDistrict(d =>
+                                          d === district.id ? null : district.id
+                                        );
+                                        return;
+                                      }
+                                      setScopeFilterRegionId(region);
+                                      setScopeFilterDistrictId(district.id);
+                                      setScopeFilterCampusId(null);
+                                      setScopeFilterPersonId(null);
+                                      setScopeMenuOpen(false);
+                                    }}
+                                    className="flex-1 text-left text-sm"
+                                  >
+                                    {district.name}
+                                  </button>
+                                  {campuses.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setScopeMenuExpandedDistrict(d =>
+                                          d === district.id ? null : district.id
+                                        );
+                                      }}
+                                      className="p-1 rounded hover:bg-gray-200"
+                                    >
+                                      <ChevronRight
+                                        className={`h-4 w-4 text-gray-400 transition-transform ${
+                                          scopeMenuExpandedDistrict ===
+                                          district.id
+                                            ? "rotate-90"
+                                            : ""
+                                        }`}
+                                      />
+                                    </button>
+                                  )}
+                                </div>
+                                {isDistrictExpanded && campuses.length > 0 && (
+                                  <div className="bg-gray-100/80 border-t border-gray-100">
+                                    {campuses.map(campus => {
+                                      const isCampusSelected =
+                                        scopeFilterCampusId === campus.id &&
+                                        !scopeFilterPersonId;
+                                      const isCampusExpanded =
+                                        scopeMenuExpandedCampus === campus.id;
+                                      const campusPeople =
+                                        filteredPeople.filter(
+                                          (p: Person) =>
+                                            p.primaryCampusId === campus.id
+                                        );
+                                      const selectCampus = (
+                                        e: React.MouseEvent
+                                      ) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setScopeFilterRegionId(region);
+                                        setScopeFilterDistrictId(district.id);
+                                        setScopeFilterCampusId(campus.id);
+                                        setScopeFilterPersonId(null);
+                                        setScopeMenuOpen(false);
+                                      };
+                                      return (
+                                        <div key={campus.id}>
+                                          <div
+                                            className={`flex items-center w-full pl-9 pr-2 py-2 gap-1 ${
+                                              isCampusSelected
+                                                ? "bg-red-50 text-red-700"
+                                                : "text-gray-700 hover:bg-gray-100"
+                                            }`}
+                                          >
+                                            <button
+                                              type="button"
+                                              onClick={selectCampus}
+                                              className={`flex-1 text-left text-sm ${
+                                                isCampusSelected
+                                                  ? "font-medium text-red-700"
+                                                  : ""
+                                              }`}
+                                            >
+                                              {campus.name}
+                                            </button>
+                                            {campusPeople.length > 0 && (
+                                              <button
+                                                type="button"
+                                                onClick={e => {
+                                                  e.stopPropagation();
+                                                  setScopeMenuExpandedCampus(
+                                                    c =>
+                                                      c === campus.id
+                                                        ? null
+                                                        : campus.id
+                                                  );
+                                                }}
+                                                className="p-1 rounded hover:bg-gray-200"
+                                              >
+                                                <ChevronRight
+                                                  className={`h-4 w-4 text-gray-400 transition-transform ${
+                                                    isCampusExpanded
+                                                      ? "rotate-90"
+                                                      : ""
+                                                  }`}
+                                                />
+                                              </button>
+                                            )}
+                                          </div>
+                                          {isCampusExpanded &&
+                                            campusPeople.length > 0 && (
+                                              <div className="bg-white border-t border-gray-100">
+                                                {[...campusPeople]
+                                                  .sort((a, b) =>
+                                                    (
+                                                      a.name ||
+                                                      a.personId ||
+                                                      ""
+                                                    ).localeCompare(
+                                                      b.name || b.personId || ""
+                                                    )
+                                                  )
+                                                  .map(person => {
+                                                    const isPersonSelected =
+                                                      scopeFilterPersonId ===
+                                                      person.personId;
+                                                    return (
+                                                      <button
+                                                        key={person.personId}
+                                                        type="button"
+                                                        onClick={e => {
+                                                          e.preventDefault();
+                                                          e.stopPropagation();
+                                                          setScopeFilterRegionId(
+                                                            region
+                                                          );
+                                                          setScopeFilterDistrictId(
+                                                            district.id
+                                                          );
+                                                          setScopeFilterCampusId(
+                                                            campus.id
+                                                          );
+                                                          setScopeFilterPersonId(
+                                                            person.personId
+                                                          );
+                                                          setScopeMenuOpen(
+                                                            false
+                                                          );
+                                                        }}
+                                                        className={`w-full pl-12 pr-3 py-2 text-left text-sm ${
+                                                          isPersonSelected
+                                                            ? "bg-red-50 text-red-700 font-medium"
+                                                            : "text-gray-700 hover:bg-gray-100"
+                                                        }`}
+                                                      >
+                                                        {person.name ||
+                                                          person.personId ||
+                                                          "Person"}
+                                                      </button>
+                                                    );
+                                                  })}
+                                              </div>
+                                            )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        <div className="h-6 w-px bg-gray-200 flex-shrink-0" aria-hidden />
+
+        {/* Filter */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-7 sm:h-9 px-1.5 sm:px-2.5 min-w-0 rounded-md sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+              >
+                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70 sm:mr-1" />
+                <span className="hidden sm:inline">Filter</span>
+                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 hidden sm:inline" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto"
+              align="start"
+            >
+              {/* Status */}
+              <div className="p-2 border-b border-gray-100">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                  Status
+                </div>
+                <div className="space-y-0.5">
                   {(["Yes", "Maybe", "No", "Not Invited"] as const).map(
                     status => {
                       const count = allPeople.filter(
@@ -734,11 +1300,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                             checked={isChecked}
                             onCheckedChange={checked => {
                               const newFilter = new Set(statusFilter);
-                              if (checked) {
-                                newFilter.add(status);
-                              } else {
-                                newFilter.delete(status);
-                              }
+                              if (checked) newFilter.add(status);
+                              else newFilter.delete(status);
                               setStatusFilter(newFilter);
                             }}
                           />
@@ -753,33 +1316,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     }
                   )}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Need Filter Dropdown */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Need
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 justify-between min-w-[140px]"
-                >
-                  <span>
-                    {needFilter.size === 0
-                      ? "All Needs"
-                      : needFilter.size === 1
-                        ? Array.from(needFilter)[0]
-                        : `${needFilter.size} selected`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
+              </div>
+              {/* Need */}
+              <div className="p-2 border-b border-gray-100">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                  Need
+                </div>
+                <div className="space-y-0.5">
                   {(
                     [
                       "Financial",
@@ -789,10 +1332,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       "Need Met",
                     ] as const
                   ).map(need => {
-                    // Calculate count for each request type
                     let count = 0;
                     if (need === "Need Met") {
-                      // Count people with no active needs
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
@@ -800,7 +1341,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         return personNeeds.length === 0;
                       }).length;
                     } else {
-                      // Count people with this specific need type
                       count = allPeople.filter((p: Person) => {
                         const personNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
@@ -808,7 +1348,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         return personNeeds.some(n => n.type === need);
                       }).length;
                     }
-
                     const isChecked = needFilter.has(need);
                     return (
                       <label
@@ -819,11 +1358,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                           checked={isChecked}
                           onCheckedChange={checked => {
                             const newFilter = new Set(needFilter);
-                            if (checked) {
-                              newFilter.add(need);
-                            } else {
-                              newFilter.delete(need);
-                            }
+                            if (checked) newFilter.add(need);
+                            else newFilter.delete(need);
                             setNeedFilter(newFilter);
                           }}
                         />
@@ -833,36 +1369,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     );
                   })}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Role Filter Dropdown */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Role
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 justify-between min-w-[140px]"
-                >
-                  <span>
-                    {roleFilter.size === 0
-                      ? "All Roles"
-                      : roleFilter.size === 1
-                        ? Array.from(roleFilter)[0]
-                        : `${roleFilter.size} selected`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                className="w-56 p-2 max-h-64 overflow-y-auto"
-                align="start"
-              >
-                <div className="space-y-1">
+              </div>
+              {/* Role */}
+              <div className="p-2 border-b border-gray-100">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                  Role
+                </div>
+                <div className="space-y-0.5 max-h-40 overflow-y-auto">
                   {uniqueRoles.map(role => {
                     const count = allPeople.filter(
                       (p: Person) => p.primaryRole === role
@@ -877,11 +1390,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                           checked={isChecked}
                           onCheckedChange={checked => {
                             const newFilter = new Set(roleFilter);
-                            if (checked) {
-                              newFilter.add(role);
-                            } else {
-                              newFilter.delete(role);
-                            }
+                            if (checked) newFilter.add(role);
+                            else newFilter.delete(role);
                             setRoleFilter(newFilter);
                           }}
                         />
@@ -891,37 +1401,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     );
                   })}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Family & Guest Filter Dropdown */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Family & Guest
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 justify-between min-w-[140px]"
-                >
-                  <span>
-                    {familyGuestFilter.size === 0
-                      ? "All"
-                      : familyGuestFilter.size === 1
-                        ? Array.from(familyGuestFilter)[0] === "spouse"
-                          ? "Spouse"
-                          : Array.from(familyGuestFilter)[0] === "children"
-                            ? "Children"
-                            : "Guest"
-                        : `${familyGuestFilter.size} selected`}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
+              </div>
+              {/* Family & Guest */}
+              <div className="p-2 border-b border-gray-100">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                  Family & Guest
+                </div>
+                <div className="space-y-0.5">
                   {[
                     { key: "spouse" as const, label: "Spouse" },
                     { key: "children" as const, label: "Children" },
@@ -945,11 +1431,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                           checked={isChecked}
                           onCheckedChange={checked => {
                             const newFilter = new Set(familyGuestFilter);
-                            if (checked) {
-                              newFilter.add(key);
-                            } else {
-                              newFilter.delete(key);
-                            }
+                            if (checked) newFilter.add(key);
+                            else newFilter.delete(key);
                             setFamilyGuestFilter(newFilter);
                           }}
                         />
@@ -959,33 +1442,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     );
                   })}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Deposit Paid Filter Dropdown */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Deposit paid
-            </span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="h-9 justify-between min-w-[140px]"
-                >
-                  <span>
-                    {depositPaidFilter === null
-                      ? "All"
-                      : depositPaidFilter
-                        ? "Paid"
-                        : "Not Paid"}
-                  </span>
-                  <ChevronDown className="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
+              </div>
+              {/* Deposit paid */}
+              <div className="p-2">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
+                  Deposit paid
+                </div>
+                <div className="space-y-0.5">
                   {[
                     { value: true, label: "Paid" },
                     { value: false, label: "Not Paid" },
@@ -1012,104 +1475,103 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     );
                   })}
                 </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-          <div
-            className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
-            aria-hidden
-          />
-
-          {/* Sort By Filter */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Sort by
-            </span>
-            <Select
-              value={sortBy}
-              onValueChange={value => setSortBy(value as typeof sortBy)}
-            >
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Region">Region</SelectItem>
-                <SelectItem value="District">District</SelectItem>
-                <SelectItem value="Campus">Campus</SelectItem>
-                <SelectItem value="Individual">Individual</SelectItem>
-                <SelectItem value="Update">Update</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Order Filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600 font-medium">Order:</span>
-            <Select
-              value={order}
-              onValueChange={value => setOrder(value as typeof order)}
-            >
-              <SelectTrigger className="h-9 w-[140px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Greatest first">Greatest first</SelectItem>
-                <SelectItem value="Least first">Least first</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Last updated filter (for follow-ups) */}
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
-              Last updated
-            </span>
-            <Select
-              value={lastUpdatedFilter}
-              onValueChange={(v: "any" | "7" | "14" | "30") =>
-                setLastUpdatedFilter(v)
-              }
-            >
-              <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any</SelectItem>
-                <SelectItem value="7">Not updated in 7 days</SelectItem>
-                <SelectItem value="14">Not updated in 14 days</SelectItem>
-                <SelectItem value="30">Not updated in 30 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* My Campus Filter */}
-          {user?.campusId &&
-            (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
-              <>
-                <div
-                  className="h-6 w-px bg-gray-200 flex-shrink-0 hidden sm:block"
-                  aria-hidden
-                />
-                <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Sort By */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:inline">
+            Sort By
+          </span>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-6 sm:h-9 justify-between min-w-0 w-[74px] sm:w-[110px] rounded sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[11px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+              >
+                <span className="truncate">{order}</span>
+                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <div className="space-y-0.5">
+                {(
+                  [
+                    "Greatest first",
+                    "Least first",
+                    "Last Updated",
+                    "Alphabetical",
+                  ] as const
+                ).map(value => (
                   <button
-                    onClick={() => setMyCampusOnly(!myCampusOnly)}
-                    className={`
-                  px-3 py-1.5 rounded-full text-sm font-medium transition-all touch-target
+                    key={value}
+                    type="button"
+                    onClick={() => setOrder(value)}
+                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-sm text-left hover:bg-gray-100 ${
+                      order === value ? "bg-gray-50 font-medium" : ""
+                    }`}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+
+        {/* Kebab: Export */}
+        <div className="flex-shrink-0 ml-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-7 w-7 sm:h-9 sm:w-9 rounded-md sm:rounded-lg border-gray-200/80 bg-white hover:bg-gray-50 hover:border-gray-300/80"
+                aria-label="More options"
+              >
+                <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={handleExport}
+                disabled={scopeFilteredPeople.length === 0}
+              >
+                <Download className="h-4 w-4" />
+                Export to CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* My Campus Filter */}
+        {user?.campusId &&
+          (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
+            <>
+              <div
+                className="h-2.5 w-px sm:h-5 bg-gray-200/80 flex-shrink-0 rounded-full hidden sm:block"
+                aria-hidden
+              />
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                <button
+                  onClick={() => setMyCampusOnly(!myCampusOnly)}
+                  className={`
+                  h-6 sm:h-9 px-1.5 sm:px-2.5 rounded sm:rounded-lg text-[11px] sm:text-[13px] font-medium transition-all border
                   ${
                     myCampusOnly
-                      ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
-                      : "bg-white text-gray-600 border border-gray-300 hover:bg-gray-50"
+                      ? "bg-blue-50 text-blue-700 border-blue-200/80"
+                      : "bg-white text-gray-600 border-gray-200/80 hover:bg-gray-50 hover:border-gray-300/80"
                   }
                 `}
-                  >
-                    <Filter className="w-4 h-4 inline mr-1" />
-                    My Campus Only
-                  </button>
-                </div>
-              </>
-            )}
-        </div>
+                >
+                  <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 inline mr-1 sm:mr-1.5" />
+                  My Campus Only
+                </button>
+              </div>
+            </>
+          )}
       </div>
 
       {/* Content - Hierarchical List */}
@@ -1190,23 +1652,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               </div>
             );
           };
-
-          if (groupedData.type === "individual") {
-            if (groupedData.people.length === 0) {
-              return (
-                <div className="p-6 text-center text-gray-500">
-                  No people found
-                </div>
-              );
-            }
-            return (
-              <div className="divide-y divide-gray-200 w-full min-w-0">
-                {groupedData.people.map((person: Person) =>
-                  renderPerson(person, "px-4")
-                )}
-              </div>
-            );
-          }
 
           if (groupedData.type === "campus") {
             if (groupedData.campuses.length === 0) {
