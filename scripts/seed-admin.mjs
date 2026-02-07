@@ -164,6 +164,35 @@ async function main() {
       );
       console.log("✅ Matthew Hoogendoorn (Regional Director, Texico) created");
     }
+
+    // --- CMC Go Admin (Demo/Shared) ---
+    const [existingDemo] = await connection.execute(
+      "SELECT id FROM users WHERE email = ?",
+      ["Admin@cmcgo.app"]
+    );
+    if (Array.isArray(existingDemo) && existingDemo.length > 0) {
+      console.log("✅ Admin@cmcgo.app already exists (skipping)");
+    } else {
+      const demoHash = await hashPassword("Admin1234");
+      await connection.execute(
+        `INSERT INTO users (
+          fullName, email, passwordHash, role,
+          scopeLevel, viewLevel, editLevel,
+          campusId, districtId, regionId,
+          approvalStatus, isBanned
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          "CMC Go Admin",
+          "Admin@cmcgo.app",
+          demoHash,
+          "CMC_GO_ADMIN",
+          "NATIONAL", "NATIONAL", "NATIONAL",
+          null, null, null,
+          "ACTIVE", false,
+        ]
+      );
+      console.log("✅ Admin@cmcgo.app (CMC_GO_ADMIN) created");
+    }
   } catch (error) {
     console.error("❌ Error seeding:", error.message);
     process.exit(1);
