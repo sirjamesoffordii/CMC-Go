@@ -26,7 +26,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: "pnpm dev",
+          command: "npx tsx server/_core/index.ts",
           url: "http://127.0.0.1:3000/readyz",
           timeout: 120_000,
           reuseExistingServer: !process.env.CI,

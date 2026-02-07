@@ -26,7 +26,10 @@ export default defineConfig({
       reportsDirectory: "coverage",
     },
     // Use jsdom for client tests
-    environmentMatchGlobs: [["client/**/*.test.{ts,tsx}", "jsdom"]],
+    environmentMatchGlobs: [
+      ["client/**/*.test.ts", "jsdom"],
+      ["client/**/*.test.tsx", "jsdom"],
+    ],
     setupFiles: ["./client/src/test-setup.ts"],
   },
 });
