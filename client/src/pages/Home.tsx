@@ -629,6 +629,13 @@ export default function Home() {
     setPersonDialogOpen(true);
   };
 
+  // After login/register, auto-open the user's district panel
+  const handleAuthSuccess = (districtId: string | null) => {
+    if (districtId) {
+      handleDistrictSelect(districtId);
+    }
+  };
+
   // Keyboard shortcuts for district panel
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1431,7 +1438,11 @@ export default function Home() {
         onClose={() => setShareModalOpen(false)}
       />
       <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
-      <LoginModal open={loginModalOpen} onOpenChange={setLoginModalOpen} />
+      <LoginModal
+        open={loginModalOpen}
+        onOpenChange={setLoginModalOpen}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

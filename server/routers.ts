@@ -334,6 +334,28 @@ export const appRouter = router({
           });
         }
 
+        // Auto-create a person record so the user shows up in the district panel
+        const personId = `user-${userId}`;
+        try {
+          await db.createPerson({
+            personId,
+            name: input.fullName,
+            primaryRole: input.role,
+            primaryCampusId: campusId,
+            primaryDistrictId: districtId,
+            primaryRegion: regionId,
+            status: "Not Invited",
+          });
+          // Link user to person record
+          await db.updateUserPersonId(userId, personId);
+        } catch (personError) {
+          // Non-fatal: user can still function without a person record
+          console.error(
+            "[register] Failed to create person record:",
+            personError
+          );
+        }
+
         // Set session
         await db.updateUserLastLoginAt(user.id);
         setSessionCookie(ctx.req, ctx.res, user.id);
