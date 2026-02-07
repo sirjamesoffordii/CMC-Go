@@ -32,6 +32,16 @@ import {
   type UserScopeAnchors,
 } from "./_core/authorization";
 
+// XAN roles - people with these roles are counted as XAN members for aggregates
+const XAN_ROLES = [
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+  "CMC_GO_ADMIN",
+];
+
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
 
@@ -1163,10 +1173,26 @@ export async function getDistrictMetrics(districtId: string) {
   // OR indirectly via their primaryCampusId's district.
   //
   // This fixes cases where primaryDistrictId is null but the campus belongs to the district.
-  const districtWhere = or(
-    eq(people.primaryDistrictId, districtId),
-    eq(campuses.districtId, districtId)
-  );
+  //
+  // Special case for XAN: also include people with XAN roles (National Team members)
+  // regardless of their primaryDistrictId
+  let districtWhere;
+  if (districtId === "XAN") {
+    // For XAN, include people by district OR by XAN role
+    districtWhere = or(
+      eq(people.primaryDistrictId, "XAN"),
+      eq(campuses.districtId, "XAN"),
+      sql`${people.primaryRole} IN (${sql.join(
+        XAN_ROLES.map(r => sql`${r}`),
+        sql`, `
+      )})`
+    );
+  } else {
+    districtWhere = or(
+      eq(people.primaryDistrictId, districtId),
+      eq(campuses.districtId, districtId)
+    );
+  }
 
   // Get total count separately to ensure we count ALL people in district
   const totalResult = await db
@@ -1427,6 +1453,9 @@ export async function getRegionMetrics(region: string) {
  * Get aggregate metrics for all districts (no person identifiers).
  * Returns counts for Yes, Maybe, No, Not Invited statuses per district.
  * This is a public aggregate endpoint - everyone can see these numbers.
+ *
+ * XAN attribution: People with XAN roles (National Team members) are
+ * attributed to the XAN district regardless of their primaryDistrictId.
  */
 export async function getAllDistrictMetrics() {
   const db = await getDb();
@@ -1434,7 +1463,15 @@ export async function getAllDistrictMetrics() {
 
   // Include people in a district either by primaryDistrictId or by the district
   // of their primaryCampusId. Use COALESCE to derive the effective district.
-  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+  // Special case: XAN role members are attributed to "XAN" district.
+  const xanRoleCondition = sql`${people.primaryRole} IN (${sql.join(
+    XAN_ROLES.map(r => sql`${r}`),
+    sql`, `
+  )})`;
+  const effectiveDistrictId = sql<string>`CASE 
+    WHEN ${xanRoleCondition} THEN 'XAN'
+    ELSE COALESCE(${people.primaryDistrictId}, ${campuses.districtId})
+  END`;
 
   const result = await db
     .select({

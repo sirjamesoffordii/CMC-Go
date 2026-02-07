@@ -2087,7 +2087,8 @@ export function InteractiveMap({
         {/* Pie charts layer - removed per user request */}
 
         {/* XAN National Button - Positioned absolutely, transforms with map */}
-        {!selectedDistrictId && (
+        {/* Only visible on National Scope */}
+        {!selectedDistrictId && scopeFilter === "NATIONAL" && (
           <div
             className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
             style={{

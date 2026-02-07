@@ -2,9 +2,11 @@ import { trpc } from "@/lib/trpc";
 import { useState, useMemo, useCallback } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
+import { ImportModal } from "./ImportModal";
 import {
   X,
   Download,
+  Upload,
   Search,
   Filter,
   ChevronDown,
@@ -40,6 +42,7 @@ interface PeoplePanelProps {
 export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const _utils = trpc.useUtils();
@@ -1538,6 +1541,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setImportModalOpen(true)}>
+                <Upload className="h-4 w-4" />
+                Import
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleExport}
                 disabled={scopeFilteredPeople.length === 0}
@@ -2014,6 +2021,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
+      <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
     </div>
   );
 }
