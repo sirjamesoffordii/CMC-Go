@@ -342,10 +342,10 @@ export function UserManagement() {
                             National Staff
                           </SelectItem>
                           <SelectItem value="NATIONAL_DIRECTOR">
-                            National Director
+                            National Director (seeded)
                           </SelectItem>
                           <SelectItem value="FIELD_DIRECTOR">
-                            Field Director
+                            Field Director (seeded)
                           </SelectItem>
                           <SelectItem value="CMC_GO_ADMIN">
                             CMC Go Admin

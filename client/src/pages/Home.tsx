@@ -288,22 +288,12 @@ export default function Home() {
     setHeaderBgColor(backgroundColor);
     setCropModalOpen(false);
 
-    console.log(
-      "[handleCropComplete] Starting upload, blob size:",
-      croppedImageBlob.size
-    );
-
     // Convert blob to base64 and upload to S3
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
-      console.log(
-        "[handleCropComplete] Base64 data length:",
-        base64Data.length
-      );
 
       const fileName = selectedFileName || `header-${Date.now()}.jpg`;
-      console.log("[handleCropComplete] Uploading with fileName:", fileName);
 
       uploadHeaderImage.mutate(
         {
@@ -312,11 +302,11 @@ export default function Home() {
           backgroundColor: backgroundColor,
         },
         {
-          onSuccess: data => {
-            console.log("[handleCropComplete] Upload successful:", data.url);
+          onSuccess: _data => {
+            // Upload successful — header image updated
           },
-          onError: error => {
-            console.error("[handleCropComplete] Upload failed:", error);
+          onError: _error => {
+            // Upload failed — optimistic preview already shown
           },
         }
       );
@@ -373,21 +363,14 @@ export default function Home() {
 
   // Set header image from database on load (fresh presigned URL)
   useEffect(() => {
-    console.log(
-      "[Header] savedHeaderImage raw:",
-      JSON.stringify(savedHeaderImage)
-    );
     if (savedHeaderImage && savedHeaderImage.url) {
-      console.log("[Header] Setting header image URL:", savedHeaderImage.url);
       setHeaderImageUrl(savedHeaderImage.url);
     }
   }, [savedHeaderImage]);
 
   // Set background color from database on load
   useEffect(() => {
-    console.log("[Header] savedBgColor raw:", JSON.stringify(savedBgColor));
     if (savedBgColor && savedBgColor.value) {
-      console.log("[Header] Setting bg color:", savedBgColor.value);
       setHeaderBgColor(savedBgColor.value);
     }
   }, [savedBgColor]);
@@ -778,53 +761,14 @@ export default function Home() {
     });
   }
 
-  // Safety check: ensure component always returns something
-  if (!districtsQuery && !campusesQuery && !peopleQuery) {
-    console.warn("[Home] Queries not initialized yet");
-  }
-
-  // Debug: Log data when it loads
-  useEffect(() => {
-    if (districtsQuery.data) {
-      console.log(
-        "[Home] Districts loaded:",
-        districtsQuery.data.length,
-        districtsQuery.data.slice(0, 5).map(d => d.id)
-      );
-    }
-    if (peopleQuery.data) {
-      console.log("[Home] People loaded:", peopleQuery.data.length);
-      const peopleWithDistricts = peopleQuery.data.filter(
-        p => p.primaryDistrictId
-      );
-      console.log("[Home] People with districts:", peopleWithDistricts.length);
-      if (peopleWithDistricts.length > 0) {
-        const districtCounts = peopleWithDistricts.reduce(
-          (acc, p) => {
-            acc[p.primaryDistrictId!] = (acc[p.primaryDistrictId!] || 0) + 1;
-            return acc;
-          },
-          {} as Record<string, number>
-        );
-        console.log(
-          "[Home] People by district (top 5):",
-          Object.entries(districtCounts).slice(0, 5)
-        );
-      }
-    }
-    if (campusesQuery.data) {
-      console.log("[Home] Campuses loaded:", campusesQuery.data.length);
-    }
-  }, [districtsQuery.data, peopleQuery.data, campusesQuery.data]);
-
   return (
-    <div className="min-h-screen bg-slate-50 paper-texture">
+    <div className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden">
       {/* Header - Chi Alpha Toolbar Style */}
-      <div
+      <header
         className="relative z-50 flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
-          height: isMobile ? "48px" : `${headerHeight}px`,
-          minHeight: isMobile ? "48px" : "52px",
+          height: isMobile ? "52px" : `${headerHeight}px`,
+          minHeight: isMobile ? "52px" : "52px",
           backgroundColor: headerBgColor || savedBgColor?.value || "#1f1f1f",
         }}
         onMouseEnter={() => setIsHeaderHovered(true)}
@@ -832,27 +776,29 @@ export default function Home() {
       >
         {/* Logo - Left Side */}
         <div
-          className="flex-shrink-0 h-10 sm:h-12 w-auto mr-2 sm:mr-4 relative z-10 flex items-center gap-2"
-          style={{ marginLeft: isMobile ? "4px" : "12px" }}
+          className="flex-shrink-0 h-8 sm:h-12 w-auto mr-2 sm:mr-4 relative z-10 flex items-center gap-2"
+          style={{ marginLeft: isMobile ? "8px" : "12px" }}
         >
           {headerLogoUrl || savedHeaderLogo?.value ? (
             <img
               src={headerLogoUrl || savedHeaderLogo?.value || undefined}
               alt="Logo"
-              className="h-full w-auto object-contain"
+              className="h-full w-auto object-contain max-w-[120px] sm:max-w-none"
             />
           ) : (
             <>
               <div
-                className="h-9 w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
                 style={{
                   opacity: 0,
                   animation:
                     "roll-in 4.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s forwards",
                 }}
               >
-                <span>CMC</span>
-                <span className="text-[10px] leading-none">Go</span>
+                <span className="text-[10px] sm:text-xs">CMC</span>
+                <span className="text-[8px] sm:text-[10px] leading-none">
+                  Go
+                </span>
               </div>
             </>
           )}
@@ -1037,13 +983,14 @@ export default function Home() {
             )}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Main Content Area Below Header */}
-      <div
-        className="flex main-content-area md:flex-row flex-col"
+      <main
+        className="flex main-content-area md:flex-row flex-col overflow-hidden"
         style={{
-          height: isMobile ? "calc(100vh - 48px)" : "calc(100vh - 120px)",
+          height: isMobile ? "calc(100dvh - 52px)" : "calc(100vh - 120px)",
+          minHeight: isMobile ? "calc(100dvh - 52px)" : undefined,
         }}
       >
         {/* Left District/National Panel - Desktop */}
@@ -1134,7 +1081,6 @@ export default function Home() {
                 ? "National Team"
                 : (selectedDistrict?.name ?? "District")
             }
-            height="70vh"
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1283,12 +1229,11 @@ export default function Home() {
             isOpen={peoplePanelOpen}
             onClose={() => setPeoplePanelOpen(false)}
             title="Table"
-            height="70vh"
           >
             <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
           </MobileDrawer>
         )}
-      </div>
+      </main>
 
       {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile */}
       {!peoplePanelOpen && (
@@ -1305,9 +1250,14 @@ export default function Home() {
                   setPeoplePanelOpen(true);
                 }}
                 className={`
-                  mobile-fab-safe fixed bottom-4 right-4 z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-5 py-3 rounded-full font-medium text-sm shadow-lg transition-all min-h-[44px] min-w-[44px] flex items-center justify-center
+                  mobile-fab-safe fixed z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-6 py-3.5 rounded-full font-medium text-sm shadow-xl transition-all min-h-[48px] min-w-[48px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black
                   ${!user ? "opacity-70" : ""}
                 `}
+                style={{
+                  bottom:
+                    "max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px))",
+                  right: "max(16px, env(safe-area-inset-right, 0px))",
+                }}
               >
                 <span className="whitespace-nowrap select-none">Table</span>
               </button>

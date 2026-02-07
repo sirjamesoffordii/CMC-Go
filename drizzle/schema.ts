@@ -24,6 +24,8 @@ export const users = mysqlTable("users", {
     "STAFF",
     "CO_DIRECTOR",
     "CAMPUS_DIRECTOR",
+    "CAMPUS_INTERN",
+    "CAMPUS_VOLUNTEER",
     "DISTRICT_DIRECTOR",
     "DISTRICT_STAFF",
     "REGION_DIRECTOR",

@@ -18,6 +18,14 @@ import {
 } from "./_core/authorization";
 import { hashPassword, verifyPassword } from "./_core/password";
 
+/** Strip sensitive fields before sending user data to clients */
+function sanitizeUser<T extends Record<string, unknown>>(
+  user: T
+): Omit<T, "passwordHash"> {
+  const { passwordHash: _, ...safe } = user as any;
+  return safe;
+}
+
 /**
  * Get default authorization levels based on role
  * Phase 2: Authorization matrix from design spec
@@ -64,6 +72,8 @@ function getDefaultAuthorization(role: string) {
         editLevel: "CAMPUS" as const,
       };
 
+    case "CAMPUS_INTERN":
+    case "CAMPUS_VOLUNTEER":
     default: // STAFF and below
       return {
         scopeLevel: "REGION" as const,
@@ -73,25 +83,24 @@ function getDefaultAuthorization(role: string) {
   }
 }
 
-// Roles available for registration (excludes CMC_GO_ADMIN which is pre-seeded)
+// Roles available for registration
+// NATIONAL_DIRECTOR and FIELD_DIRECTOR are pre-seeded (not self-registerable)
 const REGISTERABLE_ROLES = [
   "STAFF",
   "CO_DIRECTOR",
   "CAMPUS_DIRECTOR",
+  "CAMPUS_INTERN",
+  "CAMPUS_VOLUNTEER",
   "DISTRICT_DIRECTOR",
   "DISTRICT_STAFF",
   "REGION_DIRECTOR",
   "REGIONAL_STAFF",
   "NATIONAL_STAFF",
-  "NATIONAL_DIRECTOR",
-  "FIELD_DIRECTOR",
 ] as const;
 
 // National Team roles (for registration flow - no campus required)
 const NATIONAL_TEAM_ROLES = [
   "NATIONAL_STAFF",
-  "NATIONAL_DIRECTOR",
-  "FIELD_DIRECTOR",
   "REGION_DIRECTOR",
   "REGIONAL_STAFF",
 ] as const;
@@ -101,6 +110,12 @@ const DISTRICT_LEVEL_ROLES = ["DISTRICT_DIRECTOR", "DISTRICT_STAFF"] as const;
 
 // Roles that require overseeRegionId
 const ROLES_REQUIRING_OVERSEE_REGION = [
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+] as const;
+
+// Roles that require admin approval before access is granted
+const ROLES_REQUIRING_APPROVAL = [
   "REGION_DIRECTOR",
   "REGIONAL_STAFF",
 ] as const;
@@ -124,7 +139,7 @@ export const appRouter = router({
         : null;
 
       return {
-        ...ctx.user,
+        ...sanitizeUser(ctx.user),
         campusName: campus?.name || null,
         districtName: district?.name || null,
         regionName: ctx.user.regionId || ctx.user.overseeRegionId || null,
@@ -193,7 +208,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -330,7 +345,9 @@ export const appRouter = router({
           regionId,
           overseeRegionId,
           ...authLevels,
-          approvalStatus: "ACTIVE", // Auto-approve for now
+          approvalStatus: (ROLES_REQUIRING_APPROVAL as readonly string[]).includes(input.role)
+            ? "PENDING_APPROVAL"
+            : "ACTIVE",
         });
 
         const user = await db.getUserById(userId);
@@ -378,7 +395,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -533,6 +550,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "REGION_DIRECTOR",
             ])
@@ -598,7 +617,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -667,6 +686,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "REGION_DIRECTOR",
             ])
@@ -732,7 +753,7 @@ export const appRouter = router({
         return {
           success: true,
           user: {
-            ...user,
+            ...sanitizeUser(user),
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
@@ -771,6 +792,8 @@ export const appRouter = router({
               "STAFF",
               "CO_DIRECTOR",
               "CAMPUS_DIRECTOR",
+              "CAMPUS_INTERN",
+              "CAMPUS_VOLUNTEER",
               "DISTRICT_DIRECTOR",
               "DISTRICT_STAFF",
               "REGION_DIRECTOR",

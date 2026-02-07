@@ -2,7 +2,7 @@
 import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,

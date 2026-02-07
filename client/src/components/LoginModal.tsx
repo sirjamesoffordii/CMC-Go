@@ -42,9 +42,8 @@ interface LoginModalProps {
 }
 
 // Role configuration based on scope level
+// NATIONAL_DIRECTOR and FIELD_DIRECTOR are pre-seeded and not self-registerable
 const NATIONAL_ROLES = [
-  { value: "NATIONAL_DIRECTOR", label: "National Director" },
-  { value: "FIELD_DIRECTOR", label: "Field Director" },
   { value: "NATIONAL_STAFF", label: "National Staff" },
 ] as const;
 
@@ -60,8 +59,10 @@ const DISTRICT_ROLES = [
 
 const CAMPUS_ROLES = [
   { value: "CAMPUS_DIRECTOR", label: "Campus Director" },
-  { value: "CO_DIRECTOR", label: "Co-Director" },
-  { value: "STAFF", label: "Staff" },
+  { value: "CO_DIRECTOR", label: "Campus Co-Director" },
+  { value: "STAFF", label: "Campus Staff" },
+  { value: "CAMPUS_INTERN", label: "Campus Intern" },
+  { value: "CAMPUS_VOLUNTEER", label: "Campus Volunteer" },
 ] as const;
 
 type RegistrationStep =
@@ -107,6 +108,9 @@ export function LoginModal({
     null
   );
   const [selectedCampusId, setSelectedCampusId] = useState<number | null>(null);
+  const [newlyCreatedCampusName, setNewlyCreatedCampusName] = useState<
+    string | null
+  >(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
   // UI state
@@ -248,6 +252,7 @@ export function LoginModal({
       // Select the newly created campus and proceed
       setScopeLevel("campus");
       setSelectedCampusId(data.id);
+      setNewlyCreatedCampusName(data.name);
       setIsCreatingCampus(false);
       goToStep("role");
     },
@@ -327,6 +332,7 @@ export function LoginModal({
     setSelectedRegion(null);
     setSelectedDistrictId(null);
     setSelectedCampusId(null);
+    setNewlyCreatedCampusName(null);
     setSelectedRole(null);
     clearError();
     setRegionQuery("");
@@ -1487,7 +1493,8 @@ export function LoginModal({
                   <div className="flex justify-between">
                     <span className="text-sm text-slate-600">Campus</span>
                     <span className="text-sm font-medium text-slate-900">
-                      {campuses.find(c => c.id === selectedCampusId)?.name}
+                      {campuses.find(c => c.id === selectedCampusId)?.name ??
+                        newlyCreatedCampusName}
                     </span>
                   </div>
                 )}

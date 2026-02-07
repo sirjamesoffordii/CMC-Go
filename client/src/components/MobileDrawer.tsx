@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence, PanInfo, useAnimation } from "framer-motion";
 
 interface MobileDrawerProps {
@@ -7,8 +7,8 @@ interface MobileDrawerProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: string;
-  /** Height of the drawer - can be a CSS value like "50vh" or "45vh" */
-  height?: string;
+  /** Whether content should be full-height (for scrollable content) */
+  fullContent?: boolean;
 }
 
 const SWIPE_CLOSE_THRESHOLD = 80; // pixels to swipe down before closing
@@ -19,18 +19,57 @@ export function MobileDrawer({
   onClose,
   children,
   title,
-  height = "50vh",
+  fullContent = true,
 }: MobileDrawerProps) {
   const controls = useAnimation();
+  const [contentHeight, setContentHeight] = useState("70vh");
+
+  // Calculate safe height on mount and resize
+  useEffect(() => {
+    const calculateHeight = () => {
+      // Use visualViewport for better mobile keyboard handling
+      const vh = window.visualViewport?.height || window.innerHeight;
+      const maxHeight = Math.min(vh * 0.85, vh - 60); // Leave room for header
+      setContentHeight(`${maxHeight}px`);
+    };
+
+    if (isOpen) {
+      calculateHeight();
+      window.addEventListener("resize", calculateHeight);
+      window.visualViewport?.addEventListener("resize", calculateHeight);
+    }
+
+    return () => {
+      window.removeEventListener("resize", calculateHeight);
+      window.visualViewport?.removeEventListener("resize", calculateHeight);
+    };
+  }, [isOpen]);
 
   // Prevent body scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
       document.body.style.overflow = "hidden";
     } else {
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
       document.body.style.overflow = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
+      }
     }
     return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
       document.body.style.overflow = "";
     };
   }, [isOpen]);
@@ -69,8 +108,9 @@ export function MobileDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-[1px]"
+            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
             onClick={onClose}
+            aria-hidden="true"
           />
 
           {/* Drawer */}
@@ -80,38 +120,47 @@ export function MobileDrawer({
             exit={{ y: "100%" }}
             transition={{
               type: "spring",
-              damping: 28,
-              stiffness: 350,
+              damping: 30,
+              stiffness: 400,
             }}
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.4 }}
+            dragElastic={{ top: 0, bottom: 0.3 }}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-2xl shadow-2xl flex flex-col mobile-drawer-bottom"
+            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-3xl shadow-2xl flex flex-col mobile-drawer-bottom"
             style={{
-              height,
-              maxHeight: "90vh",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              height: contentHeight,
+              maxHeight: "85vh",
+              paddingBottom: "env(safe-area-inset-bottom, 16px)",
             }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? "drawer-title" : undefined}
           >
-            {/* Drag Handle Indicator - clear affordance */}
-            <div className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none shrink-0">
+            {/* Drag Handle Area - larger touch target */}
+            <div
+              className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none shrink-0"
+              style={{ minHeight: "32px" }}
+            >
               <div
-                className="w-12 h-1.5 bg-slate-300 rounded-full"
-                aria-hidden
+                className="w-14 h-1.5 bg-slate-300 rounded-full"
+                aria-hidden="true"
               />
             </div>
 
-            {/* Header - touch-friendly */}
-            <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/50">
+            {/* Header - touch-friendly with better spacing */}
+            <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/80">
               {title && (
-                <h2 className="text-lg font-semibold text-slate-900 truncate pr-2 flex-1">
+                <h2
+                  id="drawer-title"
+                  className="text-lg font-semibold text-slate-900 truncate pr-3 flex-1"
+                >
                   {title}
                 </h2>
               )}
               <button
                 onClick={onClose}
-                className="ml-auto p-2.5 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+                className="ml-auto -mr-1 p-3 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"
                 aria-label="Close panel"
               >
                 <X className="w-5 h-5 text-slate-600" />
@@ -119,7 +168,11 @@ export function MobileDrawer({
             </div>
 
             {/* Content - scrollable with momentum on iOS */}
-            <div className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide">
+            <div
+              className={`flex-1 overflow-y-auto overscroll-contain scrollbar-hide mobile-drawer-content ${
+                fullContent ? "pb-4" : ""
+              }`}
+            >
               {children}
             </div>
           </motion.div>

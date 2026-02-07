@@ -44,7 +44,13 @@ export function verifySessionToken(token: string): number | null {
     hmac.update(payload);
     const expectedSignature = hmac.digest("hex");
 
-    if (signature !== expectedSignature) {
+    // Use timing-safe comparison to prevent timing attacks on HMAC
+    const sigBuf = Buffer.from(signature, "utf-8");
+    const expectedBuf = Buffer.from(expectedSignature, "utf-8");
+    if (
+      sigBuf.length !== expectedBuf.length ||
+      !crypto.timingSafeEqual(sigBuf, expectedBuf)
+    ) {
       return null; // Invalid signature
     }
 
