@@ -21,10 +21,10 @@ interface PersonIconProps {
 }
 
 const STATUS_COLORS = {
-  Yes: "text-emerald-700",
-  Maybe: "text-yellow-600",
-  No: "text-red-700",
-  "Not Invited": "text-slate-500",
+  Yes: "text-green-500",
+  Maybe: "text-yellow-500",
+  No: "text-red-500",
+  "Not Invited": "text-gray-400",
 };
 
 // Interface kept for type reference

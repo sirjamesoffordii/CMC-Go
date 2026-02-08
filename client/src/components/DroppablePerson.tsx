@@ -25,10 +25,10 @@ const reverseStatusMap = {
 };
 
 const statusColors = {
-  director: "text-emerald-700",
-  staff: "text-yellow-600",
-  "co-director": "text-red-700",
-  "not-invited": "text-slate-500",
+  director: "text-green-500",
+  staff: "text-yellow-500",
+  "co-director": "text-red-500",
+  "not-invited": "text-gray-400",
 };
 
 interface DroppablePersonProps {

@@ -11,7 +11,7 @@ const reverseStatusMap = {
 
 const statusColors = {
   director: "text-green-500",
-  staff: "text-yellow-600",
+  staff: "text-yellow-500",
   "co-director": "text-red-500",
   "not-invited": "text-gray-400",
 };

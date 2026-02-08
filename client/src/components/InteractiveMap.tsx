@@ -1532,12 +1532,12 @@ export function InteractiveMap({
     const noPercent = no / total;
     const notInvitedPercent = notInvited / total;
 
-    // Professional status colors - muted, sophisticated palette
+    // Figma design status colors
     const colors = {
-      yes: "#047857", // emerald-700 - professional green
-      maybe: "#ca8a04", // yellow-600 - more yellow tone
-      no: "#b91c1c", // red-700 - professional red
-      notInvited: "#64748b", // slate-500 - professional gray
+      yes: "#22c55e", // green-500
+      maybe: "#eab308", // yellow-500
+      no: "#ef4444", // red-500
+      notInvited: "#9ca3af", // gray-400
     };
 
     let currentAngle = -90; // Start at top
@@ -1855,8 +1855,8 @@ export function InteractiveMap({
             <div
               className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
                 activeMetrics.has("yes")
-                  ? "bg-emerald-700 border-emerald-700"
-                  : "border-slate-300 hover:border-emerald-600 bg-white"
+                  ? "bg-green-500 border-green-500"
+                  : "border-gray-300 hover:border-green-400 bg-white"
               }`}
               style={{
                 boxShadow: activeMetrics.has("yes")
@@ -1913,8 +1913,8 @@ export function InteractiveMap({
             <div
               className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
                 activeMetrics.has("maybe")
-                  ? "bg-yellow-600 border-yellow-600"
-                  : "border-slate-300 hover:border-yellow-600 bg-white"
+                  ? "bg-yellow-500 border-yellow-500"
+                  : "border-gray-300 hover:border-yellow-400 bg-white"
               }`}
               style={{
                 boxShadow: activeMetrics.has("maybe")
@@ -2309,15 +2309,15 @@ export function InteractiveMap({
 
                       {/* Metric values with colored dots */}
                       {metricsToShow.map((metric, index) => {
-                        // Professional color mapping for each metric type
+                        // Figma design status colors
                         const dotColor =
                           metric.label === "Going"
-                            ? "#047857" // emerald-700
+                            ? "#22c55e" // green-500
                             : metric.label === "Maybe"
-                              ? "#ca8a04" // yellow-600
+                              ? "#eab308" // yellow-500
                               : metric.label === "Not Going"
-                                ? "#b91c1c" // red-700
-                                : "#64748b"; // slate-500 for Not Invited
+                                ? "#ef4444" // red-500
+                                : "#9ca3af"; // gray-400 for Not Invited
 
                         const dotRadius = isSingleMetric ? 6 : 5;
 
