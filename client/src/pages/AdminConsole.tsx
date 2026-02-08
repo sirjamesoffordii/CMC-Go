@@ -87,7 +87,7 @@ export default function AdminConsole() {
   // Show loading while checking auth
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -380,7 +380,7 @@ export default function AdminConsole() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-background">
       {/* Header matching app style */}
       <div className="bg-white border-b border-slate-200">
         <div className="container max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">

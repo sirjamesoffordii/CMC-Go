@@ -105,7 +105,7 @@ export default function FollowUpView() {
 
   if (peopleLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
+      <div className="min-h-screen bg-background px-3 py-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <p className="text-gray-600">Loading...</p>
         </div>
@@ -114,7 +114,7 @@ export default function FollowUpView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-3 py-4 sm:p-8">
+    <div className="min-h-screen bg-background px-3 py-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
