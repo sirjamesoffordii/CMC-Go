@@ -1,0 +1,33 @@
+name: Deploy to Railway (Staging)
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install and pre-build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Deploy to Railway (staging env, with pre-built dist)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli
+          # Remove dist/ from .gitignore so railway up includes the pre-built output
+          sed -i '/^dist\//d' .gitignore
+          railway up --environment staging --service 97d10b0b-dcf8-4df8-816b-13d61ccfaa3b
