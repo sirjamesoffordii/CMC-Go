@@ -27,10 +27,15 @@ import {
   LogIn,
   LogOut,
   Shield,
+  Search,
+  X,
+  Upload,
+  MapPin,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
+import { ImportModal } from "@/components/ImportModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
@@ -181,6 +186,9 @@ export default function Home() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -650,10 +658,18 @@ export default function Home() {
           e.preventDefault();
           return;
         }
+        // Close search
+        if (searchOpen) {
+          setSearchOpen(false);
+          setSearchQuery("");
+          e.preventDefault();
+          return;
+        }
         // Close all hamburger menu related modals and menu
-        if (shareModalOpen || loginModalOpen || menuOpen) {
+        if (shareModalOpen || loginModalOpen || importModalOpen || menuOpen) {
           if (shareModalOpen) setShareModalOpen(false);
           if (loginModalOpen) setLoginModalOpen(false);
+          if (importModalOpen) setImportModalOpen(false);
           if (menuOpen) setMenuOpen(false);
           e.preventDefault();
           return;
@@ -723,6 +739,8 @@ export default function Home() {
     shareModalOpen,
     cropModalOpen,
     loginModalOpen,
+    importModalOpen,
+    searchOpen,
     menuOpen,
     districts,
     setViewState,
@@ -858,19 +876,56 @@ export default function Home() {
           )}
         </div>
 
-        {/* Banner Text (desktop) - Fades in towards end of CMC Go animation */}
-        <div
-          className="hidden sm:flex items-center gap-2 flex-shrink-0 z-10"
-          style={{
-            fontSize: "16px",
-            fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-            animation: "fade-in-text 1.2s ease-out 4.2s forwards",
-            fontWeight: 400,
-            opacity: 0,
-          }}
-        >
-          <span className="whitespace-nowrap text-white">Go Together</span>
+        {/* Header Text / Scrolling Banner - Figma style */}
+        <div className="flex-grow relative z-10 overflow-hidden">
+          {headerText || savedHeaderText?.value ? (
+            <div
+              className="text-white/95 tracking-normal"
+              style={{
+                fontSize: "24px",
+                fontWeight: 400,
+                letterSpacing: "0.01em",
+              }}
+              dangerouslySetInnerHTML={{
+                __html: headerText || savedHeaderText?.value || "",
+              }}
+            />
+          ) : (
+            <div
+              className="whitespace-nowrap text-white/70 font-medium hidden sm:block"
+              style={{
+                fontSize: "14px",
+                animation: "scroll-banner-text 40s linear forwards",
+                letterSpacing: "0.01em",
+              }}
+            >
+              "We're Going Together"
+            </div>
+          )}
         </div>
+
+        {/* Calendar Widget - CMC Date (desktop only) */}
+        {!isMobile && (
+          <div className="flex-shrink-0 mr-2 z-10">
+            <div
+              className="relative bg-black rounded-md border border-white shadow-sm overflow-hidden"
+              style={{ width: "32px", height: "32px" }}
+            >
+              <div className="absolute top-0 left-0 right-0 h-1.5 flex justify-center gap-0.5 pt-0.5">
+                <div className="w-0.5 h-0.5 rounded-full bg-white"></div>
+                <div className="w-0.5 h-0.5 rounded-full bg-white"></div>
+              </div>
+              <div className="flex flex-col items-center justify-center h-full pt-1.5">
+                <span className="text-[7px] font-semibold text-white uppercase leading-tight">
+                  July
+                </span>
+                <span className="text-sm font-bold text-white leading-none">
+                  6
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Edit Header Button - Positioned absolutely in top left corner */}
         <button
@@ -881,7 +936,7 @@ export default function Home() {
           Edit
         </button>
 
-        {/* PR 4: Editing badge - mobile only, compact */}
+        {/* Editing badge - mobile only, compact */}
         {user && isMobile && (
           <div className="flex-shrink-0 mr-1 z-10 text-white/90 text-sm max-w-[140px] sm:max-w-none">
             <span
@@ -920,6 +975,190 @@ export default function Home() {
               Why Personal Invitations Matter
             </span>
           </Button>
+
+          {/* Search Icon - Figma style */}
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="text-white/80 hover:text-white hover:bg-white/10 p-2 rounded transition-colors"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+
+            {/* Search Dropdown */}
+            {searchOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-[100]"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery("");
+                  }}
+                />
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] p-3">
+                  <div className="relative mb-2">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search people, campuses, districts..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-8 py-2 bg-gray-50 border border-gray-300 rounded text-gray-900 text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 focus:border-gray-500"
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Search Results */}
+                  {searchQuery && (
+                    <div className="max-h-80 overflow-y-auto">
+                      {(() => {
+                        const query = searchQuery.toLowerCase();
+                        const matchedPeople = allPeople
+                          .filter(
+                            p =>
+                              p.name.toLowerCase().includes(query) ||
+                              p.primaryRole?.toLowerCase().includes(query)
+                          )
+                          .slice(0, 5);
+                        const matchedCampuses = allCampuses
+                          .filter(c => c.name?.toLowerCase().includes(query))
+                          .slice(0, 3);
+                        const matchedDistricts = districts
+                          .filter(
+                            d =>
+                              d.id.toLowerCase().includes(query) ||
+                              d.name?.toLowerCase().includes(query) ||
+                              d.region?.toLowerCase().includes(query)
+                          )
+                          .slice(0, 3);
+
+                        const hasResults =
+                          matchedPeople.length > 0 ||
+                          matchedCampuses.length > 0 ||
+                          matchedDistricts.length > 0;
+
+                        if (!hasResults) {
+                          return (
+                            <div className="p-3 text-gray-500 text-sm">
+                              No results found
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <>
+                            {matchedPeople.length > 0 && (
+                              <div>
+                                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                                  People
+                                </div>
+                                {matchedPeople.map(person => (
+                                  <button
+                                    key={person.personId}
+                                    onClick={() => {
+                                      setSelectedPerson(person);
+                                      setPersonDialogOpen(true);
+                                      setSearchOpen(false);
+                                      setSearchQuery("");
+                                    }}
+                                    className="w-full px-3 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                  >
+                                    <div
+                                      className={`w-2 h-2 rounded-full ${
+                                        person.status === "Yes"
+                                          ? "bg-green-500"
+                                          : person.status === "Maybe"
+                                            ? "bg-yellow-500"
+                                            : person.status === "No"
+                                              ? "bg-red-500"
+                                              : "bg-gray-300"
+                                      }`}
+                                    />
+                                    <span className="text-sm text-gray-900">
+                                      {person.name}
+                                    </span>
+                                    {person.primaryRole && (
+                                      <span className="text-xs text-gray-500">
+                                        {person.primaryRole}
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {matchedCampuses.length > 0 && (
+                              <div>
+                                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                                  Campuses
+                                </div>
+                                {matchedCampuses.map(campus => (
+                                  <button
+                                    key={campus.id}
+                                    onClick={() => {
+                                      if (campus.districtId) {
+                                        handleDistrictSelect(campus.districtId);
+                                      }
+                                      setSearchOpen(false);
+                                      setSearchQuery("");
+                                    }}
+                                    className="w-full px-3 py-2 text-left hover:bg-gray-100"
+                                  >
+                                    <span className="text-sm text-gray-900">
+                                      {campus.name}
+                                    </span>
+                                    {campus.districtId && (
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        in {campus.districtId}
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {matchedDistricts.length > 0 && (
+                              <div>
+                                <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                                  Districts
+                                </div>
+                                {matchedDistricts.map(district => (
+                                  <button
+                                    key={district.id}
+                                    onClick={() => {
+                                      handleDistrictSelect(district.id);
+                                      setSearchOpen(false);
+                                      setSearchQuery("");
+                                    }}
+                                    className="w-full px-3 py-2 text-left hover:bg-gray-100"
+                                  >
+                                    <span className="text-sm text-gray-900">
+                                      {district.name || district.id}
+                                    </span>
+                                    {district.region && (
+                                      <span className="text-xs text-gray-500 ml-2">
+                                        {district.region}
+                                      </span>
+                                    )}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
 
           {/* Hamburger Menu */}
           <div className="relative">
@@ -970,6 +1209,21 @@ export default function Home() {
                     Why Invitations Matter
                   </button>
 
+                  {/* Import - Figma menu item */}
+                  {isAuthenticated && (
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        setImportModalOpen(true);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                    >
+                      <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
+                      Import
+                    </button>
+                  )}
+
                   <button
                     onClick={e => {
                       e.stopPropagation();
@@ -987,9 +1241,10 @@ export default function Home() {
                       setLocation("/more-info");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
+                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
-                    <span className="text-sm">CMC Info</span>
+                    <MapPin className="w-5 h-5 sm:w-4 sm:h-4" />
+                    More Info
                   </button>
 
                   {user?.role === "CMC_GO_ADMIN" && (
@@ -1284,7 +1539,7 @@ export default function Home() {
           <MobileDrawer
             isOpen={peoplePanelOpen}
             onClose={() => setPeoplePanelOpen(false)}
-            title="Table"
+            title="Follow Ups"
             height="70vh"
           >
             <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
@@ -1311,7 +1566,9 @@ export default function Home() {
                   ${!user ? "opacity-70" : ""}
                 `}
               >
-                <span className="whitespace-nowrap select-none">Table</span>
+                <span className="whitespace-nowrap select-none">
+                  Follow Ups
+                </span>
               </button>
             ) : (
               /* Desktop: Slide-out tab on right edge */
@@ -1333,7 +1590,7 @@ export default function Home() {
                   `}
                 >
                   <span className="inline-block whitespace-nowrap select-none">
-                    Table
+                    Follow Ups
                   </span>
                 </button>
               </div>
@@ -1429,6 +1686,7 @@ export default function Home() {
         onAuthSuccess={handleAuthSuccess}
         showClose
       />
+      <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
     </div>
   );
 }
