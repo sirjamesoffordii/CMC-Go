@@ -2623,11 +2623,11 @@ export function DistrictPanel({
         {/* Wrapper to keep header and campuses same width */}
         <div className="w-max min-w-full">
           {/* Header Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
+          <div className="bg-white rounded-lg shadow-sm p-3 sm:p-4 mb-3 transition-shadow hover:shadow-md">
             {/* Title Section - District Name, Region, Directors, and Needs Summary */}
             <div className="flex items-center gap-4 sm:gap-5 flex-wrap">
               <div ref={districtNameRef} className="min-w-0">
-                <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
+                <h1 className="font-semibold text-gray-900 leading-tight tracking-tight text-2xl sm:text-3xl">
                   <EditableText
                     value={district.name}
                     onSave={newName => {
@@ -2637,14 +2637,14 @@ export function DistrictPanel({
                       });
                     }}
                     disabled={disableEdits}
-                    className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                    inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                    className="font-semibold text-gray-900 tracking-tight text-2xl sm:text-3xl"
+                    inputClassName="font-semibold text-gray-900 tracking-tight text-2xl sm:text-3xl"
                   />
                   {disableEdits && (
                     <span className="ml-1 text-slate-400"></span>
                   )}
                 </h1>
-                <span className="text-slate-500 text-sm mt-0.5 block font-medium">
+                <span className="text-gray-500 text-sm mt-0.5 block font-medium">
                   <EditableText
                     value={district.region}
                     onSave={newRegion => {
@@ -2786,39 +2786,155 @@ export function DistrictPanel({
 
               <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
 
-              {/* Stats Grid - Metrics (condensed) */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 flex-shrink-0 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
-                  <span className="text-slate-600">Going:</span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.going}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-yellow-600 flex-shrink-0"></div>
-                  <span className="text-slate-600">Maybe:</span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.maybe}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-red-700 flex-shrink-0"></div>
-                  <span className="text-slate-600 whitespace-nowrap">
-                    Not Going:
-                  </span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.notGoing}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
-                  <span className="text-slate-600 whitespace-nowrap">
-                    Not Invited:
-                  </span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.notInvited}
-                  </span>
+              {/* Stats Section - Pie Chart + Grid (Figma design) */}
+              <div className="flex items-center gap-4 flex-shrink-0">
+                {/* Pie Chart */}
+                <svg
+                  width="70"
+                  height="70"
+                  viewBox="0 0 120 120"
+                  className="flex-shrink-0"
+                >
+                  {/* Background circle */}
+                  <circle cx="60" cy="60" r="55" fill="#e5e7eb" />
+
+                  {(() => {
+                    const total =
+                      safeStats.going +
+                        safeStats.maybe +
+                        safeStats.notGoing +
+                        safeStats.notInvited || 1;
+                    const goingAngle = (safeStats.going / total) * 360;
+                    const maybeAngle = (safeStats.maybe / total) * 360;
+                    const notGoingAngle = (safeStats.notGoing / total) * 360;
+                    const notInvitedAngle =
+                      (safeStats.notInvited / total) * 360;
+
+                    const createPieSlice = (
+                      startAngle: number,
+                      angle: number,
+                      color: string
+                    ) => {
+                      if (angle <= 0) return "";
+                      const startRad = ((startAngle - 90) * Math.PI) / 180;
+                      const endRad =
+                        ((startAngle + angle - 90) * Math.PI) / 180;
+                      const x1 = 60 + 55 * Math.cos(startRad);
+                      const y1 = 60 + 55 * Math.sin(startRad);
+                      const x2 = 60 + 55 * Math.cos(endRad);
+                      const y2 = 60 + 55 * Math.sin(endRad);
+                      const largeArc = angle > 180 ? 1 : 0;
+                      return `M 60 60 L ${x1} ${y1} A 55 55 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                    };
+
+                    let currentAngle = 0;
+                    const slices = [];
+
+                    if (safeStats.going > 0) {
+                      slices.push(
+                        <path
+                          key="going"
+                          d={createPieSlice(
+                            currentAngle,
+                            goingAngle,
+                            "#22c55e"
+                          )}
+                          fill="#22c55e"
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                      );
+                      currentAngle += goingAngle;
+                    }
+
+                    if (safeStats.maybe > 0) {
+                      slices.push(
+                        <path
+                          key="maybe"
+                          d={createPieSlice(
+                            currentAngle,
+                            maybeAngle,
+                            "#eab308"
+                          )}
+                          fill="#eab308"
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                      );
+                      currentAngle += maybeAngle;
+                    }
+
+                    if (safeStats.notGoing > 0) {
+                      slices.push(
+                        <path
+                          key="notGoing"
+                          d={createPieSlice(
+                            currentAngle,
+                            notGoingAngle,
+                            "#ef4444"
+                          )}
+                          fill="#ef4444"
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                      );
+                      currentAngle += notGoingAngle;
+                    }
+
+                    if (safeStats.notInvited > 0) {
+                      slices.push(
+                        <path
+                          key="notInvited"
+                          d={createPieSlice(
+                            currentAngle,
+                            notInvitedAngle,
+                            "#9ca3af"
+                          )}
+                          fill="#9ca3af"
+                          stroke="white"
+                          strokeWidth="1"
+                        />
+                      );
+                    }
+
+                    return slices;
+                  })()}
+                </svg>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0"></div>
+                    <span className="text-gray-700">Going:</span>
+                    <span className="font-semibold text-gray-900 ml-auto tabular-nums">
+                      {safeStats.going}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 flex-shrink-0"></div>
+                    <span className="text-gray-700">Maybe:</span>
+                    <span className="font-semibold text-gray-900 ml-auto tabular-nums">
+                      {safeStats.maybe}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></div>
+                    <span className="text-gray-700 whitespace-nowrap">
+                      Not Going:
+                    </span>
+                    <span className="font-semibold text-gray-900 ml-auto tabular-nums">
+                      {safeStats.notGoing}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0"></div>
+                    <span className="text-gray-700 whitespace-nowrap">
+                      Not Invited:
+                    </span>
+                    <span className="font-semibold text-gray-900 ml-auto tabular-nums">
+                      {safeStats.notInvited}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -2847,7 +2963,7 @@ export function DistrictPanel({
           </div>
 
           {/* Campuses Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200">
+          <div className="bg-white rounded-lg shadow-sm p-3 transition-shadow hover:shadow-md">
             <div className="space-y-1.5 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -2875,14 +2991,14 @@ export function DistrictPanel({
                       campusId={campus.id}
                       canInteract={canEditThisCampus}
                     >
-                      <div className="flex items-center gap-0 py-0.5 border-b border-slate-100 last:border-b-0 group relative z-10">
+                      <div className="flex items-center gap-6 py-1 border-b last:border-b-0 group relative z-10">
                         {/* Campus Name section - fixed width with right border barrier */}
                         <CampusNameDropZone
                           campusId={campus.id}
                           onDrop={handleCampusNameDrop}
                           canInteract={canEditThisCampus}
                         >
-                          <div className="w-[14rem] max-w-[14rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-3 border-r border-slate-200">
+                          <div className="w-60 flex-shrink-0 flex items-center gap-2 min-w-0">
                             {/* Kebab Menu */}
                             <div className="relative z-20 flex-shrink-0">
                               <button
@@ -2997,7 +3113,10 @@ export function DistrictPanel({
                                   document.body
                                 )}
                             </div>
-                            <h3 className="font-medium text-slate-900 break-words text-xl min-w-0 flex-1">
+                            <h3
+                              className="font-medium text-gray-900 truncate"
+                              title={campus.name ?? ""}
+                            >
                               {campus.name}
                             </h3>
                           </div>
@@ -3010,7 +3129,7 @@ export function DistrictPanel({
                             onDrop={handleCampusRowDrop}
                             canInteract={canEditThisCampus}
                           >
-                            <div className="flex items-center gap-3 min-h-[70px] min-w-max pr-4">
+                            <div className="flex items-center gap-2 min-h-[60px]">
                               {sortedPeople.map((person, index) => {
                                 // Mark first campus director (first person of first campus) with data attribute
                                 const isFirstCampusDirector =

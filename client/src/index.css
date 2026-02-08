@@ -122,6 +122,29 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+  }
+
+  /* Figma design typography defaults */
+  h1 {
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  h2 {
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  h3 {
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  h4 {
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  label {
+    font-weight: 500;
+    line-height: 1.5;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
