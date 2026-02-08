@@ -1825,17 +1825,16 @@ export function InteractiveMap({
 
         {/* Top Right Metrics (collapsible dropdown) */}
         <div className="absolute top-28 right-4 z-40 flex flex-col items-end">
-          {/* Dropdown toggle button */}
+          {/* Subtle dropdown toggle - blends with background */}
           <button
             onClick={() => setMetricsExpanded(!metricsExpanded)}
-            className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg border border-slate-200 hover:bg-white transition-all duration-200"
-            style={{
-              filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-            }}
+            className="group flex items-center gap-1 px-2 py-1 rounded-md hover:bg-black/5 transition-all duration-200"
           >
-            <span className="text-sm font-medium text-slate-700">Metrics</span>
+            <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors duration-200">
+              Metrics
+            </span>
             <svg
-              className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${metricsExpanded ? "rotate-180" : ""}`}
+              className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out ${metricsExpanded ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1849,245 +1848,291 @@ export function InteractiveMap({
             </svg>
           </button>
 
-          {/* Expandable metrics panel */}
+          {/* Portal-style sliding metrics panel */}
           <div
-            className={`mt-3 flex flex-col items-end gap-3 overflow-hidden transition-all duration-300 ease-out ${
-              metricsExpanded
-                ? "max-h-[500px] opacity-100"
-                : "max-h-0 opacity-0"
-            }`}
+            className="relative overflow-hidden"
+            style={{
+              transition:
+                "max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-out",
+              maxHeight: metricsExpanded ? "500px" : "0px",
+              opacity: metricsExpanded ? 1 : 0,
+            }}
           >
-            {/* Going */}
-            <button
-              onClick={() => toggleMetric("yes")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
+            {/* Soft light gradient at the top - portal glow */}
+            <div
+              className="absolute top-0 left-0 right-0 h-8 pointer-events-none z-10"
               style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                background:
+                  "linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)",
+                opacity: metricsExpanded ? 1 : 0,
+                transition: "opacity 0.6s ease-out 0.1s",
+              }}
+            />
+            <div
+              className="flex flex-col items-end gap-3 pt-2"
+              style={{
+                transform: metricsExpanded
+                  ? "translateY(0)"
+                  : "translateY(-20px)",
+                transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              <span
-                className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              {/* Going */}
+              <button
+                onClick={() => toggleMetric("yes")}
+                className="flex items-center gap-2 transition-all hover:scale-105"
                 style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
+                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                  opacity: metricsExpanded ? 1 : 0,
+                  transform: metricsExpanded
+                    ? "translateY(0)"
+                    : "translateY(-12px)",
+                  transition:
+                    "opacity 0.4s ease-out 0.05s, transform 0.4s ease-out 0.05s",
                 }}
               >
-                Going
-              </span>
-              <span
-                className="text-4xl font-semibold text-slate-900"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.yes}
-              </span>
-              <div
-                className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("yes")
-                    ? "bg-emerald-700 border-emerald-700"
-                    : "border-slate-300 hover:border-emerald-600 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("yes")
-                    ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("yes") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+                <span
+                  className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "6.5rem",
+                    textAlign: "right",
+                  }}
+                >
+                  Going
+                </span>
+                <span
+                  className="text-4xl font-semibold text-slate-900"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "4rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {showPublicPlaceholder ? "—" : displayedTotals.yes}
+                </span>
+                <div
+                  className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    activeMetrics.has("yes")
+                      ? "bg-emerald-700 border-emerald-700"
+                      : "border-slate-300 hover:border-emerald-600 bg-white"
+                  }`}
+                  style={{
+                    boxShadow: activeMetrics.has("yes")
+                      ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                  }}
+                >
+                  {activeMetrics.has("yes") && (
+                    <svg
+                      className="w-full h-full text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </button>
 
-            {/* Maybe */}
-            <button
-              onClick={() => toggleMetric("maybe")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-              style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-              }}
-            >
-              <span
-                className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              {/* Maybe */}
+              <button
+                onClick={() => toggleMetric("maybe")}
+                className="flex items-center gap-2 transition-all hover:scale-105"
                 style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
+                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                  opacity: metricsExpanded ? 1 : 0,
+                  transform: metricsExpanded
+                    ? "translateY(0)"
+                    : "translateY(-12px)",
+                  transition:
+                    "opacity 0.4s ease-out 0.12s, transform 0.4s ease-out 0.12s",
                 }}
               >
-                Maybe
-              </span>
-              <span
-                className="text-3xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.maybe}
-              </span>
-              <div
-                className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("maybe")
-                    ? "bg-yellow-600 border-yellow-600"
-                    : "border-slate-300 hover:border-yellow-600 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("maybe")
-                    ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("maybe") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+                <span
+                  className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "6.5rem",
+                    textAlign: "right",
+                  }}
+                >
+                  Maybe
+                </span>
+                <span
+                  className="text-3xl font-semibold text-slate-900 tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "4rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+                </span>
+                <div
+                  className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    activeMetrics.has("maybe")
+                      ? "bg-yellow-600 border-yellow-600"
+                      : "border-slate-300 hover:border-yellow-600 bg-white"
+                  }`}
+                  style={{
+                    boxShadow: activeMetrics.has("maybe")
+                      ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                  }}
+                >
+                  {activeMetrics.has("maybe") && (
+                    <svg
+                      className="w-full h-full text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </button>
 
-            {/* Not Going */}
-            <button
-              onClick={() => toggleMetric("no")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-              style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-              }}
-            >
-              <span
-                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              {/* Not Going */}
+              <button
+                onClick={() => toggleMetric("no")}
+                className="flex items-center gap-2 transition-all hover:scale-105"
                 style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
+                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                  opacity: metricsExpanded ? 1 : 0,
+                  transform: metricsExpanded
+                    ? "translateY(0)"
+                    : "translateY(-12px)",
+                  transition:
+                    "opacity 0.4s ease-out 0.19s, transform 0.4s ease-out 0.19s",
                 }}
               >
-                Not Going
-              </span>
-              <span
-                className="text-2xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.no}
-              </span>
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("no")
-                    ? "bg-red-700 border-red-700"
-                    : "border-slate-300 hover:border-red-700 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("no")
-                    ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("no") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+                <span
+                  className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "6.5rem",
+                    textAlign: "right",
+                  }}
+                >
+                  Not Going
+                </span>
+                <span
+                  className="text-2xl font-semibold text-slate-900 tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "4rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {showPublicPlaceholder ? "—" : displayedTotals.no}
+                </span>
+                <div
+                  className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    activeMetrics.has("no")
+                      ? "bg-red-700 border-red-700"
+                      : "border-slate-300 hover:border-red-700 bg-white"
+                  }`}
+                  style={{
+                    boxShadow: activeMetrics.has("no")
+                      ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                  }}
+                >
+                  {activeMetrics.has("no") && (
+                    <svg
+                      className="w-full h-full text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </button>
 
-            {/* Not Invited Yet */}
-            <button
-              onClick={() => toggleMetric("notInvited")}
-              className="flex items-center gap-2 transition-all duration-200 hover:scale-105"
-              style={{
-                filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-              }}
-            >
-              <span
-                className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+              {/* Not Invited Yet */}
+              <button
+                onClick={() => toggleMetric("notInvited")}
+                className="flex items-center gap-2 transition-all hover:scale-105"
                 style={{
-                  lineHeight: "1",
-                  minWidth: "6.5rem",
-                  textAlign: "right",
+                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                  opacity: metricsExpanded ? 1 : 0,
+                  transform: metricsExpanded
+                    ? "translateY(0)"
+                    : "translateY(-12px)",
+                  transition:
+                    "opacity 0.4s ease-out 0.26s, transform 0.4s ease-out 0.26s",
                 }}
               >
-                Not Invited Yet
-              </span>
-              <span
-                className="text-2xl font-semibold text-slate-900 tracking-tight"
-                style={{
-                  lineHeight: "1",
-                  minWidth: "4rem",
-                  textAlign: "center",
-                }}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
-              </span>
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                  activeMetrics.has("notInvited")
-                    ? "bg-slate-500 border-slate-500"
-                    : "border-slate-300 hover:border-slate-400 bg-white"
-                }`}
-                style={{
-                  boxShadow: activeMetrics.has("notInvited")
-                    ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
-                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                }}
-              >
-                {activeMetrics.has("notInvited") && (
-                  <svg
-                    className="w-full h-full text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-            </button>
+                <span
+                  className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "6.5rem",
+                    textAlign: "right",
+                  }}
+                >
+                  Not Invited Yet
+                </span>
+                <span
+                  className="text-2xl font-semibold text-slate-900 tracking-tight"
+                  style={{
+                    lineHeight: "1",
+                    minWidth: "4rem",
+                    textAlign: "center",
+                  }}
+                >
+                  {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+                </span>
+                <div
+                  className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    activeMetrics.has("notInvited")
+                      ? "bg-slate-500 border-slate-500"
+                      : "border-slate-300 hover:border-slate-400 bg-white"
+                  }`}
+                  style={{
+                    boxShadow: activeMetrics.has("notInvited")
+                      ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
+                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                  }}
+                >
+                  {activeMetrics.has("notInvited") && (
+                    <svg
+                      className="w-full h-full text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -2203,7 +2248,7 @@ export function InteractiveMap({
           >
             {activeMetrics.size > 0 &&
               (() => {
-                // Aggregate stats by region
+                // Aggregate stats by region - prefer districtStats, fall back to regionalTotals
                 const regionStats: Record<string, DistrictStats> = {};
                 const districtRegionLookup = new Map<string, string>();
                 districts.forEach(d => {
@@ -2228,6 +2273,25 @@ export function InteractiveMap({
                   regionStats[region].no += stats.no;
                   regionStats[region].notInvited += stats.notInvited;
                   regionStats[region].total += stats.total;
+                });
+
+                // Fall back to regionalTotals (from allRegionMetrics public endpoint)
+                // for any region that has no data from districtStats
+                Object.keys(baseRegionPositions).forEach(region => {
+                  const existing = regionStats[region];
+                  if (
+                    (!existing || existing.total === 0) &&
+                    regionalTotals[region]
+                  ) {
+                    const rt = regionalTotals[region];
+                    regionStats[region] = {
+                      yes: rt.yes,
+                      maybe: rt.maybe,
+                      no: rt.no,
+                      notInvited: rt.notInvited,
+                      total: rt.total,
+                    };
+                  }
                 });
 
                 // Pre-calculate all regions and their heights for collision detection
