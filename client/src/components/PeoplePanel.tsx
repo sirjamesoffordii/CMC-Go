@@ -52,7 +52,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
   const [needFilter, setNeedFilter] = useState<
-    Set<"Financial" | "Transportation" | "Housing" | "Other" | "Need Met">
+    Set<"Registration" | "Transportation" | "Housing" | "Other" | "Need Met">
   >(new Set());
   const [roleFilter, setRoleFilter] = useState<Set<string>>(new Set());
   const [familyGuestFilter, setFamilyGuestFilter] = useState<
@@ -1331,7 +1331,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 <div className="space-y-0.5">
                   {(
                     [
-                      "Financial",
+                      "Registration",
                       "Transportation",
                       "Housing",
                       "Other",

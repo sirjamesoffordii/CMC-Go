@@ -109,7 +109,7 @@ export function mapRoleToAuthoritative(
 /** Need type options */
 export type NeedType =
   | "None"
-  | "Financial"
+  | "Registration"
   | "Transportation"
   | "Housing"
   | "Other";

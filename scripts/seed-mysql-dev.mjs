@@ -334,9 +334,9 @@ async function seed() {
     // 4. Insert needs (for some people)
     console.log("💰 Generating needs...");
     const allNeeds = [];
-    const needTypes = ["Financial", "Transportation", "Housing", "Other"];
+    const needTypes = ["Registration", "Transportation", "Housing", "Other"];
     const needDescriptions = {
-      Financial: [
+      Registration: [
         "Travel expenses for conference",
         "Accommodation costs",
         "Meal expenses",
@@ -372,7 +372,7 @@ async function seed() {
         type: needType,
         description: description,
         amount:
-          needType === "Financial"
+          needType === "Registration"
             ? Math.floor(Math.random() * 50000) + 1000
             : null, // $10-$500 in cents, only for Financial
         visibility: "LEADERSHIP_ONLY",

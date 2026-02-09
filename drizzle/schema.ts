@@ -238,13 +238,13 @@ export const needs = mysqlTable(
     id: int("id").primaryKey().autoincrement(),
     personId: varchar("personId", { length: 64 }).notNull(), // References people.personId
     type: mysqlEnum("type", [
-      "Financial",
+      "Registration",
       "Transportation",
       "Housing",
       "Other",
     ]).notNull(),
     description: text("description").notNull(),
-    amount: int("amount"), // in cents (only for Financial type)
+    amount: int("amount"), // in cents (only for Registration type)
     visibility: mysqlEnum("visibility", ["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
       .default("LEADERSHIP_ONLY")
       .notNull(), // PR 2: Updated visibility enum
