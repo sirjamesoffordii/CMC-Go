@@ -1,9 +1,9 @@
 export type PersonStatus = "Yes" | "Maybe" | "No" | "Not Invited";
 
 const STATUS_DISPLAY_LABELS: Record<PersonStatus, string> = {
-  Yes: "Going",
+  Yes: "Yes",
   Maybe: "Maybe",
-  No: "Not Going",
+  No: "No",
   "Not Invited": "Not Invited Yet",
 };
 

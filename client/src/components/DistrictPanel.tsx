@@ -1342,7 +1342,7 @@ export function DistrictPanel({
           if (directorIcon) {
             const iconRect = directorIcon.getBoundingClientRect();
             const directorCenter = iconRect.left + iconRect.width / 2;
-            // Align the first circle (Going) with the center of the district director icon
+            // Align the first circle (Yes) with the center of the district director icon
             // The circle is 14px (w-3.5) with a small offset from grid edge
             const labelsOffset = directorCenter - containerRect.left - 7;
             setLabelsOffset(Math.max(0, labelsOffset));
@@ -2790,7 +2790,7 @@ export function DistrictPanel({
               <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 flex-shrink-0 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
-                  <span className="text-slate-600">Going:</span>
+                  <span className="text-slate-600">Yes:</span>
                   <span className="font-semibold text-slate-900 tabular-nums">
                     {safeStats.going}
                   </span>
@@ -2804,9 +2804,7 @@ export function DistrictPanel({
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-red-700 flex-shrink-0"></div>
-                  <span className="text-slate-600 whitespace-nowrap">
-                    Not Going:
-                  </span>
+                  <span className="text-slate-600 whitespace-nowrap">No:</span>
                   <span className="font-semibold text-slate-900 tabular-nums">
                     {safeStats.notGoing}
                   </span>
@@ -3373,7 +3371,7 @@ export function DistrictPanel({
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2 relative">
-                        <Label htmlFor="person-name">Name *</Label>
+                        <Label htmlFor="person-name">Full Name *</Label>
                         <Input
                           id="person-name"
                           value={personForm.name}
@@ -3425,7 +3423,7 @@ export function DistrictPanel({
                               setNameSuggestionsHighlightIndex(-1);
                             }
                           }}
-                          placeholder="Enter name"
+                          placeholder="Enter full name"
                           spellCheck={true}
                           autoComplete="off"
                         />
@@ -3524,11 +3522,9 @@ export function DistrictPanel({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="director">Going</SelectItem>
+                            <SelectItem value="director">Yes</SelectItem>
                             <SelectItem value="staff">Maybe</SelectItem>
-                            <SelectItem value="co-director">
-                              Not Going
-                            </SelectItem>
+                            <SelectItem value="co-director">No</SelectItem>
                             <SelectItem value="not-invited">
                               Not Invited Yet
                             </SelectItem>
@@ -4053,7 +4049,7 @@ export function DistrictPanel({
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2 relative">
-                      <Label htmlFor="edit-person-name">Name *</Label>
+                      <Label htmlFor="edit-person-name">Full Name *</Label>
                       <Input
                         id="edit-person-name"
                         value={personForm.name}
@@ -4105,7 +4101,7 @@ export function DistrictPanel({
                         }}
                         spellCheck={true}
                         autoComplete="off"
-                        placeholder="Enter name"
+                        placeholder="Enter full name"
                       />
                       {nameInputFocused &&
                         filteredNameSuggestions.length > 0 && (
@@ -4202,9 +4198,9 @@ export function DistrictPanel({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="director">Going</SelectItem>
+                          <SelectItem value="director">Yes</SelectItem>
                           <SelectItem value="staff">Maybe</SelectItem>
-                          <SelectItem value="co-director">Not Going</SelectItem>
+                          <SelectItem value="co-director">No</SelectItem>
                           <SelectItem value="not-invited">
                             Not Invited Yet
                           </SelectItem>

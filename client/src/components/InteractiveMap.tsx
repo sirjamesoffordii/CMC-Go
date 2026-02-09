@@ -1676,7 +1676,7 @@ export function InteractiveMap({
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#047857]"></div>
-                <span className="text-gray-600">Going:</span>
+                <span className="text-gray-600">Yes:</span>
               </div>
               <span
                 className="text-gray-800"
@@ -1700,7 +1700,7 @@ export function InteractiveMap({
             <div className="flex items-center justify-between gap-4 py-0.5">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#b91c1c]"></div>
-                <span className="text-gray-600">Not Going:</span>
+                <span className="text-gray-600">No:</span>
               </div>
               <span
                 className="text-gray-800"
@@ -1877,7 +1877,7 @@ export function InteractiveMap({
                 transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              {/* Going */}
+              {/* Yes */}
               <button
                 onClick={() => toggleMetric("yes")}
                 className="flex items-center gap-2 transition-all hover:scale-105"
@@ -1899,7 +1899,7 @@ export function InteractiveMap({
                     textAlign: "right",
                   }}
                 >
-                  Going
+                  Yes
                 </span>
                 <span
                   className="text-4xl font-semibold text-slate-900"
@@ -2005,7 +2005,7 @@ export function InteractiveMap({
                 </div>
               </button>
 
-              {/* Not Going */}
+              {/* No */}
               <button
                 onClick={() => toggleMetric("no")}
                 className="flex items-center gap-2 transition-all hover:scale-105"
@@ -2027,7 +2027,7 @@ export function InteractiveMap({
                     textAlign: "right",
                   }}
                 >
-                  Not Going
+                  No
                 </span>
                 <span
                   className="text-2xl font-semibold text-slate-900 tracking-tight"
@@ -2313,11 +2313,11 @@ export function InteractiveMap({
                   const metricsToShow: Array<{ label: string; value: number }> =
                     [];
                   if (activeMetrics.has("yes"))
-                    metricsToShow.push({ label: "Going", value: stats.yes });
+                    metricsToShow.push({ label: "Yes", value: stats.yes });
                   if (activeMetrics.has("maybe"))
                     metricsToShow.push({ label: "Maybe", value: stats.maybe });
                   if (activeMetrics.has("no"))
-                    metricsToShow.push({ label: "Not Going", value: stats.no });
+                    metricsToShow.push({ label: "No", value: stats.no });
                   if (activeMetrics.has("notInvited"))
                     metricsToShow.push({
                       label: "Not Invited",
@@ -2409,11 +2409,11 @@ export function InteractiveMap({
                       {metricsToShow.map((metric, index) => {
                         // Professional color mapping for each metric type
                         const dotColor =
-                          metric.label === "Going"
+                          metric.label === "Yes"
                             ? "#047857" // emerald-700
                             : metric.label === "Maybe"
                               ? "#ca8a04" // yellow-600
-                              : metric.label === "Not Going"
+                              : metric.label === "No"
                                 ? "#b91c1c" // red-700
                                 : "#64748b"; // slate-500 for Not Invited
 

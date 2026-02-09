@@ -1,5 +1,4 @@
 // @ts-nocheck
-// @ts-nocheck
 import ConsoleLayout from "@/components/ConsoleLayout";
 import {
   Card,
@@ -66,7 +65,7 @@ export default function Console() {
 
         {/* Quick Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {quickStats.map(stat => {
+          {quickStats.map((stat: any) => {
             const Icon = stat.icon;
             return (
               <Link key={stat.title} href={stat.href}>
@@ -161,7 +160,7 @@ export default function Console() {
             <CardContent>
               {users && users.length > 0 ? (
                 <div className="space-y-3">
-                  {users.map(user => (
+                  {users.map((user: any) => (
                     <div
                       key={user.id}
                       className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
@@ -202,7 +201,7 @@ export default function Console() {
             <CardContent>
               {logs && logs.length > 0 ? (
                 <div className="space-y-3">
-                  {logs.map(log => (
+                  {logs.map((log: any) => (
                     <div
                       key={log.id}
                       className="rounded-lg border border-border bg-card p-3"

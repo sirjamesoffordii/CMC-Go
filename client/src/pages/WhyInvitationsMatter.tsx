@@ -44,11 +44,24 @@ export default function WhyInvitationsMatter() {
         <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 md:p-12">
           {/* Title */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 mb-6 sm:mb-8">
-            Why Personal Invitations Matter
+            What is CMC Go?
           </h1>
 
           {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-8 sm:mb-10">
+            <p className="text-lg sm:text-xl text-slate-700 leading-relaxed">
+              CMC Go as a way to coordinate toward CMC. It's a
+              map-first web app that replaces spreadsheets with a shared visual,
+              helping leaders at every level see who's been personally invited,
+              surfacing who needs support, and bringing clarity to each person's
+              decision journey.
+            </p>
+          </div>
+
+          <div className="mb-8 sm:mb-10 border-t border-slate-200 pt-8">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-800 mb-4">
+              Why Personal Invitations Still Matter
+            </h2>
             <p className="text-lg sm:text-xl text-slate-700 leading-relaxed">
               Inviting people personally ensures that people not only know about
               an opportunity, but understand why it matters. It brings clarity
@@ -60,7 +73,7 @@ export default function WhyInvitationsMatter() {
 
           {/* Section Title */}
           <h2 className="text-2xl sm:text-3xl font-semibold text-slate-800 mb-6 sm:mb-8 border-b border-slate-200 pb-3">
-            A healthy invitation should include…
+            A healthy invitation should include...
           </h2>
 
           {/* Points */}

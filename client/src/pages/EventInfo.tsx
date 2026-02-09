@@ -3,7 +3,7 @@ import { ArrowLeft, Calendar, MapPin, Users, DollarSign } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
 
-export default function MoreInfo() {
+export default function EventInfo() {
   const [, setLocation] = useLocation();
 
   // Calculate days until CMC - dynamic counter that updates

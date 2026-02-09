@@ -22,7 +22,7 @@ export default function Dashboard() {
     },
     {
       title: "Role",
-      value: user?.role === "admin" ? "Administrator" : "User",
+      value: user?.role === "ADMIN" ? "Administrator" : "User",
       description: "Current access level",
       icon: Shield,
       color: "text-blue-600",
@@ -56,7 +56,7 @@ export default function Dashboard() {
             <h1 className="text-3xl font-semibold tracking-tight">
               Welcome back{user?.name ? `, ${user.name}` : ""}
             </h1>
-            {user?.role === "admin" && (
+            {user?.role === "ADMIN" && (
               <Badge variant="default" className="h-6">
                 Admin
               </Badge>
@@ -137,28 +137,7 @@ export default function Dashboard() {
                   {user?.email || "Not provided"}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Login Method
-                </span>
-                <span className="text-sm font-medium capitalize">
-                  {user?.loginMethod || "OAuth"}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Last Sign In
-                </span>
-                <span className="text-sm font-medium">
-                  {user?.lastSignedIn
-                    ? new Date(user.lastSignedIn).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })
-                    : "-"}
-                </span>
-              </div>
+
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">
                   Account ID

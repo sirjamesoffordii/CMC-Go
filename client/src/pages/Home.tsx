@@ -23,9 +23,10 @@ import {
   Mail,
   MessageCircle,
   Check,
+  Info,
   Menu,
   LogIn,
-  LogOut,
+  UserRound,
   Shield,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
@@ -33,6 +34,7 @@ import { HeaderEditorModal } from "@/components/HeaderEditorModal";
 import { ShareModal } from "@/components/ShareModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
+import { AccountPanel } from "@/components/AccountPanel";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
@@ -181,8 +183,11 @@ export default function Home() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const userDisplayName = user?.fullName || user?.name || "Account";
 
   const utils = trpc.useUtils();
 
@@ -852,18 +857,18 @@ export default function Home() {
             />
           )}
 
-          {/* Why Personal Invitations Matter Button - desktop only (kept near scope selector) */}
+          {/* What Is CMC Go Button - desktop only (kept near scope selector) */}
           <Button
             variant="ghost"
             size="sm"
             onClick={e => {
               e.preventDefault();
-              setLocation("/why-invitations-matter");
+              setLocation("/what-is-cmc-go");
             }}
             className="hidden sm:flex text-white/80 hover:text-white hover:bg-red-700"
           >
             <span className="text-sm font-semibold tracking-wide">
-              Why Personal Invitations Matter
+              What is CMC Go?
             </span>
           </Button>
 
@@ -903,17 +908,17 @@ export default function Home() {
                     </>
                   )}
 
-                  {/* Why Personal Invitations Matter - Mobile only */}
+                  {/* What Is CMC Go - Mobile only */}
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setLocation("/why-invitations-matter");
+                      setLocation("/what-is-cmc-go");
                       setMenuOpen(false);
                     }}
                     className="w-full px-4 py-3 sm:hidden text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
                     <Calendar className="w-5 h-5" />
-                    Why Invitations Matter
+                    What is CMC Go?
                   </button>
 
                   <button
@@ -925,17 +930,18 @@ export default function Home() {
                     className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
                     <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                    Share
+                    Share CMC Go
                   </button>
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setLocation("/more-info");
+                      setLocation("/event-info");
                       setMenuOpen(false);
                     }}
-                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
+                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors flex items-center gap-3"
                   >
-                    <span className="text-sm">CMC Info</span>
+                    <Info className="w-5 h-5 sm:w-4 sm:h-4" />
+                    <span className="text-sm">Event Info</span>
                   </button>
 
                   {user?.role === "CMC_GO_ADMIN" && (
@@ -956,23 +962,20 @@ export default function Home() {
                     <>
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
-                        onClick={async e => {
+                        onClick={e => {
                           e.stopPropagation();
-                          await logout();
+                          setAccountPanelOpen(true);
                           setMenuOpen(false);
-                          setLoginModalOpen(true);
                         }}
                         className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
                       >
                         <div className="flex items-start gap-3">
-                          <LogOut className="w-5 h-5 sm:w-4 sm:h-4 mt-0.5" />
+                          <UserRound className="w-5 h-5 sm:w-4 sm:h-4 mt-0.5" />
                           <div className="flex flex-col items-start">
-                            <span className="font-semibold">Logout</span>
-                            {user?.email && (
-                              <span className="text-xs text-gray-500">
-                                {user.email}
-                              </span>
-                            )}
+                            <span className="font-semibold">Account</span>
+                            <span className="text-xs text-gray-500">
+                              {userDisplayName}
+                            </span>
                           </div>
                         </div>
                       </button>
@@ -984,6 +987,16 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      <AccountPanel
+        open={accountPanelOpen}
+        onOpenChange={setAccountPanelOpen}
+        user={user}
+        onLogout={async () => {
+          await logout();
+          setLoginModalOpen(true);
+        }}
+      />
 
       {/* Main Content Area Below Header */}
       <main

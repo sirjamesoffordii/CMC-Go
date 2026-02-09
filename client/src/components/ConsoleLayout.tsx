@@ -2,15 +2,15 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { getLoginUrl } from "@/const";
+import { AccountPanel } from "@/components/AccountPanel";
 import {
   Activity,
   Database,
   Home,
-  LogOut,
   Menu,
   Settings,
   Terminal,
+  UserRound,
   Users,
   Zap,
 } from "lucide-react";
@@ -40,9 +40,10 @@ export default function ConsoleLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading } = useAuth();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => {
       window.location.href = "/";
@@ -51,6 +52,7 @@ export default function ConsoleLayout({
       toast.error("Failed to logout");
     },
   });
+  const userDisplayName = user?.fullName || user?.name || "Account";
 
   // Loading state
   if (loading) {
@@ -116,11 +118,11 @@ export default function ConsoleLayout({
         <div className="p-4">
           <div className="mb-3 flex items-center gap-3 rounded-lg bg-secondary/50 p-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              {user?.name?.charAt(0).toUpperCase() || "A"}
+              {userDisplayName.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="truncate text-sm font-medium text-foreground">
-                {user?.name}
+                {userDisplayName}
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {user?.email}
@@ -131,11 +133,10 @@ export default function ConsoleLayout({
             variant="outline"
             size="sm"
             className="w-full"
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
+            onClick={() => setAccountPanelOpen(true)}
           >
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign Out
+            <UserRound className="mr-2 h-4 w-4" />
+            Account
           </Button>
         </div>
       </aside>
@@ -168,6 +169,13 @@ export default function ConsoleLayout({
           <div className="p-6">{children}</div>
         </main>
       </div>
+
+      <AccountPanel
+        open={accountPanelOpen}
+        onOpenChange={setAccountPanelOpen}
+        user={user}
+        onLogout={() => logoutMutation.mutate()}
+      />
     </div>
   );
 }

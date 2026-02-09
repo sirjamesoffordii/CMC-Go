@@ -19,12 +19,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import {
   LayoutDashboard,
-  LogOut,
   PanelLeft,
+  UserRound,
   Users,
   ClipboardCheck,
 } from "lucide-react";
@@ -33,6 +32,7 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { AccountPanel } from "./AccountPanel";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -95,9 +95,11 @@ function DashboardLayoutContent({
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
+  const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
+  const userDisplayName = user?.fullName || user?.name || "Account";
 
   useEffect(() => {
     if (isCollapsed) {
@@ -209,12 +211,12 @@ function DashboardLayoutContent({
                 <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase()}
+                      {userDisplayName.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium truncate leading-none">
-                      {user?.name || "-"}
+                      {userDisplayName}
                     </p>
                     <p className="text-xs text-muted-foreground truncate mt-1.5">
                       {user?.email || "-"}
@@ -224,11 +226,11 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                  onClick={() => setAccountPanelOpen(true)}
+                  className="cursor-pointer"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <UserRound className="mr-2 h-4 w-4" />
+                  <span>Account</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -261,6 +263,13 @@ function DashboardLayoutContent({
         )}
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
+
+      <AccountPanel
+        open={accountPanelOpen}
+        onOpenChange={setAccountPanelOpen}
+        user={user}
+        onLogout={logout}
+      />
     </>
   );
 }
