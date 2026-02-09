@@ -1,6 +1,11 @@
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
+import type { inferRouterOutputs } from "@trpc/server";
+import type { AppRouter } from "../../../../server/routers";
+
+/** Output type from auth.me query - used for devBypass user */
+type AuthMeOutput = NonNullable<inferRouterOutputs<AppRouter>["auth"]["me"]>;
 
 type UseAuthOptions = {
   redirectOnUnauthenticated?: boolean;
@@ -12,7 +17,7 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
 
-  const devBypass = (import.meta as any)?.env?.VITE_DEV_BYPASS_AUTH === "true";
+  const devBypass = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -46,8 +51,8 @@ export function useAuth(options?: UseAuthOptions) {
 
   const state = useMemo(() => {
     localStorage.setItem("cmc-go-user-info", JSON.stringify(meQuery.data));
-    const devUser = devBypass
-      ? ({
+    const devUser: AuthMeOutput | null = devBypass
+      ? {
           id: 0,
           fullName: "Dev User",
           email: "dev@local",
@@ -55,7 +60,7 @@ export function useAuth(options?: UseAuthOptions) {
           campusId: 0,
           districtId: null,
           regionId: null,
-          overseeRegionId: null, // For Regional Directors/Staff
+          overseeRegionId: null,
           personId: "dev-person",
           personName: "Dev Person",
           approvalStatus: "ACTIVE",
@@ -69,12 +74,14 @@ export function useAuth(options?: UseAuthOptions) {
           campusName: null,
           districtName: null,
           regionName: null,
-          // Three-tier authorization system
-          scopeLevel: "NATIONAL" as const, // Dev user gets full national scope
-          viewLevel: "NATIONAL" as const, // Dev user can view everyone
-          editLevel: "NATIONAL" as const, // Dev user can edit everyone
+          scopeLevel: "NATIONAL",
+          viewLevel: "NATIONAL",
+          editLevel: "NATIONAL",
           isBanned: false,
-        } as any)
+          roleLabel: null,
+          roleTitle: null,
+          linkedPersonId: null,
+        }
       : null;
     return {
       user: devBypass ? devUser : (meQuery.data ?? null),
