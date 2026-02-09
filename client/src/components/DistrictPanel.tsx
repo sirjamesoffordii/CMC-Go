@@ -354,6 +354,7 @@ export function DistrictPanel({
         status: "not-invited",
         needType: "None",
         needAmount: "",
+        fundsReceivedAmount: "",
         needDetails: "",
         notes: "",
         spouseAttending: false,
@@ -580,6 +581,7 @@ export function DistrictPanel({
       | "Housing"
       | "Other",
     needAmount: "",
+    fundsReceivedAmount: "",
     needDetails: "",
     notes: "",
     spouseAttending: false,
@@ -1891,6 +1893,10 @@ export function DistrictPanel({
             ? Math.round(parseFloat(personForm.needAmount) * 100)
             : undefined;
 
+          const parsedFundsReceived = personForm.fundsReceivedAmount
+            ? Math.round(parseFloat(personForm.fundsReceivedAmount) * 100)
+            : undefined;
+
           const amountPart =
             parsedAmount !== undefined
               ? `$${(parsedAmount / 100).toLocaleString("en-US", {
@@ -1911,6 +1917,7 @@ export function DistrictPanel({
             type: personForm.needType,
             description: needDescription,
             amount: parsedAmount,
+            fundsReceived: parsedFundsReceived,
             isActive: !personForm.needsMet, // Active if needsMet is false
           });
 
@@ -2023,6 +2030,9 @@ export function DistrictPanel({
         needAmount: personNeed?.amount
           ? (personNeed.amount / 100).toString()
           : "",
+        fundsReceivedAmount: personNeed?.fundsReceived
+          ? (personNeed.fundsReceived / 100).toString()
+          : "",
         needDetails: needDetails,
         notes: person.notes || "",
         spouseAttending:
@@ -2112,6 +2122,7 @@ export function DistrictPanel({
         status: "not-invited",
         needType: "None",
         needAmount: "",
+        fundsReceivedAmount: "",
         needDetails: "",
         notes: "",
         spouseAttending: false,
@@ -2259,6 +2270,10 @@ export function DistrictPanel({
               ? Math.round(parseFloat(formData.needAmount) * 100)
               : undefined;
 
+            const parsedFundsReceived = formData.fundsReceivedAmount
+              ? Math.round(parseFloat(formData.fundsReceivedAmount) * 100)
+              : undefined;
+
             const amountPart =
               parsedAmount !== undefined
                 ? `$${(parsedAmount / 100).toLocaleString("en-US", {
@@ -2280,6 +2295,7 @@ export function DistrictPanel({
                 type: formData.needType,
                 description: needDescription,
                 amount: parsedAmount,
+                fundsReceived: parsedFundsReceived,
                 isActive: !formData.needsMet, // Active if needsMet is false
               },
               {
@@ -2300,6 +2316,7 @@ export function DistrictPanel({
                     status: "not-invited",
                     needType: "None",
                     needAmount: "",
+                    fundsReceivedAmount: "",
                     needDetails: "",
                     notes: "",
                     spouseAttending: false,
@@ -2341,6 +2358,7 @@ export function DistrictPanel({
                       status: "not-invited",
                       needType: "None",
                       needAmount: "",
+                      fundsReceivedAmount: "",
                       needDetails: "",
                       notes: "",
                       spouseAttending: false,
@@ -2364,6 +2382,7 @@ export function DistrictPanel({
                 status: "not-invited",
                 needType: "None",
                 needAmount: "",
+                fundsReceivedAmount: "",
                 needDetails: "",
                 notes: "",
                 spouseAttending: false,
@@ -2602,6 +2621,7 @@ export function DistrictPanel({
       status: "not-invited",
       needType: "None",
       needAmount: "",
+      fundsReceivedAmount: "",
       needDetails: "",
       notes: "",
       spouseAttending: false,
@@ -3384,6 +3404,7 @@ export function DistrictPanel({
                   status: "not-invited",
                   needType: "None",
                   needAmount: "",
+                  fundsReceivedAmount: "",
                   needDetails: "",
                   notes: "",
                   spouseAttending: false,
@@ -3874,6 +3895,7 @@ export function DistrictPanel({
                                 | "Housing"
                                 | "Other",
                               needAmount: "",
+                              fundsReceivedAmount: "",
                               needDetails: "",
                             })
                           }
@@ -3920,6 +3942,39 @@ export function DistrictPanel({
                                   setPersonForm({
                                     ...personForm,
                                     needAmount: e.target.value,
+                                  })
+                                }
+                                placeholder="0.00"
+                                className="pl-7 w-28"
+                              />
+                            </div>
+                          </motion.div>
+                        )}
+                        {personForm.needType !== "None" && (
+                          <motion.div
+                            key="funds-received"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-2 w-40"
+                          >
+                            <Label htmlFor="person-funds-received-amount">
+                              Funds Received ($)
+                            </Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                                $
+                              </span>
+                              <Input
+                                id="person-funds-received-amount"
+                                type="number"
+                                step="0.01"
+                                value={personForm.fundsReceivedAmount}
+                                onChange={e =>
+                                  setPersonForm({
+                                    ...personForm,
+                                    fundsReceivedAmount: e.target.value,
                                   })
                                 }
                                 placeholder="0.00"
@@ -4007,13 +4062,13 @@ export function DistrictPanel({
                     {personForm.needType !== "None" && (
                       <div className="flex items-center gap-2">
                         <Label
-                          htmlFor="person-funds-received"
+                          htmlFor="person-needs-met"
                           className="cursor-pointer text-sm font-medium"
                         >
-                          Funds Received
+                          Needs Met
                         </Label>
                         <Checkbox
-                          id="person-funds-received"
+                          id="person-needs-met"
                           checked={personForm.needsMet}
                           onCheckedChange={checked =>
                             setPersonForm({
@@ -4537,6 +4592,7 @@ export function DistrictPanel({
                               | "Housing"
                               | "Other",
                             needAmount: "",
+                            fundsReceivedAmount: "",
                             needDetails: "",
                           })
                         }
@@ -4583,6 +4639,39 @@ export function DistrictPanel({
                                 setPersonForm({
                                   ...personForm,
                                   needAmount: e.target.value,
+                                })
+                              }
+                              placeholder="0.00"
+                              className="pl-7 w-28"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                      {personForm.needType !== "None" && (
+                        <motion.div
+                          key="funds-received"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.2 }}
+                          className="space-y-2 w-40"
+                        >
+                          <Label htmlFor="edit-person-funds-received-amount">
+                            Funds Received ($)
+                          </Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                              $
+                            </span>
+                            <Input
+                              id="edit-person-funds-received-amount"
+                              type="number"
+                              step="0.01"
+                              value={personForm.fundsReceivedAmount}
+                              onChange={e =>
+                                setPersonForm({
+                                  ...personForm,
+                                  fundsReceivedAmount: e.target.value,
                                 })
                               }
                               placeholder="0.00"
@@ -4675,18 +4764,18 @@ export function DistrictPanel({
                   <Trash2 className="w-4 h-4" />
                 </button>
 
-                {/* Right side: Funds Received, Deposit paid, Cancel, Update */}
+                {/* Right side: Needs Met, Deposit paid, Cancel, Update */}
                 <div className="flex items-center gap-3 ml-auto">
                   {personForm.needType !== "None" && (
                     <div className="flex items-center gap-2">
                       <Label
-                        htmlFor="edit-person-funds-received"
+                        htmlFor="edit-person-needs-met"
                         className="cursor-pointer text-sm font-medium"
                       >
-                        Funds Received
+                        Needs Met
                       </Label>
                       <Checkbox
-                        id="edit-person-funds-received"
+                        id="edit-person-needs-met"
                         checked={personForm.needsMet}
                         onCheckedChange={checked =>
                           setPersonForm({

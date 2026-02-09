@@ -245,6 +245,7 @@ export const needs = mysqlTable(
     ]).notNull(),
     description: text("description").notNull(),
     amount: int("amount"), // in cents (only for Registration type)
+    fundsReceived: int("fundsReceived").default(0), // in cents - actual funds received for this need
     visibility: mysqlEnum("visibility", ["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
       .default("LEADERSHIP_ONLY")
       .notNull(), // PR 2: Updated visibility enum

@@ -52,9 +52,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
   const [needFilter, setNeedFilter] = useState<
-    Set<
-      "Registration" | "Transportation" | "Housing" | "Other" | "Funds Received"
-    >
+    Set<"Registration" | "Transportation" | "Housing" | "Other" | "Needs Met">
   >(new Set());
   const [roleFilter, setRoleFilter] = useState<Set<string>>(new Set());
   const [familyGuestFilter, setFamilyGuestFilter] = useState<
@@ -152,14 +150,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         );
         const personNeedTypes = new Set(personActiveNeeds.map(n => n.type));
 
-        // Check if "Funds Received" is selected (person has met/resolved needs)
-        if (needFilter.has("Funds Received") && personMetNeeds.length > 0) {
+        // Check if "Needs Met" is selected (person has met/resolved needs)
+        if (needFilter.has("Needs Met") && personMetNeeds.length > 0) {
           return true;
         }
 
-        // Check if person has any of the selected need types (excluding "Funds Received")
+        // Check if person has any of the selected need types (excluding "Needs Met")
         const selectedNeedTypes = Array.from(needFilter).filter(
-          need => need !== "Funds Received"
+          need => need !== "Needs Met"
         );
         if (selectedNeedTypes.length > 0) {
           const hasSelectedNeedType = selectedNeedTypes.some(needType =>
@@ -810,10 +808,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       );
       const needsText = personNeeds
         .map(need => {
+          let text = need.type;
           if (need.amount) {
-            return `${need.type} ($${(need.amount / 100).toFixed(2)})`;
+            text += ` ($${(need.amount / 100).toFixed(2)})`;
           }
-          return need.type;
+          if (need.fundsReceived) {
+            text += ` [rcvd $${(need.fundsReceived / 100).toFixed(2)}]`;
+          }
+          return text;
         })
         .join("; ");
 
@@ -1340,11 +1342,11 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       "Transportation",
                       "Housing",
                       "Other",
-                      "Funds Received",
+                      "Needs Met",
                     ] as const
                   ).map(need => {
                     let count = 0;
-                    if (need === "Funds Received") {
+                    if (need === "Needs Met") {
                       count = allPeople.filter((p: Person) => {
                         const personMetNeeds = allNeeds.filter(
                           n => n.personId === p.personId && !n.isActive
@@ -1680,6 +1682,20 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                             })}
                           </span>
                         )}
+                        {need.fundsReceived != null &&
+                          need.fundsReceived > 0 && (
+                            <span className="text-green-600">
+                              (rcvd $
+                              {(need.fundsReceived / 100).toLocaleString(
+                                "en-US",
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                }
+                              )}
+                              )
+                            </span>
+                          )}
                         {!need.isActive && (
                           <span
                             className="text-green-600 font-semibold no-underline"

@@ -1921,6 +1921,7 @@ export const appRouter = router({
           type: z.enum(["Registration", "Transportation", "Housing", "Other"]),
           description: z.string(),
           amount: z.number().optional(),
+          fundsReceived: z.number().optional(),
           visibility: z
             .enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
             .default("LEADERSHIP_ONLY"),
@@ -1975,6 +1976,7 @@ export const appRouter = router({
             .optional(),
           description: z.string().optional(),
           amount: z.number().optional(),
+          fundsReceived: z.number().optional(),
           isActive: z.boolean().optional(),
         })
       )
@@ -2015,6 +2017,7 @@ export const appRouter = router({
             type: input.type,
             description: input.description,
             amount: input.amount,
+            fundsReceived: input.fundsReceived,
             isActive: input.isActive ?? true,
             createdById: ctx.user.id,
           });

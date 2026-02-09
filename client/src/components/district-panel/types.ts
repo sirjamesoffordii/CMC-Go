@@ -121,6 +121,7 @@ export interface PersonFormState {
   status: FigmaStatus;
   needType: NeedType;
   needAmount: string;
+  fundsReceivedAmount: string;
   needDetails: string;
   notes: string;
   spouseAttending: boolean;
@@ -139,6 +140,7 @@ export const defaultPersonForm: PersonFormState = {
   status: "not-invited",
   needType: "None",
   needAmount: "",
+  fundsReceivedAmount: "",
   needDetails: "",
   notes: "",
   spouseAttending: false,
