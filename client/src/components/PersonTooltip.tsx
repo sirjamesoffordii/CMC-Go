@@ -182,7 +182,7 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
               </div>
               <div className="space-y-2">
                 <div className="text-slate-600 text-xs font-medium text-center">
-                  Need Met
+                  Funds Received
                 </div>
                 <div className="font-medium text-slate-900 flex justify-center">
                   {!need.isActive ? (

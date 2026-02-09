@@ -3857,7 +3857,7 @@ export function DistrictPanel({
                     )}
                   </div>
 
-                  {/* Need, Funds Needed, Need Met */}
+                  {/* Need, Funds Needed */}
                   <div className="space-y-4 mt-4">
                     <div className="flex flex-wrap items-start gap-4">
                       <div className="space-y-2 w-40">
@@ -3926,36 +3926,6 @@ export function DistrictPanel({
                                 className="pl-7 w-28"
                               />
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      <AnimatePresence mode="popLayout">
-                        {personForm.needType !== "None" && (
-                          <motion.div
-                            key="need-met"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex flex-col items-center gap-2 pb-2 min-h-9"
-                          >
-                            <Label
-                              htmlFor="person-needs-met"
-                              className="cursor-pointer text-sm font-medium"
-                            >
-                              Need Met
-                            </Label>
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={checked =>
-                                setPersonForm({
-                                  ...personForm,
-                                  needsMet: checked === true,
-                                })
-                              }
-                              className="size-4 shrink-0 border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -4034,6 +4004,27 @@ export function DistrictPanel({
                 <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
                   <div />
                   <div className="flex items-center gap-3 ml-auto">
+                    {personForm.needType !== "None" && (
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor="person-funds-received"
+                          className="cursor-pointer text-sm font-medium"
+                        >
+                          Funds Received
+                        </Label>
+                        <Checkbox
+                          id="person-funds-received"
+                          checked={personForm.needsMet}
+                          onCheckedChange={checked =>
+                            setPersonForm({
+                              ...personForm,
+                              needsMet: checked === true,
+                            })
+                          }
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <Label
                         htmlFor="person-deposit-paid"
@@ -4529,7 +4520,7 @@ export function DistrictPanel({
                   )}
                 </div>
 
-                {/* Need, Funds Needed, Need Met */}
+                {/* Need, Funds Needed */}
                 <div className="space-y-4 mt-4">
                   <div className="flex flex-wrap items-start gap-4">
                     <div className="space-y-2 w-40">
@@ -4598,36 +4589,6 @@ export function DistrictPanel({
                               className="pl-7 w-28"
                             />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    <AnimatePresence mode="popLayout">
-                      {personForm.needType !== "None" && (
-                        <motion.div
-                          key="need-met"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex flex-col items-center gap-2 pb-2 min-h-9"
-                        >
-                          <Label
-                            htmlFor="edit-person-needs-met"
-                            className="cursor-pointer text-sm font-medium"
-                          >
-                            Need Met
-                          </Label>
-                          <Checkbox
-                            id="edit-person-needs-met"
-                            checked={personForm.needsMet}
-                            onCheckedChange={checked =>
-                              setPersonForm({
-                                ...personForm,
-                                needsMet: checked === true,
-                              })
-                            }
-                            className="size-4 shrink-0 border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                          />
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -4714,8 +4675,29 @@ export function DistrictPanel({
                   <Trash2 className="w-4 h-4" />
                 </button>
 
-                {/* Right side: Deposit paid, Cancel, Update */}
+                {/* Right side: Funds Received, Deposit paid, Cancel, Update */}
                 <div className="flex items-center gap-3 ml-auto">
+                  {personForm.needType !== "None" && (
+                    <div className="flex items-center gap-2">
+                      <Label
+                        htmlFor="edit-person-funds-received"
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        Funds Received
+                      </Label>
+                      <Checkbox
+                        id="edit-person-funds-received"
+                        checked={personForm.needsMet}
+                        onCheckedChange={checked =>
+                          setPersonForm({
+                            ...personForm,
+                            needsMet: checked === true,
+                          })
+                        }
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2">
                     <Label
                       htmlFor="edit-person-deposit-paid"

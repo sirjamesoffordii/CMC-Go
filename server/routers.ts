@@ -2205,6 +2205,47 @@ export const appRouter = router({
         throw error;
       }
     }),
+    listAll: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const scope = getPeopleScope(ctx.user);
+        const allNeeds = await db.getAllNeeds();
+
+        // Filter needs by scope - need to check each need's person
+        const filteredNeeds = [];
+        for (const need of allNeeds) {
+          const person = await db.getPersonByPersonId(need.personId);
+          if (!person) continue;
+
+          // Check if person is in scope
+          if (scope.level === "ALL") {
+            filteredNeeds.push(need);
+          } else if (
+            scope.level === "REGION" &&
+            person.primaryRegion === scope.regionId
+          ) {
+            filteredNeeds.push(need);
+          } else if (
+            scope.level === "DISTRICT" &&
+            person.primaryDistrictId === scope.districtId
+          ) {
+            filteredNeeds.push(need);
+          } else if (
+            scope.level === "CAMPUS" &&
+            person.primaryCampusId === scope.campusId
+          ) {
+            filteredNeeds.push(need);
+          }
+        }
+
+        return filteredNeeds;
+      } catch (error) {
+        console.error(
+          "[needs.listAll] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
+        throw error;
+      }
+    }),
   }),
 
   notes: router({
