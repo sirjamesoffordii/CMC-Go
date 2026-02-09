@@ -159,11 +159,17 @@ async function main() {
       ["mkhoogendoorn@gmail.com"]
     );
     if (Array.isArray(existingMatt) && existingMatt.length > 0) {
+      // Update password to latest
+      const mattHashUpdate = await hashPassword("RD1234");
+      await connection.execute(
+        "UPDATE users SET passwordHash = ? WHERE email = ?",
+        [mattHashUpdate, "mkhoogendoorn@gmail.com"]
+      );
       console.log(
-        "✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (skipping)"
+        "✅ Matthew Hoogendoorn (Regional Director, Texico) already exists (password updated)"
       );
     } else {
-      const mattHash = await hashPassword("Regional Director");
+      const mattHash = await hashPassword("RD1234");
       await connection.execute(
         `INSERT INTO users (
           fullName, email, passwordHash, role,
