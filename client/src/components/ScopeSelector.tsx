@@ -91,10 +91,13 @@ export function ScopeSelector({
   // Regional Directors (REGION_DIRECTOR) with a region should see their region + National,
   // not all regions. Other NATIONAL-scoped users see everything.
   const userRegionId = user?.regionId || user?.overseeRegionId || null;
-  const isRegionalDirector = user?.role === "REGION_DIRECTOR" && !!userRegionId;
-  const isRegionScoped = userRegionId && (userScopeLevel !== "NATIONAL" || isRegionalDirector);
+  const isRegionalDirector =
+    (user?.role === "REGION_DIRECTOR" || user?.role === "REGIONAL_STAFF") &&
+    !!userRegionId;
+  const isRegionScoped =
+    userRegionId && (userScopeLevel !== "NATIONAL" || isRegionalDirector);
   const regionsToShow = isRegionScoped ? [userRegionId] : ALL_REGIONS;
-  // Regional Directors CAN see National view (they have viewLevel NATIONAL)
+  // Regional Directors/Staff CAN see National view (they have viewLevel NATIONAL)
   const showNationalOption = !isRegionScoped || isRegionalDirector;
 
   // Close dropdown when clicking outside
@@ -365,15 +368,13 @@ export function useScopeFilter() {
   useEffect(() => {
     const userRegionId = user?.regionId || user?.overseeRegionId || null;
     if (!userRegionId) return;
-    const isRegionalDirector = user?.role === "REGION_DIRECTOR";
+    const isRegionalDirector =
+      user?.role === "REGION_DIRECTOR" || user?.role === "REGIONAL_STAFF";
     const isRegionOrDistrict =
       userScopeLevel === "REGION" || userScopeLevel === "DISTRICT";
     // Only default if the user has no stored preference yet
     const hasStoredPreference = !!localStorage.getItem("cmc-scope-filter");
-    if (
-      (isRegionOrDistrict || isRegionalDirector) &&
-      !hasStoredPreference
-    ) {
+    if ((isRegionOrDistrict || isRegionalDirector) && !hasStoredPreference) {
       setCurrentScope("REGION");
       setSelectedRegion(userRegionId);
       setSelectedDistrict(null);
@@ -381,13 +382,8 @@ export function useScopeFilter() {
       localStorage.setItem("cmc-scope-region", userRegionId);
       localStorage.removeItem("cmc-scope-district");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    user?.regionId,
-    user?.overseeRegionId,
-    user?.role,
-    userScopeLevel,
-  ]);
+     
+  }, [user?.regionId, user?.overseeRegionId, user?.role, userScopeLevel]);
 
   return {
     currentScope,

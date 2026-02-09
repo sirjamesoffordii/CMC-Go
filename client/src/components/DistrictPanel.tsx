@@ -625,6 +625,18 @@ export function DistrictPanel({
   const [campusPeopleOrder, setCampusPeopleOrder] = useState<
     Record<number, string[]>
   >({});
+  // Track which campus is currently animating a sort (for slow animation)
+  const [animatingSortCampus, setAnimatingSortCampus] = useState<number | null>(
+    null
+  );
+  const sortTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup sort timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (sortTimeoutRef.current) clearTimeout(sortTimeoutRef.current);
+    };
+  }, []);
 
   // Fetch active needs only - used for counting and hasNeeds indicators
   // Only active needs are counted. Inactive needs are retained for history.
@@ -2440,14 +2452,31 @@ export function DistrictPanel({
     setSelectedCampusId(null);
   };
 
-  // Handle campus sort change
+  // Handle campus sort change (with delayed animation for "Sort by Status")
   const handleCampusSortChange = (
     campusId: number,
     sortBy: "status" | "name" | "role"
   ) => {
-    setCampusSorts(prev => ({ ...prev, [campusId]: sortBy }));
-    // Disable order preservation when user explicitly sorts
-    setPreserveOrder(false);
+    // Clear any pending sort timeout
+    if (sortTimeoutRef.current) {
+      clearTimeout(sortTimeoutRef.current);
+      sortTimeoutRef.current = null;
+    }
+
+    // Start the slow animation indicator
+    setAnimatingSortCampus(campusId);
+
+    // Delay the actual sort by 1.5 seconds so user sees the transition
+    sortTimeoutRef.current = setTimeout(() => {
+      setCampusSorts(prev => ({ ...prev, [campusId]: sortBy }));
+      // Disable order preservation when user explicitly sorts
+      setPreserveOrder(false);
+
+      // Clear animation state after the layout animation completes (~1.5s)
+      setTimeout(() => {
+        setAnimatingSortCampus(null);
+      }, 1500);
+    }, 1500);
   };
 
   const handleCampusRowDrop = (
@@ -2591,7 +2620,7 @@ export function DistrictPanel({
     draggedId: string,
     draggedCampusId: number | string,
     targetCampusId: number | string,
-    _targetIndex: number
+    targetIndex: number
   ) => {
     // Find the person
     const person = peopleWithNeeds.find(p => p.personId === draggedId);
@@ -2605,6 +2634,37 @@ export function DistrictPanel({
 
     if (targetCampusId === "district-staff") {
       handleDistrictStaffDrop(draggedId, draggedCampusId);
+      return;
+    }
+
+    // Handle within-campus reorder (same campus)
+    if (
+      draggedCampusId === targetCampusId &&
+      typeof targetCampusId === "number"
+    ) {
+      const campus = campusesWithPeople.find(c => c.id === targetCampusId);
+      if (!campus) return;
+
+      // Get current order (from stored order or current people list)
+      const currentOrder =
+        campusPeopleOrder[targetCampusId] ||
+        getSortedPeople(campus.people, targetCampusId).map(p => p.personId);
+
+      // Remove dragged person from current position
+      const newOrder = currentOrder.filter(id => id !== draggedId);
+      // Insert at target position
+      const insertAt = Math.min(targetIndex, newOrder.length);
+      newOrder.splice(insertAt, 0, draggedId);
+
+      // Save custom order and enable preserve mode
+      setCampusPeopleOrder(prev => ({ ...prev, [targetCampusId]: newOrder }));
+      setPreserveOrder(true);
+      // Clear sort preference for this campus (now custom)
+      setCampusSorts(prev => {
+        const updated = { ...prev };
+        delete updated[targetCampusId];
+        return updated;
+      });
       return;
     }
 
@@ -2880,7 +2940,7 @@ export function DistrictPanel({
                           onDrop={handleCampusNameDrop}
                           canInteract={canEditThisCampus}
                         >
-                          <div className="w-[14rem] max-w-[14rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-3 border-r border-slate-200">
+                          <div className="w-[18rem] max-w-[18rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-3 border-r border-slate-200">
                             {/* Kebab Menu */}
                             <div className="relative z-20 flex-shrink-0">
                               <button
@@ -2944,6 +3004,14 @@ export function DistrictPanel({
                                       </button>
                                       <button
                                         onClick={() => {
+                                          // Cancel any pending sort animation
+                                          if (sortTimeoutRef.current) {
+                                            clearTimeout(
+                                              sortTimeoutRef.current
+                                            );
+                                            sortTimeoutRef.current = null;
+                                          }
+                                          setAnimatingSortCampus(null);
                                           // Custom = preserve current order
                                           setPreserveOrder(true);
                                           // Clear sort preference to use custom order
@@ -3059,6 +3127,9 @@ export function DistrictPanel({
                                           onPersonStatusChange
                                         }
                                         canInteract={canEditThisCampus}
+                                        slowAnimation={
+                                          animatingSortCampus === campus.id
+                                        }
                                         maskIdentity={
                                           isPublicSafeMode &&
                                           (!isCampusOnlyViewer ||

@@ -50,6 +50,7 @@ interface DroppablePersonProps {
   ) => void;
   canInteract?: boolean;
   maskIdentity?: boolean;
+  slowAnimation?: boolean;
 }
 
 // Interface kept for future use
@@ -73,6 +74,7 @@ export function DroppablePerson({
   onPersonStatusChange,
   canInteract = true,
   maskIdentity = false,
+  slowAnimation = false,
 }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
   const [isHovered, setIsHovered] = useState(false);
@@ -225,7 +227,9 @@ export function DroppablePerson({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{
-          layout: { type: "spring", stiffness: 300, damping: 30 },
+          layout: slowAnimation
+            ? { type: "spring", stiffness: 80, damping: 20, mass: 1.2 }
+            : { type: "spring", stiffness: 300, damping: 30 },
           opacity: { duration: 0.15 },
           scale: { duration: 0.2 },
         }}
