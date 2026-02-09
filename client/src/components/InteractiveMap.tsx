@@ -1653,6 +1653,14 @@ export function InteractiveMap({
                     ({campusCount} {campusCount === 1 ? "campus" : "campuses"})
                   </span>
                 )}
+                {stats.total > 0 && (
+                  <span
+                    className="text-gray-700 ml-2 tabular-nums"
+                    style={{ fontSize: "18px", fontWeight: 500 }}
+                  >
+                    {stats.total}
+                  </span>
+                )}
               </>
             );
           })()}

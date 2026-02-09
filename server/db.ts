@@ -1361,7 +1361,7 @@ export async function getDistrictNeedsSummary(districtId: string) {
     .select({
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
-      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+      totalAmount: sql<number>`COALESCE(SUM(${needs.amount}), 0)`,
       metAmount: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
     })
     .from(needs)
@@ -1397,7 +1397,7 @@ export async function getNeedsAggregateSummary() {
     .select({
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
-      totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
+      totalAmount: sql<number>`COALESCE(SUM(${needs.amount}), 0)`,
       metAmount: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
     })
     .from(needs);
