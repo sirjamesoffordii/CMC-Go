@@ -47,7 +47,7 @@ export function useAuth(options?: UseAuthOptions) {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }
-  }, [logoutMutation, utils]);
+  }, [devBypass, logoutMutation, utils]);
 
   const state = useMemo(() => {
     localStorage.setItem("cmc-go-user-info", JSON.stringify(meQuery.data));
