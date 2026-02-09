@@ -896,6 +896,18 @@ export async function getAllActiveNeeds() {
 }
 
 /**
+ * Get all needs (active + inactive) for display purposes (e.g. people list).
+ */
+export async function getAllNeeds() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(needs)
+    .orderBy(sql`${needs.createdAt} DESC`);
+}
+
+/**
  * Toggle need active status. When marking as met (isActive = false), set resolvedAt timestamp.
  * Only active needs are counted. Inactive needs are retained for history.
  */

@@ -52,7 +52,9 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     Set<"Yes" | "Maybe" | "No" | "Not Invited">
   >(new Set());
   const [needFilter, setNeedFilter] = useState<
-    Set<"Registration" | "Transportation" | "Housing" | "Other" | "Need Met">
+    Set<
+      "Registration" | "Transportation" | "Housing" | "Other" | "Funds Received"
+    >
   >(new Set());
   const [roleFilter, setRoleFilter] = useState<Set<string>>(new Set());
   const [familyGuestFilter, setFamilyGuestFilter] = useState<
@@ -117,7 +119,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     trpc.campuses.list.useQuery();
   const { data: allDistricts = [], isLoading: districtsLoading } =
     trpc.districts.list.useQuery();
-  const { data: allNeeds = [] } = trpc.needs.listActive.useQuery();
+  const { data: allNeeds = [] } = trpc.needs.listAll.useQuery();
 
   // Get unique roles from all people
   const uniqueRoles = useMemo(() => {
@@ -142,19 +144,22 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
     // Need filter
     if (needFilter.size > 0) {
       filtered = filtered.filter((p: Person) => {
-        const personNeeds = allNeeds.filter(
+        const personActiveNeeds = allNeeds.filter(
           n => n.personId === p.personId && n.isActive
         );
-        const personNeedTypes = new Set(personNeeds.map(n => n.type));
+        const personMetNeeds = allNeeds.filter(
+          n => n.personId === p.personId && !n.isActive
+        );
+        const personNeedTypes = new Set(personActiveNeeds.map(n => n.type));
 
-        // Check if "Need Met" is selected (person has no active needs)
-        if (needFilter.has("Need Met") && personNeeds.length === 0) {
+        // Check if "Funds Received" is selected (person has met/resolved needs)
+        if (needFilter.has("Funds Received") && personMetNeeds.length > 0) {
           return true;
         }
 
-        // Check if person has any of the selected need types (excluding "Need Met")
+        // Check if person has any of the selected need types (excluding "Funds Received")
         const selectedNeedTypes = Array.from(needFilter).filter(
-          need => need !== "Need Met"
+          need => need !== "Funds Received"
         );
         if (selectedNeedTypes.length > 0) {
           const hasSelectedNeedType = selectedNeedTypes.some(needType =>
@@ -1335,23 +1340,23 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       "Transportation",
                       "Housing",
                       "Other",
-                      "Need Met",
+                      "Funds Received",
                     ] as const
                   ).map(need => {
                     let count = 0;
-                    if (need === "Need Met") {
+                    if (need === "Funds Received") {
                       count = allPeople.filter((p: Person) => {
-                        const personNeeds = allNeeds.filter(
-                          n => n.personId === p.personId && n.isActive
+                        const personMetNeeds = allNeeds.filter(
+                          n => n.personId === p.personId && !n.isActive
                         );
-                        return personNeeds.length === 0;
+                        return personMetNeeds.length > 0;
                       }).length;
                     } else {
                       count = allPeople.filter((p: Person) => {
-                        const personNeeds = allNeeds.filter(
+                        const personActiveNeeds = allNeeds.filter(
                           n => n.personId === p.personId && n.isActive
                         );
-                        return personNeeds.some(n => n.type === need);
+                        return personActiveNeeds.some(n => n.type === need);
                       }).length;
                     }
                     const isChecked = needFilter.has(need);
@@ -1593,7 +1598,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             indentClass: string = "px-12"
           ) => {
             const personNeeds = allNeeds.filter(
-              n => n.personId === person.personId && n.isActive
+              n => n.personId === person.personId
             );
             return (
               <div
@@ -1651,14 +1656,57 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     >
                       {person.status}
                     </span>
-                    {personNeeds.length > 0 && (
-                      <span className="text-xs text-yellow-600 font-medium">
-                        {personNeeds.length} request
-                        {personNeeds.length === 1 ? "" : "s"}
+                  </div>
+                </div>
+                {/* Need info row */}
+                {personNeeds.length > 0 && (
+                  <div className="mt-1 ml-4 flex flex-wrap gap-2">
+                    {personNeeds.map(need => (
+                      <span
+                        key={need.id}
+                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                          need.isActive
+                            ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                            : "bg-green-50 text-green-700 border border-green-200 line-through"
+                        }`}
+                      >
+                        <span className="font-medium">{need.type}</span>
+                        {need.amount != null && need.amount > 0 && (
+                          <span>
+                            $
+                            {(need.amount / 100).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        )}
+                        {!need.isActive && (
+                          <span
+                            className="text-green-600 font-semibold no-underline"
+                            style={{ textDecoration: "none" }}
+                          >
+                            ✓
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                    {person.depositPaid && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="font-medium">Deposit Paid</span>
+                        <span className="text-blue-600 font-semibold">✓</span>
                       </span>
                     )}
                   </div>
-                </div>
+                )}
+                {/* Show deposit paid even when no needs */}
+                {personNeeds.length === 0 && person.depositPaid && (
+                  <div className="mt-1 ml-4">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                      <span className="font-medium">Deposit Paid</span>
+                      <span className="text-blue-600 font-semibold">✓</span>
+                    </span>
+                  </div>
+                )}
               </div>
             );
           };
