@@ -575,7 +575,7 @@ export function DistrictPanel({
     status: "not-invited" as keyof typeof statusMap,
     needType: "None" as
       | "None"
-      | "Financial"
+      | "Registration"
       | "Transportation"
       | "Housing"
       | "Other",
@@ -1981,7 +1981,7 @@ export function DistrictPanel({
       let needDetails = "";
       if (personNeed) {
         try {
-          if (personNeed.type === "Financial") {
+          if (personNeed.type === "Registration") {
             const desc = personNeed.description || "";
             const match = desc.match(/\$\d+(?:\.\d+)?\s*-\s*(.+)/);
             needDetails = match ? match[1].trim() : "";
@@ -2015,7 +2015,7 @@ export function DistrictPanel({
         status: figmaStatus,
         needType: personNeed
           ? (personNeed.type as
-              | "Financial"
+              | "Registration"
               | "Transportation"
               | "Housing"
               | "Other")
@@ -2685,7 +2685,7 @@ export function DistrictPanel({
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
             {/* Title Section - District Name, Region, Directors, and Needs Summary */}
-            <div className="flex items-center gap-4 sm:gap-5 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <div ref={districtNameRef} className="min-w-0">
                 <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
                   <EditableText
@@ -2847,7 +2847,7 @@ export function DistrictPanel({
               <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
 
               {/* Stats Grid - Metrics (condensed) */}
-              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 flex-shrink-0 text-xs">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0 flex-shrink-0 text-xs">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
                   <span className="text-slate-600">Yes:</span>
@@ -2884,7 +2884,7 @@ export function DistrictPanel({
 
               {/* Needs / Funds Summary (right side, slightly smaller) */}
               <div className="flex-shrink-0 text-right">
-                <div className="space-y-0.5">
+                <div className="space-y-0">
                   <div className="text-xs font-semibold text-slate-700 tabular-nums">
                     <span className="text-slate-500 font-medium">
                       Needs Met:
@@ -3869,7 +3869,7 @@ export function DistrictPanel({
                               ...personForm,
                               needType: value as
                                 | "None"
-                                | "Financial"
+                                | "Registration"
                                 | "Transportation"
                                 | "Housing"
                                 | "Other",
@@ -3883,7 +3883,9 @@ export function DistrictPanel({
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="None">None</SelectItem>
-                            <SelectItem value="Financial">Financial</SelectItem>
+                            <SelectItem value="Registration">
+                              Registration
+                            </SelectItem>
                             <SelectItem value="Transportation">
                               Transportation
                             </SelectItem>
@@ -4539,7 +4541,7 @@ export function DistrictPanel({
                             ...personForm,
                             needType: value as
                               | "None"
-                              | "Financial"
+                              | "Registration"
                               | "Transportation"
                               | "Housing"
                               | "Other",
@@ -4553,7 +4555,9 @@ export function DistrictPanel({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="None">None</SelectItem>
-                          <SelectItem value="Financial">Financial</SelectItem>
+                          <SelectItem value="Registration">
+                            Registration
+                          </SelectItem>
                           <SelectItem value="Transportation">
                             Transportation
                           </SelectItem>

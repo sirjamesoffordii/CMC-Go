@@ -90,7 +90,7 @@ export default function People() {
 
   const getNeedTypeFilterInitial = ():
     | "All"
-    | "Financial"
+    | "Registration"
     | "Housing"
     | "Transportation"
     | "Other" => {
@@ -100,14 +100,14 @@ export default function People() {
     return (
       (needTypeParam as
         | "All"
-        | "Financial"
+        | "Registration"
         | "Housing"
         | "Transportation"
         | "Other") || "All"
     );
   };
   const [needTypeFilter, setNeedTypeFilter] = useState<
-    "All" | "Financial" | "Housing" | "Transportation" | "Other"
+    "All" | "Registration" | "Housing" | "Transportation" | "Other"
   >(getNeedTypeFilterInitial());
 
   const getHasActiveNeedsInitial = (): boolean => {
@@ -873,7 +873,7 @@ export default function People() {
                         setNeedTypeFilter(
                           e.target.value as
                             | "All"
-                            | "Financial"
+                            | "Registration"
                             | "Housing"
                             | "Transportation"
                             | "Other"
@@ -882,7 +882,7 @@ export default function People() {
                       className="mx-3 mt-0.5 w-[calc(100%-24px)] px-3 py-2 rounded border border-gray-200 text-sm"
                     >
                       <option value="All">All</option>
-                      <option value="Financial">Financial</option>
+                      <option value="Registration">Registration</option>
                       <option value="Housing">Housing</option>
                       <option value="Transportation">Transportation</option>
                       <option value="Other">Other</option>

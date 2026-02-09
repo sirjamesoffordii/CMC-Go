@@ -47,8 +47,8 @@ export function PersonDetailsDialog({
 
   // Needs state
   const [needType, setNeedType] = useState<
-    "Financial" | "Transportation" | "Housing" | "Other"
-  >("Financial");
+    "Registration" | "Transportation" | "Housing" | "Other"
+  >("Registration");
   const [needDescription, setNeedDescription] = useState("");
   const [needAmount, setNeedAmount] = useState("");
   const [needVisibility, setNeedVisibility] = useState<
@@ -267,7 +267,11 @@ export function PersonDetailsDialog({
                   value={needType}
                   onValueChange={v =>
                     setNeedType(
-                      v as "Financial" | "Transportation" | "Housing" | "Other"
+                      v as
+                        | "Registration"
+                        | "Transportation"
+                        | "Housing"
+                        | "Other"
                     )
                   }
                 >
@@ -275,7 +279,7 @@ export function PersonDetailsDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Financial">Financial</SelectItem>
+                    <SelectItem value="Registration">Registration</SelectItem>
                     <SelectItem value="Transportation">
                       Transportation
                     </SelectItem>

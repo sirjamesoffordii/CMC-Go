@@ -1918,7 +1918,7 @@ export const appRouter = router({
       .input(
         z.object({
           personId: z.string(),
-          type: z.enum(["Financial", "Transportation", "Housing", "Other"]),
+          type: z.enum(["Registration", "Transportation", "Housing", "Other"]),
           description: z.string(),
           amount: z.number().optional(),
           visibility: z
@@ -1971,7 +1971,7 @@ export const appRouter = router({
         z.object({
           personId: z.string(),
           type: z
-            .enum(["Financial", "Transportation", "Housing", "Other"])
+            .enum(["Registration", "Transportation", "Housing", "Other"])
             .optional(),
           description: z.string().optional(),
           amount: z.number().optional(),

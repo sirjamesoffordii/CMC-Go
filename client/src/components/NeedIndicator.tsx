@@ -1,9 +1,14 @@
 import { DollarSign, Home, Car, HelpCircle } from "lucide-react";
 
-type NeedType = "Financial" | "Housing" | "Transportation" | "Other" | string;
+type NeedType =
+  | "Registration"
+  | "Housing"
+  | "Transportation"
+  | "Other"
+  | string;
 
 const NEED_ICON = {
-  Financial: DollarSign,
+  Registration: DollarSign,
   Housing: Home,
   Transportation: Car,
   Other: null, // Use custom "O" instead of icon

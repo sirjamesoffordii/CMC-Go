@@ -2,7 +2,7 @@
   {
     "id": 1,
     "personId": 3,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 5000
@@ -10,7 +10,7 @@
   {
     "id": 2,
     "personId": 17,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 40000
@@ -18,7 +18,7 @@
   {
     "id": 3,
     "personId": 18,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 50000
@@ -26,7 +26,7 @@
   {
     "id": 4,
     "personId": 33,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 5000
@@ -41,7 +41,7 @@
   {
     "id": 6,
     "personId": 65,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 40000
@@ -49,7 +49,7 @@
   {
     "id": 7,
     "personId": 70,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -57,7 +57,7 @@
   {
     "id": 8,
     "personId": 71,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 30000
@@ -72,7 +72,7 @@
   {
     "id": 10,
     "personId": 77,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -80,7 +80,7 @@
   {
     "id": 11,
     "personId": 80,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 5000
@@ -88,7 +88,7 @@
   {
     "id": 12,
     "personId": 81,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 10000
@@ -96,7 +96,7 @@
   {
     "id": 13,
     "personId": 92,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 20000
@@ -104,7 +104,7 @@
   {
     "id": 14,
     "personId": 107,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -126,7 +126,7 @@
   {
     "id": 17,
     "personId": 152,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -134,7 +134,7 @@
   {
     "id": 18,
     "personId": 155,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 20000
@@ -142,7 +142,7 @@
   {
     "id": 19,
     "personId": 156,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 25000
@@ -150,7 +150,7 @@
   {
     "id": 20,
     "personId": 191,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -158,7 +158,7 @@
   {
     "id": 21,
     "personId": 192,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 15000
@@ -166,7 +166,7 @@
   {
     "id": 22,
     "personId": 194,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 10000
@@ -174,7 +174,7 @@
   {
     "id": 23,
     "personId": 196,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 10000
@@ -189,7 +189,7 @@
   {
     "id": 25,
     "personId": 206,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 30000
@@ -197,7 +197,7 @@
   {
     "id": 26,
     "personId": 207,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 10000
@@ -205,7 +205,7 @@
   {
     "id": 27,
     "personId": 212,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 5000
@@ -220,7 +220,7 @@
   {
     "id": 29,
     "personId": 221,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 50000
@@ -228,7 +228,7 @@
   {
     "id": 30,
     "personId": 224,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 20000
@@ -236,7 +236,7 @@
   {
     "id": 31,
     "personId": 233,
-    "type": "Financial",
+    "type": "Registration",
     "notes": null,
     "isActive": true,
     "amount": 10000
