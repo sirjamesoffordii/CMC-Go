@@ -1398,17 +1398,24 @@ export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
 
+  // Derive region from districts table via primaryDistrictId JOIN,
+  // falling back to people.primaryRegion for people without a district.
+  const effectiveRegion = sql<string>`COALESCE(${districts.region}, ${people.primaryRegion})`;
+  const regionFilter = sql`${effectiveRegion} = ${region}`;
+
   // Get total count separately to ensure we count ALL people in region
   const totalResult = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryRegion, region));
+    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .where(regionFilter);
   const total = Number(totalResult[0]?.count) || 0;
 
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
     .from(people)
-    .where(eq(people.primaryRegion, region))
+    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .where(regionFilter)
     .groupBy(people.status);
 
   const counts = { going: 0, maybe: 0, notGoing: 0, notInvited: 0 } as Record<
@@ -1546,15 +1553,22 @@ export async function getAllRegionMetrics() {
   const db = await getDb();
   if (!db) return [];
 
+  // Derive region from districts table via primaryDistrictId JOIN,
+  // falling back to people.primaryRegion for people without a district.
+  // This ensures people with primaryDistrictId but NULL primaryRegion
+  // are still counted in the correct region.
+  const effectiveRegion = sql<string>`COALESCE(${districts.region}, ${people.primaryRegion})`;
+
   const result = await db
     .select({
-      region: people.primaryRegion,
+      region: effectiveRegion.as("region"),
       status: people.status,
       count: sql<number>`COUNT(*)`.as("count"),
     })
     .from(people)
-    .where(sql`${people.primaryRegion} IS NOT NULL`)
-    .groupBy(people.primaryRegion, people.status);
+    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .where(sql`${effectiveRegion} IS NOT NULL`)
+    .groupBy(effectiveRegion, people.status);
 
   // Group by region and aggregate status counts
   const regionMap = new Map<

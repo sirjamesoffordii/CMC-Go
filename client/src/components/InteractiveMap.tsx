@@ -541,7 +541,7 @@ export function InteractiveMap({
 
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
-  const [metricsExpanded, setMetricsExpanded] = useState(false);
+  const [metricsExpanded, setMetricsExpanded] = useState(true);
 
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(

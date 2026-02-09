@@ -87,11 +87,15 @@ export function ScopeSelector({
   const userScopeLevel: ScopeLevel = user?.scopeLevel || "DISTRICT";
   const accessibleScopes = getAccessibleScopes(userScopeLevel);
 
-  // Region-scoped users see only their region (and its districts) in the dropdown, not National
+  // Determine region-scoped behavior:
+  // Regional Directors (REGION_DIRECTOR) with a region should see their region + National,
+  // not all regions. Other NATIONAL-scoped users see everything.
   const userRegionId = user?.regionId || user?.overseeRegionId || null;
-  const isRegionScoped = userRegionId && userScopeLevel !== "NATIONAL";
+  const isRegionalDirector = user?.role === "REGION_DIRECTOR" && !!userRegionId;
+  const isRegionScoped = userRegionId && (userScopeLevel !== "NATIONAL" || isRegionalDirector);
   const regionsToShow = isRegionScoped ? [userRegionId] : ALL_REGIONS;
-  const showNationalOption = !isRegionScoped;
+  // Regional Directors CAN see National view (they have viewLevel NATIONAL)
+  const showNationalOption = !isRegionScoped || isRegionalDirector;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -356,15 +360,19 @@ export function useScopeFilter() {
     }
   }, [userScopeLevel, currentScope]);
 
-  // Region-scoped users (REGION or DISTRICT level with regionId): default to their region instead of National
+  // Region-scoped users and Regional Directors: default to their region on first load
+  // Only applies when there is no saved scope preference (first visit)
   useEffect(() => {
     const userRegionId = user?.regionId || user?.overseeRegionId || null;
-    if (!userRegionId || userScopeLevel === "NATIONAL") return;
+    if (!userRegionId) return;
+    const isRegionalDirector = user?.role === "REGION_DIRECTOR";
     const isRegionOrDistrict =
       userScopeLevel === "REGION" || userScopeLevel === "DISTRICT";
+    // Only default if the user has no stored preference yet
+    const hasStoredPreference = !!localStorage.getItem("cmc-scope-filter");
     if (
-      isRegionOrDistrict &&
-      (currentScope === "NATIONAL" || !selectedRegion)
+      (isRegionOrDistrict || isRegionalDirector) &&
+      !hasStoredPreference
     ) {
       setCurrentScope("REGION");
       setSelectedRegion(userRegionId);
@@ -373,12 +381,12 @@ export function useScopeFilter() {
       localStorage.setItem("cmc-scope-region", userRegionId);
       localStorage.removeItem("cmc-scope-district");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     user?.regionId,
     user?.overseeRegionId,
+    user?.role,
     userScopeLevel,
-    currentScope,
-    selectedRegion,
   ]);
 
   return {
