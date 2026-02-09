@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Card,
@@ -25,7 +24,7 @@ export default function Admin() {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
 
-  const allUsers = trpc.admin.getAllUsers.useQuery();
+  const allUsers = trpc.admin.users.list.useQuery();
 
   if (loading) {
     return (
@@ -58,7 +57,9 @@ export default function Admin() {
     {
       title: "Admin Users",
       value:
-        allUsers.data?.filter(u => u.role === "admin").length.toString() || "0",
+        allUsers.data
+          ?.filter((u: any) => String(u.role).toLowerCase() === "admin")
+          .length.toString() || "0",
       description: "Administrator accounts",
       icon: Shield,
       color: "text-purple-600",
@@ -106,7 +107,7 @@ export default function Admin() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {adminStats.map(stat => (
+          {adminStats.map((stat: any) => (
             <Card
               key={stat.title}
               className="transition-all hover:shadow-elegant-md"
@@ -147,7 +148,7 @@ export default function Admin() {
               </div>
             ) : (
               <div className="space-y-3">
-                {allUsers.data?.map(u => (
+                {allUsers.data?.map((u: any) => (
                   <div
                     key={u.id}
                     className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
@@ -158,7 +159,11 @@ export default function Admin() {
                           {u.name || "Unnamed User"}
                         </p>
                         <Badge
-                          variant={u.role === "admin" ? "default" : "secondary"}
+                          variant={
+                            String(u.role).toLowerCase() === "admin"
+                              ? "default"
+                              : "secondary"
+                          }
                           className="h-5 text-xs"
                         >
                           {u.role}

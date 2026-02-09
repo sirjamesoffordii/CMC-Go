@@ -371,7 +371,7 @@ export default function AdminConsole() {
       color: "text-emerald-600",
     },
     {
-      title: "Going",
+      title: "Yes",
       value: stats.going.toLocaleString(),
       description: "Confirmed attendance",
       icon: Activity,

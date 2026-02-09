@@ -9,7 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import People from "./pages/People";
 import { Login } from "./pages/Login";
-import MoreInfo from "./pages/MoreInfo";
+import EventInfo from "./pages/EventInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
 import AdminConsole from "./pages/AdminConsole";
 import Approvals from "./pages/Approvals";
@@ -57,8 +57,8 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/people" component={People} />
       <Route path="/follow-up" component={FollowUpView} />
-      <Route path="/more-info" component={MoreInfo} />
-      <Route path="/why-invitations-matter" component={WhyInvitationsMatter} />
+      <Route path="/event-info" component={EventInfo} />
+      <Route path="/what-is-cmc-go" component={WhyInvitationsMatter} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
       <Route path="/import" component={Import} />
@@ -74,8 +74,8 @@ function Router() {
 const PUBLIC_ROUTES = new Set([
   "/login",
   "/app-auth",
-  "/why-invitations-matter",
-  "/more-info",
+  "/what-is-cmc-go",
+  "/event-info",
   "/404",
 ]);
 

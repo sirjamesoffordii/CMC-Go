@@ -314,7 +314,7 @@ export function NationalPanel({
         <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-700"></div>
-            <span>Going: {stats.going}</span>
+            <span>Yes: {stats.going}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-yellow-600"></div>
@@ -322,7 +322,7 @@ export function NationalPanel({
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-red-700"></div>
-            <span>Not Going: {stats.notGoing}</span>
+            <span>No: {stats.notGoing}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-slate-500"></div>
