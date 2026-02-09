@@ -10,6 +10,7 @@ interface PersonTooltipProps {
     type: string;
     description: string;
     amount?: number | null;
+    fundsReceived?: number | null;
     isActive: boolean;
   } | null;
   position: { x: number; y: number };
@@ -183,6 +184,20 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
               <div className="space-y-2">
                 <div className="text-slate-600 text-xs font-medium text-center">
                   Funds Received
+                </div>
+                <div
+                  className={`font-medium text-center ${need.fundsReceived ? "text-slate-900" : "text-slate-400"}`}
+                >
+                  {need.fundsReceived ? (
+                    `$${(need.fundsReceived / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  ) : (
+                    <span className="text-slate-400">—</span>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-slate-600 text-xs font-medium text-center">
+                  Needs Met
                 </div>
                 <div className="font-medium text-slate-900 flex justify-center">
                   {!need.isActive ? (

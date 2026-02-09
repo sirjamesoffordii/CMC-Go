@@ -966,6 +966,7 @@ export async function updateOrCreateNeed(
     type: InsertNeed["type"];
     description: string;
     amount?: number | null;
+    fundsReceived?: number | null;
     visibility?: InsertNeed["visibility"];
     isActive: boolean;
     createdById?: number | null;
@@ -981,6 +982,7 @@ export async function updateOrCreateNeed(
     type: InsertNeed["type"];
     description: string;
     amount?: number | null;
+    fundsReceived?: number | null;
     visibility?: InsertNeed["visibility"];
     isActive: boolean;
     resolvedAt?: Date | null;
@@ -988,6 +990,7 @@ export async function updateOrCreateNeed(
     type: needData.type,
     description: needData.description,
     amount: needData.amount ?? null,
+    fundsReceived: needData.fundsReceived ?? null,
     isActive: needData.isActive,
   };
 
@@ -1014,6 +1017,7 @@ export async function updateOrCreateNeed(
       type: needData.type,
       description: needData.description,
       amount: needData.amount ?? null,
+      fundsReceived: needData.fundsReceived ?? null,
       isActive: needData.isActive,
       resolvedAt: needData.isActive ? null : new Date(),
       createdById: needData.createdById ?? null,
@@ -1358,7 +1362,7 @@ export async function getDistrictNeedsSummary(districtId: string) {
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
       totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
-      metAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN ${needs.amount} ELSE 0 END), 0)`,
+      metAmount: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
     })
     .from(needs)
     .innerJoin(people, eq(needs.personId, people.personId))
@@ -1394,7 +1398,7 @@ export async function getNeedsAggregateSummary() {
       totalNeeds: sql<number>`COUNT(${needs.id})`,
       metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
       totalAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = true THEN ${needs.amount} ELSE 0 END), 0)`,
-      metAmount: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN ${needs.amount} ELSE 0 END), 0)`,
+      metAmount: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
     })
     .from(needs);
 
