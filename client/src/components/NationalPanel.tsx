@@ -1,9 +1,9 @@
-// @ts-nocheck
 import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
 import { useState, useMemo, useRef } from "react";
 import { CHI_ALPHA_STAFF_NAMES } from "@/data/chiAlphaStaffNames";
+import { Person } from "../../../drizzle/schema";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
 
 interface NationalPanelProps {
   onClose: () => void;
-  onPersonClick: (person: any) => void;
+  onPersonClick: (person: Person) => void;
   onPersonStatusChange: (
     personId: string,
     status: "Yes" | "Maybe" | "No" | "Not Invited"
@@ -133,7 +133,7 @@ export function NationalPanel({
   // Filter out CMC Go Coordinator and Sir James Offord
   const nationalStaff = nationalStaffRaw.filter(p => {
     const nameLower = p.name.toLowerCase();
-    const roleLower = (p.roleTitle || "").toLowerCase();
+    const roleLower = (p.primaryRole || "").toLowerCase();
     return (
       !nameLower.includes("sir james offord") &&
       !roleLower.includes("cmc go coordinator")
@@ -162,8 +162,8 @@ export function NationalPanel({
 
   // Sort people by role priority, then person priority, then name
   const sortedStaff = [...nationalStaff].sort((a, b) => {
-    const rolePriorityA = getRolePriority(a.roleTitle);
-    const rolePriorityB = getRolePriority(b.roleTitle);
+    const rolePriorityA = getRolePriority(a.primaryRole);
+    const rolePriorityB = getRolePriority(b.primaryRole);
 
     if (rolePriorityA !== rolePriorityB) {
       return rolePriorityA - rolePriorityB;
@@ -182,7 +182,7 @@ export function NationalPanel({
   // Group all people into categories
   const groupedStaff = sortedStaff.reduce(
     (acc, person) => {
-      const role = person.roleTitle || "No Role Assigned";
+      const role = person.primaryRole || "No Role Assigned";
       const roleLower = role.toLowerCase();
 
       let category = role;

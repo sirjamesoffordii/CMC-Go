@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
 
 interface CampusColumnProps {
   campus: Campus;
@@ -63,6 +64,9 @@ export function CampusColumn({
       // Call the update callback to refresh parent component
       onCampusUpdate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to archive campus");
+    },
   });
 
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -81,6 +85,9 @@ export function CampusColumn({
       utils.campuses.list.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
       onCampusUpdate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to rename campus");
     },
   });
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -223,6 +224,9 @@ export default function People() {
       utils.metrics.allRegions.invalidate();
       utils.followUp.list.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update status");
+    },
   });
 
   const updateCampusName = trpc.campuses.updateName.useMutation({
@@ -230,6 +234,9 @@ export default function People() {
       utils.campuses.list.invalidate();
       setIsEditCampusDialogOpen(false);
       setCampusForm({ name: "" });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to rename campus");
     },
   });
 
