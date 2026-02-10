@@ -31,7 +31,7 @@ export default function Approvals() {
     onSuccess: () => {
       utils.approvals.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to approve user");
     },
   });
@@ -40,7 +40,7 @@ export default function Approvals() {
     onSuccess: () => {
       utils.approvals.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to reject user");
     },
   });
@@ -66,18 +66,18 @@ export default function Approvals() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="text-black hover:bg-red-600 hover:text-white"
+            className="text-black hover:bg-red-600 hover:text-white min-h-[44px] shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            <ArrowLeft className="w-4 h-4 sm:mr-2" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-3xl font-bold">Approvals</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Approvals</h1>
         </div>
 
         {isLoading ? (
@@ -94,23 +94,23 @@ export default function Approvals() {
           <div className="space-y-4">
             {pendingApprovals.map(pendingUser => (
               <Card key={pendingUser.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold truncate">
                           {pendingUser.fullName}
                         </h3>
                         <Badge variant="outline">{pendingUser.role}</Badge>
-                        <Badge variant="secondary">Pending Approval</Badge>
+                        <Badge variant="secondary">Pending</Badge>
                       </div>
-                      <p className="text-sm text-slate-600 mb-1">
+                      <p className="text-sm text-slate-600 mb-1 truncate">
                         {pendingUser.email}
                       </p>
                       {pendingUser.campusId && (
                         <p className="text-xs text-slate-500">
-                          Campus ID: {pendingUser.campusId} • District:{" "}
-                          {pendingUser.districtId} • Region:{" "}
+                          Campus ID: {pendingUser.campusId} &middot; District:{" "}
+                          {pendingUser.districtId} &middot; Region:{" "}
                           {pendingUser.regionId}
                         </p>
                       )}
@@ -119,10 +119,11 @@ export default function Approvals() {
                         {new Date(pendingUser.createdAt).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="min-h-[44px] flex-1 sm:flex-initial"
                         onClick={() =>
                           rejectMutation.mutate({ userId: pendingUser.id })
                         }
@@ -133,6 +134,7 @@ export default function Approvals() {
                       </Button>
                       <Button
                         size="sm"
+                        className="min-h-[44px] flex-1 sm:flex-initial"
                         onClick={() =>
                           approveMutation.mutate({ userId: pendingUser.id })
                         }

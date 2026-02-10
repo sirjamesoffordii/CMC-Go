@@ -49,11 +49,11 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="container max-w-7xl py-8">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">
+    <div className="container max-w-7xl py-4 sm:py-8 px-4 sm:px-6">
+      <div className="flex flex-col gap-6 sm:gap-8">
+        <div className="flex flex-col gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">
               Welcome back{user?.name ? `, ${user.name}` : ""}
             </h1>
             {user?.role === "ADMIN" && (

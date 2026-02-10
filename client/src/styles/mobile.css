@@ -248,6 +248,52 @@
     max-width: 100vw !important;
     border-radius: 16px 16px 0 0 !important;
   }
+
+  /* ===== NEW: Mobile-first page improvements ===== */
+
+  /* Ensure all page containers don't have excessive padding on mobile */
+  .min-h-screen > .max-w-7xl,
+  .min-h-screen > .max-w-4xl,
+  .min-h-screen > .max-w-6xl {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Toast notifications: full width on mobile */
+  [data-sonner-toaster] {
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 8px)) !important;
+  }
+
+  /* Tab list scrolling for admin console and similar */
+  [role="tablist"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Card content padding reduction on mobile */
+  .card-content-mobile {
+    padding: 12px !important;
+  }
+
+  /* Stat cards: 2-column grid on mobile */
+  .grid.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-6 {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Better badge wrapping */
+  .badge-wrap {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+  }
 }
 
 /* --- Small phones --- */

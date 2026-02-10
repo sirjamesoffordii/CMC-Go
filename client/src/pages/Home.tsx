@@ -1294,8 +1294,8 @@ export default function Home() {
             ) : (
               /* Desktop: Slide-out tab on right edge */
               <div
-                className="fixed top-1/2 -translate-y-1/2 z-30 group pr-16"
-                style={{ right: 0 }}
+                className="fixed -translate-y-1/2 z-30 group pr-16"
+                style={{ right: 0, top: "calc(50% + 22px)" }}
               >
                 <button
                   onClick={() => {

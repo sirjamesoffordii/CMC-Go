@@ -34,10 +34,11 @@ export default function WhyInvitationsMatter() {
         <Button
           variant="ghost"
           onClick={() => setLocation("/")}
-          className="mb-6 text-slate-600 hover:text-slate-900"
+          className="mb-4 sm:mb-6 text-slate-600 hover:text-slate-900 min-h-[44px]"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
+          <ArrowLeft className="w-4 h-4 sm:mr-2" />
+          <span className="hidden sm:inline">Back to Home</span>
+          <span className="sm:hidden">Back</span>
         </Button>
 
         {/* Main Content */}
@@ -50,11 +51,11 @@ export default function WhyInvitationsMatter() {
           {/* Introduction */}
           <div className="prose prose-lg max-w-none mb-8 sm:mb-10">
             <p className="text-lg sm:text-xl text-slate-700 leading-relaxed">
-              CMC Go as a way to coordinate toward CMC. It's a
-              map-first web app that replaces spreadsheets with a shared visual,
-              helping leaders at every level see who's been personally invited,
-              surfacing who needs support, and bringing clarity to each person's
-              decision journey.
+              CMC Go as a way to coordinate toward CMC. It's a map-first web app
+              that replaces spreadsheets with a shared visual, helping leaders
+              at every level see who's been personally invited, surfacing who
+              needs support, and bringing clarity to each person's decision
+              journey.
             </p>
           </div>
 
