@@ -50,6 +50,9 @@ interface DroppablePersonProps {
   ) => void;
   canInteract?: boolean;
   maskIdentity?: boolean;
+  /** When true, name is visible but details (status color, role, needs, tooltip) are hidden.
+   *  This is used for people within the user's Scope but outside their Detail View. */
+  maskDetails?: boolean;
   slowAnimation?: boolean;
 }
 
@@ -74,6 +77,7 @@ export function DroppablePerson({
   onPersonStatusChange,
   canInteract = true,
   maskIdentity = false,
+  maskDetails = false,
   slowAnimation = false,
 }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
@@ -85,8 +89,11 @@ export function DroppablePerson({
   const nameRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Hide details when either maskIdentity (fully hidden) or maskDetails (in-scope but no detail view)
+  const hideDetails = maskIdentity || maskDetails;
+
   // Fetch all needs (including inactive) to show met needs with checkmark
-  const needsEnabled = isAuthenticated && canInteract && !maskIdentity;
+  const needsEnabled = isAuthenticated && !hideDetails;
   const { data: _allNeeds = [] } = trpc.needs.listActive.useQuery(undefined, {
     enabled: needsEnabled,
     retry: false,
@@ -191,8 +198,8 @@ export function DroppablePerson({
     firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
-    // Only show tooltip if canInteract
-    if (!canInteract || maskIdentity) return;
+    // Only show tooltip if user can see details
+    if (hideDetails) return;
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -201,15 +208,15 @@ export function DroppablePerson({
   };
 
   const handleNameMouseLeave = () => {
-    // Only handle if canInteract
-    if (!canInteract || maskIdentity) return;
+    // Only handle if user can see details
+    if (hideDetails) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (_e: React.MouseEvent) => {
-    // Only handle if canInteract
-    if (!canInteract || maskIdentity) return;
+    // Only handle if user can see details
+    if (hideDetails) return;
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
@@ -298,7 +305,7 @@ export function DroppablePerson({
             }`}
           >
             {/* Gray spouse icon behind - shown when person has spouse */}
-            {!maskIdentity && person.spouse && (
+            {!hideDetails && person.spouse && (
               <User
                 className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
                 strokeWidth={1.5}
@@ -307,30 +314,30 @@ export function DroppablePerson({
             )}
             {/* Main person icon - solid */}
             <div
-              className={`relative ${maskIdentity ? "text-gray-300" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
+              className={`relative ${hideDetails ? "text-gray-300" : statusColors[figmaStatus]} ${!hideDetails && person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
-                className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+                className={`w-10 h-10 transition-colors relative z-10`}
                 strokeWidth={1.5}
                 fill="currentColor"
               />
             </div>
-            {/* Need indicator (arm + icon) */}
-            {!maskIdentity && hasNeeds && (
-              <NeedIndicator type={personNeed?.type} />
+            {/* Need indicator - show when person has an active need (by type: car for Transportation, etc.) */}
+            {!hideDetails && personNeed?.isActive && (
+              <NeedIndicator type={personNeed.type} />
             )}
           </button>
         </div>
 
         {/* Role Label - hidden until hover, positioned relative to motion.div */}
-        {!maskIdentity && (
+        {!hideDetails && (
           <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
             {person.primaryRole || "Staff"}
           </div>
         )}
       </motion.div>
       {/* Person Tooltip */}
-      {!maskIdentity && isHovered && tooltipPos && (
+      {!hideDetails && isHovered && tooltipPos && (
         <PersonTooltip
           person={person}
           need={

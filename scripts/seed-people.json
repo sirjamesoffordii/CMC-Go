@@ -5,7 +5,7 @@
     "campusId": 94,
     "districtId": "SouthTexas",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -14,7 +14,7 @@
     "campusId": 56,
     "districtId": "NewJersey",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -23,7 +23,7 @@
     "campusId": 43,
     "districtId": "Tennessee",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -32,7 +32,7 @@
     "campusId": 78,
     "districtId": "Alabama",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -41,7 +41,7 @@
     "campusId": 61,
     "districtId": "Vermont",
     "status": "Not Invited",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -50,7 +50,7 @@
     "campusId": 4,
     "districtId": "Montana",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -59,7 +59,7 @@
     "campusId": 87,
     "districtId": "WestFlorida",
     "status": "Maybe",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -68,7 +68,7 @@
     "campusId": 9,
     "districtId": "Wyoming",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -77,7 +77,7 @@
     "campusId": 102,
     "districtId": "Nevada",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -86,7 +86,7 @@
     "campusId": 67,
     "districtId": "Oregon",
     "status": "Maybe",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -95,7 +95,7 @@
     "campusId": 67,
     "districtId": "Oregon",
     "status": "Yes",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -104,7 +104,7 @@
     "campusId": 27,
     "districtId": "Iowa",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -113,7 +113,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -122,7 +122,7 @@
     "campusId": 100,
     "districtId": "Hawaii",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -131,7 +131,7 @@
     "campusId": 8,
     "districtId": "Utah",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -140,7 +140,7 @@
     "campusId": 81,
     "districtId": "Georgia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -149,7 +149,7 @@
     "campusId": 31,
     "districtId": "Nebraska",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -158,7 +158,7 @@
     "campusId": 11,
     "districtId": "Illinois",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -167,7 +167,7 @@
     "campusId": 14,
     "districtId": "Indiana",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -176,7 +176,7 @@
     "campusId": 64,
     "districtId": "Alaska",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -185,7 +185,7 @@
     "campusId": 85,
     "districtId": "SouthCarolina",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -194,7 +194,7 @@
     "campusId": 104,
     "districtId": "NorthCalifornia",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -203,7 +203,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -212,7 +212,7 @@
     "campusId": 38,
     "districtId": "NorthCarolina",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -221,7 +221,7 @@
     "campusId": 45,
     "districtId": "WestVirginia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -230,7 +230,7 @@
     "campusId": 45,
     "districtId": "WestVirginia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -239,7 +239,7 @@
     "campusId": 20,
     "districtId": "Minnesota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -248,7 +248,7 @@
     "campusId": 83,
     "districtId": "Mississippi",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -257,7 +257,7 @@
     "campusId": 47,
     "districtId": "Connecticut",
     "status": "Not Invited",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -266,7 +266,7 @@
     "campusId": 68,
     "districtId": "Oregon",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -275,7 +275,7 @@
     "campusId": 79,
     "districtId": "Florida",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -284,7 +284,7 @@
     "campusId": 61,
     "districtId": "Vermont",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -293,7 +293,7 @@
     "campusId": 56,
     "districtId": "NewJersey",
     "status": "Maybe",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -302,7 +302,7 @@
     "campusId": 63,
     "districtId": "Alaska",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -311,7 +311,7 @@
     "campusId": 97,
     "districtId": "Arizona",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -320,7 +320,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -329,7 +329,7 @@
     "campusId": 27,
     "districtId": "Iowa",
     "status": "Not Invited",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -338,7 +338,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -347,7 +347,7 @@
     "campusId": 49,
     "districtId": "Maine",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -356,7 +356,7 @@
     "campusId": 43,
     "districtId": "Tennessee",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -365,7 +365,7 @@
     "campusId": 93,
     "districtId": "SouthTexas",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -374,7 +374,7 @@
     "campusId": 16,
     "districtId": "Michigan",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -383,7 +383,7 @@
     "campusId": 14,
     "districtId": "Indiana",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -392,7 +392,7 @@
     "campusId": 102,
     "districtId": "Nevada",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -401,7 +401,7 @@
     "campusId": 88,
     "districtId": "WestFlorida",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -410,7 +410,7 @@
     "campusId": 53,
     "districtId": "NewHampshire",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -419,7 +419,7 @@
     "campusId": 70,
     "districtId": "Washington",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -428,7 +428,7 @@
     "campusId": 49,
     "districtId": "Maine",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -437,7 +437,7 @@
     "campusId": 32,
     "districtId": "Nebraska",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -446,7 +446,7 @@
     "campusId": 34,
     "districtId": "NorthernMissouri",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -455,7 +455,7 @@
     "campusId": 104,
     "districtId": "NorthCalifornia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -464,7 +464,7 @@
     "campusId": 87,
     "districtId": "WestFlorida",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -473,7 +473,7 @@
     "campusId": 17,
     "districtId": "Ohio",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -482,7 +482,7 @@
     "campusId": 5,
     "districtId": "SouthIdaho",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -491,7 +491,7 @@
     "campusId": 51,
     "districtId": "Massachusetts",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -500,7 +500,7 @@
     "campusId": 73,
     "districtId": "Louisiana",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -509,7 +509,7 @@
     "campusId": 2,
     "districtId": "Colorado",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -518,7 +518,7 @@
     "campusId": 88,
     "districtId": "WestFlorida",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -527,7 +527,7 @@
     "campusId": 3,
     "districtId": "Montana",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -536,7 +536,7 @@
     "campusId": 23,
     "districtId": "SouthDakota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -545,7 +545,7 @@
     "campusId": 98,
     "districtId": "Arizona",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -554,7 +554,7 @@
     "campusId": 22,
     "districtId": "NorthDakota",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -563,7 +563,7 @@
     "campusId": 5,
     "districtId": "SouthIdaho",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -572,7 +572,7 @@
     "campusId": 3,
     "districtId": "Montana",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -581,7 +581,7 @@
     "campusId": 40,
     "districtId": "Virginia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -590,7 +590,7 @@
     "campusId": 5,
     "districtId": "SouthIdaho",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -599,7 +599,7 @@
     "campusId": 97,
     "districtId": "Arizona",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -608,7 +608,7 @@
     "campusId": 20,
     "districtId": "Minnesota",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -617,7 +617,7 @@
     "campusId": 33,
     "districtId": "NorthernMissouri",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -626,7 +626,7 @@
     "campusId": 18,
     "districtId": "Ohio",
     "status": "Maybe",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -635,7 +635,7 @@
     "campusId": 86,
     "districtId": "SouthCarolina",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -644,7 +644,7 @@
     "campusId": 27,
     "districtId": "Iowa",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -653,7 +653,7 @@
     "campusId": 92,
     "districtId": "NorthTexas",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -662,7 +662,7 @@
     "campusId": 16,
     "districtId": "Michigan",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -671,7 +671,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Not Invited",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -680,7 +680,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -689,7 +689,7 @@
     "campusId": 66,
     "districtId": "NorthIdaho",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -698,7 +698,7 @@
     "campusId": 58,
     "districtId": "NewYork",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -707,7 +707,7 @@
     "campusId": 69,
     "districtId": "Washington",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -716,7 +716,7 @@
     "campusId": 106,
     "districtId": "SouthCalifornia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -725,7 +725,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -734,7 +734,7 @@
     "campusId": 106,
     "districtId": "SouthCalifornia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -743,7 +743,7 @@
     "campusId": 31,
     "districtId": "Nebraska",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -752,7 +752,7 @@
     "campusId": 72,
     "districtId": "Arkansas",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -761,7 +761,7 @@
     "campusId": 63,
     "districtId": "Alaska",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -770,7 +770,7 @@
     "campusId": 40,
     "districtId": "Virginia",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -779,7 +779,7 @@
     "campusId": 78,
     "districtId": "Alabama",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -788,7 +788,7 @@
     "campusId": 64,
     "districtId": "Alaska",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -797,7 +797,7 @@
     "campusId": 46,
     "districtId": "WestVirginia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -806,7 +806,7 @@
     "campusId": 102,
     "districtId": "Nevada",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -815,7 +815,7 @@
     "campusId": 85,
     "districtId": "SouthCarolina",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -824,7 +824,7 @@
     "campusId": 94,
     "districtId": "SouthTexas",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -833,7 +833,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -842,7 +842,7 @@
     "campusId": 38,
     "districtId": "NorthCarolina",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -851,7 +851,7 @@
     "campusId": 14,
     "districtId": "Indiana",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -860,7 +860,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -869,7 +869,7 @@
     "campusId": 87,
     "districtId": "WestFlorida",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -878,7 +878,7 @@
     "campusId": 38,
     "districtId": "NorthCarolina",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -887,7 +887,7 @@
     "campusId": 27,
     "districtId": "Iowa",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -896,7 +896,7 @@
     "campusId": 25,
     "districtId": "Wisconsin",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -905,7 +905,7 @@
     "campusId": 67,
     "districtId": "Oregon",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -914,7 +914,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -923,7 +923,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Not Invited",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -932,7 +932,7 @@
     "campusId": 77,
     "districtId": "Alabama",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -941,7 +941,7 @@
     "campusId": 85,
     "districtId": "SouthCarolina",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -950,7 +950,7 @@
     "campusId": 101,
     "districtId": "Nevada",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -959,7 +959,7 @@
     "campusId": 12,
     "districtId": "Illinois",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -968,7 +968,7 @@
     "campusId": 19,
     "districtId": "Minnesota",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -977,7 +977,7 @@
     "campusId": 50,
     "districtId": "Maine",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -986,7 +986,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -995,7 +995,7 @@
     "campusId": 27,
     "districtId": "Iowa",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1004,7 +1004,7 @@
     "campusId": 11,
     "districtId": "Illinois",
     "status": "Not Invited",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1013,7 +1013,7 @@
     "campusId": 79,
     "districtId": "Florida",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1022,7 +1022,7 @@
     "campusId": 20,
     "districtId": "Minnesota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1031,7 +1031,7 @@
     "campusId": 38,
     "districtId": "NorthCarolina",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1040,7 +1040,7 @@
     "campusId": 62,
     "districtId": "Vermont",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1049,7 +1049,7 @@
     "campusId": 45,
     "districtId": "WestVirginia",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1058,7 +1058,7 @@
     "campusId": 63,
     "districtId": "Alaska",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1067,7 +1067,7 @@
     "campusId": 34,
     "districtId": "NorthernMissouri",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1076,7 +1076,7 @@
     "campusId": 66,
     "districtId": "NorthIdaho",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1085,7 +1085,7 @@
     "campusId": 41,
     "districtId": "Kentucky",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1094,7 +1094,7 @@
     "campusId": 60,
     "districtId": "Pennsylvania",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1103,7 +1103,7 @@
     "campusId": 98,
     "districtId": "Arizona",
     "status": "Not Invited",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1112,7 +1112,7 @@
     "campusId": 83,
     "districtId": "Mississippi",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1121,7 +1121,7 @@
     "campusId": 70,
     "districtId": "Washington",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1130,7 +1130,7 @@
     "campusId": 46,
     "districtId": "WestVirginia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1139,7 +1139,7 @@
     "campusId": 44,
     "districtId": "Tennessee",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1148,7 +1148,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1157,7 +1157,7 @@
     "campusId": 34,
     "districtId": "NorthernMissouri",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1166,7 +1166,7 @@
     "campusId": 75,
     "districtId": "Oklahoma",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1175,7 +1175,7 @@
     "campusId": 94,
     "districtId": "SouthTexas",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1184,7 +1184,7 @@
     "campusId": 83,
     "districtId": "Mississippi",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1193,7 +1193,7 @@
     "campusId": 86,
     "districtId": "SouthCarolina",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1202,7 +1202,7 @@
     "campusId": 55,
     "districtId": "NewJersey",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1211,7 +1211,7 @@
     "campusId": 60,
     "districtId": "Pennsylvania",
     "status": "Yes",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1220,7 +1220,7 @@
     "campusId": 23,
     "districtId": "SouthDakota",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1229,7 +1229,7 @@
     "campusId": 65,
     "districtId": "NorthIdaho",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1238,7 +1238,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1247,7 +1247,7 @@
     "campusId": 50,
     "districtId": "Maine",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1256,7 +1256,7 @@
     "campusId": 100,
     "districtId": "Hawaii",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1265,7 +1265,7 @@
     "campusId": 12,
     "districtId": "Illinois",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1274,7 +1274,7 @@
     "campusId": 28,
     "districtId": "Iowa",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1283,7 +1283,7 @@
     "campusId": 8,
     "districtId": "Utah",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1292,7 +1292,7 @@
     "campusId": 72,
     "districtId": "Arkansas",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1301,7 +1301,7 @@
     "campusId": 49,
     "districtId": "Maine",
     "status": "Not Invited",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1310,7 +1310,7 @@
     "campusId": 43,
     "districtId": "Tennessee",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1319,7 +1319,7 @@
     "campusId": 24,
     "districtId": "SouthDakota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1328,7 +1328,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Yes",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1337,7 +1337,7 @@
     "campusId": 76,
     "districtId": "Oklahoma",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1346,7 +1346,7 @@
     "campusId": 12,
     "districtId": "Illinois",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1355,7 +1355,7 @@
     "campusId": 49,
     "districtId": "Maine",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1364,7 +1364,7 @@
     "campusId": 76,
     "districtId": "Oklahoma",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1373,7 +1373,7 @@
     "campusId": 18,
     "districtId": "Ohio",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1382,7 +1382,7 @@
     "campusId": 11,
     "districtId": "Illinois",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1391,7 +1391,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1400,7 +1400,7 @@
     "campusId": 18,
     "districtId": "Ohio",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1409,7 +1409,7 @@
     "campusId": 78,
     "districtId": "Alabama",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1418,7 +1418,7 @@
     "campusId": 91,
     "districtId": "NorthTexas",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1427,7 +1427,7 @@
     "campusId": 104,
     "districtId": "NorthCalifornia",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1436,7 +1436,7 @@
     "campusId": 37,
     "districtId": "NorthCarolina",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1445,7 +1445,7 @@
     "campusId": 21,
     "districtId": "NorthDakota",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1454,7 +1454,7 @@
     "campusId": 20,
     "districtId": "Minnesota",
     "status": "No",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1463,7 +1463,7 @@
     "campusId": 65,
     "districtId": "NorthIdaho",
     "status": "Yes",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1472,7 +1472,7 @@
     "campusId": 86,
     "districtId": "SouthCarolina",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1481,7 +1481,7 @@
     "campusId": 52,
     "districtId": "Massachusetts",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1490,7 +1490,7 @@
     "campusId": 38,
     "districtId": "NorthCarolina",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1499,7 +1499,7 @@
     "campusId": 36,
     "districtId": "SouthernMissouri",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1508,7 +1508,7 @@
     "campusId": 56,
     "districtId": "NewJersey",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1517,7 +1517,7 @@
     "campusId": 29,
     "districtId": "Kansas",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1526,7 +1526,7 @@
     "campusId": 13,
     "districtId": "Indiana",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1535,7 +1535,7 @@
     "campusId": 57,
     "districtId": "NewYork",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1544,7 +1544,7 @@
     "campusId": 102,
     "districtId": "Nevada",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1553,7 +1553,7 @@
     "campusId": 62,
     "districtId": "Vermont",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1562,7 +1562,7 @@
     "campusId": 29,
     "districtId": "Kansas",
     "status": "Yes",
-    "role": "Co-Director",
+    "role": "Campus Co-Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1571,7 +1571,7 @@
     "campusId": 84,
     "districtId": "Mississippi",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1580,7 +1580,7 @@
     "campusId": 32,
     "districtId": "Nebraska",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1589,7 +1589,7 @@
     "campusId": 10,
     "districtId": "Wyoming",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1598,7 +1598,7 @@
     "campusId": 70,
     "districtId": "Washington",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1607,7 +1607,7 @@
     "campusId": 56,
     "districtId": "NewJersey",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1616,7 +1616,7 @@
     "campusId": 35,
     "districtId": "SouthernMissouri",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1625,7 +1625,7 @@
     "campusId": 20,
     "districtId": "Minnesota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1634,7 +1634,7 @@
     "campusId": 15,
     "districtId": "Michigan",
     "status": "Not Invited",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1643,7 +1643,7 @@
     "campusId": 58,
     "districtId": "NewYork",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1652,7 +1652,7 @@
     "campusId": 105,
     "districtId": "SouthCalifornia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1661,7 +1661,7 @@
     "campusId": 91,
     "districtId": "NorthTexas",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1670,7 +1670,7 @@
     "campusId": 11,
     "districtId": "Illinois",
     "status": "Maybe",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1679,7 +1679,7 @@
     "campusId": 29,
     "districtId": "Kansas",
     "status": "Yes",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1688,7 +1688,7 @@
     "campusId": 9,
     "districtId": "Wyoming",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1697,7 +1697,7 @@
     "campusId": 57,
     "districtId": "NewYork",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1706,7 +1706,7 @@
     "campusId": 52,
     "districtId": "Massachusetts",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1715,7 +1715,7 @@
     "campusId": 73,
     "districtId": "Louisiana",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1724,7 +1724,7 @@
     "campusId": 65,
     "districtId": "NorthIdaho",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1733,7 +1733,7 @@
     "campusId": 55,
     "districtId": "NewJersey",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1742,7 +1742,7 @@
     "campusId": 97,
     "districtId": "Arizona",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1751,7 +1751,7 @@
     "campusId": 54,
     "districtId": "NewHampshire",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1760,7 +1760,7 @@
     "campusId": 23,
     "districtId": "SouthDakota",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1769,7 +1769,7 @@
     "campusId": 83,
     "districtId": "Mississippi",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1778,7 +1778,7 @@
     "campusId": 88,
     "districtId": "WestFlorida",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1787,7 +1787,7 @@
     "campusId": 31,
     "districtId": "Nebraska",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1796,7 +1796,7 @@
     "campusId": 85,
     "districtId": "SouthCarolina",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1805,7 +1805,7 @@
     "campusId": 72,
     "districtId": "Arkansas",
     "status": "Not Invited",
-    "role": "Director",
+    "role": "Campus Director",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1814,7 +1814,7 @@
     "campusId": 96,
     "districtId": "WestTexas",
     "status": "No",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1823,7 +1823,7 @@
     "campusId": 95,
     "districtId": "WestTexas",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1832,7 +1832,7 @@
     "campusId": 60,
     "districtId": "Pennsylvania",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1841,7 +1841,7 @@
     "campusId": 74,
     "districtId": "Louisiana",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1850,7 +1850,7 @@
     "campusId": 70,
     "districtId": "Washington",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1859,7 +1859,7 @@
     "campusId": 79,
     "districtId": "Florida",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1868,7 +1868,7 @@
     "campusId": 36,
     "districtId": "SouthernMissouri",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1877,7 +1877,7 @@
     "campusId": 28,
     "districtId": "Iowa",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1886,7 +1886,7 @@
     "campusId": 26,
     "districtId": "Wisconsin",
     "status": "No",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1895,7 +1895,7 @@
     "campusId": 2,
     "districtId": "Colorado",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1904,7 +1904,7 @@
     "campusId": 99,
     "districtId": "Hawaii",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1913,7 +1913,7 @@
     "campusId": 16,
     "districtId": "Michigan",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1922,7 +1922,7 @@
     "campusId": 41,
     "districtId": "Kentucky",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1931,7 +1931,7 @@
     "campusId": 40,
     "districtId": "Virginia",
     "status": "No",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1940,7 +1940,7 @@
     "campusId": 2,
     "districtId": "Colorado",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1949,7 +1949,7 @@
     "campusId": 79,
     "districtId": "Florida",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1958,7 +1958,7 @@
     "campusId": 45,
     "districtId": "WestVirginia",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1967,7 +1967,7 @@
     "campusId": 28,
     "districtId": "Iowa",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1976,7 +1976,7 @@
     "campusId": 10,
     "districtId": "Wyoming",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1985,7 +1985,7 @@
     "campusId": 64,
     "districtId": "Alaska",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -1994,7 +1994,7 @@
     "campusId": 54,
     "districtId": "NewHampshire",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2003,7 +2003,7 @@
     "campusId": 87,
     "districtId": "WestFlorida",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2012,7 +2012,7 @@
     "campusId": 4,
     "districtId": "Montana",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2021,7 +2021,7 @@
     "campusId": 99,
     "districtId": "Hawaii",
     "status": "Yes",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2030,7 +2030,7 @@
     "campusId": 26,
     "districtId": "Wisconsin",
     "status": "Not Invited",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2039,7 +2039,7 @@
     "campusId": 91,
     "districtId": "NorthTexas",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2048,7 +2048,7 @@
     "campusId": 18,
     "districtId": "Ohio",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2057,7 +2057,7 @@
     "campusId": 39,
     "districtId": "Virginia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2066,7 +2066,7 @@
     "campusId": 64,
     "districtId": "Alaska",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2075,7 +2075,7 @@
     "campusId": 101,
     "districtId": "Nevada",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2084,7 +2084,7 @@
     "campusId": 1,
     "districtId": "Colorado",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2093,7 +2093,7 @@
     "campusId": 47,
     "districtId": "Connecticut",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2102,7 +2102,7 @@
     "campusId": 61,
     "districtId": "Vermont",
     "status": "Not Invited",
-    "role": "Staff",
+    "role": "Campus Staff",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2111,7 +2111,7 @@
     "campusId": 76,
     "districtId": "Oklahoma",
     "status": "Not Invited",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2120,7 +2120,7 @@
     "campusId": 19,
     "districtId": "Minnesota",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2129,7 +2129,7 @@
     "campusId": 93,
     "districtId": "SouthTexas",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2138,7 +2138,7 @@
     "campusId": 101,
     "districtId": "Nevada",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2147,7 +2147,7 @@
     "campusId": 106,
     "districtId": "SouthCalifornia",
     "status": "Maybe",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
@@ -2156,7 +2156,7 @@
     "campusId": 1,
     "districtId": "Colorado",
     "status": "Yes",
-    "role": "Student",
+    "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   }
 ]

@@ -834,9 +834,9 @@ export default function Home() {
 
         {/* PR 4: Editing badge - mobile only, compact */}
         {user && isMobile && (
-          <div className="flex-shrink-0 mr-1 z-10 text-white/90 text-sm max-w-[140px] sm:max-w-none">
+          <div className="flex-shrink min-w-0 mr-1 z-10 text-white/90 text-sm overflow-hidden">
             <span
-              className="editing-badge-mobile inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-full"
+              className="editing-badge-mobile inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-[100px]"
               title={user.districtName || user.campusName || user.role}
             >
               {user.districtName || user.campusName || user.role}
@@ -845,7 +845,7 @@ export default function Home() {
         )}
 
         {/* Right Side: Scope Selector, Why button, and Hamburger Menu */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto min-w-0">
           {/* Scope selector - visible when authenticated, compact on mobile */}
           {isAuthenticated && (
             <ScopeSelector
@@ -1002,7 +1002,7 @@ export default function Home() {
       <main
         className="flex main-content-area md:flex-row flex-col overflow-hidden"
         style={{
-          height: isMobile ? "calc(100dvh - 52px)" : "calc(100vh - 120px)",
+          height: isMobile ? "calc(100dvh - 52px)" : `calc(100vh - ${headerHeight}px)`,
           minHeight: isMobile ? "calc(100dvh - 52px)" : undefined,
         }}
       >

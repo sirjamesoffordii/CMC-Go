@@ -207,17 +207,17 @@ export function getLastName(name: string): string {
   return parts.length > 1 ? parts[parts.length - 1]! : parts[0]!;
 }
 
-/** Status order for sorting people */
+/** Status order for sorting people (Not Invited far right, next to No) */
 export const statusSortOrder: Record<Person["status"], number> = {
-  "Not Invited": 0,
-  Yes: 1,
-  Maybe: 2,
-  No: 3,
+  Yes: 0,
+  Maybe: 1,
+  No: 2,
+  "Not Invited": 3,
 };
 
 /**
  * Sorts people by status using the standard order:
- * Not Invited → Yes → Maybe → No
+ * Yes → Maybe → No → Not Invited
  */
 export function sortPeopleByStatus(people: Person[]): Person[] {
   return [...people].sort(

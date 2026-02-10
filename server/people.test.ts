@@ -21,6 +21,9 @@ function createTestContext(): TrpcContext {
       openId: null,
       name: null,
       loginMethod: null,
+      scopeLevel: "NATIONAL",
+      viewLevel: "NATIONAL",
+      editLevel: "NATIONAL",
     },
     req: {
       protocol: "https",

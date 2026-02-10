@@ -2,7 +2,8 @@
 import { X, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { PersonRow } from "./PersonRow";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import { CHI_ALPHA_STAFF_NAMES } from "@/data/chiAlphaStaffNames";
 import {
   Dialog,
   DialogContent,
@@ -68,68 +69,25 @@ export function NationalPanel({
       }
     });
 
-    // Common first names
-    const commonNames = [
-      "Jacob",
-      "Jake",
-      "Jacky",
-      "Jack",
-      "James",
-      "John",
-      "Michael",
-      "David",
-      "Daniel",
-      "Matthew",
-      "Sarah",
-      "Emily",
-      "Jessica",
-      "Ashley",
-      "Amanda",
-      "Jennifer",
-      "Michelle",
-      "Nicole",
-      "Stephanie",
-      "Robert",
-      "William",
-      "Richard",
-      "Joseph",
-      "Thomas",
-      "Christopher",
-      "Charles",
-      "Mark",
-      "Donald",
-      "Elizabeth",
-      "Mary",
-      "Patricia",
-      "Linda",
-      "Barbara",
-      "Susan",
-      "Karen",
-      "Nancy",
-      "Lisa",
-      "Joshua",
-      "Andrew",
-      "Kevin",
-      "Brian",
-      "George",
-      "Edward",
-      "Ronald",
-      "Timothy",
-      "Jason",
-      "Betty",
-      "Helen",
-      "Sandra",
-      "Donna",
-      "Carol",
-      "Ruth",
-      "Sharon",
-      "Michelle",
-      "Laura",
-    ];
-
-    commonNames.forEach(name => existingNames.add(name));
+    // Chi Alpha staff names for autocomplete
+    CHI_ALPHA_STAFF_NAMES.forEach(name => existingNames.add(name));
     return Array.from(existingNames).sort();
   }, [allPeople]);
+
+  // Filtered name suggestions (top 3)
+  const [nameInputFocused, setNameInputFocused] = useState(false);
+  const [nameSuggestionsHighlightIndex, setNameSuggestionsHighlightIndex] =
+    useState(-1);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredNameSuggestions = useMemo(() => {
+    const q = personForm.name.trim().toLowerCase();
+    if (!q) return [];
+    return nameSuggestions
+      .filter(n => n.toLowerCase().includes(q))
+      .filter(n => n.toLowerCase() !== q)
+      .slice(0, 3);
+  }, [personForm.name, nameSuggestions]);
 
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {
@@ -285,7 +243,7 @@ export function NationalPanel({
             </div>
             <div>
               <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
-                Chi Alpha National
+                National Team
               </h2>
               <p className="text-xs sm:text-sm text-white/90 mt-0.5 font-medium">
                 {stats.total} team members
@@ -384,21 +342,91 @@ export function NationalPanel({
             <DialogTitle>Add National Team Member</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="add-person-name">Name *</Label>
               <Input
+                ref={nameInputRef}
                 id="add-person-name"
                 value={personForm.name}
-                onChange={e =>
-                  setPersonForm({ ...personForm, name: e.target.value })
-                }
-                placeholder="Enter name"
+                onChange={e => {
+                  setPersonForm({ ...personForm, name: e.target.value });
+                  setNameSuggestionsHighlightIndex(
+                    filteredNameSuggestions.length > 0 ? 0 : -1
+                  );
+                }}
+                onFocus={() => setNameInputFocused(true)}
+                onBlur={() => setTimeout(() => setNameInputFocused(false), 150)}
                 onKeyDown={e => {
-                  if (e.key === "Enter") {
+                  if (
+                    e.key === "ArrowDown" &&
+                    filteredNameSuggestions.length > 0
+                  ) {
+                    e.preventDefault();
+                    setNameSuggestionsHighlightIndex(i =>
+                      i < filteredNameSuggestions.length - 1 ? i + 1 : i
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setNameSuggestionsHighlightIndex(i => (i > 0 ? i - 1 : 0));
+                  } else if (
+                    e.key === "Enter" &&
+                    nameSuggestionsHighlightIndex >= 0 &&
+                    filteredNameSuggestions[nameSuggestionsHighlightIndex]
+                  ) {
+                    e.preventDefault();
+                    setPersonForm({
+                      ...personForm,
+                      name: filteredNameSuggestions[
+                        nameSuggestionsHighlightIndex
+                      ],
+                    });
+                    setNameInputFocused(false);
+                    setNameSuggestionsHighlightIndex(-1);
+                  } else if (
+                    e.key === "Enter" &&
+                    nameSuggestionsHighlightIndex < 0
+                  ) {
                     handleAddPerson();
+                  } else if (e.key === "Escape") {
+                    setNameInputFocused(false);
+                    setNameSuggestionsHighlightIndex(-1);
                   }
                 }}
+                placeholder="Enter name"
+                spellCheck={true}
+                autoComplete="off"
               />
+              {nameInputFocused && filteredNameSuggestions.length > 0 && (
+                <ul
+                  className="absolute left-0 right-0 top-full z-10 mt-0.5 max-h-48 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+                  role="listbox"
+                >
+                  {filteredNameSuggestions.map((name, idx) => (
+                    <li
+                      key={`${name}-${idx}`}
+                      role="option"
+                      aria-selected={idx === nameSuggestionsHighlightIndex}
+                      className={`cursor-pointer px-3 py-2 text-sm ${
+                        idx === nameSuggestionsHighlightIndex
+                          ? "bg-slate-100"
+                          : "hover:bg-slate-50"
+                      }`}
+                      onMouseDown={e => {
+                        e.preventDefault();
+                        setPersonForm({
+                          ...personForm,
+                          name,
+                        });
+                        setNameInputFocused(false);
+                        setNameSuggestionsHighlightIndex(-1);
+                      }}
+                      onMouseEnter={() => setNameSuggestionsHighlightIndex(idx)}
+                    >
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-person-role">Role</Label>

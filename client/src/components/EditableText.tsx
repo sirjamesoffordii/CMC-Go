@@ -64,7 +64,7 @@ export function EditableText({
         onChange={e => setEditValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
-        className={`border border-blue-500 rounded px-1 outline-none ${inputClassName}`}
+        className={`border-0 bg-transparent shadow-none outline-none focus:ring-0 focus:ring-offset-0 rounded px-0 min-w-[2ch] ${inputClassName}`}
         spellCheck={true}
         autoComplete="off"
       />
@@ -76,7 +76,7 @@ export function EditableText({
       onClick={() => {
         if (!disabled) setIsEditing(true);
       }}
-      className={`${disabled ? "cursor-default" : "cursor-text hover:bg-gray-100"} rounded px-1 ${className}`}
+      className={`${disabled ? "cursor-not-allowed" : "cursor-text hover:bg-slate-100"} rounded px-0.5 -mx-0.5 ${className}`}
       title={disabled ? undefined : "Click to edit"}
     >
       {value}

@@ -36,6 +36,8 @@ interface DistrictDirectorDropZoneProps {
   districtId?: string | null; // For XAN, use "National Director" instead of "District Director"
   canInteract?: boolean;
   maskIdentity?: boolean;
+  /** When true, name is visible but details (status color, role, needs, tooltip) are hidden. */
+  maskDetails?: boolean;
 }
 
 export function DistrictDirectorDropZone({
@@ -54,7 +56,10 @@ export function DistrictDirectorDropZone({
   districtId = null,
   canInteract = true,
   maskIdentity = false,
+  maskDetails = false,
 }: DistrictDirectorDropZoneProps) {
+  // Hide details when either maskIdentity (fully hidden) or maskDetails (in-scope but no detail view)
+  const hideDetails = maskIdentity || maskDetails;
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
@@ -65,7 +70,7 @@ export function DistrictDirectorDropZone({
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
     { personId: person?.personId || "" },
-    { enabled: !!person && canInteract && !maskIdentity }
+    { enabled: !!person && !hideDetails }
   );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
@@ -137,7 +142,7 @@ export function DistrictDirectorDropZone({
 
   if (!person) {
     // In public/masked mode, hide the slot entirely when no district director exists
-    if (!canInteract || maskIdentity) {
+    if (hideDetails) {
       return null;
     }
 
@@ -145,21 +150,23 @@ export function DistrictDirectorDropZone({
     return (
       <div
         ref={setDropRef}
-        className="flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2"
+        className={`flex flex-col items-center group/person w-[60px] transition-transform -ml-3 -mt-2 ${!canInteract ? "cursor-not-allowed" : ""}`}
       >
         <div className="relative flex flex-col items-center w-[60px] group/add">
           <button
             type="button"
+            disabled={!canInteract}
             onClick={e => {
               e.preventDefault();
               e.stopPropagation();
+              if (!canInteract) return;
               onAddClick();
             }}
-            className="flex flex-col items-center w-[60px]"
+            className={`flex flex-col items-center w-[60px] ${!canInteract ? "cursor-not-allowed" : ""}`}
           >
             {/* Plus sign in name position - clickable for quick add */}
             <div className="relative flex items-center justify-center mb-1 overflow-visible">
-              {quickAddMode ? (
+              {canInteract && quickAddMode ? (
                 <div className="relative">
                   <Input
                     ref={quickAddInputRef}
@@ -186,7 +193,7 @@ export function DistrictDirectorDropZone({
                     Quick Add
                   </div>
                 </div>
-              ) : (
+              ) : canInteract ? (
                 <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110">
                   <Plus
                     className="w-3 h-3 text-black"
@@ -200,10 +207,10 @@ export function DistrictDirectorDropZone({
                     Quick Add
                   </span>
                 </span>
-              )}
+              ) : null}
             </div>
             {/* Icon - outline User only; plus is above head in name position */}
-            <div className="relative inline-block transition-transform hover:scale-105 active:scale-95">
+            <div className={`relative inline-block transition-transform ${canInteract ? "hover:scale-105 active:scale-95" : ""}`}>
               <User
                 className="w-10 h-10 text-gray-300 transition-all"
                 strokeWidth={1}
@@ -227,9 +234,11 @@ export function DistrictDirectorDropZone({
             </div>
           </button>
           {/* Label - Absolutely positioned, shown on hover */}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Add
-          </div>
+          {canInteract && (
+            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-0.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight opacity-0 group-hover/add:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+              Add
+            </div>
+          )}
         </div>
       </div>
     );
@@ -290,13 +299,13 @@ export function DistrictDirectorDropZone({
         >
           <button
             onClick={() => {
-              if (maskIdentity || !canInteract) return;
+              if (hideDetails || !canInteract) return;
               onClick();
             }}
             className={`relative transition-all ${canInteract ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-not-allowed"}`}
           >
             {/* Gray spouse icon behind - shown when person has a spouse */}
-            {!maskIdentity && person.spouse && (
+            {!hideDetails && person.spouse && (
               <User
                 className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
                 strokeWidth={1.5}
@@ -305,10 +314,10 @@ export function DistrictDirectorDropZone({
             )}
             {/* Main person icon - solid */}
             <div
-              className={`relative ${maskIdentity ? "text-gray-300" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
+              className={`relative ${hideDetails ? "text-gray-300" : statusColors[figmaStatus]} ${!hideDetails && person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
-                className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+                className={`w-10 h-10 transition-colors relative z-10`}
                 strokeWidth={1.5}
                 fill="currentColor"
               />
@@ -316,7 +325,7 @@ export function DistrictDirectorDropZone({
           </button>
 
           {/* Role Label - Absolutely positioned, shown on hover */}
-          {!maskIdentity && (
+          {!hideDetails && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
               {(() => {
                 // For XAN, first person in header is always National Director
@@ -334,7 +343,7 @@ export function DistrictDirectorDropZone({
         </div>
       </div>
       {/* Person Tooltip */}
-      {!maskIdentity &&
+      {!hideDetails &&
         isHovered &&
         tooltipPos &&
         person &&

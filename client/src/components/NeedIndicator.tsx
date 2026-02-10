@@ -1,4 +1,4 @@
-import { DollarSign, Home, Car, HelpCircle } from "lucide-react";
+import { Home, Car, HelpCircle, ClipboardList } from "lucide-react";
 
 type NeedType =
   | "Registration"
@@ -7,8 +7,11 @@ type NeedType =
   | "Other"
   | string;
 
+/** Same color as other need icons (amber/orange). */
+const NEED_ICON_COLOR = "#b45309";
+
 const NEED_ICON = {
-  Registration: DollarSign,
+  Registration: ClipboardList,
   Housing: Home,
   Transportation: Car,
   Other: null, // Use custom "O" instead of icon
@@ -37,7 +40,7 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
       aria-hidden="true"
       title={type || "Need"}
     >
-      {/* Need type icon */}
+      {/* Need type icon - all use same amber color for consistency */}
       <div
         className="flex items-center justify-center m-0 p-0"
         style={{
@@ -55,7 +58,7 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
             style={{
               fontSize: "8px",
               fontWeight: "bold",
-              color: "#b45309",
+              color: NEED_ICON_COLOR,
               lineHeight: 1,
               margin: 0,
               padding: 0,
@@ -67,13 +70,13 @@ export function NeedIndicator({ type }: { type?: NeedType | null }) {
           <Icon
             className="w-3.5 h-3.5"
             style={{ margin: 0, padding: 0, strokeWidth: 2 }}
-            color="#b45309"
+            color={NEED_ICON_COLOR}
           />
         ) : (
           <HelpCircle
             className="w-3.5 h-3.5"
             style={{ margin: 0, padding: 0, strokeWidth: 2 }}
-            color="#b45309"
+            color={NEED_ICON_COLOR}
           />
         )}
       </div>

@@ -9,6 +9,7 @@ import { TRPCError } from "@trpc/server";
 import type { Person, User } from "../../drizzle/schema";
 import { eq, sql } from "drizzle-orm";
 import { people } from "../../drizzle/schema";
+import { resolvePersonRegion } from "../../shared/const";
 
 export type UserRole =
   | "STAFF"
@@ -45,6 +46,55 @@ const EDIT_LEVEL_ORDER: EditLevel[] = [
   "DISTRICT",
   "CAMPUS",
 ];
+
+/**
+ * Default edit level based on role (mirrors getDefaultAuthorization in routers.ts).
+ * Used as fallback when editLevel is not stored in DB.
+ */
+function getDefaultEditLevel(role: string): EditLevel {
+  switch (role) {
+    case "NATIONAL_DIRECTOR":
+    case "FIELD_DIRECTOR":
+    case "CMC_GO_ADMIN":
+    case "ADMIN":
+      return "NATIONAL";
+    case "NATIONAL_STAFF":
+      return "XAN";
+    case "REGION_DIRECTOR":
+    case "REGIONAL_STAFF":
+      return "REGION";
+    case "DISTRICT_DIRECTOR":
+    case "DISTRICT_STAFF":
+      return "DISTRICT";
+    default:
+      return "CAMPUS";
+  }
+}
+
+/**
+ * Default view level based on role (mirrors getDefaultAuthorization in routers.ts).
+ * Used as fallback when viewLevel is not stored in DB.
+ */
+function getDefaultViewLevel(role: string): ViewLevel {
+  switch (role) {
+    case "NATIONAL_DIRECTOR":
+    case "FIELD_DIRECTOR":
+    case "CMC_GO_ADMIN":
+    case "ADMIN":
+    case "NATIONAL_STAFF":
+    case "REGION_DIRECTOR":
+    case "REGIONAL_STAFF":
+      return "NATIONAL";
+    case "DISTRICT_DIRECTOR":
+    case "DISTRICT_STAFF":
+      return "REGION";
+    case "CAMPUS_DIRECTOR":
+    case "CO_DIRECTOR":
+      return "DISTRICT";
+    default:
+      return "CAMPUS";
+  }
+}
 
 // XAN roles - National Team members
 const XAN_ROLES = [
@@ -133,7 +183,8 @@ export function canViewPerson(
     return isNationalTeamMember(user);
   }
 
-  const userViewLevel = (user as any).viewLevel || "CAMPUS";
+  const userViewLevel: ViewLevel =
+    (user as any).viewLevel || getDefaultViewLevel(String(user.role));
 
   // NATIONAL view level can see everyone
   if (userViewLevel === "NATIONAL") return true;
@@ -141,7 +192,7 @@ export function canViewPerson(
   // REGION view level: user can see people in their region
   if (userViewLevel === "REGION") {
     const userRegion = (user as any).overseeRegionId || user.regionId;
-    return person.primaryRegion === userRegion;
+    return resolvePersonRegion(person) === userRegion;
   }
 
   // DISTRICT view level: user can see people in their district
@@ -176,7 +227,8 @@ export function canEditPerson(
     return true;
   }
 
-  const userEditLevel = (user as any).editLevel || "CAMPUS";
+  const userEditLevel: EditLevel =
+    (user as any).editLevel || getDefaultEditLevel(String(user.role));
 
   // NATIONAL edit level can edit everyone
   if (userEditLevel === "NATIONAL") return true;
@@ -189,7 +241,7 @@ export function canEditPerson(
   // REGION edit level: user can edit people in their region
   if (userEditLevel === "REGION") {
     const userRegion = (user as any).overseeRegionId || user.regionId;
-    return person.primaryRegion === userRegion;
+    return resolvePersonRegion(person) === userRegion;
   }
 
   // DISTRICT edit level: user can edit people in their district
@@ -295,12 +347,20 @@ export function canEditRegion(user: User, regionId: string): boolean {
     return false;
   }
 
-  // Only DISTRICT_DIRECTOR (ACTIVE), REGION_DIRECTOR (ACTIVE), and ADMIN can edit regions
+  // DISTRICT_DIRECTOR can only edit their own region
   if (user.role === "DISTRICT_DIRECTOR") {
     return user.regionId === regionId;
   }
 
-  if (user.role === "REGION_DIRECTOR" || user.role === "ADMIN") {
+  // REGION_DIRECTOR / REGIONAL_STAFF can only edit their overseen region
+  if (user.role === "REGION_DIRECTOR" || user.role === "REGIONAL_STAFF") {
+    const userRegion =
+      (user as { overseeRegionId?: string | null }).overseeRegionId ||
+      user.regionId;
+    return userRegion === regionId;
+  }
+
+  if (user.role === "ADMIN") {
     return true;
   }
 
@@ -558,7 +618,8 @@ export function canAccessPerson(
   const scope = getPeopleScope(user);
 
   if (scope.level === "ALL") return true;
-  if (scope.level === "REGION") return person.primaryRegion === scope.regionId;
+  if (scope.level === "REGION")
+    return resolvePersonRegion(person) === scope.regionId;
   if (scope.level === "DISTRICT")
     return person.primaryDistrictId === scope.districtId;
   return person.primaryCampusId === scope.campusId;

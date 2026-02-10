@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,17 @@ import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
 import { formatStatusLabel } from "@/utils/statusLabel";
 import { exportToCsv, formatDateForFilename } from "@/utils/csvExport";
+
+// Status order for "Sort by status": Yes, Maybe, No, Not Invited (displayed as "Not Invited Yet" in UI when desired)
+const STATUS_SORT_ORDER: Record<
+  "Yes" | "Maybe" | "No" | "Not Invited",
+  number
+> = {
+  Yes: 0,
+  Maybe: 1,
+  No: 2,
+  "Not Invited": 3,
+};
 
 export default function People() {
   const [, setLocation] = useLocation();
@@ -402,16 +414,6 @@ export default function People() {
       }
     });
 
-    const statusSortOrder: Record<
-      "Yes" | "Maybe" | "No" | "Not Invited",
-      number
-    > = {
-      Yes: 0,
-      Maybe: 1,
-      No: 2,
-      "Not Invited": 3,
-    };
-
     const comparePeople = (a: Person, b: Person, sortBy: OrderByOption) => {
       const aName = a.name?.trim() || a.personId;
       const bName = b.name?.trim() || b.personId;
@@ -440,9 +442,9 @@ export default function People() {
         if (roleCompare !== 0) return roleCompare;
         return nameCompare;
       }
-      // status
+      // status (order: Yes, Maybe, No, Not Invited)
       const statusCompare =
-        statusSortOrder[a.status] - statusSortOrder[b.status];
+        STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
       if (statusCompare !== 0) return statusCompare;
       return nameCompare;
     };
@@ -484,6 +486,70 @@ export default function People() {
 
     return sortedRegions;
   }, [filteredPeople, allDistricts, allCampuses, campusById, orderBy]);
+
+  // When orderBy is "status", delay re-sort by 2s after a status change so the list doesn't jump while the user cycles statuses
+  type RegionsDisplayItem = (typeof regionsWithDistricts)[number];
+  const [displayedRegionsWithDistricts, setDisplayedRegionsWithDistricts] =
+    useState<RegionsDisplayItem[]>([]);
+  const statusSignature = useMemo(() => {
+    if (orderBy !== "status") return "";
+    return JSON.stringify(
+      [...filteredPeople]
+        .sort((a, b) => {
+          const statusCompare =
+            STATUS_SORT_ORDER[a.status] - STATUS_SORT_ORDER[b.status];
+          if (statusCompare !== 0) return statusCompare;
+          return (a.name?.trim() || a.personId).localeCompare(
+            b.name?.trim() || b.personId
+          );
+        })
+        .map(p => [p.personId, p.status])
+    );
+  }, [filteredPeople, orderBy]);
+  const prevStatusSignatureRef = useRef("");
+  const sortDelayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const regionsRef = useRef(regionsWithDistricts);
+  const statusSignatureRef = useRef(statusSignature);
+  regionsRef.current = regionsWithDistricts;
+  statusSignatureRef.current = statusSignature;
+
+  useEffect(() => {
+    const next = regionsWithDistricts;
+    if (orderBy !== "status") {
+      prevStatusSignatureRef.current = statusSignature;
+      setDisplayedRegionsWithDistricts(next);
+      if (sortDelayTimeoutRef.current) {
+        clearTimeout(sortDelayTimeoutRef.current);
+        sortDelayTimeoutRef.current = null;
+      }
+      return;
+    }
+    const sig = statusSignature;
+    if (sig === prevStatusSignatureRef.current) {
+      setDisplayedRegionsWithDistricts(next);
+      return;
+    }
+    // First load or filters changed: show immediately
+    if (prevStatusSignatureRef.current === "") {
+      prevStatusSignatureRef.current = sig;
+      setDisplayedRegionsWithDistricts(next);
+      return;
+    }
+    // Status changed: delay 2s before re-sort. Do NOT update prev yet so a second effect run (e.g. Strict Mode) doesn't think we're in sync and update immediately.
+    if (sortDelayTimeoutRef.current) clearTimeout(sortDelayTimeoutRef.current);
+    sortDelayTimeoutRef.current = setTimeout(() => {
+      sortDelayTimeoutRef.current = null;
+      setDisplayedRegionsWithDistricts(regionsRef.current);
+      prevStatusSignatureRef.current = statusSignatureRef.current;
+    }, 2000);
+    return () => {
+      if (sortDelayTimeoutRef.current) {
+        clearTimeout(sortDelayTimeoutRef.current);
+      }
+    };
+  }, [regionsWithDistricts, orderBy, statusSignature]);
 
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person);
@@ -926,14 +992,14 @@ export default function People() {
           </div>
         </div>
 
-        {/* Hierarchical List */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-          <div className="divide-y divide-gray-200">
+        {/* Hierarchical List - matches edit panel in district panel (slate, section headers) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="divide-y divide-slate-200">
             {filteredPeople.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-500">
+              <div className="px-6 py-8 text-center text-slate-500">
                 {debouncedSearchQuery.trim() ? (
                   <>
-                    <Search className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+                    <Search className="h-8 w-8 mx-auto mb-3 text-slate-400" />
                     <p className="font-medium">No results found</p>
                     <p className="text-sm mt-1">
                       No people match "{debouncedSearchQuery}"
@@ -953,7 +1019,7 @@ export default function People() {
                   needTypeFilter !== "All" ||
                   myCampus ? (
                   <>
-                    <Filter className="h-8 w-8 mx-auto mb-3 text-gray-400" />
+                    <Filter className="h-8 w-8 mx-auto mb-3 text-slate-400" />
                     <p className="font-medium">No results found</p>
                     <p className="text-sm mt-1">
                       No people match the current filters
@@ -963,296 +1029,335 @@ export default function People() {
                   <p>No people found</p>
                 )}
               </div>
-            ) : regionsWithDistricts.length === 0 ? (
-              <div className="px-6 py-8 text-center text-gray-500">
-                No districts found
-              </div>
             ) : (
-              regionsWithDistricts.map(({ region, districts }) => (
-                <div key={region}>
-                  {/* Region Header */}
-                  <div className="px-6 py-3 bg-gradient-to-r from-indigo-50 to-blue-50 border-b border-indigo-100">
-                    <h2 className="text-sm font-bold text-indigo-900 uppercase tracking-wide">
-                      {region}
-                    </h2>
+              (() => {
+                const regionsToRender =
+                  displayedRegionsWithDistricts.length > 0
+                    ? displayedRegionsWithDistricts
+                    : regionsWithDistricts;
+                return regionsToRender.length === 0 ? (
+                  <div className="px-6 py-8 text-center text-slate-500">
+                    No districts found
                   </div>
+                ) : (
+                  regionsToRender.map(({ region, districts }) => (
+                    <div key={region}>
+                      {/* Region Header - matches edit panel section style */}
+                      <div className="px-6 py-3 border-b border-slate-200 bg-slate-50/60">
+                        <h2 className="text-sm font-semibold text-slate-700">
+                          {region}
+                        </h2>
+                      </div>
 
-                  {/* Districts in Region */}
-                  {districts.map(({ district, campuses, unassigned }) => {
-                    const isDistrictExpanded = expandedDistricts.has(
-                      district.id
-                    );
-                    const totalPeople =
-                      Array.from(campuses.values()).reduce(
-                        (sum, c) => sum + c.people.length,
-                        0
-                      ) + unassigned.length;
+                      {/* Districts in Region */}
+                      {districts.map(({ district, campuses, unassigned }) => {
+                        const isDistrictExpanded = expandedDistricts.has(
+                          district.id
+                        );
+                        const totalPeople =
+                          Array.from(campuses.values()).reduce(
+                            (sum, c) => sum + c.people.length,
+                            0
+                          ) + unassigned.length;
 
-                    return (
-                      <div
-                        key={district.id}
-                        className="divide-y divide-gray-100"
-                      >
-                        {/* District Row */}
-                        <div
-                          className="px-6 py-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => toggleDistrictExpansion(district.id)}
-                        >
-                          <div className="flex items-center gap-3">
-                            {isDistrictExpanded ? (
-                              <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                            ) : (
-                              <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                            )}
-                            <div className="flex-1">
-                              <h2 className="text-lg font-semibold text-gray-900">
-                                {district.name}
-                              </h2>
-                              <p className="text-sm text-gray-500">
-                                {district.region}
-                              </p>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                              {totalPeople}{" "}
-                              {totalPeople === 1 ? "person" : "people"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Campuses and People (when expanded) */}
-                        {isDistrictExpanded && (
-                          <div className="bg-gray-50">
-                            {/* Campuses */}
-                            {Array.from(campuses.values()).map(
-                              ({ campus, people }) => {
-                                const isCampusExpanded = expandedCampuses.has(
-                                  campus.id
-                                );
-                                const campusNeeds = allNeeds.filter(n =>
-                                  people.some(
-                                    p => p.personId === n.personId && n.isActive
-                                  )
-                                );
-
-                                return (
-                                  <div
-                                    key={campus.id}
-                                    className="divide-y divide-gray-100"
-                                  >
-                                    {/* Campus Row */}
-                                    <div className="px-12 py-3 hover:bg-gray-100 cursor-pointer transition-colors">
-                                      <div className="flex items-center gap-3">
-                                        <button
-                                          onClick={e => {
-                                            e.stopPropagation();
-                                            toggleCampusExpansion(campus.id);
-                                          }}
-                                          className="flex items-center gap-2 flex-1"
-                                        >
-                                          {isCampusExpanded ? (
-                                            <ChevronDown className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                          ) : (
-                                            <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                          )}
-                                          <div className="flex-1 text-left">
-                                            <h3 className="font-medium text-gray-900">
-                                              {campus.name}
-                                            </h3>
-                                            <p className="text-xs text-gray-500">
-                                              {people.length}{" "}
-                                              {people.length === 1
-                                                ? "person"
-                                                : "people"}
-                                              {campusNeeds.length > 0 &&
-                                                ` • ${campusNeeds.length} request${campusNeeds.length === 1 ? "" : "s"}`}
-                                            </p>
-                                          </div>
-                                        </button>
-
-                                        {/* Three Dots Menu */}
-                                        {isAuthenticated && (
-                                          <div className="relative">
-                                            <button
-                                              onClick={e => {
-                                                e.stopPropagation();
-                                                setOpenMenuId(
-                                                  openMenuId === campus.id
-                                                    ? null
-                                                    : campus.id
-                                                );
-                                              }}
-                                              className="p-1.5 hover:bg-gray-200 rounded transition-all"
-                                            >
-                                              <MoreVertical className="w-4 h-4 text-gray-500" />
-                                            </button>
-
-                                            {openMenuId === campus.id && (
-                                              <>
-                                                <div
-                                                  className="fixed inset-0 z-[5]"
-                                                  onClick={() =>
-                                                    setOpenMenuId(null)
-                                                  }
-                                                ></div>
-
-                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                                                  <button
-                                                    onClick={() => {
-                                                      handleEditCampus(
-                                                        campus.id
-                                                      );
-                                                      setOpenMenuId(null);
-                                                    }}
-                                                    className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
-                                                  >
-                                                    <Edit2 className="w-4 h-4" />
-                                                    Edit Campus Name
-                                                  </button>
-                                                </div>
-                                              </>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    {/* People (when campus expanded) */}
-                                    {isCampusExpanded && people.length > 0 && (
-                                      <div className="bg-white">
-                                        {people.map(person => {
-                                          const personNeeds = allNeeds.filter(
-                                            n =>
-                                              n.personId === person.personId &&
-                                              n.isActive
-                                          );
-
-                                          return (
-                                            <div
-                                              key={person.personId}
-                                              className="px-20 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
-                                              onClick={() =>
-                                                handlePersonClick(person)
-                                              }
-                                            >
-                                              <div className="flex items-center justify-between">
-                                                <div className="flex-1">
-                                                  <div className="font-medium text-gray-900">
-                                                    {person.name ||
-                                                      person.personId}
-                                                  </div>
-                                                  {person.primaryRole && (
-                                                    <div className="text-sm text-gray-500">
-                                                      {person.primaryRole}
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                  <span
-                                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                      person.status === "Yes"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : person.status ===
-                                                            "Maybe"
-                                                          ? "bg-yellow-100 text-yellow-800"
-                                                          : person.status ===
-                                                              "No"
-                                                            ? "bg-red-100 text-red-800"
-                                                            : "bg-gray-100 text-gray-800"
-                                                    }`}
-                                                  >
-                                                    {person.status}
-                                                  </span>
-                                                  {personNeeds.length > 0 && (
-                                                    <span className="text-xs text-yellow-600 font-medium">
-                                                      {personNeeds.length}{" "}
-                                                      request
-                                                      {personNeeds.length === 1
-                                                        ? ""
-                                                        : "s"}
-                                                    </span>
-                                                  )}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
+                        return (
+                          <div
+                            key={district.id}
+                            className="divide-y divide-slate-100"
+                          >
+                            {/* District Row */}
+                            <div
+                              className="px-6 py-4 hover:bg-slate-50 cursor-pointer transition-colors"
+                              onClick={() =>
+                                toggleDistrictExpansion(district.id)
                               }
-                            )}
+                            >
+                              <div className="flex items-center gap-3">
+                                {isDistrictExpanded ? (
+                                  <ChevronDown className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                                ) : (
+                                  <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                                )}
+                                <div className="flex-1">
+                                  <h2 className="text-lg font-semibold text-slate-900">
+                                    {district.name}
+                                  </h2>
+                                  <p className="text-sm text-slate-500">
+                                    {district.region}
+                                  </p>
+                                </div>
+                                <div className="text-sm text-slate-600">
+                                  {totalPeople}{" "}
+                                  {totalPeople === 1 ? "person" : "people"}
+                                </div>
+                              </div>
+                            </div>
 
-                            {/* Unassigned People */}
-                            {unassigned.length > 0 && (
-                              <div className="px-12 py-3">
-                                <h3 className="font-medium text-gray-500 italic mb-2">
-                                  Unassigned ({unassigned.length})
-                                </h3>
-                                <div className="bg-white rounded border border-gray-200">
-                                  {unassigned.map(person => {
-                                    const personNeeds = allNeeds.filter(
-                                      n =>
-                                        n.personId === person.personId &&
-                                        n.isActive
+                            {/* Campuses and People (when expanded) */}
+                            {isDistrictExpanded && (
+                              <div className="bg-slate-50/40">
+                                {/* Campuses */}
+                                {Array.from(campuses.values()).map(
+                                  ({ campus, people }) => {
+                                    const isCampusExpanded =
+                                      expandedCampuses.has(campus.id);
+                                    const campusNeeds = allNeeds.filter(n =>
+                                      people.some(
+                                        p =>
+                                          p.personId === n.personId &&
+                                          n.isActive
+                                      )
                                     );
 
                                     return (
                                       <div
-                                        key={person.personId}
-                                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
-                                        onClick={() =>
-                                          handlePersonClick(person)
-                                        }
+                                        key={campus.id}
+                                        className="divide-y divide-slate-100"
                                       >
-                                        <div className="flex items-center justify-between">
-                                          <div className="flex-1">
-                                            <div className="font-medium text-gray-900">
-                                              {person.name || person.personId}
-                                            </div>
-                                            {person.primaryRole && (
-                                              <div className="text-sm text-gray-500">
-                                                {person.primaryRole}
+                                        {/* Campus Row - matches edit panel section spacing */}
+                                        <div className="px-12 py-3 hover:bg-slate-100/80 cursor-pointer transition-colors">
+                                          <div className="flex items-center gap-3">
+                                            <button
+                                              onClick={e => {
+                                                e.stopPropagation();
+                                                toggleCampusExpansion(
+                                                  campus.id
+                                                );
+                                              }}
+                                              className="flex items-center gap-2 flex-1"
+                                            >
+                                              {isCampusExpanded ? (
+                                                <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                              ) : (
+                                                <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                                              )}
+                                              <div className="flex-1 text-left">
+                                                <h3 className="text-sm font-semibold text-slate-700">
+                                                  {campus.name}
+                                                </h3>
+                                                <p className="text-xs text-slate-500">
+                                                  {people.length}{" "}
+                                                  {people.length === 1
+                                                    ? "person"
+                                                    : "people"}
+                                                  {campusNeeds.length > 0 &&
+                                                    ` • ${campusNeeds.length} request${campusNeeds.length === 1 ? "" : "s"}`}
+                                                </p>
+                                              </div>
+                                            </button>
+
+                                            {/* Three Dots Menu */}
+                                            {isAuthenticated && (
+                                              <div className="relative">
+                                                <button
+                                                  onClick={e => {
+                                                    e.stopPropagation();
+                                                    setOpenMenuId(
+                                                      openMenuId === campus.id
+                                                        ? null
+                                                        : campus.id
+                                                    );
+                                                  }}
+                                                  className="p-1.5 hover:bg-slate-200 rounded transition-all"
+                                                >
+                                                  <MoreVertical className="w-4 h-4 text-slate-500" />
+                                                </button>
+
+                                                {openMenuId === campus.id && (
+                                                  <>
+                                                    <div
+                                                      className="fixed inset-0 z-[5]"
+                                                      onClick={() =>
+                                                        setOpenMenuId(null)
+                                                      }
+                                                    ></div>
+
+                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-10">
+                                                      <button
+                                                        onClick={() => {
+                                                          handleEditCampus(
+                                                            campus.id
+                                                          );
+                                                          setOpenMenuId(null);
+                                                        }}
+                                                        className="w-full px-4 py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white flex items-center gap-2 transition-colors"
+                                                      >
+                                                        <Edit2 className="w-4 h-4" />
+                                                        Edit Campus Name
+                                                      </button>
+                                                    </div>
+                                                  </>
+                                                )}
                                               </div>
                                             )}
                                           </div>
-                                          <div className="flex items-center gap-4">
-                                            <span
-                                              className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                                                person.status === "Yes"
-                                                  ? "bg-green-100 text-green-800"
-                                                  : person.status === "Maybe"
-                                                    ? "bg-yellow-100 text-yellow-800"
-                                                    : person.status === "No"
-                                                      ? "bg-red-100 text-red-800"
-                                                      : "bg-gray-100 text-gray-800"
-                                              }`}
-                                            >
-                                              {person.status}
-                                            </span>
-                                            {personNeeds.length > 0 && (
-                                              <span className="text-xs text-yellow-600 font-medium">
-                                                {personNeeds.length} request
-                                                {personNeeds.length === 1
-                                                  ? ""
-                                                  : "s"}
-                                              </span>
-                                            )}
-                                          </div>
                                         </div>
+
+                                        {/* People (when campus expanded) - matches edit panel typography and slate palette */}
+                                        {isCampusExpanded &&
+                                          people.length > 0 && (
+                                            <div className="bg-white">
+                                              {people.map(person => {
+                                                const personNeeds =
+                                                  allNeeds.filter(
+                                                    n =>
+                                                      n.personId ===
+                                                        person.personId &&
+                                                      n.isActive
+                                                  );
+
+                                                return (
+                                                  <motion.div
+                                                    key={person.personId}
+                                                    layout
+                                                    transition={{
+                                                      type: "spring",
+                                                      stiffness: 350,
+                                                      damping: 30,
+                                                    }}
+                                                    className="px-12 py-3.5 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                                                    onClick={() =>
+                                                      handlePersonClick(person)
+                                                    }
+                                                  >
+                                                    <div className="flex items-center justify-between gap-4">
+                                                      <div className="flex-1 min-w-0">
+                                                        <div className="text-sm font-medium text-slate-900">
+                                                          {person.name ||
+                                                            person.personId}
+                                                        </div>
+                                                        {person.primaryRole && (
+                                                          <div className="text-xs text-slate-500 mt-0.5">
+                                                            {person.primaryRole}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                      <div className="flex items-center gap-3 flex-shrink-0">
+                                                        <span
+                                                          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                            person.status ===
+                                                            "Yes"
+                                                              ? "bg-emerald-100 text-emerald-800"
+                                                              : person.status ===
+                                                                  "Maybe"
+                                                                ? "bg-amber-100 text-amber-800"
+                                                                : person.status ===
+                                                                    "No"
+                                                                  ? "bg-red-100 text-red-800"
+                                                                  : "bg-slate-100 text-slate-700"
+                                                          }`}
+                                                        >
+                                                          {formatStatusLabel(
+                                                            person.status
+                                                          )}
+                                                        </span>
+                                                        {personNeeds.length >
+                                                          0 && (
+                                                          <span className="text-xs text-slate-600 font-medium">
+                                                            {personNeeds.length}{" "}
+                                                            request
+                                                            {personNeeds.length ===
+                                                            1
+                                                              ? ""
+                                                              : "s"}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </motion.div>
+                                                );
+                                              })}
+                                            </div>
+                                          )}
                                       </div>
                                     );
-                                  })}
-                                </div>
+                                  }
+                                )}
+
+                                {/* Unassigned People - section style matches edit panel */}
+                                {unassigned.length > 0 && (
+                                  <div className="px-12 py-3">
+                                    <div className="border-b border-slate-200 pb-2 mb-2">
+                                      <h3 className="text-sm font-semibold text-slate-700">
+                                        Unassigned ({unassigned.length})
+                                      </h3>
+                                    </div>
+                                    <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                                      {unassigned.map(person => {
+                                        const personNeeds = allNeeds.filter(
+                                          n =>
+                                            n.personId === person.personId &&
+                                            n.isActive
+                                        );
+
+                                        return (
+                                          <motion.div
+                                            key={person.personId}
+                                            layout
+                                            transition={{
+                                              type: "spring",
+                                              stiffness: 350,
+                                              damping: 30,
+                                            }}
+                                            className="px-12 py-3.5 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                                            onClick={() =>
+                                              handlePersonClick(person)
+                                            }
+                                          >
+                                            <div className="flex items-center justify-between gap-4">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-medium text-slate-900">
+                                                  {person.name ||
+                                                    person.personId}
+                                                </div>
+                                                {person.primaryRole && (
+                                                  <div className="text-xs text-slate-500 mt-0.5">
+                                                    {person.primaryRole}
+                                                  </div>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-3 flex-shrink-0">
+                                                <span
+                                                  className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                    person.status === "Yes"
+                                                      ? "bg-emerald-100 text-emerald-800"
+                                                      : person.status ===
+                                                          "Maybe"
+                                                        ? "bg-amber-100 text-amber-800"
+                                                        : person.status === "No"
+                                                          ? "bg-red-100 text-red-800"
+                                                          : "bg-slate-100 text-slate-700"
+                                                  }`}
+                                                >
+                                                  {formatStatusLabel(
+                                                    person.status
+                                                  )}
+                                                </span>
+                                                {personNeeds.length > 0 && (
+                                                  <span className="text-xs text-slate-600 font-medium">
+                                                    {personNeeds.length} request
+                                                    {personNeeds.length === 1
+                                                      ? ""
+                                                      : "s"}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
+                                          </motion.div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))
+                        );
+                      })}
+                    </div>
+                  ))
+                );
+              })()
             )}
           </div>
         </div>

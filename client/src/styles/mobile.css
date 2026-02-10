@@ -175,18 +175,32 @@
     padding-bottom: 14px !important;
   }
 
-  /* Ensure dialogs don't overflow */
-  [role="dialog"] {
-    max-height: calc(100vh - 32px) !important;
+  /* Ensure dialogs don't overflow - exclude MobileDrawer and BottomSheet */
+  [role="dialog"]:not(.mobile-drawer-bottom):not([class*="rounded-t-3xl"]) {
+    max-height: calc(100dvh - 32px) !important;
     max-width: calc(100vw - 24px) !important;
-    margin: 12px !important;
+    overflow-y: auto !important;
+  }
+
+  /* Radix dialog content: proper mobile sizing */
+  [data-radix-dialog-content] {
+    max-height: calc(100dvh - 48px) !important;
+    max-width: calc(100vw - 32px) !important;
+    width: calc(100vw - 32px) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Select content dropdowns: keep within viewport */
+  [data-radix-select-content] {
+    max-height: 50vh !important;
+    max-width: calc(100vw - 16px) !important;
   }
 
   /* Login modal mobile optimization */
   .login-modal-mobile {
     width: calc(100vw - 32px) !important;
     max-width: 400px !important;
-    max-height: calc(100vh - 64px) !important;
+    max-height: calc(100dvh - 64px) !important;
     margin: auto !important;
   }
 
@@ -201,6 +215,38 @@
     bottom: 16px !important;
     right: 16px !important;
     z-index: 35 !important;
+  }
+
+  /* People panel: toolbar should wrap nicely */
+  .people-panel-toolbar {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* People panel: table should scroll horizontally if needed */
+  .people-panel-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* District panel: ensure campus rows don't overflow */
+  .campus-row-container {
+    overflow-x: hidden !important;
+  }
+
+  /* Tooltip: hide on mobile (use tap instead) */
+  [data-radix-tooltip-content] {
+    display: none !important;
+  }
+
+  /* Person tooltip on mobile: use bottom sheet instead */
+  .person-tooltip-mobile {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    max-width: 100vw !important;
+    border-radius: 16px 16px 0 0 !important;
   }
 }
 
@@ -243,6 +289,14 @@
     bottom: 12px !important;
     right: 12px !important;
   }
+
+  /* Compact dialog on small phones */
+  [data-radix-dialog-content] {
+    max-width: calc(100vw - 24px) !important;
+    width: calc(100vw - 24px) !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
 }
 
 /* --- Tablet --- */
@@ -260,7 +314,6 @@
 @supports (padding-top: env(safe-area-inset-top)) {
   @media (max-width: 768px) {
     html {
-      /* Ensure full viewport height accounts for safe areas on iOS */
       min-height: -webkit-fill-available;
     }
 
@@ -277,20 +330,17 @@
       ) !important;
     }
 
-    /* FAB: above home indicator with margin */
     .mobile-fab-safe {
       bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px)) !important;
       right: max(16px, calc(env(safe-area-inset-right) + 8px)) !important;
     }
 
-    /* Scope dropdown: account for safe areas */
     .scope-selector-dropdown {
       max-height: calc(
         80vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
       ) !important;
     }
 
-    /* Menu dropdown: account for safe areas */
     .mobile-menu-dropdown {
       max-height: calc(
         100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
@@ -338,8 +388,14 @@
   input[type="email"],
   input[type="password"],
   textarea {
-    min-height: 48px;
-    padding: 12px !important;
+    min-height: 44px;
+    padding: 10px 12px !important;
+  }
+
+  /* Number inputs: slightly more compact */
+  input[type="number"] {
+    min-height: 44px;
+    padding: 8px 10px !important;
   }
 
   /* Better button states */
@@ -352,5 +408,33 @@
   /* Ensure popovers don't overflow */
   [data-radix-popper-content-wrapper] {
     max-width: calc(100vw - 16px) !important;
+  }
+
+  /* Popover content: mobile-friendly sizing */
+  [data-radix-popover-content] {
+    max-width: calc(100vw - 24px) !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Dropdown menus: mobile-friendly */
+  [data-radix-dropdown-menu-content] {
+    max-width: calc(100vw - 24px) !important;
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* Tables inside panels: horizontal scroll */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  /* Prevent any child from breaking out of viewport */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 }

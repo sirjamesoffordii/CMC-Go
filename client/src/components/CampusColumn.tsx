@@ -90,9 +90,10 @@ export function CampusColumn({
 
     switch (sortBy) {
       case "status": {
+        // Yes, Maybe, No, Not Invited (Not Invited far right)
         const statusOrder = { Yes: 0, Maybe: 1, No: 2, "Not Invited": 3 };
         return peopleCopy.sort(
-          (a, b) => statusOrder[a.status] - statusOrder[b.status]
+          (a, b) => statusOrder[a.status ?? "Not Invited"] - statusOrder[b.status ?? "Not Invited"]
         );
       }
 

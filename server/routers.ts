@@ -15,8 +15,10 @@ import {
   canAccessPerson,
   canApproveDistrictDirector,
   canApproveRegionDirector,
+  canEditPerson,
 } from "./_core/authorization";
 import { hashPassword, verifyPassword } from "./_core/password";
+import { resolvePersonRegion, DISTRICT_REGION_MAP } from "../shared/const";
 
 /** Strip sensitive fields before sending user data to clients */
 function sanitizeUser<T extends Record<string, unknown>>(
@@ -928,6 +930,28 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
 
+        // Regional directors can only edit districts in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const district = await db.getDistrictById(input.id);
+          if (!district) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "District not found",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || district.region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit districts in your region",
+            });
+          }
+        }
+
         await db.updateDistrictName(input.id, input.name);
         return { success: true };
       }),
@@ -952,6 +976,28 @@ export const appRouter = router({
 
         if (scope.level === "CAMPUS") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Regional directors can only edit districts in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const district = await db.getDistrictById(input.id);
+          if (!district) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "District not found",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || district.region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit districts in your region",
+            });
+          }
         }
 
         await db.updateDistrictRegion(input.id, input.region);
@@ -1066,11 +1112,40 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
         if (scope.level === "REGION") {
-          const district = await db.getDistrictById(campus.districtId);
-          if (!district || district.region !== scope.regionId) {
+          const districtId = String(campus.districtId ?? "");
+          const district = await db.getDistrictById(districtId);
+          const region =
+            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+          if (!region || region !== scope.regionId) {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "Access denied",
+            });
+          }
+        }
+
+        // Regional directors can only edit campuses in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const districtId = String(campus.districtId ?? "");
+          const district = await db.getDistrictById(districtId);
+          const region =
+            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+          if (!region) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message:
+                "District not found. The campus may be linked to a district that is not in the database or map. An administrator can add the district via the region/district seed.",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit campuses in your region",
             });
           }
         }
@@ -1099,11 +1174,40 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
         if (scope.level === "REGION") {
-          const district = await db.getDistrictById(input.districtId);
-          if (!district || district.region !== scope.regionId) {
+          const districtId = String(input.districtId ?? "");
+          const district = await db.getDistrictById(districtId);
+          const region =
+            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+          if (!region || region !== scope.regionId) {
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "Access denied",
+            });
+          }
+        }
+
+        // Regional directors can only create campuses in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const districtId = String(input.districtId ?? "");
+          const district = await db.getDistrictById(districtId);
+          const region =
+            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+          if (!region) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message:
+                "District not found. Add the district via the region/district seed, or choose a district that exists in the database.",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only create campuses in your region",
             });
           }
         }
@@ -1141,6 +1245,28 @@ export const appRouter = router({
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "Access denied",
+            });
+          }
+        }
+
+        // Regional directors can only archive campuses in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "District not found",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || district.region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit campuses in your region",
             });
           }
         }
@@ -1197,6 +1323,28 @@ export const appRouter = router({
           }
         }
 
+        // Regional directors can only edit campuses in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "District not found",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || district.region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit campuses in your region",
+            });
+          }
+        }
+
         await db.updateCampusDisplayOrder(input.id, input.displayOrder);
         return { success: true };
       }),
@@ -1229,6 +1377,28 @@ export const appRouter = router({
             throw new TRPCError({
               code: "FORBIDDEN",
               message: "Access denied",
+            });
+          }
+        }
+
+        // Regional directors can only delete campuses in their region
+        if (
+          ctx.user.role === "REGION_DIRECTOR" ||
+          ctx.user.role === "REGIONAL_STAFF"
+        ) {
+          const district = await db.getDistrictById(campus.districtId);
+          if (!district) {
+            throw new TRPCError({
+              code: "NOT_FOUND",
+              message: "District not found",
+            });
+          }
+          const userRegion =
+            ctx.user.overseeRegionId || ctx.user.regionId || null;
+          if (!userRegion || district.region !== userRegion) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "You can only edit campuses in your region",
             });
           }
         }
@@ -1449,6 +1619,17 @@ export const appRouter = router({
           createData.lastEditedBy =
             ctx.user?.fullName || ctx.user?.email || "System";
 
+          // Auto-sync primaryRegion from district if not explicitly provided
+          // This ensures region-scoped queries always find people correctly
+          if (createData.primaryDistrictId && !createData.primaryRegion) {
+            const district = await db.getDistrictById(
+              createData.primaryDistrictId
+            );
+            if (district?.region) {
+              createData.primaryRegion = district.region;
+            }
+          }
+
           const result = await db.createPerson(createData);
 
           return { success: true, insertId: result };
@@ -1487,6 +1668,13 @@ export const appRouter = router({
           }
 
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.updatePersonStatus(input.personId, input.status);
@@ -1528,6 +1716,13 @@ export const appRouter = router({
           }
 
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.updatePersonName(input.personId, input.name);
@@ -1582,9 +1777,17 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Regional directors can only edit people in their region (editLevel REGION)
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         const updateData: any = { ...data };
@@ -1636,6 +1839,17 @@ export const appRouter = router({
         updateData.lastEditedBy =
           ctx.user?.fullName || ctx.user?.email || "System";
 
+        // Auto-sync primaryRegion when primaryDistrictId changes
+        // This ensures region-scoped queries always find people correctly
+        if (updateData.primaryDistrictId) {
+          const newDistrict = await db.getDistrictById(
+            updateData.primaryDistrictId
+          );
+          if (newDistrict?.region) {
+            updateData.primaryRegion = newDistrict.region;
+          }
+        }
+
         await db.updatePerson(personId, updateData);
         return { success: true };
       }),
@@ -1667,9 +1881,17 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        // Regional directors can only delete people in their region
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.deletePerson(input.personId);
@@ -1707,9 +1929,16 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         // If target campus is specified, verify it's in scope
@@ -1741,6 +1970,26 @@ export const appRouter = router({
                 code: "FORBIDDEN",
                 message: "Target campus is outside your region",
               });
+            }
+          }
+          // Regional directors can only move people to campuses in their region
+          if (
+            ctx.user.role === "REGION_DIRECTOR" ||
+            ctx.user.role === "REGIONAL_STAFF"
+          ) {
+            const targetDistrict = await db.getDistrictById(
+              targetCampus.districtId
+            );
+            if (targetDistrict) {
+              const userRegion =
+                ctx.user.overseeRegionId || ctx.user.regionId || null;
+              if (!userRegion || targetDistrict.region !== userRegion) {
+                throw new TRPCError({
+                  code: "FORBIDDEN",
+                  message:
+                    "You can only move people to campuses in your region",
+                });
+              }
             }
           }
         }
@@ -1787,7 +2036,7 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -1838,9 +2087,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         return await db.revertStatusChange(
@@ -1907,7 +2162,7 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -1954,9 +2209,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.createNeed({
@@ -2007,9 +2268,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         if (input.type && input.description !== undefined) {
@@ -2058,9 +2325,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.deleteNeedByPersonId(input.personId);
@@ -2105,9 +2378,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.toggleNeedActive(input.needId, input.isActive);
@@ -2152,9 +2431,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.updateNeedVisibility(input.needId, input.visibility);
@@ -2176,7 +2461,7 @@ export const appRouter = router({
             filteredNeeds.push(need);
           } else if (
             scope.level === "REGION" &&
-            person.primaryRegion === scope.regionId
+            resolvePersonRegion(person) === scope.regionId
           ) {
             filteredNeeds.push(need);
           } else if (
@@ -2224,7 +2509,7 @@ export const appRouter = router({
             filteredNeeds.push(need);
           } else if (
             scope.level === "REGION" &&
-            person.primaryRegion === scope.regionId
+            resolvePersonRegion(person) === scope.regionId
           ) {
             filteredNeeds.push(need);
           } else if (
@@ -2285,7 +2570,7 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -2328,7 +2613,7 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -2373,7 +2658,7 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
         }
@@ -2413,9 +2698,15 @@ export const appRouter = router({
         }
         if (
           scope.level === "REGION" &&
-          person.primaryRegion !== scope.regionId
+          resolvePersonRegion(person) !== scope.regionId
         ) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (!canEditPerson(ctx.user, person)) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "You can only edit people in your region",
+          });
         }
 
         await db.createInviteNote({
@@ -2570,7 +2861,7 @@ export const appRouter = router({
       // Filter by scope
       return allFollowUpPeople.filter(person => {
         if (scope.level === "ALL") return true;
-        if (scope.level === "REGION" && person.primaryRegion === scope.regionId)
+        if (scope.level === "REGION" && resolvePersonRegion(person) === scope.regionId)
           return true;
         if (
           scope.level === "DISTRICT" &&
@@ -2710,7 +3001,7 @@ export const appRouter = router({
           if (scope.level === "ALL") return true;
           if (
             scope.level === "REGION" &&
-            person.primaryRegion === scope.regionId
+            resolvePersonRegion(person) === scope.regionId
           )
             return true;
           if (
