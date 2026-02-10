@@ -610,8 +610,13 @@ export function PersonDetailsDialog({
           open={open}
           onOpenChange={onOpenChange}
           title="Edit Person"
-          defaultSnap={1}
-          snapPoints={[25, 60, 90]}
+          defaultSnap={0}
+          snapPoints={[100]}
+          closeOnBackdrop={true}
+          showCloseButton={false}
+          showSnapPoints={false}
+          compactHeader={true}
+          fullScreen={true}
         >
           <div className="px-4 pb-4">
             {formContent}

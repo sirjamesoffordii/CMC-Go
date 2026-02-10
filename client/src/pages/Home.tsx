@@ -1292,9 +1292,9 @@ export default function Home() {
                 <span className="whitespace-nowrap select-none">Table</span>
               </button>
             ) : (
-              /* Desktop: Slide-out tab on right edge (original position) */
+              /* Desktop: Slide-out tab on right edge; shrinks when district panel open */
               <div
-                className="fixed -translate-y-1/2 z-30 pr-16"
+                className={`fixed -translate-y-1/2 z-30 ${selectedDistrictId ? "pr-10" : "pr-16"}`}
                 style={{ right: 0, top: "calc(50% + 36px)" }}
               >
                 <button
@@ -1306,7 +1306,8 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] hover:translate-x-[86%] text-left
+                    relative bg-black hover:bg-red-700 text-white rounded-full font-medium backdrop-blur-sm transition-all duration-300 ease-out touch-target translate-x-[92%] hover:translate-x-[86%] text-left
+                    ${selectedDistrictId ? "w-[120px] py-2 pl-3 pr-4 text-xs" : "w-[200px] py-3.5 pl-5 pr-6 text-sm"}
                     ${!user ? "opacity-70" : ""}
                   `}
                 >
