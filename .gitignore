@@ -129,6 +129,7 @@ _external/
 
 # Database
 data/
+!client/src/data/
 
 # Build/deploy artifacts
 *.zip
