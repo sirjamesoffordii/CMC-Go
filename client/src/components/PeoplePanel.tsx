@@ -362,8 +362,8 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         : scopeFilterRegionId
           ? scopeFilterRegionId
           : isNationalScope
-            ? "All Regions"
-            : (userRegionId ?? "All Regions");
+            ? "National"
+            : (userRegionId ?? "National");
 
   const clearScopeFilter = () => {
     setScopeFilterRegionId(null);
@@ -985,7 +985,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    All Regions
+                    National
                   </button>
                 ) : userRegionId ? (
                   <button
@@ -1026,35 +1026,45 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       onMouseEnter={() => setScopeMenuHoverRegion(region)}
                       onMouseLeave={() => setScopeMenuHoverRegion(null)}
                     >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (districts.length > 0) {
-                            setScopeMenuExpandedRegion(r =>
-                              r === region ? null : region
-                            );
-                            return;
-                          }
-                          setScopeFilterRegionId(region);
-                          setScopeFilterDistrictId(null);
-                          setScopeFilterCampusId(null);
-                          setScopeMenuOpen(false);
-                        }}
+                      <div
                         className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
                           isRegionSelected
                             ? "bg-red-50 text-red-700 font-medium"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
-                        <span>{region}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setScopeFilterRegionId(region);
+                            setScopeFilterDistrictId(null);
+                            setScopeFilterCampusId(null);
+                            setScopeFilterPersonId(null);
+                            setScopeMenuOpen(false);
+                          }}
+                          className="flex-1 text-left"
+                        >
+                          {region}
+                        </button>
                         {districts.length > 0 && (
-                          <ChevronRight
-                            className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
-                              isRegionExpanded ? "rotate-90" : ""
-                            }`}
-                          />
+                          <button
+                            type="button"
+                            onClick={e => {
+                              e.stopPropagation();
+                              setScopeMenuExpandedRegion(r =>
+                                r === region ? null : region
+                              );
+                            }}
+                            className="p-1 rounded hover:bg-gray-200"
+                          >
+                            <ChevronRight
+                              className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
+                                isRegionExpanded ? "rotate-90" : ""
+                              }`}
+                            />
+                          </button>
                         )}
-                      </button>
+                      </div>
                       {isRegionExpanded && districts.length > 0 && (
                         <div className="bg-gray-50/80 border-t border-gray-100">
                           <button
@@ -1095,12 +1105,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                     onClick={e => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      if (campuses.length > 0) {
-                                        setScopeMenuExpandedDistrict(d =>
-                                          d === district.id ? null : district.id
-                                        );
-                                        return;
-                                      }
                                       setScopeFilterRegionId(region);
                                       setScopeFilterDistrictId(district.id);
                                       setScopeFilterCampusId(null);
@@ -1609,7 +1613,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 onClick={() => handlePersonClick(person)}
               >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 flex-1">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div
                       className={`w-2 h-2 rounded-full flex-shrink-0 ${
                         person.status === "Yes"
@@ -1633,35 +1637,30 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {(person.lastEdited || person.statusLastUpdated) && (
-                      <span className="text-xs text-gray-500">
-                        Updated:{" "}
-                        {person.lastEdited
-                          ? new Date(person.lastEdited).toLocaleDateString()
-                          : person.statusLastUpdated
-                            ? new Date(
-                                person.statusLastUpdated
-                              ).toLocaleDateString()
-                            : ""}
+                    {/* Show last updated when "Last Updated" sort is active */}
+                    {order === "Last Updated" &&
+                      (person.lastEdited || person.statusLastUpdated) && (
+                        <span className="text-xs text-gray-500">
+                          {person.lastEdited
+                            ? new Date(person.lastEdited).toLocaleDateString()
+                            : person.statusLastUpdated
+                              ? new Date(
+                                  person.statusLastUpdated
+                                ).toLocaleDateString()
+                              : ""}
+                        </span>
+                      )}
+                    {/* Show deposit paid badge when deposit filter is active */}
+                    {depositPaidFilter !== null && person.depositPaid && (
+                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="font-medium">Deposit</span>
+                        <span className="text-blue-600 font-semibold">✓</span>
                       </span>
                     )}
-                    <span
-                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
-                        person.status === "Yes"
-                          ? "bg-green-100 text-green-800"
-                          : person.status === "Maybe"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : person.status === "No"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {person.status}
-                    </span>
                   </div>
                 </div>
-                {/* Need info row */}
-                {personNeeds.length > 0 && (
+                {/* Need info row - show when need filter is active */}
+                {needFilter.size > 0 && personNeeds.length > 0 && (
                   <div className="mt-1 ml-4 flex flex-wrap gap-2">
                     {personNeeds.map(need => (
                       <span
@@ -1706,21 +1705,29 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                         )}
                       </span>
                     ))}
-                    {person.depositPaid && (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        <span className="font-medium">Deposit Paid</span>
-                        <span className="text-blue-600 font-semibold">✓</span>
-                      </span>
-                    )}
                   </div>
                 )}
-                {/* Show deposit paid even when no needs */}
-                {personNeeds.length === 0 && person.depositPaid && (
-                  <div className="mt-1 ml-4">
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                      <span className="font-medium">Deposit Paid</span>
-                      <span className="text-blue-600 font-semibold">✓</span>
-                    </span>
+                {/* Family & Guest info - show when family/guest filter is active */}
+                {familyGuestFilter.size > 0 && (
+                  <div className="mt-1 ml-4 flex flex-wrap gap-2">
+                    {person.spouseAttending && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                        Spouse
+                      </span>
+                    )}
+                    {person.childrenCount != null &&
+                      person.childrenCount > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                          {person.childrenCount}{" "}
+                          {person.childrenCount === 1 ? "Child" : "Children"}
+                        </span>
+                      )}
+                    {person.guestsCount != null && person.guestsCount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                        {person.guestsCount}{" "}
+                        {person.guestsCount === 1 ? "Guest" : "Guests"}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
