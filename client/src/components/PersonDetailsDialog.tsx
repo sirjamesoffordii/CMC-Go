@@ -1,6 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Person } from "../../../drizzle/schema";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -12,11 +18,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Checkbox } from "./ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BottomSheet } from "./ui/bottom-sheet";
+import { Trash2, ChevronDown } from "lucide-react";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PersonDetailsDialogProps {
   person: Person | null;
@@ -30,8 +39,7 @@ export function PersonDetailsDialog({
   onOpenChange,
 }: PersonDetailsDialogProps) {
   const utils = trpc.useUtils();
-  const { user, isAuthenticated } = useAuth();
-  // PR 2: Check if user is a leader (CO_DIRECTOR+)
+  const { user } = useAuth();
   const isLeader =
     user &&
     [
@@ -42,465 +50,695 @@ export function PersonDetailsDialog({
       "ADMIN",
     ].includes(user.role);
 
-  // Invite Notes state
-  const [inviteNoteText, setInviteNoteText] = useState("");
+  // Form state matching DistrictPanel's Edit Person dialog
+  const [formName, setFormName] = useState("");
+  const [formRole, setFormRole] = useState("");
+  const [formStatus, setFormStatus] = useState<
+    "Yes" | "Maybe" | "No" | "Not Invited"
+  >("Not Invited");
+  const [formSpouseAttending, setFormSpouseAttending] = useState(false);
+  const [formChildrenCount, setFormChildrenCount] = useState(0);
+  const [formGuestsCount, setFormGuestsCount] = useState(0);
+  const [formNeedType, setFormNeedType] = useState<
+    "None" | "Registration" | "Transportation" | "Housing" | "Other"
+  >("None");
+  const [formNeedAmount, setFormNeedAmount] = useState("");
+  const [formFundsReceived, setFormFundsReceived] = useState("");
+  const [formNeedDetails, setFormNeedDetails] = useState("");
+  const [formNeedsMet, setFormNeedsMet] = useState(false);
+  const [formNotes, setFormNotes] = useState("");
+  const [formDepositPaid, setFormDepositPaid] = useState(false);
+  const [familyGuestsExpanded, setFamilyGuestsExpanded] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
-  // Needs state
-  const [needType, setNeedType] = useState<
-    "Registration" | "Transportation" | "Housing" | "Other"
-  >("Registration");
-  const [needDescription, setNeedDescription] = useState("");
-  const [needAmount, setNeedAmount] = useState("");
-  const [needVisibility, setNeedVisibility] = useState<
-    "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE"
-  >("LEADERSHIP_ONLY");
-
-  // PR 2: Fetch invite notes (leaders-only endpoint)
-  const { data: inviteNotes = [] } = trpc.inviteNotes.byPerson.useQuery(
+  // Fetch person's needs
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
     { personId: person?.personId ?? "" },
     { enabled: !!person }
   );
 
-  const { data: needs = [] } = trpc.needs.byPerson.useQuery(
-    { personId: person?.personId ?? "" },
-    { enabled: !!person }
-  );
+  // Initialize form when person changes or dialog opens
+  useEffect(() => {
+    if (person && open) {
+      setFormName(person.name || "");
+      setFormRole(person.primaryRole || "");
+      setFormStatus(person.status || "Not Invited");
+      setFormSpouseAttending(person.spouseAttending || false);
+      setFormChildrenCount(person.childrenCount || 0);
+      setFormGuestsCount(person.guestsCount || 0);
+      setFormDepositPaid(person.depositPaid || false);
+      setFormNotes((person as Person & { notes?: string }).notes || "");
 
-  // PR 3: Fetch status history
-  const { data: statusHistoryData = [] } = trpc.people.statusHistory.useQuery(
-    { personId: person?.personId ?? "", limit: 10 },
-    { enabled: !!person && isAuthenticated }
-  );
+      // Pre-fill need from existing active need
+      const activeNeed = personNeeds.find(n => n.isActive);
+      if (activeNeed) {
+        setFormNeedType(
+          activeNeed.type as
+            | "Registration"
+            | "Transportation"
+            | "Housing"
+            | "Other"
+        );
+        setFormNeedAmount(
+          activeNeed.amount ? (activeNeed.amount / 100).toFixed(2) : ""
+        );
+        setFormFundsReceived(
+          activeNeed.fundsReceived
+            ? (activeNeed.fundsReceived / 100).toFixed(2)
+            : ""
+        );
+        setFormNeedDetails(activeNeed.description || "");
+        setFormNeedsMet(false);
+      } else {
+        setFormNeedType("None");
+        setFormNeedAmount("");
+        setFormFundsReceived("");
+        setFormNeedDetails("");
+        setFormNeedsMet(personNeeds.some(n => !n.isActive));
+      }
+      setFamilyGuestsExpanded(
+        person.spouseAttending ||
+          false ||
+          (person.childrenCount || 0) > 0 ||
+          (person.guestsCount || 0) > 0
+      );
+    }
+  }, [person, open, personNeeds]);
 
   // Mutations
-  // PR 2: Create invite note (leaders-only)
-  const createInviteNote = trpc.inviteNotes.create.useMutation({
+  const updatePerson = trpc.people.update.useMutation({
     onSuccess: () => {
-      utils.inviteNotes.byPerson.invalidate({
-        personId: person?.personId ?? "",
-      });
       utils.people.list.invalidate();
-      setInviteNoteText("");
+      utils.needs.listAll.invalidate();
+      utils.needs.listActive.invalidate();
+      toast.success("Person updated");
+      onOpenChange(false);
+    },
+    onError: error => {
+      console.error("Error updating person:", error);
+      toast.error(`Failed to update: ${error.message || "Unknown error"}`);
     },
   });
 
-  const createNeed = trpc.needs.create.useMutation({
+  const deletePerson = trpc.people.delete.useMutation({
     onSuccess: () => {
-      utils.needs.byPerson.invalidate({ personId: person?.personId ?? "" });
-      utils.needs.listActive.invalidate();
-      utils.followUp.list.invalidate();
       utils.people.list.invalidate();
-      setNeedDescription("");
-      setNeedAmount("");
-      setNeedVisibility("LEADERSHIP_ONLY");
+      toast.success("Person deleted");
+      onOpenChange(false);
+    },
+    onError: error => {
+      console.error("Error deleting person:", error);
+      toast.error(`Failed to delete: ${error.message || "Unknown error"}`);
     },
   });
 
-  const toggleNeedActive = trpc.needs.toggleActive.useMutation({
+  const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
     onSuccess: () => {
-      utils.needs.byPerson.invalidate({ personId: person?.personId ?? "" });
+      utils.needs.listAll.invalidate();
       utils.needs.listActive.invalidate();
-      utils.followUp.list.invalidate();
+      utils.needs.byPerson.invalidate({ personId: person?.personId ?? "" });
+    },
+    onError: error => {
+      console.error("Error updating need:", error);
+      toast.error(`Failed to update need: ${error.message || "Unknown error"}`);
     },
   });
 
-  const updateNeedVisibility = trpc.needs.updateVisibility.useMutation({
+  const createNote = trpc.notes.create.useMutation({
     onSuccess: () => {
-      utils.needs.byPerson.invalidate({ personId: person?.personId ?? "" });
-      utils.needs.listActive.invalidate();
+      utils.notes.byPerson.invalidate();
+    },
+    onError: error => {
+      console.error("Error creating note:", error);
     },
   });
 
-  const handleAddInviteNote = () => {
-    if (!person || !inviteNoteText.trim()) return;
-    createInviteNote.mutate({
-      personId: person.personId,
-      content: inviteNoteText.trim(),
-    });
-  };
-
-  const handleAddNeed = () => {
-    if (!person || !needDescription.trim()) return;
-    const amount = needAmount ? parseFloat(needAmount) * 100 : undefined;
-    createNeed.mutate({
-      personId: person.personId,
-      type: needType,
-      description: needDescription.trim(),
-      amount,
-      visibility: needVisibility,
-    });
-  };
-
-  // CRITICAL: All hooks must be called before any conditional returns.
-  // React requires hooks to be called in the same order on every render.
-  // If we return early before calling useIsMobile(), the hook order changes
-  // between renders, causing "Rendered more hooks than during the previous render" error.
   const isMobile = useIsMobile();
 
-  // Early return guard - must be AFTER all hooks are declared
+  // Early return guard - AFTER all hooks
   if (!person) return null;
 
-  // Format status history
-  const statusHistoryDisplay = person.statusLastUpdated ? (
-    <div className="text-xs text-gray-500 mt-1">
-      Last updated: {new Date(person.statusLastUpdated).toLocaleDateString()}
-      {person.statusLastUpdatedBy && ` by ${person.statusLastUpdatedBy}`}
-    </div>
-  ) : null;
+  const handleUpdate = () => {
+    if (!formName.trim() || !formRole.trim()) {
+      toast.error("Name and role are required");
+      return;
+    }
 
-  const content = (
-    <div className="space-y-6 mt-4">
-      {/* Invite Section */}
+    updatePerson.mutate(
+      {
+        personId: person.personId,
+        name: formName.trim(),
+        primaryRole: formRole.trim(),
+        status: formStatus,
+        depositPaid: formDepositPaid,
+        notes: formNotes || undefined,
+        spouseAttending: formSpouseAttending,
+        childrenCount: formChildrenCount,
+        guestsCount: formGuestsCount,
+      },
+      {
+        onSuccess: () => {
+          // Handle need update
+          if (formNeedType !== "None") {
+            const amount = formNeedAmount
+              ? Math.round(parseFloat(formNeedAmount) * 100)
+              : undefined;
+            const fundsReceived = formFundsReceived
+              ? Math.round(parseFloat(formFundsReceived) * 100)
+              : undefined;
+            updateOrCreateNeed.mutate(
+              {
+                personId: person.personId,
+                type: formNeedType,
+                description: formNeedDetails || formNeedType,
+                amount,
+                fundsReceived,
+                isActive: !formNeedsMet,
+              },
+              {
+                onSuccess: () => {
+                  if (formNeedDetails.trim()) {
+                    createNote.mutate({
+                      personId: person.personId,
+                      category: "INTERNAL",
+                      content: `[${formNeedType}] ${formNeedDetails}`,
+                      noteType: "REQUEST",
+                    });
+                  }
+                },
+              }
+            );
+          } else {
+            // Deactivate any active need if need type set to None
+            const activeNeed = personNeeds.find(n => n.isActive);
+            if (activeNeed) {
+              updateOrCreateNeed.mutate({
+                personId: person.personId,
+                type: activeNeed.type,
+                description: activeNeed.description || "",
+                isActive: false,
+              });
+            }
+          }
+        },
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    const skipConfirmation =
+      localStorage.getItem("skipDeletePersonConfirmation") === "true";
+    if (skipConfirmation) {
+      deletePerson.mutate({ personId: person.personId });
+    } else {
+      setIsDeleteConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    deletePerson.mutate({ personId: person.personId });
+    setIsDeleteConfirmOpen(false);
+  };
+
+  const formContent = (
+    <div className="space-y-6 py-4">
+      {/* Basic Information */}
       <div className="space-y-4">
         <div className="border-b border-slate-200 pb-2">
-          <h3 className="text-sm font-semibold text-slate-700">Invite</h3>
+          <h3 className="text-sm font-semibold text-slate-700">
+            Basic Information
+          </h3>
         </div>
-
-        {/* Invite Status + History */}
-        <div className="p-3 bg-slate-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-sm font-medium">Status: </span>
-              <span className="text-sm font-semibold">{person.status}</span>
-            </div>
-            {person.depositPaid && (
-              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                Deposit Paid
-              </span>
-            )}
-          </div>
-          {statusHistoryDisplay}
-        </div>
-
-        {/* PR 3: Status History */}
-        {isAuthenticated && statusHistoryData.length > 0 && (
+        <div className="grid grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Status History</Label>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {statusHistoryData.map(change => (
-                <div
-                  key={change.id}
-                  className="p-2 bg-white border border-gray-200 rounded text-xs"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {change.fromStatus || "Initial"} → {change.toStatus}
-                      </span>
-                      {change.source && (
-                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                          {change.source}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-gray-500">
-                      {new Date(change.changedAt).toLocaleString()}
-                    </span>
-                  </div>
-                  {change.note && (
-                    <div className="text-gray-600 mt-1 italic">
-                      {change.note}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Invite Notes (Leaders Only) */}
-        {isLeader && (
-          <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Invite Notes (Leaders Only)</Label>
-            <Textarea
-              placeholder="Enter invite note..."
-              value={inviteNoteText}
-              onChange={e => setInviteNoteText(e.target.value)}
-              rows={3}
+            <Label htmlFor="pd-name">Full Name *</Label>
+            <Input
+              id="pd-name"
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
+              placeholder="Enter full name"
             />
-            <Button
-              onClick={handleAddInviteNote}
-              disabled={!inviteNoteText.trim()}
-            >
-              Add Note
-            </Button>
           </div>
-        )}
-
-        {/* Invite Notes List */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Invite Notes</Label>
-          {inviteNotes.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">
-              No invite notes yet
-            </p>
-          ) : (
-            inviteNotes.map(note => (
-              <div
-                key={note.id}
-                className="p-3 bg-white border border-gray-200 rounded"
-              >
-                <p className="text-sm text-gray-900">{note.content}</p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  <span>{new Date(note.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))
-          )}
+          <div className="space-y-2">
+            <Label htmlFor="pd-role">Role *</Label>
+            <Input
+              id="pd-role"
+              value={formRole}
+              onChange={e => setFormRole(e.target.value)}
+              placeholder="Enter role"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pd-status">Status</Label>
+            <Select
+              value={formStatus}
+              onValueChange={v => setFormStatus(v as typeof formStatus)}
+            >
+              <SelectTrigger id="pd-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Yes">Going (Yes)</SelectItem>
+                <SelectItem value="Maybe">Maybe</SelectItem>
+                <SelectItem value="No">Not Going (No)</SelectItem>
+                <SelectItem value="Not Invited">Not Invited Yet</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* Needs Section */}
-      <div className="space-y-4">
-        <div className="border-b border-slate-200 pb-2">
-          <h3 className="text-sm font-semibold text-slate-700">Needs</h3>
-        </div>
-
-        {/* Add Need Form (Leaders Only) */}
-        {isLeader && (
-          <div className="space-y-3 p-4 bg-gray-50 rounded-lg">
-            <Label>Add Need (Leaders Only)</Label>
-            <div className="space-y-3">
-              <div>
-                <Label className="text-sm">Type</Label>
-                <Select
-                  value={needType}
-                  onValueChange={v =>
-                    setNeedType(
-                      v as
-                        | "Registration"
-                        | "Transportation"
-                        | "Housing"
-                        | "Other"
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Registration">Registration</SelectItem>
-                    <SelectItem value="Transportation">
-                      Transportation
-                    </SelectItem>
-                    <SelectItem value="Housing">Housing</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+      {/* Family & Guests - collapsible */}
+      <div className="border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setFamilyGuestsExpanded(!familyGuestsExpanded)}
+          className="flex items-center gap-2 py-2 text-left hover:bg-slate-50 rounded px-1 -ml-1 transition-colors"
+        >
+          <h3 className="text-sm font-semibold text-slate-700">
+            Family & Guests (optional)
+          </h3>
+          <ChevronDown
+            className={`h-4 w-4 text-slate-500 shrink-0 transition-transform ${familyGuestsExpanded ? "rotate-180" : ""}`}
+            aria-hidden
+          />
+        </button>
+        {familyGuestsExpanded && (
+          <div className="pt-4 pb-2">
+            <div className="grid grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label htmlFor="pd-spouse" className="text-sm font-medium">
+                  Spouse attending
+                </Label>
+                <div className="flex items-center min-h-9">
+                  <Checkbox
+                    id="pd-spouse"
+                    checked={formSpouseAttending}
+                    onCheckedChange={checked =>
+                      setFormSpouseAttending(checked === true)
+                    }
+                    className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700 h-4 w-4 shrink-0"
+                  />
+                </div>
               </div>
-              <div>
-                <Label className="text-sm">Funds Needed ($)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="pd-children">Children attending</Label>
                 <Input
+                  id="pd-children"
                   type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={needAmount}
-                  onChange={e => setNeedAmount(e.target.value)}
+                  min="0"
+                  max="10"
+                  value={formChildrenCount === 0 ? "" : formChildrenCount}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setFormChildrenCount(0);
+                      return;
+                    }
+                    setFormChildrenCount(
+                      Math.max(0, Math.min(10, parseInt(raw, 10) || 0))
+                    );
+                  }}
+                  placeholder="0"
+                  className="w-24"
                 />
               </div>
-              <div>
-                <Label className="text-sm">Description *</Label>
-                <Textarea
-                  placeholder="Describe the need..."
-                  value={needDescription}
-                  onChange={e => setNeedDescription(e.target.value)}
-                  rows={2}
+              <div className="space-y-2">
+                <Label htmlFor="pd-guests">Guests attending</Label>
+                <Input
+                  id="pd-guests"
+                  type="number"
+                  min="0"
+                  max="10"
+                  value={formGuestsCount === 0 ? "" : formGuestsCount}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    if (raw === "") {
+                      setFormGuestsCount(0);
+                      return;
+                    }
+                    setFormGuestsCount(
+                      Math.max(0, Math.min(10, parseInt(raw, 10) || 0))
+                    );
+                  }}
+                  placeholder="0"
+                  className="w-24"
                 />
               </div>
-              <div>
-                <Label className="text-sm mb-2 block">Visibility</Label>
-                <RadioGroup
-                  value={needVisibility}
-                  onValueChange={v =>
-                    setNeedVisibility(
-                      v as "LEADERSHIP_ONLY" | "DISTRICT_VISIBLE"
-                    )
-                  }
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="LEADERSHIP_ONLY"
-                      id="leadership-only"
-                    />
-                    <Label
-                      htmlFor="leadership-only"
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      Leadership only (default)
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value="DISTRICT_VISIBLE"
-                      id="district-visible"
-                    />
-                    <Label
-                      htmlFor="district-visible"
-                      className="text-sm font-normal cursor-pointer"
-                    >
-                      District visible
-                    </Label>
-                  </div>
-                </RadioGroup>
-                <p className="text-xs text-gray-500 mt-1">
-                  Use district visible for logistics or practical help the
-                  district can act on.
-                </p>
-              </div>
-              <Button
-                onClick={handleAddNeed}
-                className="w-full"
-                disabled={!needDescription.trim()}
-              >
-                Add Need
-              </Button>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Needs List */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Needs List</Label>
-          {needs.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">
-              No needs yet
-            </p>
-          ) : (
-            needs.map(need => (
-              <div
-                key={need.id}
-                className={`p-3 border rounded ${
-                  need.isActive
-                    ? "bg-white border-gray-200"
-                    : "bg-gray-50 border-gray-300 opacity-60"
-                }`}
+      {/* Need, Funds Needed, Funds Received */}
+      <div className="space-y-4 mt-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="space-y-2 w-40">
+            <Label htmlFor="pd-need">Need</Label>
+            <Select
+              value={formNeedType}
+              onValueChange={v => {
+                setFormNeedType(v as typeof formNeedType);
+                if (v === "None") {
+                  setFormNeedAmount("");
+                  setFormFundsReceived("");
+                  setFormNeedDetails("");
+                }
+              }}
+            >
+              <SelectTrigger id="pd-need">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="None">None</SelectItem>
+                <SelectItem value="Registration">Registration</SelectItem>
+                <SelectItem value="Transportation">Transportation</SelectItem>
+                <SelectItem value="Housing">Housing</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <AnimatePresence mode="popLayout">
+            {formNeedType !== "None" && (
+              <motion.div
+                key="amount"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-2 w-40"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm">{need.type}</span>
-                      {need.amount && (
-                        <span className="text-sm text-gray-700">
-                          ${(need.amount / 100).toFixed(2)}
-                        </span>
-                      )}
-                      {need.visibility && (
-                        <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                          {need.visibility}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {need.description}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(need.createdAt).toLocaleDateString()}
-                      {need.resolvedAt && !need.isActive && (
-                        <span className="ml-2">
-                          • Resolved{" "}
-                          {new Date(need.resolvedAt).toLocaleDateString()}
-                        </span>
-                      )}
-                    </p>
-                    {isLeader && need.visibility && (
-                      <div className="mt-2">
-                        <Label className="text-xs mb-1 block">Visibility</Label>
-                        <RadioGroup
-                          value={need.visibility}
-                          onValueChange={v =>
-                            updateNeedVisibility.mutate({
-                              needId: need.id,
-                              visibility: v as
-                                | "LEADERSHIP_ONLY"
-                                | "DISTRICT_VISIBLE",
-                            })
-                          }
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="LEADERSHIP_ONLY"
-                              id={`leadership-only-${need.id}`}
-                            />
-                            <Label
-                              htmlFor={`leadership-only-${need.id}`}
-                              className="text-xs font-normal cursor-pointer"
-                            >
-                              Leadership only
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem
-                              value="DISTRICT_VISIBLE"
-                              id={`district-visible-${need.id}`}
-                            />
-                            <Label
-                              htmlFor={`district-visible-${need.id}`}
-                              className="text-xs font-normal cursor-pointer"
-                            >
-                              District visible
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        toggleNeedActive.mutate({
-                          needId: need.id,
-                          isActive: !need.isActive,
-                        })
-                      }
-                    >
-                      {need.isActive ? "Resolve" : "Activate"}
-                    </Button>
-                  </div>
+                <Label htmlFor="pd-funds-needed">Funds Needed</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                    $
+                  </span>
+                  <Input
+                    id="pd-funds-needed"
+                    type="number"
+                    step="0.01"
+                    value={formNeedAmount}
+                    onChange={e => setFormNeedAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7 w-28"
+                  />
                 </div>
-              </div>
-            ))
-          )}
+              </motion.div>
+            )}
+            {formNeedType !== "None" && (
+              <motion.div
+                key="funds-received"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+                className="space-y-2 w-40"
+              >
+                <Label htmlFor="pd-funds-received">Funds Received</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                    $
+                  </span>
+                  <Input
+                    id="pd-funds-received"
+                    type="number"
+                    step="0.01"
+                    value={formFundsReceived}
+                    onChange={e => setFormFundsReceived(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7 w-28"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
+
+      {/* Need Note + Journey Notes - side by side when need selected */}
+      <motion.div
+        layout
+        transition={{ duration: 0.5, ease: "easeInOut" }}
+        className={`space-y-4 mt-4 grid gap-4 overflow-hidden ${formNeedType !== "None" ? "grid-cols-[1fr_1fr]" : "grid-cols-1"}`}
+      >
+        <AnimatePresence mode="popLayout">
+          {formNeedType !== "None" && (
+            <motion.div
+              key="need-note"
+              initial={{ opacity: 0, x: -120 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -120 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="space-y-4 min-w-0 w-full"
+            >
+              <div className="border-b border-slate-200 pb-2">
+                <h3 className="text-sm font-semibold text-slate-700">
+                  Need Note
+                </h3>
+              </div>
+              <div className="space-y-2 min-w-0">
+                <Textarea
+                  id="pd-need-notes"
+                  value={formNeedDetails}
+                  onChange={e => setFormNeedDetails(e.target.value)}
+                  placeholder="Enter notes about the need"
+                  rows={4}
+                  className="resize-none w-full min-w-0"
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <Checkbox
+                  id="pd-needs-met"
+                  checked={formNeedsMet}
+                  onCheckedChange={checked => setFormNeedsMet(checked === true)}
+                  className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                />
+                <Label
+                  htmlFor="pd-needs-met"
+                  className="cursor-pointer text-sm font-medium"
+                >
+                  Needs Met
+                </Label>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Journey Notes */}
+        <motion.div
+          layout
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+          className="space-y-4 min-w-0 w-full"
+        >
+          <div className="border-b border-slate-200 pb-2">
+            <h3 className="text-sm font-semibold text-slate-700">
+              Journey Notes
+            </h3>
+          </div>
+          <div className="space-y-2 min-w-0">
+            <Textarea
+              id="pd-notes"
+              value={formNotes}
+              onChange={e => setFormNotes(e.target.value)}
+              placeholder="Enter journey notes"
+              rows={4}
+              className="resize-none w-full min-w-0"
+            />
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
+  );
+
+  const footer = (
+    <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
+      {/* Trash - far left */}
+      {isLeader && (
+        <button
+          onClick={handleDelete}
+          disabled={deletePerson.isPending}
+          className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          title="Delete person"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Right side: Deposit paid, Cancel, Update */}
+      <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-2">
+          <Label
+            htmlFor="pd-deposit-paid"
+            className="cursor-pointer text-sm font-medium"
+          >
+            Deposit paid
+          </Label>
+          <Checkbox
+            id="pd-deposit-paid"
+            checked={formDepositPaid}
+            onCheckedChange={checked => setFormDepositPaid(checked === true)}
+            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+          />
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+        >
+          Cancel
+        </Button>
+
+        <Button
+          type="button"
+          onClick={handleUpdate}
+          disabled={
+            updatePerson.isPending || !formName.trim() || !formRole.trim()
+          }
+          className="bg-black text-white hover:bg-red-600"
+        >
+          {updatePerson.isPending ? "Updating..." : "Update Person"}
+        </Button>
+      </div>
+    </DialogFooter>
   );
 
   if (isMobile) {
     return (
-      <BottomSheet
-        open={open}
-        onOpenChange={onOpenChange}
-        title={person.name || person.personId || "Person Details"}
-        defaultSnap={1}
-        snapPoints={[25, 60, 90]}
-      >
-        <div className="px-4 pb-4">
-          <p className="text-sm text-gray-600 mb-4">
-            {person.primaryRole && <>{person.primaryRole} • </>}
-            Status: <span className="font-semibold">{person.status}</span>
-          </p>
-          {content}
-        </div>
-      </BottomSheet>
+      <>
+        <BottomSheet
+          open={open}
+          onOpenChange={onOpenChange}
+          title="Edit Person"
+          defaultSnap={1}
+          snapPoints={[25, 60, 90]}
+        >
+          <div className="px-4 pb-4">
+            {formContent}
+            <div className="mt-4 flex items-center justify-between gap-2">
+              {isLeader && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deletePerson.isPending}
+                  className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700"
+                  title="Delete person"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="pd-deposit-m" className="text-sm">
+                    Deposit paid
+                  </Label>
+                  <Checkbox
+                    id="pd-deposit-m"
+                    checked={formDepositPaid}
+                    onCheckedChange={checked =>
+                      setFormDepositPaid(checked === true)
+                    }
+                    className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleUpdate}
+                  disabled={
+                    updatePerson.isPending ||
+                    !formName.trim() ||
+                    !formRole.trim()
+                  }
+                  className="bg-black text-white hover:bg-red-600"
+                >
+                  {updatePerson.isPending ? "Updating..." : "Update"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </BottomSheet>
+
+        {/* Delete confirmation */}
+        {isDeleteConfirmOpen && (
+          <Dialog
+            open={isDeleteConfirmOpen}
+            onOpenChange={setIsDeleteConfirmOpen}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Person</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete {person.name || "this person"}?
+                This action cannot be undone.
+              </p>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button variant="destructive" onClick={handleConfirmDelete}>
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+      </>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {person.name || person.personId || "Person Details"}
-          </DialogTitle>
-          <p className="text-sm text-gray-600">
-            {person.primaryRole && <>{person.primaryRole} • </>}
-            Status: <span className="font-semibold">{person.status}</span>
-          </p>
-        </DialogHeader>
-        {content}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          aria-describedby={undefined}
+          className="max-w-2xl max-h-[85vh] overflow-y-auto"
+        >
+          <DialogHeader>
+            <DialogTitle>Edit Person</DialogTitle>
+          </DialogHeader>
+          {formContent}
+          {footer}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      {isDeleteConfirmOpen && (
+        <Dialog
+          open={isDeleteConfirmOpen}
+          onOpenChange={setIsDeleteConfirmOpen}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Person</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-gray-600">
+              Are you sure you want to delete {person.name || "this person"}?
+              This action cannot be undone.
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
+                Delete
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
   );
 }

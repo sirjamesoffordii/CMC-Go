@@ -3900,8 +3900,8 @@ export function DistrictPanel({
 
                   {/* Need, Funds Needed */}
                   <div className="space-y-4 mt-4">
-                    <div className="flex flex-wrap items-start gap-4">
-                      <div className="space-y-2 w-40">
+                    <div className="flex items-start gap-4 flex-nowrap">
+                      <div className="space-y-2 w-32">
                         <Label htmlFor="person-need">Need</Label>
                         <Select
                           value={personForm.needType}
@@ -3946,7 +3946,7 @@ export function DistrictPanel({
                             transition={{ duration: 0.2 }}
                             className="flex items-start gap-4"
                           >
-                            <div className="space-y-2 w-40">
+                            <div className="space-y-2 w-32">
                               <Label htmlFor="person-need-amount">
                                 Funds Needed ($)
                               </Label>
@@ -4587,8 +4587,8 @@ export function DistrictPanel({
 
                 {/* Need, Funds Needed */}
                 <div className="space-y-4 mt-4">
-                  <div className="flex flex-wrap items-start gap-4">
-                    <div className="space-y-2 w-40">
+                  <div className="flex items-start gap-4 flex-nowrap">
+                    <div className="space-y-2 w-32">
                       <Label htmlFor="edit-person-need">Need</Label>
                       <Select
                         value={personForm.needType}
@@ -4633,7 +4633,7 @@ export function DistrictPanel({
                           transition={{ duration: 0.2 }}
                           className="flex items-start gap-4"
                         >
-                          <div className="space-y-2 w-40">
+                          <div className="space-y-2 w-32">
                             <Label htmlFor="edit-person-need-amount">
                               Funds Needed ($)
                             </Label>
@@ -4653,11 +4653,11 @@ export function DistrictPanel({
                                   })
                                 }
                                 placeholder="0.00"
-                                className="pl-7 w-28"
+                                className="pl-7 w-24"
                               />
                             </div>
                           </div>
-                          <div className="space-y-2 w-40">
+                          <div className="space-y-2 w-32">
                             <Label htmlFor="edit-person-funds-received-amount">
                               Funds Received ($)
                             </Label>
@@ -4677,7 +4677,7 @@ export function DistrictPanel({
                                   })
                                 }
                                 placeholder="0.00"
-                                className="pl-7 w-28"
+                                className="pl-7 w-24"
                               />
                             </div>
                           </div>
