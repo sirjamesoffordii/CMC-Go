@@ -224,7 +224,7 @@ export default function People() {
       utils.metrics.allRegions.invalidate();
       utils.followUp.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to update status");
     },
   });
@@ -235,7 +235,7 @@ export default function People() {
       setIsEditCampusDialogOpen(false);
       setCampusForm({ name: "" });
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to rename campus");
     },
   });
@@ -684,23 +684,25 @@ export default function People() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-3 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <Button
             variant="ghost"
             onClick={() => setLocation("/")}
-            className="mb-4"
+            className="mb-3 sm:mb-4 min-h-[44px]"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Map
           </Button>
 
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">People</h1>
-              <p className="text-gray-600 mt-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                People
+              </h1>
+              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
                 Hierarchical list view of all districts, campuses, and people
               </p>
             </div>
@@ -711,20 +713,20 @@ export default function People() {
                 variant="outline"
                 size="sm"
                 onClick={handleExportCsv}
-                className="bg-white"
+                className="bg-white min-h-[44px]"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export CSV</span>
               </Button>
               <div className="relative">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSearchOpen(!searchOpen)}
-                  className="bg-white"
+                  className="bg-white min-h-[44px]"
                 >
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
+                  <Search className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Search</span>
                 </Button>
 
                 {searchOpen && (
@@ -733,7 +735,7 @@ export default function People() {
                       className="fixed inset-0 z-40"
                       onClick={() => setSearchOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
+                    <div className="fixed left-3 right-3 top-[140px] sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 w-auto sm:w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-3">
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <Input
@@ -766,8 +768,8 @@ export default function People() {
         </div>
 
         {/* Filters: Scope, Order, Sort by (3 dropdowns only) */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 mb-4 sm:mb-6">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* 1. Scope */}
             <div className="relative">
               <button
@@ -892,7 +894,7 @@ export default function People() {
                     className="fixed inset-0 z-40"
                     onClick={() => setSortByOpen(false)}
                   />
-                  <div className="absolute left-0 top-full mt-1 w-72 max-h-[80vh] overflow-y-auto bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                  <div className="fixed inset-x-3 top-auto bottom-0 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-1 w-auto sm:w-72 max-h-[70vh] sm:max-h-[80vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                       Status
                     </div>

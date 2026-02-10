@@ -12,12 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Upload,
-  FileText,
-  AlertCircle,
-  Download,
-} from "lucide-react";
+import { Upload, FileText, AlertCircle, Download } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
@@ -130,7 +125,7 @@ export default function Import() {
   };
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-4xl py-4 sm:py-8 px-4 sm:px-6">
       <Card>
         <CardHeader>
           <CardTitle>Import People from CSV</CardTitle>

@@ -2,10 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Hand, DollarSign, MapPin, User, CheckCircle } from "lucide-react";
@@ -65,7 +62,7 @@ export default function Needs() {
       utils.followUp.list.invalidate();
       utils.people.list.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       setResolvingNeedId(null);
       toast.error(error.message || "Failed to update need status");
     },
@@ -88,18 +85,18 @@ export default function Needs() {
   }
 
   return (
-    <div className="container max-w-6xl py-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="container max-w-6xl py-4 sm:py-8 px-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-3xl font-bold">District Needs</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold">District Needs</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
             District-visible requests that can be mobilized by the community
           </p>
         </div>
         <Button
           onClick={() => setLocation("/")}
           variant="outline"
-          className="text-black hover:bg-red-600 hover:text-white"
+          className="text-black hover:bg-red-600 hover:text-white self-start sm:self-auto min-h-[44px]"
         >
           Back to Map
         </Button>
@@ -123,28 +120,28 @@ export default function Needs() {
         <div className="grid gap-4">
           {enrichedNeeds.map(item => (
             <Card key={item.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-3">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+                  <div className="flex-1 space-y-2 sm:space-y-3 min-w-0">
                     {/* Person & Campus Info */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-gray-500" />
-                        <span className="font-semibold text-lg">
+                        <User className="h-4 w-4 text-gray-500 shrink-0" />
+                        <span className="font-semibold text-base sm:text-lg truncate">
                           {item.person?.name}
                         </span>
                       </div>
                       {item.campus && (
                         <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <MapPin className="h-3 w-3" />
-                          <span>{item.campus.name}</span>
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{item.campus.name}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Need Details */}
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="capitalize">
                           {item.type}
                         </Badge>
@@ -155,19 +152,21 @@ export default function Needs() {
                           </div>
                         )}
                       </div>
-                      <p className="text-gray-700">{item.description}</p>
+                      <p className="text-gray-700 text-sm sm:text-base">
+                        {item.description}
+                      </p>
                     </div>
                   </div>
 
                   {/* Quick Actions */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex sm:flex-col gap-2">
                     {isLeader && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleResolveNeed(item.id)}
                         disabled={resolvingNeedId === item.id}
-                        className="touch-target"
+                        className="touch-target flex-1 sm:flex-initial min-h-[44px]"
                       >
                         {resolvingNeedId === item.id ? (
                           <>
@@ -191,7 +190,7 @@ export default function Needs() {
                           setDialogOpen(true);
                         }
                       }}
-                      className="touch-target"
+                      className="touch-target flex-1 sm:flex-initial min-h-[44px]"
                     >
                       View Person
                     </Button>
