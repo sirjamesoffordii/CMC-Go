@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useMemo, memo, useCallback } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
@@ -493,7 +493,7 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   Wyoming: { x: 377, y: 195 },
 };
 
-export function InteractiveMap({
+export const InteractiveMap = memo(function InteractiveMap({
   districts,
   selectedDistrictId,
   onDistrictSelect,
@@ -1090,10 +1090,10 @@ export function InteractiveMap({
     const BASE_FILTER = "drop-shadow(0 1px 2px rgba(0,0,0,0.08))";
     // Hovered district - brighter with almost no glow (tiny shadow)
     const HOVER_FILTER =
-      "brightness(1.35) saturate(1.06) drop-shadow(0 1px 2px rgba(0,0,0,0.18))";
-    // Other districts in same region on hover - slight brightness, no noticeable glow
+      "brightness(1.55) saturate(1.1) drop-shadow(0 2px 4px rgba(0,0,0,0.22))";
+    // Other districts in same region on hover - noticeable brightness boost
     const REGION_HOVER_FILTER =
-      "brightness(1.16) saturate(1.03) drop-shadow(0 1px 1px rgba(0,0,0,0.12))";
+      "brightness(1.3) saturate(1.06) drop-shadow(0 1px 2px rgba(0,0,0,0.15))";
     // Selected district - modest step above hover, still very tight shadow
     const SELECTED_FILTER =
       "brightness(1.45) saturate(1.08) drop-shadow(0 2px 3px rgba(0,0,0,0.2))";
@@ -1783,7 +1783,7 @@ export function InteractiveMap({
           <div className="absolute top-4 right-2 z-50 flex flex-col items-end gap-0.5 bg-transparent">
           <div className="flex items-center justify-end">
             <span
-              className="font-beach text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-6"
+              className="font-beach text-3xl sm:text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-2 sm:mr-6"
               style={{
                 transform: "scaleX(1.08)",
                 transformOrigin: "right center",
@@ -2095,13 +2095,13 @@ export function InteractiveMap({
         </div>
 
         {/* Top Left Invited / Total + Needs */}
-        <div className="absolute top-4 left-4 z-40 flex flex-col items-start gap-2">
+        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-40 flex flex-col items-start gap-1 sm:gap-2">
           <div
             className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
           >
             <span
-              className="text-4xl font-semibold text-slate-900 whitespace-nowrap tracking-tight"
+              className="text-2xl sm:text-4xl font-semibold text-slate-900 whitespace-nowrap tracking-tight"
               style={{
                 lineHeight: "1",
                 textAlign: "left",
@@ -2114,11 +2114,11 @@ export function InteractiveMap({
               className="flex items-baseline gap-2 tabular-nums"
               style={{ lineHeight: "1" }}
             >
-              <span className="text-4xl font-bold text-slate-900 tracking-tight">
+              <span className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.invited}
               </span>
-              <span className="text-xl font-normal text-slate-400">/</span>
-              <span className="text-lg font-normal text-slate-400 tracking-tight">
+              <span className="text-lg sm:text-xl font-normal text-slate-400">/</span>
+              <span className="text-base sm:text-lg font-normal text-slate-400 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.total}
               </span>
             </div>
@@ -2173,7 +2173,7 @@ export function InteractiveMap({
           ref={visualContainerRef}
           className="absolute inset-0 pointer-events-none z-10"
           style={{
-            filter: "blur(0.3px) brightness(0.6)", // Slightly darker map with same subtle blur
+            filter: "blur(0.3px) brightness(0.82)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
               ? "scale(1.05)" // Larger scale when panel open
               : "scale(1)", // Normal scale, centered
@@ -2495,4 +2495,4 @@ export function InteractiveMap({
       {renderTooltip()}
     </div>
   );
-}
+});

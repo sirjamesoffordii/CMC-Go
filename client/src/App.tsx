@@ -11,12 +11,14 @@ import People from "./pages/People";
 import { Login } from "./pages/Login";
 import EventInfo from "./pages/EventInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
-import AdminConsole from "./pages/AdminConsole";
-import Approvals from "./pages/Approvals";
-import Import from "./pages/Import";
-import Needs from "./pages/Needs";
-import FollowUpView from "./pages/FollowUpView";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+
+// Lazy-load less-used routes for smaller initial bundle
+const AdminConsole = lazy(() => import("./pages/AdminConsole"));
+const Approvals = lazy(() => import("./pages/Approvals"));
+const Import = lazy(() => import("./pages/Import"));
+const Needs = lazy(() => import("./pages/Needs"));
+const FollowUpView = lazy(() => import("./pages/FollowUpView"));
 
 function AppAuthRedirect() {
   const [, setLocation] = useLocation();
@@ -52,6 +54,7 @@ function AppAuthRedirect() {
 
 function Router() {
   return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-gray-400 text-sm">Loading...</div></div>}>
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
@@ -67,6 +70,7 @@ function Router() {
       <Route path="/app-auth" component={AppAuthRedirect} />
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 
