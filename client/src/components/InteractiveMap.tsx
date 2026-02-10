@@ -1631,7 +1631,7 @@ export function InteractiveMap({
         }}
       >
         <div
-          className="text-gray-800 mb-3"
+          className="text-gray-800 mb-3 flex items-baseline justify-between gap-2"
           style={{
             fontSize: "18px",
             fontWeight: 500,
@@ -1644,18 +1644,21 @@ export function InteractiveMap({
             ).length;
             return (
               <>
-                {getDistrictDisplayName(hoveredDistrict)}
-                {campusCount > 0 && (
-                  <span
-                    className="text-gray-600 ml-1"
-                    style={{ fontSize: "18px", fontWeight: 400 }}
-                  >
-                    ({campusCount} {campusCount === 1 ? "campus" : "campuses"})
-                  </span>
-                )}
+                <span>
+                  {getDistrictDisplayName(hoveredDistrict)}
+                  {campusCount > 0 && (
+                    <span
+                      className="text-gray-600 ml-1"
+                      style={{ fontSize: "18px", fontWeight: 400 }}
+                    >
+                      ({campusCount} {campusCount === 1 ? "campus" : "campuses"}
+                      )
+                    </span>
+                  )}
+                </span>
                 {stats.total > 0 && (
                   <span
-                    className="text-gray-700 ml-2 tabular-nums"
+                    className="text-gray-700 tabular-nums"
                     style={{ fontSize: "18px", fontWeight: 500 }}
                   >
                     {stats.total}
