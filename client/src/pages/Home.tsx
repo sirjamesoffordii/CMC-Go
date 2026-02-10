@@ -1292,10 +1292,10 @@ export default function Home() {
                 <span className="whitespace-nowrap select-none">Table</span>
               </button>
             ) : (
-              /* Desktop: Slide-out tab on right edge */
+              /* Desktop: Slide-out tab on right edge (original position) */
               <div
-                className="fixed -translate-y-1/2 z-30 group pr-16"
-                style={{ right: 0, top: "calc(50% + 22px)" }}
+                className="fixed -translate-y-1/2 z-30 pr-16"
+                style={{ right: 0, top: "calc(50% + 36px)" }}
               >
                 <button
                   onClick={() => {
@@ -1306,7 +1306,7 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] group-hover:translate-x-[86%] text-left
+                    relative bg-black hover:bg-red-700 text-white w-[200px] py-3.5 pl-5 pr-6 rounded-full font-medium text-sm backdrop-blur-sm transition-transform duration-600 ease-out touch-target translate-x-[92%] hover:translate-x-[86%] text-left
                     ${!user ? "opacity-70" : ""}
                   `}
                 >

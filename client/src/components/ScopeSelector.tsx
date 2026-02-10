@@ -96,7 +96,10 @@ export function ScopeSelector({
     !!userRegionId;
   const isRegionScoped =
     userRegionId && (userScopeLevel !== "NATIONAL" || isRegionalDirector);
-  const regionsToShow = isRegionScoped ? [userRegionId] : ALL_REGIONS;
+  // Exclude "National Team" from the dropdown — XAN is accessed via the map icon
+  const regionsToShow = isRegionScoped
+    ? [userRegionId]
+    : ALL_REGIONS.filter(r => r !== "National Team");
   // Regional Directors/Staff CAN see National view (they have viewLevel NATIONAL)
   const showNationalOption = !isRegionScoped || isRegionalDirector;
 
@@ -173,7 +176,9 @@ export function ScopeSelector({
         className={`flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${className}`}
       >
         <Globe className="h-4 w-4 shrink-0" />
-        <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-[200px]">{getDisplayLabel()}</span>
+        <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-[200px]">
+          {getDisplayLabel()}
+        </span>
         <ChevronDown
           className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
@@ -382,7 +387,6 @@ export function useScopeFilter() {
       localStorage.setItem("cmc-scope-region", userRegionId);
       localStorage.removeItem("cmc-scope-district");
     }
-     
   }, [user?.regionId, user?.overseeRegionId, user?.role, userScopeLevel]);
 
   return {

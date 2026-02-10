@@ -111,7 +111,7 @@ export function BottomSheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => onOpenChange(false)}
-            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
             aria-hidden="true"
           />
 
@@ -131,7 +131,7 @@ export function BottomSheet({
             onDrag={handleDrag}
             onDragEnd={handleDragEnd}
             className={cn(
-              "fixed left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl md:hidden",
+              "fixed left-0 right-0 z-[60] bg-white rounded-t-3xl shadow-2xl md:hidden",
               "flex flex-col",
               className
             )}
