@@ -1442,23 +1442,28 @@ export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };
 
-  // Derive region from districts table via primaryDistrictId JOIN,
-  // falling back to people.primaryRegion for people without a district.
-  const effectiveRegion = sql<string>`COALESCE(${districts.region}, ${people.primaryRegion})`;
+  // Derive region from the effective district (same resolution as getAllDistrictMetrics).
+  // A person's district is: COALESCE(primaryDistrictId, campus.districtId).
+  // Then we look up that district's region. This keeps region counts consistent
+  // with district counts — no phantom people in a region without a district.
+  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+  const effectiveRegion = sql<string>`${districts.region}`;
   const regionFilter = sql`${effectiveRegion} = ${region}`;
 
   // Get total count separately to ensure we count ALL people in region
   const totalResult = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(people)
-    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .leftJoin(districts, eq(effectiveDistrictId, districts.id))
     .where(regionFilter);
   const total = Number(totalResult[0]?.count) || 0;
 
   const statusCounts = await db
     .select({ status: people.status, count: sql<number>`COUNT(*)` })
     .from(people)
-    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .leftJoin(districts, eq(effectiveDistrictId, districts.id))
     .where(regionFilter)
     .groupBy(people.status);
 
@@ -1636,11 +1641,13 @@ export async function getAllRegionMetrics() {
     }
   }
 
-  // Derive region from districts table via primaryDistrictId JOIN,
-  // falling back to people.primaryRegion for people without a district.
-  // This ensures people with primaryDistrictId but NULL primaryRegion
-  // are still counted in the correct region.
-  const effectiveRegion = sql<string>`COALESCE(${districts.region}, ${people.primaryRegion})`;
+  // Derive region from the effective district (same resolution as getAllDistrictMetrics).
+  // A person's district is: COALESCE(primaryDistrictId, campus.districtId).
+  // Then we look up that district's region. This ensures region counts stay
+  // consistent with district counts — no phantom people in a region without
+  // a district.
+  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+  const effectiveRegion = sql<string>`${districts.region}`;
 
   const result = await db
     .select({
@@ -1649,7 +1656,8 @@ export async function getAllRegionMetrics() {
       count: sql<number>`COUNT(*)`.as("count"),
     })
     .from(people)
-    .leftJoin(districts, eq(people.primaryDistrictId, districts.id))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .leftJoin(districts, eq(effectiveDistrictId, districts.id))
     .where(sql`${effectiveRegion} IS NOT NULL`)
     .groupBy(effectiveRegion, people.status);
 

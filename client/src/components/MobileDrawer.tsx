@@ -108,7 +108,7 @@ export function MobileDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
+            className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -127,7 +127,7 @@ export function MobileDrawer({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.3 }}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white z-50 md:hidden rounded-t-3xl shadow-2xl flex flex-col mobile-drawer-bottom"
+            className="fixed inset-x-0 bottom-0 bg-white z-[60] md:hidden rounded-t-3xl shadow-2xl flex flex-col mobile-drawer-bottom"
             style={{
               height: contentHeight,
               maxHeight: "85vh",

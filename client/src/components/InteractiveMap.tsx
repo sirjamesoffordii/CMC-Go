@@ -1835,7 +1835,7 @@ export const InteractiveMap = memo(function InteractiveMap({
     >
       <div className="relative w-full h-full">
         {/* Top Right - Chi Alpha label + metrics (close together) */}
-        <div className="absolute top-5 right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2">
+        <div className="absolute top-6 right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2">
           <div className="flex items-center justify-end">
             <span
               className="font-beach text-3xl sm:text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-0 sm:mr-1"
@@ -2158,7 +2158,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         </div>
 
         {/* Top Left Invited / Total + Needs */}
-        <div className="absolute top-4 left-0 sm:top-5 sm:left-0 z-40 flex flex-col items-start gap-1 sm:gap-2 pl-1 sm:pl-2">
+        <div className="absolute top-5 left-0 sm:top-6 sm:left-0 z-40 flex flex-col items-start gap-1 sm:gap-2 pl-1 sm:pl-2">
           <div
             className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
@@ -2240,8 +2240,8 @@ export const InteractiveMap = memo(function InteractiveMap({
           style={{
             filter: "blur(0.3px) brightness(0.82)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
-              ? "scale(1.05) translate(-8px, 4px)" // Larger scale when panel open
-              : "scale(0.94) translate(-8px, 4px)", // Slightly smaller, nudged left and down
+              ? "scale(1.02) translate(-8px, -14px)" // Slightly larger when panel open
+              : "scale(0.88) translate(-8px, -14px)", // A bit smaller; map nudged up
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2251,13 +2251,12 @@ export const InteractiveMap = memo(function InteractiveMap({
 
         {/* Pie charts layer - removed per user request */}
 
-        {/* XAN National Button - Positioned absolutely, transforms with map */}
-        {/* Only visible on National Scope */}
-        {!selectedDistrictId && scopeFilter === "NATIONAL" && (
+        {/* XAN National Button - Positioned so it stays on screen; when panel open, nudge inward */}
+        {scopeFilter === "NATIONAL" && (
           <div
             className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
             style={{
-              transform: selectedDistrictId ? "scale(1.05)" : "scale(0.94)",
+              transform: selectedDistrictId ? "scale(1.02)" : "scale(0.88)",
               transformOrigin: "center",
             }}
           >
@@ -2266,8 +2265,8 @@ export const InteractiveMap = memo(function InteractiveMap({
               aria-label="Open XAN (National Team)"
               className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan"
               style={{
-                left: "3%",
-                bottom: "9%",
+                left: selectedDistrictId ? "8%" : "5%",
+                bottom: selectedDistrictId ? "15%" : "13%",
                 transform: "translate(-50%, 50%)",
               }}
               onClick={e => {
@@ -2278,13 +2277,17 @@ export const InteractiveMap = memo(function InteractiveMap({
               <div
                 className="rounded-full bg-black group-hover/xan:bg-red-700 flex items-center justify-center transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-black/60 shadow-lg group-hover/xan:-translate-y-2 group-hover/xan:shadow-xl"
                 style={{
-                  width: "3.5vw", // Larger default size, scales with viewport
-                  height: "3.5vw",
-                  minWidth: "40px", // Minimum size
-                  minHeight: "40px",
+                  width: selectedDistrictId ? "2.5vw" : "3.5vw",
+                  height: selectedDistrictId ? "2.5vw" : "3.5vw",
+                  minWidth: selectedDistrictId ? "28px" : "40px",
+                  minHeight: selectedDistrictId ? "28px" : "40px",
                 }}
               >
-                <span className="text-white text-sm font-semibold">XAN</span>
+                <span
+                  className={`text-white font-semibold ${selectedDistrictId ? "text-[10px]" : "text-sm"}`}
+                >
+                  XAN
+                </span>
               </div>
             </button>
           </div>
@@ -2298,8 +2301,8 @@ export const InteractiveMap = memo(function InteractiveMap({
             opacity: 0,
             pointerEvents: "auto",
             transform: selectedDistrictId
-              ? "scale(1.05) translate(-8px, 4px)" // Match visual layer when panel open
-              : "scale(0.94) translate(-8px, 4px)", // Slightly smaller, nudged left and down
+              ? "scale(1.02) translate(-8px, -14px)" // Match visual layer when panel open
+              : "scale(0.88) translate(-8px, -14px)", // A bit smaller; map nudged up
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2322,7 +2325,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         <div
           className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
           style={{
-            transform: selectedDistrictId ? "scale(1.05)" : "scale(0.94)",
+            transform: selectedDistrictId ? "scale(1.02)" : "scale(0.88)",
             transformOrigin: "center",
           }}
         >

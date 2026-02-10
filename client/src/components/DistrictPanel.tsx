@@ -43,6 +43,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "./ui/dialog";
+import { ResponsiveDialog } from "./ui/responsive-dialog";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
@@ -3635,8 +3636,8 @@ export function DistrictPanel({
 
       {canEditDistrict && (
         <>
-          {/* Add Person Dialog */}
-          <Dialog
+          {/* Add Person Dialog — ResponsiveDialog: BottomSheet on mobile, Dialog on desktop */}
+          <ResponsiveDialog
             open={isPersonDialogOpen}
             onOpenChange={open => {
               setIsPersonDialogOpen(open);
@@ -3666,720 +3667,25 @@ export function DistrictPanel({
                 setNameSuggestionsHighlightIndex(-1);
               }
             }}
+            title="Add New Person"
+            snapPoints={[30, 70, 90]}
+            defaultSnap={2}
           >
-            <DialogContent
-              aria-describedby={undefined}
-              className="max-w-2xl max-h-[85vh] overflow-y-auto"
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (
+                  !personForm.name.trim() ||
+                  !personForm.role.trim() ||
+                  !selectedCampusId ||
+                  createPerson.isPending
+                ) {
+                  return;
+                }
+                handleAddPerson();
+              }}
             >
-              <DialogHeader>
-                <DialogTitle>Add New Person</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (
-                    !personForm.name.trim() ||
-                    !personForm.role.trim() ||
-                    !selectedCampusId ||
-                    createPerson.isPending
-                  ) {
-                    return;
-                  }
-                  handleAddPerson();
-                }}
-              >
-                <div className="space-y-6 py-4">
-                  {/* Basic Information Section */}
-                  <div className="space-y-4">
-                    <div className="border-b border-slate-200 pb-2">
-                      <h3 className="text-sm font-semibold text-slate-700">
-                        Basic Information
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2 relative">
-                        <Label htmlFor="person-name">Full Name *</Label>
-                        <Input
-                          id="person-name"
-                          value={personForm.name}
-                          onChange={e => {
-                            setPersonForm({
-                              ...personForm,
-                              name: e.target.value,
-                            });
-                            setHouseholdNameError(null);
-                            setNameSuggestionsHighlightIndex(
-                              filteredNameSuggestions.length > 0 ? 0 : -1
-                            );
-                          }}
-                          onFocus={() => setNameInputFocused(true)}
-                          onBlur={() =>
-                            setTimeout(() => setNameInputFocused(false), 150)
-                          }
-                          onKeyDown={e => {
-                            if (e.key === "ArrowDown") {
-                              e.preventDefault();
-                              setNameSuggestionsHighlightIndex(i =>
-                                i < filteredNameSuggestions.length - 1
-                                  ? i + 1
-                                  : i
-                              );
-                            } else if (e.key === "ArrowUp") {
-                              e.preventDefault();
-                              setNameSuggestionsHighlightIndex(i =>
-                                i > 0 ? i - 1 : 0
-                              );
-                            } else if (
-                              e.key === "Enter" &&
-                              nameSuggestionsHighlightIndex >= 0 &&
-                              filteredNameSuggestions[
-                                nameSuggestionsHighlightIndex
-                              ]
-                            ) {
-                              e.preventDefault();
-                              setPersonForm({
-                                ...personForm,
-                                name: filteredNameSuggestions[
-                                  nameSuggestionsHighlightIndex
-                                ],
-                              });
-                              setNameInputFocused(false);
-                              setNameSuggestionsHighlightIndex(-1);
-                            } else if (e.key === "Escape") {
-                              setNameInputFocused(false);
-                              setNameSuggestionsHighlightIndex(-1);
-                            }
-                          }}
-                          placeholder="Enter full name"
-                          spellCheck={true}
-                          autoComplete="off"
-                        />
-                        {nameInputFocused &&
-                          filteredNameSuggestions.length > 0 && (
-                            <ul
-                              className="absolute left-0 right-0 top-full z-10 mt-0.5 max-h-48 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg"
-                              role="listbox"
-                            >
-                              {filteredNameSuggestions.map((name, idx) => (
-                                <li
-                                  key={`${name}-${idx}`}
-                                  role="option"
-                                  aria-selected={
-                                    idx === nameSuggestionsHighlightIndex
-                                  }
-                                  className={`cursor-pointer px-3 py-2 text-sm ${
-                                    idx === nameSuggestionsHighlightIndex
-                                      ? "bg-slate-100"
-                                      : "hover:bg-slate-50"
-                                  }`}
-                                  onMouseDown={e => {
-                                    e.preventDefault();
-                                    setPersonForm({
-                                      ...personForm,
-                                      name,
-                                    });
-                                    setNameInputFocused(false);
-                                    setNameSuggestionsHighlightIndex(-1);
-                                  }}
-                                  onMouseEnter={() =>
-                                    setNameSuggestionsHighlightIndex(idx)
-                                  }
-                                >
-                                  {name}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="person-role">Role *</Label>
-                        {selectedCampusId === "district" ? (
-                          <Input
-                            id="person-role"
-                            value={
-                              isNationalTeam
-                                ? "National Director"
-                                : "District Director"
-                            }
-                            disabled
-                            className="bg-slate-100 cursor-not-allowed"
-                          />
-                        ) : isFirstPersonInRegionalDirectorsAdd ? (
-                          <Input
-                            id="person-role"
-                            value="Field Director"
-                            disabled
-                            className="bg-slate-100 cursor-not-allowed"
-                          />
-                        ) : (
-                          <Select
-                            value={personForm.role}
-                            onValueChange={value =>
-                              setPersonForm({
-                                ...personForm,
-                                role: value as CampusRole,
-                              })
-                            }
-                          >
-                            <SelectTrigger id="person-role">
-                              <SelectValue placeholder="Select role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableRoles.map(role => (
-                                <SelectItem key={role} value={role}>
-                                  {role}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      </div>
-                      <div className="space-y-2 relative">
-                        <Label htmlFor="person-status">Status</Label>
-                        <Select
-                          value={personForm.status}
-                          onValueChange={value =>
-                            setPersonForm({
-                              ...personForm,
-                              status: value as keyof typeof statusMap,
-                            })
-                          }
-                        >
-                          <SelectTrigger id="person-status">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="director">Yes</SelectItem>
-                            <SelectItem value="staff">Maybe</SelectItem>
-                            <SelectItem value="co-director">No</SelectItem>
-                            <SelectItem value="not-invited">
-                              Not Invited Yet
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Family & Guests - collapsible, hidden by default */}
-                  <div className="mt-4 border-b border-slate-200 pb-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setFamilyGuestsExpanded(!familyGuestsExpanded)
-                        }
-                        className="flex items-center gap-2 py-2 text-left hover:bg-slate-50 rounded px-1 -ml-1 transition-colors"
-                      >
-                        <h3 className="text-sm font-semibold text-slate-700">
-                          Family & Guests (optional)
-                        </h3>
-                        <ChevronDown
-                          className={`h-4 w-4 text-slate-500 shrink-0 transition-transform ${familyGuestsExpanded ? "rotate-180" : ""}`}
-                          aria-hidden
-                        />
-                      </button>
-                      <div ref={householdInputRef} className="relative min-w-0">
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          id="person-household"
-                          onClick={e => {
-                            e.stopPropagation();
-                            setHouseholdDropdownOpen(!householdDropdownOpen);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              setHouseholdDropdownOpen(!householdDropdownOpen);
-                            }
-                          }}
-                          title="Autoset by last name"
-                          className="text-xs italic text-slate-500 cursor-pointer hover:underline focus:outline-none focus:underline ml-0.5"
-                        >
-                          {householdInputValue
-                            ? householdInputValue
-                            : personForm.name.trim()
-                              ? `${getLastName(personForm.name)} Household`
-                              : ""}
-                        </span>
-                        {householdDropdownOpen &&
-                          allHouseholds &&
-                          allPeople && (
-                            <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto min-w-[11rem]">
-                              {householdInputValue.trim() &&
-                                !allHouseholds.some(h => {
-                                  const members = allPeople.filter(
-                                    p => p.householdId === h.id
-                                  );
-                                  const displayName =
-                                    h.label ||
-                                    (members.length > 0
-                                      ? `${members[0].name.split(" ").pop() || "Household"} Household`
-                                      : "Household");
-                                  return (
-                                    displayName.toLowerCase() ===
-                                    householdInputValue.trim().toLowerCase()
-                                  );
-                                }) && (
-                                  <div
-                                    className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                    onMouseDown={e => {
-                                      e.preventDefault();
-                                      handleCreateHouseholdFromInput();
-                                    }}
-                                  >
-                                    Create "{householdInputValue.trim()}"
-                                  </div>
-                                )}
-                              <div
-                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                onMouseDown={e => {
-                                  e.preventDefault();
-                                  setHouseholdInputValue("");
-                                  setPersonForm({
-                                    ...personForm,
-                                    householdId: null,
-                                  });
-                                  setHouseholdDropdownOpen(false);
-                                }}
-                              >
-                                None
-                              </div>
-                              {allHouseholds
-                                .filter(household => {
-                                  if (!householdInputValue.trim()) return true;
-                                  const members = allPeople.filter(
-                                    p => p.householdId === household.id
-                                  );
-                                  const displayName =
-                                    household.label ||
-                                    (members.length > 0
-                                      ? `${members[0].name.split(" ").pop() || "Household"} Household`
-                                      : "Household");
-                                  return displayName
-                                    .toLowerCase()
-                                    .includes(
-                                      householdInputValue.toLowerCase()
-                                    );
-                                })
-                                .map(household => {
-                                  const members = allPeople.filter(
-                                    p => p.householdId === household.id
-                                  );
-                                  const displayName =
-                                    household.label ||
-                                    (members.length > 0
-                                      ? `${members[0].name.split(" ").pop() || "Household"} Household`
-                                      : "Household");
-                                  return (
-                                    <div
-                                      key={household.id}
-                                      className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                      onMouseDown={e => {
-                                        e.preventDefault();
-                                        setHouseholdInputValue(displayName);
-                                        setPersonForm({
-                                          ...personForm,
-                                          householdId: household.id,
-                                        });
-                                        setHouseholdDropdownOpen(false);
-                                        setHouseholdValidationError(null);
-                                      }}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span>{displayName}</span>
-                                        {members.length > 0 && (
-                                          <span className="text-xs text-slate-500">
-                                            {members
-                                              .map(m => m.name)
-                                              .join(", ")}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                    {familyGuestsExpanded && (
-                      <div className="pt-4 pb-2">
-                        <div className="grid grid-cols-3 gap-4 items-end">
-                          <div className="space-y-2">
-                            <Label
-                              htmlFor="person-spouse-attending"
-                              className="text-sm font-medium"
-                            >
-                              Spouse attending
-                            </Label>
-                            <div className="flex items-center min-h-9">
-                              <Checkbox
-                                id="person-spouse-attending"
-                                checked={personForm.spouseAttending}
-                                onCheckedChange={checked => {
-                                  setPersonForm({
-                                    ...personForm,
-                                    spouseAttending: checked === true,
-                                  });
-                                  setHouseholdValidationError(null);
-                                  setHouseholdNameError(null);
-                                }}
-                                className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700 h-4 w-4 shrink-0"
-                              />
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="person-children-count">
-                              Children attending
-                            </Label>
-                            <Input
-                              id="person-children-count"
-                              type="number"
-                              min="0"
-                              max="10"
-                              value={
-                                personForm.childrenCount === 0
-                                  ? ""
-                                  : personForm.childrenCount
-                              }
-                              onChange={e => {
-                                const raw = e.target.value;
-                                if (raw === "") {
-                                  setPersonForm({
-                                    ...personForm,
-                                    childrenCount: 0,
-                                    childrenAges: [],
-                                  });
-                                  setHouseholdValidationError(null);
-                                  setHouseholdNameError(null);
-                                  return;
-                                }
-                                const count = Math.max(
-                                  0,
-                                  Math.min(10, parseInt(raw, 10) || 0)
-                                );
-                                setPersonForm({
-                                  ...personForm,
-                                  childrenCount: count,
-                                  childrenAges: Array(count).fill(""),
-                                });
-                                setHouseholdValidationError(null);
-                                setHouseholdNameError(null);
-                              }}
-                              placeholder="0"
-                              className="w-24 focus-visible:border-red-600/60 focus-visible:ring-red-600/25 focus-visible:ring-1"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="person-guests-count">
-                              Guests attending
-                            </Label>
-                            <Input
-                              id="person-guests-count"
-                              type="number"
-                              min="0"
-                              max="10"
-                              value={
-                                personForm.guestsCount === 0
-                                  ? ""
-                                  : personForm.guestsCount
-                              }
-                              onChange={e => {
-                                const raw = e.target.value;
-                                if (raw === "") {
-                                  setPersonForm({
-                                    ...personForm,
-                                    guestsCount: 0,
-                                  });
-                                  return;
-                                }
-                                const count = Math.max(
-                                  0,
-                                  Math.min(10, parseInt(raw, 10) || 0)
-                                );
-                                setPersonForm({
-                                  ...personForm,
-                                  guestsCount: count,
-                                });
-                              }}
-                              placeholder="0"
-                              className="w-24 focus-visible:border-red-600/60 focus-visible:ring-red-600/25 focus-visible:ring-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Need, Funds Needed */}
-                  <div className="space-y-4 mt-4">
-                    <div className="flex items-start gap-4 flex-nowrap">
-                      <div className="space-y-2 w-32">
-                        <Label htmlFor="person-need">Need</Label>
-                        <Select
-                          value={personForm.needType}
-                          onValueChange={value =>
-                            setPersonForm({
-                              ...personForm,
-                              needType: value as
-                                | "None"
-                                | "Registration"
-                                | "Transportation"
-                                | "Housing"
-                                | "Other",
-                              needAmount: "",
-                              fundsReceivedAmount: "",
-                              needDetails: "",
-                            })
-                          }
-                        >
-                          <SelectTrigger id="person-need">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="None">None</SelectItem>
-                            <SelectItem value="Registration">
-                              Registration
-                            </SelectItem>
-                            <SelectItem value="Transportation">
-                              Transportation
-                            </SelectItem>
-                            <SelectItem value="Housing">Housing</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <AnimatePresence mode="popLayout">
-                        {personForm.needType !== "None" && (
-                          <motion.div
-                            key="funds-fields"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                            className="flex items-start gap-4"
-                          >
-                            <div className="space-y-2 w-32">
-                              <Label htmlFor="person-need-amount">
-                                Funds Needed
-                              </Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                                  $
-                                </span>
-                                <Input
-                                  id="person-need-amount"
-                                  type="number"
-                                  step="0.01"
-                                  value={personForm.needAmount}
-                                  onChange={e =>
-                                    setPersonForm({
-                                      ...personForm,
-                                      needAmount: e.target.value,
-                                    })
-                                  }
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-2 w-40">
-                              <Label htmlFor="person-funds-received-amount">
-                                Funds Received
-                              </Label>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
-                                  $
-                                </span>
-                                <Input
-                                  id="person-funds-received-amount"
-                                  type="number"
-                                  step="0.01"
-                                  value={personForm.fundsReceivedAmount}
-                                  onChange={e =>
-                                    setPersonForm({
-                                      ...personForm,
-                                      fundsReceivedAmount: e.target.value,
-                                    })
-                                  }
-                                  placeholder="0.00"
-                                  className="pl-7 w-28"
-                                />
-                              </div>
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
-
-                  {/* Need Note (only when need selected) and Journey Notes - slow slide when need selected */}
-                  <motion.div
-                    layout
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
-                    className={`space-y-4 mt-4 grid gap-4 overflow-hidden ${personForm.needType !== "None" ? "grid-cols-[1fr_1fr]" : "grid-cols-1"}`}
-                  >
-                    <AnimatePresence mode="popLayout">
-                      {personForm.needType !== "None" && (
-                        <motion.div
-                          key="need-note"
-                          initial={{ opacity: 0, x: -120 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -120 }}
-                          transition={{ duration: 0.5, ease: "easeInOut" }}
-                          className="space-y-4 min-w-0 w-full"
-                        >
-                          <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                            Need Note
-                          </h3>
-                          <div className="space-y-2 min-w-0">
-                            <Textarea
-                              id="person-need-notes"
-                              value={personForm.needDetails || ""}
-                              onChange={e => {
-                                setPersonForm({
-                                  ...personForm,
-                                  needDetails: e.target.value,
-                                });
-                              }}
-                              placeholder="Enter notes about the need"
-                              rows={4}
-                              className="resize-none w-full min-w-0"
-                            />
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Label
-                              htmlFor="person-needs-met"
-                              className="cursor-pointer text-sm font-medium"
-                            >
-                              Need Met
-                            </Label>
-                            <Checkbox
-                              id="person-needs-met"
-                              checked={personForm.needsMet}
-                              onCheckedChange={checked =>
-                                setPersonForm({
-                                  ...personForm,
-                                  needsMet: checked === true,
-                                })
-                              }
-                              className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Journey Notes Section - slides when Need Note appears */}
-                    <motion.div
-                      layout
-                      transition={{ duration: 0.5, ease: "easeInOut" }}
-                      className="space-y-4 min-w-0 w-full"
-                    >
-                      <h3 className="text-sm font-semibold text-slate-700 mb-1">
-                        Journey Notes
-                      </h3>
-                      <div className="space-y-2 min-w-0">
-                        <Textarea
-                          id="person-notes"
-                          value={personForm.notes || ""}
-                          onChange={e => {
-                            setPersonForm({
-                              ...personForm,
-                              notes: e.target.value,
-                            });
-                          }}
-                          placeholder="Enter journey notes"
-                          rows={4}
-                          className="resize-none w-full min-w-0"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Label
-                          htmlFor="person-deposit-paid"
-                          className="cursor-pointer text-sm font-medium"
-                        >
-                          Deposit Paid
-                        </Label>
-                        <Checkbox
-                          id="person-deposit-paid"
-                          checked={personForm.depositPaid}
-                          onCheckedChange={checked =>
-                            setPersonForm({
-                              ...personForm,
-                              depositPaid: checked === true,
-                            })
-                          }
-                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                        />
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                </div>
-                <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
-                  <div />
-                  <div className="flex items-center gap-3 ml-auto">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsPersonDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      onClick={e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (
-                          !personForm.name.trim() ||
-                          !personForm.role.trim() ||
-                          !selectedCampusId ||
-                          createPerson.isPending
-                        ) {
-                          return;
-                        }
-                        handleAddPerson();
-                      }}
-                      disabled={
-                        !personForm.name.trim() ||
-                        !personForm.role.trim() ||
-                        !selectedCampusId ||
-                        createPerson.isPending
-                      }
-                      className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {createPerson.isPending ? "Adding..." : "Add Person"}
-                    </Button>
-                  </div>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          {/* Edit Person Dialog */}
-          <Dialog
-            open={isEditPersonDialogOpen}
-            onOpenChange={open => {
-              setIsEditPersonDialogOpen(open);
-              if (!open) {
-                setHouseholdInputValue("");
-                setHouseholdDropdownOpen(false);
-                setNameInputFocused(false);
-                setNameSuggestionsHighlightIndex(-1);
-              }
-            }}
-          >
-            <DialogContent
-              aria-describedby={undefined}
-              className="max-w-2xl max-h-[85vh] overflow-y-auto"
-            >
-              <DialogHeader>
-                <DialogTitle>Edit Person</DialogTitle>
-              </DialogHeader>
               <div className="space-y-6 py-4">
                 {/* Basic Information Section */}
                 <div className="space-y-4">
@@ -4388,11 +3694,11 @@ export function DistrictPanel({
                       Basic Information
                     </h3>
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div className="space-y-2 relative">
-                      <Label htmlFor="edit-person-name">Full Name *</Label>
+                      <Label htmlFor="person-name">Full Name *</Label>
                       <Input
-                        id="edit-person-name"
+                        id="person-name"
                         value={personForm.name}
                         onChange={e => {
                           setPersonForm({
@@ -4440,9 +3746,9 @@ export function DistrictPanel({
                             setNameSuggestionsHighlightIndex(-1);
                           }
                         }}
+                        placeholder="Enter full name"
                         spellCheck={true}
                         autoComplete="off"
-                        placeholder="Enter full name"
                       />
                       {nameInputFocused &&
                         filteredNameSuggestions.length > 0 && (
@@ -4482,10 +3788,10 @@ export function DistrictPanel({
                         )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-person-role">Role *</Label>
-                      {editingPerson?.campusId === "district" ? (
+                      <Label htmlFor="person-role">Role *</Label>
+                      {selectedCampusId === "district" ? (
                         <Input
-                          id="edit-person-role"
+                          id="person-role"
                           value={
                             isNationalTeam
                               ? "National Director"
@@ -4494,9 +3800,9 @@ export function DistrictPanel({
                           disabled
                           className="bg-slate-100 cursor-not-allowed"
                         />
-                      ) : isFirstPersonInRegionalDirectorsEdit ? (
+                      ) : isFirstPersonInRegionalDirectorsAdd ? (
                         <Input
-                          id="edit-person-role"
+                          id="person-role"
                           value="Field Director"
                           disabled
                           className="bg-slate-100 cursor-not-allowed"
@@ -4511,7 +3817,7 @@ export function DistrictPanel({
                             })
                           }
                         >
-                          <SelectTrigger id="edit-person-role">
+                          <SelectTrigger id="person-role">
                             <SelectValue placeholder="Select role" />
                           </SelectTrigger>
                           <SelectContent>
@@ -4525,7 +3831,7 @@ export function DistrictPanel({
                       )}
                     </div>
                     <div className="space-y-2 relative">
-                      <Label htmlFor="edit-person-status">Status</Label>
+                      <Label htmlFor="person-status">Status</Label>
                       <Select
                         value={personForm.status}
                         onValueChange={value =>
@@ -4535,7 +3841,7 @@ export function DistrictPanel({
                           })
                         }
                       >
-                        <SelectTrigger id="edit-person-status">
+                        <SelectTrigger id="person-status">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -4573,7 +3879,7 @@ export function DistrictPanel({
                       <span
                         role="button"
                         tabIndex={0}
-                        id="edit-person-household"
+                        id="person-household"
                         onClick={e => {
                           e.stopPropagation();
                           setHouseholdDropdownOpen(!householdDropdownOpen);
@@ -4690,17 +3996,17 @@ export function DistrictPanel({
                   </div>
                   {familyGuestsExpanded && (
                     <div className="pt-4 pb-2">
-                      <div className="grid grid-cols-3 gap-4 items-end">
+                      <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
                         <div className="space-y-2">
                           <Label
-                            htmlFor="edit-person-spouse-attending"
+                            htmlFor="person-spouse-attending"
                             className="text-sm font-medium"
                           >
                             Spouse attending
                           </Label>
                           <div className="flex items-center min-h-9">
                             <Checkbox
-                              id="edit-person-spouse-attending"
+                              id="person-spouse-attending"
                               checked={personForm.spouseAttending}
                               onCheckedChange={checked => {
                                 setPersonForm({
@@ -4715,11 +4021,11 @@ export function DistrictPanel({
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit-person-children-count">
+                          <Label htmlFor="person-children-count">
                             Children attending
                           </Label>
                           <Input
-                            id="edit-person-children-count"
+                            id="person-children-count"
                             type="number"
                             min="0"
                             max="10"
@@ -4757,11 +4063,11 @@ export function DistrictPanel({
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="edit-person-guests-count">
+                          <Label htmlFor="person-guests-count">
                             Guests attending
                           </Label>
                           <Input
-                            id="edit-person-guests-count"
+                            id="person-guests-count"
                             type="number"
                             min="0"
                             max="10"
@@ -4801,7 +4107,7 @@ export function DistrictPanel({
                 <div className="space-y-4 mt-4">
                   <div className="flex items-start gap-4 flex-nowrap">
                     <div className="space-y-2 w-32">
-                      <Label htmlFor="edit-person-need">Need</Label>
+                      <Label htmlFor="person-need">Need</Label>
                       <Select
                         value={personForm.needType}
                         onValueChange={value =>
@@ -4819,7 +4125,7 @@ export function DistrictPanel({
                           })
                         }
                       >
-                        <SelectTrigger id="edit-person-need">
+                        <SelectTrigger id="person-need">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -4846,7 +4152,7 @@ export function DistrictPanel({
                           className="flex items-start gap-4"
                         >
                           <div className="space-y-2 w-32">
-                            <Label htmlFor="edit-person-need-amount">
+                            <Label htmlFor="person-need-amount">
                               Funds Needed
                             </Label>
                             <div className="relative">
@@ -4854,7 +4160,7 @@ export function DistrictPanel({
                                 $
                               </span>
                               <Input
-                                id="edit-person-need-amount"
+                                id="person-need-amount"
                                 type="number"
                                 step="0.01"
                                 value={personForm.needAmount}
@@ -4865,12 +4171,12 @@ export function DistrictPanel({
                                   })
                                 }
                                 placeholder="0.00"
-                                className="pl-7 w-24"
+                                className="pl-7 w-28"
                               />
                             </div>
                           </div>
-                          <div className="space-y-2 w-32">
-                            <Label htmlFor="edit-person-funds-received-amount">
+                          <div className="space-y-2 w-40">
+                            <Label htmlFor="person-funds-received-amount">
                               Funds Received
                             </Label>
                             <div className="relative">
@@ -4878,7 +4184,7 @@ export function DistrictPanel({
                                 $
                               </span>
                               <Input
-                                id="edit-person-funds-received-amount"
+                                id="person-funds-received-amount"
                                 type="number"
                                 step="0.01"
                                 value={personForm.fundsReceivedAmount}
@@ -4889,7 +4195,7 @@ export function DistrictPanel({
                                   })
                                 }
                                 placeholder="0.00"
-                                className="pl-7 w-24"
+                                className="pl-7 w-28"
                               />
                             </div>
                           </div>
@@ -4908,7 +4214,7 @@ export function DistrictPanel({
                   <AnimatePresence mode="popLayout">
                     {personForm.needType !== "None" && (
                       <motion.div
-                        key="edit-need-note"
+                        key="need-note"
                         initial={{ opacity: 0, x: -120 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -120 }}
@@ -4920,7 +4226,7 @@ export function DistrictPanel({
                         </h3>
                         <div className="space-y-2 min-w-0">
                           <Textarea
-                            id="edit-person-need-notes"
+                            id="person-need-notes"
                             value={personForm.needDetails || ""}
                             onChange={e => {
                               setPersonForm({
@@ -4935,13 +4241,13 @@ export function DistrictPanel({
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Label
-                            htmlFor="edit-person-needs-met"
+                            htmlFor="person-needs-met"
                             className="cursor-pointer text-sm font-medium"
                           >
                             Need Met
                           </Label>
                           <Checkbox
-                            id="edit-person-needs-met"
+                            id="person-needs-met"
                             checked={personForm.needsMet}
                             onCheckedChange={checked =>
                               setPersonForm({
@@ -4967,7 +4273,7 @@ export function DistrictPanel({
                     </h3>
                     <div className="space-y-2 min-w-0">
                       <Textarea
-                        id="edit-person-notes"
+                        id="person-notes"
                         value={personForm.notes || ""}
                         onChange={e => {
                           setPersonForm({
@@ -4982,13 +4288,13 @@ export function DistrictPanel({
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <Label
-                        htmlFor="edit-person-deposit-paid"
+                        htmlFor="person-deposit-paid"
                         className="cursor-pointer text-sm font-medium"
                       >
                         Deposit Paid
                       </Label>
                       <Checkbox
-                        id="edit-person-deposit-paid"
+                        id="person-deposit-paid"
                         checked={personForm.depositPaid}
                         onCheckedChange={checked =>
                           setPersonForm({
@@ -5003,37 +4309,711 @@ export function DistrictPanel({
                 </motion.div>
               </div>
               <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
-                {/* Trashcan - anchored to far bottom-left */}
-                <button
-                  onClick={handleDeletePerson}
-                  disabled={deletePerson.isPending}
-                  className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                  title="Delete person"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-
-                {/* Right side: Cancel, Update */}
+                <div />
                 <div className="flex items-center gap-3 ml-auto">
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setIsEditPersonDialogOpen(false)}
+                    onClick={() => setIsPersonDialogOpen(false)}
                   >
                     Cancel
                   </Button>
-
                   <Button
-                    type="button"
-                    onClick={handleUpdatePerson}
-                    className="bg-black text-white hover:bg-red-600"
+                    type="submit"
+                    onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (
+                        !personForm.name.trim() ||
+                        !personForm.role.trim() ||
+                        !selectedCampusId ||
+                        createPerson.isPending
+                      ) {
+                        return;
+                      }
+                      handleAddPerson();
+                    }}
+                    disabled={
+                      !personForm.name.trim() ||
+                      !personForm.role.trim() ||
+                      !selectedCampusId ||
+                      createPerson.isPending
+                    }
+                    className="bg-black text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Update Person
+                    {createPerson.isPending ? "Adding..." : "Add Person"}
                   </Button>
                 </div>
               </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </form>
+          </ResponsiveDialog>
+
+          {/* Edit Person Dialog — ResponsiveDialog: BottomSheet on mobile, Dialog on desktop */}
+          <ResponsiveDialog
+            open={isEditPersonDialogOpen}
+            onOpenChange={open => {
+              setIsEditPersonDialogOpen(open);
+              if (!open) {
+                setHouseholdInputValue("");
+                setHouseholdDropdownOpen(false);
+                setNameInputFocused(false);
+                setNameSuggestionsHighlightIndex(-1);
+              }
+            }}
+            title="Edit Person"
+            snapPoints={[30, 70, 90]}
+            defaultSnap={2}
+          >
+            <div className="space-y-6 py-4">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2">
+                  <h3 className="text-sm font-semibold text-slate-700">
+                    Basic Information
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="edit-person-name">Full Name *</Label>
+                    <Input
+                      id="edit-person-name"
+                      value={personForm.name}
+                      onChange={e => {
+                        setPersonForm({
+                          ...personForm,
+                          name: e.target.value,
+                        });
+                        setHouseholdNameError(null);
+                        setNameSuggestionsHighlightIndex(
+                          filteredNameSuggestions.length > 0 ? 0 : -1
+                        );
+                      }}
+                      onFocus={() => setNameInputFocused(true)}
+                      onBlur={() =>
+                        setTimeout(() => setNameInputFocused(false), 150)
+                      }
+                      onKeyDown={e => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setNameSuggestionsHighlightIndex(i =>
+                            i < filteredNameSuggestions.length - 1 ? i + 1 : i
+                          );
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          setNameSuggestionsHighlightIndex(i =>
+                            i > 0 ? i - 1 : 0
+                          );
+                        } else if (
+                          e.key === "Enter" &&
+                          nameSuggestionsHighlightIndex >= 0 &&
+                          filteredNameSuggestions[nameSuggestionsHighlightIndex]
+                        ) {
+                          e.preventDefault();
+                          setPersonForm({
+                            ...personForm,
+                            name: filteredNameSuggestions[
+                              nameSuggestionsHighlightIndex
+                            ],
+                          });
+                          setNameInputFocused(false);
+                          setNameSuggestionsHighlightIndex(-1);
+                        } else if (e.key === "Escape") {
+                          setNameInputFocused(false);
+                          setNameSuggestionsHighlightIndex(-1);
+                        }
+                      }}
+                      spellCheck={true}
+                      autoComplete="off"
+                      placeholder="Enter full name"
+                    />
+                    {nameInputFocused && filteredNameSuggestions.length > 0 && (
+                      <ul
+                        className="absolute left-0 right-0 top-full z-10 mt-0.5 max-h-48 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg"
+                        role="listbox"
+                      >
+                        {filteredNameSuggestions.map((name, idx) => (
+                          <li
+                            key={`${name}-${idx}`}
+                            role="option"
+                            aria-selected={
+                              idx === nameSuggestionsHighlightIndex
+                            }
+                            className={`cursor-pointer px-3 py-2 text-sm ${
+                              idx === nameSuggestionsHighlightIndex
+                                ? "bg-slate-100"
+                                : "hover:bg-slate-50"
+                            }`}
+                            onMouseDown={e => {
+                              e.preventDefault();
+                              setPersonForm({
+                                ...personForm,
+                                name,
+                              });
+                              setNameInputFocused(false);
+                              setNameSuggestionsHighlightIndex(-1);
+                            }}
+                            onMouseEnter={() =>
+                              setNameSuggestionsHighlightIndex(idx)
+                            }
+                          >
+                            {name}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-person-role">Role *</Label>
+                    {editingPerson?.campusId === "district" ? (
+                      <Input
+                        id="edit-person-role"
+                        value={
+                          isNationalTeam
+                            ? "National Director"
+                            : "District Director"
+                        }
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : isFirstPersonInRegionalDirectorsEdit ? (
+                      <Input
+                        id="edit-person-role"
+                        value="Field Director"
+                        disabled
+                        className="bg-slate-100 cursor-not-allowed"
+                      />
+                    ) : (
+                      <Select
+                        value={personForm.role}
+                        onValueChange={value =>
+                          setPersonForm({
+                            ...personForm,
+                            role: value as CampusRole,
+                          })
+                        }
+                      >
+                        <SelectTrigger id="edit-person-role">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRoles.map(role => (
+                            <SelectItem key={role} value={role}>
+                              {role}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                  <div className="space-y-2 relative">
+                    <Label htmlFor="edit-person-status">Status</Label>
+                    <Select
+                      value={personForm.status}
+                      onValueChange={value =>
+                        setPersonForm({
+                          ...personForm,
+                          status: value as keyof typeof statusMap,
+                        })
+                      }
+                    >
+                      <SelectTrigger id="edit-person-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="director">Yes</SelectItem>
+                        <SelectItem value="staff">Maybe</SelectItem>
+                        <SelectItem value="co-director">No</SelectItem>
+                        <SelectItem value="not-invited">
+                          Not Invited Yet
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Family & Guests - collapsible, hidden by default */}
+              <div className="mt-4 border-b border-slate-200 pb-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFamilyGuestsExpanded(!familyGuestsExpanded)
+                    }
+                    className="flex items-center gap-2 py-2 text-left hover:bg-slate-50 rounded px-1 -ml-1 transition-colors"
+                  >
+                    <h3 className="text-sm font-semibold text-slate-700">
+                      Family & Guests (optional)
+                    </h3>
+                    <ChevronDown
+                      className={`h-4 w-4 text-slate-500 shrink-0 transition-transform ${familyGuestsExpanded ? "rotate-180" : ""}`}
+                      aria-hidden
+                    />
+                  </button>
+                  <div ref={householdInputRef} className="relative min-w-0">
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      id="edit-person-household"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setHouseholdDropdownOpen(!householdDropdownOpen);
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setHouseholdDropdownOpen(!householdDropdownOpen);
+                        }
+                      }}
+                      title="Autoset by last name"
+                      className="text-xs italic text-slate-500 cursor-pointer hover:underline focus:outline-none focus:underline ml-0.5"
+                    >
+                      {householdInputValue
+                        ? householdInputValue
+                        : personForm.name.trim()
+                          ? `${getLastName(personForm.name)} Household`
+                          : ""}
+                    </span>
+                    {householdDropdownOpen && allHouseholds && allPeople && (
+                      <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto min-w-[11rem]">
+                        {householdInputValue.trim() &&
+                          !allHouseholds.some(h => {
+                            const members = allPeople.filter(
+                              p => p.householdId === h.id
+                            );
+                            const displayName =
+                              h.label ||
+                              (members.length > 0
+                                ? `${members[0].name.split(" ").pop() || "Household"} Household`
+                                : "Household");
+                            return (
+                              displayName.toLowerCase() ===
+                              householdInputValue.trim().toLowerCase()
+                            );
+                          }) && (
+                            <div
+                              className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={e => {
+                                e.preventDefault();
+                                handleCreateHouseholdFromInput();
+                              }}
+                            >
+                              Create "{householdInputValue.trim()}"
+                            </div>
+                          )}
+                        <div
+                          className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            setHouseholdInputValue("");
+                            setPersonForm({
+                              ...personForm,
+                              householdId: null,
+                            });
+                            setHouseholdDropdownOpen(false);
+                          }}
+                        >
+                          None
+                        </div>
+                        {allHouseholds
+                          .filter(household => {
+                            if (!householdInputValue.trim()) return true;
+                            const members = allPeople.filter(
+                              p => p.householdId === household.id
+                            );
+                            const displayName =
+                              household.label ||
+                              (members.length > 0
+                                ? `${members[0].name.split(" ").pop() || "Household"} Household`
+                                : "Household");
+                            return displayName
+                              .toLowerCase()
+                              .includes(householdInputValue.toLowerCase());
+                          })
+                          .map(household => {
+                            const members = allPeople.filter(
+                              p => p.householdId === household.id
+                            );
+                            const displayName =
+                              household.label ||
+                              (members.length > 0
+                                ? `${members[0].name.split(" ").pop() || "Household"} Household`
+                                : "Household");
+                            return (
+                              <div
+                                key={household.id}
+                                className="px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={e => {
+                                  e.preventDefault();
+                                  setHouseholdInputValue(displayName);
+                                  setPersonForm({
+                                    ...personForm,
+                                    householdId: household.id,
+                                  });
+                                  setHouseholdDropdownOpen(false);
+                                  setHouseholdValidationError(null);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <span>{displayName}</span>
+                                  {members.length > 0 && (
+                                    <span className="text-xs text-slate-500">
+                                      {members.map(m => m.name).join(", ")}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {familyGuestsExpanded && (
+                  <div className="pt-4 pb-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-3 gap-3 sm:gap-4 items-end">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="edit-person-spouse-attending"
+                          className="text-sm font-medium"
+                        >
+                          Spouse attending
+                        </Label>
+                        <div className="flex items-center min-h-9">
+                          <Checkbox
+                            id="edit-person-spouse-attending"
+                            checked={personForm.spouseAttending}
+                            onCheckedChange={checked => {
+                              setPersonForm({
+                                ...personForm,
+                                spouseAttending: checked === true,
+                              });
+                              setHouseholdValidationError(null);
+                              setHouseholdNameError(null);
+                            }}
+                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700 h-4 w-4 shrink-0"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-person-children-count">
+                          Children attending
+                        </Label>
+                        <Input
+                          id="edit-person-children-count"
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={
+                            personForm.childrenCount === 0
+                              ? ""
+                              : personForm.childrenCount
+                          }
+                          onChange={e => {
+                            const raw = e.target.value;
+                            if (raw === "") {
+                              setPersonForm({
+                                ...personForm,
+                                childrenCount: 0,
+                                childrenAges: [],
+                              });
+                              setHouseholdValidationError(null);
+                              setHouseholdNameError(null);
+                              return;
+                            }
+                            const count = Math.max(
+                              0,
+                              Math.min(10, parseInt(raw, 10) || 0)
+                            );
+                            setPersonForm({
+                              ...personForm,
+                              childrenCount: count,
+                              childrenAges: Array(count).fill(""),
+                            });
+                            setHouseholdValidationError(null);
+                            setHouseholdNameError(null);
+                          }}
+                          placeholder="0"
+                          className="w-24 focus-visible:border-red-600/60 focus-visible:ring-red-600/25 focus-visible:ring-1"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-person-guests-count">
+                          Guests attending
+                        </Label>
+                        <Input
+                          id="edit-person-guests-count"
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={
+                            personForm.guestsCount === 0
+                              ? ""
+                              : personForm.guestsCount
+                          }
+                          onChange={e => {
+                            const raw = e.target.value;
+                            if (raw === "") {
+                              setPersonForm({
+                                ...personForm,
+                                guestsCount: 0,
+                              });
+                              return;
+                            }
+                            const count = Math.max(
+                              0,
+                              Math.min(10, parseInt(raw, 10) || 0)
+                            );
+                            setPersonForm({
+                              ...personForm,
+                              guestsCount: count,
+                            });
+                          }}
+                          placeholder="0"
+                          className="w-24 focus-visible:border-red-600/60 focus-visible:ring-red-600/25 focus-visible:ring-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Need, Funds Needed */}
+              <div className="space-y-4 mt-4">
+                <div className="flex items-start gap-4 flex-nowrap">
+                  <div className="space-y-2 w-32">
+                    <Label htmlFor="edit-person-need">Need</Label>
+                    <Select
+                      value={personForm.needType}
+                      onValueChange={value =>
+                        setPersonForm({
+                          ...personForm,
+                          needType: value as
+                            | "None"
+                            | "Registration"
+                            | "Transportation"
+                            | "Housing"
+                            | "Other",
+                          needAmount: "",
+                          fundsReceivedAmount: "",
+                          needDetails: "",
+                        })
+                      }
+                    >
+                      <SelectTrigger id="edit-person-need">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Registration">
+                          Registration
+                        </SelectItem>
+                        <SelectItem value="Transportation">
+                          Transportation
+                        </SelectItem>
+                        <SelectItem value="Housing">Housing</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <AnimatePresence mode="popLayout">
+                    {personForm.needType !== "None" && (
+                      <motion.div
+                        key="funds-fields"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="flex items-start gap-4"
+                      >
+                        <div className="space-y-2 w-32">
+                          <Label htmlFor="edit-person-need-amount">
+                            Funds Needed
+                          </Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                              $
+                            </span>
+                            <Input
+                              id="edit-person-need-amount"
+                              type="number"
+                              step="0.01"
+                              value={personForm.needAmount}
+                              onChange={e =>
+                                setPersonForm({
+                                  ...personForm,
+                                  needAmount: e.target.value,
+                                })
+                              }
+                              placeholder="0.00"
+                              className="pl-7 w-24"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2 w-32">
+                          <Label htmlFor="edit-person-funds-received-amount">
+                            Funds Received
+                          </Label>
+                          <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
+                              $
+                            </span>
+                            <Input
+                              id="edit-person-funds-received-amount"
+                              type="number"
+                              step="0.01"
+                              value={personForm.fundsReceivedAmount}
+                              onChange={e =>
+                                setPersonForm({
+                                  ...personForm,
+                                  fundsReceivedAmount: e.target.value,
+                                })
+                              }
+                              placeholder="0.00"
+                              className="pl-7 w-24"
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Need Note (only when need selected) and Journey Notes - slow slide when need selected */}
+              <motion.div
+                layout
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className={`space-y-4 mt-4 grid gap-4 overflow-hidden ${personForm.needType !== "None" ? "grid-cols-[1fr_1fr]" : "grid-cols-1"}`}
+              >
+                <AnimatePresence mode="popLayout">
+                  {personForm.needType !== "None" && (
+                    <motion.div
+                      key="edit-need-note"
+                      initial={{ opacity: 0, x: -120 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -120 }}
+                      transition={{ duration: 0.5, ease: "easeInOut" }}
+                      className="space-y-4 min-w-0 w-full"
+                    >
+                      <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                        Need Note
+                      </h3>
+                      <div className="space-y-2 min-w-0">
+                        <Textarea
+                          id="edit-person-need-notes"
+                          value={personForm.needDetails || ""}
+                          onChange={e => {
+                            setPersonForm({
+                              ...personForm,
+                              needDetails: e.target.value,
+                            });
+                          }}
+                          placeholder="Enter notes about the need"
+                          rows={4}
+                          className="resize-none w-full min-w-0"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Label
+                          htmlFor="edit-person-needs-met"
+                          className="cursor-pointer text-sm font-medium"
+                        >
+                          Need Met
+                        </Label>
+                        <Checkbox
+                          id="edit-person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={checked =>
+                            setPersonForm({
+                              ...personForm,
+                              needsMet: checked === true,
+                            })
+                          }
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Journey Notes Section - slides when Need Note appears */}
+                <motion.div
+                  layout
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  className="space-y-4 min-w-0 w-full"
+                >
+                  <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                    Journey Notes
+                  </h3>
+                  <div className="space-y-2 min-w-0">
+                    <Textarea
+                      id="edit-person-notes"
+                      value={personForm.notes || ""}
+                      onChange={e => {
+                        setPersonForm({
+                          ...personForm,
+                          notes: e.target.value,
+                        });
+                      }}
+                      placeholder="Enter journey notes"
+                      rows={4}
+                      className="resize-none w-full min-w-0"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Label
+                      htmlFor="edit-person-deposit-paid"
+                      className="cursor-pointer text-sm font-medium"
+                    >
+                      Deposit Paid
+                    </Label>
+                    <Checkbox
+                      id="edit-person-deposit-paid"
+                      checked={personForm.depositPaid}
+                      onCheckedChange={checked =>
+                        setPersonForm({
+                          ...personForm,
+                          depositPaid: checked === true,
+                        })
+                      }
+                      className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                    />
+                  </div>
+                </motion.div>
+              </motion.div>
+            </div>
+            <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
+              {/* Trashcan - anchored to far bottom-left */}
+              <button
+                onClick={handleDeletePerson}
+                disabled={deletePerson.isPending}
+                className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                title="Delete person"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
+              {/* Right side: Cancel, Update */}
+              <div className="flex items-center gap-3 ml-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditPersonDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleUpdatePerson}
+                  className="bg-black text-white hover:bg-red-600"
+                >
+                  Update Person
+                </Button>
+              </div>
+            </DialogFooter>
+          </ResponsiveDialog>
 
           {/* Delete Person Confirmation Dialog */}
           <AlertDialog
@@ -5081,105 +5061,99 @@ export function DistrictPanel({
           </AlertDialog>
 
           {/* Add Campus/Category Dialog */}
-          <Dialog
+          <ResponsiveDialog
             open={isCampusDialogOpen}
             onOpenChange={setIsCampusDialogOpen}
+            title={`Add New ${entityName}`}
+            snapPoints={[30, 50]}
+            defaultSnap={1}
           >
-            <DialogContent aria-describedby={undefined}>
-              <DialogHeader>
-                <DialogTitle>Add New {entityName}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="campus-name">{entityName} Name</Label>
-                  <Input
-                    id="campus-name"
-                    value={campusForm.name}
-                    onChange={e => setCampusForm({ name: e.target.value })}
-                    onKeyDown={e => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        if (campusForm.name.trim() && !createCampus.isPending) {
-                          handleAddCampus();
-                        }
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="campus-name">{entityName} Name</Label>
+                <Input
+                  id="campus-name"
+                  value={campusForm.name}
+                  onChange={e => setCampusForm({ name: e.target.value })}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (campusForm.name.trim() && !createCampus.isPending) {
+                        handleAddCampus();
                       }
-                    }}
-                    placeholder={`Enter ${entityName.toLowerCase()} name`}
-                    spellCheck={true}
-                    autoComplete="organization"
-                    autoFocus
-                    className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
-                  />
-                </div>
+                    }
+                  }}
+                  placeholder={`Enter ${entityName.toLowerCase()} name`}
+                  spellCheck={true}
+                  autoComplete="organization"
+                  autoFocus
+                  className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
+                />
               </div>
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsCampusDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleAddCampus}
-                  disabled={!campusForm.name.trim() || createCampus.isPending}
-                >
-                  {createCampus.isPending ? "Adding..." : `Add ${entityName}`}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsCampusDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAddCampus}
+                disabled={!campusForm.name.trim() || createCampus.isPending}
+              >
+                {createCampus.isPending ? "Adding..." : `Add ${entityName}`}
+              </Button>
+            </DialogFooter>
+          </ResponsiveDialog>
 
           {/* Edit Campus/Category Dialog */}
-          <Dialog
+          <ResponsiveDialog
             open={isEditCampusDialogOpen}
             onOpenChange={setIsEditCampusDialogOpen}
+            title={`Edit ${entityName}`}
+            snapPoints={[30, 50]}
+            defaultSnap={1}
           >
-            <DialogContent aria-describedby={undefined}>
-              <DialogHeader>
-                <DialogTitle>Edit {entityName}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-campus-name">{entityName} Name</Label>
-                  <Input
-                    id="edit-campus-name"
-                    list="edit-campus-name-suggestions"
-                    value={campusForm.name}
-                    onChange={e => setCampusForm({ name: e.target.value })}
-                    placeholder={`Enter ${entityName.toLowerCase()} name`}
-                    spellCheck={true}
-                    autoComplete="organization"
-                    className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
-                  />
-                  <datalist id="edit-campus-name-suggestions">
-                    {campusSuggestions.map((name, idx) => (
-                      <option key={idx} value={name} />
-                    ))}
-                  </datalist>
-                </div>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-campus-name">{entityName} Name</Label>
+                <Input
+                  id="edit-campus-name"
+                  list="edit-campus-name-suggestions"
+                  value={campusForm.name}
+                  onChange={e => setCampusForm({ name: e.target.value })}
+                  placeholder={`Enter ${entityName.toLowerCase()} name`}
+                  spellCheck={true}
+                  autoComplete="organization"
+                  className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
+                />
+                <datalist id="edit-campus-name-suggestions">
+                  {campusSuggestions.map((name, idx) => (
+                    <option key={idx} value={name} />
+                  ))}
+                </datalist>
               </div>
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditCampusDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => handleUpdateCampus()}
-                  disabled={
-                    !campusForm.name.trim() || updateCampusName.isPending
-                  }
-                >
-                  {updateCampusName.isPending
-                    ? "Updating..."
-                    : `Update ${entityName}`}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsEditCampusDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={() => handleUpdateCampus()}
+                disabled={!campusForm.name.trim() || updateCampusName.isPending}
+              >
+                {updateCampusName.isPending
+                  ? "Updating..."
+                  : `Update ${entityName}`}
+              </Button>
+            </DialogFooter>
+          </ResponsiveDialog>
         </>
       )}
     </>
