@@ -37,6 +37,15 @@ export default defineConfig({
     outDir: "../dist/public",
     emptyOutDir: true,
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-ui": ["@radix-ui/react-dialog", "@radix-ui/react-tooltip", "@radix-ui/react-select", "@radix-ui/react-popover", "@radix-ui/react-scroll-area"],
+          "vendor-motion": ["framer-motion"],
+        },
+      },
+    },
   },
   server: {
     host: true,

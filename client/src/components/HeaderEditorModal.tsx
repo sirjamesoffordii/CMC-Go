@@ -186,7 +186,7 @@ export function HeaderEditorModal({
                         (e.target as HTMLImageElement).src = "/xa-logo.png";
                       }}
                       onLoad={() => {
-                        console.log("Logo preview loaded successfully");
+                        // Logo preview loaded
                       }}
                     />
                   ) : (

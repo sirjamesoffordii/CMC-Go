@@ -770,7 +770,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden">
       {/* Header - Chi Alpha Toolbar Style */}
       <header
-        className="relative z-50 flex items-center px-2 sm:px-4 group flex-shrink-0"
+        className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "52px" : `${headerHeight}px`,
           minHeight: isMobile ? "52px" : "52px",
@@ -1059,6 +1059,7 @@ export default function Home() {
                         utils.districts.list.invalidate();
                         utils.people.list.invalidate();
                       }}
+                      onOpenTable={() => setPeoplePanelOpen(true)}
                     />
                   )}
                 </AnimatePresence>
@@ -1119,6 +1120,7 @@ export default function Home() {
                   utils.districts.list.invalidate();
                   utils.people.list.invalidate();
                 }}
+                onOpenTable={() => setPeoplePanelOpen(true)}
               />
             )}
             {nationalPanelOpen && (
@@ -1140,7 +1142,7 @@ export default function Home() {
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              padding: "1rem",
+              padding: isMobile ? "0.5rem" : "2rem 3rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map

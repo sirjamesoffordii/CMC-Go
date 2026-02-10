@@ -26,8 +26,8 @@ const NEED_ICON = {
  */
 export function NeedIndicator({ type }: { type?: NeedType | null }) {
   const Icon =
-    type && (NEED_ICON as any)[type] && (NEED_ICON as any)[type] !== null
-      ? (NEED_ICON as any)[type]
+    type && type in NEED_ICON && NEED_ICON[type as keyof typeof NEED_ICON] !== null
+      ? NEED_ICON[type as keyof typeof NEED_ICON]
       : type === "Other"
         ? null
         : HelpCircle;
