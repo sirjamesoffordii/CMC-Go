@@ -3,7 +3,27 @@
  * Provides clear error messages when the server is not available.
  */
 
+import "dotenv/config";
 import { FullConfig } from "@playwright/test";
+import { spawn } from "node:child_process";
+
+function runCommand(command: string, args: string[], env: NodeJS.ProcessEnv) {
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn(command, args, {
+      env,
+      stdio: "inherit",
+      shell: process.platform === "win32",
+    });
+
+    child.on("error", reject);
+    child.on("exit", code => {
+      if (code === 0) return resolve();
+      reject(
+        new Error(`${command} ${args.join(" ")} exited with code ${code}`)
+      );
+    });
+  });
+}
 
 async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use?.baseURL || "http://127.0.0.1:3000";
@@ -60,6 +80,25 @@ async function globalSetup(config: FullConfig) {
   }
 
   console.log("✓ Server health check passed");
+
+  // Ensure an e2e-loginable user exists.
+  // This does NOT authenticate the browser; it only seeds an account that tests can log in with.
+  if (process.env.DATABASE_URL) {
+    try {
+      await runCommand("node", ["scripts/seed-admin.mjs"], {
+        ...process.env,
+        APP_ENV: process.env.APP_ENV || "ci",
+      });
+      console.log("✓ Seeded admin user for e2e");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      console.error(
+        `\n[global-setup] Failed to seed admin user: ${errorMessage}`
+      );
+      process.exit(1);
+    }
+  }
 }
 
 export default globalSetup;
