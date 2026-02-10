@@ -48,6 +48,7 @@ import {
 import { DISTRICT_REGION_MAP } from "@/lib/regions";
 import { District } from "../../../drizzle/schema";
 import { isDistrictInScope, isCampusInScope } from "@/lib/scopeCheck";
+import { toast } from "sonner";
 
 /**
  * DISTRICT_REGION_MAP: Temporary fallback for districts not yet in database
@@ -334,6 +335,9 @@ export default function Home() {
     onSuccess: () => {
       utils.settings.get.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to save setting");
+    },
   });
 
   // Handle logo upload
@@ -477,6 +481,9 @@ export default function Home() {
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create person");
     },
   });
 
@@ -767,7 +774,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden">
+    <div id="main-content" className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden">
       {/* Header - Chi Alpha Toolbar Style */}
       <header
         className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"

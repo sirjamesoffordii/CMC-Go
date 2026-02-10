@@ -17,10 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Check, X, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export default function Approvals() {
   const [, setLocation] = useLocation();
-  const { user, isAuthenticated } = usePublicAuth();
+  const { user } = usePublicAuth();
   const utils = trpc.useUtils();
 
   const { data: pendingApprovals = [], isLoading } =
@@ -30,27 +31,19 @@ export default function Approvals() {
     onSuccess: () => {
       utils.approvals.list.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to approve user");
+    },
   });
 
   const rejectMutation = trpc.approvals.reject.useMutation({
     onSuccess: () => {
       utils.approvals.list.invalidate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to reject user");
+    },
   });
-
-  // Authentication disabled - allow all users to view approvals
-  if (false) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>Please sign in to view approvals</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
 
   const canViewApprovals =
     user &&

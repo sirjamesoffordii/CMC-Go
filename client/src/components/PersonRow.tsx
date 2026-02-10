@@ -6,6 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState } from "react";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { toast } from "sonner";
 
 interface PersonRowProps {
   person: Person;
@@ -56,6 +57,9 @@ export function PersonRow({
       utils.people.getNational.invalidate();
       onPersonUpdate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to rename person");
+    },
   });
 
   const updateDepositPaid = trpc.people.update.useMutation({
@@ -63,6 +67,9 @@ export function PersonRow({
       utils.people.list.invalidate();
       utils.people.getNational.invalidate();
       onPersonUpdate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update deposit status");
     },
   });
 

@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +14,7 @@ import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { Person } from "../../../drizzle/schema";
 
 export default function Needs() {
-  const { user, isAuthenticated, loading } = useAuth();
+  const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);
@@ -67,6 +65,10 @@ export default function Needs() {
       utils.followUp.list.invalidate();
       utils.people.list.invalidate();
     },
+    onError: (error) => {
+      setResolvingNeedId(null);
+      toast.error(error.message || "Failed to update need status");
+    },
   });
 
   const handleResolveNeed = async (needId: number) => {
@@ -81,20 +83,6 @@ export default function Needs() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
           <p className="text-muted-foreground">Loading...</p>
         </div>
-      </div>
-    );
-  }
-
-  // Authentication disabled - allow all users to view needs
-  if (false) {
-    return (
-      <div className="container max-w-4xl py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>Please log in to view requests.</CardDescription>
-          </CardHeader>
-        </Card>
       </div>
     );
   }

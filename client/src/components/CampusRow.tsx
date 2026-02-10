@@ -4,6 +4,7 @@ import { PersonIcon } from "./PersonIcon";
 import { EditableText } from "./EditableText";
 import { trpc } from "../lib/trpc";
 import { MoreVertical, User, Plus, Check, Edit2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface CampusRowProps {
   campus: Campus;
@@ -41,6 +42,9 @@ export function CampusRow({
       utils.campuses.byDistrict.invalidate({ districtId: campus.districtId });
       onCampusUpdate();
     },
+    onError: (error) => {
+      toast.error(error.message || "Failed to rename campus");
+    },
   });
 
   const deleteCampus = trpc.campuses.delete.useMutation({
@@ -54,6 +58,9 @@ export function CampusRow({
       utils.metrics.district.invalidate({ districtId: campus.districtId });
       utils.followUp.list.invalidate();
       onCampusUpdate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete campus");
     },
   });
 
