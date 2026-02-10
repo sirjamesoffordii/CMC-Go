@@ -35,6 +35,7 @@ export const users = mysqlTable("users", {
     "FIELD_DIRECTOR",
     "CMC_GO_ADMIN",
     "ADMIN",
+    "OTHER",
   ]).notNull(),
   campusId: int("campusId"), // Nullable for National Team members
   districtId: varchar("districtId", { length: 64 }), // Derived from campusId server-side
@@ -69,7 +70,7 @@ export const users = mysqlTable("users", {
     "REJECTED",
     "DISABLED",
   ])
-    .default("PENDING_APPROVAL")
+    .default("ACTIVE")
     .notNull(),
   approvedByUserId: int("approvedByUserId"), // Nullable - set when approved
   approvedAt: timestamp("approvedAt"), // Nullable - set when approved

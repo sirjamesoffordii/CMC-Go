@@ -44,26 +44,73 @@ interface LoginModalProps {
 // Role configuration based on scope level
 // NATIONAL_DIRECTOR and FIELD_DIRECTOR are pre-seeded and not self-registerable
 const NATIONAL_ROLES = [
-  { value: "NATIONAL_STAFF", label: "National Staff" },
+  {
+    value: "NATIONAL_STAFF",
+    label: "National Staff",
+    description: "National map view · View all details · Edit XAN panel only",
+  },
 ] as const;
 
 const REGIONAL_ROLES = [
-  { value: "REGION_DIRECTOR", label: "Regional Director" },
-  { value: "REGIONAL_STAFF", label: "Regional Staff" },
+  {
+    value: "REGION_DIRECTOR",
+    label: "Regional Director",
+    description: "National map view · View all details · Edit your region",
+  },
+  {
+    value: "REGIONAL_STAFF",
+    label: "Regional Staff",
+    description: "National map view · View all details · Edit your region",
+  },
 ] as const;
 
 const DISTRICT_ROLES = [
-  { value: "DISTRICT_DIRECTOR", label: "District Director" },
-  { value: "DISTRICT_STAFF", label: "District Staff" },
+  {
+    value: "DISTRICT_DIRECTOR",
+    label: "District Director",
+    description: "Regional map view · View region details · Edit your district",
+  },
+  {
+    value: "DISTRICT_STAFF",
+    label: "District Staff",
+    description: "Regional map view · View region details · Edit your district",
+  },
 ] as const;
 
 const CAMPUS_ROLES = [
-  { value: "CAMPUS_DIRECTOR", label: "Campus Director" },
-  { value: "CO_DIRECTOR", label: "Campus Co-Director" },
-  { value: "STAFF", label: "Campus Staff" },
-  { value: "CAMPUS_INTERN", label: "Campus Intern" },
-  { value: "CAMPUS_VOLUNTEER", label: "Campus Volunteer" },
+  {
+    value: "CAMPUS_DIRECTOR",
+    label: "Campus Director",
+    description: "Regional map view · View district details · Edit your campus",
+  },
+  {
+    value: "CO_DIRECTOR",
+    label: "Campus Co-Director",
+    description: "Regional map view · View district details · Edit your campus",
+  },
+  {
+    value: "STAFF",
+    label: "Campus Staff",
+    description: "Regional map view · View your campus · Edit your campus",
+  },
+  {
+    value: "CAMPUS_INTERN",
+    label: "Campus Intern",
+    description: "Regional map view · View your campus · Edit your campus",
+  },
+  {
+    value: "CAMPUS_VOLUNTEER",
+    label: "Campus Volunteer",
+    description: "Regional map view · View your campus · Edit your campus",
+  },
 ] as const;
+
+const OTHER_ROLE = {
+  value: "OTHER" as const,
+  label: "Other",
+  description:
+    "Full map view · No personal details visible · No editing access",
+};
 
 type RegistrationStep =
   | "credentials" // Email + Password
@@ -112,6 +159,8 @@ export function LoginModal({
     string | null
   >(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [customRoleTitle, setCustomRoleTitle] = useState("");
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -208,9 +257,14 @@ export function LoginModal({
     { enabled: !!selectedDistrictId }
   );
 
-  // Compute unique regions
+  // Compute unique regions (exclude National Team — handled by "No region" option)
   const regions = useMemo(() => {
-    const regionSet = new Set(districts.map(d => d.region).filter(Boolean));
+    const excludedRegions = new Set(["National Team", "NATIONAL"]);
+    const regionSet = new Set(
+      districts
+        .map(d => d.region)
+        .filter((r): r is string => Boolean(r) && !excludedRegions.has(r))
+    );
     return Array.from(regionSet).sort();
   }, [districts]);
 
@@ -285,6 +339,9 @@ export function LoginModal({
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: async data => {
+      if (data.user) {
+        utils.auth.me.setData(undefined, data.user);
+      }
       await utils.auth.me.invalidate();
       onOpenChange(false);
       const districtId = data.user?.districtId ?? null;
@@ -334,6 +391,8 @@ export function LoginModal({
     setSelectedCampusId(null);
     setNewlyCreatedCampusName(null);
     setSelectedRole(null);
+    setCustomRoleTitle("");
+    setIsCheckingEmail(false);
     clearError();
     setRegionQuery("");
     setDistrictQuery("");
@@ -372,7 +431,7 @@ export function LoginModal({
     loginMutation.mutate({ email: email.trim(), password });
   };
 
-  const handleCredentialsNext = () => {
+  const handleCredentialsNext = async () => {
     if (!email.trim()) {
       setUserError("Please enter your email");
       return;
@@ -386,6 +445,24 @@ export function LoginModal({
       return;
     }
     clearError();
+
+    // Check email availability before proceeding
+    setIsCheckingEmail(true);
+    try {
+      const result = await utils.client.auth.emailExists.query({
+        email: email.trim(),
+      });
+      if (result.exists) {
+        setUserError(
+          "An account with this email already exists. Try signing in instead."
+        );
+        setIsCheckingEmail(false);
+        return;
+      }
+    } catch {
+      // If check fails, let registration attempt handle it
+    }
+    setIsCheckingEmail(false);
     goToStep("region");
   };
 
@@ -457,23 +534,30 @@ export function LoginModal({
           : undefined,
       overseeRegionId:
         scopeLevel === "regional" ? (selectedRegion ?? undefined) : undefined,
+      customRoleTitle:
+        selectedRole === "OTHER"
+          ? customRoleTitle.trim() || undefined
+          : undefined,
     });
   };
 
   // Get available roles based on scope
   const getAvailableRoles = () => {
-    switch (scopeLevel) {
-      case "national":
-        return NATIONAL_ROLES;
-      case "regional":
-        return REGIONAL_ROLES;
-      case "district":
-        return DISTRICT_ROLES;
-      case "campus":
-        return CAMPUS_ROLES;
-      default:
-        return [];
-    }
+    const baseRoles = (() => {
+      switch (scopeLevel) {
+        case "national":
+          return [...NATIONAL_ROLES];
+        case "regional":
+          return [...REGIONAL_ROLES];
+        case "district":
+          return [...DISTRICT_ROLES];
+        case "campus":
+          return [...CAMPUS_ROLES];
+        default:
+          return [];
+      }
+    })();
+    return [...baseRoles, OTHER_ROLE];
   };
 
   // Get scope description
@@ -1123,9 +1207,19 @@ export function LoginModal({
 
               <Button
                 onClick={handleCredentialsNext}
+                disabled={isCheckingEmail}
                 className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
               >
-                Continue <ChevronRight className="ml-2 h-4 w-4" />
+                {isCheckingEmail ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Checking...
+                  </>
+                ) : (
+                  <>
+                    Continue <ChevronRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
               </Button>
 
               <p className="text-center text-sm text-slate-600">
@@ -1196,13 +1290,15 @@ export function LoginModal({
                     <span className="text-sm">No regions found</span>
                   </div>
                 )}
-                {/* No region option at bottom */}
+                {/* National Team option at bottom */}
                 <button
                   onClick={() => handleRegionSelect(null)}
                   className="flex w-full items-center gap-3 rounded-lg border-t border-slate-100 px-3 py-2.5 text-left transition-all hover:bg-slate-50 mt-1 pt-3"
                 >
                   <Globe className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm text-slate-600">No region</span>
+                  <span className="text-sm text-slate-600">
+                    National Team (no specific region)
+                  </span>
                 </button>
               </div>
 
@@ -1423,19 +1519,70 @@ export function LoginModal({
                 {getAvailableRoles().map(role => (
                   <button
                     key={role.value}
-                    onClick={() => handleRoleSelect(role.value)}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-slate-200/70 bg-white/70 p-4 text-left shadow-sm shadow-slate-900/5 transition-all hover:border-red-300 hover:bg-white"
+                    onClick={() => {
+                      if (role.value === "OTHER") {
+                        setSelectedRole("OTHER");
+                      } else {
+                        handleRoleSelect(role.value);
+                      }
+                    }}
+                    className={cn(
+                      "group flex w-full items-center gap-4 rounded-xl border p-4 text-left shadow-sm shadow-slate-900/5 transition-all",
+                      selectedRole === role.value && role.value === "OTHER"
+                        ? "border-red-300 bg-white"
+                        : "border-slate-200/70 bg-white/70 hover:border-red-300 hover:bg-white"
+                    )}
                   >
                     <div className="flex-1">
                       <p className="font-medium text-slate-900">{role.label}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {role.description}
+                      </p>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                    {role.value !== "OTHER" && (
+                      <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
+                    )}
                   </button>
                 ))}
               </div>
 
+              {/* Custom role input for "Other" */}
+              {selectedRole === "OTHER" && (
+                <div className="space-y-3 rounded-lg border border-slate-200/70 bg-white/70 p-4">
+                  <div>
+                    <Label
+                      htmlFor="custom-role"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      What is your role?
+                    </Label>
+                    <Input
+                      id="custom-role"
+                      type="text"
+                      value={customRoleTitle}
+                      onChange={e => setCustomRoleTitle(e.target.value)}
+                      placeholder="e.g., Pastor, Supporter, Parent..."
+                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                      autoFocus
+                    />
+                  </div>
+                  <p className="text-xs text-amber-700 bg-amber-50 rounded px-2.5 py-1.5 border border-amber-200">
+                    You'll be able to view the full map, but you won't be able
+                    to see any personal details or edit anything.
+                  </p>
+                  <Button
+                    onClick={() => goToStep("confirm")}
+                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-4 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                  >
+                    Continue <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
               <button
                 onClick={() => {
+                  setSelectedRole(null);
+                  setCustomRoleTitle("");
                   if (scopeLevel === "national") goToStep("region");
                   else if (scopeLevel === "regional") goToStep("district");
                   else if (scopeLevel === "district") goToStep("campus");
@@ -1501,16 +1648,21 @@ export function LoginModal({
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-600">Role</span>
                   <span className="text-sm font-medium text-slate-900">
-                    {
-                      getAvailableRoles().find(r => r.value === selectedRole)
-                        ?.label
-                    }
+                    {selectedRole === "OTHER"
+                      ? customRoleTitle
+                        ? `Other (${customRoleTitle})`
+                        : "Other"
+                      : getAvailableRoles().find(r => r.value === selectedRole)
+                          ?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-slate-600">Access Level</span>
-                  <span className="text-sm font-medium capitalize text-red-700">
-                    {scopeLevel}
+                  <span className="text-sm text-slate-600">Access</span>
+                  <span className="text-sm font-medium text-slate-900 text-right">
+                    {selectedRole === "OTHER"
+                      ? "Map view only"
+                      : getAvailableRoles().find(r => r.value === selectedRole)
+                          ?.description}
                   </span>
                 </div>
               </div>

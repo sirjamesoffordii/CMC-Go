@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, useMemo, memo, useCallback } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useMemo,
+  memo,
+  useCallback,
+} from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
@@ -843,14 +851,16 @@ export const InteractiveMap = memo(function InteractiveMap({
   const getDisplayedTotals = (): typeof nationalTotals => {
     // If hovering over a region, show that region's totals (or zeros if no data)
     if (hoveredRegion) {
-      return regionalTotals[hoveredRegion] ?? {
-        yes: 0,
-        maybe: 0,
-        no: 0,
-        notInvited: 0,
-        total: 0,
-        invited: 0,
-      };
+      return (
+        regionalTotals[hoveredRegion] ?? {
+          yes: 0,
+          maybe: 0,
+          no: 0,
+          notInvited: 0,
+          total: 0,
+          invited: 0,
+        }
+      );
     }
     // If in REGION scope, show that region's totals
     if (
@@ -971,6 +981,23 @@ export const InteractiveMap = memo(function InteractiveMap({
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
 
+    const getPathId = (p: Element): string =>
+      p.getAttribute("inkscape:label") ||
+      p.getAttributeNS(
+        "http://www.inkscape.org/namespaces/inkscape",
+        "label"
+      ) ||
+      p.getAttribute("id") ||
+      "";
+    const pathOrder = Array.from(visualPaths).map(getPathId);
+    const movedPathRef: {
+      current: {
+        path: SVGPathElement;
+        parent: Element;
+        originalIndex: number;
+      } | null;
+    } = { current: null };
+
     // Regional color mapping – deeper, richer palette with slight brightness
     // Goal: refined colors with more depth and richness, slightly brighter
     const regionColors: Record<string, string> = {
@@ -1080,7 +1107,7 @@ export const InteractiveMap = memo(function InteractiveMap({
     // Premium map styling constants - clean, subtle design
     const BORDER_COLOR = "rgba(255,255,255,0.85)"; // soft white borders
     const BORDER_WIDTH = "0.3"; // clean borders
-    const BORDER_WIDTH_HOVER = "0.35"; // subtle increase on hover
+    const BORDER_WIDTH_HOVER = "0.3"; // keep subtle stroke change only
     const BORDER_WIDTH_SELECTED = "0.4"; // emphasis for selected
     const TRANSITION = "all 200ms ease-out"; // smooth transitions
     const DIM_OPACITY = "1"; // keep opacity full, use brightness for dimming
@@ -1321,7 +1348,7 @@ export const InteractiveMap = memo(function InteractiveMap({
       };
       path.addEventListener("click", clickHandler);
 
-      // Hover behavior: focus district, highlight region, dim others
+      // Hover behavior: region lighting + raise; move hovered path to top of stack
       const mouseEnterHandler = (e: MouseEvent) => {
         setHoveredDistrict(pathId);
         if (pathRegion) {
@@ -1329,43 +1356,69 @@ export const InteractiveMap = memo(function InteractiveMap({
         }
         setTooltipPos({ x: e.clientX, y: e.clientY });
 
+        // Restore any previously moved path so we only ever have one "on top"
+        if (movedPathRef.current) {
+          const {
+            path: prevPath,
+            parent,
+            originalIndex,
+          } = movedPathRef.current;
+          const sibling = parent.children[originalIndex] || null;
+          parent.insertBefore(prevPath, sibling);
+          movedPathRef.current = null;
+        }
+
+        const hoveredVisualPath = Array.from(visualPaths).find(
+          p => getPathId(p) === pathId
+        );
+        if (hoveredVisualPath?.parentNode) {
+          const parent = hoveredVisualPath.parentNode as Element;
+          const originalIndex = pathOrder.indexOf(pathId);
+          if (originalIndex !== -1) {
+            parent.appendChild(hoveredVisualPath);
+            movedPathRef.current = {
+              path: hoveredVisualPath as SVGPathElement,
+              parent,
+              originalIndex,
+            };
+          }
+        }
+
         visualPaths.forEach(vPath => {
-          const vPathId =
-            vPath.getAttribute("inkscape:label") ||
-            vPath.getAttributeNS(
-              "http://www.inkscape.org/namespaces/inkscape",
-              "label"
-            ) ||
-            vPath.getAttribute("id");
+          const vPathId = getPathId(vPath);
           if (!vPathId) return;
 
           const vDistrict = districtMap.get(vPathId);
           const vRegion = vDistrict?.region || DISTRICT_REGION_MAP[vPathId];
           const isInSameRegion =
             vRegion && pathRegion && vRegion === pathRegion;
+          const isHoveredDistrict = vPathId === pathId;
 
           if (isInSameRegion) {
-            // Whole region responds, but hovered district is brightest
-            const isHoveredDistrict = vPathId === pathId;
+            // Whole region lights up; hovered district is brightest and subtly raises.
             vPath.style.opacity = "1";
             vPath.style.filter = isHoveredDistrict
               ? selectedDistrictId === vPathId
                 ? SELECTED_FILTER
                 : HOVER_FILTER
               : REGION_HOVER_FILTER;
-            vPath.style.strokeWidth = isHoveredDistrict
-              ? selectedDistrictId === vPathId
+            vPath.style.strokeWidth =
+              selectedDistrictId === vPathId && isHoveredDistrict
                 ? BORDER_WIDTH_SELECTED
-                : BORDER_WIDTH_HOVER
-              : BORDER_WIDTH;
+                : BORDER_WIDTH;
+            // Very subtle raise for the hovered district only
             vPath.style.transform = isHoveredDistrict
-              ? "translateY(-2px)"
+              ? "translateY(-0.5px)"
               : "translateY(0)";
           } else {
-            // Districts in other regions remain in the inactive state
+            // Other regions stay at their base appearance.
             vPath.style.opacity = "1";
-            vPath.style.filter = BASE_FILTER;
-            vPath.style.strokeWidth = BORDER_WIDTH;
+            vPath.style.filter =
+              selectedDistrictId === vPathId ? SELECTED_FILTER : BASE_FILTER;
+            vPath.style.strokeWidth =
+              selectedDistrictId === vPathId
+                ? BORDER_WIDTH_SELECTED
+                : BORDER_WIDTH;
             vPath.style.transform = "translateY(0)";
           }
         });
@@ -1392,15 +1445,17 @@ export const InteractiveMap = memo(function InteractiveMap({
           mousemoveTimeout = null;
         }
 
+        // Put the raised path back in its original order
+        if (movedPathRef.current) {
+          const { path, parent, originalIndex } = movedPathRef.current;
+          const sibling = parent.children[originalIndex] || null;
+          parent.insertBefore(path, sibling);
+          movedPathRef.current = null;
+        }
+
         // Restore all districts to their default state
         visualPaths.forEach(vPath => {
-          const vPathId =
-            vPath.getAttribute("inkscape:label") ||
-            vPath.getAttributeNS(
-              "http://www.inkscape.org/namespaces/inkscape",
-              "label"
-            ) ||
-            vPath.getAttribute("id");
+          const vPathId = getPathId(vPath);
           if (!vPathId) return;
 
           if (selectedDistrictId === vPathId) {
@@ -1780,10 +1835,10 @@ export const InteractiveMap = memo(function InteractiveMap({
     >
       <div className="relative w-full h-full">
         {/* Top Right - Chi Alpha label + metrics (close together) */}
-          <div className="absolute top-4 right-2 z-50 flex flex-col items-end gap-0.5 bg-transparent">
+        <div className="absolute top-3 right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2">
           <div className="flex items-center justify-end">
             <span
-              className="font-beach text-3xl sm:text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-2 sm:mr-6"
+              className="font-beach text-3xl sm:text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-0 sm:mr-1"
               style={{
                 transform: "scaleX(1.08)",
                 transformOrigin: "right center",
@@ -1804,17 +1859,17 @@ export const InteractiveMap = memo(function InteractiveMap({
               }
             >
               <div
-                className={`h-px bg-slate-400 relative z-10 origin-left ${
+                className={`h-px bg-slate-400 relative z-10 origin-right ${
                   metricsExpanded
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100"
-                }`}
+                } ml-4`}
                 style={{
                   width: labelWidthPx ? `${labelWidthPx}px` : undefined,
                   transform: metricsExpanded ? "scaleX(1)" : "scaleX(0)",
                   transition:
-                    "opacity 0.2s ease-out, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
-                  transitionDelay: metricsExpanded ? "0ms" : "1.2s",
+                    "opacity 0.25s ease-out, transform 1s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transitionDelay: metricsExpanded ? "0ms" : "1s, 0ms", // fade after line recedes
                 }}
               />
               <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0">
@@ -1848,14 +1903,16 @@ export const InteractiveMap = memo(function InteractiveMap({
                 opacity: metricsExpanded ? 1 : 0,
               }}
             >
-              <div className="flex flex-col items-end gap-3 pt-0 pr-6 mt-1.5 overflow-hidden">
+              <div className="flex flex-col items-end gap-3 pt-0 pr-1 mt-1.5 overflow-hidden">
                 {/* Yes - closest to line: slides out first, back in last */}
                 <button
                   onClick={() => toggleMetric("yes")}
                   className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transform: metricsExpanded
+                      ? "translateX(0)"
+                      : "translateX(100%)",
                     transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
                     transitionDelay: metricsExpanded ? "0.15s" : "0.9s",
                   }}
@@ -1915,7 +1972,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                   className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transform: metricsExpanded
+                      ? "translateX(0)"
+                      : "translateX(100%)",
                     transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
                     transitionDelay: metricsExpanded ? "0.45s" : "0.6s",
                   }}
@@ -1975,7 +2034,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                   className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transform: metricsExpanded
+                      ? "translateX(0)"
+                      : "translateX(100%)",
                     transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
                     transitionDelay: metricsExpanded ? "0.75s" : "0.3s",
                   }}
@@ -2035,7 +2096,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                   className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transform: metricsExpanded
+                      ? "translateX(0)"
+                      : "translateX(100%)",
                     transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
                     transitionDelay: metricsExpanded ? "1.05s" : "0ms",
                   }}
@@ -2095,7 +2158,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         </div>
 
         {/* Top Left Invited / Total + Needs */}
-        <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-40 flex flex-col items-start gap-1 sm:gap-2">
+        <div className="absolute top-2 left-0 sm:top-3 sm:left-0 z-40 flex flex-col items-start gap-1 sm:gap-2 pl-1 sm:pl-2">
           <div
             className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
@@ -2117,7 +2180,9 @@ export const InteractiveMap = memo(function InteractiveMap({
               <span className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.invited}
               </span>
-              <span className="text-lg sm:text-xl font-normal text-slate-400">/</span>
+              <span className="text-lg sm:text-xl font-normal text-slate-400">
+                /
+              </span>
               <span className="text-base sm:text-lg font-normal text-slate-400 tracking-tight">
                 {showPublicPlaceholder ? "—" : displayedTotals.total}
               </span>
@@ -2126,24 +2191,24 @@ export const InteractiveMap = memo(function InteractiveMap({
             <div className="w-6 h-6 flex-shrink-0" />
           </div>
 
-          {/* Needs summary - same alignment and size as district panel (labels right-aligned, metrics left-aligned, text-sm) */}
+          {/* Needs summary - left-aligned with Invited */}
           <div className="hidden sm:block flex-shrink-0">
             <div className="inline-flex flex-col gap-y-0.5">
-              <div className="flex items-baseline gap-x-3">
-                <span className="w-[7.25rem] text-sm font-medium text-slate-500 text-right shrink-0">
+              <div className="flex items-baseline gap-x-2">
+                <span className="text-sm font-medium text-slate-500 shrink-0 text-left">
                   Needs Met:
                 </span>
-                <span className="text-sm font-semibold text-slate-700 tabular-nums text-left min-w-0">
+                <span className="text-sm font-semibold text-slate-700 tabular-nums min-w-0">
                   {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
                   <span className="text-slate-500 font-medium">/</span>{" "}
                   {needsAggregate ? needsAggregate.totalNeeds : "—"}
                 </span>
               </div>
-              <div className="flex items-baseline gap-x-3">
-                <span className="w-[7.25rem] text-sm font-medium text-slate-500 text-right shrink-0">
+              <div className="flex items-baseline gap-x-2">
+                <span className="text-sm font-medium text-slate-500 shrink-0 text-left">
                   Funds Received:
                 </span>
-                <span className="text-sm text-slate-600 tabular-nums text-left min-w-0">
+                <span className="text-sm text-slate-600 tabular-nums min-w-0">
                   {needsAggregate
                     ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
                     : "—"}{" "}
@@ -2175,8 +2240,8 @@ export const InteractiveMap = memo(function InteractiveMap({
           style={{
             filter: "blur(0.3px) brightness(0.82)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
-              ? "scale(1.05)" // Larger scale when panel open
-              : "scale(1)", // Normal scale, centered
+              ? "scale(1.05) translate(-8px, -10px)" // Larger scale when panel open
+              : "scale(0.94) translate(-8px, -10px)", // Slightly smaller, nudged left and up
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2192,7 +2257,7 @@ export const InteractiveMap = memo(function InteractiveMap({
           <div
             className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
             style={{
-              transform: selectedDistrictId ? "scale(1.05)" : "scale(1)",
+              transform: selectedDistrictId ? "scale(1.05)" : "scale(0.94)",
               transformOrigin: "center",
             }}
           >
@@ -2201,8 +2266,8 @@ export const InteractiveMap = memo(function InteractiveMap({
               aria-label="Open XAN (National Team)"
               className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan"
               style={{
-                left: "12%", // Moved to the left a little
-                bottom: "5%", // Moved up a little
+                left: "3%",
+                bottom: "13%",
                 transform: "translate(-50%, 50%)",
               }}
               onClick={e => {
@@ -2233,8 +2298,8 @@ export const InteractiveMap = memo(function InteractiveMap({
             opacity: 0,
             pointerEvents: "auto",
             transform: selectedDistrictId
-              ? "scale(1.05)" // Match visual layer when panel open
-              : "scale(1)",
+              ? "scale(1.05) translate(-8px, -10px)" // Match visual layer when panel open
+              : "scale(0.94) translate(-8px, -10px)", // Slightly smaller, nudged left and up
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2257,7 +2322,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         <div
           className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
           style={{
-            transform: selectedDistrictId ? "scale(1.05)" : "scale(1)",
+            transform: selectedDistrictId ? "scale(1.05)" : "scale(0.94)",
             transformOrigin: "center",
           }}
         >

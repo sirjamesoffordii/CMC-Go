@@ -82,6 +82,13 @@ function getDefaultAuthorization(role: string) {
         viewLevel: "CAMPUS" as const,
         editLevel: "CAMPUS" as const,
       };
+
+    case "OTHER":
+      return {
+        scopeLevel: "NATIONAL" as const,
+        viewLevel: "CAMPUS" as const, // No campusId = no detail view
+        editLevel: "CAMPUS" as const, // No campusId = no edit access
+      };
   }
 }
 
@@ -98,6 +105,7 @@ const REGISTERABLE_ROLES = [
   "REGION_DIRECTOR",
   "REGIONAL_STAFF",
   "NATIONAL_STAFF",
+  "OTHER",
 ] as const;
 
 // National Team roles (for registration flow - no campus required)
@@ -117,7 +125,8 @@ const ROLES_REQUIRING_OVERSEE_REGION = [
 ] as const;
 
 // Roles that require admin approval before access is granted
-const ROLES_REQUIRING_APPROVAL = ["REGION_DIRECTOR", "REGIONAL_STAFF"] as const;
+// NOTE: Approval requirement removed — all users are immediately ACTIVE
+const ROLES_REQUIRING_APPROVAL = [] as const;
 
 export const appRouter = router({
   system: systemRouter,
@@ -229,6 +238,8 @@ export const appRouter = router({
           districtId: z.string().optional(),
           // For Regional Directors/Staff - which region they oversee
           overseeRegionId: z.string().optional(),
+          // For OTHER role - custom role title entered by user
+          customRoleTitle: z.string().max(255).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -241,6 +252,7 @@ export const appRouter = router({
           });
         }
 
+        const isOtherRole = input.role === "OTHER";
         const isNationalTeamRole = (
           NATIONAL_TEAM_ROLES as readonly string[]
         ).includes(input.role);
@@ -252,7 +264,10 @@ export const appRouter = router({
         ).includes(input.role);
 
         // Validate based on role type
-        if (isNationalTeamRole) {
+        if (isOtherRole) {
+          // OTHER role: view-only, no campus/district/region required
+          // customRoleTitle is optional but recommended
+        } else if (isNationalTeamRole) {
           // National team members don't need campus
           if (requiresOverseeRegion && !input.overseeRegionId) {
             throw new TRPCError({
@@ -343,6 +358,9 @@ export const appRouter = router({
           districtId,
           regionId,
           overseeRegionId,
+          ...(input.role === "OTHER" && input.customRoleTitle
+            ? { roleTitle: input.customRoleTitle }
+            : {}),
           ...authLevels,
           approvalStatus: (
             ROLES_REQUIRING_APPROVAL as readonly string[]
@@ -400,6 +418,7 @@ export const appRouter = router({
             campusName: campus?.name || null,
             districtName: district?.name || null,
             regionName: user.regionId || null,
+            personName: user.fullName || null,
           },
         };
       }),
@@ -931,24 +950,27 @@ export const appRouter = router({
         }
 
         // Regional directors can only edit districts in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
-          const district = await db.getDistrictById(input.id);
-          if (!district) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "District not found",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || district.region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit districts in your region",
-            });
+          if (input.id !== "XAN") {
+            const district = await db.getDistrictById(input.id);
+            if (!district) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "District not found",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || district.region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit districts in your region",
+              });
+            }
           }
         }
 
@@ -979,24 +1001,27 @@ export const appRouter = router({
         }
 
         // Regional directors can only edit districts in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
-          const district = await db.getDistrictById(input.id);
-          if (!district) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "District not found",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || district.region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit districts in your region",
-            });
+          if (input.id !== "XAN") {
+            const district = await db.getDistrictById(input.id);
+            if (!district) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "District not found",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || district.region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit districts in your region",
+              });
+            }
           }
         }
 
@@ -1125,28 +1150,31 @@ export const appRouter = router({
         }
 
         // Regional directors can only edit campuses in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
           const districtId = String(campus.districtId ?? "");
-          const district = await db.getDistrictById(districtId);
-          const region =
-            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
-          if (!region) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message:
-                "District not found. The campus may be linked to a district that is not in the database or map. An administrator can add the district via the region/district seed.",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit campuses in your region",
-            });
+          if (districtId !== "XAN") {
+            const district = await db.getDistrictById(districtId);
+            const region =
+              district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+            if (!region) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message:
+                  "District not found. The campus may be linked to a district that is not in the database or map. An administrator can add the district via the region/district seed.",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit campuses in your region",
+              });
+            }
           }
         }
 
@@ -1187,28 +1215,31 @@ export const appRouter = router({
         }
 
         // Regional directors can only create campuses in their region
+        // (Exception: XAN / National Team district is always allowed for RDs)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
           const districtId = String(input.districtId ?? "");
-          const district = await db.getDistrictById(districtId);
-          const region =
-            district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
-          if (!region) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message:
-                "District not found. Add the district via the region/district seed, or choose a district that exists in the database.",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only create campuses in your region",
-            });
+          if (districtId !== "XAN") {
+            const district = await db.getDistrictById(districtId);
+            const region =
+              district?.region ?? DISTRICT_REGION_MAP[districtId] ?? null;
+            if (!region) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message:
+                  "District not found. Add the district via the region/district seed, or choose a district that exists in the database.",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only create campuses in your region",
+              });
+            }
           }
         }
 
@@ -1250,24 +1281,27 @@ export const appRouter = router({
         }
 
         // Regional directors can only archive campuses in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
-          const district = await db.getDistrictById(campus.districtId);
-          if (!district) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "District not found",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || district.region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit campuses in your region",
-            });
+          if (campus.districtId !== "XAN") {
+            const district = await db.getDistrictById(campus.districtId);
+            if (!district) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "District not found",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || district.region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit campuses in your region",
+              });
+            }
           }
         }
 
@@ -1324,24 +1358,27 @@ export const appRouter = router({
         }
 
         // Regional directors can only edit campuses in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
-          const district = await db.getDistrictById(campus.districtId);
-          if (!district) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "District not found",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || district.region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit campuses in your region",
-            });
+          if (campus.districtId !== "XAN") {
+            const district = await db.getDistrictById(campus.districtId);
+            if (!district) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "District not found",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || district.region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit campuses in your region",
+              });
+            }
           }
         }
 
@@ -1382,24 +1419,27 @@ export const appRouter = router({
         }
 
         // Regional directors can only delete campuses in their region
+        // (Exception: XAN / National Team district is always allowed)
         if (
           ctx.user.role === "REGION_DIRECTOR" ||
           ctx.user.role === "REGIONAL_STAFF"
         ) {
-          const district = await db.getDistrictById(campus.districtId);
-          if (!district) {
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "District not found",
-            });
-          }
-          const userRegion =
-            ctx.user.overseeRegionId || ctx.user.regionId || null;
-          if (!userRegion || district.region !== userRegion) {
-            throw new TRPCError({
-              code: "FORBIDDEN",
-              message: "You can only edit campuses in your region",
-            });
+          if (campus.districtId !== "XAN") {
+            const district = await db.getDistrictById(campus.districtId);
+            if (!district) {
+              throw new TRPCError({
+                code: "NOT_FOUND",
+                message: "District not found",
+              });
+            }
+            const userRegion =
+              ctx.user.overseeRegionId || ctx.user.regionId || null;
+            if (!userRegion || district.region !== userRegion) {
+              throw new TRPCError({
+                code: "FORBIDDEN",
+                message: "You can only edit campuses in your region",
+              });
+            }
           }
         }
 
@@ -1973,22 +2013,25 @@ export const appRouter = router({
             }
           }
           // Regional directors can only move people to campuses in their region
+          // (Exception: XAN / National Team district is always allowed)
           if (
             ctx.user.role === "REGION_DIRECTOR" ||
             ctx.user.role === "REGIONAL_STAFF"
           ) {
-            const targetDistrict = await db.getDistrictById(
-              targetCampus.districtId
-            );
-            if (targetDistrict) {
-              const userRegion =
-                ctx.user.overseeRegionId || ctx.user.regionId || null;
-              if (!userRegion || targetDistrict.region !== userRegion) {
-                throw new TRPCError({
-                  code: "FORBIDDEN",
-                  message:
-                    "You can only move people to campuses in your region",
-                });
+            if (targetCampus.districtId !== "XAN") {
+              const targetDistrict = await db.getDistrictById(
+                targetCampus.districtId
+              );
+              if (targetDistrict) {
+                const userRegion =
+                  ctx.user.overseeRegionId || ctx.user.regionId || null;
+                if (!userRegion || targetDistrict.region !== userRegion) {
+                  throw new TRPCError({
+                    code: "FORBIDDEN",
+                    message:
+                      "You can only move people to campuses in your region",
+                  });
+                }
               }
             }
           }
@@ -2861,7 +2904,10 @@ export const appRouter = router({
       // Filter by scope
       return allFollowUpPeople.filter(person => {
         if (scope.level === "ALL") return true;
-        if (scope.level === "REGION" && resolvePersonRegion(person) === scope.regionId)
+        if (
+          scope.level === "REGION" &&
+          resolvePersonRegion(person) === scope.regionId
+        )
           return true;
         if (
           scope.level === "DISTRICT" &&

@@ -164,12 +164,12 @@ export default function Home() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
-  const [districtPanelWidth, setDistrictPanelWidth] = useState(50); // percentage
+  const [districtPanelWidth, setDistrictPanelWidth] = useState(60); // percentage
   const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
   const [isResizingPeople, setIsResizingPeople] = useState(false);
   const [headerImageUrl, setHeaderImageUrl] = useState<string | null>(null);
-  const [headerBgColor, setHeaderBgColor] = useState<string>("#1a1a1a");
+  const [headerBgColor, setHeaderBgColor] = useState<string>("#000000");
   const [headerLogoUrl, setHeaderLogoUrl] = useState<string | null>(null);
   const [headerText, setHeaderText] = useState<string>("");
   const [headerEditorOpen, setHeaderEditorOpen] = useState(false);
@@ -335,7 +335,7 @@ export default function Home() {
     onSuccess: () => {
       utils.settings.get.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to save setting");
     },
   });
@@ -377,10 +377,13 @@ export default function Home() {
     }
   }, [savedHeaderImage]);
 
-  // Set background color from database on load
+  // Set background color from database on load (default black; ignore saved white)
   useEffect(() => {
-    if (savedBgColor && savedBgColor.value) {
-      setHeaderBgColor(savedBgColor.value);
+    if (savedBgColor?.value) {
+      const v = savedBgColor.value.trim().toLowerCase();
+      if (v && v !== "#ffffff" && v !== "#fff" && v !== "white") {
+        setHeaderBgColor(savedBgColor.value);
+      }
     }
   }, [savedBgColor]);
 
@@ -482,7 +485,7 @@ export default function Home() {
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to create person");
     },
   });
@@ -774,14 +777,17 @@ export default function Home() {
   }
 
   return (
-    <div id="main-content" className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden">
+    <div
+      id="main-content"
+      className="min-h-screen bg-slate-50 paper-texture overflow-x-hidden"
+    >
       {/* Header - Chi Alpha Toolbar Style */}
       <header
         className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "52px" : `${headerHeight}px`,
           minHeight: isMobile ? "52px" : "52px",
-          backgroundColor: headerBgColor || savedBgColor?.value || "#1f1f1f",
+          backgroundColor: headerBgColor || savedBgColor?.value || "#000000",
         }}
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
@@ -1009,7 +1015,9 @@ export default function Home() {
       <main
         className="flex main-content-area md:flex-row flex-col overflow-hidden"
         style={{
-          height: isMobile ? "calc(100dvh - 52px)" : `calc(100vh - ${headerHeight}px)`,
+          height: isMobile
+            ? "calc(100dvh - 52px)"
+            : `calc(100vh - ${headerHeight}px)`,
           minHeight: isMobile ? "calc(100dvh - 52px)" : undefined,
         }}
       >
@@ -1038,7 +1046,7 @@ export default function Home() {
               <>
                 {/* Resize Handle (desktop only) */}
                 <div
-                  className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                  className="absolute top-0 right-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
                   onMouseDown={handleDistrictMouseDown}
                 />
                 <AnimatePresence mode="wait">
@@ -1149,7 +1157,7 @@ export default function Home() {
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              padding: isMobile ? "0.5rem" : "2rem 3rem",
+              padding: isMobile ? "0.5rem" : "0.75rem 2.75rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
@@ -1236,7 +1244,7 @@ export default function Home() {
               <>
                 {/* Resize Handle */}
                 <div
-                  className="absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-gray-400 bg-gray-200 transition-colors z-10"
+                  className="absolute top-0 left-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
                   onMouseDown={handlePeopleMouseDown}
                 />
                 <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />

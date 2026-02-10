@@ -36,6 +36,23 @@ interface User {
   editLevel?: string | null;
 }
 
+// Roles that belong to the National Team (XAN panel).
+// Mirrors server-side XAN_ROLES in authorization.ts.
+const XAN_ROLES = [
+  "NATIONAL_STAFF",
+  "NATIONAL_DIRECTOR",
+  "FIELD_DIRECTOR",
+  "REGION_DIRECTOR",
+  "REGIONAL_STAFF",
+  "CMC_GO_ADMIN",
+];
+
+/** Whether the user's role grants access to edit the XAN / National Team panel. */
+function isXanEditRole(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return XAN_ROLES.includes(user.role);
+}
+
 // ────────────────────────────────────────────────────────
 // Default level fallbacks (mirrors server getDefaultAuthorization)
 // Used only when DB-stored levels are missing.
@@ -50,6 +67,7 @@ function getDefaultScopeLevel(role: string): string {
     case "NATIONAL_STAFF":
     case "REGION_DIRECTOR":
     case "REGIONAL_STAFF":
+    case "OTHER":
       return "NATIONAL";
     default:
       // DISTRICT_DIRECTOR, DISTRICT_STAFF, CAMPUS_DIRECTOR, CO_DIRECTOR,
@@ -74,6 +92,8 @@ function getDefaultViewLevel(role: string): string {
     case "CAMPUS_DIRECTOR":
     case "CO_DIRECTOR":
       return "DISTRICT";
+    case "OTHER":
+      return "CAMPUS"; // No campusId = no detail view
     default:
       // STAFF, CAMPUS_INTERN, CAMPUS_VOLUNTEER
       return "CAMPUS";
@@ -95,6 +115,8 @@ function getDefaultEditLevel(role: string): string {
     case "DISTRICT_DIRECTOR":
     case "DISTRICT_STAFF":
       return "DISTRICT";
+    case "OTHER":
+      return "CAMPUS"; // No campusId = no edit access
     default:
       // CAMPUS_DIRECTOR, CO_DIRECTOR, STAFF, CAMPUS_INTERN, CAMPUS_VOLUNTEER
       return "CAMPUS";
@@ -157,7 +179,7 @@ function resolveEditScope(level: string, user: User): EditScope | null {
  * Falls back to role-based defaults when scopeLevel is not set.
  */
 export function getPeopleScope(
-  user: User | null | undefined,
+  user: User | null | undefined
 ): PeopleScope | null {
   if (!user) return null;
   const level = user.scopeLevel || getDefaultScopeLevel(user.role);
@@ -173,7 +195,7 @@ export function getPeopleScope(
  * Detail View = roles, needs, tooltip notes, status colors.
  */
 export function getViewScope(
-  user: User | null | undefined,
+  user: User | null | undefined
 ): PeopleScope | null {
   if (!user) return null;
   const level = user.viewLevel || getDefaultViewLevel(user.role);
@@ -187,9 +209,7 @@ export function getViewScope(
 /**
  * Returns the user's edit scope (determines which people can be edited).
  */
-export function getEditScope(
-  user: User | null | undefined,
-): EditScope | null {
+export function getEditScope(user: User | null | undefined): EditScope | null {
   if (!user) return null;
   const level = user.editLevel || getDefaultEditLevel(user.role);
   return resolveEditScope(level, user);
@@ -206,7 +226,7 @@ function isInScope(
     primaryCampusId?: number | null;
     primaryDistrictId?: string | null;
     primaryRegion?: string | null;
-  },
+  }
 ): boolean {
   if (scope.level === "ALL") return true;
   if (scope.level === "REGION")
@@ -228,7 +248,7 @@ export function canViewPersonDetails(
     primaryCampusId?: number | null;
     primaryDistrictId?: string | null;
     primaryRegion?: string | null;
-  },
+  }
 ): boolean {
   const viewScope = getViewScope(user);
   if (!viewScope) return false;
@@ -237,7 +257,7 @@ export function canViewPersonDetails(
 
 /**
  * Can the user edit this person's info?
- * Based on editLevel. XAN edit = can only edit XAN members.
+ * Based on editLevel. XAN edit roles can always edit XAN members.
  */
 export function canEditPersonClient(
   user: User | null | undefined,
@@ -245,8 +265,11 @@ export function canEditPersonClient(
     primaryCampusId?: number | null;
     primaryDistrictId?: string | null;
     primaryRegion?: string | null;
-  },
+  }
 ): boolean {
+  // National Team members (NS, RD, ND, FD, Admin) can always edit XAN people
+  if (person.primaryDistrictId === "XAN" && isXanEditRole(user)) return true;
+
   const editScope = getEditScope(user);
   if (!editScope) return false;
 
@@ -269,7 +292,7 @@ export function canEditPersonClient(
 export function isDistrictInScope(
   districtId: string,
   user: User | null | undefined,
-  districtRegion?: string | null,
+  districtRegion?: string | null
 ): boolean {
   const scope = getPeopleScope(user);
   if (!scope) return false;
@@ -288,7 +311,7 @@ export function isCampusInScope(
   campusId: number,
   campusDistrictId: string | null,
   user: User | null | undefined,
-  districtRegion?: string | null,
+  districtRegion?: string | null
 ): boolean {
   const scope = getPeopleScope(user);
   if (!scope) return false;
@@ -309,9 +332,13 @@ export function isCampusInScope(
  */
 export function canEditDistrictInRegion(
   user: User | null | undefined,
-  districtRegion: string | null | undefined,
+  districtRegion: string | null | undefined
 ): boolean {
   if (!user || !districtRegion) return false;
+
+  // National Team members (NS, RD, ND, FD, Admin) can always edit the XAN panel
+  if (districtRegion === "National Team" && isXanEditRole(user)) return true;
+
   const editScope = getEditScope(user);
   if (!editScope) return false;
   if (editScope.level === "ALL") return true;
@@ -322,7 +349,7 @@ export function canEditDistrictInRegion(
     // (server validates the specific district)
     return true;
   }
-  // CAMPUS and XAN cannot edit at district level
+  // CAMPUS and XAN-only cannot edit at district level outside National Team
   return false;
 }
 
@@ -332,13 +359,20 @@ export function canEditDistrictInRegion(
  */
 export function canEditPersonByRegion(
   user: User | null | undefined,
-  personPrimaryRegion: string | null | undefined,
+  personPrimaryRegion: string | null | undefined
 ): boolean {
   if (!user) return false;
+
+  // National Team members can always edit people in the National Team region
+  if (personPrimaryRegion === "National Team" && isXanEditRole(user))
+    return true;
+
   const editScope = getEditScope(user);
   if (!editScope) return false;
   if (editScope.level === "ALL") return true;
-  if (editScope.level === "XAN") return false;
+  if (editScope.level === "XAN") {
+    return personPrimaryRegion === "National Team";
+  }
   if (editScope.level === "REGION") {
     return editScope.regionId === (personPrimaryRegion ?? null);
   }
