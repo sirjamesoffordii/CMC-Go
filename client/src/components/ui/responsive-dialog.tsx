@@ -13,6 +13,16 @@ interface ResponsiveDialogProps {
   snapPoints?: number[];
   /** Default snap index (default: 1 = 60%) */
   defaultSnap?: number;
+  /** Disable backdrop click to close on mobile */
+  closeOnBackdrop?: boolean;
+  /** Hide close button on mobile */
+  showCloseButton?: boolean;
+  /** Hide snap point indicators on mobile */
+  showSnapPoints?: boolean;
+  /** Reduce header height on mobile */
+  compactHeader?: boolean;
+  /** Force full-screen height on mobile */
+  fullScreen?: boolean;
 }
 
 /**
@@ -27,6 +37,11 @@ export function ResponsiveDialog({
   className = "max-w-2xl max-h-[85vh] overflow-y-auto",
   snapPoints = [25, 60, 90],
   defaultSnap = 1,
+  closeOnBackdrop = true,
+  showCloseButton = true,
+  showSnapPoints = true,
+  compactHeader = false,
+  fullScreen = false,
 }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
 
@@ -38,6 +53,11 @@ export function ResponsiveDialog({
         title={title}
         snapPoints={snapPoints}
         defaultSnap={defaultSnap}
+        closeOnBackdrop={closeOnBackdrop}
+        showCloseButton={showCloseButton}
+        showSnapPoints={showSnapPoints}
+        compactHeader={compactHeader}
+        fullScreen={fullScreen}
       >
         <div className="px-4 pb-4">{children}</div>
       </BottomSheet>

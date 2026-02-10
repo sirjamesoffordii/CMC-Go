@@ -3668,8 +3668,13 @@ export function DistrictPanel({
               }
             }}
             title="Add New Person"
-            snapPoints={[30, 70, 90]}
-            defaultSnap={2}
+            snapPoints={[100]}
+            defaultSnap={0}
+            closeOnBackdrop={true}
+            showCloseButton={false}
+            showSnapPoints={false}
+            compactHeader={true}
+            fullScreen={true}
           >
             <form
               onSubmit={e => {
@@ -4361,8 +4366,13 @@ export function DistrictPanel({
               }
             }}
             title="Edit Person"
-            snapPoints={[30, 70, 90]}
-            defaultSnap={2}
+            snapPoints={[100]}
+            defaultSnap={0}
+            closeOnBackdrop={true}
+            showCloseButton={false}
+            showSnapPoints={false}
+            compactHeader={true}
+            fullScreen={true}
           >
             <div className="space-y-6 py-4">
               {/* Basic Information Section */}

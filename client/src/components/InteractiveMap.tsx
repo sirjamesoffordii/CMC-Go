@@ -1834,11 +1834,13 @@ export const InteractiveMap = memo(function InteractiveMap({
       }}
     >
       <div className="relative w-full h-full">
-        {/* Top Right - Chi Alpha label + metrics (close together) */}
-        <div className="absolute top-6 right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2">
+        {/* Top Right - Chi Alpha label + metrics (shrink when district panel open) */}
+        <div
+          className={`absolute right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2 transition-all duration-300 ${selectedDistrictId ? "top-5" : "top-6"}`}
+        >
           <div className="flex items-center justify-end">
             <span
-              className="font-beach text-3xl sm:text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-0 sm:mr-1"
+              className={`font-beach font-medium text-slate-800 drop-shadow-lg transition-all duration-300 tracking-wide inline-block leading-none mr-0 sm:mr-1 ${selectedDistrictId ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl"}`}
               style={{
                 transform: "scaleX(1.08)",
                 transformOrigin: "right center",
@@ -1850,7 +1852,9 @@ export const InteractiveMap = memo(function InteractiveMap({
           </div>
 
           {/* "metrics" label + horizontal line (on hover) + collapsible metrics */}
-          <div className="flex flex-col items-end w-full max-w-[16rem] mt-3 bg-transparent">
+          <div
+            className={`flex flex-col items-end w-full bg-transparent transition-all duration-300 ${selectedDistrictId ? "max-w-[12rem] mt-2" : "max-w-[16rem] mt-3"}`}
+          >
             <button
               onClick={() => setMetricsExpanded(!metricsExpanded)}
               className="group flex flex-row items-center w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
@@ -1872,11 +1876,13 @@ export const InteractiveMap = memo(function InteractiveMap({
                   transitionDelay: metricsExpanded ? "0ms" : "1s, 0ms", // fade after line recedes
                 }}
               />
-              <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0">
+              <span
+                className={`font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0 ${selectedDistrictId ? "text-[9px]" : "text-[10px]"}`}
+              >
                 Metrics
               </span>
               <svg
-                className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 ${
+                className={`text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 ${selectedDistrictId ? "w-3 h-3" : "w-3.5 h-3.5"} ${
                   metricsExpanded ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -1903,7 +1909,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                 opacity: metricsExpanded ? 1 : 0,
               }}
             >
-              <div className="flex flex-col items-end gap-3 pt-0 pr-1 mt-1.5 overflow-hidden">
+              <div
+                className={`flex flex-col items-end pt-0 pr-1 mt-1.5 overflow-hidden transition-all duration-300 ${selectedDistrictId ? "gap-2" : "gap-3"}`}
+              >
                 {/* Yes - closest to line: slides out first, back in last */}
                 <button
                   onClick={() => toggleMetric("yes")}
@@ -1918,17 +1926,17 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-2xl" : "text-4xl"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: "8.5rem",
+                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Yes
                   </span>
                   <span
-                    className="text-4xl font-semibold text-slate-900 tabular-nums"
+                    className={`font-semibold text-slate-900 tabular-nums ${selectedDistrictId ? "text-2xl" : "text-4xl"}`}
                     style={{
                       lineHeight: "1",
                       width: "4rem",
@@ -1980,17 +1988,17 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className="text-[1.65rem] font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-xl" : "text-[1.65rem]"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: "8.5rem",
+                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Maybe
                   </span>
                   <span
-                    className="text-[1.65rem] font-semibold text-slate-900 tracking-tight tabular-nums"
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-xl" : "text-[1.65rem]"}`}
                     style={{
                       lineHeight: "1",
                       width: "4rem",
@@ -2042,17 +2050,17 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-lg" : "text-2xl"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: "8.5rem",
+                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     No
                   </span>
                   <span
-                    className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums"
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-lg" : "text-2xl"}`}
                     style={{
                       lineHeight: "1",
                       width: "4rem",
@@ -2104,17 +2112,17 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className="font-medium text-slate-700 whitespace-nowrap tracking-tight text-[1.2rem]"
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-base" : "text-[1.2rem]"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: "8.5rem",
+                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Not Invited Yet
                   </span>
                   <span
-                    className="font-semibold text-slate-900 tracking-tight tabular-nums text-[1.2rem]"
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-base" : "text-[1.2rem]"}`}
                     style={{
                       lineHeight: "1",
                       width: "4rem",
@@ -2157,14 +2165,16 @@ export const InteractiveMap = memo(function InteractiveMap({
           </div>
         </div>
 
-        {/* Top Left Invited / Total + Needs */}
-        <div className="absolute top-5 left-0 sm:top-6 sm:left-0 z-40 flex flex-col items-start gap-1 sm:gap-2 pl-1 sm:pl-2">
+        {/* Top Left Invited / Total + Needs (shrink when district panel open) */}
+        <div
+          className={`absolute left-0 z-40 flex flex-col items-start pl-1 sm:pl-2 transition-all duration-300 ${selectedDistrictId ? "top-5 sm:top-5 gap-1" : "top-5 sm:top-6 gap-1 sm:gap-2"}`}
+        >
           <div
             className="flex items-center gap-3"
             style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
           >
             <span
-              className="text-2xl sm:text-4xl font-semibold text-slate-900 whitespace-nowrap tracking-tight"
+              className={`font-semibold text-slate-900 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-xl sm:text-2xl" : "text-2xl sm:text-4xl"}`}
               style={{
                 lineHeight: "1",
                 textAlign: "left",
@@ -2177,38 +2187,58 @@ export const InteractiveMap = memo(function InteractiveMap({
               className="flex items-baseline gap-2 tabular-nums"
               style={{ lineHeight: "1" }}
             >
-              <span className="text-2xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+              <span
+                className={`font-bold text-slate-900 tracking-tight ${selectedDistrictId ? "text-xl sm:text-2xl" : "text-2xl sm:text-4xl"}`}
+              >
                 {showPublicPlaceholder ? "—" : displayedTotals.invited}
               </span>
-              <span className="text-lg sm:text-xl font-normal text-slate-400">
+              <span
+                className={`font-normal text-slate-400 ${selectedDistrictId ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}
+              >
                 /
               </span>
-              <span className="text-base sm:text-lg font-normal text-slate-400 tracking-tight">
+              <span
+                className={`font-normal text-slate-400 tracking-tight ${selectedDistrictId ? "text-sm sm:text-base" : "text-base sm:text-lg"}`}
+              >
                 {showPublicPlaceholder ? "—" : displayedTotals.total}
               </span>
             </div>
 
-            <div className="w-6 h-6 flex-shrink-0" />
+            <div
+              className={
+                selectedDistrictId
+                  ? "w-4 h-4 flex-shrink-0"
+                  : "w-6 h-6 flex-shrink-0"
+              }
+            />
           </div>
 
           {/* Needs summary - left-aligned with Invited */}
           <div className="hidden sm:block flex-shrink-0">
             <div className="inline-flex flex-col gap-y-0.5">
               <div className="flex items-baseline gap-x-2">
-                <span className="text-sm font-medium text-slate-500 shrink-0 text-left">
+                <span
+                  className={`font-medium text-slate-500 shrink-0 text-left ${selectedDistrictId ? "text-xs" : "text-sm"}`}
+                >
                   Needs Met:
                 </span>
-                <span className="text-sm font-semibold text-slate-700 tabular-nums min-w-0">
+                <span
+                  className={`font-semibold text-slate-700 tabular-nums min-w-0 ${selectedDistrictId ? "text-xs" : "text-sm"}`}
+                >
                   {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
                   <span className="text-slate-500 font-medium">/</span>{" "}
                   {needsAggregate ? needsAggregate.totalNeeds : "—"}
                 </span>
               </div>
               <div className="flex items-baseline gap-x-2">
-                <span className="text-sm font-medium text-slate-500 shrink-0 text-left">
+                <span
+                  className={`font-medium text-slate-500 shrink-0 text-left ${selectedDistrictId ? "text-xs" : "text-sm"}`}
+                >
                   Funds Received:
                 </span>
-                <span className="text-sm text-slate-600 tabular-nums min-w-0">
+                <span
+                  className={`text-slate-600 tabular-nums min-w-0 ${selectedDistrictId ? "text-xs" : "text-sm"}`}
+                >
                   {needsAggregate
                     ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
                     : "—"}{" "}
@@ -2240,8 +2270,8 @@ export const InteractiveMap = memo(function InteractiveMap({
           style={{
             filter: "blur(0.3px) brightness(0.82)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
-              ? "scale(1.02) translate(-8px, -14px)" // Slightly larger when panel open
-              : "scale(0.88) translate(-8px, -14px)", // A bit smaller; map nudged up
+              ? "scale(1.02) translate(-20px, -26px)" // Slightly larger when panel open
+              : "scale(0.88) translate(-20px, -26px)", // A bit smaller; map nudged up and left
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2277,10 +2307,10 @@ export const InteractiveMap = memo(function InteractiveMap({
               <div
                 className="rounded-full bg-black group-hover/xan:bg-red-700 flex items-center justify-center transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-black/60 shadow-lg group-hover/xan:-translate-y-2 group-hover/xan:shadow-xl"
                 style={{
-                  width: selectedDistrictId ? "2.5vw" : "3.5vw",
-                  height: selectedDistrictId ? "2.5vw" : "3.5vw",
-                  minWidth: selectedDistrictId ? "28px" : "40px",
-                  minHeight: selectedDistrictId ? "28px" : "40px",
+                  width: selectedDistrictId ? "2.5vw" : "4vw",
+                  height: selectedDistrictId ? "2.5vw" : "4vw",
+                  minWidth: selectedDistrictId ? "28px" : "44px",
+                  minHeight: selectedDistrictId ? "28px" : "44px",
                 }}
               >
                 <span
@@ -2301,8 +2331,8 @@ export const InteractiveMap = memo(function InteractiveMap({
             opacity: 0,
             pointerEvents: "auto",
             transform: selectedDistrictId
-              ? "scale(1.02) translate(-8px, -14px)" // Match visual layer when panel open
-              : "scale(0.88) translate(-8px, -14px)", // A bit smaller; map nudged up
+              ? "scale(1.02) translate(-20px, -26px)" // Match visual layer when panel open
+              : "scale(0.88) translate(-20px, -26px)", // A bit smaller; map nudged up and left
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",

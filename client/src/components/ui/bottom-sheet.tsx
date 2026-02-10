@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -11,6 +12,11 @@ interface BottomSheetProps {
   snapPoints?: number[]; // Array of percentages [25, 60, 90]
   defaultSnap?: number; // Default snap point index (0, 1, or 2)
   className?: string;
+  closeOnBackdrop?: boolean;
+  showCloseButton?: boolean;
+  showSnapPoints?: boolean;
+  compactHeader?: boolean;
+  fullScreen?: boolean;
 }
 
 const DEFAULT_SNAP_POINTS = [30, 60, 85];
@@ -24,15 +30,27 @@ export function BottomSheet({
   snapPoints = DEFAULT_SNAP_POINTS,
   defaultSnap = DEFAULT_SNAP,
   className,
+  closeOnBackdrop = true,
+  showCloseButton = true,
+  showSnapPoints = true,
+  compactHeader = false,
+  fullScreen = false,
 }: BottomSheetProps) {
-  const [currentSnap, setCurrentSnap] = useState(defaultSnap);
+  const resolvedSnapPoints = snapPoints.length
+    ? snapPoints
+    : DEFAULT_SNAP_POINTS;
+  const safeDefaultSnap = Math.max(
+    0,
+    Math.min(defaultSnap, resolvedSnapPoints.length - 1)
+  );
+  const [currentSnap, setCurrentSnap] = useState(safeDefaultSnap);
   const sheetRef = useRef<HTMLDivElement>(null);
   const startHeight = useRef(0);
 
   // Reset to default snap when opening
   useEffect(() => {
     if (open) {
-      setCurrentSnap(defaultSnap);
+      setCurrentSnap(safeDefaultSnap);
       // Prevent body scroll
       const scrollY = window.scrollY;
       document.body.style.position = "fixed";
@@ -51,7 +69,7 @@ export function BottomSheet({
         window.scrollTo(0, parseInt(top, 10) * -1);
       }
     }
-  }, [open, defaultSnap]);
+  }, [open, safeDefaultSnap]);
 
   const handleDragStart = () => {
     if (sheetRef.current) {
@@ -74,7 +92,7 @@ export function BottomSheet({
     let closestSnap = currentSnap;
     let minDiff = Infinity;
 
-    snapPoints.forEach((snap, index) => {
+    resolvedSnapPoints.forEach((snap, index) => {
       const diff = Math.abs(newPercentage - snap);
       if (diff < minDiff) {
         minDiff = diff;
@@ -99,9 +117,11 @@ export function BottomSheet({
     setCurrentSnap(index);
   };
 
-  const currentHeight = snapPoints[currentSnap];
+  const currentHeight = fullScreen
+    ? 100
+    : resolvedSnapPoints[Math.min(currentSnap, resolvedSnapPoints.length - 1)];
 
-  return (
+  const sheetContent = (
     <AnimatePresence>
       {open && (
         <>
@@ -110,8 +130,8 @@ export function BottomSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => onOpenChange(false)}
-            className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
+            onClick={closeOnBackdrop ? () => onOpenChange(false) : undefined}
+            className="fixed inset-0 bg-black/50 z-[95] md:hidden backdrop-blur-sm"
             aria-hidden="true"
           />
 
@@ -131,13 +151,13 @@ export function BottomSheet({
             onDrag={handleDrag}
             onDragEnd={handleDragEnd}
             className={cn(
-              "fixed left-0 right-0 z-[60] bg-white rounded-t-3xl shadow-2xl md:hidden",
+              "fixed left-0 right-0 z-[100] bg-white rounded-t-3xl shadow-2xl md:hidden",
               "flex flex-col",
               className
             )}
             style={{
-              height: `${currentHeight}%`,
-              maxHeight: "85vh",
+              height: fullScreen ? "100dvh" : `${currentHeight}%`,
+              maxHeight: fullScreen ? "100dvh" : "85vh",
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
             }}
             role="dialog"
@@ -146,8 +166,12 @@ export function BottomSheet({
           >
             {/* Drag Handle */}
             <div
-              className="flex-shrink-0 pt-4 pb-2 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
-              style={{ minHeight: "32px" }}
+              className={cn(
+                "flex-shrink-0 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none",
+                compactHeader
+                  ? "pt-2 pb-1 min-h-[24px]"
+                  : "pt-4 pb-2 min-h-[32px]"
+              )}
             >
               <div
                 className="w-14 h-1.5 bg-gray-300 rounded-full"
@@ -157,39 +181,53 @@ export function BottomSheet({
 
             {/* Header */}
             {title && (
-              <div className="flex-shrink-0 flex items-center justify-between px-4 pb-3 border-b border-gray-100">
+              <div
+                className={cn(
+                  "flex-shrink-0 flex items-center border-b border-gray-100",
+                  compactHeader ? "px-4 py-2" : "px-4 pb-3",
+                  showCloseButton ? "justify-between" : "justify-start"
+                )}
+              >
                 <h2
                   id="bottom-sheet-title"
-                  className="text-lg font-semibold text-gray-900 truncate pr-3"
+                  className={cn(
+                    "font-semibold text-gray-900 truncate",
+                    compactHeader ? "text-base" : "text-lg",
+                    showCloseButton ? "pr-3" : "pr-0"
+                  )}
                 >
                   {title}
                 </h2>
-                <button
-                  onClick={() => onOpenChange(false)}
-                  className="p-3 -mr-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center"
-                  aria-label="Close"
-                >
-                  <X className="h-5 w-5 text-gray-600" />
-                </button>
+                {showCloseButton && (
+                  <button
+                    onClick={() => onOpenChange(false)}
+                    className="p-3 -mr-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors min-w-[48px] min-h-[48px] flex items-center justify-center"
+                    aria-label="Close"
+                  >
+                    <X className="h-5 w-5 text-gray-600" />
+                  </button>
+                )}
               </div>
             )}
 
             {/* Snap Point Indicators */}
-            <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2">
-              {snapPoints.map((snap, index) => (
-                <button
-                  key={index}
-                  onClick={() => snapTo(index)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all min-w-[32px] min-h-[32px] flex items-center justify-center",
-                    index === currentSnap
-                      ? "w-10 bg-gray-400"
-                      : "w-2 bg-gray-200"
-                  )}
-                  aria-label={`Snap to ${snap}%`}
-                />
-              ))}
-            </div>
+            {showSnapPoints && resolvedSnapPoints.length > 1 && (
+              <div className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2">
+                {resolvedSnapPoints.map((snap, index) => (
+                  <button
+                    key={index}
+                    onClick={() => snapTo(index)}
+                    className={cn(
+                      "h-1.5 rounded-full transition-all min-w-[32px] min-h-[32px] flex items-center justify-center",
+                      index === currentSnap
+                        ? "w-10 bg-gray-400"
+                        : "w-2 bg-gray-200"
+                    )}
+                    aria-label={`Snap to ${snap}%`}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-4">
@@ -200,4 +238,10 @@ export function BottomSheet({
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(sheetContent, document.body);
 }
