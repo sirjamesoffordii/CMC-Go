@@ -1512,6 +1512,32 @@ export async function getAllDistrictMetrics() {
   const db = await getDb();
   if (!db) return [];
 
+  // First, seed the districtMap with ALL districts from the districts table
+  // so every district appears even with 0 people
+  const allDistrictRows = await db.select({ id: districts.id }).from(districts);
+  const districtMap = new Map<
+    string,
+    {
+      going: number;
+      maybe: number;
+      notGoing: number;
+      notInvited: number;
+      total: number;
+    }
+  >();
+  const zeroCounts = {
+    going: 0,
+    maybe: 0,
+    notGoing: 0,
+    notInvited: 0,
+    total: 0,
+  };
+  for (const row of allDistrictRows) {
+    if (row.id && !districtMap.has(row.id)) {
+      districtMap.set(row.id, { ...zeroCounts });
+    }
+  }
+
   // Include people in a district either by primaryDistrictId or by the district
   // of their primaryCampusId. Use COALESCE to derive the effective district.
   // Special case: XAN role members are attributed to "XAN" district.
@@ -1535,30 +1561,13 @@ export async function getAllDistrictMetrics() {
     .where(sql`${effectiveDistrictId} IS NOT NULL`)
     .groupBy(effectiveDistrictId, people.status);
 
-  // Group by district and aggregate status counts
-  const districtMap = new Map<
-    string,
-    {
-      going: number;
-      maybe: number;
-      notGoing: number;
-      notInvited: number;
-      total: number;
-    }
-  >();
-
+  // Aggregate people counts into the pre-seeded districtMap
   for (const row of result) {
     const districtId = row.districtId;
     if (!districtId) continue;
 
     if (!districtMap.has(districtId)) {
-      districtMap.set(districtId, {
-        going: 0,
-        maybe: 0,
-        notGoing: 0,
-        notInvited: 0,
-        total: 0,
-      });
+      districtMap.set(districtId, { ...zeroCounts });
     }
 
     const counts = districtMap.get(districtId)!;
@@ -1592,10 +1601,40 @@ export async function getAllDistrictMetrics() {
  * Get aggregate metrics for all regions (no person identifiers).
  * Returns counts for Yes, Maybe, No, Not Invited statuses per region.
  * This is a public aggregate endpoint - everyone can see these numbers.
+ * Always returns ALL regions (including those with 0 people) by seeding
+ * from the districts table.
  */
 export async function getAllRegionMetrics() {
   const db = await getDb();
   if (!db) return [];
+
+  // First, seed the regionMap with ALL regions from the districts table
+  // so every region appears even with 0 people
+  const allDistrictRows = await db
+    .select({ region: districts.region })
+    .from(districts);
+  const regionMap = new Map<
+    string,
+    {
+      going: number;
+      maybe: number;
+      notGoing: number;
+      notInvited: number;
+      total: number;
+    }
+  >();
+  const zeroCounts = {
+    going: 0,
+    maybe: 0,
+    notGoing: 0,
+    notInvited: 0,
+    total: 0,
+  };
+  for (const row of allDistrictRows) {
+    if (row.region && !regionMap.has(row.region)) {
+      regionMap.set(row.region, { ...zeroCounts });
+    }
+  }
 
   // Derive region from districts table via primaryDistrictId JOIN,
   // falling back to people.primaryRegion for people without a district.
@@ -1614,30 +1653,13 @@ export async function getAllRegionMetrics() {
     .where(sql`${effectiveRegion} IS NOT NULL`)
     .groupBy(effectiveRegion, people.status);
 
-  // Group by region and aggregate status counts
-  const regionMap = new Map<
-    string,
-    {
-      going: number;
-      maybe: number;
-      notGoing: number;
-      notInvited: number;
-      total: number;
-    }
-  >();
-
+  // Aggregate status counts into the pre-seeded regionMap
   for (const row of result) {
     const region = row.region;
     if (!region) continue;
 
     if (!regionMap.has(region)) {
-      regionMap.set(region, {
-        going: 0,
-        maybe: 0,
-        notGoing: 0,
-        notInvited: 0,
-        total: 0,
-      });
+      regionMap.set(region, { ...zeroCounts });
     }
 
     const counts = regionMap.get(region)!;

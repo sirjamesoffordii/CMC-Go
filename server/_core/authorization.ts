@@ -25,7 +25,8 @@ export type UserRole =
   | "NATIONAL_DIRECTOR"
   | "FIELD_DIRECTOR"
   | "CMC_GO_ADMIN"
-  | "ADMIN";
+  | "ADMIN"
+  | "OTHER";
 
 // Phase 3: Authorization level types
 export type ScopeLevel = "NATIONAL" | "REGION" | "DISTRICT";

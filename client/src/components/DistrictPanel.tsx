@@ -206,7 +206,8 @@ export function DistrictPanel({
     const normalizedNew = normalizeCampusName(name);
     if (!normalizedNew) return false;
     return campusesForLayout.some(campus => {
-      if (excludeCampusId != null && campus.id === excludeCampusId) return false;
+      if (excludeCampusId != null && campus.id === excludeCampusId)
+        return false;
       const normalizedExisting = normalizeCampusName(campus.name ?? "");
       return normalizedExisting && normalizedExisting === normalizedNew;
     });
@@ -2016,12 +2017,12 @@ export function DistrictPanel({
     });
   };
 
-  // Handle add campus
+  // Handle add campus/category
   const handleAddCampus = () => {
     if (!campusForm.name.trim() || !district) return;
     if (hasCampusNameConflict(campusForm.name)) {
       toast.error(
-        "A campus with a very similar name already exists in this district. Please use that campus instead of creating a duplicate."
+        `A ${entityName.toLowerCase()} with a very similar name already exists. Please use that ${entityName.toLowerCase()} instead of creating a duplicate.`
       );
       return;
     }
@@ -2794,38 +2795,53 @@ export function DistrictPanel({
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
             {/* Title Section - District Name, Region, Directors, and Needs Summary */}
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <div ref={districtNameRef} className="w-[12rem] min-w-[12rem] max-w-[12rem] flex-shrink-0">
+              <div
+                ref={districtNameRef}
+                className="w-[12rem] min-w-[12rem] max-w-[12rem] flex-shrink-0"
+              >
                 <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
-                  <EditableText
-                    value={district.name}
-                    onSave={newName => {
-                      updateDistrictName.mutate({
-                        id: district.id,
-                        name: newName,
-                      });
-                    }}
-                    disabled={disableEdits}
-                    className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                    inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                  />
-                  {disableEdits && (
+                  {isNationalTeam ? (
+                    <span className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl">
+                      XAN
+                    </span>
+                  ) : (
+                    <EditableText
+                      value={district.name}
+                      onSave={newName => {
+                        updateDistrictName.mutate({
+                          id: district.id,
+                          name: newName,
+                        });
+                      }}
+                      disabled={disableEdits}
+                      className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                      inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                    />
+                  )}
+                  {disableEdits && !isNationalTeam && (
                     <span className="ml-1 text-slate-400"></span>
                   )}
                 </h1>
                 <span className="text-slate-500 text-sm mt-0.5 block font-medium">
-                  <EditableText
-                    value={district.region}
-                    onSave={newRegion => {
-                      updateDistrictRegion.mutate({
-                        id: district.id,
-                        region: newRegion,
-                      });
-                    }}
-                    disabled={disableEdits}
-                    className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded"
-                    inputClassName="text-slate-500 text-sm"
-                  />
-                  {disableEdits && (
+                  {isNationalTeam ? (
+                    <span className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded">
+                      Chi Alpha National Team
+                    </span>
+                  ) : (
+                    <EditableText
+                      value={district.region}
+                      onSave={newRegion => {
+                        updateDistrictRegion.mutate({
+                          id: district.id,
+                          region: newRegion,
+                        });
+                      }}
+                      disabled={disableEdits}
+                      className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded"
+                      inputClassName="text-slate-500 text-sm"
+                    />
+                  )}
+                  {disableEdits && !isNationalTeam && (
                     <span className="ml-1 text-slate-400"></span>
                   )}
                 </span>
@@ -2970,93 +2986,100 @@ export function DistrictPanel({
 
               {/* Stats + Needs/Funds with divider between status block and Needs Met */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Stats - two blocks (Yes/No, Maybe/Not Invited Yet) with Open in Table on hover */}
-              <div
-                className="group/stats relative flex items-center gap-3 flex-shrink-0 text-[13px] cursor-pointer rounded-md px-1 -mx-1"
-                onClick={() =>
-                  onOpenTable?.({
-                    statusFilter: new Set(["Yes", "Maybe", "No", "Not Invited"]),
-                  })
-                }
-              >
-                <div className="flex flex-col gap-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
-                    <span className="text-slate-600">Yes:</span>
-                    <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
-                      {safeStats.going}
-                    </span>
+                {/* Stats - two blocks (Yes/No, Maybe/Not Invited Yet) with Open in Table on hover */}
+                <div
+                  className="group/stats relative flex items-center gap-3 flex-shrink-0 text-[13px] cursor-pointer rounded-md px-1 -mx-1"
+                  onClick={() =>
+                    onOpenTable?.({
+                      statusFilter: new Set([
+                        "Yes",
+                        "Maybe",
+                        "No",
+                        "Not Invited",
+                      ]),
+                    })
+                  }
+                >
+                  <div className="flex flex-col gap-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
+                      <span className="text-slate-600">Yes:</span>
+                      <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
+                        {safeStats.going}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-700 flex-shrink-0"></div>
+                      <span className="text-slate-600 whitespace-nowrap">
+                        No:
+                      </span>
+                      <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
+                        {safeStats.notGoing}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-700 flex-shrink-0"></div>
-                    <span className="text-slate-600 whitespace-nowrap">No:</span>
-                    <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
-                      {safeStats.notGoing}
+                  <div className="flex flex-col gap-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-600 flex-shrink-0"></div>
+                      <span className="text-slate-600">Maybe:</span>
+                      <span className="font-semibold text-slate-900 tabular-nums">
+                        {safeStats.maybe}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
+                      <span className="text-slate-600 whitespace-nowrap">
+                        Not Invited Yet:
+                      </span>
+                      <span className="font-semibold text-slate-900 tabular-nums">
+                        {safeStats.notInvited}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/stats:opacity-100 transition-opacity">
+                    <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open in Table
                     </span>
                   </div>
                 </div>
-                <div className="flex flex-col gap-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-yellow-600 flex-shrink-0"></div>
-                    <span className="text-slate-600">Maybe:</span>
-                    <span className="font-semibold text-slate-900 tabular-nums">
-                      {safeStats.maybe}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
-                    <span className="text-slate-600 whitespace-nowrap">
-                      Not Invited Yet:
-                    </span>
-                    <span className="font-semibold text-slate-900 tabular-nums">
-                      {safeStats.notInvited}
-                    </span>
-                  </div>
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/stats:opacity-100 transition-opacity">
-                  <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open in Table
-                  </span>
-                </div>
-              </div>
 
-              <div className="w-px h-7 bg-slate-200 flex-shrink-0"></div>
+                <div className="w-px h-7 bg-slate-200 flex-shrink-0"></div>
 
-              {/* Needs / Funds Summary (right side) - with Open in Table on hover */}
-              <div
-                className="group/needs relative flex-shrink-0 cursor-pointer rounded-md px-1 -mx-1"
-                onClick={() => onOpenTable?.({ needsView: true })}
-              >
-                <div className="inline-flex flex-col gap-y-0.5">
-                  <div className="flex items-baseline gap-x-3">
-                    <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
-                      Needs Met:
-                    </span>
-                    <span className="text-[13px] font-semibold text-slate-700 tabular-nums text-left min-w-0">
-                      {needsSummary.metNeeds}{" "}
-                      <span className="text-slate-500 font-medium">/</span>{" "}
-                      {needsSummary.totalNeeds}
-                    </span>
+                {/* Needs / Funds Summary (right side) - with Open in Table on hover */}
+                <div
+                  className="group/needs relative flex-shrink-0 cursor-pointer rounded-md px-1 -mx-1"
+                  onClick={() => onOpenTable?.({ needsView: true })}
+                >
+                  <div className="inline-flex flex-col gap-y-0.5">
+                    <div className="flex items-baseline gap-x-3">
+                      <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
+                        Needs Met:
+                      </span>
+                      <span className="text-[13px] font-semibold text-slate-700 tabular-nums text-left min-w-0">
+                        {needsSummary.metNeeds}{" "}
+                        <span className="text-slate-500 font-medium">/</span>{" "}
+                        {needsSummary.totalNeeds}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-x-3">
+                      <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
+                        Funds Received:
+                      </span>
+                      <span className="text-[13px] text-slate-600 tabular-nums text-left min-w-0">
+                        {`$${((needsSummary.metFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}{" "}
+                        <span className="text-slate-500 font-medium">/</span>{" "}
+                        {`$${((needsSummary.totalFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-baseline gap-x-3">
-                    <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
-                      Funds Received:
-                    </span>
-                    <span className="text-[13px] text-slate-600 tabular-nums text-left min-w-0">
-                      {`$${((needsSummary.metFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}{" "}
-                      <span className="text-slate-500 font-medium">/</span>{" "}
-                      {`$${((needsSummary.totalFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/needs:opacity-100 transition-opacity">
+                    <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Open in Table
                     </span>
                   </div>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/needs:opacity-100 transition-opacity">
-                  <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    Open in Table
-                  </span>
-                </div>
-              </div>
               </div>
             </div>
           </div>
@@ -3200,7 +3223,7 @@ export function DistrictPanel({
                                         className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 min-h-[40px]"
                                       >
                                         <Edit2 className="w-4 h-4 text-slate-500 shrink-0" />
-                                        <span>Edit Campus Name</span>
+                                        <span>Edit {entityName} Name</span>
                                       </button>
                                       <button
                                         onClick={() => {
@@ -3235,7 +3258,10 @@ export function DistrictPanel({
                                   if (e.key === "Enter") {
                                     e.preventDefault();
                                     const name = campusForm.name?.trim();
-                                    if (name && !hasCampusNameConflict(name, campus.id))
+                                    if (
+                                      name &&
+                                      !hasCampusNameConflict(name, campus.id)
+                                    )
                                       handleUpdateCampus(campus.id);
                                     else if (name)
                                       toast.error(
@@ -3523,7 +3549,7 @@ export function DistrictPanel({
                               if (!name) return;
                               if (hasCampusNameConflict(name)) {
                                 toast.error(
-                                  "A campus with a very similar name already exists in this district. Please use that campus instead of creating a duplicate."
+                                  `A ${entityName.toLowerCase()} with a very similar name already exists. Please use that ${entityName.toLowerCase()} instead of creating a duplicate.`
                                 );
                                 return;
                               }
@@ -3587,7 +3613,7 @@ export function DistrictPanel({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className={`w-full h-full flex flex-col ${!canInteract ? "cursor-not-allowed" : ""}`}
+      className="w-full h-full flex flex-col"
     >
       {content}
     </motion.div>
@@ -5054,18 +5080,18 @@ export function DistrictPanel({
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Add Campus Dialog */}
+          {/* Add Campus/Category Dialog */}
           <Dialog
             open={isCampusDialogOpen}
             onOpenChange={setIsCampusDialogOpen}
           >
             <DialogContent aria-describedby={undefined}>
               <DialogHeader>
-                <DialogTitle>Add New Campus</DialogTitle>
+                <DialogTitle>Add New {entityName}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="campus-name">Campus Name</Label>
+                  <Label htmlFor="campus-name">{entityName} Name</Label>
                   <Input
                     id="campus-name"
                     value={campusForm.name}
@@ -5078,7 +5104,7 @@ export function DistrictPanel({
                         }
                       }
                     }}
-                    placeholder="Enter campus name"
+                    placeholder={`Enter ${entityName.toLowerCase()} name`}
                     spellCheck={true}
                     autoComplete="organization"
                     autoFocus
@@ -5097,30 +5123,30 @@ export function DistrictPanel({
                   onClick={handleAddCampus}
                   disabled={!campusForm.name.trim() || createCampus.isPending}
                 >
-                  {createCampus.isPending ? "Adding..." : "Add Campus"}
+                  {createCampus.isPending ? "Adding..." : `Add ${entityName}`}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
 
-          {/* Edit Campus Dialog */}
+          {/* Edit Campus/Category Dialog */}
           <Dialog
             open={isEditCampusDialogOpen}
             onOpenChange={setIsEditCampusDialogOpen}
           >
             <DialogContent aria-describedby={undefined}>
               <DialogHeader>
-                <DialogTitle>Edit Campus</DialogTitle>
+                <DialogTitle>Edit {entityName}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                  <Label htmlFor="edit-campus-name">Campus Name</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-campus-name">{entityName} Name</Label>
                   <Input
                     id="edit-campus-name"
                     list="edit-campus-name-suggestions"
                     value={campusForm.name}
                     onChange={e => setCampusForm({ name: e.target.value })}
-                    placeholder="Enter campus name"
+                    placeholder={`Enter ${entityName.toLowerCase()} name`}
                     spellCheck={true}
                     autoComplete="organization"
                     className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
@@ -5147,7 +5173,9 @@ export function DistrictPanel({
                     !campusForm.name.trim() || updateCampusName.isPending
                   }
                 >
-                  {updateCampusName.isPending ? "Updating..." : "Update Campus"}
+                  {updateCampusName.isPending
+                    ? "Updating..."
+                    : `Update ${entityName}`}
                 </Button>
               </DialogFooter>
             </DialogContent>

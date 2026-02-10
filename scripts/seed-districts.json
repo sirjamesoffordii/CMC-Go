@@ -60,8 +60,8 @@
     "region": "Great Plains North"
   },
   {
-    "id": "Wisconsin",
-    "name": "Wisconsin",
+    "id": "Wisconsin-NorthMichigan",
+    "name": "Wisconsin / North Michigan",
     "region": "Great Plains North"
   },
   {
@@ -90,13 +90,8 @@
     "region": "Great Plains South"
   },
   {
-    "id": "NorthCarolina",
-    "name": "North Carolina",
-    "region": "Mid-Atlantic"
-  },
-  {
-    "id": "Virginia",
-    "name": "Virginia",
+    "id": "Appalachian",
+    "name": "Appalachian",
     "region": "Mid-Atlantic"
   },
   {
@@ -105,34 +100,19 @@
     "region": "Mid-Atlantic"
   },
   {
+    "id": "NorthCarolina",
+    "name": "North Carolina",
+    "region": "Mid-Atlantic"
+  },
+  {
+    "id": "Potomac",
+    "name": "Potomac",
+    "region": "Mid-Atlantic"
+  },
+  {
     "id": "Tennessee",
     "name": "Tennessee",
     "region": "Mid-Atlantic"
-  },
-  {
-    "id": "WestVirginia",
-    "name": "West Virginia",
-    "region": "Mid-Atlantic"
-  },
-  {
-    "id": "Connecticut",
-    "name": "Connecticut",
-    "region": "Northeast"
-  },
-  {
-    "id": "Maine",
-    "name": "Maine",
-    "region": "Northeast"
-  },
-  {
-    "id": "Massachusetts",
-    "name": "Massachusetts",
-    "region": "Northeast"
-  },
-  {
-    "id": "NewHampshire",
-    "name": "New Hampshire",
-    "region": "Northeast"
   },
   {
     "id": "NewJersey",
@@ -145,13 +125,18 @@
     "region": "Northeast"
   },
   {
-    "id": "Pennsylvania",
-    "name": "Pennsylvania",
+    "id": "NorthernNewEngland",
+    "name": "Northern New England",
     "region": "Northeast"
   },
   {
-    "id": "Vermont",
-    "name": "Vermont",
+    "id": "Penn-Del",
+    "name": "Penn-Del",
+    "region": "Northeast"
+  },
+  {
+    "id": "SouthernNewEngland",
+    "name": "Southern New England",
     "region": "Northeast"
   },
   {
@@ -195,11 +180,6 @@
     "region": "Southeast"
   },
   {
-    "id": "Florida",
-    "name": "Florida",
-    "region": "Southeast"
-  },
-  {
     "id": "Georgia",
     "name": "Georgia",
     "region": "Southeast"
@@ -207,6 +187,11 @@
   {
     "id": "Mississippi",
     "name": "Mississippi",
+    "region": "Southeast"
+  },
+  {
+    "id": "PeninsularFlorida",
+    "name": "Peninsular Florida",
     "region": "Southeast"
   },
   {
@@ -250,18 +235,18 @@
     "region": "West Coast"
   },
   {
-    "id": "Nevada",
-    "name": "Nevada",
+    "id": "NorthernCal-Nevada",
+    "name": "Northern California / Nevada",
     "region": "West Coast"
   },
   {
-    "id": "NorthCalifornia",
-    "name": "North California",
+    "id": "SouthernCalifornia",
+    "name": "Southern California",
     "region": "West Coast"
   },
   {
-    "id": "SouthCalifornia",
-    "name": "South California",
-    "region": "West Coast"
+    "id": "XAN",
+    "name": "National Team",
+    "region": "National Team"
   }
 ]

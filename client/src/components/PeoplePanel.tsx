@@ -247,6 +247,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   );
 
   // Region -> District -> Campus tree for Scope dropdown (like main toolbar)
+  // Always show ALL regions even if they have no districts/people
   const scopeMenuTree = useMemo(() => {
     return ALL_REGIONS.map(region => ({
       region,
@@ -256,7 +257,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           district,
           campuses: allCampuses.filter(c => c.districtId === district.id),
         })),
-    })).filter(r => r.districts.length > 0);
+    }));
   }, [allDistricts, allCampuses]);
 
   // User's region: either their direct regionId or overseeRegionId
@@ -2052,7 +2053,10 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                             people.length > 0 && (
                                               <div className="bg-gray-50">
                                                 {people.map((person: Person) =>
-                                                  renderPerson(person, "px-5 sm:px-16")
+                                                  renderPerson(
+                                                    person,
+                                                    "px-5 sm:px-16"
+                                                  )
                                                 )}
                                               </div>
                                             )}

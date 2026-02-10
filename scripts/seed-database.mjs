@@ -160,8 +160,8 @@ async function seed() {
   console.log("🌱 Seeding MySQL database with dev data...\n");
 
   try {
-    // 1. Insert districts (first 20 for quick setup, or all if you want)
-    const districtsToSeed = allDistricts.slice(0, 20);
+    // 1. Insert ALL districts (all regions must be represented)
+    const districtsToSeed = allDistricts;
     console.log(`📋 Inserting ${districtsToSeed.length} districts...`);
 
     let districtsInserted = 0;
@@ -192,26 +192,12 @@ async function seed() {
     }
     console.log(`✅ Inserted/updated ${districtsInserted} districts\n`);
 
-    // 1b. Ensure National Team (XAN) exists as a first-class district
-    console.log("🏛️  Ensuring XAN (National Team) district exists...");
-    await db
-      .insert(districts)
-      .values({
-        id: "XAN",
-        name: "National Team",
-        region: "National Team",
-        leftNeighbor: null,
-        rightNeighbor: null,
-      })
-      .onDuplicateKeyUpdate({
-        set: { name: "National Team", region: "National Team" },
-      });
-    console.log("✅ XAN district ready\n");
-
-    // 2. Generate and insert campuses (2-3 per district)
+    // 2. Generate and insert campuses (2-3 per district, skip XAN)
     console.log("🏫 Generating campuses...");
     const allCampuses = [];
     for (const district of districtsToSeed) {
+      // Skip XAN — national campuses are added separately below
+      if (district.id === "XAN") continue;
       const numCampuses = 2 + Math.floor(Math.random() * 2); // 2-3 campuses
       for (let i = 0; i < numCampuses; i++) {
         const suffix = campusSuffixes[i % campusSuffixes.length];
