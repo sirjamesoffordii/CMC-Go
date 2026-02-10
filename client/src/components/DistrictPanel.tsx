@@ -3948,7 +3948,7 @@ export function DistrictPanel({
                           >
                             <div className="space-y-2 w-32">
                               <Label htmlFor="person-need-amount">
-                                Funds Needed ($)
+                                Funds Needed
                               </Label>
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
@@ -3972,7 +3972,7 @@ export function DistrictPanel({
                             </div>
                             <div className="space-y-2 w-40">
                               <Label htmlFor="person-funds-received-amount">
-                                Funds Received ($)
+                                Funds Received
                               </Label>
                               <div className="relative">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
@@ -4635,7 +4635,7 @@ export function DistrictPanel({
                         >
                           <div className="space-y-2 w-32">
                             <Label htmlFor="edit-person-need-amount">
-                              Funds Needed ($)
+                              Funds Needed
                             </Label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
@@ -4659,7 +4659,7 @@ export function DistrictPanel({
                           </div>
                           <div className="space-y-2 w-32">
                             <Label htmlFor="edit-person-funds-received-amount">
-                              Funds Received ($)
+                              Funds Received
                             </Label>
                             <div className="relative">
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">
