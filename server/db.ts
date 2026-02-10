@@ -636,10 +636,38 @@ export async function getPeopleByDistrictId(districtId: string) {
 export async function getPeopleByRegionId(regionId: string) {
   const db = await getDb();
   if (!db) return [];
+
+  // Find all district IDs that belong to this region
+  const regionDistricts = await db
+    .select({ id: districts.id })
+    .from(districts)
+    .where(eq(districts.region, regionId));
+  const regionDistrictIds = regionDistricts.map(d => d.id);
+
+  // Return people who either:
+  // 1. Have primaryRegion explicitly set to this region, OR
+  // 2. Have primaryDistrictId belonging to a district in this region
+  // This ensures people with NULL primaryRegion but a valid district are included.
+  if (regionDistrictIds.length === 0) {
+    // No districts in DB for this region — fall back to primaryRegion only
+    return await db
+      .select()
+      .from(people)
+      .where(eq(people.primaryRegion, regionId));
+  }
+
   return await db
     .select()
     .from(people)
-    .where(eq(people.primaryRegion, regionId));
+    .where(
+      or(
+        eq(people.primaryRegion, regionId),
+        sql`${people.primaryDistrictId} IN (${sql.join(
+          regionDistrictIds.map(id => sql`${id}`),
+          sql`, `
+        )})`
+      )
+    );
 }
 
 export async function getPeopleByCampusId(campusId: number) {

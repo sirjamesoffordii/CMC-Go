@@ -742,13 +742,18 @@ describe("canEditRegion", () => {
     });
   });
 
-  describe("REGION_DIRECTOR and ADMIN - full national access", () => {
-    it("REGION_DIRECTOR can edit any region", () => {
-      const user = createFullUser("REGION_DIRECTOR");
-
-      expect(canEditRegion(user, "ANY-REGION")).toBe(true);
+  describe("REGION_DIRECTOR - overseen region only", () => {
+    it("REGION_DIRECTOR can edit only their overseen region", () => {
+      const user = {
+        ...createFullUser("REGION_DIRECTOR"),
+        overseeRegionId: "REG-001",
+      };
+      expect(canEditRegion(user, "REG-001")).toBe(true);
+      expect(canEditRegion(user, "ANY-REGION")).toBe(false);
     });
+  });
 
+  describe("ADMIN - full national access", () => {
     it("ADMIN can edit any region", () => {
       const user = createFullUser("ADMIN");
 

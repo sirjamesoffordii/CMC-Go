@@ -38,6 +38,8 @@ interface DistrictStaffDropZoneProps {
   quickAddInputRef?: React.RefObject<HTMLInputElement | null>;
   canInteract?: boolean;
   maskIdentity?: boolean;
+  /** When true, name is visible but details (status color, role, needs, tooltip) are hidden. */
+  maskDetails?: boolean;
 }
 
 interface _Need {
@@ -64,7 +66,10 @@ export function DistrictStaffDropZone({
   quickAddInputRef,
   canInteract = true,
   maskIdentity = false,
+  maskDetails = false,
 }: DistrictStaffDropZoneProps) {
+  // Hide details when either maskIdentity (fully hidden) or maskDetails (in-scope but no detail view)
+  const hideDetails = maskIdentity || maskDetails;
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
@@ -75,7 +80,7 @@ export function DistrictStaffDropZone({
   // Fetch needs by person to get all needs (including inactive) to show met needs with checkmark
   const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
     { personId: person?.personId || "" },
-    { enabled: !!person && canInteract && !maskIdentity }
+    { enabled: !!person && !hideDetails }
   );
   const personNeed = person && personNeeds.length > 0 ? personNeeds[0] : null;
 
@@ -143,7 +148,7 @@ export function DistrictStaffDropZone({
 
   if (!person) {
     // In public/masked mode, hide the slot entirely when no district staff exists
-    if (!canInteract || maskIdentity) {
+    if (!canInteract || hideDetails) {
       return null;
     }
 
@@ -298,13 +303,13 @@ export function DistrictStaffDropZone({
         >
           <button
             onClick={() => {
-              if (maskIdentity || !canInteract) return;
+              if (hideDetails || !canInteract) return;
               onClick();
             }}
             className={`relative transition-all ${canInteract ? "hover:scale-110 active:scale-95 cursor-pointer" : "cursor-not-allowed"}`}
           >
             {/* Gray spouse icon behind - shown when person has a spouse */}
-            {!maskIdentity && person.spouse && (
+            {!hideDetails && person.spouse && (
               <User
                 className="w-10 h-10 text-slate-300 absolute top-0 left-2 pointer-events-none z-0"
                 strokeWidth={1.5}
@@ -313,22 +318,22 @@ export function DistrictStaffDropZone({
             )}
             {/* Main person icon - solid */}
             <div
-              className={`relative ${maskIdentity ? "text-gray-300" : statusColors[figmaStatus]} ${!maskIdentity && person.depositPaid ? "deposit-glow" : ""}`}
+              className={`relative ${hideDetails ? "text-gray-300" : statusColors[figmaStatus]} ${!hideDetails && person.depositPaid ? "deposit-glow" : ""}`}
             >
               <User
-                className={`w-10 h-10 transition-colors cursor-pointer relative z-10`}
+                className={`w-10 h-10 transition-colors relative z-10`}
                 strokeWidth={1.5}
                 fill="currentColor"
               />
               {/* Need indicator (arm + icon) */}
-              {!maskIdentity && personNeed?.isActive && (
+              {!hideDetails && personNeed?.isActive && (
                 <NeedIndicator type={personNeed.type} />
               )}
             </div>
           </button>
 
           {/* Role Label - Absolutely positioned, shown on hover */}
-          {!maskIdentity && (
+          {!hideDetails && (
             <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1.5 text-xs text-slate-500 text-center max-w-[80px] leading-tight whitespace-nowrap pointer-events-none opacity-0 group-hover/person:opacity-100 transition-opacity">
               {person.primaryRole || "District Staff"}
             </div>
@@ -336,7 +341,7 @@ export function DistrictStaffDropZone({
         </div>
       </div>
       {/* Person Tooltip */}
-      {!maskIdentity &&
+      {!hideDetails &&
         isHovered &&
         tooltipPos &&
         person &&

@@ -145,10 +145,10 @@ const campusSuffixes = [
 ];
 const roles = [
   "Campus Director",
-  "Associate Director",
-  "Staff",
-  "Intern",
-  "Volunteer",
+  "Campus Co-Director",
+  "Campus Staff",
+  "Campus Intern",
+  "Campus Volunteer",
   "District Director",
   "Regional Director",
 ];
@@ -192,19 +192,19 @@ async function seed() {
     }
     console.log(`✅ Inserted/updated ${districtsInserted} districts\n`);
 
-    // 1b. Ensure Chi Alpha National (XAN) exists as a first-class district
-    console.log("🏛️  Ensuring XAN (Chi Alpha National) district exists...");
+    // 1b. Ensure National Team (XAN) exists as a first-class district
+    console.log("🏛️  Ensuring XAN (National Team) district exists...");
     await db
       .insert(districts)
       .values({
         id: "XAN",
-        name: "Chi Alpha National",
-        region: "NATIONAL",
+        name: "National Team",
+        region: "National Team",
         leftNeighbor: null,
         rightNeighbor: null,
       })
       .onDuplicateKeyUpdate({
-        set: { name: "Chi Alpha National", region: "NATIONAL" },
+        set: { name: "National Team", region: "National Team" },
       });
     console.log("✅ XAN district ready\n");
 

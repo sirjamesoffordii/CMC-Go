@@ -1601,7 +1601,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         {(() => {
           const renderPerson = (
             person: Person,
-            indentClass: string = "px-12"
+            indentClass: string = "px-4 sm:px-12"
           ) => {
             const personNeeds = allNeeds.filter(
               n => n.personId === person.personId
@@ -1777,7 +1777,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       {isCampusExpanded && people.length > 0 && (
                         <div className="bg-gray-50">
                           {people.map((person: Person) =>
-                            renderPerson(person, "px-8")
+                            renderPerson(person, "px-3 sm:px-8")
                           )}
                         </div>
                       )}
@@ -1885,7 +1885,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                     {isCampusExpanded && people.length > 0 && (
                                       <div className="bg-white">
                                         {people.map((person: Person) =>
-                                          renderPerson(person, "px-12")
+                                          renderPerson(person, "px-4 sm:px-12")
                                         )}
                                       </div>
                                     )}
@@ -2018,7 +2018,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                           key={campus.id}
                                           className="divide-y divide-gray-100"
                                         >
-                                          <div className="px-12 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                                          <div className="px-4 sm:px-12 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
                                             <button
                                               onClick={e => {
                                                 e.stopPropagation();
@@ -2052,7 +2052,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                             people.length > 0 && (
                                               <div className="bg-gray-50">
                                                 {people.map((person: Person) =>
-                                                  renderPerson(person, "px-16")
+                                                  renderPerson(person, "px-5 sm:px-16")
                                                 )}
                                               </div>
                                             )}
@@ -2061,7 +2061,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                                     }
                                   )}
                                   {unassigned.length > 0 && (
-                                    <div className="px-12 py-2">
+                                    <div className="px-4 sm:px-12 py-2">
                                       <h4 className="font-medium text-gray-500 italic text-sm mb-2">
                                         Unassigned ({unassigned.length})
                                       </h4>

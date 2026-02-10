@@ -5,6 +5,8 @@ import {
   Trash2,
   MoreVertical,
   ChevronDown,
+  Check,
+  ExternalLink,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -29,6 +31,7 @@ import {
   useCallback,
 } from "react";
 import { toast } from "sonner";
+import { CHI_ALPHA_STAFF_NAMES } from "@/data/chiAlphaStaffNames";
 import { createPortal } from "react-dom";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -51,6 +54,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Checkbox } from "./ui/checkbox";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { DroppablePerson } from "./DroppablePerson";
 import { CampusDropZone } from "./CampusDropZone";
 import { CampusNameDropZone } from "./CampusNameDropZone";
@@ -66,7 +70,12 @@ import {
 } from "@/utils/districtStats";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getPeopleScope } from "@/lib/scopeCheck";
+import {
+  getPeopleScope,
+  canEditDistrictInRegion,
+  canViewPersonDetails,
+  canEditPersonClient,
+} from "@/lib/scopeCheck";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -81,6 +90,10 @@ interface DistrictPanelProps {
   onPersonAdd: (campusId: number, name: string) => void;
   onPersonClick: (person: Person) => void;
   onDistrictUpdate: () => void;
+  onOpenTable?: (filter?: {
+    statusFilter?: Set<"Yes" | "Maybe" | "No" | "Not Invited">;
+    needsView?: boolean;
+  }) => void;
 }
 
 // Status mapping between Figma design and database
@@ -108,45 +121,72 @@ export function DistrictPanel({
   onPersonAdd: _onPersonAdd,
   onPersonClick: _onPersonClick,
   onDistrictUpdate,
+  onOpenTable,
 }: DistrictPanelProps) {
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const utils = trpc.useUtils();
 
-  // Visibility & edit gating:
-  // - Public/out-of-scope: aggregates + campuses + presence icons only (no identities)
-  // - In-scope: full interactive behavior
-  const viewerScope = getPeopleScope(
-    user
-      ? {
-          role: user.role,
-          campusId: user.campusId ?? null,
-          districtId: user.districtId ?? null,
-          regionId: user.regionId ?? null,
-        }
-      : null
-  );
-  const isCampusOnlyViewer = viewerScope?.level === "CAMPUS";
+  // Visibility & edit gating (3-tier: Scope / Detail View / Edit):
+  //
+  // Scope:       Determines which people are shown (names + grey icons).
+  //              Controlled by scopeLevel. isOutOfScope means the district is not
+  //              in the user's geographic scope → fall back to public aggregates.
+  //
+  // Detail View: Determines which people's details are visible (roles, needs,
+  //              tooltip notes, status colors). Controlled by viewLevel.
+  //              Per-person check via canViewPersonDetails().
+  //
+  // Edit:        Determines which people can be modified. Controlled by editLevel.
+  //              Per-person check via canEditPersonClient().
+  //
+  // For unauthenticated users: public-safe mode (aggregates only, no names).
+  const isPublicSafeMode = !isAuthenticated || isOutOfScope;
 
-  // Campus-level viewers (staff and below) can see campuses and presence icons,
-  // but identities and detailed info stay masked even in their own district.
-  const canViewPeopleDetails =
-    isAuthenticated && !isOutOfScope && !isCampusOnlyViewer;
-  const canEditDistrict = isAuthenticated && !isOutOfScope;
-  const isPublicSafeMode = !canViewPeopleDetails;
+  // District-level edit check: can the user edit district-level entities (campuses, etc.)?
+  const canEditDistrict =
+    isAuthenticated &&
+    !isOutOfScope &&
+    canEditDistrictInRegion(user, district?.region ?? null);
+
+  // Back-compat: canInteract controls district-level operations (add campus, rename district, etc.)
+  const canInteract = canEditDistrict;
+  // disableEdits: district-level editing disabled (public, out of scope, or no edit access)
   const disableEdits = isPublicSafeMode || !canEditDistrict;
-  // Back-compat name used throughout this component
-  const canInteract = !disableEdits;
 
-  // Campus-level editing: campus staff / interns / volunteers may edit ONLY their own campus.
+  // Per-person detail and edit helpers (used per DroppablePerson)
+  // When person.primaryRegion is null, fall back to district.region so that
+  // Regional Directors can still edit people whose primaryRegion wasn't populated.
+  const userCanViewDetails = (person: {
+    primaryCampusId?: number | null;
+    primaryDistrictId?: string | null;
+    primaryRegion?: string | null;
+  }) =>
+    isAuthenticated &&
+    !isOutOfScope &&
+    canViewPersonDetails(user, {
+      ...person,
+      primaryRegion: person.primaryRegion ?? district?.region ?? null,
+    });
+  const userCanEditPerson = (person: {
+    primaryCampusId?: number | null;
+    primaryDistrictId?: string | null;
+    primaryRegion?: string | null;
+  }) =>
+    isAuthenticated &&
+    !isOutOfScope &&
+    canEditPersonClient(user, {
+      ...person,
+      primaryRegion: person.primaryRegion ?? district?.region ?? null,
+    });
+
+  // Campus-level editing: whether the user can edit entities within a specific campus.
   const userCampusId = user?.campusId ?? null;
-  const canEditAll = !disableEdits;
   const canEditCampus = (campusId: number | null | undefined) => {
-    if (!campusId) return false;
-    if (canEditAll) return true;
-    if (isCampusOnlyViewer && userCampusId && userCampusId === campusId) {
-      return true;
-    }
+    if (!campusId || !isAuthenticated || isOutOfScope) return false;
+    if (canEditDistrict) return true;
+    // Campus-level editors can edit their own campus
+    if (userCampusId && userCampusId === campusId) return true;
     return false;
   };
 
@@ -162,10 +202,11 @@ export function DistrictPanel({
           .trim()
       : "";
 
-  const hasCampusNameConflict = (name: string) => {
+  const hasCampusNameConflict = (name: string, excludeCampusId?: number) => {
     const normalizedNew = normalizeCampusName(name);
     if (!normalizedNew) return false;
     return campusesForLayout.some(campus => {
+      if (excludeCampusId != null && campus.id === excludeCampusId) return false;
       const normalizedExisting = normalizeCampusName(campus.name ?? "");
       return normalizedExisting && normalizedExisting === normalizedNew;
     });
@@ -298,12 +339,17 @@ export function DistrictPanel({
   const updatePerson = trpc.people.update.useMutation({
     onSuccess: (_data, variables) => {
       utils.people.list.invalidate();
+      utils.needs.listActive.invalidate();
       utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? "" });
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+      utils.metrics.districtNeeds.invalidate({ districtId: districtId ?? "" });
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
+      }
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
       }
       utils.followUp.list.invalidate();
       if (variables.householdId) {
@@ -332,11 +378,13 @@ export function DistrictPanel({
   });
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {
-      // Invalidate all people queries to ensure UI updates
+      // Invalidate all people, needs, and metrics so district panel and header update immediately
       utils.people.list.invalidate();
+      utils.needs.listActive.invalidate();
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+      utils.metrics.districtNeeds.invalidate({ districtId: districtId ?? "" });
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
       }
@@ -344,7 +392,6 @@ export function DistrictPanel({
       if (district?.id) {
         utils.people.byDistrict.invalidate({ districtId: district.id });
       }
-      // Also invalidate campuses to refresh people counts
       utils.campuses.byDistrict.invalidate({ districtId: district?.id ?? "" });
       onDistrictUpdate();
       // Reset form and close dialog only after successful creation
@@ -376,11 +423,17 @@ export function DistrictPanel({
   const deletePerson = trpc.people.delete.useMutation({
     onSuccess: () => {
       utils.people.list.invalidate();
+      utils.needs.listActive.invalidate();
       utils.metrics.get.invalidate();
       utils.metrics.allDistricts.invalidate();
       utils.metrics.allRegions.invalidate();
+      utils.metrics.districtNeeds.invalidate({ districtId: districtId ?? "" });
       if (districtId) {
         utils.metrics.district.invalidate({ districtId });
+      }
+      utils.campuses.byDistrict.invalidate({ districtId: districtId ?? "" });
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
       }
       utils.followUp.list.invalidate();
       setIsEditPersonDialogOpen(false);
@@ -431,6 +484,7 @@ export function DistrictPanel({
     person: Person;
   } | null>(null);
   const [openCampusMenuId, setOpenCampusMenuId] = useState<number | null>(null);
+  const [editingCampusId, setEditingCampusId] = useState<number | null>(null);
   const [campusMenuPosition, setCampusMenuPosition] = useState<{
     x: number;
     y: number;
@@ -439,6 +493,7 @@ export function DistrictPanel({
 
   // Refs for dynamic positioning
   const districtNameRef = useRef<HTMLDivElement>(null);
+  const inlineCampusNameInputRef = useRef<HTMLInputElement>(null);
   const districtDirectorRef = useRef<HTMLDivElement>(null);
   const campusDirectorRef = useRef<HTMLDivElement>(null);
   const [pieChartOffset, setPieChartOffset] = useState(0);
@@ -621,8 +676,8 @@ export function DistrictPanel({
   const [campusSorts, setCampusSorts] = useState<
     Record<number, "status" | "name" | "role">
   >({});
-  // Preserve order when status changes (don't auto-sort)
-  const [preserveOrder, setPreserveOrder] = useState(true);
+  // Preserve order only when user selects Custom; default is Sort by Status
+  const [preserveOrder, setPreserveOrder] = useState(false);
   // Store original order of people per campus (by personId)
   const [campusPeopleOrder, setCampusPeopleOrder] = useState<
     Record<number, string[]>
@@ -632,6 +687,10 @@ export function DistrictPanel({
     null
   );
   const sortTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Delay re-sort after status change (or "Sort by Status" click) so list doesn't jump; same 2s for all status changes
+  const SORT_DELAY_MS = 2000;
+  const lastStatusChangeAtRef = useRef<number>(0);
+  const previousOrderSnapshotRef = useRef<Record<number, string[]>>({});
 
   // Cleanup sort timeout on unmount
   useEffect(() => {
@@ -890,6 +949,18 @@ export function DistrictPanel({
   const updateOrCreateNeed = trpc.needs.updateOrCreate.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      utils.metrics.districtNeeds.invalidate({ districtId: districtId ?? "" });
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
+      utils.campuses.byDistrict.invalidate({ districtId: districtId ?? "" });
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
+      }
       utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
@@ -901,6 +972,18 @@ export function DistrictPanel({
   const _deleteNeed = trpc.needs.delete.useMutation({
     onSuccess: () => {
       utils.needs.listActive.invalidate();
+      utils.people.list.invalidate();
+      utils.metrics.get.invalidate();
+      utils.metrics.allDistricts.invalidate();
+      utils.metrics.allRegions.invalidate();
+      utils.metrics.districtNeeds.invalidate({ districtId: districtId ?? "" });
+      if (districtId) {
+        utils.metrics.district.invalidate({ districtId });
+      }
+      utils.campuses.byDistrict.invalidate({ districtId: districtId ?? "" });
+      if (district?.id) {
+        utils.people.byDistrict.invalidate({ districtId: district.id });
+      }
       utils.followUp.list.invalidate();
       onDistrictUpdate();
     },
@@ -935,71 +1018,8 @@ export function DistrictPanel({
       }
     });
 
-    // Common first names
-    const commonNames = [
-      "Jacob",
-      "Jake",
-      "Jacky",
-      "Jack",
-      "James",
-      "John",
-      "Michael",
-      "David",
-      "Daniel",
-      "Matthew",
-      "Sarah",
-      "Emily",
-      "Jessica",
-      "Ashley",
-      "Amanda",
-      "Jennifer",
-      "Michelle",
-      "Nicole",
-      "Stephanie",
-      "Robert",
-      "William",
-      "Richard",
-      "Joseph",
-      "Thomas",
-      "Christopher",
-      "Charles",
-      "Mark",
-      "Donald",
-      "Elizabeth",
-      "Mary",
-      "Patricia",
-      "Linda",
-      "Barbara",
-      "Susan",
-      "Karen",
-      "Nancy",
-      "Lisa",
-      "Joshua",
-      "Andrew",
-      "Kevin",
-      "Brian",
-      "George",
-      "Edward",
-      "Ronald",
-      "Timothy",
-      "Jason",
-      "Betty",
-      "Helen",
-      "Sandra",
-      "Donna",
-      "Carol",
-      "Ruth",
-      "Sharon",
-      "Michelle",
-      "Laura",
-      "Moriah",
-      "Shelli",
-      "Jake",
-      "Jake",
-      "Jake",
-    ];
-
-    commonNames.forEach(name => existingNames.add(name));
+    // Chi Alpha staff names for autocomplete
+    CHI_ALPHA_STAFF_NAMES.forEach(name => existingNames.add(name));
     return Array.from(existingNames).sort();
   }, [allPeople]);
 
@@ -1009,8 +1029,18 @@ export function DistrictPanel({
     return nameSuggestions
       .filter(n => n.toLowerCase().includes(q))
       .filter(n => n.toLowerCase() !== q)
-      .slice(0, 10);
+      .slice(0, 3);
   }, [personForm.name, nameSuggestions]);
+
+  // Name suggestions for Quick Add use the same global list, filtered by quickAddName
+  const quickAddFilteredNameSuggestions = useMemo(() => {
+    const q = quickAddName.trim().toLowerCase();
+    if (!q) return [];
+    return nameSuggestions
+      .filter(n => n.toLowerCase().includes(q))
+      .filter(n => n.toLowerCase() !== q)
+      .slice(0, 3);
+  }, [quickAddName, nameSuggestions]);
 
   // Keep highlight in range when filter or focus changes
   useEffect(() => {
@@ -1090,10 +1120,10 @@ export function DistrictPanel({
 
   const districtStaffList = useMemo(() => {
     const statusOrder: Record<Person["status"], number> = {
-      "Not Invited": 0,
-      Yes: 1,
-      Maybe: 2,
-      No: 3,
+      Yes: 0,
+      Maybe: 1,
+      No: 2,
+      "Not Invited": 3,
     };
 
     return peopleWithNeeds
@@ -1209,10 +1239,10 @@ export function DistrictPanel({
 
   const _sortedUnassignedPeople = useMemo(() => {
     const statusOrder: Record<Person["status"], number> = {
-      "Not Invited": 0,
-      Yes: 1,
-      Maybe: 2,
-      No: 3,
+      Yes: 0,
+      Maybe: 1,
+      No: 2,
+      "Not Invited": 3,
     };
 
     return [...unassignedPeople].sort(
@@ -1277,12 +1307,9 @@ export function DistrictPanel({
         : campusesForLayout;
 
     return ordered.map(campus => {
-      // Campus staff/interns/volunteers can see real people on their own campus
-      const isOwnCampus =
-        isCampusOnlyViewer &&
-        userCampusId != null &&
-        campus.id === userCampusId;
-      const useRealPeople = !isPublicSafeMode || isOwnCampus;
+      // Authenticated + in-scope users always see real people (server gates the data).
+      // Public/out-of-scope users see placeholder icons from public endpoints.
+      const useRealPeople = !isPublicSafeMode;
       return {
         ...campus,
         people: useRealPeople
@@ -1298,10 +1325,8 @@ export function DistrictPanel({
     campusesForLayout,
     campusOrder,
     filteredPeople,
-    isCampusOnlyViewer,
     isPublicSafeMode,
     publicCampusCountMap,
-    userCampusId,
   ]);
 
   // XAN category: first person in "Regional Directors" is Field Director (locked)
@@ -1402,23 +1427,19 @@ export function DistrictPanel({
     campusesWithPeople,
   ]);
 
-  // Store initial order when panel opens or data changes significantly
+  // Store initial order when panel opens or data changes significantly (do not override user's sort preference)
   useEffect(() => {
-    // When panel opens, preserve order initially (so status changes don't move people)
-    // But default to status sort for when panel closes/refreshes
-    setPreserveOrder(true);
-
     const newOrder: Record<number, string[]> = {};
     campusesWithPeople.forEach(campus => {
       // Store current order, but if no custom order exists, use status-sorted order as baseline
       const currentSort = campusSorts[campus.id] || "status";
       if (currentSort === "status") {
-        // Store status-sorted order as the initial order
+        // Store status-sorted order as the initial order (Yes, Maybe, No, Not Invited)
         const statusOrder: Record<Person["status"], number> = {
-          "Not Invited": 0,
-          Yes: 1,
-          Maybe: 2,
-          No: 3,
+          Yes: 0,
+          Maybe: 1,
+          No: 2,
+          "Not Invited": 3,
         };
         const sorted = [...campus.people].sort(
           (a, b) => statusOrder[a.status] - statusOrder[b.status]
@@ -1431,6 +1452,34 @@ export function DistrictPanel({
     setCampusPeopleOrder(newOrder);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [district?.id]); // Reset order when district changes (panel opens/closes)
+
+  // Detect status-only change during render so we can delay re-sort in this same render
+  const prevStatusSignatureRef = useRef<string>("");
+  (() => {
+    const signature = campusesWithPeople
+      .map(c =>
+        c.people
+          .map(p => `${p.personId}:${p.status || "Not Invited"}`)
+          .join(",")
+      )
+      .join("|");
+    const currIds = campusesWithPeople
+      .map(c =>
+        c.people
+          .map(p => p.personId)
+          .sort()
+          .join(",")
+      )
+      .join("|");
+    if (prevStatusSignatureRef.current !== "") {
+      const [prevIds, prevSigs] = prevStatusSignatureRef.current.split("\n");
+      if (currIds === prevIds && signature !== prevSigs) {
+        lastStatusChangeAtRef.current = Date.now();
+        previousOrderSnapshotRef.current = { ...campusPeopleOrder };
+      }
+    }
+    prevStatusSignatureRef.current = `${currIds}\n${signature}`;
+  })();
 
   // Calculate stats using shared utility with allPeople to ensure consistency with tooltip and map
   // This ensures the stats match exactly what's shown in the tooltip and map metrics
@@ -1488,12 +1537,16 @@ export function DistrictPanel({
     const totalFinancial = districtNeeds
       .filter(n => n.amount !== null && n.amount !== undefined)
       .reduce((sum, n) => sum + (n.amount || 0), 0);
+    const metFinancial = districtNeeds.reduce(
+      (sum, n) => sum + (n.fundsReceived ?? 0),
+      0
+    );
 
     return {
       totalNeeds,
       metNeeds: 0,
       totalFinancial, // in cents
-      metFinancial: 0,
+      metFinancial,
     };
   }, [allNeeds, peopleWithNeeds, publicDistrictNeeds]);
 
@@ -1507,17 +1560,27 @@ export function DistrictPanel({
       ? Math.round(((totalPeople - safeStats.notInvited) / totalPeople) * 100)
       : 0;
 
+  // Status order: Yes, Maybe, No, Not Invited (Not Invited far right, next to No)
+  const STATUS_ORDER: Record<Person["status"], number> = {
+    Yes: 0,
+    Maybe: 1,
+    No: 2,
+    "Not Invited": 3,
+  };
+
   // Sort people based on campus preference
   const getSortedPeople = (people: Person[], campusId: number) => {
-    // If preserveOrder is true AND we have a stored order, maintain the stored order
-    // This prevents people from moving when status changes while panel is open
-    if (preserveOrder && campusPeopleOrder[campusId]) {
-      const order = campusPeopleOrder[campusId];
+    const sortBy = campusSorts[campusId] || "status";
+    const withinStatusChangeDelay =
+      sortBy === "status" &&
+      Date.now() - lastStatusChangeAtRef.current < SORT_DELAY_MS &&
+      previousOrderSnapshotRef.current[campusId]?.length;
+
+    // Within a few seconds of a status change, keep previous order so list doesn't jump
+    if (withinStatusChangeDelay && previousOrderSnapshotRef.current[campusId]) {
+      const order = previousOrderSnapshotRef.current[campusId];
       const peopleMap = new Map(people.map(p => [p.personId, p]));
       const ordered: Person[] = [];
-      const unordered: Person[] = [];
-
-      // First, add people in the stored order
       order.forEach(personId => {
         const person = peopleMap.get(personId);
         if (person) {
@@ -1525,26 +1588,34 @@ export function DistrictPanel({
           peopleMap.delete(personId);
         }
       });
+      peopleMap.forEach(person => ordered.push(person));
+      return ordered;
+    }
 
-      // Then add any new people that weren't in the original order
-      // New people should be sorted by status (default)
+    // If preserveOrder is true AND we have a stored order, maintain the stored order
+    if (preserveOrder && campusPeopleOrder[campusId]) {
+      const order = campusPeopleOrder[campusId];
+      const peopleMap = new Map(people.map(p => [p.personId, p]));
+      const ordered: Person[] = [];
+      const unordered: Person[] = [];
+
+      order.forEach(personId => {
+        const person = peopleMap.get(personId);
+        if (person) {
+          ordered.push(person);
+          peopleMap.delete(personId);
+        }
+      });
       peopleMap.forEach(person => unordered.push(person));
       if (unordered.length > 0) {
-        const statusOrder: Record<Person["status"], number> = {
-          "Not Invited": 0,
-          Yes: 1,
-          Maybe: 2,
-          No: 3,
-        };
-        unordered.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+        unordered.sort(
+          (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+        );
       }
-
       return [...ordered, ...unordered];
     }
 
     // Otherwise, sort normally (applies on page refresh or when user selects "Status")
-    const sortBy = campusSorts[campusId] || "status";
-
     if (sortBy === "name") {
       return [...people].sort((a, b) => a.name.localeCompare(b.name));
     } else if (sortBy === "role") {
@@ -1552,15 +1623,8 @@ export function DistrictPanel({
         (a.primaryRole || "").localeCompare(b.primaryRole || "")
       );
     } else {
-      // Sort by status: Not Invited, Yes, Maybe, No (default)
-      const statusOrder: Record<Person["status"], number> = {
-        "Not Invited": 0,
-        Yes: 1,
-        Maybe: 2,
-        No: 3,
-      };
       return [...people].sort(
-        (a, b) => statusOrder[a.status] - statusOrder[b.status]
+        (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
       );
     }
   };
@@ -1694,6 +1758,11 @@ export function DistrictPanel({
       depositPaid: false,
     };
 
+    // Always set primaryRegion so region-scoped queries find this person
+    if (district.region) {
+      mutationData.primaryRegion = district.region;
+    }
+
     // Set role and campus based on target
     if (targetId === "district") {
       // First person in header: XAN = National Director (fixed), districts = District Director (fixed)
@@ -1717,11 +1786,6 @@ export function DistrictPanel({
         mutationData.primaryCampusId = targetId;
       } else {
         mutationData.primaryCampusId = null;
-      }
-
-      // Add primaryRegion if district has it
-      if (district.region) {
-        mutationData.primaryRegion = district.region;
       }
     }
 
@@ -1779,6 +1843,11 @@ export function DistrictPanel({
 
     // Set depositPaid - ensure it's a boolean
     mutationData.depositPaid = personForm.depositPaid ?? false;
+
+    // Always set primaryRegion so region-scoped queries find this person
+    if (district.region) {
+      mutationData.primaryRegion = district.region;
+    }
 
     // Set role and campus based on selection
     if (selectedCampusId === "district") {
@@ -1962,11 +2031,12 @@ export function DistrictPanel({
     });
   };
 
-  // Handle edit person
+  // Handle edit person (uses 3-tier edit authorization)
   const handleEditPerson = async (
     campusId: number | string,
     person: Person
   ) => {
+    if (!userCanEditPerson(person)) return;
     setEditingPerson({ campusId, person });
     setIsEditPersonDialogOpen(true);
 
@@ -2466,29 +2536,27 @@ export function DistrictPanel({
     onPersonStatusChange(person.personId, nextStatus);
   };
 
-  // Handle edit campus
+  // Handle edit campus (inline on the row; no dialog)
   const handleEditCampus = (campusId: number) => {
     const campus = campuses.find(c => c.id === campusId);
     if (campus) {
-      setCampusForm({ name: campus.name });
-      setSelectedCampusId(campusId);
-      setIsEditCampusDialogOpen(true);
+      setCampusForm({ name: campus.name ?? "" });
+      setEditingCampusId(campusId);
+      setOpenCampusMenuId(null);
+      setTimeout(() => inlineCampusNameInputRef.current?.focus(), 0);
     }
   };
 
-  // Handle update campus
-  const handleUpdateCampus = () => {
-    if (
-      !selectedCampusId ||
-      typeof selectedCampusId !== "number" ||
-      !campusForm.name
-    )
-      return;
+  // Handle update campus (used by inline edit and by dialog if still opened elsewhere)
+  const handleUpdateCampus = (campusId?: number) => {
+    const id = campusId ?? selectedCampusId;
+    if (!id || typeof id !== "number" || !campusForm.name?.trim()) return;
 
-    updateCampusName.mutate({ id: selectedCampusId, name: campusForm.name });
+    updateCampusName.mutate({ id, name: campusForm.name.trim() });
     setCampusForm({ name: "" });
     setIsEditCampusDialogOpen(false);
     setSelectedCampusId(null);
+    setEditingCampusId(null);
   };
 
   // Handle campus sort change (with delayed animation for "Sort by Status")
@@ -2505,17 +2573,17 @@ export function DistrictPanel({
     // Start the slow animation indicator
     setAnimatingSortCampus(campusId);
 
-    // Delay the actual sort by 1.5 seconds so user sees the transition
+    // Delay the actual sort by 2 seconds (same as auto-sort after status change)
     sortTimeoutRef.current = setTimeout(() => {
       setCampusSorts(prev => ({ ...prev, [campusId]: sortBy }));
-      // Disable order preservation when user explicitly sorts
+      // Disable order preservation when user explicitly sorts by status/name/role
       setPreserveOrder(false);
 
-      // Clear animation state after the layout animation completes (~1.5s)
+      // Clear animation state after the layout animation completes (~2s)
       setTimeout(() => {
         setAnimatingSortCampus(null);
-      }, 1500);
-    }, 1500);
+      }, 2000);
+    }, SORT_DELAY_MS);
   };
 
   const handleCampusRowDrop = (
@@ -2726,7 +2794,7 @@ export function DistrictPanel({
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
             {/* Title Section - District Name, Region, Directors, and Needs Summary */}
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <div ref={districtNameRef} className="min-w-0">
+              <div ref={districtNameRef} className="w-[12rem] min-w-[12rem] max-w-[12rem] flex-shrink-0">
                 <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
                   <EditableText
                     value={district.name}
@@ -2754,7 +2822,7 @@ export function DistrictPanel({
                       });
                     }}
                     disabled={disableEdits}
-                    className="text-slate-500 text-sm"
+                    className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded"
                     inputClassName="text-slate-500 text-sm"
                   />
                   {disableEdits && (
@@ -2804,8 +2872,18 @@ export function DistrictPanel({
                     onQuickAddClick={e => handleQuickAddClick(e, "district")}
                     quickAddInputRef={quickAddInputRef}
                     districtId={district?.id || null}
-                    canInteract={canInteract}
+                    canInteract={
+                      canInteract &&
+                      (displayedDistrictDirector
+                        ? userCanEditPerson(displayedDistrictDirector)
+                        : true)
+                    }
                     maskIdentity={isPublicSafeMode}
+                    maskDetails={
+                      !isPublicSafeMode &&
+                      !!displayedDistrictDirector &&
+                      !userCanViewDetails(displayedDistrictDirector)
+                    }
                   />
                 </div>
 
@@ -2846,8 +2924,11 @@ export function DistrictPanel({
                       handleQuickAddClick(e, "district-staff")
                     }
                     quickAddInputRef={quickAddInputRef}
-                    canInteract={canInteract}
+                    canInteract={canInteract && userCanEditPerson(person)}
                     maskIdentity={isPublicSafeMode}
+                    maskDetails={
+                      !isPublicSafeMode && !userCanViewDetails(person)
+                    }
                   />
                 ))}
                 {/* Only one add slot in header at a time: show add-staff slot only when director exists (otherwise add is on director slot as District Director) */}
@@ -2880,66 +2961,102 @@ export function DistrictPanel({
                       quickAddInputRef={quickAddInputRef}
                       canInteract={canInteract}
                       maskIdentity={isPublicSafeMode}
+                      maskDetails={false}
                     />
                   )}
               </div>
 
               <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
 
-              {/* Stats Grid - Metrics (condensed) */}
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0 flex-shrink-0 text-xs">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
-                  <span className="text-slate-600">Yes:</span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.going}
-                  </span>
+              {/* Stats + Needs/Funds with divider between status block and Needs Met */}
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Stats - two blocks (Yes/No, Maybe/Not Invited Yet) with Open in Table on hover */}
+              <div
+                className="group/stats relative flex items-center gap-3 flex-shrink-0 text-[13px] cursor-pointer rounded-md px-1 -mx-1"
+                onClick={() =>
+                  onOpenTable?.({
+                    statusFilter: new Set(["Yes", "Maybe", "No", "Not Invited"]),
+                  })
+                }
+              >
+                <div className="flex flex-col gap-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-700 flex-shrink-0"></div>
+                    <span className="text-slate-600">Yes:</span>
+                    <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
+                      {safeStats.going}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-700 flex-shrink-0"></div>
+                    <span className="text-slate-600 whitespace-nowrap">No:</span>
+                    <span className="font-semibold text-slate-900 tabular-nums mr-1.5">
+                      {safeStats.notGoing}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-yellow-600 flex-shrink-0"></div>
-                  <span className="text-slate-600">Maybe:</span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.maybe}
-                  </span>
+                <div className="flex flex-col gap-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-yellow-600 flex-shrink-0"></div>
+                    <span className="text-slate-600">Maybe:</span>
+                    <span className="font-semibold text-slate-900 tabular-nums">
+                      {safeStats.maybe}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
+                    <span className="text-slate-600 whitespace-nowrap">
+                      Not Invited Yet:
+                    </span>
+                    <span className="font-semibold text-slate-900 tabular-nums">
+                      {safeStats.notInvited}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-red-700 flex-shrink-0"></div>
-                  <span className="text-slate-600 whitespace-nowrap">No:</span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.notGoing}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></div>
-                  <span className="text-slate-600 whitespace-nowrap">
-                    Not Invited:
-                  </span>
-                  <span className="font-semibold text-slate-900 tabular-nums">
-                    {safeStats.notInvited}
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/stats:opacity-100 transition-opacity">
+                  <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Open in Table
                   </span>
                 </div>
               </div>
 
-              <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
+              <div className="w-px h-7 bg-slate-200 flex-shrink-0"></div>
 
-              {/* Needs / Funds Summary (right side, slightly smaller) */}
-              <div className="flex-shrink-0 text-right">
-                <div className="space-y-0">
-                  <div className="text-xs font-semibold text-slate-700 tabular-nums">
-                    <span className="text-slate-500 font-medium">
+              {/* Needs / Funds Summary (right side) - with Open in Table on hover */}
+              <div
+                className="group/needs relative flex-shrink-0 cursor-pointer rounded-md px-1 -mx-1"
+                onClick={() => onOpenTable?.({ needsView: true })}
+              >
+                <div className="inline-flex flex-col gap-y-0.5">
+                  <div className="flex items-baseline gap-x-3">
+                    <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
                       Needs Met:
-                    </span>{" "}
-                    {needsSummary.metNeeds}{" "}
-                    <span className="text-slate-500 font-medium">/</span>{" "}
-                    {needsSummary.totalNeeds}
+                    </span>
+                    <span className="text-[13px] font-semibold text-slate-700 tabular-nums text-left min-w-0">
+                      {needsSummary.metNeeds}{" "}
+                      <span className="text-slate-500 font-medium">/</span>{" "}
+                      {needsSummary.totalNeeds}
+                    </span>
                   </div>
-                  <div className="text-[11px] text-slate-600 tabular-nums">
-                    <span className="text-slate-500">Funds Received:</span>{" "}
-                    {`$${((needsSummary.metFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}{" "}
-                    <span className="text-slate-500 font-medium">/</span>{" "}
-                    {`$${((needsSummary.totalFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                  <div className="flex items-baseline gap-x-3">
+                    <span className="w-[7rem] text-[13px] font-medium text-slate-500 text-right shrink-0">
+                      Funds Received:
+                    </span>
+                    <span className="text-[13px] text-slate-600 tabular-nums text-left min-w-0">
+                      {`$${((needsSummary.metFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}{" "}
+                      <span className="text-slate-500 font-medium">/</span>{" "}
+                      {`$${((needsSummary.totalFinancial || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
+                    </span>
                   </div>
                 </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-white/90 rounded-md opacity-0 group-hover/needs:opacity-100 transition-opacity">
+                  <span className="flex items-center gap-1.5 text-[12px] font-medium text-red-600">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    Open in Table
+                  </span>
+                </div>
+              </div>
               </div>
             </div>
           </div>
@@ -2980,7 +3097,7 @@ export function DistrictPanel({
                           onDrop={handleCampusNameDrop}
                           canInteract={canEditThisCampus}
                         >
-                          <div className="w-[18rem] max-w-[18rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-3 border-r border-slate-200">
+                          <div className="w-[16rem] max-w-[16rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-1 border-r border-slate-200">
                             {/* Kebab Menu */}
                             <div className="relative z-20 flex-shrink-0">
                               <button
@@ -3016,13 +3133,13 @@ export function DistrictPanel({
                                     ></div>
 
                                     <div
-                                      className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1.5 z-[99999]"
+                                      className="fixed w-52 bg-white rounded-xl shadow-xl border border-slate-200/80 py-2 z-[99999]"
                                       style={{
                                         left: `${campusMenuPosition.x}px`,
                                         top: `${campusMenuPosition.y + 4}px`,
                                       }}
                                     >
-                                      <div className="px-5 py-2.5 text-sm text-gray-500 font-medium border-b border-gray-100">
+                                      <div className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-100">
                                         Sort by
                                       </div>
                                       <button
@@ -3033,14 +3150,16 @@ export function DistrictPanel({
                                           );
                                           setOpenCampusMenuId(null);
                                         }}
-                                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 min-h-[40px]"
                                       >
-                                        {(campusSorts[campus.id] === "status" ||
-                                          (!campusSorts[campus.id] &&
-                                            !preserveOrder)) && (
-                                          <span className="text-xs">✓</span>
+                                        {campusSorts[campus.id] === "status" ||
+                                        (!campusSorts[campus.id] &&
+                                          !preserveOrder) ? (
+                                          <Check className="w-4 h-4 text-slate-600 shrink-0" />
+                                        ) : (
+                                          <span className="w-4 shrink-0" />
                                         )}
-                                        Status
+                                        <span>Status</span>
                                       </button>
                                       <button
                                         onClick={() => {
@@ -3062,24 +3181,26 @@ export function DistrictPanel({
                                           });
                                           setOpenCampusMenuId(null);
                                         }}
-                                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 min-h-[40px]"
                                       >
                                         {preserveOrder &&
-                                          !campusSorts[campus.id] && (
-                                            <span className="text-xs">✓</span>
-                                          )}
-                                        Custom
+                                        !campusSorts[campus.id] ? (
+                                          <Check className="w-4 h-4 text-slate-600 shrink-0" />
+                                        ) : (
+                                          <span className="w-4 shrink-0" />
+                                        )}
+                                        <span>Custom</span>
                                       </button>
-                                      <div className="border-t border-gray-100 my-1"></div>
+                                      <div className="border-t border-slate-100 my-2" />
                                       <button
                                         onClick={() => {
                                           handleEditCampus(campus.id);
                                           setOpenCampusMenuId(null);
                                         }}
-                                        className="w-full px-5 py-2.5 text-left text-base text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-3 min-h-[40px]"
                                       >
-                                        <Edit2 className="w-5 h-5" />
-                                        Edit Campus Name
+                                        <Edit2 className="w-4 h-4 text-slate-500 shrink-0" />
+                                        <span>Edit Campus Name</span>
                                       </button>
                                       <button
                                         onClick={() => {
@@ -3093,24 +3214,64 @@ export function DistrictPanel({
                                           }
                                           setOpenCampusMenuId(null);
                                         }}
-                                        className="w-full px-5 py-2.5 text-left text-base text-red-600 hover:bg-red-50 flex items-center gap-3"
+                                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3 min-h-[40px]"
                                       >
-                                        <Trash2 className="w-5 h-5" />
-                                        Delete {entityName}
+                                        <Trash2 className="w-4 h-4 shrink-0" />
+                                        <span>Delete {entityName}</span>
                                       </button>
                                     </div>
                                   </>,
                                   document.body
                                 )}
                             </div>
-                            <h3 className="font-medium text-slate-900 break-words text-xl min-w-0 flex-1">
-                              {campus.name}
-                            </h3>
+                            {editingCampusId === campus.id ? (
+                              <Input
+                                ref={inlineCampusNameInputRef}
+                                value={campusForm.name}
+                                onChange={e =>
+                                  setCampusForm({ name: e.target.value })
+                                }
+                                onKeyDown={e => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const name = campusForm.name?.trim();
+                                    if (name && !hasCampusNameConflict(name, campus.id))
+                                      handleUpdateCampus(campus.id);
+                                    else if (name)
+                                      toast.error(
+                                        "A campus with a very similar name already exists in this district."
+                                      );
+                                  } else if (e.key === "Escape") {
+                                    setEditingCampusId(null);
+                                    setCampusForm({
+                                      name: campus.name ?? "",
+                                    });
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const name = campusForm.name?.trim();
+                                  if (name && name !== (campus.name ?? "")) {
+                                    if (!hasCampusNameConflict(name, campus.id))
+                                      handleUpdateCampus(campus.id);
+                                    else
+                                      setCampusForm({
+                                        name: campus.name ?? "",
+                                      });
+                                  }
+                                  setEditingCampusId(null);
+                                }}
+                                className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-xl md:text-xl font-medium text-slate-900 break-words bg-transparent py-0 px-0 text-left h-auto min-h-[1.75rem] leading-tight"
+                              />
+                            ) : (
+                              <h3 className="font-medium text-slate-900 break-words text-xl min-w-0 flex-1">
+                                {campus.name}
+                              </h3>
+                            )}
                           </div>
                         </CampusNameDropZone>
 
                         {/* Person Figures - start right after campus name barrier; same column for all rows */}
-                        <div className="flex-1 min-w-0 pl-1">
+                        <div className="flex-1 min-w-0 pl-0 -ml-1">
                           <CampusDropZone
                             campusId={campus.id}
                             onDrop={handleCampusRowDrop}
@@ -3166,14 +3327,14 @@ export function DistrictPanel({
                                         onPersonStatusChange={
                                           onPersonStatusChange
                                         }
-                                        canInteract={canEditThisCampus}
+                                        canInteract={userCanEditPerson(person)}
                                         slowAnimation={
                                           animatingSortCampus === campus.id
                                         }
-                                        maskIdentity={
-                                          isPublicSafeMode &&
-                                          (!isCampusOnlyViewer ||
-                                            campus.id !== userCampusId)
+                                        maskIdentity={isPublicSafeMode}
+                                        maskDetails={
+                                          !isPublicSafeMode &&
+                                          !userCanViewDetails(person)
                                         }
                                       />
                                     </div>
@@ -3216,6 +3377,8 @@ export function DistrictPanel({
                                                   )
                                                 }
                                                 onKeyDown={e => {
+                                                  // Prevent space from triggering the parent button behavior
+                                                  e.stopPropagation();
                                                   if (e.key === "Enter") {
                                                     handleQuickAddSubmit(
                                                       `campus-${campus.id}`
@@ -3233,14 +3396,48 @@ export function DistrictPanel({
                                                   );
                                                 }}
                                                 placeholder="Name"
-                                                className="w-20 h-6 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                className="w-28 h-7 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
                                                 autoFocus
                                                 spellCheck={true}
                                                 autoComplete="name"
                                               />
+                                              {/* Quick Add label above */}
                                               <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
                                                 Quick Add
                                               </div>
+                                              {/* Name suggestions dropdown (same behavior as full Add Person) */}
+                                              {quickAddFilteredNameSuggestions.length >
+                                                0 && (
+                                                <ul
+                                                  className="absolute left-1/2 -translate-x-1/2 top-full z-10 mt-0.5 max-h-40 w-40 overflow-auto rounded-md border border-slate-200 bg-white py-1 shadow-lg text-left"
+                                                  role="listbox"
+                                                >
+                                                  {quickAddFilteredNameSuggestions.map(
+                                                    (name, idx) => (
+                                                      <li
+                                                        key={`${name}-${idx}`}
+                                                        role="option"
+                                                        aria-selected={
+                                                          idx ===
+                                                          nameSuggestionsHighlightIndex
+                                                        }
+                                                        className={`cursor-pointer px-3 py-1.5 text-xs ${
+                                                          idx ===
+                                                          nameSuggestionsHighlightIndex
+                                                            ? "bg-slate-100"
+                                                            : "hover:bg-slate-50"
+                                                        }`}
+                                                        onMouseDown={e => {
+                                                          e.preventDefault();
+                                                          setQuickAddName(name);
+                                                        }}
+                                                      >
+                                                        {name}
+                                                      </li>
+                                                    )
+                                                  )}
+                                                </ul>
+                                              )}
                                             </div>
                                           ) : (
                                             <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110">
@@ -3302,54 +3499,54 @@ export function DistrictPanel({
                 );
               })}
 
-              {/* Add {entityName} (Inline) - Only when canInteract */}
+              {/* Add {entityName} (Inline) - Only when canInteract; types in same block as campus names. Fixed height and top alignment so switching to input doesn't move the type box. */}
               {canInteract && (
                 <div
-                  className="relative z-10"
+                  className="relative z-10 pt-2 min-h-[3.5rem] flex flex-col justify-start"
                   style={{ pointerEvents: "auto" }}
                 >
                   {quickAddMode === "add-campus" ? (
-                    <div className="w-48">
-                      <Input
-                        ref={quickAddInputRef}
-                        value={quickAddName}
-                        onChange={e => setQuickAddName(e.target.value)}
-                        placeholder={`New ${entityName.toLowerCase()} name…`}
-                        className="h-12 text-base"
-                        spellCheck={true}
-                        onKeyDown={e => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            const name = quickAddName.trim();
-                            if (!name) return;
-                            if (hasCampusNameConflict(name)) {
-                              toast.error(
-                                "A campus with a very similar name already exists in this district. Please use that campus instead of creating a duplicate."
-                              );
-                              return;
+                    <div className="flex items-center gap-0 py-3 border-b border-slate-100">
+                      <div className="w-[16rem] max-w-[16rem] flex-shrink-0 flex items-center gap-2 -ml-2 min-w-0 pr-1 border-r border-slate-200">
+                        <span className="w-7 flex-shrink-0" aria-hidden />
+                        <Input
+                          ref={quickAddInputRef}
+                          value={quickAddName}
+                          onChange={e => setQuickAddName(e.target.value)}
+                          placeholder={`New ${entityName.toLowerCase()} name…`}
+                          className="min-w-0 flex-1 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-xl md:text-xl font-medium text-slate-900 break-words bg-transparent placeholder:text-slate-400 py-0 px-0 pl-0 text-left h-auto min-h-[1.75rem] leading-tight"
+                          spellCheck={true}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              const name = quickAddName.trim();
+                              if (!name) return;
+                              if (hasCampusNameConflict(name)) {
+                                toast.error(
+                                  "A campus with a very similar name already exists in this district. Please use that campus instead of creating a duplicate."
+                                );
+                                return;
+                              }
+                              createCampus.mutate({
+                                name,
+                                districtId: district.id,
+                              });
+                              setQuickAddName("");
+                              setQuickAddMode(null);
+                            } else if (e.key === "Escape") {
+                              setQuickAddName("");
+                              setQuickAddMode(null);
                             }
-                            createCampus.mutate({
-                              name,
-                              districtId: district.id,
-                            });
-                            setQuickAddName("");
-                            setQuickAddMode(null);
-                          } else if (e.key === "Escape") {
-                            setQuickAddName("");
-                            setQuickAddMode(null);
-                          }
-                        }}
-                        onBlur={() => {
-                          // Keep tidy; only cancel if empty
-                          if (!quickAddName.trim()) {
-                            setQuickAddMode(null);
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <div className="mt-1 text-xs text-slate-500">
-                        Press Enter to add • Esc to cancel
+                          }}
+                          onBlur={() => {
+                            if (!quickAddName.trim()) {
+                              setQuickAddMode(null);
+                            }
+                          }}
+                          autoFocus
+                        />
                       </div>
+                      <div className="flex-1 min-w-0" />
                     </div>
                   ) : (
                     <button
@@ -3363,9 +3560,10 @@ export function DistrictPanel({
                         setQuickAddName("");
                         setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      className="w-48 py-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                      className="w-[calc(16rem-12px)] max-w-[calc(16rem-12px)] py-3 pl-0 pr-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
                     >
-                      <Plus className="w-5 h-5" strokeWidth={2} />
+                      <span className="w-7 flex-shrink-0" aria-hidden />
+                      <Plus className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
                       <span className="text-sm">
                         Add {entityName}
                         {disableEdits ? " " : ""}
@@ -3463,14 +3661,6 @@ export function DistrictPanel({
                     return;
                   }
                   handleAddPerson();
-                }}
-                onKeyDown={e => {
-                  if (
-                    e.key === "Enter" &&
-                    (e.target as HTMLElement).tagName !== "TEXTAREA"
-                  ) {
-                    e.preventDefault();
-                  }
                 }}
               >
                 <div className="space-y-6 py-4">
@@ -4016,11 +4206,9 @@ export function DistrictPanel({
                           transition={{ duration: 0.5, ease: "easeInOut" }}
                           className="space-y-4 min-w-0 w-full"
                         >
-                          <div className="border-b border-slate-200 pb-2">
-                            <h3 className="text-sm font-semibold text-slate-700">
-                              Need Note
-                            </h3>
-                          </div>
+                          <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                            Need Note
+                          </h3>
                           <div className="space-y-2 min-w-0">
                             <Textarea
                               id="person-need-notes"
@@ -4065,11 +4253,9 @@ export function DistrictPanel({
                       transition={{ duration: 0.5, ease: "easeInOut" }}
                       className="space-y-4 min-w-0 w-full"
                     >
-                      <div className="border-b border-slate-200 pb-2">
-                        <h3 className="text-sm font-semibold text-slate-700">
-                          Journey Notes
-                        </h3>
-                      </div>
+                      <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                        Journey Notes
+                      </h3>
                       <div className="space-y-2 min-w-0">
                         <Textarea
                           id="person-notes"
@@ -4703,11 +4889,9 @@ export function DistrictPanel({
                         transition={{ duration: 0.5, ease: "easeInOut" }}
                         className="space-y-4 min-w-0 w-full"
                       >
-                        <div className="border-b border-slate-200 pb-2">
-                          <h3 className="text-sm font-semibold text-slate-700">
-                            Need Note
-                          </h3>
-                        </div>
+                        <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                          Need Note
+                        </h3>
                         <div className="space-y-2 min-w-0">
                           <Textarea
                             id="edit-person-need-notes"
@@ -4752,11 +4936,9 @@ export function DistrictPanel({
                     transition={{ duration: 0.5, ease: "easeInOut" }}
                     className="space-y-4 min-w-0 w-full"
                   >
-                    <div className="border-b border-slate-200 pb-2">
-                      <h3 className="text-sm font-semibold text-slate-700">
-                        Journey Notes
-                      </h3>
-                    </div>
+                    <h3 className="text-sm font-semibold text-slate-700 mb-1">
+                      Journey Notes
+                    </h3>
                     <div className="space-y-2 min-w-0">
                       <Textarea
                         id="edit-person-notes"
@@ -4900,6 +5082,7 @@ export function DistrictPanel({
                     spellCheck={true}
                     autoComplete="organization"
                     autoFocus
+                    className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
                   />
                 </div>
               </div>
@@ -4930,7 +5113,7 @@ export function DistrictPanel({
                 <DialogTitle>Edit Campus</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="space-y-2">
+                  <div className="space-y-2">
                   <Label htmlFor="edit-campus-name">Campus Name</Label>
                   <Input
                     id="edit-campus-name"
@@ -4940,6 +5123,7 @@ export function DistrictPanel({
                     placeholder="Enter campus name"
                     spellCheck={true}
                     autoComplete="organization"
+                    className="text-xl md:text-xl font-semibold text-slate-900 focus-visible:border-red-400/60 focus-visible:ring-red-400/25"
                   />
                   <datalist id="edit-campus-name-suggestions">
                     {campusSuggestions.map((name, idx) => (
@@ -4958,7 +5142,7 @@ export function DistrictPanel({
                 </Button>
                 <Button
                   type="button"
-                  onClick={handleUpdateCampus}
+                  onClick={() => handleUpdateCampus()}
                   disabled={
                     !campusForm.name.trim() || updateCampusName.isPending
                   }

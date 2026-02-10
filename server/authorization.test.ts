@@ -292,10 +292,23 @@ describe("canEditRegion", () => {
   });
 
   describe("REGION_DIRECTOR role", () => {
-    it("should allow editing any region", () => {
-      const user = createTestUser({ role: "REGION_DIRECTOR", regionId: "R1" });
+    it("should allow editing only their overseen region", () => {
+      const user = createTestUser({
+        role: "REGION_DIRECTOR",
+        regionId: "R1",
+        overseeRegionId: "R1",
+      } as any);
       expect(canEditRegion(user, "R1")).toBe(true);
-      expect(canEditRegion(user, "R99")).toBe(true);
+      expect(canEditRegion(user, "R99")).toBe(false);
+    });
+
+    it("should deny when overseeRegionId/regionId is missing", () => {
+      const user = createTestUser({
+        role: "REGION_DIRECTOR",
+        regionId: null,
+        overseeRegionId: null,
+      } as any);
+      expect(canEditRegion(user, "R1")).toBe(false);
     });
   });
 

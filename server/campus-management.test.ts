@@ -35,6 +35,9 @@ function createAdminContext(): TrpcContext {
       name: null,
       loginMethod: null,
       personId: null,
+      scopeLevel: "NATIONAL",
+      viewLevel: "NATIONAL",
+      editLevel: "NATIONAL",
     },
     req: {
       protocol: "https",
@@ -66,6 +69,9 @@ function createDistrictDirectorContext(
       name: null,
       loginMethod: null,
       personId: null,
+      scopeLevel: "REGION",
+      viewLevel: "REGION",
+      editLevel: "DISTRICT",
     },
     req: {
       protocol: "https",
@@ -97,6 +103,9 @@ function createCampusUserContext(
       name: null,
       loginMethod: null,
       personId: null,
+      scopeLevel: "REGION",
+      viewLevel: "CAMPUS",
+      editLevel: "CAMPUS",
     },
     req: {
       protocol: "https",

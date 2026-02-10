@@ -40,10 +40,10 @@ const DATA = {
     "Prairie View A&M University": [
       { name: "Sir James Offord", role: "Campus Director" },
       { name: "Moriah Offord", role: "Campus Co-Director" },
-      { name: "Cam", role: "Staff" },
-      { name: "Jada", role: "Staff" },
-      { name: "Zoe", role: "Staff" },
-      { name: "Destiny", role: "Staff" },
+      { name: "Cam", role: "Campus Staff" },
+      { name: "Jada", role: "Campus Staff" },
+      { name: "Zoe", role: "Campus Staff" },
+      { name: "Destiny", role: "Campus Staff" },
     ],
     "University of Texas at San Antonio": [
       { name: "Johnny Hauk", role: "Campus Director" },

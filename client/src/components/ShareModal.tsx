@@ -124,7 +124,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={isOpen => !isOpen && onClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[85dvh] sm:max-h-[90vh] overflow-y-auto w-[calc(100vw-32px)] sm:w-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />

@@ -162,16 +162,16 @@ export default function WhyInvitationsMatter() {
 
       {/* Google Doc Modal */}
       {isDocModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85dvh] sm:h-[90vh] flex flex-col max-h-[calc(100dvh-16px)]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-xl font-semibold text-slate-900">
+            <div className="flex items-center justify-between p-3 sm:p-4 border-b gap-2">
+              <h2 className="text-base sm:text-xl font-semibold text-slate-900 truncate">
                 The Word God Gave Me For CMC
               </h2>
               <button
                 onClick={() => setIsDocModalOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2.5 hover:bg-gray-100 rounded-lg transition-colors shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Close"
               >
                 <X className="w-5 h-5 text-slate-600" />
@@ -179,7 +179,7 @@ export default function WhyInvitationsMatter() {
             </div>
 
             {/* Modal Content - Google Doc iframe */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden min-h-0">
               <iframe
                 src="https://docs.google.com/document/d/1vo23ldjIphJSz7tvj8h3FQoAtREvzUh31A5zJ__M81I/preview?usp=sharing&embedded=true"
                 className="w-full h-full border-0"

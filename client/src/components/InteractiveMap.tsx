@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useMemo } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
@@ -543,6 +543,21 @@ export function InteractiveMap({
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
   const [metricsExpanded, setMetricsExpanded] = useState(true);
 
+  // Line width matches the label above (Chi Alpha / region name)
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [labelWidthPx, setLabelWidthPx] = useState(0);
+  useLayoutEffect(() => {
+    const el = labelRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setLabelWidthPx(el.offsetWidth);
+    });
+    ro.observe(el);
+    // Initial measurement
+    setLabelWidthPx(el.offsetWidth);
+    return () => ro.disconnect();
+  }, []);
+
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(
     null
@@ -826,9 +841,16 @@ export function InteractiveMap({
   // Get displayed totals based on hover state and scope filter
   // Returns the same shape as nationalTotals (includes 'invited' field)
   const getDisplayedTotals = (): typeof nationalTotals => {
-    // If hovering over a region, show that region's totals
-    if (hoveredRegion && regionalTotals[hoveredRegion]) {
-      return regionalTotals[hoveredRegion];
+    // If hovering over a region, show that region's totals (or zeros if no data)
+    if (hoveredRegion) {
+      return regionalTotals[hoveredRegion] ?? {
+        yes: 0,
+        maybe: 0,
+        no: 0,
+        notInvited: 0,
+        total: 0,
+        invited: 0,
+      };
     }
     // If in REGION scope, show that region's totals
     if (
@@ -1064,14 +1086,17 @@ export function InteractiveMap({
     const DIM_OPACITY = "1"; // keep opacity full, use brightness for dimming
     const DIM_FILTER = "brightness(0.65)"; // darken non-hovered regions
 
-    // Subtle shadow for depth
+    // Subtle shadow for depth on inactive map
     const BASE_FILTER = "drop-shadow(0 1px 2px rgba(0,0,0,0.08))";
-    // Hovered district - subtle lift effect
+    // Hovered district - brighter with almost no glow (tiny shadow)
     const HOVER_FILTER =
-      "brightness(1.05) drop-shadow(0 4px 8px rgba(0,0,0,0.15))";
-    // Selected district - slightly more prominent
+      "brightness(1.35) saturate(1.06) drop-shadow(0 1px 2px rgba(0,0,0,0.18))";
+    // Other districts in same region on hover - slight brightness, no noticeable glow
+    const REGION_HOVER_FILTER =
+      "brightness(1.16) saturate(1.03) drop-shadow(0 1px 1px rgba(0,0,0,0.12))";
+    // Selected district - modest step above hover, still very tight shadow
     const SELECTED_FILTER =
-      "brightness(1.08) drop-shadow(0 4px 8px rgba(0,0,0,0.18))";
+      "brightness(1.45) saturate(1.08) drop-shadow(0 2px 3px rgba(0,0,0,0.2))";
     const GREYED_OUT_FILTER = "brightness(0.6)";
     const GREYED_OUT_OPACITY = "1";
 
@@ -1240,8 +1265,10 @@ export function InteractiveMap({
         path.style.opacity = "1";
         path.style.visibility = "visible";
       } else if (shouldDim) {
-        path.style.filter = DIM_FILTER;
-        path.style.opacity = DIM_OPACITY;
+        // Previously: darkened non-selected regions with DIM_FILTER.
+        // Per UI feedback, keep other districts at the normal brightness even when a district is active/hovered.
+        path.style.filter = BASE_FILTER;
+        path.style.opacity = "1";
         path.style.visibility = "visible";
       } else {
         path.style.filter = BASE_FILTER; // 3D floating effect
@@ -1317,26 +1344,27 @@ export function InteractiveMap({
           const isInSameRegion =
             vRegion && pathRegion && vRegion === pathRegion;
 
-          if (vPathId === pathId) {
-            // Hovered district - lift effect with brightness
+          if (isInSameRegion) {
+            // Whole region responds, but hovered district is brightest
+            const isHoveredDistrict = vPathId === pathId;
             vPath.style.opacity = "1";
-            vPath.style.filter =
-              selectedDistrictId === pathId ? SELECTED_FILTER : HOVER_FILTER;
-            vPath.style.strokeWidth =
-              selectedDistrictId === pathId
+            vPath.style.filter = isHoveredDistrict
+              ? selectedDistrictId === vPathId
+                ? SELECTED_FILTER
+                : HOVER_FILTER
+              : REGION_HOVER_FILTER;
+            vPath.style.strokeWidth = isHoveredDistrict
+              ? selectedDistrictId === vPathId
                 ? BORDER_WIDTH_SELECTED
-                : BORDER_WIDTH_HOVER;
-            vPath.style.transform = "translateY(-2px)"; // Subtle lift
-          } else if (isInSameRegion) {
-            // Same region - normal appearance
+                : BORDER_WIDTH_HOVER
+              : BORDER_WIDTH;
+            vPath.style.transform = isHoveredDistrict
+              ? "translateY(-2px)"
+              : "translateY(0)";
+          } else {
+            // Districts in other regions remain in the inactive state
             vPath.style.opacity = "1";
             vPath.style.filter = BASE_FILTER;
-            vPath.style.strokeWidth = BORDER_WIDTH;
-            vPath.style.transform = "translateY(0)";
-          } else {
-            // Other regions - dimmed (darker)
-            vPath.style.opacity = DIM_OPACITY;
-            vPath.style.filter = DIM_FILTER;
             vPath.style.strokeWidth = BORDER_WIDTH;
             vPath.style.transform = "translateY(0)";
           }
@@ -1751,18 +1779,318 @@ export function InteractiveMap({
       }}
     >
       <div className="relative w-full h-full">
-        {/* Top Right Label - Chi Alpha */}
-        <div className="absolute top-4 right-4 z-40 flex flex-col items-end gap-2">
+        {/* Top Right - Chi Alpha label + metrics (close together) */}
+          <div className="absolute top-4 right-2 z-50 flex flex-col items-end gap-0.5 bg-transparent">
           <div className="flex items-center justify-end">
             <span
-              className="font-beach text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none"
+              className="font-beach text-5xl font-medium text-slate-800 drop-shadow-lg transition-opacity duration-300 tracking-wide inline-block leading-none mr-6"
               style={{
                 transform: "scaleX(1.08)",
                 transformOrigin: "right center",
               }}
+              ref={labelRef}
             >
               {displayedLabel}
             </span>
+          </div>
+
+          {/* "metrics" label + horizontal line (on hover) + collapsible metrics */}
+          <div className="flex flex-col items-end w-full max-w-[16rem] mt-3 bg-transparent">
+            <button
+              onClick={() => setMetricsExpanded(!metricsExpanded)}
+              className="group flex flex-row items-center w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
+              aria-label={
+                metricsExpanded ? "Collapse metrics" : "Expand metrics"
+              }
+            >
+              <div
+                className={`h-px bg-slate-400 relative z-10 origin-left ${
+                  metricsExpanded
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100"
+                }`}
+                style={{
+                  width: labelWidthPx ? `${labelWidthPx}px` : undefined,
+                  transform: metricsExpanded ? "scaleX(1)" : "scaleX(0)",
+                  transition:
+                    "opacity 0.2s ease-out, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transitionDelay: metricsExpanded ? "0ms" : "1.2s",
+                }}
+              />
+              <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0">
+                Metrics
+              </span>
+              <svg
+                className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 ${
+                  metricsExpanded ? "rotate-180" : ""
+                }`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {/* Metrics panel: line expands first; metrics slide out from the line one by one */}
+            <div
+              className="relative overflow-hidden w-full bg-transparent"
+              style={{
+                transition:
+                  "max-height 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out",
+                transitionDelay: metricsExpanded ? "0.4s" : "0ms",
+                maxHeight: metricsExpanded ? "500px" : "0px",
+                opacity: metricsExpanded ? 1 : 0,
+              }}
+            >
+              <div className="flex flex-col items-end gap-3 pt-0 pr-6 mt-1.5 overflow-hidden">
+                {/* Yes - closest to line: slides out first, back in last */}
+                <button
+                  onClick={() => toggleMetric("yes")}
+                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  style={{
+                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
+                    transitionDelay: metricsExpanded ? "0.15s" : "0.9s",
+                  }}
+                >
+                  <span
+                    className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    style={{
+                      lineHeight: "1",
+                      minWidth: "8.5rem",
+                      textAlign: "right",
+                    }}
+                  >
+                    Yes
+                  </span>
+                  <span
+                    className="text-4xl font-semibold text-slate-900 tabular-nums"
+                    style={{
+                      lineHeight: "1",
+                      width: "4rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    {showPublicPlaceholder ? "—" : displayedTotals.yes}
+                  </span>
+                  <div
+                    className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                      activeMetrics.has("yes")
+                        ? "bg-emerald-700 border-emerald-700"
+                        : "border-slate-300 hover:border-emerald-600 bg-white"
+                    }`}
+                    style={{
+                      boxShadow: activeMetrics.has("yes")
+                        ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                    }}
+                  >
+                    {activeMetrics.has("yes") && (
+                      <svg
+                        className="w-full h-full text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+                {/* Maybe - slides out from line 2nd, back into line 3rd */}
+                <button
+                  onClick={() => toggleMetric("maybe")}
+                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  style={{
+                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
+                    transitionDelay: metricsExpanded ? "0.45s" : "0.6s",
+                  }}
+                >
+                  <span
+                    className="text-[1.65rem] font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    style={{
+                      lineHeight: "1",
+                      minWidth: "8.5rem",
+                      textAlign: "right",
+                    }}
+                  >
+                    Maybe
+                  </span>
+                  <span
+                    className="text-[1.65rem] font-semibold text-slate-900 tracking-tight tabular-nums"
+                    style={{
+                      lineHeight: "1",
+                      width: "4rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    {showPublicPlaceholder ? "—" : displayedTotals.maybe}
+                  </span>
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                      activeMetrics.has("maybe")
+                        ? "bg-yellow-600 border-yellow-600"
+                        : "border-slate-300 hover:border-yellow-600 bg-white"
+                    }`}
+                    style={{
+                      boxShadow: activeMetrics.has("maybe")
+                        ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                    }}
+                  >
+                    {activeMetrics.has("maybe") && (
+                      <svg
+                        className="w-full h-full text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+                {/* No - slides out from line 3rd, back into line 2nd */}
+                <button
+                  onClick={() => toggleMetric("no")}
+                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  style={{
+                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
+                    transitionDelay: metricsExpanded ? "0.75s" : "0.3s",
+                  }}
+                >
+                  <span
+                    className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
+                    style={{
+                      lineHeight: "1",
+                      minWidth: "8.5rem",
+                      textAlign: "right",
+                    }}
+                  >
+                    No
+                  </span>
+                  <span
+                    className="text-2xl font-semibold text-slate-900 tracking-tight tabular-nums"
+                    style={{
+                      lineHeight: "1",
+                      width: "4rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    {showPublicPlaceholder ? "—" : displayedTotals.no}
+                  </span>
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                      activeMetrics.has("no")
+                        ? "bg-red-700 border-red-700"
+                        : "border-slate-300 hover:border-red-700 bg-white"
+                    }`}
+                    style={{
+                      boxShadow: activeMetrics.has("no")
+                        ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                    }}
+                  >
+                    {activeMetrics.has("no") && (
+                      <svg
+                        className="w-full h-full text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+                {/* Not Invited Yet - farthest from line: slides out last, back in first */}
+                <button
+                  onClick={() => toggleMetric("notInvited")}
+                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  style={{
+                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
+                    transform: metricsExpanded ? "translateX(0)" : "translateX(100%)",
+                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
+                    transitionDelay: metricsExpanded ? "1.05s" : "0ms",
+                  }}
+                >
+                  <span
+                    className="font-medium text-slate-700 whitespace-nowrap tracking-tight text-[1.2rem]"
+                    style={{
+                      lineHeight: "1",
+                      minWidth: "8.5rem",
+                      textAlign: "right",
+                    }}
+                  >
+                    Not Invited Yet
+                  </span>
+                  <span
+                    className="font-semibold text-slate-900 tracking-tight tabular-nums text-[1.2rem]"
+                    style={{
+                      lineHeight: "1",
+                      width: "4rem",
+                      textAlign: "center",
+                    }}
+                  >
+                    {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
+                  </span>
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                      activeMetrics.has("notInvited")
+                        ? "bg-slate-500 border-slate-500"
+                        : "border-slate-300 hover:border-slate-400 bg-white"
+                    }`}
+                    style={{
+                      boxShadow: activeMetrics.has("notInvited")
+                        ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
+                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                    }}
+                  >
+                    {activeMetrics.has("notInvited") && (
+                      <svg
+                        className="w-full h-full text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={3}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1798,351 +2126,33 @@ export function InteractiveMap({
             <div className="w-6 h-6 flex-shrink-0" />
           </div>
 
-          {/* Needs summary (moved from bottom-right) */}
-          <div className="hidden sm:block text-left">
-            <div className="space-y-1">
-              <div className="text-sm font-semibold text-slate-700 tabular-nums">
-                <span className="text-slate-500 font-medium">Needs Met:</span>{" "}
-                {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
-                <span className="text-slate-500 font-medium">/</span>{" "}
-                {needsAggregate ? needsAggregate.totalNeeds : "—"}
+          {/* Needs summary - same alignment and size as district panel (labels right-aligned, metrics left-aligned, text-sm) */}
+          <div className="hidden sm:block flex-shrink-0">
+            <div className="inline-flex flex-col gap-y-0.5">
+              <div className="flex items-baseline gap-x-3">
+                <span className="w-[7.25rem] text-sm font-medium text-slate-500 text-right shrink-0">
+                  Needs Met:
+                </span>
+                <span className="text-sm font-semibold text-slate-700 tabular-nums text-left min-w-0">
+                  {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
+                  <span className="text-slate-500 font-medium">/</span>{" "}
+                  {needsAggregate ? needsAggregate.totalNeeds : "—"}
+                </span>
               </div>
-
-              <div className="text-xs text-slate-600 tabular-nums">
-                <span className="text-slate-500">Funds Received:</span>{" "}
-                {needsAggregate
-                  ? `$${(needsAggregate.metFinancial / 100).toLocaleString(
-                      "en-US",
-                      {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }
-                    )}`
-                  : "—"}{" "}
-                <span className="text-slate-500 font-medium">/</span>{" "}
-                {needsAggregate
-                  ? `$${(needsAggregate.totalFinancial / 100).toLocaleString(
-                      "en-US",
-                      {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }
-                    )}`
-                  : "—"}
+              <div className="flex items-baseline gap-x-3">
+                <span className="w-[7.25rem] text-sm font-medium text-slate-500 text-right shrink-0">
+                  Funds Received:
+                </span>
+                <span className="text-sm text-slate-600 tabular-nums text-left min-w-0">
+                  {needsAggregate
+                    ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                    : "—"}{" "}
+                  <span className="text-slate-500 font-medium">/</span>{" "}
+                  {needsAggregate
+                    ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                    : "—"}
+                </span>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Top Right Metrics (collapsible dropdown) */}
-        <div className="absolute top-28 right-4 z-40 flex flex-col items-end">
-          {/* Subtle dropdown toggle - blends with background */}
-          <button
-            onClick={() => setMetricsExpanded(!metricsExpanded)}
-            className="group flex items-center gap-1 px-2 py-1 rounded-md hover:bg-black/5 transition-all duration-200"
-          >
-            <span className="text-xs font-medium text-slate-400 group-hover:text-slate-600 transition-colors duration-200">
-              Metrics
-            </span>
-            <svg
-              className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out ${metricsExpanded ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
-          </button>
-
-          {/* Portal-style sliding metrics panel */}
-          <div
-            className="relative overflow-hidden"
-            style={{
-              transition:
-                "max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease-out",
-              maxHeight: metricsExpanded ? "500px" : "0px",
-              opacity: metricsExpanded ? 1 : 0,
-            }}
-          >
-            {/* Soft light gradient at the top - portal glow */}
-            <div
-              className="absolute top-0 left-0 right-0 h-8 pointer-events-none z-10"
-              style={{
-                background:
-                  "linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, transparent 100%)",
-                opacity: metricsExpanded ? 1 : 0,
-                transition: "opacity 0.6s ease-out 0.1s",
-              }}
-            />
-            <div
-              className="flex flex-col items-end gap-3 pt-2"
-              style={{
-                transform: metricsExpanded
-                  ? "translateY(0)"
-                  : "translateY(-20px)",
-                transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-              }}
-            >
-              {/* Yes */}
-              <button
-                onClick={() => toggleMetric("yes")}
-                className="flex items-center gap-2 transition-all hover:scale-105"
-                style={{
-                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                  opacity: metricsExpanded ? 1 : 0,
-                  transform: metricsExpanded
-                    ? "translateY(0)"
-                    : "translateY(-12px)",
-                  transition:
-                    "opacity 0.4s ease-out 0.05s, transform 0.4s ease-out 0.05s",
-                }}
-              >
-                <span
-                  className="text-4xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "6.5rem",
-                    textAlign: "right",
-                  }}
-                >
-                  Yes
-                </span>
-                <span
-                  className="text-4xl font-semibold text-slate-900"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "4rem",
-                    textAlign: "center",
-                  }}
-                >
-                  {showPublicPlaceholder ? "—" : displayedTotals.yes}
-                </span>
-                <div
-                  className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                    activeMetrics.has("yes")
-                      ? "bg-emerald-700 border-emerald-700"
-                      : "border-slate-300 hover:border-emerald-600 bg-white"
-                  }`}
-                  style={{
-                    boxShadow: activeMetrics.has("yes")
-                      ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                  }}
-                >
-                  {activeMetrics.has("yes") && (
-                    <svg
-                      className="w-full h-full text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
-
-              {/* Maybe */}
-              <button
-                onClick={() => toggleMetric("maybe")}
-                className="flex items-center gap-2 transition-all hover:scale-105"
-                style={{
-                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                  opacity: metricsExpanded ? 1 : 0,
-                  transform: metricsExpanded
-                    ? "translateY(0)"
-                    : "translateY(-12px)",
-                  transition:
-                    "opacity 0.4s ease-out 0.12s, transform 0.4s ease-out 0.12s",
-                }}
-              >
-                <span
-                  className="text-3xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "6.5rem",
-                    textAlign: "right",
-                  }}
-                >
-                  Maybe
-                </span>
-                <span
-                  className="text-3xl font-semibold text-slate-900 tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "4rem",
-                    textAlign: "center",
-                  }}
-                >
-                  {showPublicPlaceholder ? "—" : displayedTotals.maybe}
-                </span>
-                <div
-                  className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                    activeMetrics.has("maybe")
-                      ? "bg-yellow-600 border-yellow-600"
-                      : "border-slate-300 hover:border-yellow-600 bg-white"
-                  }`}
-                  style={{
-                    boxShadow: activeMetrics.has("maybe")
-                      ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                  }}
-                >
-                  {activeMetrics.has("maybe") && (
-                    <svg
-                      className="w-full h-full text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
-
-              {/* No */}
-              <button
-                onClick={() => toggleMetric("no")}
-                className="flex items-center gap-2 transition-all hover:scale-105"
-                style={{
-                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                  opacity: metricsExpanded ? 1 : 0,
-                  transform: metricsExpanded
-                    ? "translateY(0)"
-                    : "translateY(-12px)",
-                  transition:
-                    "opacity 0.4s ease-out 0.19s, transform 0.4s ease-out 0.19s",
-                }}
-              >
-                <span
-                  className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "6.5rem",
-                    textAlign: "right",
-                  }}
-                >
-                  No
-                </span>
-                <span
-                  className="text-2xl font-semibold text-slate-900 tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "4rem",
-                    textAlign: "center",
-                  }}
-                >
-                  {showPublicPlaceholder ? "—" : displayedTotals.no}
-                </span>
-                <div
-                  className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                    activeMetrics.has("no")
-                      ? "bg-red-700 border-red-700"
-                      : "border-slate-300 hover:border-red-700 bg-white"
-                  }`}
-                  style={{
-                    boxShadow: activeMetrics.has("no")
-                      ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                  }}
-                >
-                  {activeMetrics.has("no") && (
-                    <svg
-                      className="w-full h-full text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
-
-              {/* Not Invited Yet */}
-              <button
-                onClick={() => toggleMetric("notInvited")}
-                className="flex items-center gap-2 transition-all hover:scale-105"
-                style={{
-                  filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                  opacity: metricsExpanded ? 1 : 0,
-                  transform: metricsExpanded
-                    ? "translateY(0)"
-                    : "translateY(-12px)",
-                  transition:
-                    "opacity 0.4s ease-out 0.26s, transform 0.4s ease-out 0.26s",
-                }}
-              >
-                <span
-                  className="text-2xl font-medium text-slate-700 whitespace-nowrap tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "6.5rem",
-                    textAlign: "right",
-                  }}
-                >
-                  Not Invited Yet
-                </span>
-                <span
-                  className="text-2xl font-semibold text-slate-900 tracking-tight"
-                  style={{
-                    lineHeight: "1",
-                    minWidth: "4rem",
-                    textAlign: "center",
-                  }}
-                >
-                  {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
-                </span>
-                <div
-                  className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
-                    activeMetrics.has("notInvited")
-                      ? "bg-slate-500 border-slate-500"
-                      : "border-slate-300 hover:border-slate-400 bg-white"
-                  }`}
-                  style={{
-                    boxShadow: activeMetrics.has("notInvited")
-                      ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
-                      : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                  }}
-                >
-                  {activeMetrics.has("notInvited") && (
-                    <svg
-                      className="w-full h-full text-white"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-              </button>
             </div>
           </div>
         </div>
@@ -2163,7 +2173,7 @@ export function InteractiveMap({
           ref={visualContainerRef}
           className="absolute inset-0 pointer-events-none z-10"
           style={{
-            filter: "blur(0.3px)", // Minimal blur to fill tiny gaps while preserving sharp edges
+            filter: "blur(0.3px) brightness(0.6)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
               ? "scale(1.05)" // Larger scale when panel open
               : "scale(1)", // Normal scale, centered
@@ -2188,7 +2198,7 @@ export function InteractiveMap({
           >
             <button
               type="button"
-              aria-label="Open XAN (Chi Alpha National)"
+              aria-label="Open XAN (National Team)"
               className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan"
               style={{
                 left: "12%", // Moved to the left a little
@@ -2243,9 +2253,9 @@ export function InteractiveMap({
           }}
         />
 
-        {/* Metric Overlays - Anchored to Region Labels around map edges */}
+        {/* Metric Overlays - Anchored to Region Labels around map edges; below metrics dropdown (z-50) and toolbar (z-[100]) */}
         <div
-          className="absolute inset-0 flex items-center justify-center z-35 pointer-events-none"
+          className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
           style={{
             transform: selectedDistrictId ? "scale(1.05)" : "scale(1)",
             transformOrigin: "center",
@@ -2306,6 +2316,14 @@ export function InteractiveMap({
                 });
 
                 // Pre-calculate all regions and their heights for collision detection
+                // When scope is REGION, only show that region's bubbles (e.g. Texico only)
+                const regionsToConsider =
+                  scopeFilter === "REGION" && userRegionId
+                    ? baseRegionPositions[userRegionId]
+                      ? [userRegionId]
+                      : Object.keys(baseRegionPositions)
+                    : Object.keys(baseRegionPositions);
+
                 const allRegions: string[] = [];
                 const allTotalHeights: Record<string, number> = {};
                 const allMetricsToShow: Record<
@@ -2313,7 +2331,7 @@ export function InteractiveMap({
                   Array<{ label: string; value: number }>
                 > = {};
 
-                Object.keys(baseRegionPositions).forEach(region => {
+                regionsToConsider.forEach(region => {
                   const stats = regionStats[region] || {
                     yes: 0,
                     maybe: 0,

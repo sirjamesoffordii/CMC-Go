@@ -269,7 +269,7 @@ export function PersonDetailsDialog({
             Basic Information
           </h3>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <div className="space-y-2">
             <Label htmlFor="pd-name">Full Name *</Label>
             <Input
@@ -325,7 +325,7 @@ export function PersonDetailsDialog({
         </button>
         {familyGuestsExpanded && (
           <div className="pt-4 pb-2">
-            <div className="grid grid-cols-3 gap-4 items-end">
+            <div className="grid grid-cols-3 gap-3 sm:gap-4 items-end">
               <div className="space-y-2">
                 <Label htmlFor="pd-spouse" className="text-sm font-medium">
                   Spouse attending
@@ -360,7 +360,7 @@ export function PersonDetailsDialog({
                     );
                   }}
                   placeholder="0"
-                  className="w-24"
+                  className="w-full sm:w-24"
                 />
               </div>
               <div className="space-y-2">
@@ -382,7 +382,7 @@ export function PersonDetailsDialog({
                     );
                   }}
                   placeholder="0"
-                  className="w-24"
+                  className="w-full sm:w-24"
                 />
               </div>
             </div>
@@ -392,8 +392,8 @@ export function PersonDetailsDialog({
 
       {/* Need, Funds Needed, Funds Received */}
       <div className="space-y-4 mt-4">
-        <div className="flex flex-wrap items-start gap-4">
-          <div className="space-y-2 w-40">
+        <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+          <div className="space-y-2 w-full sm:w-40">
             <Label htmlFor="pd-need">Need</Label>
             <Select
               value={formNeedType}
@@ -426,7 +426,7 @@ export function PersonDetailsDialog({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-2 w-40"
+                className="space-y-2 w-[calc(50%-6px)] sm:w-40"
               >
                 <Label htmlFor="pd-funds-needed">Funds Needed</Label>
                 <div className="relative">
@@ -440,7 +440,7 @@ export function PersonDetailsDialog({
                     value={formNeedAmount}
                     onChange={e => setFormNeedAmount(e.target.value)}
                     placeholder="0.00"
-                    className="pl-7 w-28"
+                    className="pl-7 w-full sm:w-28"
                   />
                 </div>
               </motion.div>
@@ -452,7 +452,7 @@ export function PersonDetailsDialog({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
-                className="space-y-2 w-40"
+                className="space-y-2 w-[calc(50%-6px)] sm:w-40"
               >
                 <Label htmlFor="pd-funds-received">Funds Received</Label>
                 <div className="relative">
@@ -466,7 +466,7 @@ export function PersonDetailsDialog({
                     value={formFundsReceived}
                     onChange={e => setFormFundsReceived(e.target.value)}
                     placeholder="0.00"
-                    className="pl-7 w-28"
+                    className="pl-7 w-full sm:w-28"
                   />
                 </div>
               </motion.div>
@@ -479,7 +479,7 @@ export function PersonDetailsDialog({
       <motion.div
         layout
         transition={{ duration: 0.5, ease: "easeInOut" }}
-        className={`space-y-4 mt-4 grid gap-4 overflow-hidden ${formNeedType !== "None" ? "grid-cols-[1fr_1fr]" : "grid-cols-1"}`}
+        className={`space-y-4 mt-4 grid gap-4 overflow-hidden ${formNeedType !== "None" ? "grid-cols-1 sm:grid-cols-[1fr_1fr]" : "grid-cols-1"}`}
       >
         <AnimatePresence mode="popLayout">
           {formNeedType !== "None" && (
@@ -615,35 +615,40 @@ export function PersonDetailsDialog({
         >
           <div className="px-4 pb-4">
             {formContent}
-            <div className="mt-4 flex items-center justify-between gap-2">
-              {isLeader && (
-                <button
-                  onClick={handleDelete}
-                  disabled={deletePerson.isPending}
-                  className="p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700"
-                  title="Delete person"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-              <div className="flex items-center gap-2 ml-auto">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="pd-deposit-m" className="text-sm">
-                    Deposit paid
-                  </Label>
-                  <Checkbox
-                    id="pd-deposit-m"
-                    checked={formDepositPaid}
-                    onCheckedChange={checked =>
-                      setFormDepositPaid(checked === true)
-                    }
-                    className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
-                  />
-                </div>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                {isLeader && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleDelete}
+                      disabled={deletePerson.isPending}
+                      className="p-2.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      title="Delete person"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="pd-deposit-m"
+                        checked={formDepositPaid}
+                        onCheckedChange={checked =>
+                          setFormDepositPaid(checked === true)
+                        }
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                      <Label htmlFor="pd-deposit-m" className="text-sm">
+                        Deposit paid
+                      </Label>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onOpenChange(false)}
+                  className="flex-1 min-h-[44px]"
                 >
                   Cancel
                 </Button>
@@ -655,7 +660,7 @@ export function PersonDetailsDialog({
                     !formName.trim() ||
                     !formRole.trim()
                   }
-                  className="bg-black text-white hover:bg-red-600"
+                  className="bg-black text-white hover:bg-red-600 flex-1 min-h-[44px]"
                 >
                   {updatePerson.isPending ? "Updating..." : "Update"}
                 </Button>
