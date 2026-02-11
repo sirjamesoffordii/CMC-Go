@@ -35,6 +35,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { AccountPanel } from "@/components/AccountPanel";
+import { EventInfoPanel } from "@/components/EventInfoPanel";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
@@ -185,6 +186,7 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
+  const [eventInfoPanelOpen, setEventInfoPanelOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -845,11 +847,11 @@ export default function Home() {
           Edit
         </button>
 
-        {/* PR 4: Editing badge - mobile only, compact */}
-        {user && isMobile && (
+        {/* Editing badge - desktop only, compact; hidden on mobile to prevent header overlap */}
+        {user && !isMobile && (
           <div className="flex-shrink min-w-0 mr-1 z-10 text-white/90 text-sm overflow-hidden">
             <span
-              className="editing-badge-mobile inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-[100px]"
+              className="inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-[140px]"
               title={user.districtName || user.campusName || user.role}
             >
               {user.districtName || user.campusName || user.role}
@@ -858,7 +860,7 @@ export default function Home() {
         )}
 
         {/* Right Side: Scope Selector, Why button, and Hamburger Menu */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto min-w-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto min-w-0 max-w-[70%] sm:max-w-none">
           {/* Scope selector - visible when authenticated, compact on mobile */}
           {isAuthenticated && (
             <ScopeSelector
@@ -891,7 +893,7 @@ export default function Home() {
               variant="ghost"
               size="sm"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-white/80 hover:text-white hover:bg-red-700"
+              className="text-white/80 hover:text-white hover:bg-red-700 min-w-[44px] min-h-[44px] p-0 sm:p-2"
             >
               <Menu className="w-5 h-5" />
             </Button>
@@ -948,7 +950,7 @@ export default function Home() {
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setLocation("/event-info");
+                      setEventInfoPanelOpen(true);
                       setMenuOpen(false);
                     }}
                     className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors flex items-center gap-3"
@@ -1105,11 +1107,8 @@ export default function Home() {
                 panelOpen: false,
               });
             }}
-            title={
-              nationalPanelOpen
-                ? "National Team"
-                : (selectedDistrict?.name ?? "District")
-            }
+            title={nationalPanelOpen ? "National Team" : undefined}
+            showHeader={nationalPanelOpen}
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1407,6 +1406,11 @@ export default function Home() {
         onOpenChange={setLoginModalOpen}
         onAuthSuccess={handleAuthSuccess}
         showClose
+      />
+      <EventInfoPanel
+        open={eventInfoPanelOpen}
+        onOpenChange={setEventInfoPanelOpen}
+        headerHeight={headerHeight}
       />
     </div>
   );

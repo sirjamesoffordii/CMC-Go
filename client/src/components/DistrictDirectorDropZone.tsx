@@ -5,6 +5,7 @@ import { useState, useRef, useCallback } from "react";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { Input } from "./ui/input";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 const reverseStatusMap = {
   Yes: "director" as const,
@@ -60,10 +61,13 @@ export function DistrictDirectorDropZone({
 }: DistrictDirectorDropZoneProps) {
   // Hide details when either maskIdentity (fully hidden) or maskDetails (in-scope but no detail view)
   const hideDetails = maskIdentity || maskDetails;
+  const isMobile = useIsMobile();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
 
@@ -117,6 +121,7 @@ export function DistrictDirectorDropZone({
   );
 
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
+    if (isMobile) return;
     if (person && canInteract) {
       setIsHovered(true);
       if (nameRef.current) {
@@ -127,6 +132,7 @@ export function DistrictDirectorDropZone({
   };
 
   const handleNameMouseLeave = () => {
+    if (isMobile) return;
     if (canInteract) {
       setIsHovered(false);
       setTooltipPos(null);
@@ -134,10 +140,42 @@ export function DistrictDirectorDropZone({
   };
 
   const handleNameMouseMove = (_e: React.MouseEvent) => {
+    if (isMobile) return;
     if (nameRef.current && isHovered && person && canInteract) {
       const rect = nameRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.left, y: rect.top });
     }
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleNamePointerDown = (e: React.PointerEvent) => {
+    if (!isMobile || hideDetails || !canInteract) return;
+    if (e.pointerType === "mouse") return;
+
+    longPressTriggeredRef.current = false;
+    clearLongPressTimer();
+
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setIsHovered(true);
+      setTooltipPos({ x: 0, y: 0 });
+    }, 450);
+  };
+
+  const handleNamePointerUpOrCancel = () => {
+    if (!isMobile) return;
+    clearLongPressTimer();
+    setIsHovered(false);
+    setTooltipPos(null);
+    window.setTimeout(() => {
+      longPressTriggeredRef.current = false;
+    }, 0);
   };
 
   if (!person) {
@@ -263,9 +301,22 @@ export function DistrictDirectorDropZone({
         <div
           ref={nameRef}
           className={`relative flex items-center justify-center mb-1 group/name w-full min-w-0 ${canInteract ? "cursor-pointer" : "cursor-not-allowed"}`}
+          onClick={e => {
+            if (!canInteract) return;
+            if (isMobile && longPressTriggeredRef.current) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+            onEdit("district", person);
+          }}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
+          onPointerDown={handleNamePointerDown}
+          onPointerUp={handleNamePointerUpOrCancel}
+          onPointerCancel={handleNamePointerUpOrCancel}
+          onPointerLeave={handleNamePointerUpOrCancel}
         >
           <div className="relative inline-flex items-center justify-center">
             <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
@@ -361,6 +412,7 @@ export function DistrictDirectorDropZone({
                 : null
             }
             position={tooltipPos}
+            centered={isMobile}
           />
         )}
     </>

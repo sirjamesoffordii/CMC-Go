@@ -14,9 +14,15 @@ interface PersonTooltipProps {
     isActive: boolean;
   } | null;
   position: { x: number; y: number };
+  centered?: boolean;
 }
 
-export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
+export function PersonTooltip({
+  person,
+  need,
+  position,
+  centered = false,
+}: PersonTooltipProps) {
   // Fetch household if person has one
   const { data: household } = trpc.households.getById.useQuery(
     { id: person.householdId! },
@@ -38,11 +44,11 @@ export function PersonTooltip({ person, need, position }: PersonTooltipProps) {
 
   const tooltipContent = (
     <div
-      className="fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px]"
+      className="fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px] max-h-[calc(100dvh-32px)] overflow-y-auto"
       style={{
-        left: position.x + 15,
-        top: position.y,
-        transform: "translateY(-50%)",
+        left: centered ? "50%" : position.x + 15,
+        top: centered ? "50%" : position.y,
+        transform: centered ? "translate(-50%, -50%)" : "translateY(-50%)",
       }}
     >
       <div className="space-y-4">
