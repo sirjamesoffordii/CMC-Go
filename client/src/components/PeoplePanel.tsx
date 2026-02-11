@@ -908,20 +908,23 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   return (
     <div className="h-full w-full min-w-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
       {/* Header: search, Scope, Filter, Sort By, kebab — minimal on mobile, premium on desktop */}
-      <div className="flex items-center flex-nowrap gap-0.5 sm:gap-2.5 px-1.5 py-0.5 sm:px-4 sm:py-2.5 min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0">
+      <div className="flex items-center flex-nowrap gap-1 sm:gap-2.5 px-2 py-1 sm:px-4 sm:py-2.5 min-h-[44px] sm:min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0 overflow-x-auto">
         {/* Search */}
         <Popover open={searchOpen} onOpenChange={setSearchOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
               size="icon"
-              className="h-6 w-6 sm:h-9 sm:w-9 flex-shrink-0 rounded border-gray-200/80 bg-gray-50/50 hover:bg-gray-100/80 hover:border-gray-300/80 sm:rounded-lg"
+              className="h-9 w-9 sm:h-9 sm:w-9 flex-shrink-0 rounded-lg border-gray-200/80 bg-gray-50/50 hover:bg-gray-100/80 hover:border-gray-300/80"
               aria-label="Search people"
             >
               <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-2" align="start">
+          <PopoverContent
+            className="w-64 p-2 z-[80] pointer-events-auto"
+            align="start"
+          >
             <Input
               type="text"
               placeholder="Search people by name or role..."
@@ -934,7 +937,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
         </Popover>
 
         <div
-          className="h-2.5 w-px sm:h-5 bg-gray-200/80 flex-shrink-0 rounded-full"
+          className="h-5 w-px bg-gray-200/80 flex-shrink-0 rounded-full"
           aria-hidden
         />
 
@@ -958,14 +961,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="h-6 sm:h-9 justify-between min-w-0 w-[72px] sm:w-[100px] rounded sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[11px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-9 sm:h-9 justify-between min-w-0 w-[80px] sm:w-[100px] rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
               >
                 <span className="truncate">{scopeFilterLabel}</span>
                 <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto"
+              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto z-[80] pointer-events-auto"
               align="start"
               onOpenAutoFocus={e => e.preventDefault()}
             >
@@ -1278,7 +1281,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           </Popover>
         </div>
 
-        <div className="h-6 w-px bg-gray-200 flex-shrink-0" aria-hidden />
+        <div className="h-5 w-px bg-gray-200 flex-shrink-0" aria-hidden />
 
         {/* Filter */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
@@ -1286,7 +1289,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="h-7 sm:h-9 px-1.5 sm:px-2.5 min-w-0 rounded-md sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-9 sm:h-9 px-2 sm:px-2.5 min-w-0 rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
               >
                 <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70 sm:mr-1" />
                 <span className="hidden sm:inline">Filter</span>
@@ -1294,7 +1297,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto"
+              className="w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto z-[80] pointer-events-auto"
               align="start"
             >
               {/* Status */}
@@ -1507,13 +1510,16 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="h-6 sm:h-9 justify-between min-w-0 w-[74px] sm:w-[110px] rounded sm:rounded-lg border-gray-200/80 bg-white text-gray-700 text-[11px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-9 sm:h-9 justify-between min-w-0 w-[80px] sm:w-[110px] rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
               >
                 <span className="truncate">{order}</span>
                 <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-56 p-2" align="start">
+            <PopoverContent
+              className="w-56 p-2 z-[80] pointer-events-auto"
+              align="start"
+            >
               <div className="space-y-0.5">
                 {(
                   [
@@ -1546,13 +1552,13 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               <Button
                 variant="outline"
                 size="icon"
-                className="h-7 w-7 sm:h-9 sm:w-9 rounded-md sm:rounded-lg border-gray-200/80 bg-white hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-9 w-9 sm:h-9 sm:w-9 rounded-lg border-gray-200/80 bg-white hover:bg-gray-50 hover:border-gray-300/80"
                 aria-label="More options"
               >
                 <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-[80]">
               <DropdownMenuItem onClick={() => setImportModalOpen(true)}>
                 <Upload className="h-4 w-4" />
                 Import
@@ -1573,14 +1579,14 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
           (user.role === "STAFF" || user.role === "CO_DIRECTOR") && (
             <>
               <div
-                className="h-2.5 w-px sm:h-5 bg-gray-200/80 flex-shrink-0 rounded-full hidden sm:block"
+                className="h-5 w-px bg-gray-200/80 flex-shrink-0 rounded-full hidden sm:block"
                 aria-hidden
               />
               <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                 <button
                   onClick={() => setMyCampusOnly(!myCampusOnly)}
                   className={`
-                  h-6 sm:h-9 px-1.5 sm:px-2.5 rounded sm:rounded-lg text-[11px] sm:text-[13px] font-medium transition-all border
+                  h-9 px-2 sm:px-2.5 rounded-lg text-[12px] sm:text-[13px] font-medium transition-all border whitespace-nowrap
                   ${
                     myCampusOnly
                       ? "bg-blue-50 text-blue-700 border-blue-200/80"

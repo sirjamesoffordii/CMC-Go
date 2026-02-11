@@ -9,6 +9,8 @@ interface MobileDrawerProps {
   title?: string;
   /** Whether content should be full-height (for scrollable content) */
   fullContent?: boolean;
+  /** Hide the header row (title + close button). Drag handle remains. */
+  showHeader?: boolean;
 }
 
 const SWIPE_CLOSE_THRESHOLD = 80; // pixels to swipe down before closing
@@ -20,6 +22,7 @@ export function MobileDrawer({
   children,
   title,
   fullContent = true,
+  showHeader = true,
 }: MobileDrawerProps) {
   const controls = useAnimation();
   const [contentHeight, setContentHeight] = useState("70vh");
@@ -29,7 +32,8 @@ export function MobileDrawer({
     const calculateHeight = () => {
       // Use visualViewport for better mobile keyboard handling
       const vh = window.visualViewport?.height || window.innerHeight;
-      const maxHeight = Math.min(vh * 0.85, vh - 60); // Leave room for header
+      const headerOffset = 56; // Leave room for header (52px + 4px buffer)
+      const maxHeight = Math.max(240, vh - headerOffset);
       setContentHeight(`${maxHeight}px`);
     };
 
@@ -130,7 +134,7 @@ export function MobileDrawer({
             className="fixed inset-x-0 bottom-0 bg-white z-[60] md:hidden rounded-t-3xl shadow-2xl flex flex-col mobile-drawer-bottom"
             style={{
               height: contentHeight,
-              maxHeight: "85vh",
+              maxHeight: contentHeight,
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
             }}
             role="dialog"
@@ -149,23 +153,25 @@ export function MobileDrawer({
             </div>
 
             {/* Header - touch-friendly with better spacing */}
-            <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/80">
-              {title && (
-                <h2
-                  id="drawer-title"
-                  className="text-lg font-semibold text-slate-900 truncate pr-3 flex-1"
+            {showHeader && (
+              <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/80">
+                {title && (
+                  <h2
+                    id="drawer-title"
+                    className="text-lg font-semibold text-slate-900 truncate pr-3 flex-1"
+                  >
+                    {title}
+                  </h2>
+                )}
+                <button
+                  onClick={onClose}
+                  className="ml-auto -mr-1 p-3 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"
+                  aria-label="Close panel"
                 >
-                  {title}
-                </h2>
-              )}
-              <button
-                onClick={onClose}
-                className="ml-auto -mr-1 p-3 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"
-                aria-label="Close panel"
-              >
-                <X className="w-5 h-5 text-slate-600" />
-              </button>
-            </div>
+                  <X className="w-5 h-5 text-slate-600" />
+                </button>
+              </div>
+            )}
 
             {/* Content - scrollable with momentum on iOS */}
             <div

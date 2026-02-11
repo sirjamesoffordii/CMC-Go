@@ -56,7 +56,7 @@ const baseRegionPositions: Record<
   "West Coast": { baseX: 100, baseY: 300, labelDirection: "left" },
 
   // BOTTOM ROW - closer to map edge
-  Texico: { baseX: 420, baseY: 470, labelDirection: "below" },
+  Texico: { baseX: 400, baseY: 470, labelDirection: "below" },
   "South Central": { baseX: 640, baseY: 470, labelDirection: "below" },
 };
 
@@ -1857,7 +1857,7 @@ export const InteractiveMap = memo(function InteractiveMap({
           >
             <button
               onClick={() => setMetricsExpanded(!metricsExpanded)}
-              className="group flex flex-row items-center w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
+              className="group flex flex-row items-center justify-end w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
               aria-label={
                 metricsExpanded ? "Collapse metrics" : "Expand metrics"
               }
