@@ -258,54 +258,46 @@
   }
 }
 
-/* Rolling animation for CMC Go icon - overshoots and rolls back in one fluid motion */
+/* Go Together: banner slides out from left edge of toolbar (no fade) */
+@keyframes slide-in-go-together-from-left {
+  0% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* CMC GO: roll in (no roll back - keep smooth wheel effect) */
+@keyframes roll-in-chase {
+  0% {
+    transform: translateX(-150px) rotate(-360deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) rotate(12deg);
+    opacity: 1;
+  }
+}
+
+/* Legacy: roll-in (kept for fallback) */
 @keyframes roll-in {
   0% {
     transform: translateX(-150px) rotate(-360deg);
     opacity: 0;
   }
   58% {
-    transform: translateX(0) rotate(12deg); /* Approach stopping point */
+    transform: translateX(0) rotate(12deg);
     opacity: 1;
   }
   68% {
-    transform: translateX(2.5px) rotate(13deg); /* Gentle overshoot */
-    opacity: 1;
-  }
-  78% {
-    transform: translateX(0.8px) rotate(12.3deg); /* Begin settling */
-    opacity: 1;
-  }
-  85% {
-    transform: translateX(0.4px) rotate(12.15deg); /* Continue settling */
-    opacity: 1;
-  }
-  90% {
-    transform: translateX(0.2px) rotate(12.1deg); /* Continue settling */
-    opacity: 1;
-  }
-  94% {
-    transform: translateX(0.1px) rotate(12.05deg); /* Almost there */
-    opacity: 1;
-  }
-  97% {
-    transform: translateX(0.03px) rotate(12.02deg); /* Final approach */
+    transform: translateX(2.5px) rotate(13deg);
     opacity: 1;
   }
   100% {
-    transform: translateX(0) rotate(12deg); /* Smoothly settle into place */
-    opacity: 1;
-  }
-}
-
-/* Go Together: slide in from the right and stop (sits to the right of the circle) */
-@keyframes slide-in-go-together {
-  0% {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0);
+    transform: translateX(0) rotate(12deg);
     opacity: 1;
   }
 }

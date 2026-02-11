@@ -794,7 +794,7 @@ export default function Home() {
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
-        {/* Logo - Left Side */}
+        {/* Logo + Banner - Left Side: Go Together first, then CMC GO (chase + bounce) */}
         <div
           className="flex-shrink-0 h-8 sm:h-12 w-auto mr-2 sm:mr-4 relative z-10 flex items-center gap-2"
           style={{ marginLeft: isMobile ? "8px" : "12px" }}
@@ -807,35 +807,40 @@ export default function Home() {
             />
           ) : (
             <>
+              {/* CMC GO: starts after Go Together, chases and bounces off */}
               <div
-                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-black border-2 border-white flex flex-col items-center justify-center text-white font-bold text-xs"
+                className="h-8 w-8 sm:h-9 sm:w-9 rounded-full border-2 border-white flex items-center justify-center overflow-hidden flex-shrink-0"
                 style={{
                   opacity: 0,
                   animation:
-                    "roll-in 4.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s forwards",
+                    "roll-in-chase 1.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0s forwards",
                 }}
               >
-                <span className="text-[10px] sm:text-xs">CMC</span>
-                <span className="text-[8px] sm:text-[10px] leading-none">
-                  Go
+                <img
+                  src="/favicon.svg"
+                  alt="CMC GO"
+                  className="h-full w-full object-contain"
+                  style={{ transform: "rotate(-13deg)" }}
+                />
+              </div>
+              {/* Go Together: slides in from left first, stops to the right of CMC GO */}
+              <div
+                className="hidden sm:flex items-center gap-2 flex-shrink-0 z-10"
+                style={{
+                  fontSize: "16px",
+                  fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+                  fontWeight: 400,
+                  opacity: 0,
+                  animation:
+                    "slide-in-go-together-from-left 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.15s forwards",
+                }}
+              >
+                <span className="whitespace-nowrap text-white">
+                  Go Together
                 </span>
               </div>
             </>
           )}
-        </div>
-
-        {/* Banner Text (desktop) - Fades in towards end of CMC Go animation */}
-        <div
-          className="hidden sm:flex items-center gap-2 flex-shrink-0 z-10"
-          style={{
-            fontSize: "16px",
-            fontFamily: "Inter, system-ui, -apple-system, sans-serif",
-            animation: "fade-in-text 1.2s ease-out 4.2s forwards",
-            fontWeight: 400,
-            opacity: 0,
-          }}
-        >
-          <span className="whitespace-nowrap text-white">Go Together</span>
         </div>
 
         {/* Edit Header Button - Positioned absolutely in top left corner */}
