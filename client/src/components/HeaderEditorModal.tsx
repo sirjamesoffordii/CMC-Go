@@ -183,7 +183,7 @@ export function HeaderEditorModal({
                           "Error loading logo preview:",
                           logoPreview
                         );
-                        (e.target as HTMLImageElement).src = "/xa-logo.png";
+                        (e.target as HTMLImageElement).src = "/og-image.png";
                       }}
                       onLoad={() => {
                         // Logo preview loaded
@@ -191,9 +191,9 @@ export function HeaderEditorModal({
                     />
                   ) : (
                     <img
-                      src="/xa-logo.png"
-                      alt="Chi Alpha Logo"
-                      className="h-full w-full object-contain"
+                      src="/og-image.png"
+                      alt="CMC Go"
+                      className="h-full w-full object-contain object-left"
                       onError={e => {
                         console.error("Error loading default logo");
                         (e.target as HTMLImageElement).style.display = "none";
@@ -233,9 +233,9 @@ export function HeaderEditorModal({
                   />
                 ) : (
                   <img
-                    src="/xa-logo.png"
-                    alt="Chi Alpha Logo"
-                    className="h-12 w-12 object-contain"
+                    src="/og-image.png"
+                    alt="CMC Go"
+                    className="h-12 w-12 object-contain object-left"
                   />
                 )}
               </div>

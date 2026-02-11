@@ -349,7 +349,7 @@
   }
 
   /* ===== Map container fixes ===== */
-  
+
   /* Ensure map SVG fits mobile viewport without being clipped */
   .map-container-mobile svg {
     max-width: 100% !important;
@@ -368,7 +368,7 @@
   }
 
   /* ===== Share modal fixes ===== */
-  
+
   /* Share buttons: stack vertically */
   .share-buttons-row {
     flex-direction: column !important;
@@ -376,7 +376,7 @@
   }
 
   /* ===== Import modal fixes ===== */
-  
+
   /* Ensure import steps are properly contained */
   .import-step-content {
     max-width: 100% !important;
@@ -449,7 +449,7 @@
   .scope-selector-trigger {
     max-width: 100px !important;
   }
-  
+
   /* Very small phones: reduce header padding more */
   .flex-shrink-0.h-8 {
     margin-left: 4px !important;
@@ -647,7 +647,15 @@
   }
 
   /* ===== Prevent long text from breaking layout ===== */
-  h1, h2, h3, h4, h5, h6, p, span, div {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  div {
     word-wrap: break-word;
     overflow-wrap: break-word;
   }

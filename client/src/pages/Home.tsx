@@ -847,19 +847,19 @@ export default function Home() {
           Edit
         </button>
 
-        {/* Editing badge - desktop only, compact; hidden on mobile to prevent header overlap */}
-        {user && !isMobile && (
+        {/* Context badge - desktop only: district/campus only (never show role in toolbar on production) */}
+        {user && !isMobile && (user.districtName || user.campusName) && (
           <div className="flex-shrink min-w-0 mr-1 z-10 text-white/90 text-sm overflow-hidden">
             <span
               className="inline-block px-2 py-1.5 bg-white/20 rounded-md text-xs font-medium truncate max-w-[140px]"
-              title={user.districtName || user.campusName || user.role}
+              title={(user.districtName || user.campusName) ?? undefined}
             >
-              {user.districtName || user.campusName || user.role}
+              {user.districtName || user.campusName}
             </span>
           </div>
         )}
 
-        {/* Right Side: Scope Selector, Why button, and Hamburger Menu */}
+        {/* Right Side: Scope Selector, Why button, Hamburger Menu, CMC Go logo */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto min-w-0 max-w-[70%] sm:max-w-none">
           {/* Scope selector - visible when authenticated, compact on mobile */}
           {isAuthenticated && (

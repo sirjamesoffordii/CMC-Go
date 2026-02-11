@@ -1,11 +1,14 @@
 # Share preview & favicon assets
 
-These files are used when **cmcgo.app** is shared (e.g. link previews) and as the browser tab icon.
+**The image used for link previews and the main toolbar logo is:**
 
-| File             | Purpose                                                                    |
-| ---------------- | -------------------------------------------------------------------------- |
-| **og-image.png** | Preview image when sharing the site (Open Graph / Twitter Card). 1200×630. |
-| **favicon.svg**  | Browser tab icon and Apple touch icon.                                     |
+- **File:** `client/public/og-image.png`
+- Same file is used for: share preview (Open Graph / Twitter), **default header logo** (top-left on mobile, top-right on desktop), and Header Editor placeholder/fallback.
+
+| File             | Purpose                                                                           |
+| ---------------- | --------------------------------------------------------------------------------- |
+| **og-image.png** | Share preview (Open Graph / Twitter). **Default logo in main toolbar.** 1200×630. |
+| **favicon.svg**  | Browser tab icon and Apple touch icon.                                            |
 
 ## How to see the preview picture
 
