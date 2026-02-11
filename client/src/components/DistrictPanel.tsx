@@ -2794,62 +2794,68 @@ export function DistrictPanel({
         <div className="w-max min-w-full">
           {/* Header Section */}
           <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
-            {/* Title Section - District Name, Region, Directors, and Needs Summary */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <div
-                ref={districtNameRef}
-                className="w-[12rem] min-w-[12rem] max-w-[12rem] flex-shrink-0"
-              >
-                <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
-                  {isNationalTeam ? (
-                    <span className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl">
-                      XAN
-                    </span>
-                  ) : (
-                    <EditableText
-                      value={district.name}
-                      onSave={newName => {
-                        updateDistrictName.mutate({
-                          id: district.id,
-                          name: newName,
-                        });
-                      }}
-                      disabled={disableEdits}
-                      className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                      inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
-                    />
-                  )}
-                  {disableEdits && !isNationalTeam && (
-                    <span className="ml-1 text-slate-400"></span>
-                  )}
-                </h1>
-                <span className="text-slate-500 text-sm mt-0.5 block font-medium">
-                  {isNationalTeam ? (
-                    <span className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded">
-                      Chi Alpha National Team
-                    </span>
-                  ) : (
-                    <EditableText
-                      value={district.region}
-                      onSave={newRegion => {
-                        updateDistrictRegion.mutate({
-                          id: district.id,
-                          region: newRegion,
-                        });
-                      }}
-                      disabled={disableEdits}
-                      className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded"
-                      inputClassName="text-slate-500 text-sm"
-                    />
-                  )}
-                  {disableEdits && !isNationalTeam && (
-                    <span className="ml-1 text-slate-400"></span>
-                  )}
-                </span>
+            {/* Title Section - District Name, Region, Directors, and Needs Summary. -ml-3 sm:-ml-4 aligns name column + divider with campus rows (same as pl-2 -ml-2). */}
+            <div className="flex items-center gap-3 flex-wrap -ml-3 sm:-ml-4">
+              {/* District name + divider: same width as campus name column, no gap so divider lines up with campus border-r */}
+              <div className="flex items-stretch gap-0 flex-shrink-0">
+                <div
+                  ref={districtNameRef}
+                  className="w-[10rem] sm:w-[16rem] min-w-[10rem] sm:min-w-[16rem] max-w-[10rem] sm:max-w-[16rem] flex-shrink-0"
+                >
+                  <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
+                    {isNationalTeam ? (
+                      <span className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl">
+                        XAN
+                      </span>
+                    ) : (
+                      <EditableText
+                        value={district.name}
+                        onSave={newName => {
+                          updateDistrictName.mutate({
+                            id: district.id,
+                            name: newName,
+                          });
+                        }}
+                        disabled={disableEdits}
+                        className="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                        inputClassName="font-semibold text-slate-900 tracking-tight text-xl sm:text-2xl"
+                      />
+                    )}
+                    {disableEdits && !isNationalTeam && (
+                      <span className="ml-1 text-slate-400"></span>
+                    )}
+                  </h1>
+                  <span className="text-slate-500 text-sm mt-0.5 block font-medium">
+                    {isNationalTeam ? (
+                      <span className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded">
+                        Chi Alpha National Team
+                      </span>
+                    ) : (
+                      <EditableText
+                        value={district.region}
+                        onSave={newRegion => {
+                          updateDistrictRegion.mutate({
+                            id: district.id,
+                            region: newRegion,
+                          });
+                        }}
+                        disabled={disableEdits}
+                        className="text-slate-500 text-sm py-2.5 pr-4 min-h-[2.25rem] block -mx-0.5 rounded"
+                        inputClassName="text-slate-500 text-sm"
+                      />
+                    )}
+                    {disableEdits && !isNationalTeam && (
+                      <span className="ml-1 text-slate-400"></span>
+                    )}
+                  </span>
+                </div>
+                <div
+                  className="w-px min-h-[2.5rem] bg-slate-200 flex-shrink-0 self-center"
+                  aria-hidden="true"
+                ></div>
               </div>
-              <div className="w-px h-8 bg-slate-200 flex-shrink-0"></div>
 
-              {/* District Director and Staff - grouped together with smaller gap */}
+              {/* District Director and Staff - gap-3 matches CampusNameDropZone so first person aligns with campus rows */}
               <div className="flex items-center gap-2 flex-shrink-0">
                 {/* District Director */}
                 <div ref={districtDirectorRef}>
