@@ -24,8 +24,8 @@ test.describe("Static Assets", () => {
   });
 
   test("favicon exists", async ({ request }) => {
-    const response = await request.get("/favicon.ico");
-    // May or may not exist, but shouldn't error
-    expect([200, 404]).toContain(response.status());
+    const response = await request.get("/favicon.svg");
+    expect(response.ok()).toBeTruthy();
+    expect(response.headers()["content-type"]).toContain("svg");
   });
 });
