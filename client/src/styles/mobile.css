@@ -9,6 +9,8 @@
   body {
     overflow-x: hidden !important;
     max-width: 100vw !important;
+    /* Use dvh to account for mobile browser chrome */
+    min-height: 100dvh;
   }
 
   .main-content-area {
@@ -70,7 +72,7 @@
     max-width: 100% !important;
   }
 
-  /* Touch targets: minimum 44px for accessibility */
+  /* Touch targets: minimum 44px for iOS/Android accessibility */
   .touch-target {
     min-height: 44px !important;
     min-width: 44px !important;
@@ -92,9 +94,11 @@
     opacity: 0.85;
   }
 
+  /* Header: compact on mobile with safe area */
   header {
     padding-top: 6px !important;
     padding-bottom: 6px !important;
+    gap: 4px;
   }
 
   .dropdown-menu-mobile {
@@ -116,7 +120,7 @@
   .mobile-drawer-bottom {
     display: flex !important;
     flex-direction: column !important;
-    max-height: calc(85vh - env(safe-area-inset-bottom, 0px)) !important;
+    max-height: calc(85dvh - env(safe-area-inset-bottom, 0px)) !important;
     z-index: 60 !important;
   }
 
@@ -146,7 +150,7 @@
     transform: none !important;
     width: auto !important;
     max-width: calc(100vw - 24px) !important;
-    max-height: calc(80vh - 80px) !important;
+    max-height: calc(80dvh - 80px) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
@@ -165,7 +169,7 @@
     border-radius: 16px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
     z-index: 200 !important;
-    max-height: calc(100vh - 80px) !important;
+    max-height: calc(100dvh - 80px) !important;
     overflow-y: auto !important;
   }
 
@@ -193,7 +197,7 @@
 
   /* Select content dropdowns: keep within viewport */
   [data-radix-select-content] {
-    max-height: 50vh !important;
+    max-height: 50dvh !important;
     max-width: calc(100vw - 16px) !important;
   }
 
@@ -250,7 +254,7 @@
     border-radius: 16px 16px 0 0 !important;
   }
 
-  /* ===== NEW: Mobile-first page improvements ===== */
+  /* ===== Mobile-first page improvements ===== */
 
   /* Ensure all page containers don't have excessive padding on mobile */
   .min-h-screen > .max-w-7xl,
@@ -274,6 +278,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    gap: 2px !important;
   }
   [role="tablist"]::-webkit-scrollbar {
     display: none;
@@ -294,6 +299,101 @@
   .badge-wrap {
     flex-wrap: wrap !important;
     gap: 4px !important;
+  }
+
+  /* ===== PeoplePanel fixes ===== */
+
+  /* PeoplePanel header: force items to fit in single row */
+  .people-panel-toolbar,
+  .h-full.w-full .flex.items-center.flex-nowrap {
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .people-panel-toolbar::-webkit-scrollbar,
+  .h-full.w-full .flex.items-center.flex-nowrap::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ===== DistrictPanel fixes ===== */
+
+  /* Campus section headers - prevent overflow */
+  .campus-row-container > div,
+  .campus-section-header {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Person rows: ensure they fit viewport width */
+  .person-row-mobile {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  /* ===== Dialog footer fixes ===== */
+  /* Make dialog footers stack properly on mobile */
+  [class*="DialogFooter"],
+  .dialog-footer-mobile {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  [class*="DialogFooter"] > div,
+  .dialog-footer-mobile > div {
+    width: 100% !important;
+  }
+  [class*="DialogFooter"] button,
+  .dialog-footer-mobile button {
+    width: 100% !important;
+    min-height: 44px !important;
+  }
+
+  /* ===== Map container fixes ===== */
+  
+  /* Ensure map SVG fits mobile viewport without being clipped */
+  .map-container-mobile svg {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    touch-action: manipulation;
+  }
+
+  /* ===== Admin Console mobile fixes ===== */
+
+  /* Tab triggers: smaller font, equal width on mobile */
+  [role="tab"] {
+    font-size: 0.75rem !important;
+    padding: 8px 10px !important;
+    white-space: nowrap !important;
+    min-height: 40px !important;
+  }
+
+  /* ===== Share modal fixes ===== */
+  
+  /* Share buttons: stack vertically */
+  .share-buttons-row {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* ===== Import modal fixes ===== */
+  
+  /* Ensure import steps are properly contained */
+  .import-step-content {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ===== LoginModal mobile improvements ===== */
+
+  /* Gate 2 region/district/campus picker: stack vertically */
+  .login-scope-picker {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  /* Role cards: full width on mobile */
+  .role-card-grid {
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -344,6 +444,17 @@
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
+
+  /* Scope selector trigger: smaller on tiny phones */
+  .scope-selector-trigger {
+    max-width: 100px !important;
+  }
+  
+  /* Very small phones: reduce header padding more */
+  .flex-shrink-0.h-8 {
+    margin-left: 4px !important;
+    margin-right: 4px !important;
+  }
 }
 
 /* --- Tablet --- */
@@ -365,7 +476,7 @@
     }
 
     header {
-      padding-top: max(8px, env(safe-area-inset-top)) !important;
+      padding-top: max(6px, env(safe-area-inset-top)) !important;
       padding-left: max(12px, env(safe-area-inset-left)) !important;
       padding-right: max(12px, env(safe-area-inset-right)) !important;
     }
@@ -384,14 +495,19 @@
 
     .scope-selector-dropdown {
       max-height: calc(
-        80vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
+        80dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
       ) !important;
     }
 
     .mobile-menu-dropdown {
       max-height: calc(
-        100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
+        100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 80px
       ) !important;
+    }
+
+    /* Bottom sheet: account for home indicator */
+    [class*="rounded-t-3xl"] {
+      padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
     }
   }
 }
@@ -423,7 +539,7 @@
     outline-offset: 2px !important;
   }
 
-  /* Prevent zoom on input focus (iOS) */
+  /* Prevent zoom on input focus (iOS) — CRITICAL for mobile UX */
   input,
   select,
   textarea {
@@ -434,9 +550,11 @@
   input[type="text"],
   input[type="email"],
   input[type="password"],
+  input[type="search"],
   textarea {
     min-height: 44px;
     padding: 10px 12px !important;
+    border-radius: 8px !important;
   }
 
   /* Number inputs: slightly more compact */
@@ -445,7 +563,7 @@
     padding: 8px 10px !important;
   }
 
-  /* Better button states */
+  /* Better button states with haptic-like feedback */
   button:active:not(:disabled),
   [role="button"]:active:not([aria-disabled="true"]) {
     transform: scale(0.98);
@@ -460,14 +578,14 @@
   /* Popover content: mobile-friendly sizing */
   [data-radix-popover-content] {
     max-width: calc(100vw - 24px) !important;
-    max-height: 60vh !important;
+    max-height: 60dvh !important;
     overflow-y: auto !important;
   }
 
   /* Dropdown menus: mobile-friendly */
   [data-radix-dropdown-menu-content] {
     max-width: calc(100vw - 24px) !important;
-    max-height: 60vh !important;
+    max-height: 60dvh !important;
     overflow-y: auto !important;
   }
 
@@ -483,5 +601,59 @@
   #root {
     overflow-x: hidden;
     max-width: 100vw;
+  }
+
+  /* ===== Ensure buttons inside drawers/bottom-sheets have good touch targets ===== */
+  .mobile-drawer-content button,
+  [class*="rounded-t-3xl"] button {
+    min-height: 40px;
+  }
+
+  /* ===== Status badges: ensure they don't get cut off ===== */
+  .inline-flex.items-center.rounded-full {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ===== Ensure grid sections stack properly on mobile ===== */
+  .grid.grid-cols-2,
+  .grid.sm\\:grid-cols-2,
+  .grid.sm\\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Keep 2-col grids for small items like family/guest inputs */
+  .grid.grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* ===== Metric/stat cards on map ===== */
+  .map-metric-label {
+    font-size: 9px !important;
+  }
+
+  /* ===== Bottom Sheet full-height improvements ===== */
+  [style*="height: 100dvh"] {
+    overflow-y: auto !important;
+  }
+
+  /* ===== Form layout improvements: side-by-side to stacked ===== */
+  .flex.flex-wrap.items-start.gap-3 {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .flex.flex-wrap.items-start.gap-3 > * {
+    width: 100% !important;
+  }
+
+  /* ===== Prevent long text from breaking layout ===== */
+  h1, h2, h3, h4, h5, h6, p, span, div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* ===== Labels: ensure they're readable on mobile ===== */
+  label {
+    font-size: 14px !important;
   }
 }

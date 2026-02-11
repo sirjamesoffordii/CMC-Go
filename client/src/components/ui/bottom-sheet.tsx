@@ -140,7 +140,8 @@ export function BottomSheet({
             ref={sheetRef}
             initial={{ y: "100%" }}
             animate={{
-              y: `${100 - currentHeight}%`,
+              y: 0,
+              height: fullScreen ? "100dvh" : `${currentHeight}%`,
               transition: { type: "spring", damping: 30, stiffness: 350 },
             }}
             exit={{ y: "100%" }}
@@ -151,13 +152,17 @@ export function BottomSheet({
             onDrag={handleDrag}
             onDragEnd={handleDragEnd}
             className={cn(
-              "fixed left-0 right-0 z-[100] bg-white rounded-t-3xl shadow-2xl md:hidden",
+              fullScreen
+                ? "fixed inset-0 z-[100] bg-white shadow-2xl md:hidden"
+                : "fixed left-0 right-0 bottom-0 z-[100] bg-white rounded-t-3xl shadow-2xl md:hidden",
               "flex flex-col",
               className
             )}
             style={{
-              height: fullScreen ? "100dvh" : `${currentHeight}%`,
-              maxHeight: fullScreen ? "100dvh" : "85vh",
+              maxHeight: fullScreen ? "100dvh" : "85dvh",
+              paddingTop: fullScreen
+                ? "env(safe-area-inset-top, 0px)"
+                : undefined,
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
             }}
             role="dialog"

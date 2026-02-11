@@ -261,7 +261,7 @@ export function PersonDetailsDialog({
   };
 
   const formContent = (
-    <div className="space-y-6 py-4">
+    <div className="space-y-6 py-4 overflow-x-hidden">
       {/* Basic Information */}
       <div className="space-y-4">
         <div className="border-b border-slate-200 pb-2">
@@ -269,7 +269,7 @@ export function PersonDetailsDialog({
             Basic Information
           </h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="pd-name">Full Name *</Label>
             <Input
@@ -618,7 +618,7 @@ export function PersonDetailsDialog({
           compactHeader={true}
           fullScreen={true}
         >
-          <div className="px-4 pb-4">
+          <div className="px-4 pb-4 overflow-x-hidden">
             {formContent}
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -639,7 +639,7 @@ export function PersonDetailsDialog({
                         onCheckedChange={checked =>
                           setFormDepositPaid(checked === true)
                         }
-                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700 h-5 w-5"
                       />
                       <Label htmlFor="pd-deposit-m" className="text-sm">
                         Deposit paid
@@ -648,24 +648,22 @@ export function PersonDetailsDialog({
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => onOpenChange(false)}
-                  className="flex-1 min-h-[44px]"
+                  className="flex-1 min-h-[48px] text-base"
                 >
                   Cancel
                 </Button>
                 <Button
-                  size="sm"
                   onClick={handleUpdate}
                   disabled={
                     updatePerson.isPending ||
                     !formName.trim() ||
                     !formRole.trim()
                   }
-                  className="bg-black text-white hover:bg-red-600 flex-1 min-h-[44px]"
+                  className="bg-black text-white hover:bg-red-600 flex-1 min-h-[48px] text-base"
                 >
                   {updatePerson.isPending ? "Updating..." : "Update"}
                 </Button>

@@ -8,6 +8,7 @@ import { Person } from "../../../drizzle/schema";
 import { PersonTooltip } from "./PersonTooltip";
 import { trpc } from "../lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 // Map Figma status to database status (kept for reference)
 const _statusMap = {
@@ -81,10 +82,13 @@ export function DroppablePerson({
   slowAnimation = false,
 }: DroppablePersonProps) {
   const { isAuthenticated } = usePublicAuth();
+  const isMobile = useIsMobile();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
@@ -199,7 +203,7 @@ export function DroppablePerson({
 
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
     // Only show tooltip if user can see details
-    if (hideDetails) return;
+    if (hideDetails || isMobile) return;
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -209,18 +213,51 @@ export function DroppablePerson({
 
   const handleNameMouseLeave = () => {
     // Only handle if user can see details
-    if (hideDetails) return;
+    if (hideDetails || isMobile) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (_e: React.MouseEvent) => {
     // Only handle if user can see details
-    if (hideDetails) return;
+    if (hideDetails || isMobile) return;
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
     }
+  };
+
+  const clearLongPressTimer = () => {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleNamePointerDown = (e: React.PointerEvent) => {
+    if (!isMobile || hideDetails || !canInteract) return;
+    // Only respond to primary touch/pen.
+    if (e.pointerType === "mouse") return;
+
+    longPressTriggeredRef.current = false;
+    clearLongPressTimer();
+
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setIsHovered(true);
+      setTooltipPos({ x: 0, y: 0 });
+    }, 450);
+  };
+
+  const handleNamePointerUpOrCancel = () => {
+    if (!isMobile) return;
+    clearLongPressTimer();
+    setIsHovered(false);
+    setTooltipPos(null);
+    // Reset after the click event has had a chance to check it.
+    window.setTimeout(() => {
+      longPressTriggeredRef.current = false;
+    }, 0);
   };
 
   return (
@@ -246,9 +283,22 @@ export function DroppablePerson({
         <div
           ref={nameRef}
           className="relative flex items-center justify-center mb-1 group/name w-full min-w-0"
+          onClick={e => {
+            if (!canInteract) return;
+            if (isMobile && longPressTriggeredRef.current) {
+              e.preventDefault();
+              e.stopPropagation();
+              return;
+            }
+            _onClick(campusId, person);
+          }}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
           onMouseMove={handleNameMouseMove}
+          onPointerDown={handleNamePointerDown}
+          onPointerUp={handleNamePointerUpOrCancel}
+          onPointerCancel={handleNamePointerUpOrCancel}
+          onPointerLeave={handleNamePointerUpOrCancel}
         >
           <div className="relative inline-flex items-center justify-center">
             <div className="text-sm text-slate-600 font-semibold text-center whitespace-nowrap overflow-hidden max-w-full">
@@ -351,6 +401,7 @@ export function DroppablePerson({
               : null
           }
           position={tooltipPos}
+          centered={isMobile}
         />
       )}
     </>
