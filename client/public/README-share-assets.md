@@ -1,19 +1,22 @@
 # Share preview & favicon assets
 
-**The image used for link previews and the main toolbar logo is:**
+**Favicon (browser tab, Apple touch icon):**
+
+- **File:** `client/public/favicon.svg` — CMC GO logo in circle, rotated 15°. Sole favicon; no other variants.
+
+**Share preview & header logo:**
 
 - **File:** `client/public/og-image.png`
-- Same file is used for: share preview (Open Graph / Twitter), **default header logo** (top-left on mobile, top-right on desktop), and Header Editor placeholder/fallback.
+- Used for: share preview (Open Graph / Twitter), **default header logo** (top-left on mobile, top-right on desktop), and Header Editor placeholder/fallback. 1200×630.
 
-| File             | Purpose                                                                           |
-| ---------------- | --------------------------------------------------------------------------------- |
-| **og-image.png** | Share preview (Open Graph / Twitter). **Default logo in main toolbar.** 1200×630. |
-| **favicon.svg**  | Browser tab icon and Apple touch icon.                                            |
+| File             | Purpose                                       |
+| ---------------- | --------------------------------------------- |
+| **favicon.svg**  | Browser tab icon and Apple touch icon.        |
+| **og-image.png** | Share preview (Open Graph / Twitter), header. |
 
-## How to see the preview picture
+## How to see the assets
 
 - **Locally:** Run the app (`pnpm dev`), then open:
-  - Share image: [http://localhost:5173/og-image.png](http://localhost:5173/og-image.png)
   - Favicon: [http://localhost:5173/favicon.svg](http://localhost:5173/favicon.svg)
-- **In the repo:** Open `client/public/og-image.png` or `client/public/favicon.svg` in your editor or file explorer (PNG will show in image viewers, SVG in browser or editor).
-- **Production:** [https://cmcgo.app/og-image.png](https://cmcgo.app/og-image.png) and [https://cmcgo.app/favicon.svg](https://cmcgo.app/favicon.svg) after deploy.
+  - Share image: [http://localhost:5173/og-image.png](http://localhost:5173/og-image.png)
+- **Production:** [https://cmcgo.app/favicon.svg](https://cmcgo.app/favicon.svg) and [https://cmcgo.app/og-image.png](https://cmcgo.app/og-image.png) after deploy.
