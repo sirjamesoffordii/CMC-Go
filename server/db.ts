@@ -46,6 +46,36 @@ let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
 
 /**
+ * Check if an error is a fatal connection error that should reset the pool.
+ * After a reset, the next call to getDb() will create a fresh pool.
+ */
+function isFatalConnectionError(err: unknown): boolean {
+  if (err && typeof err === "object" && "code" in err) {
+    const code = (err as { code: string }).code;
+    return (
+      code === "ETIMEDOUT" ||
+      code === "ECONNREFUSED" ||
+      code === "ECONNRESET" ||
+      code === "PROTOCOL_CONNECTION_LOST"
+    );
+  }
+  return false;
+}
+
+/**
+ * Reset the DB singleton so the next getDb() call creates a fresh pool.
+ * This allows recovery from stale/dead connection pools.
+ */
+export function resetDbPool() {
+  if (_pool) {
+    _pool.end().catch(() => {}); // best-effort cleanup
+  }
+  _db = null;
+  _pool = null;
+  console.warn("[Database] Pool reset — next query will reconnect");
+}
+
+/**
  * Get database connection using MySQL/TiDB connection pool.
  * Connection pooling is the standard practice for MySQL/TiDB to handle
  * concurrent requests efficiently and manage connections properly.
@@ -68,6 +98,8 @@ export async function getDb() {
         queueLimit: 0, // Unlimited queue for waiting connections
         enableKeepAlive: true, // Keep connections alive
         keepAliveInitialDelay: 0, // Start keep-alive immediately
+        connectTimeout: 10000, // 10s timeout for new connections (prevents hanging)
+        idleTimeout: 60000, // Close idle connections after 60s
       });
 
       const db = drizzle(_pool as any);
