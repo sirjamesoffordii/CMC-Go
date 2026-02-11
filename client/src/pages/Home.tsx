@@ -1107,8 +1107,11 @@ export default function Home() {
                 panelOpen: false,
               });
             }}
-            title={nationalPanelOpen ? "National Team" : undefined}
-            showHeader={nationalPanelOpen}
+            title={
+              nationalPanelOpen
+                ? "National Team"
+                : (selectedDistrict?.name ?? "District")
+            }
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1410,7 +1413,6 @@ export default function Home() {
       <EventInfoPanel
         open={eventInfoPanelOpen}
         onOpenChange={setEventInfoPanelOpen}
-        headerHeight={headerHeight}
       />
     </div>
   );

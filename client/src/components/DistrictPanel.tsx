@@ -2527,9 +2527,15 @@ export function DistrictPanel({
 
   // Handle person click - cycle status
   const handlePersonClick = (campusId: number | string, person: Person) => {
-    // Mobile UX: tapping the name should open the edit sheet.
-    // Status cycling is available via tapping the icon.
-    void handleEditPerson(campusId, person);
+    const statusCycle: Person["status"][] = [
+      "Not Invited",
+      "Yes",
+      "Maybe",
+      "No",
+    ];
+    const currentIndex = statusCycle.indexOf(person.status);
+    const nextStatus = statusCycle[(currentIndex + 1) % statusCycle.length];
+    onPersonStatusChange(person.personId, nextStatus);
   };
 
   // Handle edit campus (inline on the row; no dialog)
@@ -3581,7 +3587,7 @@ export function DistrictPanel({
                         setQuickAddName("");
                         setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      className="w-[10rem] sm:w-[16rem] max-w-[10rem] sm:max-w-[16rem] -ml-2 min-w-0 py-3 pl-0 pr-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                      className="w-[calc(16rem-12px)] max-w-[calc(16rem-12px)] py-3 pl-0 pr-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
                     >
                       <span className="w-7 flex-shrink-0" aria-hidden />
                       <Plus className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
