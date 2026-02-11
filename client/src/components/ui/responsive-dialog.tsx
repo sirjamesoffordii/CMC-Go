@@ -23,6 +23,8 @@ interface ResponsiveDialogProps {
   compactHeader?: boolean;
   /** Force full-screen height on mobile */
   fullScreen?: boolean;
+  /** Mobile content wrapper className (default: "px-4 pb-4") */
+  mobileContentClassName?: string;
 }
 
 /**
@@ -42,6 +44,7 @@ export function ResponsiveDialog({
   showSnapPoints = true,
   compactHeader = false,
   fullScreen = false,
+  mobileContentClassName = "px-4 pb-4",
 }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
 
@@ -59,7 +62,7 @@ export function ResponsiveDialog({
         compactHeader={compactHeader}
         fullScreen={fullScreen}
       >
-        <div className="px-4 pb-4">{children}</div>
+        <div className={mobileContentClassName}>{children}</div>
       </BottomSheet>
     );
   }

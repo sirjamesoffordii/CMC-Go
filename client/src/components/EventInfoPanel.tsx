@@ -1,5 +1,5 @@
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { EventInfoContent } from "@/pages/EventInfo";
+import { ResponsiveDialog } from "@/components/ui/responsive-dialog";
 
 interface EventInfoPanelProps {
   open: boolean;
@@ -7,20 +7,23 @@ interface EventInfoPanelProps {
 }
 
 /**
- * Event Info (About CMC) as a large slide-over panel from the right.
- * Pretty big but not full screen: ~85vw up to 42rem (672px).
+ * Event Info (About CMC) – centered panel, no scroll:
+ * Top half = just the picture (face visible); bottom = date, location, description, big Mighty App CTA.
  */
 export function EventInfoPanel({ open, onOpenChange }: EventInfoPanelProps) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="h-full w-[min(90vw,42rem)] max-w-[42rem] border-slate-700/50 bg-slate-900 p-0 gap-0 overflow-hidden text-slate-300 [&_button.absolute]:text-white [&_button.absolute]:hover:bg-white/10 [&_button.absolute]:border-0"
-      >
-        <div className="h-full overflow-auto">
-          <EventInfoContent isPanel />
-        </div>
-      </SheetContent>
-    </Sheet>
+    <ResponsiveDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Event Info"
+      className="max-w-[420px] h-[min(88vh,680px)] overflow-hidden p-0"
+      snapPoints={[100]}
+      defaultSnap={0}
+      fullScreen
+      showSnapPoints={false}
+      mobileContentClassName="p-0"
+    >
+      <EventInfoContent isPanel />
+    </ResponsiveDialog>
   );
 }
