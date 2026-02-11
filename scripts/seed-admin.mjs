@@ -89,11 +89,16 @@ async function main() {
       ["Arodriguez@ag.org"]
     );
     if (Array.isArray(existingAlex) && existingAlex.length > 0) {
+      const alexHashUpdate = await hashPassword("Arod");
+      await connection.execute(
+        "UPDATE users SET passwordHash = ? WHERE email = ?",
+        [alexHashUpdate, "Arodriguez@ag.org"]
+      );
       console.log(
-        "✅ Alex Rodriguez (National Director) already exists (skipping)"
+        "✅ Alex Rodriguez (National Director) already exists (password updated)"
       );
     } else {
-      const alexHash = await hashPassword("National Director");
+      const alexHash = await hashPassword("Arod");
       await connection.execute(
         `INSERT INTO users (
           fullName, email, passwordHash, role,
