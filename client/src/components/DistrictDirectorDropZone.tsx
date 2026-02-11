@@ -248,7 +248,9 @@ export function DistrictDirectorDropZone({
               ) : null}
             </div>
             {/* Icon - outline User only; plus is above head in name position */}
-            <div className={`relative inline-block transition-transform ${canInteract ? "hover:scale-105 active:scale-95" : ""}`}>
+            <div
+              className={`relative inline-block transition-transform ${canInteract ? "hover:scale-105 active:scale-95" : ""}`}
+            >
               <User
                 className="w-10 h-10 text-gray-300 transition-all"
                 strokeWidth={1}

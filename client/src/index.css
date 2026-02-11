@@ -298,6 +298,46 @@
   }
 }
 
+/* Go Together: slide in from the right and stop (sits to the right of the circle) */
+@keyframes slide-in-go-together {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* CMC Go circle: roll in from left, tap Go Together (overshoot), roll back into place */
+@keyframes roll-in-tap {
+  0% {
+    transform: translateX(-140px) rotate(-360deg);
+    opacity: 0;
+  }
+  45% {
+    transform: translateX(-8px) rotate(8deg); /* Approach Go Together */
+    opacity: 1;
+  }
+  58% {
+    transform: translateX(6px) rotate(14deg); /* Tap: overshoot into Go Together */
+    opacity: 1;
+  }
+  72% {
+    transform: translateX(2px) rotate(13deg); /* Roll back start */
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(0.5px) rotate(12.2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0) rotate(12deg); /* Settled in place */
+    opacity: 1;
+  }
+}
+
 /* Glowing effect for deposit paid icons - subtle glow without blurring the icon */
 .deposit-glow::before {
   content: "";
