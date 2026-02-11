@@ -18,7 +18,17 @@ export async function createContext(
   // PR 2: Try new session-based authentication first
   const userId = getUserIdFromSession(opts.req);
   if (userId) {
-    user = await db.getUserById(userId);
+    try {
+      user = await db.getUserById(userId);
+    } catch (error) {
+      // DB may be temporarily unreachable (ETIMEDOUT, etc.).
+      // Treat as unauthenticated so public procedures still work.
+      console.error(
+        "[Context] Failed to fetch user from session (DB may be down):",
+        (error as Error).message
+      );
+      user = null;
+    }
     if (user) {
       return {
         req: opts.req,

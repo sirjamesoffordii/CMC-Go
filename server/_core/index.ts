@@ -16,6 +16,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startupDbHealthCheck, checkDbHealth } from "./db-health";
+import { resetDbPool } from "../db";
 import { validateEnv, ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -214,6 +215,8 @@ async function startServer() {
       // If the DB connection fails or health check throws, return a
       // 503 to signal that the service is unhealthy. We do not include
       // error details for security reasons.
+      // Reset the pool so the next request attempts a fresh connection.
+      resetDbPool();
       const duration = Date.now() - start;
       console.log(`[Health] /healthz responded Unhealthy in ${duration}ms`);
       res.status(503).send("Unhealthy");
