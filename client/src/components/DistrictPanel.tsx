@@ -77,6 +77,7 @@ import {
   canViewPersonDetails,
   canEditPersonClient,
 } from "@/lib/scopeCheck";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface DistrictPanelProps {
   district: District | null;
@@ -129,6 +130,7 @@ export function DistrictPanel({
 }: DistrictPanelProps) {
   const { isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const utils = trpc.useUtils();
 
   // Visibility & edit gating (3-tier: Scope / Detail View / Edit):
@@ -4259,7 +4261,7 @@ export function DistrictPanel({
                               });
                             }}
                             placeholder="Enter notes about the need"
-                            rows={4}
+                            rows={isMobile ? 2 : 4}
                             className="resize-none w-full min-w-0"
                           />
                         </div>
@@ -4940,7 +4942,7 @@ export function DistrictPanel({
                             });
                           }}
                           placeholder="Enter notes about the need"
-                          rows={4}
+                          rows={isMobile ? 2 : 4}
                           className="resize-none w-full min-w-0"
                         />
                       </div>
@@ -4987,7 +4989,7 @@ export function DistrictPanel({
                         });
                       }}
                       placeholder="Enter journey notes"
-                      rows={4}
+                      rows={isMobile ? 2 : 4}
                       className="resize-none w-full min-w-0"
                     />
                   </div>

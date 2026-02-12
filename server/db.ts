@@ -252,6 +252,18 @@ export async function updateUserPassword(userId: number, passwordHash: string) {
   await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
+export async function updateUserFullName(userId: number, fullName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ fullName }).where(eq(users.id, userId));
+}
+
+export async function updateUserEmail(userId: number, email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ email }).where(eq(users.id, userId));
+}
+
 export async function updateUserPersonId(
   userId: number,
   personId: string | null

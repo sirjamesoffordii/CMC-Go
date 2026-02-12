@@ -19,6 +19,7 @@ const Approvals = lazy(() => import("./pages/Approvals"));
 const Import = lazy(() => import("./pages/Import"));
 const Needs = lazy(() => import("./pages/Needs"));
 const FollowUpView = lazy(() => import("./pages/FollowUpView"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 function AppAuthRedirect() {
   const [, setLocation] = useLocation();
@@ -66,6 +67,7 @@ function Router() {
       <Route path="/approvals" component={Approvals} />
       <Route path="/import" component={Import} />
       <Route path="/needs" component={Needs} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/404" component={NotFound} />
       <Route path="/app-auth" component={AppAuthRedirect} />
       <Route component={NotFound} />

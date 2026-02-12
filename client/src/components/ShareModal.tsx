@@ -215,9 +215,9 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
       icon={<Share2 className="w-4 h-4" />}
       maxWidth="980px"
     >
-      <div className="space-y-4">
+      <div className="space-y-4 md:space-y-3">
         {/* Info Banner */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:p-3">
           <p className="text-sm font-semibold text-black mb-1">
             Share the CMC Go app with other leaders
           </p>
@@ -229,7 +229,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
         </div>
 
         {/* Message + Share — side-by-side on desktop, stacked on mobile */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-4 md:gap-3">
           {/* Message — always visible */}
           <div className="border border-gray-200 rounded-xl overflow-hidden min-w-0">
           {/* Message header with actions */}
@@ -321,16 +321,16 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
           </div>
         </div>
 
-        {/* Share Options — right column on desktop */}
+        {/* Share Options — 1 row on desktop, 3 cols on mobile */}
         <div className="flex flex-col items-center justify-center">
           <span className="hidden md:block text-xs text-gray-400 uppercase tracking-widest font-medium text-[10px] mb-2">
             Share via
           </span>
-          <div className="grid grid-cols-3 md:grid-cols-2 gap-2 md:gap-1">
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-2 md:justify-items-center">
           {/* Email */}
           <button
             onClick={handleEmailShare}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
+            className="flex flex-col items-center gap-2 p-3 md:p-2 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
           >
             <div className="w-11 h-11 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
               <Mail className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
@@ -343,7 +343,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
           {/* SMS/Text */}
           <button
             onClick={handleSMSShare}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
+            className="flex flex-col items-center gap-2 p-3 md:p-2 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
           >
             <div className="w-11 h-11 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
               <MessageCircle className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
@@ -375,7 +375,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
           {/* GroupMe */}
           <button
             onClick={handleGroupMeShare}
-            className="relative flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
+            className="relative flex flex-col items-center gap-2 p-3 md:p-2 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
           >
             <div className="w-11 h-11 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
               <svg
@@ -418,7 +418,7 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
           {/* X (Twitter) */}
           <button
             onClick={handleTwitterShare}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
+            className="flex flex-col items-center gap-2 p-3 md:p-2 rounded-xl border border-transparent hover:border-gray-200 hover:shadow-sm transition-all group"
           >
             <div className="w-11 h-11 rounded-full bg-gray-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
               <svg

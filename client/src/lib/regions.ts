@@ -24,5 +24,7 @@ export type RegionName = (typeof ALL_REGIONS)[number];
  */
 export {
   DISTRICT_REGION_MAP,
+  DISTRICT_TO_SVG_PATH,
+  resolveDistrictSvgPath,
   resolvePersonRegion,
 } from "../../../shared/const";

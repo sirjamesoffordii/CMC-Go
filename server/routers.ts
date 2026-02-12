@@ -423,7 +423,7 @@ export const appRouter = router({
         };
       }),
 
-    // Request password reset - sends a 6-digit code
+    // Request password reset - sends a reset link via email
     forgotPassword: publicProcedure
       .input(z.object({ email: z.string().email() }))
       .mutation(async ({ input }) => {
@@ -434,19 +434,28 @@ export const appRouter = router({
           return { success: true };
         }
 
-        // Generate a 6-digit code
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        // Generate a secure random token (32 hex chars = 16 bytes)
+        const { randomBytes } = await import("crypto");
+        const token = randomBytes(16).toString("hex");
 
-        // Store the code with 15-minute expiration
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+        // Store the token with 1-hour expiration
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
         await db.createAuthToken({
-          token: code,
+          token,
           email: input.email,
           expiresAt,
         });
 
         // Import ENV for email configuration
         const { ENV } = await import("./_core/env");
+
+        // Build the reset link
+        const origin =
+          ENV.corsOrigin ||
+          (ENV.isProduction
+            ? "https://cmcgo.org"
+            : "http://localhost:3000");
+        const resetLink = `${origin}/reset-password?token=${token}&email=${encodeURIComponent(input.email)}`;
 
         // Send email via Resend API if configured
         if (ENV.RESEND_API_KEY) {
@@ -460,17 +469,21 @@ export const appRouter = router({
               body: JSON.stringify({
                 from: ENV.FROM_EMAIL,
                 to: [input.email],
-                subject: "CMC Go - Password Reset Code",
+                subject: "CMC Go - Reset Your Password",
                 html: `
                   <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
                     <h2 style="color: #dc2626;">CMC Go Password Reset</h2>
                     <p>You requested a password reset for your CMC Go account.</p>
-                    <p>Your reset code is:</p>
-                    <div style="background: #f1f5f9; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
-                      <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0f172a;">${code}</span>
+                    <p>Click the button below to set a new password:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                      <a href="${resetLink}" style="background: #dc2626; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px;">
+                        Reset Password
+                      </a>
                     </div>
-                    <p style="color: #64748b; font-size: 14px;">This code expires in 15 minutes.</p>
+                    <p style="color: #64748b; font-size: 14px;">This link expires in 1 hour.</p>
                     <p style="color: #64748b; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+                    <p style="color: #94a3b8; font-size: 12px;">If the button doesn't work, copy and paste this link into your browser:<br/>${resetLink}</p>
                   </div>
                 `,
               }),
@@ -488,30 +501,30 @@ export const appRouter = router({
           }
         } else {
           console.warn(
-            `[ForgotPassword] RESEND_API_KEY not configured — reset code was stored but no email sent`
+            `[ForgotPassword] RESEND_API_KEY not configured — reset link was stored but no email sent. Link: ${resetLink}`
           );
         }
 
         return { success: true };
       }),
 
-    // Verify reset code and reset password
+    // Verify reset token and set new password
     resetPassword: publicProcedure
       .input(
         z.object({
           email: z.string().email(),
-          code: z.string().length(6),
+          token: z.string().min(1),
           newPassword: z.string().min(1),
         })
       )
       .mutation(async ({ input }) => {
-        // Verify the code
-        const authToken = await db.getAuthToken(input.code);
+        // Verify the token
+        const authToken = await db.getAuthToken(input.token);
 
         if (!authToken || authToken.email !== input.email) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "Invalid or expired reset code",
+            message: "Invalid or expired reset link",
           });
         }
 
@@ -531,7 +544,7 @@ export const appRouter = router({
         await db.updateUserPassword(user.id, passwordHash);
 
         // Consume the token so it can't be reused
-        await db.consumeAuthToken(input.code);
+        await db.consumeAuthToken(input.token);
 
         return { success: true };
       }),
@@ -758,6 +771,72 @@ export const appRouter = router({
         };
       }),
 
+    // Account self-service: change password (requires current password)
+    changePassword: protectedProcedure
+      .input(
+        z.object({
+          currentPassword: z.string().min(1),
+          newPassword: z.string().min(1),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const user = await db.getUserById(ctx.user.id);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Cannot change password for this account",
+          });
+        }
+
+        const isValid = await verifyPassword(
+          input.currentPassword,
+          user.passwordHash
+        );
+        if (!isValid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Current password is incorrect",
+          });
+        }
+
+        const newHash = await hashPassword(input.newPassword);
+        await db.updateUserPassword(ctx.user.id, newHash);
+        return { success: true } as const;
+      }),
+
+    // Account self-service: change display name
+    changeUsername: protectedProcedure
+      .input(
+        z.object({
+          fullName: z.string().min(1, "Name cannot be empty").max(100),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        await db.updateUserFullName(ctx.user.id, input.fullName);
+        return { success: true } as const;
+      }),
+
+    // Account self-service: change email
+    changeEmail: protectedProcedure
+      .input(
+        z.object({
+          email: z.string().email("Invalid email address"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // Check uniqueness
+        const existing = await db.getUserByEmail(input.email);
+        if (existing && existing.id !== ctx.user.id) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "That email is already in use",
+          });
+        }
+
+        await db.updateUserEmail(ctx.user.id, input.email);
+        return { success: true } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       clearSessionCookie(ctx.req, ctx.res);
       return {
@@ -838,6 +917,16 @@ export const appRouter = router({
         .mutation(async ({ input }) => {
           const { userId, ...levels } = input;
           await db.updateUserAuthLevels(userId, levels);
+          return { success: true };
+        }),
+
+      // Reset user password to temporary "CMC Go"
+      resetPassword: adminProcedure
+        .input(z.object({ userId: z.number() }))
+        .mutation(async ({ input }) => {
+          const tempPassword = "CMC Go";
+          const passwordHash = await hashPassword(tempPassword);
+          await db.updateUserPassword(input.userId, passwordHash);
           return { success: true };
         }),
 

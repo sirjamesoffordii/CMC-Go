@@ -77,6 +77,42 @@ export const DISTRICT_REGION_MAP: Record<string, string> = {
 };
 
 /**
+ * Maps district IDs that don't have their own SVG `<path>` in `map.svg` to the
+ * composite SVG path `inkscape:label` that geographically contains them.
+ *
+ * When a user selects one of these districts in the scope dropdown, the map
+ * highlights the parent SVG path instead.  Only districts whose ID differs from
+ * the SVG label need an entry here; districts whose ID already matches an
+ * `inkscape:label` in the SVG are resolved directly.
+ */
+export const DISTRICT_TO_SVG_PATH: Record<string, string> = {
+  // Typo variant → correct SVG label
+  NorthernNewEnglend: "NorthernNewEngland",
+  // Individual-state districts → composite SVG paths
+  NewHampshire: "NorthernNewEngland",
+  Vermont: "NorthernNewEngland",
+  Maine: "NorthernNewEngland",
+  Connecticut: "SouthernNewEngland",
+  Massachusetts: "SouthernNewEngland",
+  Pennsylvania: "Penn-Del",
+  Virginia: "Potomac",
+  WestVirginia: "Appalachian",
+  Florida: "PeninsularFlorida",
+  Nevada: "NorthernCal-Nevada",
+  NorthCalifornia: "NorthernCal-Nevada",
+  SouthCalifornia: "SouthernCalifornia",
+  NorthIdaho: "SouthIdaho",
+};
+
+/**
+ * Resolve a district ID to the SVG path label used in `map.svg`.
+ * Returns the original ID if it already matches an SVG path.
+ */
+export function resolveDistrictSvgPath(districtId: string): string {
+  return DISTRICT_TO_SVG_PATH[districtId] ?? districtId;
+}
+
+/**
  * Resolve a person's region: uses `primaryRegion` if set, otherwise falls back
  * to the district→region static mapping via `primaryDistrictId`.
  */

@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import { ImportModal } from "./ImportModal";
@@ -9,6 +9,7 @@ import {
   Upload,
   Search,
   Filter,
+  User,
   ChevronDown,
   ChevronRight,
   MoreVertical,
@@ -73,6 +74,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [myCampusOnly, setMyCampusOnly] = useState(false);
+  const [peopleOnly, setPeopleOnly] = useState(false);
   // Scope: how to group the table when no scope filter is set
   const [scope, setScope] = useState<"Region" | "District" | "Campus">(
     "Region"
@@ -104,6 +106,22 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
   const [scopeMenuExpandedDistrict, setScopeMenuExpandedDistrict] = useState<
     string | null
   >(null);
+
+  // Filter dropdown open state (used for desktop popover + mobile sheet)
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+
+  // Dropdown rendering mode (Tailwind `sm` breakpoint = 640px)
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 640px)");
+    const onChange = () => setIsDesktopViewport(mql.matches);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
   const [order, setOrder] = useState<
     "Greatest first" | "Least first" | "Last Updated" | "Alphabetical"
   >("Greatest first");
@@ -826,6 +844,34 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     scopeFilterPersonId,
   ]);
 
+  // Flat list of all people extracted from groupedData in hierarchical order
+  // Used when "People Only" toggle is active
+  const flatPeopleList = useMemo(() => {
+    if (!peopleOnly) return [];
+    const result: Person[] = [];
+    if (groupedData.type === "campus") {
+      groupedData.campuses.forEach(({ people }) => result.push(...people));
+    } else if (groupedData.type === "district") {
+      groupedData.districts.forEach(({ campuses, unassigned }) => {
+        Array.from(campuses.values()).forEach(({ people }) =>
+          result.push(...people)
+        );
+        result.push(...unassigned);
+      });
+    } else {
+      // region
+      groupedData.regions.forEach(({ districts }) => {
+        districts.forEach(({ campuses, unassigned }) => {
+          Array.from(campuses.values()).forEach(({ people }) =>
+            result.push(...people)
+          );
+          result.push(...unassigned);
+        });
+      });
+    }
+    return result;
+  }, [peopleOnly, groupedData]);
+
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person as Person);
     setDialogOpen(true);
@@ -952,367 +998,289 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     );
   }
 
-  return (
-    <div className="h-full w-full min-w-0 min-h-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
-      {/* Header: search, Scope, Filter, Sort By, kebab — minimal on mobile, premium on desktop */}
-      <div className="flex items-center flex-nowrap gap-1 sm:gap-2.5 px-2 py-1 sm:px-4 sm:py-2.5 min-h-[44px] sm:min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0 overflow-x-auto">
-        {/* Search */}
-        <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-9 w-9 sm:h-9 sm:w-9 flex-shrink-0 rounded-lg border-gray-200/80 bg-gray-50/50 hover:bg-gray-100/80 hover:border-gray-300/80"
-              aria-label="Search people"
-            >
-              <Search className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent
-            className="w-64 p-2 z-[999] pointer-events-auto"
-            align="start"
-          >
-            <Input
-              type="text"
-              placeholder="Search people by name or role..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="h-9"
-              autoFocus
-            />
-          </PopoverContent>
-        </Popover>
+  const handleScopeMenuOpenChange = (open: boolean) => {
+    setScopeMenuOpen(open);
+    if (!open) {
+      setScopeMenuHoverRegion(null);
+      setScopeMenuExpandedRegion(null);
+      setScopeMenuExpandedDistrict(null);
+      setScopeMenuExpandedCampus(null);
+    }
+  };
 
-        <div
-          className="h-5 w-px bg-gray-200/80 flex-shrink-0 rounded-full"
-          aria-hidden
-        />
-
-        {/* Scope */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-            Scope
+  const scopeTrigger = (
+    <Button
+      variant="outline"
+      className="h-11 justify-between min-w-0 w-[90px] sm:w-[120px] rounded-lg border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80 px-2.5 py-1.5"
+    >
+      <span className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
+        <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider leading-none">
+          Scope
+        </span>
+        <span className="flex items-center justify-between gap-2 w-full min-w-0">
+          <span className="truncate text-[13px] font-medium">
+            {scopeFilterLabel}
           </span>
-          <Popover
-            open={scopeMenuOpen}
-            onOpenChange={open => {
-              setScopeMenuOpen(open);
-              if (!open) {
-                setScopeMenuHoverRegion(null);
-                setScopeMenuExpandedRegion(null);
-                setScopeMenuExpandedDistrict(null);
-                setScopeMenuExpandedCampus(null);
-              }
-            }}
+          <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+        </span>
+      </span>
+    </Button>
+  );
+
+  const scopeMenuBody = (
+    <div className="py-1">
+      {isNationalScope ? (
+        <button
+          type="button"
+          onClick={() => {
+            clearScopeFilter();
+            setScopeMenuOpen(false);
+          }}
+          className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+            !scopeFilterRegionId &&
+            !scopeFilterDistrictId &&
+            scopeFilterCampusId == null &&
+            !scopeFilterPersonId
+              ? "bg-red-50 text-red-700 font-medium"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          National
+        </button>
+      ) : userRegionId ? (
+        <button
+          type="button"
+          onClick={() => {
+            setScopeFilterRegionId(userRegionId);
+            setScopeFilterDistrictId(null);
+            setScopeFilterCampusId(null);
+            setScopeFilterPersonId(null);
+            setScopeMenuOpen(false);
+          }}
+          className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+            scopeFilterRegionId === userRegionId ||
+            (!scopeFilterRegionId &&
+              !scopeFilterDistrictId &&
+              scopeFilterCampusId == null &&
+              !scopeFilterPersonId)
+              ? "bg-red-50 text-red-700 font-medium"
+              : "text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          {userRegionId}
+        </button>
+      ) : null}
+      {scopeMenuTreeFiltered.map(({ region, districts }) => {
+        const isRegionSelected =
+          scopeFilterRegionId === region &&
+          !scopeFilterDistrictId &&
+          scopeFilterCampusId == null &&
+          !scopeFilterPersonId;
+        const isRegionExpanded =
+          scopeMenuHoverRegion === region || scopeMenuExpandedRegion === region;
+        return (
+          <div
+            key={region}
+            className="border-b border-gray-100 last:border-b-0"
+            onMouseEnter={() => setScopeMenuHoverRegion(region)}
+            onMouseLeave={() => setScopeMenuHoverRegion(null)}
           >
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-9 sm:h-9 justify-between min-w-0 w-[80px] sm:w-[100px] rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
-              >
-                <span className="truncate">{scopeFilterLabel}</span>
-                <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto z-[999] pointer-events-auto"
-              align="start"
-              onOpenAutoFocus={e => e.preventDefault()}
+            <div
+              className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
+                isRegionSelected
+                  ? "bg-red-50 text-red-700 font-medium"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
             >
-              <div className="py-1">
-                {isNationalScope ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      clearScopeFilter();
-                      setScopeMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
-                      !scopeFilterRegionId &&
-                      !scopeFilterDistrictId &&
-                      scopeFilterCampusId == null &&
-                      !scopeFilterPersonId
-                        ? "bg-red-50 text-red-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-100"
+              <button
+                type="button"
+                onClick={() => {
+                  setScopeFilterRegionId(region);
+                  setScopeFilterDistrictId(null);
+                  setScopeFilterCampusId(null);
+                  setScopeFilterPersonId(null);
+                  setScopeMenuOpen(false);
+                }}
+                className="flex-1 text-left"
+              >
+                {region}
+              </button>
+              {districts.length > 0 && (
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation();
+                    setScopeMenuExpandedRegion(r => (r === region ? null : region));
+                  }}
+                  className="p-1 rounded hover:bg-gray-200"
+                >
+                  <ChevronRight
+                    className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
+                      isRegionExpanded ? "rotate-90" : ""
                     }`}
-                  >
-                    National
-                  </button>
-                ) : userRegionId ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setScopeFilterRegionId(userRegionId);
-                      setScopeFilterDistrictId(null);
-                      setScopeFilterCampusId(null);
-                      setScopeFilterPersonId(null);
-                      setScopeMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm transition-colors ${
-                      scopeFilterRegionId === userRegionId ||
-                      (!scopeFilterRegionId &&
-                        !scopeFilterDistrictId &&
-                        scopeFilterCampusId == null &&
-                        !scopeFilterPersonId)
-                        ? "bg-red-50 text-red-700 font-medium"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    {userRegionId}
-                  </button>
-                ) : null}
-                {scopeMenuTreeFiltered.map(({ region, districts }) => {
-                  const isRegionSelected =
-                    scopeFilterRegionId === region &&
-                    !scopeFilterDistrictId &&
+                  />
+                </button>
+              )}
+            </div>
+            {isRegionExpanded && districts.length > 0 && (
+              <div className="bg-gray-50/80 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScopeFilterRegionId(region);
+                    setScopeFilterDistrictId(null);
+                    setScopeFilterCampusId(null);
+                    setScopeFilterPersonId(null);
+                    setScopeMenuOpen(false);
+                  }}
+                  className={`w-full pl-6 pr-3 py-2 text-left text-sm font-medium ${
+                    isRegionSelected
+                      ? "bg-red-50 text-red-700"
+                      : "text-gray-800 hover:bg-gray-100"
+                  }`}
+                >
+                  All of {region}
+                </button>
+                {districts.map(({ district, campuses }) => {
+                  const isDistrictSelected =
+                    scopeFilterDistrictId === district.id &&
                     scopeFilterCampusId == null &&
                     !scopeFilterPersonId;
-                  const isRegionExpanded =
-                    scopeMenuHoverRegion === region ||
-                    scopeMenuExpandedRegion === region;
+                  const isDistrictExpanded = scopeMenuExpandedDistrict === district.id;
                   return (
-                    <div
-                      key={region}
-                      className="border-b border-gray-100 last:border-b-0"
-                      onMouseEnter={() => setScopeMenuHoverRegion(region)}
-                      onMouseLeave={() => setScopeMenuHoverRegion(null)}
-                    >
+                    <div key={district.id}>
                       <div
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center justify-between gap-2 transition-colors ${
-                          isRegionSelected
-                            ? "bg-red-50 text-red-700 font-medium"
+                        className={`flex items-center w-full pl-6 pr-2 py-2 gap-1 ${
+                          isDistrictSelected
+                            ? "bg-red-50 text-red-700"
                             : "text-gray-700 hover:bg-gray-100"
                         }`}
                       >
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             setScopeFilterRegionId(region);
-                            setScopeFilterDistrictId(null);
+                            setScopeFilterDistrictId(district.id);
                             setScopeFilterCampusId(null);
                             setScopeFilterPersonId(null);
                             setScopeMenuOpen(false);
                           }}
-                          className="flex-1 text-left"
+                          className="flex-1 text-left text-sm"
                         >
-                          {region}
+                          {district.name}
                         </button>
-                        {districts.length > 0 && (
+                        {campuses.length > 0 && (
                           <button
                             type="button"
                             onClick={e => {
                               e.stopPropagation();
-                              setScopeMenuExpandedRegion(r =>
-                                r === region ? null : region
+                              setScopeMenuExpandedDistrict(d =>
+                                d === district.id ? null : district.id
                               );
                             }}
                             className="p-1 rounded hover:bg-gray-200"
                           >
                             <ChevronRight
-                              className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${
-                                isRegionExpanded ? "rotate-90" : ""
+                              className={`h-4 w-4 text-gray-400 transition-transform ${
+                                scopeMenuExpandedDistrict === district.id
+                                  ? "rotate-90"
+                                  : ""
                               }`}
                             />
                           </button>
                         )}
                       </div>
-                      {isRegionExpanded && districts.length > 0 && (
-                        <div className="bg-gray-50/80 border-t border-gray-100">
-                          <button
-                            type="button"
-                            onClick={() => {
+                      {isDistrictExpanded && campuses.length > 0 && (
+                        <div className="bg-gray-100/80 border-t border-gray-100">
+                          {campuses.map(campus => {
+                            const isCampusSelected =
+                              scopeFilterCampusId === campus.id && !scopeFilterPersonId;
+                            const isCampusExpanded = scopeMenuExpandedCampus === campus.id;
+                            const campusPeople = filteredPeople.filter(
+                              (p: Person) => p.primaryCampusId === campus.id
+                            );
+                            const selectCampus = (e: React.MouseEvent) => {
+                              e.preventDefault();
+                              e.stopPropagation();
                               setScopeFilterRegionId(region);
-                              setScopeFilterDistrictId(null);
-                              setScopeFilterCampusId(null);
+                              setScopeFilterDistrictId(district.id);
+                              setScopeFilterCampusId(campus.id);
                               setScopeFilterPersonId(null);
                               setScopeMenuOpen(false);
-                            }}
-                            className={`w-full pl-6 pr-3 py-2 text-left text-sm font-medium ${
-                              isRegionSelected
-                                ? "bg-red-50 text-red-700"
-                                : "text-gray-800 hover:bg-gray-100"
-                            }`}
-                          >
-                            All of {region}
-                          </button>
-                          {districts.map(({ district, campuses }) => {
-                            const isDistrictSelected =
-                              scopeFilterDistrictId === district.id &&
-                              scopeFilterCampusId == null &&
-                              !scopeFilterPersonId;
-                            const isDistrictExpanded =
-                              scopeMenuExpandedDistrict === district.id;
+                            };
                             return (
-                              <div key={district.id}>
+                              <div key={campus.id}>
                                 <div
-                                  className={`flex items-center w-full pl-6 pr-2 py-2 gap-1 ${
-                                    isDistrictSelected
+                                  className={`flex items-center w-full pl-9 pr-2 py-2 gap-1 ${
+                                    isCampusSelected
                                       ? "bg-red-50 text-red-700"
                                       : "text-gray-700 hover:bg-gray-100"
                                   }`}
                                 >
                                   <button
                                     type="button"
-                                    onClick={e => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setScopeFilterRegionId(region);
-                                      setScopeFilterDistrictId(district.id);
-                                      setScopeFilterCampusId(null);
-                                      setScopeFilterPersonId(null);
-                                      setScopeMenuOpen(false);
-                                    }}
-                                    className="flex-1 text-left text-sm"
+                                    onClick={selectCampus}
+                                    className={`flex-1 text-left text-sm ${
+                                      isCampusSelected ? "font-medium text-red-700" : ""
+                                    }`}
                                   >
-                                    {district.name}
+                                    {campus.name}
                                   </button>
-                                  {campuses.length > 0 && (
+                                  {campusPeople.length > 0 && (
                                     <button
                                       type="button"
                                       onClick={e => {
                                         e.stopPropagation();
-                                        setScopeMenuExpandedDistrict(d =>
-                                          d === district.id ? null : district.id
+                                        setScopeMenuExpandedCampus(c =>
+                                          c === campus.id ? null : campus.id
                                         );
                                       }}
                                       className="p-1 rounded hover:bg-gray-200"
                                     >
                                       <ChevronRight
                                         className={`h-4 w-4 text-gray-400 transition-transform ${
-                                          scopeMenuExpandedDistrict ===
-                                          district.id
-                                            ? "rotate-90"
-                                            : ""
+                                          isCampusExpanded ? "rotate-90" : ""
                                         }`}
                                       />
                                     </button>
                                   )}
                                 </div>
-                                {isDistrictExpanded && campuses.length > 0 && (
-                                  <div className="bg-gray-100/80 border-t border-gray-100">
-                                    {campuses.map(campus => {
-                                      const isCampusSelected =
-                                        scopeFilterCampusId === campus.id &&
-                                        !scopeFilterPersonId;
-                                      const isCampusExpanded =
-                                        scopeMenuExpandedCampus === campus.id;
-                                      const campusPeople =
-                                        filteredPeople.filter(
-                                          (p: Person) =>
-                                            p.primaryCampusId === campus.id
-                                        );
-                                      const selectCampus = (
-                                        e: React.MouseEvent
-                                      ) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setScopeFilterRegionId(region);
-                                        setScopeFilterDistrictId(district.id);
-                                        setScopeFilterCampusId(campus.id);
-                                        setScopeFilterPersonId(null);
-                                        setScopeMenuOpen(false);
-                                      };
-                                      return (
-                                        <div key={campus.id}>
-                                          <div
-                                            className={`flex items-center w-full pl-9 pr-2 py-2 gap-1 ${
-                                              isCampusSelected
-                                                ? "bg-red-50 text-red-700"
+                                {isCampusExpanded && campusPeople.length > 0 && (
+                                  <div className="bg-white border-t border-gray-100">
+                                    {[...campusPeople]
+                                      .sort((a, b) =>
+                                        (a.name || a.personId || "").localeCompare(
+                                          b.name || b.personId || ""
+                                        )
+                                      )
+                                      .map(person => {
+                                        const isPersonSelected =
+                                          scopeFilterPersonId === person.personId;
+                                        return (
+                                          <button
+                                            key={person.personId}
+                                            type="button"
+                                            onClick={e => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setScopeFilterRegionId(region);
+                                              setScopeFilterDistrictId(district.id);
+                                              setScopeFilterCampusId(campus.id);
+                                              setScopeFilterPersonId(person.personId);
+                                              setScopeMenuOpen(false);
+                                            }}
+                                            className={`w-full pl-12 pr-3 py-2 text-left text-sm ${
+                                              isPersonSelected
+                                                ? "bg-red-50 text-red-700 font-medium"
                                                 : "text-gray-700 hover:bg-gray-100"
                                             }`}
                                           >
-                                            <button
-                                              type="button"
-                                              onClick={selectCampus}
-                                              className={`flex-1 text-left text-sm ${
-                                                isCampusSelected
-                                                  ? "font-medium text-red-700"
-                                                  : ""
-                                              }`}
-                                            >
-                                              {campus.name}
-                                            </button>
-                                            {campusPeople.length > 0 && (
-                                              <button
-                                                type="button"
-                                                onClick={e => {
-                                                  e.stopPropagation();
-                                                  setScopeMenuExpandedCampus(
-                                                    c =>
-                                                      c === campus.id
-                                                        ? null
-                                                        : campus.id
-                                                  );
-                                                }}
-                                                className="p-1 rounded hover:bg-gray-200"
-                                              >
-                                                <ChevronRight
-                                                  className={`h-4 w-4 text-gray-400 transition-transform ${
-                                                    isCampusExpanded
-                                                      ? "rotate-90"
-                                                      : ""
-                                                  }`}
-                                                />
-                                              </button>
-                                            )}
-                                          </div>
-                                          {isCampusExpanded &&
-                                            campusPeople.length > 0 && (
-                                              <div className="bg-white border-t border-gray-100">
-                                                {[...campusPeople]
-                                                  .sort((a, b) =>
-                                                    (
-                                                      a.name ||
-                                                      a.personId ||
-                                                      ""
-                                                    ).localeCompare(
-                                                      b.name || b.personId || ""
-                                                    )
-                                                  )
-                                                  .map(person => {
-                                                    const isPersonSelected =
-                                                      scopeFilterPersonId ===
-                                                      person.personId;
-                                                    return (
-                                                      <button
-                                                        key={person.personId}
-                                                        type="button"
-                                                        onClick={e => {
-                                                          e.preventDefault();
-                                                          e.stopPropagation();
-                                                          setScopeFilterRegionId(
-                                                            region
-                                                          );
-                                                          setScopeFilterDistrictId(
-                                                            district.id
-                                                          );
-                                                          setScopeFilterCampusId(
-                                                            campus.id
-                                                          );
-                                                          setScopeFilterPersonId(
-                                                            person.personId
-                                                          );
-                                                          setScopeMenuOpen(
-                                                            false
-                                                          );
-                                                        }}
-                                                        className={`w-full pl-12 pr-3 py-2 text-left text-sm ${
-                                                          isPersonSelected
-                                                            ? "bg-red-50 text-red-700 font-medium"
-                                                            : "text-gray-700 hover:bg-gray-100"
-                                                        }`}
-                                                      >
-                                                        {person.name ||
-                                                          person.personId ||
-                                                          "Person"}
-                                                      </button>
-                                                    );
-                                                  })}
-                                              </div>
-                                            )}
-                                        </div>
-                                      );
-                                    })}
+                                            {person.name || person.personId || "Person"}
+                                          </button>
+                                        );
+                                      })}
                                   </div>
                                 )}
                               </div>
@@ -1324,244 +1292,331 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                   );
                 })}
               </div>
-            </PopoverContent>
-          </Popover>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const activeFilterCategoryCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter.size > 0) count += 1;
+    if (needFilter.size > 0) count += 1;
+    if (roleFilter.size > 0) count += 1;
+    if (familyGuestFilter.size > 0) count += 1;
+    if (depositPaidFilter !== null) count += 1;
+    return count;
+  }, [
+    statusFilter,
+    needFilter,
+    roleFilter,
+    familyGuestFilter,
+    depositPaidFilter,
+  ]);
+
+  const filterTrigger = (
+    <Button
+      variant="outline"
+      className="h-11 min-w-0 w-[72px] sm:w-[90px] rounded-lg border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80 px-2.5 py-1.5"
+    >
+      <span className="flex flex-col items-start gap-0.5 w-full min-w-0">
+        <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider leading-none">
+          Filter
+        </span>
+        <span className="flex items-center justify-between w-full">
+          <span className="flex items-center gap-1.5 min-w-0">
+            <Filter className="h-4 w-4 opacity-70 shrink-0" />
+            {activeFilterCategoryCount > 0 ? (
+              <span className="text-[11px] font-semibold text-gray-600 bg-gray-100 border border-gray-200/80 rounded-sm px-1.5 py-0.5 leading-none">
+                {activeFilterCategoryCount}
+              </span>
+            ) : null}
+          </span>
+          <ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </span>
+      </span>
+    </Button>
+  );
+
+  const FilterCategory = ({
+    title,
+    children,
+    defaultOpen = false,
+  }: {
+    title: string;
+    children: ReactNode;
+    defaultOpen?: boolean;
+  }) => (
+    <details
+      className="border-b border-gray-100 last:border-b-0"
+      open={defaultOpen}
+    >
+      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none [&::-webkit-details-marker]:hidden">
+        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          {title}
+        </span>
+        <ChevronDown className="h-4 w-4 text-gray-400" />
+      </summary>
+      <div className="px-2 pb-2">{children}</div>
+    </details>
+  );
+
+  const filterMenuBody = (
+    <>
+      <FilterCategory title="Status" defaultOpen>
+        <div className="space-y-0.5">
+          {(["Yes", "Maybe", "No", "Not Invited"] as const).map(status => {
+            const count = allPeople.filter((p: Person) => p.status === status).length;
+            const isChecked = statusFilter.has(status);
+            return (
+              <label
+                key={status}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={checked => {
+                    const newFilter = new Set(statusFilter);
+                    if (checked) newFilter.add(status);
+                    else newFilter.delete(status);
+                    setStatusFilter(newFilter);
+                  }}
+                />
+                <span className="text-sm flex-1">{formatStatusLabel(status)}</span>
+                <span className="text-xs text-gray-500">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterCategory>
+
+      <FilterCategory title="Need">
+        <div className="space-y-0.5">
+          {(
+            [
+              "Registration",
+              "Transportation",
+              "Housing",
+              "Other",
+              "Needs Met",
+            ] as const
+          ).map(need => {
+            let count = 0;
+            if (need === "Needs Met") {
+              count = allPeople.filter((p: Person) => {
+                const personMetNeeds = allNeeds.filter(
+                  n => n.personId === p.personId && !n.isActive
+                );
+                return personMetNeeds.length > 0;
+              }).length;
+            } else {
+              count = allPeople.filter((p: Person) => {
+                const personActiveNeeds = allNeeds.filter(
+                  n => n.personId === p.personId && n.isActive
+                );
+                return personActiveNeeds.some(n => n.type === need);
+              }).length;
+            }
+            const isChecked = needFilter.has(need);
+            return (
+              <label
+                key={need}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={checked => {
+                    const newFilter = new Set(needFilter);
+                    if (checked) newFilter.add(need);
+                    else newFilter.delete(need);
+                    setNeedFilter(newFilter);
+                  }}
+                />
+                <span className="text-sm flex-1">{need}</span>
+                <span className="text-xs text-gray-500">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterCategory>
+
+      <FilterCategory title="Role">
+        <div className="space-y-0.5 sm:max-h-40 sm:overflow-y-auto">
+          {uniqueRoles.map(role => {
+            const count = allPeople.filter((p: Person) => p.primaryRole === role).length;
+            const isChecked = roleFilter.has(role);
+            return (
+              <label
+                key={role}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={checked => {
+                    const newFilter = new Set(roleFilter);
+                    if (checked) newFilter.add(role);
+                    else newFilter.delete(role);
+                    setRoleFilter(newFilter);
+                  }}
+                />
+                <span className="text-sm flex-1">{role}</span>
+                <span className="text-xs text-gray-500">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterCategory>
+
+      <FilterCategory title="Family & Guest">
+        <div className="space-y-0.5">
+          {[
+            { key: "spouse" as const, label: "Spouse" },
+            { key: "children" as const, label: "Children" },
+            { key: "guest" as const, label: "Guest" },
+          ].map(({ key, label }) => {
+            const count = allPeople.filter((p: Person) => {
+              if (key === "spouse") return p.spouseAttending;
+              if (key === "children") return p.childrenCount && p.childrenCount > 0;
+              if (key === "guest") return p.guestsCount && p.guestsCount > 0;
+              return false;
+            }).length;
+            const isChecked = familyGuestFilter.has(key);
+            return (
+              <label
+                key={key}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={checked => {
+                    const newFilter = new Set(familyGuestFilter);
+                    if (checked) newFilter.add(key);
+                    else newFilter.delete(key);
+                    setFamilyGuestFilter(newFilter);
+                  }}
+                />
+                <span className="text-sm flex-1">{label}</span>
+                <span className="text-xs text-gray-500">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterCategory>
+
+      <FilterCategory title="Deposit paid">
+        <div className="space-y-0.5">
+          {[
+            { value: true, label: "Paid" },
+            { value: false, label: "Not Paid" },
+          ].map(({ value, label }) => {
+            const count = allPeople.filter((p: Person) => {
+              const hasDepositPaid = p.depositPaid === true;
+              return hasDepositPaid === value;
+            }).length;
+            const isChecked = depositPaidFilter === value;
+            return (
+              <label
+                key={value.toString()}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
+              >
+                <Checkbox
+                  checked={isChecked}
+                  onCheckedChange={checked => {
+                    setDepositPaidFilter(checked ? value : null);
+                  }}
+                />
+                <span className="text-sm flex-1">{label}</span>
+                <span className="text-xs text-gray-500">({count})</span>
+              </label>
+            );
+          })}
+        </div>
+      </FilterCategory>
+    </>
+  );
+
+  return (
+    <div className="h-full w-full min-w-0 min-h-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
+      {/* Header: search, Scope, Filter, Sort By, kebab — minimal on mobile, premium on desktop */}
+      <div className="flex items-end flex-nowrap gap-1 sm:gap-2.5 px-2 py-1.5 sm:px-4 sm:py-2 min-h-[44px] sm:min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0 overflow-x-auto">
+        {/* Scope */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isDesktopViewport ? (
+            <Popover open={scopeMenuOpen} onOpenChange={handleScopeMenuOpenChange}>
+              <PopoverTrigger asChild>{scopeTrigger}</PopoverTrigger>
+              <PopoverContent
+                className="w-56 p-0 h-[calc(100vh-16px)] max-h-none overflow-y-auto z-[999] pointer-events-auto"
+                align="start"
+                onOpenAutoFocus={e => e.preventDefault()}
+              >
+                {scopeMenuBody}
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <Button
+              variant="outline"
+              className="h-11 justify-between min-w-0 w-[90px] sm:w-[120px] rounded-lg border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80 px-2.5 py-1.5"
+              type="button"
+              onClick={() => {
+                const nextOpen = !scopeMenuOpen;
+                handleScopeMenuOpenChange(nextOpen);
+                if (nextOpen) setFilterMenuOpen(false);
+              }}
+            >
+              {scopeTrigger.props.children}
+            </Button>
+          )}
         </div>
 
-        <div className="h-5 w-px bg-gray-200 flex-shrink-0" aria-hidden />
-
         {/* Filter */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="h-9 sm:h-9 px-2 sm:px-2.5 min-w-0 rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isDesktopViewport ? (
+            <Popover open={filterMenuOpen} onOpenChange={setFilterMenuOpen}>
+              <PopoverTrigger asChild>{filterTrigger}</PopoverTrigger>
+              <PopoverContent
+                className="w-[min(calc(100vw-32px),360px)] sm:w-72 p-0 h-[calc(100vh-16px)] max-h-none overflow-y-auto z-[999] pointer-events-auto"
+                align="start"
+                side="bottom"
               >
-                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70 sm:mr-1 shrink-0" />
-                <span className="truncate">Filter</span>
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 shrink-0" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-[min(calc(100vw-32px),360px)] sm:w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto z-[999] pointer-events-auto"
-              align="start"
-              side="bottom"
+                {filterMenuBody}
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <Button
+              variant="outline"
+              className="h-11 min-w-0 w-[72px] sm:w-[90px] rounded-lg border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80 px-2.5 py-1.5"
+              type="button"
+              onClick={() => {
+                const nextOpen = !filterMenuOpen;
+                setFilterMenuOpen(nextOpen);
+                if (nextOpen) handleScopeMenuOpenChange(false);
+              }}
             >
-              {/* Status */}
-              <div className="p-2 border-b border-gray-100">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
-                  Status
-                </div>
-                <div className="space-y-0.5">
-                  {(["Yes", "Maybe", "No", "Not Invited"] as const).map(
-                    status => {
-                      const count = allPeople.filter(
-                        (p: Person) => p.status === status
-                      ).length;
-                      const isChecked = statusFilter.has(status);
-                      return (
-                        <label
-                          key={status}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-                        >
-                          <Checkbox
-                            checked={isChecked}
-                            onCheckedChange={checked => {
-                              const newFilter = new Set(statusFilter);
-                              if (checked) newFilter.add(status);
-                              else newFilter.delete(status);
-                              setStatusFilter(newFilter);
-                            }}
-                          />
-                          <span className="text-sm flex-1">
-                            {formatStatusLabel(status)}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            ({count})
-                          </span>
-                        </label>
-                      );
-                    }
-                  )}
-                </div>
-              </div>
-              {/* Need */}
-              <div className="p-2 border-b border-gray-100">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
-                  Need
-                </div>
-                <div className="space-y-0.5">
-                  {(
-                    [
-                      "Registration",
-                      "Transportation",
-                      "Housing",
-                      "Other",
-                      "Needs Met",
-                    ] as const
-                  ).map(need => {
-                    let count = 0;
-                    if (need === "Needs Met") {
-                      count = allPeople.filter((p: Person) => {
-                        const personMetNeeds = allNeeds.filter(
-                          n => n.personId === p.personId && !n.isActive
-                        );
-                        return personMetNeeds.length > 0;
-                      }).length;
-                    } else {
-                      count = allPeople.filter((p: Person) => {
-                        const personActiveNeeds = allNeeds.filter(
-                          n => n.personId === p.personId && n.isActive
-                        );
-                        return personActiveNeeds.some(n => n.type === need);
-                      }).length;
-                    }
-                    const isChecked = needFilter.has(need);
-                    return (
-                      <label
-                        key={need}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={checked => {
-                            const newFilter = new Set(needFilter);
-                            if (checked) newFilter.add(need);
-                            else newFilter.delete(need);
-                            setNeedFilter(newFilter);
-                          }}
-                        />
-                        <span className="text-sm flex-1">{need}</span>
-                        <span className="text-xs text-gray-500">({count})</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Role */}
-              <div className="p-2 border-b border-gray-100">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
-                  Role
-                </div>
-                <div className="space-y-0.5 max-h-40 overflow-y-auto">
-                  {uniqueRoles.map(role => {
-                    const count = allPeople.filter(
-                      (p: Person) => p.primaryRole === role
-                    ).length;
-                    const isChecked = roleFilter.has(role);
-                    return (
-                      <label
-                        key={role}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={checked => {
-                            const newFilter = new Set(roleFilter);
-                            if (checked) newFilter.add(role);
-                            else newFilter.delete(role);
-                            setRoleFilter(newFilter);
-                          }}
-                        />
-                        <span className="text-sm flex-1">{role}</span>
-                        <span className="text-xs text-gray-500">({count})</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Family & Guest */}
-              <div className="p-2 border-b border-gray-100">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
-                  Family & Guest
-                </div>
-                <div className="space-y-0.5">
-                  {[
-                    { key: "spouse" as const, label: "Spouse" },
-                    { key: "children" as const, label: "Children" },
-                    { key: "guest" as const, label: "Guest" },
-                  ].map(({ key, label }) => {
-                    const count = allPeople.filter((p: Person) => {
-                      if (key === "spouse") return p.spouseAttending;
-                      if (key === "children")
-                        return p.childrenCount && p.childrenCount > 0;
-                      if (key === "guest")
-                        return p.guestsCount && p.guestsCount > 0;
-                      return false;
-                    }).length;
-                    const isChecked = familyGuestFilter.has(key);
-                    return (
-                      <label
-                        key={key}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={checked => {
-                            const newFilter = new Set(familyGuestFilter);
-                            if (checked) newFilter.add(key);
-                            else newFilter.delete(key);
-                            setFamilyGuestFilter(newFilter);
-                          }}
-                        />
-                        <span className="text-sm flex-1">{label}</span>
-                        <span className="text-xs text-gray-500">({count})</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              {/* Deposit paid */}
-              <div className="p-2">
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-2 py-1">
-                  Deposit paid
-                </div>
-                <div className="space-y-0.5">
-                  {[
-                    { value: true, label: "Paid" },
-                    { value: false, label: "Not Paid" },
-                  ].map(({ value, label }) => {
-                    const count = allPeople.filter((p: Person) => {
-                      const hasDepositPaid = p.depositPaid === true;
-                      return hasDepositPaid === value;
-                    }).length;
-                    const isChecked = depositPaidFilter === value;
-                    return (
-                      <label
-                        key={value.toString()}
-                        className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={checked => {
-                            setDepositPaidFilter(checked ? value : null);
-                          }}
-                        />
-                        <span className="text-sm flex-1">{label}</span>
-                        <span className="text-xs text-gray-500">({count})</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+              {filterTrigger.props.children}
+            </Button>
+          )}
         </div>
 
         {/* Sort By */}
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
-            Sort By
-          </span>
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 sm:flex-none">
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="h-9 sm:h-9 justify-between min-w-0 w-[80px] sm:w-[110px] rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-11 justify-between min-w-0 w-full sm:w-[130px] rounded-lg border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80 px-2.5 py-1.5"
               >
-                <span className="truncate">{order}</span>
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 flex-shrink-0" />
+                <span className="flex flex-col items-start gap-0.5 min-w-0 flex-1">
+                  <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider leading-none">
+                    Sort
+                  </span>
+                  <span className="flex items-center justify-between gap-2 w-full min-w-0">
+                    <span className="truncate text-[13px] font-medium">
+                      {order}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+                  </span>
+                </span>
               </Button>
             </PopoverTrigger>
             <PopoverContent
@@ -1593,17 +1648,60 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
           </Popover>
         </div>
 
-        {/* Kebab: Export */}
-        <div className="flex-shrink-0 ml-auto">
+        {/* Right-side icons */}
+        <div className="flex items-center gap-0.5 flex-shrink-0 ml-auto">
+          {/* People Only */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={
+              "h-9 w-9 rounded-lg bg-transparent hover:bg-gray-100 " +
+              (peopleOnly ? "text-blue-700" : "text-gray-500")
+            }
+            onClick={() => setPeopleOnly(!peopleOnly)}
+            aria-label="People only"
+            title="People Only"
+          >
+            <User className="h-4 w-4" />
+          </Button>
+
+          {/* Search */}
+          <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 rounded-lg bg-transparent text-gray-500 hover:bg-gray-100"
+                aria-label="Search"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-64 p-2 z-[999] pointer-events-auto"
+              align="end"
+            >
+              <Input
+                type="text"
+                placeholder="Search people by name or role..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="h-9"
+                autoFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Kebab: Export */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9 sm:h-9 sm:w-9 rounded-lg border-gray-200/80 bg-white hover:bg-gray-50 hover:border-gray-300/80"
+                className="h-9 w-9 rounded-lg bg-transparent text-gray-500 hover:bg-gray-100"
                 aria-label="More options"
               >
-                <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
+                <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="z-[999]">
@@ -1650,8 +1748,47 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
           )}
       </div>
 
+      {/* Mobile inline panels (contained within the table drawer) */}
+      {!isDesktopViewport && (scopeMenuOpen || filterMenuOpen) ? (
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden w-full flex flex-col">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-200">
+            {scopeMenuOpen ? (
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-gray-900">Scope</div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  Choose what you want to view
+                </div>
+              </div>
+            ) : (
+              <div className="min-w-0" />
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setFilterMenuOpen(false);
+                handleScopeMenuOpenChange(false);
+              }}
+              className="p-2 -mr-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            {scopeMenuOpen ? scopeMenuBody : filterMenuBody}
+          </div>
+        </div>
+      ) : null}
+
       {/* Content - Hierarchical List */}
-      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto w-full flex flex-col">
+      <div
+        className={
+          "flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto w-full flex flex-col " +
+          (!isDesktopViewport && (scopeMenuOpen || filterMenuOpen)
+            ? "hidden"
+            : "")
+        }
+      >
         {/* Helper function to render a person */}
         {(() => {
           const renderPerson = (
@@ -1786,6 +1923,24 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
               </div>
             );
           };
+
+          // People Only mode: flat list with no hierarchy headers
+          if (peopleOnly) {
+            if (flatPeopleList.length === 0) {
+              return (
+                <div className="p-6 text-center text-gray-500">
+                  No people found
+                </div>
+              );
+            }
+            return (
+              <div className="divide-y divide-gray-100">
+                {flatPeopleList.map((person: Person) =>
+                  renderPerson(person, "px-3 sm:px-4")
+                )}
+              </div>
+            );
+          }
 
           if (groupedData.type === "campus") {
             if (groupedData.campuses.length === 0) {

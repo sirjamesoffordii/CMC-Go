@@ -28,6 +28,7 @@ import {
   Globe,
   Eye,
   Edit,
+  KeyRound,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,6 +92,15 @@ export function UserManagement() {
         toast.error(`Failed to update authorization: ${error.message}`);
       },
     });
+
+  const resetPasswordMutation = trpc.admin.users.resetPassword.useMutation({
+    onSuccess: () => {
+      toast.success('Password reset to "CMC Go"');
+    },
+    onError: error => {
+      toast.error(`Failed to reset password: ${error.message}`);
+    },
+  });
 
   const deleteUserMutation = trpc.admin.users.delete.useMutation({
     onSuccess: () => {
@@ -463,6 +473,26 @@ export function UserManagement() {
                             ? "Disable"
                             : "Enable"}
                         </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Reset password for "${user.fullName}" to "CMC Go"?`
+                                  )
+                                ) {
+                                  resetPasswordMutation.mutate({ userId: user.id });
+                                }
+                              }}
+                            >
+                              <KeyRound className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Reset password to "CMC Go"</TooltipContent>
+                        </Tooltip>
                         <Button
                           size="sm"
                           variant="outline"

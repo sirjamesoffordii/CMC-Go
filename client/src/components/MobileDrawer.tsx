@@ -115,19 +115,20 @@ export function MobileDrawer({
   );
 
   const isFullScreen = snap === "full";
-  const shouldCoverToolbar = coverToolbar || isFullScreen;
+  // Only cover the toolbar when the drawer is actually full-screen
+  const shouldCoverToolbar = isFullScreen;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Transparent backdrop — no blur, no darkening so map stays visible */}
+          {/* Transparent backdrop — excludes header (52px) so toolbar clicks don't close drawer */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className={`fixed inset-0 md:hidden ${shouldCoverToolbar ? "z-[255]" : "z-[210]"}`}
+            className={`fixed inset-x-0 top-[52px] bottom-0 md:hidden ${shouldCoverToolbar ? "z-[255]" : "z-[210]"} ${!closeOnBackdropClick ? "pointer-events-none" : ""}`}
             onClick={closeOnBackdropClick ? onClose : undefined}
             aria-hidden="true"
           />
@@ -166,32 +167,22 @@ export function MobileDrawer({
               className="relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none bg-black"
               style={{ minHeight: "40px", padding: "12px 0 8px", touchAction: "none" }}
             >
-              <div className="w-10 h-1 bg-slate-500 rounded-full" aria-hidden="true" />
+              {showHeader && title && !hideTitleCloseInCorner && (
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pr-14 min-w-0">
+                  <h2 className="text-sm font-semibold text-white truncate">
+                    {title}
+                  </h2>
+                </div>
+              )}
+              <div className="w-10 h-1 bg-white rounded-full" aria-hidden="true" />
               <button
                 onClick={e => { e.stopPropagation(); onClose(); }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white hover:bg-white/10 active:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Title header — shown for table/national, hidden for district panel */}
-            {showHeader && title && !hideTitleCloseInCorner && (
-              <div
-                onPointerDown={e => {
-                  if (!(e.target instanceof HTMLElement) || !e.target.closest("button")) {
-                    dragControls.start(e);
-                  }
-                }}
-                style={{ touchAction: "none" }}
-                className="px-4 py-2.5 flex items-center shrink-0 border-b border-slate-200 bg-slate-50 cursor-grab active:cursor-grabbing"
-              >
-                <h2 className="text-base font-semibold text-slate-900 truncate">
-                  {title}
-                </h2>
-              </div>
-            )}
 
             {/* Content */}
             <div
