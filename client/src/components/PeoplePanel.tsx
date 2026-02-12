@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import { ImportModal } from "./ImportModal";
@@ -35,11 +35,20 @@ import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { formatStatusLabel } from "@/utils/statusLabel";
 
+export type PeoplePanelInitialFilter = {
+  districtId?: string;
+  regionId?: string;
+  campusIds?: number[];
+  statusFilter?: Set<"Yes" | "Maybe" | "No" | "Not Invited">;
+  needsView?: boolean;
+} | null;
+
 interface PeoplePanelProps {
   onClose: () => void;
+  initialFilter?: PeoplePanelInitialFilter;
 }
 
-export function PeoplePanel({ onClose }: PeoplePanelProps) {
+export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -109,6 +118,44 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   const [expandedCampuses, setExpandedCampuses] = useState<Set<number>>(
     new Set()
   );
+
+  // Apply initial filter when opening from district panel (View Table) or toolbar scope
+  useEffect(() => {
+    if (!initialFilter) return;
+
+    if (initialFilter.districtId) {
+      // District scope (from district panel or toolbar)
+      setScopeFilterDistrictId(initialFilter.districtId);
+      setScopeFilterRegionId(initialFilter.regionId ?? null);
+      setScopeFilterCampusId(null);
+      setScopeFilterPersonId(null);
+      setScope("District");
+      setExpandedDistricts(new Set([initialFilter.districtId]));
+      setExpandedCampuses(new Set(initialFilter.campusIds ?? []));
+    } else if (initialFilter.regionId) {
+      // Region scope (from toolbar)
+      setScopeFilterRegionId(initialFilter.regionId);
+      setScopeFilterDistrictId(null);
+      setScopeFilterCampusId(null);
+      setScopeFilterPersonId(null);
+      setScope("Region");
+      setExpandedRegions(new Set([initialFilter.regionId]));
+    } else {
+      // National scope (no filter)
+      setScopeFilterRegionId(null);
+      setScopeFilterDistrictId(null);
+      setScopeFilterCampusId(null);
+      setScopeFilterPersonId(null);
+      setScope("Region");
+    }
+
+    if (initialFilter.statusFilter) setStatusFilter(initialFilter.statusFilter);
+    if (initialFilter.needsView) {
+      setNeedFilter(
+        new Set(["Registration", "Transportation", "Housing", "Other"])
+      );
+    }
+  }, [initialFilter]);
 
   // Data queries
   const { data: allPeople = [], isLoading: peopleLoading } =
@@ -906,7 +953,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
   }
 
   return (
-    <div className="h-full w-full min-w-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
+    <div className="h-full w-full min-w-0 min-h-0 flex-1 flex flex-col bg-white border-l border-gray-300 overflow-hidden">
       {/* Header: search, Scope, Filter, Sort By, kebab — minimal on mobile, premium on desktop */}
       <div className="flex items-center flex-nowrap gap-1 sm:gap-2.5 px-2 py-1 sm:px-4 sm:py-2.5 min-h-[44px] sm:min-h-0 border-b border-gray-200/90 sm:border-gray-200 bg-white shadow-[0_1px_0_0_rgba(0,0,0,0.03)] sm:shadow-[0_1px_0_0_rgba(0,0,0,0.06)] flex-shrink-0 overflow-x-auto">
         {/* Search */}
@@ -922,7 +969,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
             </Button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-64 p-2 z-[80] pointer-events-auto"
+            className="w-64 p-2 z-[999] pointer-events-auto"
             align="start"
           >
             <Input
@@ -943,7 +990,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
         {/* Scope */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:inline">
+          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
             Scope
           </span>
           <Popover
@@ -968,7 +1015,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto z-[80] pointer-events-auto"
+              className="w-56 p-0 max-h-[min(80vh,400px)] overflow-y-auto z-[999] pointer-events-auto"
               align="start"
               onOpenAutoFocus={e => e.preventDefault()}
             >
@@ -1291,14 +1338,15 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 variant="outline"
                 className="h-9 sm:h-9 px-2 sm:px-2.5 min-w-0 rounded-lg border-gray-200/80 bg-white text-gray-700 text-[12px] sm:text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300/80"
               >
-                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70 sm:mr-1" />
-                <span className="hidden sm:inline">Filter</span>
-                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 hidden sm:inline" />
+                <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-70 sm:mr-1 shrink-0" />
+                <span className="truncate">Filter</span>
+                <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 opacity-50 shrink-0" />
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto z-[80] pointer-events-auto"
+              className="w-[min(calc(100vw-32px),360px)] sm:w-72 p-0 max-h-[min(80vh,420px)] overflow-y-auto z-[999] pointer-events-auto"
               align="start"
+              side="bottom"
             >
               {/* Status */}
               <div className="p-2 border-b border-gray-100">
@@ -1503,7 +1551,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
 
         {/* Sort By */}
         <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap hidden sm:inline">
+          <span className="text-[11px] font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
             Sort By
           </span>
           <Popover>
@@ -1517,7 +1565,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-56 p-2 z-[80] pointer-events-auto"
+              className="w-56 p-2 z-[999] pointer-events-auto"
               align="start"
             >
               <div className="space-y-0.5">
@@ -1558,7 +1606,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                 <MoreVertical className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="z-[80]">
+            <DropdownMenuContent align="end" className="z-[999]">
               <DropdownMenuItem onClick={() => setImportModalOpen(true)}>
                 <Upload className="h-4 w-4" />
                 Import
@@ -1603,7 +1651,7 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
       </div>
 
       {/* Content - Hierarchical List */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full min-w-0 flex flex-col">
+      <div className="flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto w-full flex flex-col">
         {/* Helper function to render a person */}
         {(() => {
           const renderPerson = (
@@ -1643,7 +1691,53 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                    {/* Need badges - show when need filter is active */}
+                    {needFilter.size > 0 &&
+                      personNeeds.length > 0 &&
+                      personNeeds.map(need => (
+                        <span
+                          key={need.id}
+                          className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
+                            need.isActive
+                              ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                              : "bg-green-50 text-green-700 border border-green-200 line-through"
+                          }`}
+                        >
+                          <span className="font-medium">{need.type}</span>
+                          {need.amount != null && need.amount > 0 && (
+                            <span>
+                              $
+                              {(need.amount / 100).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          )}
+                          {need.fundsReceived != null &&
+                            need.fundsReceived > 0 && (
+                              <span className="text-green-600">
+                                (rcvd $
+                                {(need.fundsReceived / 100).toLocaleString(
+                                  "en-US",
+                                  {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  }
+                                )}
+                                )
+                              </span>
+                            )}
+                          {!need.isActive && (
+                            <span
+                              className="text-green-600 font-semibold no-underline"
+                              style={{ textDecoration: "none" }}
+                            >
+                              ✓
+                            </span>
+                          )}
+                        </span>
+                      ))}
                     {/* Show last updated when "Last Updated" sort is active */}
                     {order === "Last Updated" &&
                       (person.lastEdited || person.statusLastUpdated) && (
@@ -1666,54 +1760,6 @@ export function PeoplePanel({ onClose }: PeoplePanelProps) {
                     )}
                   </div>
                 </div>
-                {/* Need info row - show when need filter is active */}
-                {needFilter.size > 0 && personNeeds.length > 0 && (
-                  <div className="mt-1 ml-4 flex flex-wrap gap-2">
-                    {personNeeds.map(need => (
-                      <span
-                        key={need.id}
-                        className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                          need.isActive
-                            ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                            : "bg-green-50 text-green-700 border border-green-200 line-through"
-                        }`}
-                      >
-                        <span className="font-medium">{need.type}</span>
-                        {need.amount != null && need.amount > 0 && (
-                          <span>
-                            $
-                            {(need.amount / 100).toLocaleString("en-US", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                        )}
-                        {need.fundsReceived != null &&
-                          need.fundsReceived > 0 && (
-                            <span className="text-green-600">
-                              (rcvd $
-                              {(need.fundsReceived / 100).toLocaleString(
-                                "en-US",
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                }
-                              )}
-                              )
-                            </span>
-                          )}
-                        {!need.isActive && (
-                          <span
-                            className="text-green-600 font-semibold no-underline"
-                            style={{ textDecoration: "none" }}
-                          >
-                            ✓
-                          </span>
-                        )}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 {/* Family & Guest info - show when family/guest filter is active */}
                 {familyGuestFilter.size > 0 && (
                   <div className="mt-1 ml-4 flex flex-wrap gap-2">

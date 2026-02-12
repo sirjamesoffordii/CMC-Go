@@ -66,6 +66,7 @@ export function DistrictDirectorDropZone({
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+  const [mobileTooltipOpen, setMobileTooltipOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -165,17 +166,26 @@ export function DistrictDirectorDropZone({
       longPressTriggeredRef.current = true;
       setIsHovered(true);
       setTooltipPos({ x: 0, y: 0 });
+      setMobileTooltipOpen(true);
     }, 450);
   };
 
   const handleNamePointerUpOrCancel = () => {
     if (!isMobile) return;
     clearLongPressTimer();
+    if (longPressTriggeredRef.current) return;
     setIsHovered(false);
     setTooltipPos(null);
     window.setTimeout(() => {
       longPressTriggeredRef.current = false;
     }, 0);
+  };
+
+  const dismissMobileTooltip = () => {
+    setMobileTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+    longPressTriggeredRef.current = false;
   };
 
   if (!person) {
@@ -401,21 +411,36 @@ export function DistrictDirectorDropZone({
         tooltipPos &&
         person &&
         (personNeed || person.notes || person.depositPaid) && (
-          <PersonTooltip
-            person={person}
-            need={
-              personNeed
-                ? {
-                    type: personNeed.type,
-                    description: personNeed.description,
-                    amount: personNeed.amount,
-                    isActive: personNeed.isActive,
-                  }
-                : null
-            }
-            position={tooltipPos}
-            centered={isMobile}
-          />
+          <>
+            {isMobile && mobileTooltipOpen && (
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Close tooltip"
+                className="fixed inset-0 z-[99998] bg-black/20"
+                onClick={dismissMobileTooltip}
+                onKeyDown={e => {
+                  if (e.key === "Enter" || e.key === "Escape")
+                    dismissMobileTooltip();
+                }}
+              />
+            )}
+            <PersonTooltip
+              person={person}
+              need={
+                personNeed
+                  ? {
+                      type: personNeed.type,
+                      description: personNeed.description,
+                      amount: personNeed.amount,
+                      isActive: personNeed.isActive,
+                    }
+                  : null
+              }
+              position={tooltipPos}
+              centered={isMobile}
+            />
+          </>
         )}
     </>
   );

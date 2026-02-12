@@ -116,18 +116,18 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Mobile drawer - improved content layout - overlays map metrics */
+  /* Mobile drawer - full height when expanded; Table drawer opens full screen */
   .mobile-drawer-bottom {
     display: flex !important;
     flex-direction: column !important;
-    max-height: calc(85dvh - env(safe-area-inset-bottom, 0px)) !important;
-    z-index: 60 !important;
   }
 
   .mobile-drawer-content {
     flex: 1 !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
     overflow-y: auto !important;
-    overflow-x: hidden !important;
+    overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
@@ -180,8 +180,8 @@
     padding-bottom: 14px !important;
   }
 
-  /* Ensure dialogs don't overflow - exclude MobileDrawer and BottomSheet */
-  [role="dialog"]:not(.mobile-drawer-bottom):not([class*="rounded-t-3xl"]) {
+  /* Ensure dialogs don't overflow - exclude MobileDrawer and BottomSheet (they handle their own sizing) */
+  [role="dialog"]:not(.mobile-drawer-bottom):not(.mobile-bottom-sheet) {
     max-height: calc(100dvh - 32px) !important;
     max-width: calc(100vw - 24px) !important;
     overflow-y: auto !important;
@@ -195,10 +195,17 @@
     overflow-y: auto !important;
   }
 
-  /* Select content dropdowns: keep within viewport */
+  /* Select content dropdowns: keep within viewport, above drawer */
   [data-radix-select-content] {
     max-height: 50dvh !important;
     max-width: calc(100vw - 16px) !important;
+    z-index: 999 !important;
+  }
+
+  /* Popover/dropdown content: render above drawers (z-260) */
+  [data-slot="popover-content"],
+  [data-radix-popper-content-wrapper] {
+    z-index: 999 !important;
   }
 
   /* Login modal mobile optimization */
@@ -333,19 +340,33 @@
 
   /* ===== Dialog footer fixes ===== */
   /* Make dialog footers stack properly on mobile */
-  [class*="DialogFooter"],
+  [class*="DialogFooter"]:not(.edit-person-footer),
   .dialog-footer-mobile {
     flex-direction: column !important;
     gap: 8px !important;
   }
-  [class*="DialogFooter"] > div,
+  [class*="DialogFooter"]:not(.edit-person-footer) > div,
   .dialog-footer-mobile > div {
     width: 100% !important;
   }
-  [class*="DialogFooter"] button,
+  [class*="DialogFooter"]:not(.edit-person-footer) button,
   .dialog-footer-mobile button {
     width: 100% !important;
     min-height: 44px !important;
+  }
+
+  /* Edit Person footer: trashcan bottom-left, Cancel/Update on right, row layout */
+  .edit-person-footer {
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    padding-top: 32px !important;
+    padding-bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .edit-person-footer .edit-person-footer-buttons {
+    width: auto !important;
+  }
+  .edit-person-footer .edit-person-footer-buttons button {
+    width: auto !important;
   }
 
   /* ===== Map container fixes ===== */
@@ -506,7 +527,7 @@
     }
 
     /* Bottom sheet: account for home indicator */
-    [class*="rounded-t-3xl"] {
+    .mobile-drawer-bottom {
       padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
     }
   }
@@ -570,9 +591,10 @@
     transition: transform 0.1s ease;
   }
 
-  /* Ensure popovers don't overflow */
+  /* Ensure popovers don't overflow viewport */
   [data-radix-popper-content-wrapper] {
     max-width: calc(100vw - 16px) !important;
+    z-index: 999 !important;
   }
 
   /* Popover content: mobile-friendly sizing */
@@ -605,7 +627,7 @@
 
   /* ===== Ensure buttons inside drawers/bottom-sheets have good touch targets ===== */
   .mobile-drawer-content button,
-  [class*="rounded-t-3xl"] button {
+  .mobile-drawer-bottom button {
     min-height: 40px;
   }
 

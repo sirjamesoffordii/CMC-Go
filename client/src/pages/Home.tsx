@@ -36,6 +36,7 @@ import { NationalPanel } from "@/components/NationalPanel";
 import { LoginModal } from "@/components/LoginModal";
 import { AccountPanel } from "@/components/AccountPanel";
 import { EventInfoPanel } from "@/components/EventInfoPanel";
+import { WhatIsCmcGoPanel } from "@/components/WhatIsCmcGoPanel";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
@@ -165,6 +166,14 @@ export default function Home() {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [personDialogOpen, setPersonDialogOpen] = useState(false);
   const [peoplePanelOpen, setPeoplePanelOpen] = useState(false);
+  const [peoplePanelSnapKey, setPeoplePanelSnapKey] = useState(0);
+  const [peoplePanelOpenFilter, setPeoplePanelOpenFilter] = useState<{
+    districtId?: string;
+    regionId?: string;
+    campusIds?: number[];
+    statusFilter?: Set<"Yes" | "Maybe" | "No" | "Not Invited">;
+    needsView?: boolean;
+  } | null>(null);
   const [districtPanelWidth, setDistrictPanelWidth] = useState(60); // percentage
   const [peoplePanelWidth, setPeoplePanelWidth] = useState(40); // percentage
   const [isResizingDistrict, setIsResizingDistrict] = useState(false);
@@ -187,8 +196,27 @@ export default function Home() {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [eventInfoPanelOpen, setEventInfoPanelOpen] = useState(false);
+  const [whatIsCmcGoPanelOpen, setWhatIsCmcGoPanelOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+
+  const closeMenuPanels = () => {
+    setShareModalOpen(false);
+    setEventInfoPanelOpen(false);
+    setAccountPanelOpen(false);
+    setWhatIsCmcGoPanelOpen(false);
+  };
+
+  const openMenuPanel = (
+    panel: "share" | "eventInfo" | "account" | "whatIs"
+  ) => {
+    closeMenuPanels();
+    setMenuOpen(false);
+    if (panel === "share") setShareModalOpen(true);
+    if (panel === "eventInfo") setEventInfoPanelOpen(true);
+    if (panel === "account") setAccountPanelOpen(true);
+    if (panel === "whatIs") setWhatIsCmcGoPanelOpen(true);
+  };
 
   const userDisplayName = user?.fullName || user?.name || "Account";
 
@@ -536,34 +564,42 @@ export default function Home() {
   // Only updates viewState if district exists in database (preserves original behavior).
   // Region is extracted from database district, with fallback to DISTRICT_REGION_MAP.
   const handleDistrictSelect = (districtId: string) => {
+    const selectedDistrict = districts.find(d => d.id === districtId);
+    const regionId =
+      selectedDistrict?.region ||
+      extractRegionForViewState(districtId, districts);
+
+    // On mobile with the Table drawer open, update the table filter instead of
+    // opening the district panel.  The table will scope to the selected district
+    // and expand its campuses/people.
+    if (isMobile && peoplePanelOpen) {
+      const campusIds = allCampuses
+        .filter(c => c.districtId === districtId)
+        .map(c => c.id);
+      setPeoplePanelOpenFilter({ districtId, regionId, campusIds });
+      // Expand drawer to full so the user can see district details
+      setPeoplePanelSnapKey(k => k + 1);
+      return;
+    }
+
     setSelectedDistrictId(districtId);
 
-    const selectedDistrict = districts.find(d => d.id === districtId);
-    if (selectedDistrict) {
-      // Extract region: database first, then fallback map
-      const regionId =
-        selectedDistrict.region ||
-        extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
-    } else {
-      // If district not in database, still update viewState but use fallback region
-      const regionId = extractRegionForViewState(districtId, districts);
-      const newViewState: ViewState = {
-        mode: "district",
-        districtId: districtId,
-        regionId: regionId,
-        campusId: null,
-        panelOpen: true,
-      };
-      setViewState(newViewState);
+    if (peoplePanelOpen) {
+      const campusIds = allCampuses
+        .filter(c => c.districtId === districtId)
+        .map(c => c.id);
+      setPeoplePanelOpenFilter({ districtId, regionId, campusIds });
+      setPeoplePanelOpen(true);
     }
+
+    const newViewState: ViewState = {
+      mode: "district",
+      districtId: districtId,
+      regionId: regionId,
+      campusId: null,
+      panelOpen: true,
+    };
+    setViewState(newViewState);
   };
 
   // Region selection: Sets ViewMode to "region", clears district/campus scope
@@ -639,6 +675,12 @@ export default function Home() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Escape to close panels and modals (in priority order: modals first, then panels)
       if (e.key === "Escape") {
+        // If a Radix popover/dropdown/select is currently open, let Radix handle
+        // the Escape key — don't also close the underlying panel/drawer.
+        const openRadixPopup = document.querySelector(
+          '[data-radix-popper-content-wrapper], [data-state="open"][data-radix-select-content]'
+        );
+        if (openRadixPopup) return;
         // Close modals first (they're typically on top)
         if (cropModalOpen) {
           setCropModalOpen(false);
@@ -651,10 +693,20 @@ export default function Home() {
           return;
         }
         // Close all hamburger menu related modals and menu
-        if (shareModalOpen || loginModalOpen || menuOpen) {
+        if (
+          shareModalOpen ||
+          loginModalOpen ||
+          menuOpen ||
+          whatIsCmcGoPanelOpen ||
+          eventInfoPanelOpen ||
+          accountPanelOpen
+        ) {
           if (shareModalOpen) setShareModalOpen(false);
           if (loginModalOpen) setLoginModalOpen(false);
           if (menuOpen) setMenuOpen(false);
+          if (whatIsCmcGoPanelOpen) setWhatIsCmcGoPanelOpen(false);
+          if (eventInfoPanelOpen) setEventInfoPanelOpen(false);
+          if (accountPanelOpen) setAccountPanelOpen(false);
           e.preventDefault();
           return;
         }
@@ -785,7 +837,7 @@ export default function Home() {
     >
       {/* Header - Chi Alpha Toolbar Style */}
       <header
-        className="relative z-[200] flex items-center px-2 sm:px-4 group flex-shrink-0"
+        className="relative z-[250] flex items-center px-2 sm:px-4 group flex-shrink-0"
         style={{
           height: isMobile ? "52px" : `${headerHeight}px`,
           minHeight: isMobile ? "52px" : "52px",
@@ -883,7 +935,7 @@ export default function Home() {
             size="sm"
             onClick={e => {
               e.preventDefault();
-              setLocation("/what-is-cmc-go");
+              openMenuPanel("whatIs");
             }}
             className="hidden sm:flex text-white/80 hover:text-white hover:bg-red-700"
           >
@@ -932,8 +984,7 @@ export default function Home() {
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setLocation("/what-is-cmc-go");
-                      setMenuOpen(false);
+                      openMenuPanel("whatIs");
                     }}
                     className="w-full px-4 py-3 sm:hidden text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
@@ -944,8 +995,7 @@ export default function Home() {
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setShareModalOpen(true);
-                      setMenuOpen(false);
+                      openMenuPanel("share");
                     }}
                     className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                   >
@@ -955,8 +1005,7 @@ export default function Home() {
                   <button
                     onClick={e => {
                       e.stopPropagation();
-                      setEventInfoPanelOpen(true);
-                      setMenuOpen(false);
+                      openMenuPanel("eventInfo");
                     }}
                     className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors flex items-center gap-3"
                   >
@@ -984,8 +1033,7 @@ export default function Home() {
                       <button
                         onClick={e => {
                           e.stopPropagation();
-                          setAccountPanelOpen(true);
-                          setMenuOpen(false);
+                          openMenuPanel("account");
                         }}
                         className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
                       >
@@ -1051,10 +1099,11 @@ export default function Home() {
           >
             {(selectedDistrictId || nationalPanelOpen) && (
               <>
-                {/* Resize Handle (desktop only) */}
+                {/* Resize Handle / Drawer Edge (desktop only) */}
                 <div
-                  className="absolute top-0 right-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
+                  className="absolute top-0 right-0 w-3 h-full cursor-col-resize z-10 border-l border-gray-300 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors"
                   onMouseDown={handleDistrictMouseDown}
+                  aria-label="Resize panel"
                 />
                 <AnimatePresence mode="wait">
                   {selectedDistrictId && selectedDistrict && (
@@ -1081,7 +1130,10 @@ export default function Home() {
                         utils.districts.list.invalidate();
                         utils.people.list.invalidate();
                       }}
-                      onOpenTable={() => setPeoplePanelOpen(true)}
+                      onOpenTable={filter => {
+                        setPeoplePanelOpenFilter(filter ?? null);
+                        setPeoplePanelOpen(true);
+                      }}
                     />
                   )}
                 </AnimatePresence>
@@ -1117,6 +1169,7 @@ export default function Home() {
                 ? "National Team"
                 : (selectedDistrict?.name ?? "District")
             }
+            hideTitleCloseInCorner={!nationalPanelOpen}
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1142,7 +1195,10 @@ export default function Home() {
                   utils.districts.list.invalidate();
                   utils.people.list.invalidate();
                 }}
-                onOpenTable={() => setPeoplePanelOpen(true)}
+                onOpenTable={filter => {
+                  setPeoplePanelOpenFilter(filter ?? null);
+                  setPeoplePanelOpen(true);
+                }}
               />
             )}
             {nationalPanelOpen && (
@@ -1155,16 +1211,29 @@ export default function Home() {
           </MobileDrawer>
         )}
 
-        {/* Center Map Area - fills remaining space so map is full size */}
+        {/* Center Map Area - fills remaining space so map is full size; on mobile with drawer open, constrain to top half so map fits fully and stays clickable above backdrop */}
         <div
-          className="flex-1 relative overflow-hidden map-container-mobile bg-white"
-          style={{ minWidth: 0 }}
+          className={`flex-1 relative overflow-hidden map-container-mobile bg-white ${isMobile && (selectedDistrictId || nationalPanelOpen || peoplePanelOpen) ? "z-[215]" : ""}`}
+          style={{
+            minWidth: 0,
+            ...(isMobile && {
+              maxHeight:
+                selectedDistrictId || nationalPanelOpen || peoplePanelOpen
+                  ? "45dvh"
+                  : "calc(100dvh - 52px)",
+              flexShrink:
+                selectedDistrictId || nationalPanelOpen || peoplePanelOpen
+                  ? 0
+                  : 1,
+              transition: "max-height 0.35s ease-out",
+            }),
+          }}
         >
           {/* Map wrapper - centers the map and gives it full height */}
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              padding: isMobile ? "0.5rem" : "0.75rem 2.75rem",
+              padding: isMobile ? 0 : "0.75rem 2.75rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
@@ -1187,6 +1256,7 @@ export default function Home() {
               onDistrictSelect={handleDistrictSelect}
               viewState={viewState}
               scopeFilter={currentScope}
+              isTableOpen={peoplePanelOpen}
               userRegionId={
                 currentScope === "REGION" && selectedRegion
                   ? selectedRegion
@@ -1254,7 +1324,13 @@ export default function Home() {
                   className="absolute top-0 left-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
                   onMouseDown={handlePeopleMouseDown}
                 />
-                <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
+                <PeoplePanel
+                  onClose={() => {
+                    setPeoplePanelOpen(false);
+                    setPeoplePanelOpenFilter(null);
+                  }}
+                  initialFilter={peoplePanelOpenFilter}
+                />
               </>
             )}
           </div>
@@ -1264,40 +1340,64 @@ export default function Home() {
         {isMobile && (
           <MobileDrawer
             isOpen={peoplePanelOpen}
-            onClose={() => setPeoplePanelOpen(false)}
+            onClose={() => {
+              setPeoplePanelOpen(false);
+              setPeoplePanelOpenFilter(null);
+            }}
             title="Table"
+            initialSnap="full"
+            coverToolbar
+            closeOnBackdropClick={false}
+            snapOverride={peoplePanelSnapKey ? { snap: "full", key: peoplePanelSnapKey } : undefined}
           >
-            <PeoplePanel onClose={() => setPeoplePanelOpen(false)} />
+            <PeoplePanel
+              onClose={() => {
+                setPeoplePanelOpen(false);
+                setPeoplePanelOpenFilter(null);
+              }}
+              initialFilter={peoplePanelOpenFilter}
+            />
           </MobileDrawer>
         )}
       </main>
 
-      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile */}
-      {!peoplePanelOpen && (
+      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
+      {!peoplePanelOpen && (!isMobile || !(selectedDistrictId || nationalPanelOpen)) && (
         <Tooltip>
           <TooltipTrigger asChild>
             {isMobile ? (
-              /* Mobile: FAB with safe area for notched devices */
-              <button
-                onClick={() => {
-                  if (!user) {
-                    setLoginModalOpen(true);
-                    return;
-                  }
-                  setPeoplePanelOpen(true);
-                }}
-                className={`
-                  mobile-fab-safe fixed z-30 bg-black hover:bg-red-700 active:bg-red-800 text-white px-6 py-3.5 rounded-full font-medium text-sm shadow-xl transition-all min-h-[48px] min-w-[48px] flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black
-                  ${!user ? "opacity-70" : ""}
-                `}
-                style={{
-                  bottom:
-                    "max(20px, calc(env(safe-area-inset-bottom, 0px) + 16px))",
-                  right: "max(16px, env(safe-area-inset-right, 0px))",
-                }}
+              /* Mobile: Full-width bar at bottom of screen */
+              <div
+                className="fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2"
               >
-                <span className="whitespace-nowrap select-none">Table</span>
-              </button>
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setLoginModalOpen(true);
+                      return;
+                    }
+                    setPeoplePanelOpenFilter(
+                      currentScope === "REGION" && selectedRegion
+                        ? { regionId: selectedRegion }
+                        : currentScope === "DISTRICT" && scopeSelectedDistrict
+                          ? {
+                              regionId: selectedRegion ?? undefined,
+                              districtId: scopeSelectedDistrict,
+                            }
+                          : null
+                    );
+                    setPeoplePanelOpen(true);
+                  }}
+                  className={`
+                    w-full py-4 bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center
+                    ${!user ? "opacity-70" : ""}
+                  `}
+                >
+                  <span className="inline-block whitespace-nowrap select-none">
+                    Table
+                  </span>
+                </button>
+              </div>
             ) : (
               /* Desktop: Slide-out tab on right edge; shrinks when district panel open */
               <div
@@ -1310,6 +1410,16 @@ export default function Home() {
                       setLoginModalOpen(true);
                       return;
                     }
+                    setPeoplePanelOpenFilter(
+                      currentScope === "REGION" && selectedRegion
+                        ? { regionId: selectedRegion }
+                        : currentScope === "DISTRICT" && scopeSelectedDistrict
+                          ? {
+                              regionId: selectedRegion ?? undefined,
+                              districtId: scopeSelectedDistrict,
+                            }
+                          : null
+                    );
                     setPeoplePanelOpen(true);
                   }}
                   className={`
@@ -1418,6 +1528,10 @@ export default function Home() {
       <EventInfoPanel
         open={eventInfoPanelOpen}
         onOpenChange={setEventInfoPanelOpen}
+      />
+      <WhatIsCmcGoPanel
+        open={whatIsCmcGoPanelOpen}
+        onOpenChange={setWhatIsCmcGoPanelOpen}
       />
     </div>
   );

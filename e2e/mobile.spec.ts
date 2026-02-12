@@ -117,6 +117,143 @@ test.describe("Mobile UI", () => {
     }
   });
 
+  test("metrics section aligns right on mobile (screenshot verification)", async ({
+    page,
+  }) => {
+    await loginAsAdmin(page);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+    // Wait for map and metrics to load
+    await expect(
+      page
+        .locator('path[id="Colorado"], path[inkscape\\:label="Colorado"]')
+        .first()
+    ).toBeAttached({ timeout: 10_000 });
+
+    // Metrics label and line should be visible
+    const metricsLabel = page.getByText("Metrics", { exact: true });
+    await expect(metricsLabel).toBeVisible({ timeout: 5000 });
+
+    // Chi Alpha or region label should be visible
+    const brandLabel = page.locator(
+      'span.font-beach:has-text("Chi Alpha"), span.font-beach:has-text("Texico"), span.font-beach'
+    );
+    await expect(brandLabel.first()).toBeVisible({ timeout: 5000 });
+
+    // Take screenshot for visual verification of alignment
+    await page.screenshot({
+      path: "e2e/screenshots/mobile-metrics-alignment.png",
+    });
+  });
+
+  test("table drawer filter menus open above drawer (screenshot verification)", async ({
+    page,
+  }) => {
+    await loginAsAdmin(page);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+    // Open Table drawer
+    const openTableButton = page.getByRole("button", { name: "Table" }).first();
+    await expect(openTableButton).toBeVisible({ timeout: 10_000 });
+    await openTableButton.click();
+
+    const tableDrawer = page.locator(".mobile-drawer-bottom");
+    await expect(tableDrawer).toBeVisible({ timeout: 10_000 });
+    await expect(
+      tableDrawer.getByRole("heading", { name: "Table", exact: true })
+    ).toBeVisible({ timeout: 10_000 });
+
+    // SCOPE
+    const scopeTrigger = tableDrawer
+      .getByRole("button", { name: "National", exact: true })
+      .first();
+    await expect(scopeTrigger).toBeVisible({ timeout: 10_000 });
+    await scopeTrigger.click();
+
+    const scopePopover = page
+      .locator('[data-slot="popover-content"]')
+      .filter({
+        has: page.getByRole("button", { name: "National", exact: true }),
+      })
+      .first();
+    await expect(scopePopover).toBeVisible({ timeout: 10_000 });
+    await expect(
+      scopePopover.getByRole("button", { name: "National", exact: true })
+    ).toBeVisible();
+    const scopeZ = await scopePopover.evaluate(el =>
+      Number.parseInt(window.getComputedStyle(el).zIndex || "0", 10)
+    );
+    expect(scopeZ).toBeGreaterThanOrEqual(260);
+    await page.screenshot({
+      path: "e2e/screenshots/mobile-table-scope-open.png",
+    });
+
+    // Close scope menu
+    await page.keyboard.press("Escape");
+    await expect(scopePopover).toBeHidden();
+    await expect(
+      tableDrawer.getByRole("heading", { name: "Table", exact: true })
+    ).toBeVisible();
+
+    // FILTER
+    const filterTrigger = tableDrawer
+      .getByRole("button", { name: /filter/i })
+      .first();
+    await expect(filterTrigger).toBeVisible({ timeout: 10_000 });
+    await filterTrigger.click();
+
+    const filterPopover = page
+      .locator('[data-slot="popover-content"]')
+      .filter({ hasText: "Status" })
+      .first();
+    await expect(filterPopover).toBeVisible({ timeout: 10_000 });
+    const filterZ = await filterPopover.evaluate(el =>
+      Number.parseInt(window.getComputedStyle(el).zIndex || "0", 10)
+    );
+    expect(filterZ).toBeGreaterThanOrEqual(260);
+    await page.screenshot({
+      path: "e2e/screenshots/mobile-table-filter-open.png",
+    });
+
+    // Click a filter option and ensure the Table drawer stays open
+    await filterPopover.getByText("Yes", { exact: true }).click();
+    await expect(
+      tableDrawer.getByRole("heading", { name: "Table", exact: true })
+    ).toBeVisible();
+
+    // Close filter menu
+    await page.keyboard.press("Escape");
+    await expect(filterPopover).toBeHidden();
+
+    // SORT BY
+    const sortTrigger = tableDrawer
+      .getByRole("button", { name: /greatest first/i })
+      .first();
+    await expect(sortTrigger).toBeVisible({ timeout: 10_000 });
+    await sortTrigger.click();
+
+    const sortPopover = page
+      .locator('[data-slot="popover-content"]')
+      .filter({ hasText: "Alphabetical" })
+      .first();
+    await expect(sortPopover).toBeVisible({ timeout: 10_000 });
+    const sortZ = await sortPopover.evaluate(el =>
+      Number.parseInt(window.getComputedStyle(el).zIndex || "0", 10)
+    );
+    expect(sortZ).toBeGreaterThanOrEqual(260);
+    await page.screenshot({
+      path: "e2e/screenshots/mobile-table-sort-open.png",
+    });
+
+    // Select an option and ensure the drawer stays open
+    await sortPopover.getByRole("button", { name: "Alphabetical" }).click();
+    await expect(
+      tableDrawer.getByRole("heading", { name: "Table", exact: true })
+    ).toBeVisible();
+  });
+
   test("mobile viewport displays correctly sized touch targets", async ({
     page,
   }) => {

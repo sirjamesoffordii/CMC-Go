@@ -613,7 +613,7 @@ export function PersonDetailsDialog({
           defaultSnap={0}
           snapPoints={[100]}
           closeOnBackdrop={true}
-          showCloseButton={false}
+          showCloseButton={true}
           showSnapPoints={false}
           compactHeader={true}
           fullScreen={true}

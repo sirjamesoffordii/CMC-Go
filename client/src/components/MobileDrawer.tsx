@@ -1,6 +1,13 @@
 import { X } from "lucide-react";
-import { useEffect, useCallback, useState } from "react";
-import { motion, AnimatePresence, PanInfo, useAnimation } from "framer-motion";
+import { useCallback, useState, useEffect } from "react";
+import {
+  motion,
+  AnimatePresence,
+  PanInfo,
+  useAnimation,
+  useDragControls,
+} from "framer-motion";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -11,10 +18,24 @@ interface MobileDrawerProps {
   fullContent?: boolean;
   /** Hide the header row (title + close button). Drag handle remains. */
   showHeader?: boolean;
+  /** Hide title only, show close button in top-right corner with no padding (for district panel) */
+  hideTitleCloseInCorner?: boolean;
+  /** Initial snap when opening: "half" (55dvh) or "full" (100dvh). Table uses "full". */
+  initialSnap?: "half" | "full";
+  /** When true, drawer and backdrop use higher z-index to cover the main toolbar (e.g. table full screen). */
+  coverToolbar?: boolean;
+  /** When false, backdrop does not close the drawer on click. */
+  closeOnBackdropClick?: boolean;
+  /** When changed, forces the drawer to this snap position (use a counter/key to re-trigger the same value). */
+  snapOverride?: { snap: "half" | "full"; key: number };
 }
 
-const SWIPE_CLOSE_THRESHOLD = 80; // pixels to swipe down before closing
-const SWIPE_VELOCITY_THRESHOLD = 400; // velocity in px/s for quick swipes
+const SWIPE_CLOSE_THRESHOLD = 80;
+const SWIPE_VELOCITY_THRESHOLD = 400;
+
+/** Height percentages for snap points */
+const SNAP_HALF = 55; // half-screen default
+const SNAP_FULL = 100; // full-screen
 
 export function MobileDrawer({
   isOpen,
@@ -23,161 +44,158 @@ export function MobileDrawer({
   title,
   fullContent = true,
   showHeader = true,
+  hideTitleCloseInCorner = false,
+  initialSnap = "half",
+  coverToolbar = false,
+  closeOnBackdropClick = true,
+  snapOverride,
 }: MobileDrawerProps) {
   const controls = useAnimation();
-  const [contentHeight, setContentHeight] = useState("70vh");
+  const dragControls = useDragControls();
+  const [snap, setSnap] = useState<"half" | "full">(initialSnap);
 
-  // Calculate safe height on mount and resize
-  useEffect(() => {
-    const calculateHeight = () => {
-      // Use visualViewport for better mobile keyboard handling
-      const vh = window.visualViewport?.height || window.innerHeight;
-      const headerOffset = 56; // Leave room for header (52px + 4px buffer)
-      const maxHeight = Math.max(240, vh - headerOffset);
-      setContentHeight(`${maxHeight}px`);
-    };
+  useBodyScrollLock(isOpen);
 
-    if (isOpen) {
-      calculateHeight();
-      window.addEventListener("resize", calculateHeight);
-      window.visualViewport?.addEventListener("resize", calculateHeight);
-    }
-
-    return () => {
-      window.removeEventListener("resize", calculateHeight);
-      window.visualViewport?.removeEventListener("resize", calculateHeight);
-    };
-  }, [isOpen]);
-
-  // Prevent body scroll when drawer is open
+  // Reset snap and animation when drawer opens
   useEffect(() => {
     if (isOpen) {
-      const scrollY = window.scrollY;
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = "0";
-      document.body.style.right = "0";
-      document.body.style.overflow = "hidden";
-    } else {
-      const scrollY = document.body.style.top;
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.overflow = "";
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY || "0", 10) * -1);
-      }
+      setSnap(initialSnap);
+      controls.start({
+        height: initialSnap === "full" ? `${SNAP_FULL}dvh` : `${SNAP_HALF}dvh`,
+      });
     }
-    return () => {
-      document.body.style.position = "";
-      document.body.style.top = "";
-      document.body.style.left = "";
-      document.body.style.right = "";
-      document.body.style.overflow = "";
-    };
-  }, [isOpen]);
+  }, [isOpen, controls, initialSnap]);
 
-  // Reset animation when drawer opens
+  // External snap override (e.g. expand to full when district selected from map)
   useEffect(() => {
-    if (isOpen) {
-      controls.start({ y: 0 });
+    if (snapOverride && isOpen) {
+      setSnap(snapOverride.snap);
+      controls.start({
+        height: snapOverride.snap === "full" ? `${SNAP_FULL}dvh` : `${SNAP_HALF}dvh`,
+      });
     }
-  }, [isOpen, controls]);
+  }, [snapOverride, isOpen, controls]);
 
   const handleDragEnd = useCallback(
     (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-      const shouldClose =
+      const swipedDown =
         info.offset.y > SWIPE_CLOSE_THRESHOLD ||
         info.velocity.y > SWIPE_VELOCITY_THRESHOLD;
+      const swipedUp =
+        info.offset.y < -SWIPE_CLOSE_THRESHOLD ||
+        info.velocity.y < -SWIPE_VELOCITY_THRESHOLD;
 
-      if (shouldClose) {
-        // Animate out before closing
-        controls.start({ y: "100%" }).then(onClose);
+      if (snap === "half") {
+        if (swipedDown) {
+          // Half → close
+          controls.start({ height: "0dvh" }).then(onClose);
+          return;
+        }
+        if (swipedUp) {
+          // Half → full
+          setSnap("full");
+          controls.start({ height: `${SNAP_FULL}dvh` });
+          return;
+        }
+        // Snap back to half
+        controls.start({ height: `${SNAP_HALF}dvh` });
       } else {
-        // Snap back to open position
-        controls.start({ y: 0 });
+        // Currently full
+        if (swipedDown) {
+          // Full → half
+          setSnap("half");
+          controls.start({ height: `${SNAP_HALF}dvh` });
+          return;
+        }
+        // Snap back to full
+        controls.start({ height: `${SNAP_FULL}dvh` });
       }
     },
-    [controls, onClose]
+    [controls, onClose, snap]
   );
+
+  const isFullScreen = snap === "full";
+  const shouldCoverToolbar = coverToolbar || isFullScreen;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Transparent backdrop — no blur, no darkening so map stays visible */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/50 z-[55] md:hidden backdrop-blur-sm"
-            onClick={onClose}
+            className={`fixed inset-0 md:hidden ${shouldCoverToolbar ? "z-[255]" : "z-[210]"}`}
+            onClick={closeOnBackdropClick ? onClose : undefined}
             aria-hidden="true"
           />
 
-          {/* Drawer */}
+          {/* Drawer — pinned to bottom, height animated between snap points */}
           <motion.div
-            initial={{ y: "100%" }}
+            initial={{ height: "0dvh" }}
             animate={controls}
-            exit={{ y: "100%" }}
-            transition={{
-              type: "spring",
-              damping: 30,
-              stiffness: 400,
-            }}
+            exit={{ height: "0dvh" }}
+            transition={{ type: "spring", damping: 30, stiffness: 400 }}
             drag="y"
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.3 }}
+            dragElastic={{ top: 0.15, bottom: 0.3 }}
             onDragEnd={handleDragEnd}
-            className="fixed inset-x-0 bottom-0 bg-white z-[60] md:hidden rounded-t-3xl shadow-2xl flex flex-col mobile-drawer-bottom"
+            className={[
+              "fixed inset-x-0 bottom-0 bg-white md:hidden flex flex-col mobile-drawer-bottom overflow-hidden",
+              shouldCoverToolbar ? "z-[260]" : "z-[220]",
+              isFullScreen ? "" : "rounded-t-[1.25rem]",
+            ].join(" ")}
             style={{
-              height: contentHeight,
-              maxHeight: contentHeight,
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
+              boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
             }}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={title ? "drawer-title" : undefined}
           >
-            {/* Drag Handle Area - larger touch target */}
+            {/* Dark handle bar with X button */}
             <div
-              className="flex justify-center pt-4 pb-2 cursor-grab active:cursor-grabbing touch-none shrink-0"
-              style={{ minHeight: "32px" }}
+              onPointerDown={e => {
+                if (!(e.target instanceof HTMLElement) || !e.target.closest("button")) {
+                  dragControls.start(e);
+                }
+              }}
+              className="relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none bg-black"
+              style={{ minHeight: "40px", padding: "12px 0 8px", touchAction: "none" }}
             >
-              <div
-                className="w-14 h-1.5 bg-slate-300 rounded-full"
-                aria-hidden="true"
-              />
+              <div className="w-10 h-1 bg-slate-500 rounded-full" aria-hidden="true" />
+              <button
+                onClick={e => { e.stopPropagation(); onClose(); }}
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 active:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Header - touch-friendly with better spacing */}
-            {showHeader && (
-              <div className="px-4 py-3 flex items-center justify-between shrink-0 border-b border-slate-100 bg-slate-50/80">
-                {title && (
-                  <h2
-                    id="drawer-title"
-                    className="text-lg font-semibold text-slate-900 truncate pr-3 flex-1"
-                  >
-                    {title}
-                  </h2>
-                )}
-                <button
-                  onClick={onClose}
-                  className="ml-auto -mr-1 p-3 hover:bg-slate-200 active:bg-slate-300 rounded-full transition-colors flex items-center justify-center min-w-[48px] min-h-[48px]"
-                  aria-label="Close panel"
-                >
-                  <X className="w-5 h-5 text-slate-600" />
-                </button>
+            {/* Title header — shown for table/national, hidden for district panel */}
+            {showHeader && title && !hideTitleCloseInCorner && (
+              <div
+                onPointerDown={e => {
+                  if (!(e.target instanceof HTMLElement) || !e.target.closest("button")) {
+                    dragControls.start(e);
+                  }
+                }}
+                style={{ touchAction: "none" }}
+                className="px-4 py-2.5 flex items-center shrink-0 border-b border-slate-200 bg-slate-50 cursor-grab active:cursor-grabbing"
+              >
+                <h2 className="text-base font-semibold text-slate-900 truncate">
+                  {title}
+                </h2>
               </div>
             )}
 
-            {/* Content - scrollable with momentum on iOS */}
+            {/* Content */}
             <div
-              className={`flex-1 overflow-y-auto overscroll-contain scrollbar-hide mobile-drawer-content ${
-                fullContent ? "pb-4" : ""
-              }`}
+              className={`flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-hide mobile-drawer-content ${fullContent ? "pb-4" : ""}`}
             >
               {children}
             </div>
