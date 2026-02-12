@@ -2,8 +2,9 @@ import { Person } from "../../../drizzle/schema";
 import { User, Edit2 } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { PersonTooltip } from "./PersonTooltip";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { NeedIndicator } from "./NeedIndicator";
 import { trpc } from "@/lib/trpc";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
@@ -45,10 +46,14 @@ export function PersonIcon({
   canInteract = true,
 }: PersonIconProps) {
   const { isAuthenticated: _isAuthenticated } = usePublicAuth();
+  const isMobile = useIsMobile();
   const [isHovered, setIsHovered] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+  const [mobileTooltipOpen, setMobileTooltipOpen] = useState(false);
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLDivElement>(null);
 
@@ -81,6 +86,7 @@ export function PersonIcon({
     firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
 
   const handleNameMouseEnter = (_e: React.MouseEvent) => {
+    if (isMobile) return;
     setIsHovered(true);
     if (iconRef.current) {
       const rect = iconRef.current.getBoundingClientRect();
@@ -89,16 +95,58 @@ export function PersonIcon({
   };
 
   const handleNameMouseLeave = () => {
+    if (isMobile) return;
     setIsHovered(false);
     setTooltipPos(null);
   };
 
   const handleNameMouseMove = (_e: React.MouseEvent) => {
+    if (isMobile) return;
     if (iconRef.current && isHovered) {
       const rect = iconRef.current.getBoundingClientRect();
       setTooltipPos({ x: rect.right, y: rect.top });
     }
   };
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handleNamePointerDown = (e: React.PointerEvent) => {
+    if (!isMobile || !canInteract) return;
+    if (e.pointerType === "mouse") return;
+
+    longPressTriggeredRef.current = false;
+    clearLongPressTimer();
+
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setIsHovered(true);
+      setTooltipPos({ x: 0, y: 0 });
+      setMobileTooltipOpen(true);
+    }, 450);
+  };
+
+  const handleNamePointerUpOrCancel = () => {
+    if (!isMobile) return;
+    clearLongPressTimer();
+    if (longPressTriggeredRef.current) return;
+    setIsHovered(false);
+    setTooltipPos(null);
+    window.setTimeout(() => {
+      longPressTriggeredRef.current = false;
+    }, 0);
+  };
+
+  const dismissMobileTooltip = useCallback(() => {
+    setMobileTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+    longPressTriggeredRef.current = false;
+  }, []);
 
   const handleStatusClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -206,20 +254,36 @@ export function PersonIcon({
       </div>
       {/* Person Tooltip */}
       {isHovered && tooltipPos && (
-        <PersonTooltip
-          person={person}
-          need={
-            personNeed
-              ? {
-                  type: personNeed.type,
-                  description: personNeed.description,
-                  amount: personNeed.amount,
-                  isActive: personNeed.isActive,
-                }
-              : null
-          }
-          position={tooltipPos}
-        />
+        <>
+          {isMobile && mobileTooltipOpen && (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Close tooltip"
+              className="fixed inset-0 z-[99998] bg-black/20"
+              onClick={dismissMobileTooltip}
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === "Escape")
+                  dismissMobileTooltip();
+              }}
+            />
+          )}
+          <PersonTooltip
+            person={person}
+            need={
+              personNeed
+                ? {
+                    type: personNeed.type,
+                    description: personNeed.description,
+                    amount: personNeed.amount,
+                    isActive: personNeed.isActive,
+                  }
+                : null
+            }
+            position={tooltipPos}
+            centered={isMobile}
+          />
+        </>
       )}
     </>
   );

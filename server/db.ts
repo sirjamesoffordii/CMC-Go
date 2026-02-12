@@ -1470,6 +1470,38 @@ export async function getNeedsAggregateSummary() {
   };
 }
 
+/**
+ * Get aggregate needs summary for a region (public - no person identifiers).
+ * Returns total needs count, met needs count, and financial amounts (active + met).
+ */
+export async function getRegionNeedsSummary(region: string) {
+  const db = await getDb();
+  if (!db)
+    return { totalNeeds: 0, metNeeds: 0, totalFinancial: 0, metFinancial: 0 };
+
+  const effectiveDistrictId = sql<string>`COALESCE(${people.primaryDistrictId}, ${campuses.districtId})`;
+
+  const result = await db
+    .select({
+      totalNeeds: sql<number>`COUNT(${needs.id})`,
+      metNeeds: sql<number>`COALESCE(SUM(CASE WHEN ${needs.isActive} = false THEN 1 ELSE 0 END), 0)`,
+      totalAmount: sql<number>`COALESCE(SUM(${needs.amount}), 0)`,
+      metAmount: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
+    })
+    .from(needs)
+    .innerJoin(people, eq(needs.personId, people.personId))
+    .leftJoin(campuses, eq(people.primaryCampusId, campuses.id))
+    .leftJoin(districts, eq(effectiveDistrictId, districts.id))
+    .where(eq(districts.region, region));
+
+  return {
+    totalNeeds: Number(result[0]?.totalNeeds) || 0,
+    metNeeds: Number(result[0]?.metNeeds) || 0,
+    totalFinancial: Number(result[0]?.totalAmount) || 0,
+    metFinancial: Number(result[0]?.metAmount) || 0,
+  };
+}
+
 export async function getRegionMetrics(region: string) {
   const db = await getDb();
   if (!db) return { going: 0, maybe: 0, notGoing: 0, notInvited: 0, total: 0 };

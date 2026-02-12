@@ -28,10 +28,11 @@ interface InteractiveMapProps {
   scopeFilter?: ScopeLevel; // Filter map display by scope level
   userRegionId?: string | null; // User's region for REGION scope filtering
   userDistrictId?: string | null; // User's district for DISTRICT scope filtering
+  isTableOpen?: boolean; // Table drawer open (mobile)
 }
 
-// Base region label positions - closest to map (for 1 metric active)
-// The map roughly occupies: x: 180-880, y: 120-500 in the 960x600 viewBox
+// Base region label positions - outside map bounds (x: 180-880, y: 120-500 in 960x600 viewBox)
+// Metrics must stay clear of map SVG; positions chosen to be proximate to each region
 const baseRegionPositions: Record<
   string,
   {
@@ -40,24 +41,24 @@ const baseRegionPositions: Record<
     labelDirection: "above" | "below" | "left" | "right";
   }
 > = {
-  // TOP ROW - pushed away from map edge to prevent overlap
-  Northwest: { baseX: 200, baseY: 80, labelDirection: "above" },
-  "Big Sky": { baseX: 380, baseY: 80, labelDirection: "above" },
-  "Great Plains North": { baseX: 540, baseY: 80, labelDirection: "above" },
-  "Great Plains South": { baseX: 680, baseY: 80, labelDirection: "above" },
-  "Great Lakes": { baseX: 780, baseY: 100, labelDirection: "above" },
+  // TOP ROW - above map (y < 120); baseY 65 keeps metric block bottom above map top
+  Northwest: { baseX: 200, baseY: 65, labelDirection: "above" },
+  "Big Sky": { baseX: 380, baseY: 65, labelDirection: "above" },
+  "Great Plains North": { baseX: 540, baseY: 65, labelDirection: "above" },
+  "Great Plains South": { baseX: 680, baseY: 65, labelDirection: "above" },
+  "Great Lakes": { baseX: 780, baseY: 65, labelDirection: "above" },
 
-  // RIGHT SIDE - pushed away from map edge
-  Northeast: { baseX: 900, baseY: 200, labelDirection: "right" },
-  "Mid-Atlantic": { baseX: 900, baseY: 330, labelDirection: "right" },
-  Southeast: { baseX: 915, baseY: 470, labelDirection: "right" },
+  // RIGHT SIDE - right of map (x > 880); baseX 920 keeps block in viewBox (960) and clear
+  Northeast: { baseX: 920, baseY: 200, labelDirection: "right" },
+  "Mid-Atlantic": { baseX: 920, baseY: 330, labelDirection: "right" },
+  Southeast: { baseX: 920, baseY: 470, labelDirection: "right" },
 
-  // LEFT SIDE - pushed away from map edge
+  // LEFT SIDE - left of map (x < 140)
   "West Coast": { baseX: 100, baseY: 300, labelDirection: "left" },
 
-  // BOTTOM ROW - closer to map edge
-  Texico: { baseX: 420, baseY: 470, labelDirection: "below" },
-  "South Central": { baseX: 640, baseY: 470, labelDirection: "below" },
+  // BOTTOM ROW - below map (y > 500); baseY 512 keeps block in viewBox (600) with ~12px buffer from map
+  Texico: { baseX: 420, baseY: 512, labelDirection: "below" },
+  "South Central": { baseX: 640, baseY: 512, labelDirection: "below" },
 };
 
 // Map boundaries (from comment: x: 180-880, y: 120-500 in 960x600 viewBox)
@@ -66,6 +67,16 @@ const MAP_BOUNDS = {
   right: 880,
   top: 120,
   bottom: 500,
+  viewBoxHeight: 600,
+};
+
+// Tighter map bounds on mobile so metrics fit within viewBox without overlap
+const MAP_BOUNDS_MOBILE = {
+  left: 100,
+  right: 780, // Leave room for Chi Alpha toggle on right
+  top: 80,
+  bottom: 520,
+  viewBoxWidth: 960,
   viewBoxHeight: 600,
 };
 
@@ -282,13 +293,39 @@ const resolveCollisions = (
   return resolved;
 };
 
+// Mobile-specific position overrides (fit within viewBox, avoid overlap)
+const getMobileBaseOverride = (
+  region: string
+): { baseX?: number; baseY?: number } | null => {
+  switch (region) {
+    case "Northeast":
+    case "Mid-Atlantic":
+    case "Southeast":
+      return { baseX: 820 }; // Right of map (780), stays clear of map SVG
+    case "Northwest":
+    case "Big Sky":
+    case "Great Plains North":
+    case "Great Plains South":
+    case "Great Lakes":
+      return { baseY: 45 }; // Push up to avoid overlap with map top
+    case "West Coast":
+      return { baseX: 70 }; // Pull right slightly to avoid left edge cutoff
+    case "Texico":
+    case "South Central":
+      return { baseY: 512 }; // Below map bottom (520), fits in viewBox
+    default:
+      return null;
+  }
+};
+
 // Dynamic positioning function with collision detection
 const getDynamicPosition = (
   region: string,
   activeMetricCount: number,
   totalHeight: number,
   allRegions: string[],
-  allTotalHeights: Record<string, number>
+  allTotalHeights: Record<string, number>,
+  isMobile?: boolean
 ): {
   labelX: number;
   labelY: number;
@@ -297,14 +334,16 @@ const getDynamicPosition = (
   const base = baseRegionPositions[region];
   if (!base) return { labelX: 0, labelY: 0, labelDirection: "above" };
 
-  let labelX = base.baseX;
-  let labelY = base.baseY;
+  const bounds = isMobile ? MAP_BOUNDS_MOBILE : MAP_BOUNDS;
+  const metricWidth = 80;
+  const mobileOverride = isMobile ? getMobileBaseOverride(region) : null;
+  let labelX = mobileOverride?.baseX ?? base.baseX;
+  let labelY = mobileOverride?.baseY ?? base.baseY;
 
   const isBottomRegion = region === "Texico" || region === "South Central";
 
   // Calculate metric bounds
-  const metricWidth = 80;
-  const metricPadding = 0; // No extra padding from map edge
+  const metricPadding = 15; // Buffer from map SVG to prevent overlap
   const textHeight = totalHeight;
 
   // Check if metrics would overlap with map and calculate required offset
@@ -313,40 +352,40 @@ const getDynamicPosition = (
   switch (base.labelDirection) {
     case "above": {
       const metricBottom = labelY + textHeight / 2;
-      if (metricBottom > MAP_BOUNDS.top - metricPadding) {
-        requiredOffset = metricBottom - (MAP_BOUNDS.top - metricPadding);
+      if (metricBottom > bounds.top - metricPadding) {
+        requiredOffset = metricBottom - (bounds.top - metricPadding);
       }
       labelY -= requiredOffset;
       break;
     }
     case "below": {
       const metricTop = labelY - textHeight / 2;
-      const wouldTouchMap = metricTop < MAP_BOUNDS.bottom + metricPadding;
+      const wouldTouchMap = metricTop < bounds.bottom + metricPadding;
       const wouldGoOffScreen =
-        labelY + textHeight / 2 > MAP_BOUNDS.viewBoxHeight - 15;
+        labelY + textHeight / 2 > bounds.viewBoxHeight - 15;
 
       if (wouldGoOffScreen) {
         requiredOffset =
-          labelY + textHeight / 2 - (MAP_BOUNDS.viewBoxHeight - 15);
+          labelY + textHeight / 2 - (bounds.viewBoxHeight - 15);
         labelY -= requiredOffset;
       } else if (wouldTouchMap) {
-        requiredOffset = MAP_BOUNDS.bottom + metricPadding - metricTop;
+        requiredOffset = bounds.bottom + metricPadding - metricTop;
         labelY += requiredOffset;
       }
       break;
     }
     case "right": {
       const metricLeft = labelX - metricWidth / 2;
-      if (metricLeft < MAP_BOUNDS.right + metricPadding) {
-        requiredOffset = MAP_BOUNDS.right + metricPadding - metricLeft;
+      if (metricLeft < bounds.right + metricPadding) {
+        requiredOffset = bounds.right + metricPadding - metricLeft;
       }
       labelX += requiredOffset;
       break;
     }
     case "left": {
       const metricRight = labelX + metricWidth / 2;
-      if (metricRight > MAP_BOUNDS.left - metricPadding) {
-        requiredOffset = metricRight - (MAP_BOUNDS.left - metricPadding);
+      if (metricRight > bounds.left - metricPadding) {
+        requiredOffset = metricRight - (bounds.left - metricPadding);
       }
       labelX -= requiredOffset;
       break;
@@ -361,8 +400,9 @@ const getDynamicPosition = (
     const rBase = baseRegionPositions[r];
     if (!rBase) return;
 
-    let rX = rBase.baseX;
-    let rY = rBase.baseY;
+    const rMobileOverride = isMobile ? getMobileBaseOverride(r) : null;
+    let rX = rMobileOverride?.baseX ?? rBase.baseX;
+    let rY = rMobileOverride?.baseY ?? rBase.baseY;
     const rHeight = allTotalHeights[r] || 0;
 
     // Apply map boundary adjustments
@@ -370,22 +410,22 @@ const getDynamicPosition = (
     switch (rBase.labelDirection) {
       case "above": {
         const rMetricBottom = rY + rHeight / 2;
-        if (rMetricBottom > MAP_BOUNDS.top - metricPadding) {
-          rOffset = rMetricBottom - (MAP_BOUNDS.top - metricPadding);
+        if (rMetricBottom > bounds.top - metricPadding) {
+          rOffset = rMetricBottom - (bounds.top - metricPadding);
         }
         rY -= rOffset;
         break;
       }
       case "below": {
         const rMetricTop = rY - rHeight / 2;
-        const rWouldTouchMap = rMetricTop < MAP_BOUNDS.bottom + metricPadding;
+        const rWouldTouchMap = rMetricTop < bounds.bottom + metricPadding;
         const rWouldGoOffScreen =
-          rY + rHeight / 2 > MAP_BOUNDS.viewBoxHeight - 15;
+          rY + rHeight / 2 > bounds.viewBoxHeight - 15;
         if (rWouldGoOffScreen) {
-          rOffset = rY + rHeight / 2 - (MAP_BOUNDS.viewBoxHeight - 15);
+          rOffset = rY + rHeight / 2 - (bounds.viewBoxHeight - 15);
           rY -= rOffset;
         } else if (rWouldTouchMap) {
-          rOffset = MAP_BOUNDS.bottom + metricPadding - rMetricTop;
+          rOffset = bounds.bottom + metricPadding - rMetricTop;
           rY += rOffset;
         }
 
@@ -393,7 +433,7 @@ const getDynamicPosition = (
         if (r === "Texico" || r === "South Central") {
           const rLineHeight = activeMetricCount === 1 ? 26 : 22;
           const rLastBaseline = rY + (activeMetricCount - 1) * rLineHeight;
-          const rMaxBaseline = MAP_BOUNDS.viewBoxHeight - 18;
+          const rMaxBaseline = bounds.viewBoxHeight - 18;
           if (rLastBaseline > rMaxBaseline) {
             rY -= rLastBaseline - rMaxBaseline;
           }
@@ -402,16 +442,16 @@ const getDynamicPosition = (
       }
       case "right": {
         const rMetricLeft = rX - metricWidth / 2;
-        if (rMetricLeft < MAP_BOUNDS.right + metricPadding) {
-          rOffset = MAP_BOUNDS.right + metricPadding - rMetricLeft;
+        if (rMetricLeft < bounds.right + metricPadding) {
+          rOffset = bounds.right + metricPadding - rMetricLeft;
         }
         rX += rOffset;
         break;
       }
       case "left": {
         const rMetricRight = rX + metricWidth / 2;
-        if (rMetricRight > MAP_BOUNDS.left - metricPadding) {
-          rOffset = rMetricRight - (MAP_BOUNDS.left - metricPadding);
+        if (rMetricRight > bounds.left - metricPadding) {
+          rOffset = rMetricRight - (bounds.left - metricPadding);
         }
         rX -= rOffset;
         break;
@@ -439,10 +479,65 @@ const getDynamicPosition = (
   ) {
     const lineHeight = activeMetricCount === 1 ? 26 : 22;
     const lastBaseline = labelY + (activeMetricCount - 1) * lineHeight;
-    const maxBaseline = MAP_BOUNDS.viewBoxHeight - 18;
+    const maxBaseline = bounds.viewBoxHeight - 18;
     if (lastBaseline > maxBaseline) {
       labelY -= lastBaseline - maxBaseline;
     }
+  }
+
+  // Mobile: clamp to viewBox edges so metrics never go off-screen or overlap Chi Alpha toggle
+  if (isMobile) {
+    const halfW = metricWidth / 2;
+    const vw = MAP_BOUNDS_MOBILE.viewBoxWidth;
+    const vh = MAP_BOUNDS_MOBILE.viewBoxHeight;
+    const edgePad = 10;
+    const rightSidePad = 180; // Space for Chi Alpha toggle + screen edge (viewBox units)
+    if (base.labelDirection === "right") {
+      labelX = Math.min(labelX, vw - halfW - rightSidePad);
+    } else if (base.labelDirection === "left") {
+      labelX = Math.max(labelX, halfW + edgePad);
+    } else if (base.labelDirection === "above") {
+      const lineH = activeMetricCount === 1 ? 28 : 22;
+      const minY = lineH + edgePad; // region name above needs this space
+      labelY = Math.max(labelY, minY);
+    } else if (base.labelDirection === "below") {
+      const lineH = activeMetricCount === 1 ? 28 : 22;
+      const blockHeight = activeMetricCount * lineH;
+      labelY = Math.min(labelY, vh - blockHeight - edgePad);
+    }
+  }
+
+  // Final clamp: prevent overlap with map SVG
+  const mapPad = 15;
+  const mapPadBelow = 5; // Tighter for below (limited space between map bottom and viewBox)
+  const mapLeft = bounds.left;
+  const mapRight = bounds.right;
+  const mapTop = bounds.top;
+  const mapBottom = bounds.bottom;
+  const vh = "viewBoxHeight" in bounds ? bounds.viewBoxHeight : 600;
+  switch (base.labelDirection) {
+    case "above":
+      if (labelY > mapTop - mapPad) labelY = mapTop - mapPad;
+      break;
+    case "below": {
+      const minY = mapBottom + mapPadBelow;
+      if (labelY < minY) {
+        // Only clamp if block would still fit in viewBox
+        const blockH = (activeMetricCount === 1 ? 26 : 22) * activeMetricCount;
+        if (minY + blockH <= vh - 18) labelY = minY;
+      }
+      break;
+    }
+    case "right":
+      if (labelX - metricWidth / 2 < mapRight + mapPad) {
+        labelX = mapRight + mapPad + metricWidth / 2;
+      }
+      break;
+    case "left":
+      if (labelX + metricWidth / 2 > mapLeft - mapPad) {
+        labelX = mapLeft - mapPad - metricWidth / 2;
+      }
+      break;
   }
 
   return { labelX, labelY, labelDirection: base.labelDirection };
@@ -511,8 +606,10 @@ export const InteractiveMap = memo(function InteractiveMap({
   scopeFilter = "NATIONAL",
   userRegionId,
   userDistrictId,
+  isTableOpen = false,
 }: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
+  const isMobile = useIsMobile();
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -550,19 +647,44 @@ export const InteractiveMap = memo(function InteractiveMap({
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
   const [metricsExpanded, setMetricsExpanded] = useState(true);
+  const shouldCollapseForNationalMobile =
+    isMobile &&
+    scopeFilter === "NATIONAL" &&
+    (!!selectedDistrictId || isTableOpen);
+
+  useEffect(() => {
+    if (shouldCollapseForNationalMobile) {
+      setMetricsExpanded(false);
+    } else {
+      setMetricsExpanded(true);
+    }
+  }, [shouldCollapseForNationalMobile]);
 
   // Line width matches the label above (Chi Alpha / region name)
   const labelRef = useRef<HTMLSpanElement>(null);
+  const labelCRef = useRef<HTMLSpanElement>(null);
   const [labelWidthPx, setLabelWidthPx] = useState(0);
+  const [labelCWidthPx, setLabelCWidthPx] = useState(0);
   useLayoutEffect(() => {
-    const el = labelRef.current;
-    if (!el) return;
+    const labelEl = labelRef.current;
+    const labelCEl = labelCRef.current;
+    if (!labelEl && !labelCEl) return;
     const ro = new ResizeObserver(() => {
-      setLabelWidthPx(el.offsetWidth);
+      if (labelEl) {
+        setLabelWidthPx(labelEl.offsetWidth);
+      }
+      if (labelCEl) {
+        setLabelCWidthPx(labelCEl.offsetWidth);
+      }
     });
-    ro.observe(el);
-    // Initial measurement
-    setLabelWidthPx(el.offsetWidth);
+    if (labelEl) {
+      ro.observe(labelEl);
+      setLabelWidthPx(labelEl.offsetWidth);
+    }
+    if (labelCEl) {
+      ro.observe(labelCEl);
+      setLabelCWidthPx(labelCEl.offsetWidth);
+    }
     return () => ro.disconnect();
   }, []);
 
@@ -588,6 +710,11 @@ export const InteractiveMap = memo(function InteractiveMap({
 
   // Fetch aggregate needs summary (public - no person identifiers)
   const { data: needsAggregate } = trpc.metrics.needsAggregate.useQuery();
+
+  const { data: regionNeeds } = trpc.metrics.regionNeeds.useQuery(
+    { region: userRegionId ?? "" },
+    { enabled: scopeFilter === "REGION" && !!userRegionId }
+  );
 
   // Fetch aggregate district and region metrics (public - everyone can see these)
   // These must be declared BEFORE useMemo hooks that use them
@@ -887,15 +1014,30 @@ export const InteractiveMap = memo(function InteractiveMap({
   };
   const displayedTotals = getDisplayedTotals();
 
+  const needsSummary =
+    scopeFilter === "REGION" && userRegionId ? regionNeeds : needsAggregate;
+
   // Determine the label to display:
-  // - If hovering over a region, show that region name
+  // - NATIONAL scope: show selected district's region when one is selected, else "Chi Alpha"
+  // - If hovering over a region (and not national), show that region name
   // - If in REGION scope filter, show user's region name
   // - If in DISTRICT scope filter, show user's district name
   // - Otherwise show "Chi Alpha"
   const getDisplayLabel = (): string => {
-    if (hoveredRegion) return hoveredRegion;
     if (scopeFilter === "REGION" && userRegionId) return userRegionId;
     if (scopeFilter === "DISTRICT" && userDistrictId) return userDistrictId;
+    if (scopeFilter === "NATIONAL") {
+      // When a district is selected, show its region name (works on mobile with drawer open)
+      if (selectedDistrictId) {
+        const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
+        const region =
+          selectedDistrict?.region || DISTRICT_REGION_MAP[selectedDistrictId];
+        if (region) return region;
+      }
+      if (hoveredRegion) return hoveredRegion;
+      return "Chi Alpha";
+    }
+    if (hoveredRegion) return hoveredRegion;
     return "Chi Alpha";
   };
   const displayedLabel = getDisplayLabel();
@@ -915,6 +1057,14 @@ export const InteractiveMap = memo(function InteractiveMap({
   const clearAllMetrics = () => {
     setActiveMetrics(new Set());
   };
+
+  // Clear hover state when switching to national view so label updates immediately
+  useEffect(() => {
+    if (scopeFilter === "NATIONAL") {
+      setHoveredRegion(null);
+      setHoveredRegionLabel(null);
+    }
+  }, [scopeFilter]);
 
   useEffect(() => {
     // Load SVG content
@@ -977,6 +1127,31 @@ export const InteractiveMap = memo(function InteractiveMap({
     applyMapScale(clickSvg);
     applyMapScale(visualSvg);
 
+    // On mobile: reposition Alaska (closer to Washington, left side) and Hawaii (under Arizona/SoCal)
+    const applyMobileReposition = (svg: SVGSVGElement) => {
+      if (!isMobile) return;
+      const ns = "http://www.inkscape.org/namespaces/inkscape";
+      const getLabel = (p: Element) =>
+        p.getAttributeNS(ns, "label") || p.getAttribute("inkscape:label") || "";
+      const paths = svg.querySelectorAll("path");
+      paths.forEach(p => {
+        const label = getLabel(p);
+        if (label === "Alaska") {
+          (p as SVGPathElement).setAttribute(
+            "transform",
+            "translate(4, 6)"
+          );
+        } else if (label === "Hawaii") {
+          (p as SVGPathElement).setAttribute(
+            "transform",
+            "translate(16, 0)"
+          );
+        }
+      });
+    };
+    applyMobileReposition(clickSvg);
+    applyMobileReposition(visualSvg);
+
     // Get all path elements from both SVGs
     const clickPaths = clickSvg.querySelectorAll("path");
     const visualPaths = visualSvg.querySelectorAll("path");
@@ -989,6 +1164,12 @@ export const InteractiveMap = memo(function InteractiveMap({
       ) ||
       p.getAttribute("id") ||
       "";
+    const getPathBaseTransform = (pathId: string) =>
+      isMobile && pathId === "Alaska"
+        ? "translate(4, 6)"
+        : isMobile && pathId === "Hawaii"
+          ? "translate(16, 0)"
+          : "translateY(0)";
     const pathOrder = Array.from(visualPaths).map(getPathId);
     const movedPathRef: {
       current: {
@@ -1118,9 +1299,12 @@ export const InteractiveMap = memo(function InteractiveMap({
     // Hovered district - brighter with almost no glow (tiny shadow)
     const HOVER_FILTER =
       "brightness(1.55) saturate(1.1) drop-shadow(0 2px 4px rgba(0,0,0,0.22))";
-    // Other districts in same region on hover - noticeable brightness boost
+    // Other districts in same region on hover - subtle lightening (not too bright)
     const REGION_HOVER_FILTER =
-      "brightness(1.3) saturate(1.06) drop-shadow(0 1px 2px rgba(0,0,0,0.15))";
+      "brightness(1.12) saturate(1.03) drop-shadow(0 1px 2px rgba(0,0,0,0.12))";
+    // Mobile: region brightens more when district selected (better visibility on small screens)
+    const REGION_HOVER_FILTER_MOBILE =
+      "brightness(1.22) saturate(1.06) drop-shadow(0 1px 3px rgba(0,0,0,0.15))";
     // Selected district - modest step above hover, still very tight shadow
     const SELECTED_FILTER =
       "brightness(1.45) saturate(1.08) drop-shadow(0 2px 3px rgba(0,0,0,0.2))";
@@ -1196,7 +1380,7 @@ export const InteractiveMap = memo(function InteractiveMap({
       path.style.strokeDasharray = "";
       path.style.transition = TRANSITION;
       path.style.transformOrigin = "center";
-      path.style.transform = "translateY(0)";
+      path.style.transform = getPathBaseTransform(pathId);
 
       // View mode dimming logic
       let shouldDim = false;
@@ -1282,6 +1466,8 @@ export const InteractiveMap = memo(function InteractiveMap({
       }
 
       // Apply styling based on dimming/hiding logic
+      const isInSelectedRegion =
+        selectedDistrictId && selectedRegion && region === selectedRegion;
       if (shouldHide) {
         // Completely hide districts outside scope
         path.style.opacity = "0";
@@ -1292,13 +1478,20 @@ export const InteractiveMap = memo(function InteractiveMap({
         path.style.opacity = "1";
         path.style.visibility = "visible";
       } else if (shouldDim) {
-        // Previously: darkened non-selected regions with DIM_FILTER.
-        // Per UI feedback, keep other districts at the normal brightness even when a district is active/hovered.
+        // Districts outside selected region - normal brightness
         path.style.filter = BASE_FILTER;
         path.style.opacity = "1";
         path.style.visibility = "visible";
+      } else if (isInSelectedRegion) {
+        // Districts in selected region (not the selected one) - lighten like region hover
+        path.style.filter =
+          isMobile && selectedDistrictId
+            ? REGION_HOVER_FILTER_MOBILE
+            : REGION_HOVER_FILTER;
+        path.style.opacity = "1";
+        path.style.visibility = "visible";
       } else {
-        path.style.filter = BASE_FILTER; // 3D floating effect
+        path.style.filter = BASE_FILTER;
         path.style.opacity = "1";
         path.style.visibility = "visible";
       }
@@ -1408,8 +1601,8 @@ export const InteractiveMap = memo(function InteractiveMap({
                 : BORDER_WIDTH;
             // Very subtle raise for the hovered district only
             vPath.style.transform = isHoveredDistrict
-              ? "translateY(-0.5px)"
-              : "translateY(0)";
+              ? `${getPathBaseTransform(vPathId)} translateY(-0.5px)`
+              : getPathBaseTransform(vPathId);
           } else {
             // Other regions stay at their base appearance.
             vPath.style.opacity = "1";
@@ -1419,7 +1612,7 @@ export const InteractiveMap = memo(function InteractiveMap({
               selectedDistrictId === vPathId
                 ? BORDER_WIDTH_SELECTED
                 : BORDER_WIDTH;
-            vPath.style.transform = "translateY(0)";
+            vPath.style.transform = getPathBaseTransform(vPathId);
           }
         });
       };
@@ -1453,19 +1646,26 @@ export const InteractiveMap = memo(function InteractiveMap({
           movedPathRef.current = null;
         }
 
-        // Restore all districts to their default state
+        // Restore to default state: selected district bright, region lightened, others base
         visualPaths.forEach(vPath => {
           const vPathId = getPathId(vPath);
           if (!vPathId) return;
 
           if (selectedDistrictId === vPathId) {
             vPath.style.filter = SELECTED_FILTER;
+          } else if (
+            selectedDistrictId &&
+            selectedRegion &&
+            (districtMap.get(vPathId)?.region || DISTRICT_REGION_MAP[vPathId]) ===
+              selectedRegion
+          ) {
+            vPath.style.filter = REGION_HOVER_FILTER;
           } else {
             vPath.style.filter = BASE_FILTER;
           }
           vPath.style.opacity = "1";
           vPath.style.strokeWidth = BORDER_WIDTH;
-          vPath.style.transform = "translateY(0)";
+          vPath.style.transform = getPathBaseTransform(vPathId);
         });
       };
       path.addEventListener("mouseleave", mouseLeaveHandler);
@@ -1584,12 +1784,14 @@ export const InteractiveMap = memo(function InteractiveMap({
     svgContent,
     districts,
     selectedDistrictId,
+    viewState,
     onDistrictSelect,
     onNationalClick,
     scopeFilter,
     userRegionId,
     userDistrictId,
     originalViewBox,
+    isMobile,
   ]);
 
   // Generate pie chart SVG
@@ -1689,8 +1891,6 @@ export const InteractiveMap = memo(function InteractiveMap({
       .trim()
       .replace(/^./, str => str.toUpperCase());
   };
-
-  const isMobile = useIsMobile();
 
   // Render tooltip (hidden on mobile to avoid overlap and improve touch UX)
   const renderTooltip = () => {
@@ -1836,7 +2036,9 @@ export const InteractiveMap = memo(function InteractiveMap({
       <div className="relative w-full h-full">
         {/* Top Right - Chi Alpha label + metrics (shrink when district panel open) */}
         <div
-          className={`absolute right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent -mr-2 transition-all duration-300 ${selectedDistrictId ? "top-5" : "top-6"}`}
+          className={`absolute right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent transition-all duration-300 ${
+            isMobile ? "top-6" : "top-5 sm:top-6"
+          } ${isMobile ? "right-2 pr-4 max-w-[85%]" : "-mr-2"}`}
         >
           <div className="flex items-center justify-end">
             <span
@@ -1849,15 +2051,28 @@ export const InteractiveMap = memo(function InteractiveMap({
             >
               {displayedLabel}
             </span>
+            <span
+              aria-hidden
+              ref={labelCRef}
+              className={`font-beach font-medium text-slate-800 tracking-wide leading-none ${selectedDistrictId ? "text-2xl sm:text-3xl" : "text-3xl sm:text-5xl"}`}
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                whiteSpace: "nowrap",
+                visibility: "hidden",
+              }}
+            >
+              C
+            </span>
           </div>
 
           {/* "metrics" label + horizontal line (on hover) + collapsible metrics */}
           <div
-            className={`flex flex-col items-end w-full bg-transparent transition-all duration-300 ${selectedDistrictId ? "max-w-[12rem] mt-2" : "max-w-[16rem] mt-3"}`}
+            className={`flex flex-col items-end w-full bg-transparent transition-all duration-300 ${selectedDistrictId ? "mt-2" : "mt-3"} ${selectedDistrictId ? "max-w-none sm:max-w-[12rem]" : "max-w-none sm:max-w-[16rem]"}`}
           >
             <button
               onClick={() => setMetricsExpanded(!metricsExpanded)}
-              className="group flex flex-row items-center w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
+              className="group flex flex-row items-center justify-end w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
               aria-label={
                 metricsExpanded ? "Collapse metrics" : "Expand metrics"
               }
@@ -1869,7 +2084,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                     : "opacity-0 group-hover:opacity-100"
                 } ml-4`}
                 style={{
-                  width: labelWidthPx ? `${labelWidthPx}px` : undefined,
+                  width: labelWidthPx
+                    ? `${isMobile ? Math.round(labelWidthPx * 0.92) : labelWidthPx}px`
+                    : undefined,
                   transform: metricsExpanded ? "scaleX(1)" : "scaleX(0)",
                   transition:
                     "opacity 0.25s ease-out, transform 1s cubic-bezier(0.22, 1, 0.36, 1)",
@@ -1877,12 +2094,12 @@ export const InteractiveMap = memo(function InteractiveMap({
                 }}
               />
               <span
-                className={`font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0 ${selectedDistrictId ? "text-[9px]" : "text-[10px]"}`}
+                className={`font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0 ${isMobile ? "text-[9px]" : "text-[10px]"}`}
               >
                 Metrics
               </span>
               <svg
-                className={`text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 ${selectedDistrictId ? "w-3 h-3" : "w-3.5 h-3.5"} ${
+                className={`text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 w-3.5 h-3.5 ${
                   metricsExpanded ? "rotate-180" : ""
                 }`}
                 fill="none"
@@ -1910,12 +2127,12 @@ export const InteractiveMap = memo(function InteractiveMap({
               }}
             >
               <div
-                className={`flex flex-col items-end pt-0 pr-1 mt-1.5 overflow-hidden transition-all duration-300 ${selectedDistrictId ? "gap-2" : "gap-3"}`}
+                className={`flex flex-col items-end pt-0 pr-1 mt-1.5 overflow-hidden transition-all duration-300 ${isMobile ? "gap-1" : selectedDistrictId ? "gap-2" : "gap-3"}`}
               >
                 {/* Yes - closest to line: slides out first, back in last */}
                 <button
                   onClick={() => toggleMetric("yes")}
-                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
                     transform: metricsExpanded
@@ -1926,27 +2143,31 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-2xl" : "text-4xl"}`}
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
+                      minWidth: isMobile
+                        ? "4rem"
+                        : selectedDistrictId
+                          ? "6rem"
+                          : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Yes
                   </span>
                   <span
-                    className={`font-semibold text-slate-900 tabular-nums ${selectedDistrictId ? "text-2xl" : "text-4xl"}`}
+                    className={`font-semibold text-slate-900 tabular-nums ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
                     style={{
                       lineHeight: "1",
-                      width: "4rem",
+                      width: isMobile ? "2.5rem" : "4rem",
                       textAlign: "center",
                     }}
                   >
                     {showPublicPlaceholder ? "—" : displayedTotals.yes}
                   </span>
                   <div
-                    className={`w-6 h-6 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3.5 h-3.5" : "w-6 h-6"} ${
                       activeMetrics.has("yes")
                         ? "bg-emerald-700 border-emerald-700"
                         : "border-slate-300 hover:border-emerald-600 bg-white"
@@ -1977,7 +2198,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 {/* Maybe - slides out from line 2nd, back into line 3rd */}
                 <button
                   onClick={() => toggleMetric("maybe")}
-                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
                     transform: metricsExpanded
@@ -1988,27 +2209,31 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-xl" : "text-[1.65rem]"}`}
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
+                      minWidth: isMobile
+                        ? "4rem"
+                        : selectedDistrictId
+                          ? "6rem"
+                          : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Maybe
                   </span>
                   <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-xl" : "text-[1.65rem]"}`}
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
                     style={{
                       lineHeight: "1",
-                      width: "4rem",
+                      width: isMobile ? "2.5rem" : "4rem",
                       textAlign: "center",
                     }}
                   >
                     {showPublicPlaceholder ? "—" : displayedTotals.maybe}
                   </span>
                   <div
-                    className={`w-5 h-5 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3.5 h-3.5" : "w-5 h-5"} ${
                       activeMetrics.has("maybe")
                         ? "bg-yellow-600 border-yellow-600"
                         : "border-slate-300 hover:border-yellow-600 bg-white"
@@ -2039,7 +2264,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 {/* No - slides out from line 3rd, back into line 2nd */}
                 <button
                   onClick={() => toggleMetric("no")}
-                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
                     transform: metricsExpanded
@@ -2050,27 +2275,31 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-lg" : "text-2xl"}`}
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-sm" : selectedDistrictId ? "text-base md:text-lg" : "text-base md:text-2xl"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
+                      minWidth: isMobile
+                        ? "4rem"
+                        : selectedDistrictId
+                          ? "6rem"
+                          : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     No
                   </span>
                   <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-lg" : "text-2xl"}`}
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-base md:text-lg" : "text-base md:text-2xl"}`}
                     style={{
                       lineHeight: "1",
-                      width: "4rem",
+                      width: isMobile ? "2.5rem" : "4rem",
                       textAlign: "center",
                     }}
                   >
                     {showPublicPlaceholder ? "—" : displayedTotals.no}
                   </span>
                   <div
-                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3 h-3" : "w-4 h-4"} ${
                       activeMetrics.has("no")
                         ? "bg-red-700 border-red-700"
                         : "border-slate-300 hover:border-red-700 bg-white"
@@ -2101,7 +2330,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 {/* Not Invited Yet - farthest from line: slides out last, back in first */}
                 <button
                   onClick={() => toggleMetric("notInvited")}
-                  className="flex items-center gap-2 transition-all hover:scale-105 w-full justify-end min-w-0"
+                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
                     transform: metricsExpanded
@@ -2112,27 +2341,31 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }}
                 >
                   <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-base" : "text-[1.2rem]"}`}
+                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-[1.2rem]"}`}
                     style={{
                       lineHeight: "1",
-                      minWidth: selectedDistrictId ? "6rem" : "8.5rem",
+                      minWidth: isMobile
+                        ? "4rem"
+                        : selectedDistrictId
+                          ? "6rem"
+                          : "8.5rem",
                       textAlign: "right",
                     }}
                   >
                     Not Invited Yet
                   </span>
                   <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${selectedDistrictId ? "text-base" : "text-[1.2rem]"}`}
+                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-[1.2rem]"}`}
                     style={{
                       lineHeight: "1",
-                      width: "4rem",
+                      width: isMobile ? "2.5rem" : "4rem",
                       textAlign: "center",
                     }}
                   >
                     {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
                   </span>
                   <div
-                    className={`w-4 h-4 rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${
+                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3 h-3" : "w-4 h-4"} ${
                       activeMetrics.has("notInvited")
                         ? "bg-slate-500 border-slate-500"
                         : "border-slate-300 hover:border-slate-400 bg-white"
@@ -2167,7 +2400,7 @@ export const InteractiveMap = memo(function InteractiveMap({
 
         {/* Top Left Invited / Total + Needs (shrink when district panel open) */}
         <div
-          className={`absolute left-0 z-40 flex flex-col items-start pl-1 sm:pl-2 transition-all duration-300 ${selectedDistrictId ? "top-5 sm:top-5 gap-1" : "top-5 sm:top-6 gap-1 sm:gap-2"}`}
+          className={`absolute left-0 z-40 flex flex-col items-start transition-all duration-300 ${selectedDistrictId ? "top-5 sm:top-5 gap-1" : "top-5 sm:top-6 gap-1 sm:gap-2"} ${isMobile ? "pl-4" : "pl-1 sm:pl-2"}`}
         >
           <div
             className="flex items-center gap-3"
@@ -2214,42 +2447,44 @@ export const InteractiveMap = memo(function InteractiveMap({
           </div>
 
           {/* Needs summary - left-aligned with Invited */}
-          <div className="hidden sm:block flex-shrink-0">
-            <div className="inline-flex flex-col gap-y-0.5">
-              <div className="flex items-baseline gap-x-2">
-                <span
-                  className={`font-medium text-slate-500 shrink-0 text-left ${selectedDistrictId ? "text-xs" : "text-sm"}`}
-                >
-                  Needs Met:
-                </span>
-                <span
-                  className={`font-semibold text-slate-700 tabular-nums min-w-0 ${selectedDistrictId ? "text-xs" : "text-sm"}`}
-                >
-                  {needsAggregate ? needsAggregate.metNeeds : "—"}{" "}
-                  <span className="text-slate-500 font-medium">/</span>{" "}
-                  {needsAggregate ? needsAggregate.totalNeeds : "—"}
-                </span>
-              </div>
-              <div className="flex items-baseline gap-x-2">
-                <span
-                  className={`font-medium text-slate-500 shrink-0 text-left ${selectedDistrictId ? "text-xs" : "text-sm"}`}
-                >
-                  Funds Received:
-                </span>
-                <span
-                  className={`text-slate-600 tabular-nums min-w-0 ${selectedDistrictId ? "text-xs" : "text-sm"}`}
-                >
-                  {needsAggregate
-                    ? `$${(needsAggregate.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                    : "—"}{" "}
-                  <span className="text-slate-500 font-medium">/</span>{" "}
-                  {needsAggregate
-                    ? `$${(needsAggregate.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
-                    : "—"}
-                </span>
+          {!shouldCollapseForNationalMobile && (
+            <div className="flex-shrink-0">
+              <div className="inline-flex flex-col gap-y-0.5">
+                <div className="flex items-baseline gap-x-2">
+                  <span
+                    className={`font-medium text-slate-500 shrink-0 text-left ${isMobile ? "text-[11px]" : selectedDistrictId ? "text-xs" : "text-sm"}`}
+                  >
+                    Needs Met:
+                  </span>
+                  <span
+                    className={`font-semibold text-slate-700 tabular-nums min-w-0 ${isMobile ? "text-[11px]" : selectedDistrictId ? "text-xs" : "text-sm"}`}
+                  >
+                    {needsSummary ? needsSummary.metNeeds : "—"}{" "}
+                    <span className="text-slate-500 font-medium">/</span>{" "}
+                    {needsSummary ? needsSummary.totalNeeds : "—"}
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-x-2">
+                  <span
+                    className={`font-medium text-slate-500 shrink-0 text-left ${isMobile ? "text-[11px]" : selectedDistrictId ? "text-xs" : "text-sm"}`}
+                  >
+                    Funds Received:
+                  </span>
+                  <span
+                    className={`text-slate-600 tabular-nums min-w-0 ${isMobile ? "text-[11px]" : selectedDistrictId ? "text-xs" : "text-sm"}`}
+                  >
+                    {needsSummary
+                      ? `$${(needsSummary.metFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      : "—"}{" "}
+                    <span className="text-slate-500 font-medium">/</span>{" "}
+                    {needsSummary
+                      ? `$${(needsSummary.totalFinancial / 100).toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      : "—"}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Background click layer - captures clicks on empty space */}
@@ -2266,12 +2501,16 @@ export const InteractiveMap = memo(function InteractiveMap({
         {/* Visual layer - smooth, gap-free appearance with subtle blur */}
         <div
           ref={visualContainerRef}
-          className="absolute inset-0 pointer-events-none z-10"
+          className="absolute inset-0 pointer-events-none z-10 transition-transform duration-300 ease-out"
           style={{
             filter: "blur(0.3px) brightness(0.82)", // Slightly darker map with same subtle blur
             transform: selectedDistrictId
-              ? "scale(1.02) translate(-20px, -26px)" // Slightly larger when panel open
-              : "scale(0.88) translate(-20px, -26px)", // A bit smaller; map nudged up and left
+              ? isMobile
+                ? "scale(0.95) translate(-20px, -15px)"
+                : "scale(1.02) translate(-20px, -26px)" // Slightly larger when panel open
+              : isMobile
+                ? "scale(0.95) translate(-20px, -15px)" // Smaller on mobile to fit in top half
+                : "scale(0.88) translate(-20px, -10px)", // National map moved down a little
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2284,19 +2523,35 @@ export const InteractiveMap = memo(function InteractiveMap({
         {/* XAN National Button - Positioned so it stays on screen; when panel open, nudge inward */}
         {scopeFilter === "NATIONAL" && (
           <div
-            className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
+            className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-transform duration-300 ease-out"
             style={{
-              transform: selectedDistrictId ? "scale(1.02)" : "scale(0.88)",
+              transform: selectedDistrictId
+                ? isMobile
+                  ? "scale(1)"
+                  : "scale(1.02)"
+                : isMobile
+                  ? "scale(1)" // XAN stays fixed while map scales up
+                  : "scale(0.88)",
               transformOrigin: "center",
             }}
           >
             <button
               type="button"
               aria-label="Open XAN (National Team)"
-              className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan"
+              className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan transition-all duration-300 ease-out"
               style={{
-                left: selectedDistrictId ? "8%" : "5%",
-                bottom: selectedDistrictId ? "15%" : "13%",
+                left:
+                  isMobile && (selectedDistrictId || isTableOpen)
+                    ? "13%"
+                    : selectedDistrictId
+                      ? "18%"
+                      : "15%",
+                bottom:
+                  isMobile && (selectedDistrictId || isTableOpen)
+                    ? "26%"
+                    : selectedDistrictId
+                      ? "30%"
+                      : "35%",
                 transform: "translate(-50%, 50%)",
               }}
               onClick={e => {
@@ -2307,14 +2562,38 @@ export const InteractiveMap = memo(function InteractiveMap({
               <div
                 className="rounded-full bg-black group-hover/xan:bg-red-700 flex items-center justify-center transition-all duration-300 ease-out focus-visible:ring-2 focus-visible:ring-black/60 shadow-lg group-hover/xan:-translate-y-2 group-hover/xan:shadow-xl"
                 style={{
-                  width: selectedDistrictId ? "2.5vw" : "4vw",
-                  height: selectedDistrictId ? "2.5vw" : "4vw",
-                  minWidth: selectedDistrictId ? "28px" : "44px",
-                  minHeight: selectedDistrictId ? "28px" : "44px",
+                  width: selectedDistrictId
+                    ? isMobile
+                      ? "1.6vw"
+                      : "2.2vw"
+                    : isMobile
+                      ? "2.5vw"
+                      : "3.5vw",
+                  height: selectedDistrictId
+                    ? isMobile
+                      ? "1.6vw"
+                      : "2.2vw"
+                    : isMobile
+                      ? "2.5vw"
+                      : "3.5vw",
+                  minWidth: selectedDistrictId
+                    ? isMobile
+                      ? "20px"
+                      : "24px"
+                    : isMobile
+                      ? "26px"
+                      : "38px",
+                  minHeight: selectedDistrictId
+                    ? isMobile
+                      ? "20px"
+                      : "24px"
+                    : isMobile
+                      ? "26px"
+                      : "38px",
                 }}
               >
                 <span
-                  className={`text-white font-semibold ${selectedDistrictId ? "text-[10px]" : "text-sm"}`}
+                  className={`text-white font-semibold ${selectedDistrictId ? "text-[9px]" : isMobile ? "text-[10px]" : "text-sm"}`}
                 >
                   XAN
                 </span>
@@ -2326,13 +2605,17 @@ export const InteractiveMap = memo(function InteractiveMap({
         {/* Invisible SVG click zones */}
         <div
           ref={svgContainerRef}
-          className="absolute inset-0 z-30"
+          className="absolute inset-0 z-30 transition-transform duration-300 ease-out"
           style={{
             opacity: 0,
             pointerEvents: "auto",
             transform: selectedDistrictId
-              ? "scale(1.02) translate(-20px, -26px)" // Match visual layer when panel open
-              : "scale(0.88) translate(-20px, -26px)", // A bit smaller; map nudged up and left
+              ? isMobile
+                ? "scale(0.95) translate(-20px, -15px)"
+                : "scale(1.02) translate(-20px, -26px)" // Match visual layer when panel open
+              : isMobile
+                ? "scale(0.95) translate(-20px, -15px)"
+                : "scale(0.88) translate(-20px, -10px)", // National map moved down a little
             transformOrigin: "center",
             display: "flex",
             alignItems: "center",
@@ -2351,11 +2634,17 @@ export const InteractiveMap = memo(function InteractiveMap({
           }}
         />
 
-        {/* Metric Overlays - Anchored to Region Labels around map edges; below metrics dropdown (z-50) and toolbar (z-[100]) */}
+        {/* Metric Overlays */}
         <div
-          className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none"
+          className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-transform duration-300 ease-out"
           style={{
-            transform: selectedDistrictId ? "scale(1.02)" : "scale(0.88)",
+            transform: selectedDistrictId
+              ? isMobile
+                ? "scale(0.95) translate(-20px, -15px)"
+                : "scale(1.02) translate(-20px, -26px)"
+              : isMobile
+                ? "scale(0.95) translate(-20px, -15px)"
+                : "scale(0.88) translate(-20px, -10px)",
             transformOrigin: "center",
           }}
         >
@@ -2455,7 +2744,13 @@ export const InteractiveMap = memo(function InteractiveMap({
                     allRegions.push(region);
                     allMetricsToShow[region] = metricsToShow;
                     const isSingleMetric = metricsToShow.length === 1;
-                    const lineHeight = isSingleMetric ? 26 : 22;
+                    const lineHeight = isMobile
+                      ? isSingleMetric
+                        ? 28
+                        : 22
+                      : isSingleMetric
+                        ? 26
+                        : 22;
                     allTotalHeights[region] = metricsToShow.length * lineHeight;
                   }
                 });
@@ -2473,7 +2768,13 @@ export const InteractiveMap = memo(function InteractiveMap({
                   if (!metricsToShow || metricsToShow.length === 0) return null;
 
                   const isSingleMetric = metricsToShow.length === 1;
-                  const lineHeight = isSingleMetric ? 26 : 22;
+                  const lineHeight = isMobile
+                    ? isSingleMetric
+                      ? 28
+                      : 22
+                    : isSingleMetric
+                      ? 26
+                      : 22;
                   const isHovered = hoveredRegionLabel === region;
                   const totalHeight = allTotalHeights[region];
 
@@ -2483,15 +2784,23 @@ export const InteractiveMap = memo(function InteractiveMap({
                     activeMetrics.size,
                     totalHeight,
                     allRegions,
-                    allTotalHeights
+                    allTotalHeights,
+                    isMobile
                   );
                   const direction = pos.labelDirection;
 
-                  // Region label: always directly under the metric stack (no padding/margins)
+                  // Region label: above metrics for most regions; Northeast has name below (right-side layout)
+                  const nameX = pos.labelX;
+                  const nameBelow =
+                    region === "Northeast" ||
+                    region === "Mid-Atlantic" ||
+                    region === "Southeast" ||
+                    region === "Great Plains South";
                   const lastBaseline =
                     pos.labelY + (metricsToShow.length - 1) * lineHeight;
-                  const nameX = pos.labelX;
-                  const nameY = lastBaseline + lineHeight;
+                  const nameY = nameBelow
+                    ? lastBaseline + lineHeight
+                    : pos.labelY - lineHeight;
                   const nameAnchor: "start" | "middle" | "end" = "middle";
 
                   return (
@@ -2505,28 +2814,38 @@ export const InteractiveMap = memo(function InteractiveMap({
                       {/* Invisible hit area for hover detection */}
                       <rect
                         x={pos.labelX - 40}
-                        y={pos.labelY - 30}
+                        y={nameBelow ? pos.labelY - 30 : pos.labelY - 55}
                         width={80}
-                        height={totalHeight + 55}
+                        height={
+                          nameBelow ? totalHeight + 70 : totalHeight + 70
+                        }
                         fill="transparent"
                         rx="4"
                       />
 
-                      {/* Region name - only visible on hover, bigger with more spacing */}
+                      {/* Region name - above metrics (except Northeast: below) */}
                       <text
                         x={nameX}
                         y={nameY}
                         textAnchor={nameAnchor}
-                        fill="#64748b"
-                        fontSize={isSingleMetric ? "13px" : "12px"}
+                        fill={isHovered ? "#0f172a" : "#64748b"}
+                        fontSize={
+                          isMobile
+                            ? isSingleMetric
+                              ? "11px"
+                              : "10px"
+                            : isSingleMetric
+                              ? "13px"
+                              : "12px"
+                        }
                         fontWeight="600"
                         letterSpacing="0.5px"
                         className="select-none"
                         style={{
                           textTransform: "uppercase",
                           fontFamily: "system-ui, -apple-system, sans-serif",
-                          opacity: isHovered ? 1 : 0,
-                          transition: "opacity 0.15s ease",
+                          opacity: 1,
+                          transition: "fill 0.15s ease",
                         }}
                       >
                         {region}
@@ -2544,7 +2863,13 @@ export const InteractiveMap = memo(function InteractiveMap({
                                 ? "#b91c1c" // red-700
                                 : "#64748b"; // slate-500 for Not Invited
 
-                        const dotRadius = isSingleMetric ? 6 : 5;
+                        const dotRadius = isMobile
+                          ? isSingleMetric
+                            ? 7
+                            : 5
+                          : isSingleMetric
+                            ? 6
+                            : 5;
 
                         return (
                           <g key={metric.label}>
@@ -2566,7 +2891,15 @@ export const InteractiveMap = memo(function InteractiveMap({
                               y={pos.labelY + index * lineHeight}
                               textAnchor="middle"
                               fill={isHovered ? "#0f172a" : "#334155"}
-                              fontSize={isSingleMetric ? "22px" : "15px"}
+                              fontSize={
+                                isMobile
+                                  ? isSingleMetric
+                                    ? "22px"
+                                    : "15px"
+                                  : isSingleMetric
+                                    ? "22px"
+                                    : "15px"
+                              }
                               fontWeight="700"
                               letterSpacing="-0.3px"
                               className="select-none"

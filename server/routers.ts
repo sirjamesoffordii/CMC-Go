@@ -2878,6 +2878,11 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getDistrictNeedsSummary(input.districtId);
       }),
+    regionNeeds: publicProcedure
+      .input(z.object({ region: z.string() }))
+      .query(async ({ input }) => {
+        return await db.getRegionNeedsSummary(input.region);
+      }),
     needsAggregate: publicProcedure.query(async () => {
       return await db.getNeedsAggregateSummary();
     }),

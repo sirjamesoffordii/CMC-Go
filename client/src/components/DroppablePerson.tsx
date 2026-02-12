@@ -87,6 +87,7 @@ export function DroppablePerson({
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(
     null
   );
+  const [mobileTooltipOpen, setMobileTooltipOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -246,18 +247,27 @@ export function DroppablePerson({
       longPressTriggeredRef.current = true;
       setIsHovered(true);
       setTooltipPos({ x: 0, y: 0 });
+      setMobileTooltipOpen(true);
     }, 450);
   };
 
   const handleNamePointerUpOrCancel = () => {
     if (!isMobile) return;
     clearLongPressTimer();
+    // Don't dismiss tooltip on lift when it was a long-press (user taps backdrop to dismiss)
+    if (longPressTriggeredRef.current) return;
     setIsHovered(false);
     setTooltipPos(null);
-    // Reset after the click event has had a chance to check it.
     window.setTimeout(() => {
       longPressTriggeredRef.current = false;
     }, 0);
+  };
+
+  const dismissMobileTooltip = () => {
+    setMobileTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+    longPressTriggeredRef.current = false;
   };
 
   return (
@@ -290,7 +300,7 @@ export function DroppablePerson({
               e.stopPropagation();
               return;
             }
-            _onClick(campusId, person);
+            onEdit(campusId, person);
           }}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
@@ -388,21 +398,36 @@ export function DroppablePerson({
       </motion.div>
       {/* Person Tooltip */}
       {!hideDetails && isHovered && tooltipPos && (
-        <PersonTooltip
-          person={person}
-          need={
-            personNeed
-              ? {
-                  type: personNeed.type,
-                  description: personNeed.description,
-                  amount: personNeed.amount,
-                  isActive: personNeed.isActive,
-                }
-              : null
-          }
-          position={tooltipPos}
-          centered={isMobile}
-        />
+        <>
+          {isMobile && mobileTooltipOpen && (
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Close tooltip"
+              className="fixed inset-0 z-[99998] bg-black/20"
+              onClick={dismissMobileTooltip}
+              onKeyDown={e => {
+                if (e.key === "Enter" || e.key === "Escape")
+                  dismissMobileTooltip();
+              }}
+            />
+          )}
+          <PersonTooltip
+            person={person}
+            need={
+              personNeed
+                ? {
+                    type: personNeed.type,
+                    description: personNeed.description,
+                    amount: personNeed.amount,
+                    isActive: personNeed.isActive,
+                  }
+                : null
+            }
+            position={tooltipPos}
+            centered={isMobile}
+          />
+        </>
       )}
     </>
   );

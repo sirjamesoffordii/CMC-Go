@@ -94,6 +94,9 @@ interface DistrictPanelProps {
   onOpenTable?: (filter?: {
     statusFilter?: Set<"Yes" | "Maybe" | "No" | "Not Invited">;
     needsView?: boolean;
+    districtId?: string;
+    regionId?: string;
+    campusIds?: number[];
   }) => void;
 }
 
@@ -2788,19 +2791,19 @@ export function DistrictPanel({
   };
 
   const content = district ? (
-    <div className="w-full h-full flex flex-col">
-      <div className="flex-1 overflow-auto scrollbar-hide py-2 px-2 sm:px-4">
+    <div className="w-full h-full min-h-0 min-w-0 flex flex-col">
+      <div className="flex-1 min-h-0 min-w-0 overflow-auto scrollbar-hide py-2 px-2 sm:px-4">
         {/* Wrapper to keep header and campuses same width */}
         <div className="w-max min-w-full">
           {/* Header Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
+          <div className="bg-white shadow-sm border border-slate-100 p-3 sm:p-4 mb-2">
             {/* Title Section - District Name, Region, Directors, and Needs Summary. -ml-3 sm:-ml-4 aligns name column + divider with campus rows (same as pl-2 -ml-2). */}
             <div className="flex items-center gap-3 flex-wrap -ml-3 sm:-ml-4">
-              {/* District name + divider: same width as campus name column, no gap so divider lines up with campus border-r */}
+              {/* District name + divider: same width as campus name column, no gap so divider lines up with campus border-r. pl-10 aligns with campus names (kebab menu + gap-2 ≈ 40px). */}
               <div className="flex items-stretch gap-0 flex-shrink-0">
                 <div
                   ref={districtNameRef}
-                  className="w-[10rem] sm:w-[16rem] min-w-[10rem] sm:min-w-[16rem] max-w-[10rem] sm:max-w-[16rem] flex-shrink-0"
+                  className="w-[10rem] sm:w-[16rem] min-w-[10rem] sm:min-w-[16rem] max-w-[10rem] sm:max-w-[16rem] flex-shrink-0 pl-10"
                 >
                   <h1 className="font-semibold text-slate-900 leading-tight tracking-tight text-xl sm:text-2xl">
                     {isNationalTeam ? (
@@ -3004,6 +3007,9 @@ export function DistrictPanel({
                         "No",
                         "Not Invited",
                       ]),
+                      districtId: district?.id ?? undefined,
+                      regionId: district?.region ?? undefined,
+                      campusIds: campusesWithPeople.map(c => c.id),
                     })
                   }
                 >
@@ -3056,7 +3062,14 @@ export function DistrictPanel({
                 {/* Needs / Funds Summary (right side) - with Open in Table on hover */}
                 <div
                   className="group/needs relative flex-shrink-0 cursor-pointer rounded-md px-1 -mx-1"
-                  onClick={() => onOpenTable?.({ needsView: true })}
+                  onClick={() =>
+                    onOpenTable?.({
+                      needsView: true,
+                      districtId: district?.id ?? undefined,
+                      regionId: district?.region ?? undefined,
+                      campusIds: campusesWithPeople.map(c => c.id),
+                    })
+                  }
                 >
                   <div className="inline-flex flex-col gap-y-0.5">
                     <div className="flex items-baseline gap-x-3">
@@ -3092,7 +3105,7 @@ export function DistrictPanel({
           </div>
 
           {/* Campuses Section */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200">
+          <div className="bg-white shadow-sm border border-slate-100 py-2 pl-2 pr-2 transition-all md:hover:shadow-md md:hover:border-slate-200">
             <div className="space-y-1.5 min-w-max">
               {campusesWithPeople.map((campus, index) => {
                 const sortedPeople = getSortedPeople(campus.people, campus.id);
@@ -3593,7 +3606,7 @@ export function DistrictPanel({
                         setQuickAddName("");
                         setTimeout(() => quickAddInputRef.current?.focus(), 0);
                       }}
-                      className="w-[calc(16rem-12px)] max-w-[calc(16rem-12px)] py-3 pl-0 pr-3 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
+                      className="w-[calc(16rem-12px)] max-w-[calc(16rem-12px)] py-3 pl-0 pr-3 border-2 border-dashed border-slate-300 flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer disabled:opacity-60 disabled:cursor-default"
                     >
                       <span className="w-7 flex-shrink-0" aria-hidden />
                       <Plus className="w-5 h-5 flex-shrink-0" strokeWidth={2} />
@@ -3677,7 +3690,7 @@ export function DistrictPanel({
             snapPoints={[100]}
             defaultSnap={0}
             closeOnBackdrop={true}
-            showCloseButton={false}
+            showCloseButton={true}
             showSnapPoints={false}
             compactHeader={true}
             fullScreen={true}
@@ -4376,7 +4389,7 @@ export function DistrictPanel({
             snapPoints={[100]}
             defaultSnap={0}
             closeOnBackdrop={true}
-            showCloseButton={false}
+            showCloseButton={true}
             showSnapPoints={false}
             compactHeader={true}
             fullScreen={true}
@@ -5000,19 +5013,19 @@ export function DistrictPanel({
                 </motion.div>
               </motion.div>
             </div>
-            <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
-              {/* Trashcan - anchored to far bottom-left */}
+            <DialogFooter className="edit-person-footer flex w-full flex-row flex-wrap items-end justify-between gap-4 pt-8 pb-6 sm:pt-6 sm:pb-4">
+              {/* Trashcan - anchored to bottom-left */}
               <button
                 onClick={handleDeletePerson}
                 disabled={deletePerson.isPending}
-                className="p-2.5 sm:p-1.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
+                className="order-first p-2.5 hover:bg-red-50 rounded-md transition-colors text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center sm:p-1.5 sm:min-w-0 sm:min-h-0"
                 title="Delete person"
               >
                 <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
 
               {/* Right side: Cancel, Update */}
-              <div className="flex items-center gap-3 ml-auto">
+              <div className="edit-person-footer-buttons order-last flex items-center gap-3 ml-auto">
                 <Button
                   type="button"
                   variant="outline"
