@@ -10,11 +10,53 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
-const connectionString = process.env.DATABASE_URL;
-// Security: Don't log the connection string as it contains credentials
-console.log("🔍 DATABASE_URL:", connectionString ? "Set ✓" : "Not set ✗");
+function resolveDatabaseUrl() {
+  if (process.env.DATABASE_URL) {
+    return { url: process.env.DATABASE_URL, source: "DATABASE_URL" };
+  }
+
+  // Railway MySQL commonly exposes a full connection string as MYSQL_URL.
+  if (process.env.MYSQL_URL) {
+    return { url: process.env.MYSQL_URL, source: "MYSQL_URL" };
+  }
+
+  // Some setups expose a public URL separately.
+  if (process.env.MYSQL_PUBLIC_URL) {
+    return { url: process.env.MYSQL_PUBLIC_URL, source: "MYSQL_PUBLIC_URL" };
+  }
+
+  // Fall back to discrete MySQL env vars (common across platforms and Railway).
+  const host = process.env.MYSQL_HOST ?? process.env.MYSQLHOST;
+  const port = process.env.MYSQL_PORT ?? process.env.MYSQLPORT ?? "3306";
+  const user = process.env.MYSQL_USER ?? process.env.MYSQLUSER;
+  const password = process.env.MYSQL_PASSWORD ?? process.env.MYSQLPASSWORD;
+  const database = process.env.MYSQL_DATABASE ?? process.env.MYSQLDATABASE;
+
+  if (host && user && database) {
+    const encodedUser = encodeURIComponent(user);
+    const encodedPassword = password ? encodeURIComponent(password) : "";
+    const auth = password ? `${encodedUser}:${encodedPassword}` : encodedUser;
+    return {
+      url: `mysql://${auth}@${host}:${port}/${database}`,
+      source: "MYSQL_*",
+    };
+  }
+
+  return { url: undefined, source: undefined };
+}
+
+const resolved = resolveDatabaseUrl();
+// Security: Don't log connection strings (they contain credentials)
+console.log(
+  "🔍 Database connection:",
+  resolved.url ? `Set ✓ (${resolved.source})` : "Not set ✗"
+);
+
+const connectionString = resolved.url;
 if (!connectionString) {
-  console.error("❌ DATABASE_URL environment variable is required");
+  console.error(
+    "❌ Database connection string is required. Set DATABASE_URL or MYSQL_URL (Railway), or MYSQL_HOST/MYSQL_USER/MYSQL_PASSWORD/MYSQL_DATABASE."
+  );
   process.exit(1);
 }
 
