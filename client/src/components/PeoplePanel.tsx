@@ -1,5 +1,11 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import { ImportModal } from "./ImportModal";
@@ -9,7 +15,6 @@ import {
   Upload,
   Search,
   Filter,
-  User,
   ChevronDown,
   ChevronRight,
   MoreVertical,
@@ -1110,7 +1115,9 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                   type="button"
                   onClick={e => {
                     e.stopPropagation();
-                    setScopeMenuExpandedRegion(r => (r === region ? null : region));
+                    setScopeMenuExpandedRegion(r =>
+                      r === region ? null : region
+                    );
                   }}
                   className="p-1 rounded hover:bg-gray-200"
                 >
@@ -1146,7 +1153,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                     scopeFilterDistrictId === district.id &&
                     scopeFilterCampusId == null &&
                     !scopeFilterPersonId;
-                  const isDistrictExpanded = scopeMenuExpandedDistrict === district.id;
+                  const isDistrictExpanded =
+                    scopeMenuExpandedDistrict === district.id;
                   return (
                     <div key={district.id}>
                       <div
@@ -1196,8 +1204,10 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                         <div className="bg-gray-100/80 border-t border-gray-100">
                           {campuses.map(campus => {
                             const isCampusSelected =
-                              scopeFilterCampusId === campus.id && !scopeFilterPersonId;
-                            const isCampusExpanded = scopeMenuExpandedCampus === campus.id;
+                              scopeFilterCampusId === campus.id &&
+                              !scopeFilterPersonId;
+                            const isCampusExpanded =
+                              scopeMenuExpandedCampus === campus.id;
                             const campusPeople = filteredPeople.filter(
                               (p: Person) => p.primaryCampusId === campus.id
                             );
@@ -1223,7 +1233,9 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                                     type="button"
                                     onClick={selectCampus}
                                     className={`flex-1 text-left text-sm ${
-                                      isCampusSelected ? "font-medium text-red-700" : ""
+                                      isCampusSelected
+                                        ? "font-medium text-red-700"
+                                        : ""
                                     }`}
                                   >
                                     {campus.name}
@@ -1247,42 +1259,56 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                                     </button>
                                   )}
                                 </div>
-                                {isCampusExpanded && campusPeople.length > 0 && (
-                                  <div className="bg-white border-t border-gray-100">
-                                    {[...campusPeople]
-                                      .sort((a, b) =>
-                                        (a.name || a.personId || "").localeCompare(
-                                          b.name || b.personId || ""
+                                {isCampusExpanded &&
+                                  campusPeople.length > 0 && (
+                                    <div className="bg-white border-t border-gray-100">
+                                      {[...campusPeople]
+                                        .sort((a, b) =>
+                                          (
+                                            a.name ||
+                                            a.personId ||
+                                            ""
+                                          ).localeCompare(
+                                            b.name || b.personId || ""
+                                          )
                                         )
-                                      )
-                                      .map(person => {
-                                        const isPersonSelected =
-                                          scopeFilterPersonId === person.personId;
-                                        return (
-                                          <button
-                                            key={person.personId}
-                                            type="button"
-                                            onClick={e => {
-                                              e.preventDefault();
-                                              e.stopPropagation();
-                                              setScopeFilterRegionId(region);
-                                              setScopeFilterDistrictId(district.id);
-                                              setScopeFilterCampusId(campus.id);
-                                              setScopeFilterPersonId(person.personId);
-                                              setScopeMenuOpen(false);
-                                            }}
-                                            className={`w-full pl-12 pr-3 py-2 text-left text-sm ${
-                                              isPersonSelected
-                                                ? "bg-red-50 text-red-700 font-medium"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                            }`}
-                                          >
-                                            {person.name || person.personId || "Person"}
-                                          </button>
-                                        );
-                                      })}
-                                  </div>
-                                )}
+                                        .map(person => {
+                                          const isPersonSelected =
+                                            scopeFilterPersonId ===
+                                            person.personId;
+                                          return (
+                                            <button
+                                              key={person.personId}
+                                              type="button"
+                                              onClick={e => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setScopeFilterRegionId(region);
+                                                setScopeFilterDistrictId(
+                                                  district.id
+                                                );
+                                                setScopeFilterCampusId(
+                                                  campus.id
+                                                );
+                                                setScopeFilterPersonId(
+                                                  person.personId
+                                                );
+                                                setScopeMenuOpen(false);
+                                              }}
+                                              className={`w-full pl-12 pr-3 py-2 text-left text-sm ${
+                                                isPersonSelected
+                                                  ? "bg-red-50 text-red-700 font-medium"
+                                                  : "text-gray-700 hover:bg-gray-100"
+                                              }`}
+                                            >
+                                              {person.name ||
+                                                person.personId ||
+                                                "Person"}
+                                            </button>
+                                          );
+                                        })}
+                                    </div>
+                                  )}
                               </div>
                             );
                           })}
@@ -1367,7 +1393,9 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
       <FilterCategory title="Status" defaultOpen>
         <div className="space-y-0.5">
           {(["Yes", "Maybe", "No", "Not Invited"] as const).map(status => {
-            const count = allPeople.filter((p: Person) => p.status === status).length;
+            const count = allPeople.filter(
+              (p: Person) => p.status === status
+            ).length;
             const isChecked = statusFilter.has(status);
             return (
               <label
@@ -1383,7 +1411,9 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                     setStatusFilter(newFilter);
                   }}
                 />
-                <span className="text-sm flex-1">{formatStatusLabel(status)}</span>
+                <span className="text-sm flex-1">
+                  {formatStatusLabel(status)}
+                </span>
                 <span className="text-xs text-gray-500">({count})</span>
               </label>
             );
@@ -1444,7 +1474,9 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
       <FilterCategory title="Role">
         <div className="space-y-0.5 sm:max-h-40 sm:overflow-y-auto">
           {uniqueRoles.map(role => {
-            const count = allPeople.filter((p: Person) => p.primaryRole === role).length;
+            const count = allPeople.filter(
+              (p: Person) => p.primaryRole === role
+            ).length;
             const isChecked = roleFilter.has(role);
             return (
               <label
@@ -1477,7 +1509,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
           ].map(({ key, label }) => {
             const count = allPeople.filter((p: Person) => {
               if (key === "spouse") return p.spouseAttending;
-              if (key === "children") return p.childrenCount && p.childrenCount > 0;
+              if (key === "children")
+                return p.childrenCount && p.childrenCount > 0;
               if (key === "guest") return p.guestsCount && p.guestsCount > 0;
               return false;
             }).length;
@@ -1543,7 +1576,10 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
         {/* Scope */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {isDesktopViewport ? (
-            <Popover open={scopeMenuOpen} onOpenChange={handleScopeMenuOpenChange}>
+            <Popover
+              open={scopeMenuOpen}
+              onOpenChange={handleScopeMenuOpenChange}
+            >
               <PopoverTrigger asChild>{scopeTrigger}</PopoverTrigger>
               <PopoverContent
                 className="w-56 p-0 h-[calc(100vh-16px)] max-h-none overflow-y-auto z-[999] pointer-events-auto"
@@ -1648,23 +1684,28 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
           </Popover>
         </div>
 
+        {/* Layout — right after Sort, matches SCOPE/FILTER/SORT style on desktop and mobile */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setPeopleOnly(!peopleOnly)}
+            className={`h-11 min-w-0 rounded-lg border px-2 sm:px-2.5 py-1.5 flex flex-col items-start justify-center gap-0.5 ${
+              peopleOnly
+                ? "bg-blue-50 text-blue-700 border-blue-200/80 hover:bg-blue-100"
+                : "border-gray-200/80 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300/80"
+            }`}
+          >
+            <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider leading-none">
+              Layout
+            </span>
+            <span className="text-[11px] sm:text-[13px] font-medium truncate max-w-[80px] sm:max-w-none">
+              {peopleOnly ? "People Only" : "Hierarchical"}
+            </span>
+          </button>
+        </div>
+
         {/* Right-side icons */}
         <div className="flex items-center gap-0.5 flex-shrink-0 ml-auto">
-          {/* People Only */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={
-              "h-9 w-9 rounded-lg bg-transparent hover:bg-gray-100 " +
-              (peopleOnly ? "text-blue-700" : "text-gray-500")
-            }
-            onClick={() => setPeopleOnly(!peopleOnly)}
-            aria-label="People only"
-            title="People Only"
-          >
-            <User className="h-4 w-4" />
-          </Button>
-
           {/* Search */}
           <Popover open={searchOpen} onOpenChange={setSearchOpen}>
             <PopoverTrigger asChild>
