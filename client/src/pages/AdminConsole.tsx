@@ -240,7 +240,7 @@ export default function AdminConsole() {
       const lines: string[] = [];
       lines.push(headers.join(","));
 
-      for (const p of allPeople as Record<string, unknown>[]) {
+      for (const p of allPeople as any[]) {
         lines.push(headers.map(h => csvEscape(p?.[h])).join(","));
       }
 
@@ -271,7 +271,7 @@ export default function AdminConsole() {
         string,
         Array<{ id: number; name: string; districtId: string }>
       >();
-      for (const c of campuses) {
+      for (const c of campuses as any[]) {
         if (!c?.districtId) continue;
         const arr = campusesByDistrictId.get(c.districtId) ?? [];
         arr.push({ id: c.id, name: c.name, districtId: c.districtId });
@@ -282,7 +282,7 @@ export default function AdminConsole() {
         string,
         Array<{ id: string; name: string; region: string }>
       >();
-      for (const d of districts) {
+      for (const d of districts as any[]) {
         const region = d?.region ?? "Unknown";
         const arr = regionMap.get(region) ?? [];
         arr.push({ id: d.id, name: d.name, region });

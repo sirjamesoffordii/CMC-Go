@@ -289,9 +289,9 @@ export function ImageCropModal({
               Colors extracted from your image edges:
             </p>
             <div className="flex flex-wrap gap-2">
-              {extractedColors.map(color => (
+              {extractedColors.map((color, index) => (
                 <button
-                  key={color}
+                  key={index}
                   onClick={() => setSelectedColor(color)}
                   className={cn(
                     "w-8 h-8 rounded border-2 transition-all",

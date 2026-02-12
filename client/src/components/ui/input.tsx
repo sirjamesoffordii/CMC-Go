@@ -30,7 +30,7 @@ function Input({
 
       // Check if this is an Enter key that should be blocked
       const isComposing =
-        (e.nativeEvent as KeyboardEvent).isComposing ||
+        (e.nativeEvent as any).isComposing ||
         dialogComposition.justEndedComposing();
 
       // If Enter key is pressed while composing or just after composition ended,

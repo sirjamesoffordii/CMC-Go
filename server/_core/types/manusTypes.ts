@@ -43,8 +43,6 @@ export interface GetUserInfoResponse {
   email?: string | null;
   platform?: string | null;
   loginMethod?: string | null;
-  /** Extra field sometimes returned by the API (list of platform identifiers) */
-  platforms?: string[];
 }
 
 export interface CanAccessRequest {
@@ -68,6 +66,4 @@ export interface GetUserInfoWithJwtResponse {
   email?: string | null;
   platform?: string | null;
   loginMethod?: string | null;
-  /** Extra field sometimes returned by the API (list of platform identifiers) */
-  platforms?: string[];
 }
