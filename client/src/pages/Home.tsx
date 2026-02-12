@@ -576,7 +576,7 @@ export default function Home() {
       const campusIds = allCampuses
         .filter(c => c.districtId === districtId)
         .map(c => c.id);
-      setPeoplePanelOpenFilter({ districtId, regionId, campusIds });
+      setPeoplePanelOpenFilter({ districtId, regionId: regionId ?? undefined, campusIds });
       // Expand drawer to full so the user can see district details
       setPeoplePanelSnapKey(k => k + 1);
       return;
@@ -588,7 +588,7 @@ export default function Home() {
       const campusIds = allCampuses
         .filter(c => c.districtId === districtId)
         .map(c => c.id);
-      setPeoplePanelOpenFilter({ districtId, regionId, campusIds });
+      setPeoplePanelOpenFilter({ districtId, regionId: regionId ?? undefined, campusIds });
       setPeoplePanelOpen(true);
     }
 

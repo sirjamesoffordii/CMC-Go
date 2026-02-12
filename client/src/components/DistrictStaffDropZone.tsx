@@ -185,6 +185,13 @@ export function DistrictStaffDropZone({
     }, 0);
   };
 
+  const dismissMobileTooltip = () => {
+    setMobileTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+    longPressTriggeredRef.current = false;
+  };
+
   if (!person) {
     // In public/masked mode, hide the slot entirely when no district staff exists
     if (!canInteract || hideDetails) {
