@@ -11,7 +11,7 @@ import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
 import { ViewState } from "@/types/viewModes";
-import { DISTRICT_REGION_MAP } from "@/lib/regions";
+import { DISTRICT_REGION_MAP, resolveDistrictSvgPath } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
@@ -318,6 +318,13 @@ const getMobileBaseOverride = (
   }
 };
 
+// Base position type for regions and districts
+type BasePosition = {
+  baseX: number;
+  baseY: number;
+  labelDirection: "above" | "below" | "left" | "right";
+};
+
 // Dynamic positioning function with collision detection
 const getDynamicPosition = (
   region: string,
@@ -325,22 +332,28 @@ const getDynamicPosition = (
   totalHeight: number,
   allRegions: string[],
   allTotalHeights: Record<string, number>,
-  isMobile?: boolean
+  isMobile?: boolean,
+  customPositions?: Record<string, BasePosition>
 ): {
   labelX: number;
   labelY: number;
   labelDirection: "above" | "below" | "left" | "right";
 } => {
-  const base = baseRegionPositions[region];
+  const positions = customPositions ?? baseRegionPositions;
+  const base = positions[region];
   if (!base) return { labelX: 0, labelY: 0, labelDirection: "above" };
 
   const bounds = isMobile ? MAP_BOUNDS_MOBILE : MAP_BOUNDS;
   const metricWidth = 80;
-  const mobileOverride = isMobile ? getMobileBaseOverride(region) : null;
+  const mobileOverride =
+    !customPositions && isMobile ? getMobileBaseOverride(region) : null;
   let labelX = mobileOverride?.baseX ?? base.baseX;
   let labelY = mobileOverride?.baseY ?? base.baseY;
 
-  const isBottomRegion = region === "Texico" || region === "South Central";
+  const isBottomRegion =
+    region === "Texico" ||
+    region === "South Central" ||
+    (!!customPositions && base.labelDirection === "below");
 
   // Calculate metric bounds
   const metricPadding = 15; // Buffer from map SVG to prevent overlap
@@ -397,10 +410,11 @@ const getDynamicPosition = (
 
   // First, calculate all initial positions
   allRegions.forEach(r => {
-    const rBase = baseRegionPositions[r];
+    const rBase = positions[r];
     if (!rBase) return;
 
-    const rMobileOverride = isMobile ? getMobileBaseOverride(r) : null;
+    const rMobileOverride =
+      !customPositions && isMobile ? getMobileBaseOverride(r) : null;
     let rX = rMobileOverride?.baseX ?? rBase.baseX;
     let rY = rMobileOverride?.baseY ?? rBase.baseY;
     const rHeight = allTotalHeights[r] || 0;
@@ -430,7 +444,7 @@ const getDynamicPosition = (
         }
 
         // Extra clamp ONLY for bottom regions so their stacks don't go off-screen.
-        if (r === "Texico" || r === "South Central") {
+        if (rBase.labelDirection === "below") {
           const rLineHeight = activeMetricCount === 1 ? 26 : 22;
           const rLastBaseline = rY + (activeMetricCount - 1) * rLineHeight;
           const rMaxBaseline = bounds.viewBoxHeight - 18;
@@ -462,7 +476,7 @@ const getDynamicPosition = (
   });
 
   // Resolve collisions
-  const resolvedBounds = resolveCollisions(allBounds, baseRegionPositions);
+  const resolvedBounds = resolveCollisions(allBounds, positions);
 
   // Find the resolved position for this region
   const resolved = resolvedBounds.find(b => b.region === region);
@@ -637,8 +651,9 @@ export const InteractiveMap = memo(function InteractiveMap({
       });
     }
     if (scopeFilter === "DISTRICT" && userDistrictId) {
-      // Show only user's district
-      return districts.filter(d => d.id === userDistrictId);
+      // Show only user's district (resolve to SVG path for composite districts)
+      const svgPath = resolveDistrictSvgPath(userDistrictId);
+      return districts.filter(d => d.id === svgPath);
     }
     // Default to all if no valid filter
     return districts;
@@ -1362,8 +1377,8 @@ export const InteractiveMap = memo(function InteractiveMap({
           districtColors[pathId]) ||
         (scopeFilter === "DISTRICT" &&
           userDistrictId &&
-          pathId === userDistrictId &&
-          districtColors[pathId]);
+          pathId === resolveDistrictSvgPath(userDistrictId) &&
+          (districtColors[pathId] || districtColors[userDistrictId]));
 
       if (shouldShowDistrictColor) {
         baseColor = districtColors[pathId];
@@ -1459,7 +1474,7 @@ export const InteractiveMap = memo(function InteractiveMap({
           }
         } else if (scopeFilter === "DISTRICT" && userDistrictId) {
           // Only show user's district, hide all others
-          if (pathId !== userDistrictId) {
+          if (pathId !== resolveDistrictSvgPath(userDistrictId)) {
             shouldHide = true;
           }
         }
@@ -1520,7 +1535,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         if (scopeFilter === "REGION" && userRegionId) {
           isHiddenByScope = pathRegion !== userRegionId;
         } else if (scopeFilter === "DISTRICT" && userDistrictId) {
-          isHiddenByScope = pathId !== userDistrictId;
+          isHiddenByScope = pathId !== resolveDistrictSvgPath(userDistrictId);
         }
       }
 
@@ -1710,7 +1725,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         if (scopeFilter === "REGION" && userRegionId) {
           isVisible = pathRegion === userRegionId;
         } else if (scopeFilter === "DISTRICT" && userDistrictId) {
-          isVisible = pathId === userDistrictId;
+          isVisible = pathId === resolveDistrictSvgPath(userDistrictId);
         }
 
         if (isVisible) {
@@ -2523,7 +2538,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         {/* XAN National Button - Positioned so it stays on screen; when panel open, nudge inward */}
         {scopeFilter === "NATIONAL" && (
           <div
-            className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-transform duration-300 ease-out"
+            className={`absolute inset-0 flex items-center justify-center ${isMobile ? "z-40" : "z-[5]"} pointer-events-none transition-transform duration-300 ease-out`}
             style={{
               transform: selectedDistrictId
                 ? isMobile
@@ -2540,19 +2555,10 @@ export const InteractiveMap = memo(function InteractiveMap({
               aria-label="Open XAN (National Team)"
               className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan transition-all duration-300 ease-out"
               style={{
-                left:
-                  isMobile && (selectedDistrictId || isTableOpen)
-                    ? "13%"
-                    : selectedDistrictId
-                      ? "18%"
-                      : "15%",
-                bottom:
-                  isMobile && (selectedDistrictId || isTableOpen)
-                    ? "26%"
-                    : selectedDistrictId
-                      ? "30%"
-                      : "35%",
-                transform: "translate(-50%, 50%)",
+                // Left-aligned, vertically aligned with the D in "Invited"
+                left: "12px",
+                top: "32px",
+                transform: "translate(0, -50%)",
               }}
               onClick={e => {
                 e.stopPropagation();
@@ -2702,10 +2708,25 @@ export const InteractiveMap = memo(function InteractiveMap({
                   }
                 });
 
-                // Pre-calculate all regions and their heights for collision detection
-                // When scope is REGION, only show that region's bubbles (e.g. Texico only)
-                const regionsToConsider =
-                  scopeFilter === "REGION" && userRegionId
+                // When scope is REGION, show per-district bubbles; otherwise per-region
+                const isRegionScope =
+                  scopeFilter === "REGION" && userRegionId;
+                const baseDistrictPositions: Record<string, BasePosition> = {};
+                if (isRegionScope && filteredDistricts.length > 0) {
+                  filteredDistricts.forEach(d => {
+                    const cen = districtCentroids[d.id];
+                    if (cen) {
+                      baseDistrictPositions[d.id] = {
+                        baseX: cen.x,
+                        baseY: cen.y + 55,
+                        labelDirection: "below",
+                      };
+                    }
+                  });
+                }
+                const regionsToConsider = isRegionScope
+                  ? Object.keys(baseDistrictPositions)
+                  : scopeFilter === "REGION" && userRegionId
                     ? baseRegionPositions[userRegionId]
                       ? [userRegionId]
                       : Object.keys(baseRegionPositions)
@@ -2717,15 +2738,24 @@ export const InteractiveMap = memo(function InteractiveMap({
                   string,
                   Array<{ label: string; value: number }>
                 > = {};
+                const displayLabels: Record<string, string> = {};
 
-                regionsToConsider.forEach(region => {
-                  const stats = regionStats[region] || {
-                    yes: 0,
-                    maybe: 0,
-                    no: 0,
-                    notInvited: 0,
-                    total: 0,
-                  };
+                regionsToConsider.forEach(regionOrDistrictId => {
+                  const stats = isRegionScope
+                    ? (districtStats[regionOrDistrictId] || {
+                        yes: 0,
+                        maybe: 0,
+                        no: 0,
+                        notInvited: 0,
+                        total: 0,
+                      })
+                    : regionStats[regionOrDistrictId] || {
+                        yes: 0,
+                        maybe: 0,
+                        no: 0,
+                        notInvited: 0,
+                        total: 0,
+                      };
                   const metricsToShow: Array<{ label: string; value: number }> =
                     [];
                   if (activeMetrics.has("yes"))
@@ -2741,8 +2771,12 @@ export const InteractiveMap = memo(function InteractiveMap({
                     });
 
                   if (metricsToShow.length > 0) {
-                    allRegions.push(region);
-                    allMetricsToShow[region] = metricsToShow;
+                    allRegions.push(regionOrDistrictId);
+                    allMetricsToShow[regionOrDistrictId] = metricsToShow;
+                    displayLabels[regionOrDistrictId] = isRegionScope
+                      ? (districts.find(d => d.id === regionOrDistrictId)
+                          ?.name ?? regionOrDistrictId)
+                      : regionOrDistrictId;
                     const isSingleMetric = metricsToShow.length === 1;
                     const lineHeight = isMobile
                       ? isSingleMetric
@@ -2751,18 +2785,32 @@ export const InteractiveMap = memo(function InteractiveMap({
                       : isSingleMetric
                         ? 26
                         : 22;
-                    allTotalHeights[region] = metricsToShow.length * lineHeight;
+                    allTotalHeights[regionOrDistrictId] =
+                      metricsToShow.length * lineHeight;
                   }
                 });
 
+                const customPositionsForPositioning =
+                  isRegionScope && Object.keys(baseDistrictPositions).length > 0
+                    ? baseDistrictPositions
+                    : undefined;
+
                 return allRegions.map(region => {
-                  const stats = regionStats[region] || {
-                    yes: 0,
-                    maybe: 0,
-                    no: 0,
-                    notInvited: 0,
-                    total: 0,
-                  };
+                  const stats = isRegionScope
+                    ? (districtStats[region] || {
+                        yes: 0,
+                        maybe: 0,
+                        no: 0,
+                        notInvited: 0,
+                        total: 0,
+                      })
+                    : regionStats[region] || {
+                        yes: 0,
+                        maybe: 0,
+                        no: 0,
+                        notInvited: 0,
+                        total: 0,
+                      };
                   const metricsToShow = allMetricsToShow[region];
 
                   if (!metricsToShow || metricsToShow.length === 0) return null;
@@ -2777,6 +2825,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                       : 22;
                   const isHovered = hoveredRegionLabel === region;
                   const totalHeight = allTotalHeights[region];
+                  const labelText = displayLabels[region] ?? region;
 
                   // Calculate position with collision detection
                   const pos = getDynamicPosition(
@@ -2785,17 +2834,20 @@ export const InteractiveMap = memo(function InteractiveMap({
                     totalHeight,
                     allRegions,
                     allTotalHeights,
-                    isMobile
+                    isMobile,
+                    customPositionsForPositioning
                   );
                   const direction = pos.labelDirection;
 
                   // Region label: above metrics for most regions; Northeast has name below (right-side layout)
+                  // District labels (region scope) always above metrics
                   const nameX = pos.labelX;
                   const nameBelow =
-                    region === "Northeast" ||
-                    region === "Mid-Atlantic" ||
-                    region === "Southeast" ||
-                    region === "Great Plains South";
+                    !isRegionScope &&
+                    (region === "Northeast" ||
+                      region === "Mid-Atlantic" ||
+                      region === "Southeast" ||
+                      region === "Great Plains South");
                   const lastBaseline =
                     pos.labelY + (metricsToShow.length - 1) * lineHeight;
                   const nameY = nameBelow
@@ -2823,7 +2875,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                         rx="4"
                       />
 
-                      {/* Region name - above metrics (except Northeast: below) */}
+                      {/* Region/district name - above metrics (except Northeast: below) */}
                       <text
                         x={nameX}
                         y={nameY}
@@ -2848,7 +2900,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                           transition: "fill 0.15s ease",
                         }}
                       >
-                        {region}
+                        {labelText}
                       </text>
 
                       {/* Metric values with colored dots */}

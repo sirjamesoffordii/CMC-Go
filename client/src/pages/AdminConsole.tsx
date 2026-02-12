@@ -78,7 +78,14 @@ export default function AdminConsole() {
 
   // Redirect non-admins to home
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== "CMC_GO_ADMIN")) {
+    if (
+      !authLoading &&
+      (!user ||
+        (user.role !== "CMC_GO_ADMIN" &&
+          user.role !== "NATIONAL_DIRECTOR" &&
+          user.role !== "FIELD_DIRECTOR" &&
+          user.role !== "REGION_DIRECTOR"))
+    ) {
       toast.error("Access denied - Admin privileges required");
       setLocation("/");
     }
@@ -94,7 +101,10 @@ export default function AdminConsole() {
   }
 
   // Don't render if not admin (redirect will happen via useEffect)
-  if (!user || user.role !== "CMC_GO_ADMIN") {
+  if (
+    !user ||
+    (user.role !== "CMC_GO_ADMIN" && user.role !== "NATIONAL_DIRECTOR")
+  ) {
     return null;
   }
 

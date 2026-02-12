@@ -101,7 +101,11 @@ export const adminProcedure = protectedProcedure.use(
     // which throws if user is null (unless dev bypass is enabled)
     const user = ctx.user!;
 
-    if (user.role !== "ADMIN" && user.role !== "CMC_GO_ADMIN") {
+    if (
+      user.role !== "ADMIN" &&
+      user.role !== "CMC_GO_ADMIN" &&
+      user.role !== "NATIONAL_DIRECTOR"
+    ) {
       throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
     }
 

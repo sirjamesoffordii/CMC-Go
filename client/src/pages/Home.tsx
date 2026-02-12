@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
@@ -571,14 +572,20 @@ export default function Home() {
 
     // On mobile with the Table drawer open, update the table filter instead of
     // opening the district panel.  The table will scope to the selected district
-    // and expand its campuses/people.
+    // and expand its campuses/people.  Also highlight district+region on the map.
     if (isMobile && peoplePanelOpen) {
       const campusIds = allCampuses
         .filter(c => c.districtId === districtId)
         .map(c => c.id);
       setPeoplePanelOpenFilter({ districtId, regionId: regionId ?? undefined, campusIds });
-      // Expand drawer to full so the user can see district details
-      setPeoplePanelSnapKey(k => k + 1);
+      setSelectedDistrictId(districtId);
+      setViewState({
+        mode: "district",
+        districtId,
+        regionId: regionId ?? null,
+        campusId: null,
+        panelOpen: false,
+      });
       return;
     }
 
@@ -955,14 +962,15 @@ export default function Home() {
               <Menu className="w-5 h-5" />
             </Button>
 
-            {/* Dropdown Menu */}
-            {menuOpen && (
+            {/* Dropdown Menu — portalled to body so it sits above all MobileDrawer layers */}
+            {menuOpen && createPortal(
               <>
                 <div
-                  className="fixed inset-0 z-[100]"
+                  className="fixed inset-0 z-[300]"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="mobile-menu-dropdown absolute right-0 top-full mt-2 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[101] py-1 max-h-[80vh] overflow-y-auto">
+                <div className="mobile-menu-dropdown fixed right-2 sm:right-4 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[301] py-1 max-h-[80vh] overflow-y-auto"
+                  style={{ top: isMobile ? '52px' : `${headerHeight}px` }}>
                   {!isAuthenticated && (
                     <>
                       <button
@@ -1013,7 +1021,10 @@ export default function Home() {
                     <span className="text-sm">Event Info</span>
                   </button>
 
-                  {user?.role === "CMC_GO_ADMIN" && (
+                  {(user?.role === "CMC_GO_ADMIN" ||
+                    user?.role === "NATIONAL_DIRECTOR" ||
+                    user?.role === "FIELD_DIRECTOR" ||
+                    user?.role === "REGION_DIRECTOR") && (
                     <button
                       onClick={e => {
                         e.preventDefault();
@@ -1050,7 +1061,8 @@ export default function Home() {
                     </>
                   )}
                 </div>
-              </>
+              </>,
+              document.body
             )}
           </div>
         </div>
@@ -1152,7 +1164,7 @@ export default function Home() {
         {/* Left District/National Panel - Mobile (swipe-to-close drawer) */}
         {isMobile && (
           <MobileDrawer
-            isOpen={!!(selectedDistrictId || nationalPanelOpen)}
+            isOpen={!!(selectedDistrictId || nationalPanelOpen) && !peoplePanelOpen}
             onClose={() => {
               setSelectedDistrictId(null);
               setNationalPanelOpen(false);
@@ -1170,6 +1182,7 @@ export default function Home() {
                 : (selectedDistrict?.name ?? "District")
             }
             hideTitleCloseInCorner={!nationalPanelOpen}
+            closeOnBackdropClick={false}
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1237,7 +1250,9 @@ export default function Home() {
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
+              // But keep table drawer open on mobile
               if (e.target === e.currentTarget) {
+                if (isMobile && peoplePanelOpen) return;
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setViewState({
@@ -1270,6 +1285,8 @@ export default function Home() {
                   : user?.districtId
               }
               onBackgroundClick={() => {
+                // When table drawer is open on mobile, don't close it on map background click
+                if (isMobile && peoplePanelOpen) return;
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
@@ -1344,8 +1361,11 @@ export default function Home() {
               setPeoplePanelOpen(false);
               setPeoplePanelOpenFilter(null);
             }}
-            title="Table"
-            initialSnap="full"
+            title={peoplePanelOpenFilter?.districtId
+              ? `Table — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
+              : "Table"
+            }
+            initialSnap="half"
             coverToolbar
             closeOnBackdropClick={false}
             snapOverride={peoplePanelSnapKey ? { snap: "full", key: peoplePanelSnapKey } : undefined}
@@ -1368,7 +1388,7 @@ export default function Home() {
             {isMobile ? (
               /* Mobile: Full-width bar at bottom of screen */
               <div
-                className="fixed inset-x-0 bottom-0 z-30 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2"
+                className="fixed inset-x-0 bottom-0 z-30 pb-[max(12px,env(safe-area-inset-bottom))] pt-2"
               >
                 <button
                   onClick={() => {
@@ -1389,7 +1409,7 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                    w-full py-4 bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center
+                    w-full py-4 bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center
                     ${!user ? "opacity-70" : ""}
                   `}
                 >

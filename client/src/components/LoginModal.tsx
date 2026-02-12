@@ -122,7 +122,7 @@ type RegistrationStep =
 
 type ScopeLevel = "national" | "regional" | "district" | "campus";
 
-type AuthMode = "login" | "register" | "forgotPassword" | "resetPassword";
+type AuthMode = "login" | "register" | "forgotPassword";
 
 export function LoginModal({
   open,
@@ -142,10 +142,7 @@ export function LoginModal({
   const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
 
-  // Password reset fields
-  const [resetCode, setResetCode] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [showNewPassword, setShowNewPassword] = useState(false);
+  // Password reset state
   const [resetSuccess, setResetSuccess] = useState(false);
 
   // Scope selection
@@ -354,22 +351,7 @@ export function LoginModal({
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
     onSuccess: () => {
       clearError();
-      setMode("resetPassword");
-    },
-    onError: err => handleMutationError(err),
-  });
-
-  const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
-    onSuccess: () => {
-      clearError();
       setResetSuccess(true);
-      // After 2 seconds, go back to login
-      setTimeout(() => {
-        setMode("login");
-        setResetCode("");
-        setNewPassword("");
-        setResetSuccess(false);
-      }, 2000);
     },
     onError: err => handleMutationError(err),
   });
@@ -381,9 +363,6 @@ export function LoginModal({
     setPassword("");
     setShowPassword(false);
     setFullName("");
-    setResetCode("");
-    setNewPassword("");
-    setShowNewPassword(false);
     setResetSuccess(false);
     setScopeLevel(null);
     setSelectedRegion(null);
@@ -766,13 +745,11 @@ export function LoginModal({
           <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-slate-900">
             {mode === "login" && "Go Together"}
             {mode === "register" && "Create Account"}
-            {mode === "forgotPassword" && "Forgot Password"}
-            {mode === "resetPassword" && "Reset Password"}
+            {mode === "forgotPassword" && "Reset Password"}
           </h1>
           <p className="mt-2 text-sm text-slate-600">
             {mode === "login" && "Sign in to continue"}
-            {mode === "forgotPassword" && "We'll send you a reset code"}
-            {mode === "resetPassword" && "Enter your new password"}
+            {mode === "forgotPassword" && "Enter your email to reset your password"}
             {mode === "register" &&
               (step === "credentials"
                 ? "Let's start with your credentials"
@@ -816,9 +793,9 @@ export function LoginModal({
                 </Label>
                 <Input
                   id="login-email"
-                  name="username"
+                  name="login-email"
                   type="email"
-                  autoComplete="username"
+                  autoComplete="off"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
@@ -841,9 +818,9 @@ export function LoginModal({
                 <div className="relative mt-1.5">
                   <Input
                     id="login-password"
-                    name="password"
+                    name="login-password"
                     type={showPassword ? "text" : "password"}
-                    autoComplete="current-password"
+                    autoComplete="off"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="Enter your password"
@@ -916,10 +893,37 @@ export function LoginModal({
           {/* FORGOT PASSWORD */}
           {mode === "forgotPassword" && (
             <div className="space-y-5">
+              {resetSuccess ? (
+                <div className="text-center py-4">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                    <Check className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-900">
+                    Check Your Email
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-600">
+                    We've sent a password reset link to your email. Click the
+                    link to set a new password.
+                  </p>
+                  <p className="mt-3 text-xs text-slate-500">
+                    The link expires in 1 hour. Check your spam folder if you
+                    don't see it.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setResetSuccess(false);
+                      setMode("login");
+                    }}
+                    className="mt-4 w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                  >
+                    Back to Login
+                  </Button>
+                </div>
+              ) : (
+                <>
               <div className="text-center mb-4">
                 <p className="text-sm text-slate-600">
-                  Enter your email address and we'll send you a code to reset
-                  your password.
+                  Enter your email address and we'll send you a reset link.
                 </p>
               </div>
 
@@ -933,7 +937,7 @@ export function LoginModal({
                 <Input
                   id="forgot-email"
                   type="email"
-                  autoComplete="email"
+                  autoComplete="off"
                   value={email}
                   onChange={e => handleEmailChange(e.target.value)}
                   placeholder="you@example.com"
@@ -960,10 +964,10 @@ export function LoginModal({
                 {forgotPasswordMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
+                    Resetting...
                   </>
                 ) : (
-                  "Send Reset Code"
+                  "Reset Password"
                 )}
               </Button>
 
@@ -978,149 +982,6 @@ export function LoginModal({
                   ← Back to login
                 </button>
               </p>
-            </div>
-          )}
-
-          {/* RESET PASSWORD */}
-          {mode === "resetPassword" && (
-            <div className="space-y-5">
-              {resetSuccess ? (
-                <div className="text-center py-4">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                    <Check className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-slate-900">
-                    Password Reset!
-                  </h3>
-                  <p className="mt-1 text-sm text-slate-600">
-                    Your password has been changed. Redirecting to login...
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="text-center mb-4">
-                    <p className="text-sm text-slate-600">
-                      Enter the 6-digit code sent to <strong>{email}</strong>{" "}
-                      and your new password.
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="reset-code"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Reset Code
-                    </Label>
-                    <Input
-                      id="reset-code"
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={resetCode}
-                      onChange={e =>
-                        setResetCode(e.target.value.replace(/\D/g, ""))
-                      }
-                      placeholder="000000"
-                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 text-center text-2xl tracking-widest placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
-                    />
-                  </div>
-
-                  <div>
-                    <Label
-                      htmlFor="new-password"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      New Password
-                    </Label>
-                    <div className="relative mt-1.5">
-                      <Input
-                        id="new-password"
-                        type={showNewPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        placeholder="Enter new password"
-                        className="border-slate-200 bg-white/80 pr-10 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
-                        onKeyDown={e => {
-                          if (
-                            e.key === "Enter" &&
-                            resetCode.length === 6 &&
-                            newPassword.length > 0
-                          ) {
-                            resetPasswordMutation.mutate({
-                              email: email.trim(),
-                              code: resetCode,
-                              newPassword,
-                            });
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showNewPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {renderError()}
-
-                  <Button
-                    onClick={() => {
-                      resetPasswordMutation.mutate({
-                        email: email.trim(),
-                        code: resetCode,
-                        newPassword,
-                      });
-                    }}
-                    disabled={
-                      resetPasswordMutation.isPending ||
-                      resetCode.length !== 6 ||
-                      newPassword.length < 1
-                    }
-                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
-                  >
-                    {resetPasswordMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Resetting...
-                      </>
-                    ) : (
-                      "Reset Password"
-                    )}
-                  </Button>
-
-                  <div className="flex justify-between text-sm text-slate-600">
-                    <button
-                      onClick={() => {
-                        clearError();
-                        setMode("forgotPassword");
-                        setResetCode("");
-                        setNewPassword("");
-                      }}
-                      className="font-medium text-red-700 hover:text-red-600"
-                    >
-                      ← Resend code
-                    </button>
-                    <button
-                      onClick={() => {
-                        clearError();
-                        setMode("login");
-                        setResetCode("");
-                        setNewPassword("");
-                      }}
-                      className="font-medium text-red-700 hover:text-red-600"
-                    >
-                      Back to login
-                    </button>
-                  </div>
                 </>
               )}
             </div>

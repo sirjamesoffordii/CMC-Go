@@ -133,16 +133,13 @@ export function MenuPanel({
             aria-label={title}
             style={{ width: "90vw", maxWidth }}
             className={[
-              "fixed z-[151] flex flex-col bg-gradient-to-b from-white via-white to-gray-50/80 text-black shadow-[0_20px_70px_-35px_rgba(0,0,0,0.65)] overflow-hidden border border-gray-200/80 ring-1 ring-black/5",
-              "left-1/2 -translate-x-1/2 top-[60px] max-h-[calc(100vh-80px)] rounded-2xl",
+              "fixed z-[151] flex flex-col bg-gradient-to-b from-white via-white to-gray-50/80 text-black shadow-[0_20px_70px_-35px_rgba(0,0,0,0.65)] overflow-hidden border-2 border-black rounded-2xl",
+              "left-1/2 -translate-x-1/2 top-[60px] max-h-[calc(100vh-80px)]",
               className,
             ]
               .filter(Boolean)
               .join(" ")}
           >
-            {/* Red accent stripe */}
-            <div className="h-1 w-full bg-gradient-to-r from-red-600 via-red-500 to-red-600 flex-shrink-0" />
-
             <DesktopHeaderContent
               title={title}
               icon={icon}

@@ -502,7 +502,7 @@ export function PersonDetailsDialog({
                   value={formNeedDetails}
                   onChange={e => setFormNeedDetails(e.target.value)}
                   placeholder="Enter notes about the need"
-                  rows={4}
+                  rows={isMobile ? 2 : 4}
                   className="resize-none w-full min-w-0"
                 />
               </div>
@@ -541,7 +541,7 @@ export function PersonDetailsDialog({
               value={formNotes}
               onChange={e => setFormNotes(e.target.value)}
               placeholder="Enter journey notes"
-              rows={4}
+              rows={isMobile ? 2 : 4}
               className="resize-none w-full min-w-0"
             />
           </div>
