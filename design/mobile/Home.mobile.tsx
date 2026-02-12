@@ -326,7 +326,6 @@ export default function Home() {
     NorthCarolina: "Mid-Atlantic",
     NorthDakota: "Great Plains North",
     "NorthernCal-Nevada": "West Coast",
-    NorthernNewEnglend: "Northeast",
     NorthernNewEngland: "Northeast",
     NorthIdaho: "Northwest",
     NorthernMissouri: "Great Plains South",
