@@ -158,7 +158,7 @@
     z-index: 200 !important;
   }
 
-  /* Hamburger menu: don't overflow viewport */
+  /* Hamburger menu: don't overflow viewport (z-index must be above backdrop z-[300]) */
   .mobile-menu-dropdown {
     position: fixed !important;
     top: 56px !important;
@@ -168,7 +168,7 @@
     width: 260px !important;
     border-radius: 16px !important;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2) !important;
-    z-index: 200 !important;
+    z-index: 301 !important;
     max-height: calc(100dvh - 80px) !important;
     overflow-y: auto !important;
   }

@@ -577,7 +577,11 @@ export default function Home() {
       const campusIds = allCampuses
         .filter(c => c.districtId === districtId)
         .map(c => c.id);
-      setPeoplePanelOpenFilter({ districtId, regionId: regionId ?? undefined, campusIds });
+      setPeoplePanelOpenFilter({
+        districtId,
+        regionId: regionId ?? undefined,
+        campusIds,
+      });
       setSelectedDistrictId(districtId);
       setViewState({
         mode: "district",
@@ -595,7 +599,11 @@ export default function Home() {
       const campusIds = allCampuses
         .filter(c => c.districtId === districtId)
         .map(c => c.id);
-      setPeoplePanelOpenFilter({ districtId, regionId: regionId ?? undefined, campusIds });
+      setPeoplePanelOpenFilter({
+        districtId,
+        regionId: regionId ?? undefined,
+        campusIds,
+      });
       setPeoplePanelOpen(true);
     }
 
@@ -963,107 +971,110 @@ export default function Home() {
             </Button>
 
             {/* Dropdown Menu — portalled to body so it sits above all MobileDrawer layers */}
-            {menuOpen && createPortal(
-              <>
-                <div
-                  className="fixed inset-0 z-[300]"
-                  onClick={() => setMenuOpen(false)}
-                />
-                <div className="mobile-menu-dropdown fixed right-2 sm:right-4 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[301] py-1 max-h-[80vh] overflow-y-auto"
-                  style={{ top: isMobile ? '52px' : `${headerHeight}px` }}>
-                  {!isAuthenticated && (
-                    <>
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setLoginModalOpen(true);
-                          setMenuOpen(false);
-                        }}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 font-semibold transition-colors"
-                      >
-                        <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
-                        Login
-                      </button>
-                      <div className="border-t border-gray-200 my-1"></div>
-                    </>
-                  )}
-
-                  {/* What Is CMC Go - Mobile only */}
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      openMenuPanel("whatIs");
-                    }}
-                    className="w-full px-4 py-3 sm:hidden text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+            {menuOpen &&
+              createPortal(
+                <>
+                  <div
+                    className="fixed inset-0 z-[300]"
+                    onClick={() => setMenuOpen(false)}
+                  />
+                  <div
+                    className="mobile-menu-dropdown fixed right-2 sm:right-4 w-56 sm:w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-[301] py-1 max-h-[80vh] overflow-y-auto"
+                    style={{ top: isMobile ? "52px" : `${headerHeight}px` }}
                   >
-                    <Calendar className="w-5 h-5" />
-                    What is CMC Go?
-                  </button>
+                    {!isAuthenticated && (
+                      <>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setLoginModalOpen(true);
+                            setMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 font-semibold transition-colors"
+                        >
+                          <LogIn className="w-5 h-5 sm:w-4 sm:h-4" />
+                          Login
+                        </button>
+                        <div className="border-t border-gray-200 my-1"></div>
+                      </>
+                    )}
 
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      openMenuPanel("share");
-                    }}
-                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
-                  >
-                    <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                    Share CMC Go
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      openMenuPanel("eventInfo");
-                    }}
-                    className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors flex items-center gap-3"
-                  >
-                    <Info className="w-5 h-5 sm:w-4 sm:h-4" />
-                    <span className="text-sm">Event Info</span>
-                  </button>
-
-                  {(user?.role === "CMC_GO_ADMIN" ||
-                    user?.role === "NATIONAL_DIRECTOR" ||
-                    user?.role === "FIELD_DIRECTOR" ||
-                    user?.role === "REGION_DIRECTOR") && (
+                    {/* What Is CMC Go - Mobile only */}
                     <button
                       onClick={e => {
-                        e.preventDefault();
-                        setLocation("/admin");
-                        setMenuOpen(false);
+                        e.stopPropagation();
+                        openMenuPanel("whatIs");
+                      }}
+                      className="w-full px-4 py-3 sm:hidden text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                    >
+                      <Calendar className="w-5 h-5" />
+                      What is CMC Go?
+                    </button>
+
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        openMenuPanel("share");
                       }}
                       className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                     >
-                      <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
-                      Admin Console
+                      <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                      Share CMC Go
                     </button>
-                  )}
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        openMenuPanel("eventInfo");
+                      }}
+                      className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors flex items-center gap-3"
+                    >
+                      <Info className="w-5 h-5 sm:w-4 sm:h-4" />
+                      <span className="text-sm">Event Info</span>
+                    </button>
 
-                  {isAuthenticated && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
+                    {(user?.role === "CMC_GO_ADMIN" ||
+                      user?.role === "NATIONAL_DIRECTOR" ||
+                      user?.role === "FIELD_DIRECTOR" ||
+                      user?.role === "REGION_DIRECTOR") && (
                       <button
                         onClick={e => {
-                          e.stopPropagation();
-                          openMenuPanel("account");
+                          e.preventDefault();
+                          setLocation("/admin");
+                          setMenuOpen(false);
                         }}
-                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
+                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                       >
-                        <div className="flex items-start gap-3">
-                          <UserRound className="w-5 h-5 sm:w-4 sm:h-4 mt-0.5" />
-                          <div className="flex flex-col items-start">
-                            <span className="font-semibold">Account</span>
-                            <span className="text-xs text-gray-500">
-                              {userDisplayName}
-                            </span>
-                          </div>
-                        </div>
+                        <Shield className="w-5 h-5 sm:w-4 sm:h-4" />
+                        Admin Console
                       </button>
-                    </>
-                  )}
-                </div>
-              </>,
-              document.body
-            )}
+                    )}
+
+                    {isAuthenticated && (
+                      <>
+                        <div className="border-t border-gray-200 my-1"></div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            openMenuPanel("account");
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 transition-colors"
+                        >
+                          <div className="flex items-start gap-3">
+                            <UserRound className="w-5 h-5 sm:w-4 sm:h-4 mt-0.5" />
+                            <div className="flex flex-col items-start">
+                              <span className="font-semibold">Account</span>
+                              <span className="text-xs text-gray-500">
+                                {userDisplayName}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>,
+                document.body
+              )}
           </div>
         </div>
       </header>
@@ -1164,7 +1175,9 @@ export default function Home() {
         {/* Left District/National Panel - Mobile (swipe-to-close drawer) */}
         {isMobile && (
           <MobileDrawer
-            isOpen={!!(selectedDistrictId || nationalPanelOpen) && !peoplePanelOpen}
+            isOpen={
+              !!(selectedDistrictId || nationalPanelOpen) && !peoplePanelOpen
+            }
             onClose={() => {
               setSelectedDistrictId(null);
               setNationalPanelOpen(false);
@@ -1182,7 +1195,7 @@ export default function Home() {
                 : (selectedDistrict?.name ?? "District")
             }
             hideTitleCloseInCorner={!nationalPanelOpen}
-            closeOnBackdropClick={false}
+            closeOnBackdropClick={true}
           >
             {selectedDistrictId && selectedDistrict && (
               <DistrictPanel
@@ -1250,9 +1263,7 @@ export default function Home() {
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
-              // But keep table drawer open on mobile
               if (e.target === e.currentTarget) {
-                if (isMobile && peoplePanelOpen) return;
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setViewState({
@@ -1285,8 +1296,6 @@ export default function Home() {
                   : user?.districtId
               }
               onBackgroundClick={() => {
-                // When table drawer is open on mobile, don't close it on map background click
-                if (isMobile && peoplePanelOpen) return;
                 setSelectedDistrictId(null);
                 setPeoplePanelOpen(false);
                 setNationalPanelOpen(false);
@@ -1361,14 +1370,19 @@ export default function Home() {
               setPeoplePanelOpen(false);
               setPeoplePanelOpenFilter(null);
             }}
-            title={peoplePanelOpenFilter?.districtId
-              ? `Table — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
-              : "Table"
+            title={
+              peoplePanelOpenFilter?.districtId
+                ? `Table — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
+                : "Table"
             }
             initialSnap="half"
             coverToolbar
-            closeOnBackdropClick={false}
-            snapOverride={peoplePanelSnapKey ? { snap: "full", key: peoplePanelSnapKey } : undefined}
+            closeOnBackdropClick={true}
+            snapOverride={
+              peoplePanelSnapKey
+                ? { snap: "full", key: peoplePanelSnapKey }
+                : undefined
+            }
           >
             <PeoplePanel
               onClose={() => {
@@ -1382,14 +1396,12 @@ export default function Home() {
       </main>
 
       {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
-      {!peoplePanelOpen && (!isMobile || !(selectedDistrictId || nationalPanelOpen)) && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {isMobile ? (
-              /* Mobile: Full-width bar at bottom of screen */
-              <div
-                className="fixed inset-x-0 bottom-0 z-30 pb-[max(12px,env(safe-area-inset-bottom))] pt-2"
-              >
+      {!peoplePanelOpen &&
+        (!isMobile || !(selectedDistrictId || nationalPanelOpen)) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {isMobile ? (
+                /* Mobile: Full-width bar at bottom of screen, extends to bottom edge with safe area */
                 <button
                   onClick={() => {
                     if (!user) {
@@ -1409,59 +1421,58 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                    w-full py-4 bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center
-                    ${!user ? "opacity-70" : ""}
-                  `}
+                  fixed inset-x-0 bottom-0 z-30 w-full pt-4 pb-[max(12px,env(safe-area-inset-bottom))] bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center touch-manipulation
+                  ${!user ? "opacity-70" : ""}
+                `}
                 >
                   <span className="inline-block whitespace-nowrap select-none">
                     Table
                   </span>
                 </button>
-              </div>
-            ) : (
-              /* Desktop: Slide-out tab on right edge; shrinks when district panel open */
-              <div
-                className={`fixed -translate-y-1/2 z-30 ${selectedDistrictId ? "pr-10" : "pr-16"}`}
-                style={{ right: 0, top: "calc(50% + 36px)" }}
-              >
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      setLoginModalOpen(true);
-                      return;
-                    }
-                    setPeoplePanelOpenFilter(
-                      currentScope === "REGION" && selectedRegion
-                        ? { regionId: selectedRegion }
-                        : currentScope === "DISTRICT" && scopeSelectedDistrict
-                          ? {
-                              regionId: selectedRegion ?? undefined,
-                              districtId: scopeSelectedDistrict,
-                            }
-                          : null
-                    );
-                    setPeoplePanelOpen(true);
-                  }}
-                  className={`
+              ) : (
+                /* Desktop: Slide-out tab on right edge; shrinks when district panel open */
+                <div
+                  className={`fixed -translate-y-1/2 z-30 ${selectedDistrictId ? "pr-10" : "pr-16"}`}
+                  style={{ right: 0, top: "calc(50% + 36px)" }}
+                >
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        setLoginModalOpen(true);
+                        return;
+                      }
+                      setPeoplePanelOpenFilter(
+                        currentScope === "REGION" && selectedRegion
+                          ? { regionId: selectedRegion }
+                          : currentScope === "DISTRICT" && scopeSelectedDistrict
+                            ? {
+                                regionId: selectedRegion ?? undefined,
+                                districtId: scopeSelectedDistrict,
+                              }
+                            : null
+                      );
+                      setPeoplePanelOpen(true);
+                    }}
+                    className={`
                     relative bg-black hover:bg-red-700 text-white rounded-full font-medium backdrop-blur-sm transition-all duration-300 ease-out touch-target translate-x-[92%] hover:translate-x-[86%] text-left
                     ${selectedDistrictId ? "w-[120px] py-2 pl-3 pr-4 text-xs" : "w-[200px] py-3.5 pl-5 pr-6 text-sm"}
                     ${!user ? "opacity-70" : ""}
                   `}
-                >
-                  <span className="inline-block whitespace-nowrap select-none">
-                    Table
-                  </span>
-                </button>
-              </div>
+                  >
+                    <span className="inline-block whitespace-nowrap select-none">
+                      Table
+                    </span>
+                  </button>
+                </div>
+              )}
+            </TooltipTrigger>
+            {!user && (
+              <TooltipContent side="left">
+                <p>Please log in to view table</p>
+              </TooltipContent>
             )}
-          </TooltipTrigger>
-          {!user && (
-            <TooltipContent side="left">
-              <p>Please log in to view table</p>
-            </TooltipContent>
-          )}
-        </Tooltip>
-      )}
+          </Tooltip>
+        )}
 
       <PersonDetailsDialog
         person={selectedPerson}

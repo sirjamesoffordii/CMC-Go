@@ -501,7 +501,7 @@ export function PersonDetailsDialog({
                   id="pd-need-notes"
                   value={formNeedDetails}
                   onChange={e => setFormNeedDetails(e.target.value)}
-                  placeholder="Enter notes about the need"
+                  placeholder="Enter Need Notes"
                   rows={isMobile ? 2 : 4}
                   className="resize-none w-full min-w-0"
                 />
