@@ -378,8 +378,7 @@ const getDynamicPosition = (
         labelY + textHeight / 2 > bounds.viewBoxHeight - 15;
 
       if (wouldGoOffScreen) {
-        requiredOffset =
-          labelY + textHeight / 2 - (bounds.viewBoxHeight - 15);
+        requiredOffset = labelY + textHeight / 2 - (bounds.viewBoxHeight - 15);
         labelY -= requiredOffset;
       } else if (wouldTouchMap) {
         requiredOffset = bounds.bottom + metricPadding - metricTop;
@@ -433,8 +432,7 @@ const getDynamicPosition = (
       case "below": {
         const rMetricTop = rY - rHeight / 2;
         const rWouldTouchMap = rMetricTop < bounds.bottom + metricPadding;
-        const rWouldGoOffScreen =
-          rY + rHeight / 2 > bounds.viewBoxHeight - 15;
+        const rWouldGoOffScreen = rY + rHeight / 2 > bounds.viewBoxHeight - 15;
         if (rWouldGoOffScreen) {
           rOffset = rY + rHeight / 2 - (bounds.viewBoxHeight - 15);
           rY -= rOffset;
@@ -1044,7 +1042,9 @@ export const InteractiveMap = memo(function InteractiveMap({
     if (scopeFilter === "NATIONAL") {
       // When a district is selected, show its region name (works on mobile with drawer open)
       if (selectedDistrictId) {
-        const selectedDistrict = districts.find(d => d.id === selectedDistrictId);
+        const selectedDistrict = districts.find(
+          d => d.id === selectedDistrictId
+        );
         const region =
           selectedDistrict?.region || DISTRICT_REGION_MAP[selectedDistrictId];
         if (region) return region;
@@ -1152,15 +1152,9 @@ export const InteractiveMap = memo(function InteractiveMap({
       paths.forEach(p => {
         const label = getLabel(p);
         if (label === "Alaska") {
-          (p as SVGPathElement).setAttribute(
-            "transform",
-            "translate(4, 6)"
-          );
+          (p as SVGPathElement).setAttribute("transform", "translate(4, 6)");
         } else if (label === "Hawaii") {
-          (p as SVGPathElement).setAttribute(
-            "transform",
-            "translate(16, 0)"
-          );
+          (p as SVGPathElement).setAttribute("transform", "translate(16, 0)");
         }
       });
     };
@@ -1671,8 +1665,8 @@ export const InteractiveMap = memo(function InteractiveMap({
           } else if (
             selectedDistrictId &&
             selectedRegion &&
-            (districtMap.get(vPathId)?.region || DISTRICT_REGION_MAP[vPathId]) ===
-              selectedRegion
+            (districtMap.get(vPathId)?.region ||
+              DISTRICT_REGION_MAP[vPathId]) === selectedRegion
           ) {
             vPath.style.filter = REGION_HOVER_FILTER;
           } else {
@@ -2555,10 +2549,25 @@ export const InteractiveMap = memo(function InteractiveMap({
               aria-label="Open XAN (National Team)"
               className="absolute cursor-pointer pointer-events-auto focus-visible:outline-none group/xan transition-all duration-300 ease-out"
               style={{
-                // Left-aligned, vertically aligned with the D in "Invited"
-                left: "12px",
-                top: "32px",
-                transform: "translate(0, -50%)",
+                left: isMobile
+                  ? selectedDistrictId || isTableOpen
+                    ? "calc(13% - 14px)"
+                    : selectedDistrictId
+                      ? "calc(18% - 14px)"
+                      : "calc(15% - 14px)"
+                  : selectedDistrictId
+                    ? "calc(8% - 19px)"
+                    : "calc(6% - 19px)",
+                bottom: isMobile
+                  ? selectedDistrictId || isTableOpen
+                    ? "30%"
+                    : selectedDistrictId
+                      ? "34%"
+                      : "39%"
+                  : selectedDistrictId
+                    ? "12%"
+                    : "16%",
+                transform: "translate(-50%, 50%)",
               }}
               onClick={e => {
                 e.stopPropagation();
@@ -2709,8 +2718,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 });
 
                 // When scope is REGION, show per-district bubbles; otherwise per-region
-                const isRegionScope =
-                  scopeFilter === "REGION" && userRegionId;
+                const isRegionScope = scopeFilter === "REGION" && userRegionId;
                 const baseDistrictPositions: Record<string, BasePosition> = {};
                 if (isRegionScope && filteredDistricts.length > 0) {
                   filteredDistricts.forEach(d => {
@@ -2742,13 +2750,13 @@ export const InteractiveMap = memo(function InteractiveMap({
 
                 regionsToConsider.forEach(regionOrDistrictId => {
                   const stats = isRegionScope
-                    ? (districtStats[regionOrDistrictId] || {
+                    ? districtStats[regionOrDistrictId] || {
                         yes: 0,
                         maybe: 0,
                         no: 0,
                         notInvited: 0,
                         total: 0,
-                      })
+                      }
                     : regionStats[regionOrDistrictId] || {
                         yes: 0,
                         maybe: 0,
@@ -2797,13 +2805,13 @@ export const InteractiveMap = memo(function InteractiveMap({
 
                 return allRegions.map(region => {
                   const stats = isRegionScope
-                    ? (districtStats[region] || {
+                    ? districtStats[region] || {
                         yes: 0,
                         maybe: 0,
                         no: 0,
                         notInvited: 0,
                         total: 0,
-                      })
+                      }
                     : regionStats[region] || {
                         yes: 0,
                         maybe: 0,
@@ -2868,9 +2876,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                         x={pos.labelX - 40}
                         y={nameBelow ? pos.labelY - 30 : pos.labelY - 55}
                         width={80}
-                        height={
-                          nameBelow ? totalHeight + 70 : totalHeight + 70
-                        }
+                        height={nameBelow ? totalHeight + 70 : totalHeight + 70}
                         fill="transparent"
                         rx="4"
                       />
