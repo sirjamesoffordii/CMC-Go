@@ -71,7 +71,8 @@ export function MobileDrawer({
     if (snapOverride && isOpen) {
       setSnap(snapOverride.snap);
       controls.start({
-        height: snapOverride.snap === "full" ? `${SNAP_FULL}dvh` : `${SNAP_HALF}dvh`,
+        height:
+          snapOverride.snap === "full" ? `${SNAP_FULL}dvh` : `${SNAP_HALF}dvh`,
       });
     }
   }, [snapOverride, isOpen, controls]);
@@ -146,9 +147,8 @@ export function MobileDrawer({
             dragElastic={{ top: 0.15, bottom: 0.3 }}
             onDragEnd={handleDragEnd}
             className={[
-              "fixed inset-x-0 bottom-0 bg-white md:hidden flex flex-col mobile-drawer-bottom overflow-hidden",
+              "fixed inset-x-0 bottom-0 bg-white md:hidden flex flex-col mobile-drawer-bottom overflow-hidden rounded-t-[1.25rem]",
               shouldCoverToolbar ? "z-[260]" : "z-[220]",
-              isFullScreen ? "" : "rounded-t-[1.25rem]",
             ].join(" ")}
             style={{
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
@@ -160,12 +160,19 @@ export function MobileDrawer({
             {/* Dark handle bar with X button */}
             <div
               onPointerDown={e => {
-                if (!(e.target instanceof HTMLElement) || !e.target.closest("button")) {
+                if (
+                  !(e.target instanceof HTMLElement) ||
+                  !e.target.closest("button")
+                ) {
                   dragControls.start(e);
                 }
               }}
               className="relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none bg-black"
-              style={{ minHeight: "40px", padding: "12px 0 8px", touchAction: "none" }}
+              style={{
+                minHeight: "40px",
+                padding: "12px 0 8px",
+                touchAction: "none",
+              }}
             >
               {showHeader && title && !hideTitleCloseInCorner && (
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 pr-14 min-w-0">
@@ -174,9 +181,15 @@ export function MobileDrawer({
                   </h2>
                 </div>
               )}
-              <div className="w-10 h-1 bg-white rounded-full" aria-hidden="true" />
+              <div
+                className="w-10 h-1 bg-white rounded-full"
+                aria-hidden="true"
+              />
               <button
-                onClick={e => { e.stopPropagation(); onClose(); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  onClose();
+                }}
                 className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white hover:bg-white/10 active:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                 aria-label="Close"
               >
