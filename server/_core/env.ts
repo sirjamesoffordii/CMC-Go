@@ -268,7 +268,7 @@ export const ENV = {
   corsOrigin: process.env.CORS_ORIGIN ?? "",
   // Email configuration (Resend API)
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
-  FROM_EMAIL: process.env.FROM_EMAIL ?? "CMC Go <noreply@cmcgo.org>",
+  FROM_EMAIL: process.env.FROM_EMAIL ?? "CMC Go <noreply@cmcgo.app>",
   // Dev-only: bypass auth requirements in local development when set
   devBypassAuth:
     (
