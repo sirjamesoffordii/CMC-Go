@@ -53,7 +53,7 @@ const districtsData = [
   // Northeast
   {
     name: "Northern New England",
-    svgPathId: "NorthernNewEngland",
+    svgPathId: "NorthernNewEnglend",
     regionName: "Northeast",
   },
   {

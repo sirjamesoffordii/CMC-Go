@@ -44,7 +44,7 @@ const districtsData = [
   { svgPathId: "Tennessee", regionName: "Mid-Atlantic" },
 
   // NORTH EAST
-  { svgPathId: "NorthernNewEngland", regionName: "North East" },
+  { svgPathId: "NorthernNewEnglend", regionName: "North East" },
   { svgPathId: "SouthernNewEngland", regionName: "North East" },
   { svgPathId: "NewYork", regionName: "North East" },
   { svgPathId: "NewJersey", regionName: "North East" },
