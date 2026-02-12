@@ -65,10 +65,7 @@ export function BottomSheet({
   );
 
   const startDrag = (e: React.PointerEvent) => {
-    if (
-      !(e.target instanceof HTMLElement) ||
-      !e.target.closest("button")
-    ) {
+    if (!(e.target instanceof HTMLElement) || !e.target.closest("button")) {
       dragControls.start(e);
     }
   };
@@ -107,22 +104,31 @@ export function BottomSheet({
             style={{
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
               boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+              borderTopLeftRadius: "1.25rem",
+              borderTopRightRadius: "1.25rem",
             }}
             role="dialog"
             aria-modal="true"
           >
-            {/* Dark handle bar — matching MobileDrawer */}
+            {/* Dark handle bar — black like Table drawer, title + dash + X in white */}
             <div
               onPointerDown={startDrag}
-              className="relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none bg-slate-900"
+              className="relative flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none bg-black"
               style={{
                 minHeight: "40px",
                 padding: "12px 0 8px",
                 touchAction: "none",
               }}
             >
+              {title && (
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pr-14 min-w-0">
+                  <h2 className="text-sm font-semibold text-white truncate">
+                    {title}
+                  </h2>
+                </div>
+              )}
               <div
-                className="w-10 h-1 bg-slate-500 rounded-full"
+                className="w-10 h-1 bg-white rounded-full"
                 aria-hidden="true"
               />
               {showCloseButton && (
@@ -131,26 +137,13 @@ export function BottomSheet({
                     e.stopPropagation();
                     onOpenChange(false);
                   }}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-700 active:bg-slate-600 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-2.5 rounded-full text-white hover:bg-white/10 active:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>
               )}
             </div>
-
-            {/* Title header */}
-            {title && (
-              <div
-                onPointerDown={startDrag}
-                style={{ touchAction: "none" }}
-                className="px-4 py-2.5 flex items-center shrink-0 border-b border-slate-200 bg-slate-50 cursor-grab active:cursor-grabbing"
-              >
-                <h2 className="text-base font-semibold text-slate-900 truncate">
-                  {title}
-                </h2>
-              </div>
-            )}
 
             {/* Content */}
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">

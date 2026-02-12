@@ -153,6 +153,8 @@ export function MobileDrawer({
             style={{
               paddingBottom: "env(safe-area-inset-bottom, 16px)",
               boxShadow: "0 -4px 24px rgba(0,0,0,0.18)",
+              borderTopLeftRadius: "1.25rem",
+              borderTopRightRadius: "1.25rem",
             }}
             role="dialog"
             aria-modal="true"

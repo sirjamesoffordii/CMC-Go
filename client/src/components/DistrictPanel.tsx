@@ -3720,7 +3720,7 @@ export function DistrictPanel({
                       Basic Information
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
                     <div className="space-y-2 relative">
                       <Label htmlFor="person-name">Full Name *</Label>
                       <Input
@@ -3813,72 +3813,74 @@ export function DistrictPanel({
                           </ul>
                         )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="person-role">Role *</Label>
-                      {selectedCampusId === "district" ? (
-                        <Input
-                          id="person-role"
-                          value={
-                            isNationalTeam
-                              ? "National Director"
-                              : "District Director"
-                          }
-                          disabled
-                          className="bg-slate-100 cursor-not-allowed"
-                        />
-                      ) : isFirstPersonInRegionalDirectorsAdd ? (
-                        <Input
-                          id="person-role"
-                          value="Field Director"
-                          disabled
-                          className="bg-slate-100 cursor-not-allowed"
-                        />
-                      ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="person-role">Role *</Label>
+                        {selectedCampusId === "district" ? (
+                          <Input
+                            id="person-role"
+                            value={
+                              isNationalTeam
+                                ? "National Director"
+                                : "District Director"
+                            }
+                            disabled
+                            className="bg-slate-100 cursor-not-allowed"
+                          />
+                        ) : isFirstPersonInRegionalDirectorsAdd ? (
+                          <Input
+                            id="person-role"
+                            value="Field Director"
+                            disabled
+                            className="bg-slate-100 cursor-not-allowed"
+                          />
+                        ) : (
+                          <Select
+                            value={personForm.role}
+                            onValueChange={value =>
+                              setPersonForm({
+                                ...personForm,
+                                role: value as CampusRole,
+                              })
+                            }
+                          >
+                            <SelectTrigger id="person-role">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableRoles.map(role => (
+                                <SelectItem key={role} value={role}>
+                                  {role}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+                      <div className="space-y-2 relative">
+                        <Label htmlFor="person-status">Status</Label>
                         <Select
-                          value={personForm.role}
+                          value={personForm.status}
                           onValueChange={value =>
                             setPersonForm({
                               ...personForm,
-                              role: value as CampusRole,
+                              status: value as keyof typeof statusMap,
                             })
                           }
                         >
-                          <SelectTrigger id="person-role">
-                            <SelectValue placeholder="Select role" />
+                          <SelectTrigger id="person-status">
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableRoles.map(role => (
-                              <SelectItem key={role} value={role}>
-                                {role}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="director">Yes</SelectItem>
+                            <SelectItem value="staff">Maybe</SelectItem>
+                            <SelectItem value="co-director">No</SelectItem>
+                            <SelectItem value="not-invited">
+                              Not Invited Yet
+                            </SelectItem>
                           </SelectContent>
                         </Select>
-                      )}
-                    </div>
-                    <div className="space-y-2 relative">
-                      <Label htmlFor="person-status">Status</Label>
-                      <Select
-                        value={personForm.status}
-                        onValueChange={value =>
-                          setPersonForm({
-                            ...personForm,
-                            status: value as keyof typeof statusMap,
-                          })
-                        }
-                      >
-                        <SelectTrigger id="person-status">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="director">Yes</SelectItem>
-                          <SelectItem value="staff">Maybe</SelectItem>
-                          <SelectItem value="co-director">No</SelectItem>
-                          <SelectItem value="not-invited">
-                            Not Invited Yet
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4260,28 +4262,9 @@ export function DistrictPanel({
                                 needDetails: e.target.value,
                               });
                             }}
-                            placeholder="Enter notes about the need"
+                            placeholder="Enter Need Notes"
                             rows={isMobile ? 2 : 4}
                             className="resize-none w-full min-w-0"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Label
-                            htmlFor="person-needs-met"
-                            className="cursor-pointer text-sm font-medium"
-                          >
-                            Need Met
-                          </Label>
-                          <Checkbox
-                            id="person-needs-met"
-                            checked={personForm.needsMet}
-                            onCheckedChange={checked =>
-                              setPersonForm({
-                                ...personForm,
-                                needsMet: checked === true,
-                              })
-                            }
-                            className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                           />
                         </div>
                       </motion.div>
@@ -4312,7 +4295,38 @@ export function DistrictPanel({
                         className="resize-none w-full min-w-0"
                       />
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
+                  </motion.div>
+
+                  {/* Need Met and Deposit Paid - aligned in same row across from each other */}
+                  <div
+                    className={
+                      personForm.needType !== "None"
+                        ? "col-span-2 grid grid-cols-2 gap-4 items-center"
+                        : "flex items-center gap-2"
+                    }
+                  >
+                    {personForm.needType !== "None" && (
+                      <div className="flex items-center gap-2">
+                        <Label
+                          htmlFor="person-needs-met"
+                          className="cursor-pointer text-sm font-medium"
+                        >
+                          Need Met
+                        </Label>
+                        <Checkbox
+                          id="person-needs-met"
+                          checked={personForm.needsMet}
+                          onCheckedChange={checked =>
+                            setPersonForm({
+                              ...personForm,
+                              needsMet: checked === true,
+                            })
+                          }
+                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
                       <Label
                         htmlFor="person-deposit-paid"
                         className="cursor-pointer text-sm font-medium"
@@ -4331,7 +4345,7 @@ export function DistrictPanel({
                         className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                       />
                     </div>
-                  </motion.div>
+                  </div>
                 </motion.div>
               </div>
               <DialogFooter className="flex w-full items-center justify-between pt-0 px-0">
@@ -4404,7 +4418,7 @@ export function DistrictPanel({
                     Basic Information
                   </h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4">
                   <div className="space-y-2 relative">
                     <Label htmlFor="edit-person-name">Full Name *</Label>
                     <Input
@@ -4494,72 +4508,74 @@ export function DistrictPanel({
                       </ul>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-person-role">Role *</Label>
-                    {editingPerson?.campusId === "district" ? (
-                      <Input
-                        id="edit-person-role"
-                        value={
-                          isNationalTeam
-                            ? "National Director"
-                            : "District Director"
-                        }
-                        disabled
-                        className="bg-slate-100 cursor-not-allowed"
-                      />
-                    ) : isFirstPersonInRegionalDirectorsEdit ? (
-                      <Input
-                        id="edit-person-role"
-                        value="Field Director"
-                        disabled
-                        className="bg-slate-100 cursor-not-allowed"
-                      />
-                    ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-person-role">Role *</Label>
+                      {editingPerson?.campusId === "district" ? (
+                        <Input
+                          id="edit-person-role"
+                          value={
+                            isNationalTeam
+                              ? "National Director"
+                              : "District Director"
+                          }
+                          disabled
+                          className="bg-slate-100 cursor-not-allowed"
+                        />
+                      ) : isFirstPersonInRegionalDirectorsEdit ? (
+                        <Input
+                          id="edit-person-role"
+                          value="Field Director"
+                          disabled
+                          className="bg-slate-100 cursor-not-allowed"
+                        />
+                      ) : (
+                        <Select
+                          value={personForm.role}
+                          onValueChange={value =>
+                            setPersonForm({
+                              ...personForm,
+                              role: value as CampusRole,
+                            })
+                          }
+                        >
+                          <SelectTrigger id="edit-person-role">
+                            <SelectValue placeholder="Select role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableRoles.map(role => (
+                              <SelectItem key={role} value={role}>
+                                {role}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                    <div className="space-y-2 relative">
+                      <Label htmlFor="edit-person-status">Status</Label>
                       <Select
-                        value={personForm.role}
+                        value={personForm.status}
                         onValueChange={value =>
                           setPersonForm({
                             ...personForm,
-                            role: value as CampusRole,
+                            status: value as keyof typeof statusMap,
                           })
                         }
                       >
-                        <SelectTrigger id="edit-person-role">
-                          <SelectValue placeholder="Select role" />
+                        <SelectTrigger id="edit-person-status">
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {availableRoles.map(role => (
-                            <SelectItem key={role} value={role}>
-                              {role}
-                            </SelectItem>
-                          ))}
+                          <SelectItem value="director">Yes</SelectItem>
+                          <SelectItem value="staff">Maybe</SelectItem>
+                          <SelectItem value="co-director">No</SelectItem>
+                          <SelectItem value="not-invited">
+                            Not Invited Yet
+                          </SelectItem>
                         </SelectContent>
                       </Select>
-                    )}
-                  </div>
-                  <div className="space-y-2 relative">
-                    <Label htmlFor="edit-person-status">Status</Label>
-                    <Select
-                      value={personForm.status}
-                      onValueChange={value =>
-                        setPersonForm({
-                          ...personForm,
-                          status: value as keyof typeof statusMap,
-                        })
-                      }
-                    >
-                      <SelectTrigger id="edit-person-status">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="director">Yes</SelectItem>
-                        <SelectItem value="staff">Maybe</SelectItem>
-                        <SelectItem value="co-director">No</SelectItem>
-                        <SelectItem value="not-invited">
-                          Not Invited Yet
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4941,28 +4957,9 @@ export function DistrictPanel({
                               needDetails: e.target.value,
                             });
                           }}
-                          placeholder="Enter notes about the need"
+                          placeholder="Enter Need Notes"
                           rows={isMobile ? 2 : 4}
                           className="resize-none w-full min-w-0"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Label
-                          htmlFor="edit-person-needs-met"
-                          className="cursor-pointer text-sm font-medium"
-                        >
-                          Need Met
-                        </Label>
-                        <Checkbox
-                          id="edit-person-needs-met"
-                          checked={personForm.needsMet}
-                          onCheckedChange={checked =>
-                            setPersonForm({
-                              ...personForm,
-                              needsMet: checked === true,
-                            })
-                          }
-                          className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                         />
                       </div>
                     </motion.div>
@@ -4993,7 +4990,38 @@ export function DistrictPanel({
                       className="resize-none w-full min-w-0"
                     />
                   </div>
-                  <div className="flex items-center gap-2 mt-1">
+                </motion.div>
+
+                {/* Need Met and Deposit Paid - aligned in same row across from each other */}
+                <div
+                  className={
+                    personForm.needType !== "None"
+                      ? "col-span-2 grid grid-cols-2 gap-4 items-center"
+                      : "flex items-center gap-2"
+                  }
+                >
+                  {personForm.needType !== "None" && (
+                    <div className="flex items-center gap-2">
+                      <Label
+                        htmlFor="edit-person-needs-met"
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        Need Met
+                      </Label>
+                      <Checkbox
+                        id="edit-person-needs-met"
+                        checked={personForm.needsMet}
+                        onCheckedChange={checked =>
+                          setPersonForm({
+                            ...personForm,
+                            needsMet: checked === true,
+                          })
+                        }
+                        className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
                     <Label
                       htmlFor="edit-person-deposit-paid"
                       className="cursor-pointer text-sm font-medium"
@@ -5012,7 +5040,7 @@ export function DistrictPanel({
                       className="border-slate-600 data-[state=checked]:bg-slate-700 data-[state=checked]:border-slate-700"
                     />
                   </div>
-                </motion.div>
+                </div>
               </motion.div>
             </div>
             <DialogFooter className="edit-person-footer flex w-full flex-row flex-wrap items-end justify-between gap-4 pt-8 pb-6 sm:pt-6 sm:pb-4">
