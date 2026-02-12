@@ -452,9 +452,7 @@ export const appRouter = router({
         // Build the reset link
         const origin =
           ENV.corsOrigin ||
-          (ENV.isProduction
-            ? "https://cmcgo.org"
-            : "http://localhost:3000");
+          (ENV.isProduction ? "https://cmcgo.app" : "http://localhost:3000");
         const resetLink = `${origin}/reset-password?token=${token}&email=${encodeURIComponent(input.email)}`;
 
         // Send email via Resend API if configured
