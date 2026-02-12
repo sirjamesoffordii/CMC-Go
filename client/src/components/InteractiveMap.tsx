@@ -582,7 +582,6 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   NorthCarolina: { x: 742, y: 302 },
   NorthDakota: { x: 478, y: 126 },
   "NorthernCal-Nevada": { x: 199, y: 246 },
-  NorthernNewEnglend: { x: 818, y: 122 },
   NorthernNewEngland: { x: 818, y: 122 },
   NorthernMissouri: { x: 557, y: 262 },
   NorthTexas: { x: 501, y: 367 },
@@ -1254,7 +1253,6 @@ export const InteractiveMap = memo(function InteractiveMap({
       NewJersey: "#7A6A5A", // brownstone
       NewYork: "#4A5A7A", // empire slate
       NorthernNewEngland: "#5A6A5A", // pine
-      NorthernNewEnglend: "#5A6A5A", // pine (typo variant)
       "Penn-Del": "#8A5A5A", // liberty brick
       SouthernNewEngland: "#6A5A6A", // vineyard plum
       Connecticut: "#5A7A7A", // harbor teal
