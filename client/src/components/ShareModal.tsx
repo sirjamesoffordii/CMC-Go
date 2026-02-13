@@ -36,6 +36,11 @@ function getSmsUri(body: string): string {
   return `sms:?body=${encoded}`;
 }
 
+/** Detect mobile user agents */
+function isMobileDevice(): boolean {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+}
+
 /** Open a popup window centered on screen */
 function openSharePopup(url: string, name: string) {
   const width = 600;
@@ -118,48 +123,42 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
   }, []);
 
   const handleEmailShare = useCallback(() => {
+    const subject = "Check out CMC Go — Coordinate toward CMC together";
+
+    // Mobile: use mailto: to open native email app (Gmail, Apple Mail, etc.)
+    if (isMobileDevice()) {
+      window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullMessage)}`;
+      return;
+    }
+
+    // Desktop: open Gmail compose
     const params = new URLSearchParams({
       view: "cm",
       fs: "1",
       tf: "1",
-      su: "Check out CMC Go — Coordinate toward CMC together",
+      su: subject,
       body: fullMessage,
     });
-
-    // Force Gmail account index 0 (primary account) for the current browser profile.
-    // Note: if the user isn't signed into Gmail, Google will still prompt for login.
     const gmailUrl = `https://mail.google.com/mail/u/0/?${params.toString()}`;
     openInNewTab(gmailUrl);
   }, [fullMessage]);
 
   const handleSMSShare = useCallback(() => {
-    // Prefer Web Share API when available:
-    // - Windows desktop: opens the Windows share sheet (Phone Link can appear as a target)
-    // - iPhone/iPad: opens the iOS share sheet (Messages draft prefilled)
+    // Mobile: go directly to sms: URI → opens Google Messages (Android) or iMessage (iOS)
+    if (isMobileDevice()) {
+      window.location.href = getSmsUri(fullMessage);
+      return;
+    }
+
+    // Desktop: try Web Share API (Windows share sheet can reach Phone Link / Messages)
     const share = navigator.share;
     const canShare = navigator.canShare;
     if (share && (!canShare || canShare({ text: fullMessage }))) {
       share({ text: fullMessage, title: "CMC Go" }).catch(() => {
-        // User cancel or share failure → fall through to platform-specific fallbacks
-        const ua = navigator.userAgent;
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-        if (isMobile) {
-          window.location.href = getSmsUri(fullMessage);
-          return;
-        }
-
-        // Desktop fallback: Google Messages Web can't accept a prefilled body via URL,
-        // so copy the message and open a new conversation page.
+        // User cancel or share failure → desktop fallback
         void copyToClipboard(fullMessage);
         openInNewTab("https://messages.google.com/web/conversations/new");
       });
-      return;
-    }
-
-    const ua = navigator.userAgent;
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(ua);
-    if (isMobile) {
-      window.location.href = getSmsUri(fullMessage);
       return;
     }
 
@@ -178,10 +177,14 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
   const handleFacebookShare = useCallback(() => {
     const url = encodeURIComponent(siteUrl);
     const quote = encodeURIComponent(customMessage);
-    openSharePopup(
-      `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${quote}`,
-      "facebook-share"
-    );
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${quote}`;
+    // Mobile: open in new tab (Facebook app or in-app browser handles it)
+    // Desktop: centered popup
+    if (isMobileDevice()) {
+      window.open(fbUrl, "_blank");
+    } else {
+      openSharePopup(fbUrl, "facebook-share");
+    }
   }, [siteUrl, customMessage]);
 
   const handleTwitterShare = useCallback(() => {
@@ -192,15 +195,25 @@ export function ShareModal({ open, onClose }: ShareModalProps) {
         : customMessage;
     const text = encodeURIComponent(trimmed);
     const url = encodeURIComponent(siteUrl);
-    openSharePopup(
-      `https://x.com/intent/tweet?text=${text}&url=${url}`,
-      "x-share"
-    );
+    const xUrl = `https://x.com/intent/tweet?text=${text}&url=${url}`;
+    // Mobile: open in new tab (X app or browser handles it)
+    // Desktop: centered popup
+    if (isMobileDevice()) {
+      window.open(xUrl, "_blank");
+    } else {
+      openSharePopup(xUrl, "x-share");
+    }
   }, [siteUrl, customMessage]);
 
   const handleWhatsAppShare = useCallback(() => {
     const text = encodeURIComponent(fullMessage);
-    window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
+    // whatsapp:// intent works on both Android and iOS when app is installed
+    // Falls back to web.whatsapp.com on desktop
+    if (isMobileDevice()) {
+      window.location.href = `whatsapp://send?text=${text}`;
+    } else {
+      window.open(`https://web.whatsapp.com/send?text=${text}`, "_blank");
+    }
   }, [fullMessage]);
 
   const isMessageModified = customMessage !== DEFAULT_INVITATION_MESSAGE;
