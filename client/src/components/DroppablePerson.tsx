@@ -88,6 +88,7 @@ export function DroppablePerson({
     null
   );
   const [mobileTooltipOpen, setMobileTooltipOpen] = useState(false);
+  const [clickTooltipOpen, setClickTooltipOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -215,6 +216,7 @@ export function DroppablePerson({
   const handleNameMouseLeave = () => {
     // Only handle if user can see details
     if (hideDetails || isMobile) return;
+    if (clickTooltipOpen) return; // Keep click tooltip open until backdrop/edit
     setIsHovered(false);
     setTooltipPos(null);
   };
@@ -245,9 +247,7 @@ export function DroppablePerson({
 
     longPressTimerRef.current = window.setTimeout(() => {
       longPressTriggeredRef.current = true;
-      setIsHovered(true);
-      setTooltipPos({ x: 0, y: 0 });
-      setMobileTooltipOpen(true);
+      onEdit(campusId, person);
     }, 450);
   };
 
@@ -268,6 +268,18 @@ export function DroppablePerson({
     setIsHovered(false);
     setTooltipPos(null);
     longPressTriggeredRef.current = false;
+  };
+
+  const dismissClickTooltip = () => {
+    setClickTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+  };
+
+  const handleEditFromTooltip = () => {
+    dismissClickTooltip();
+    dismissMobileTooltip();
+    onEdit(campusId, person);
   };
 
   return (
@@ -300,7 +312,10 @@ export function DroppablePerson({
               e.stopPropagation();
               return;
             }
-            onEdit(campusId, person);
+            // Tap → tooltip; long-press (handled above) → edit panel
+            setClickTooltipOpen(true);
+            setTooltipPos({ x: 0, y: 0 });
+            setIsHovered(true);
           }}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
@@ -399,16 +414,20 @@ export function DroppablePerson({
       {/* Person Tooltip */}
       {!hideDetails && isHovered && tooltipPos && (
         <>
-          {isMobile && mobileTooltipOpen && (
+          {((isMobile && mobileTooltipOpen) || clickTooltipOpen) && (
             <div
               role="button"
               tabIndex={0}
               aria-label="Close tooltip"
               className="fixed inset-0 z-[99998] bg-black/20"
-              onClick={dismissMobileTooltip}
+              onClick={() =>
+                clickTooltipOpen ? dismissClickTooltip() : dismissMobileTooltip()
+              }
               onKeyDown={e => {
                 if (e.key === "Enter" || e.key === "Escape")
-                  dismissMobileTooltip();
+                  clickTooltipOpen
+                    ? dismissClickTooltip()
+                    : dismissMobileTooltip();
               }}
             />
           )}
@@ -425,7 +444,12 @@ export function DroppablePerson({
                 : null
             }
             position={tooltipPos}
-            centered={isMobile}
+            centered={isMobile || clickTooltipOpen}
+            onEdit={
+              clickTooltipOpen || mobileTooltipOpen
+                ? handleEditFromTooltip
+                : undefined
+            }
           />
         </>
       )}

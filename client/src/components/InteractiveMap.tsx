@@ -1545,6 +1545,23 @@ export const InteractiveMap = memo(function InteractiveMap({
       const clickHandler = (e: MouseEvent) => {
         e.stopPropagation();
         onDistrictSelect(pathId);
+
+        // On touch devices, mouseenter fires before click but mouseleave never
+        // fires, leaving hover brightness stuck on the tapped district.
+        // Clear hover state immediately after tap to prevent sticky highlight.
+        if (isMobile) {
+          setHoveredDistrict(null);
+          setHoveredRegion(null);
+          setTooltipPos(null);
+
+          // Restore the raised path to its original z-order
+          if (movedPathRef.current) {
+            const { path: prevPath, parent, originalIndex } = movedPathRef.current;
+            const sibling = parent.children[originalIndex] || null;
+            parent.insertBefore(prevPath, sibling);
+            movedPathRef.current = null;
+          }
+        }
       };
       path.addEventListener("click", clickHandler);
 

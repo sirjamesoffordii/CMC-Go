@@ -94,6 +94,21 @@
     opacity: 0.85;
   }
 
+  /* Prevent sticky hover on touch — Table tab button: on touch devices, :hover
+     persists after tap until another tap. Restrict hover styles to hover-capable devices. */
+  @media (hover: none) {
+    .table-tab-button:hover {
+      background-color: black !important;
+    }
+  }
+
+  /* Remove focus outline/glow from Table tab — prevents white border persisting after tap */
+  .table-tab-button:focus,
+  .table-tab-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   /* Header: compact on mobile with safe area */
   header {
     padding-top: 6px !important;

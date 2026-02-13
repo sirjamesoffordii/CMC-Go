@@ -1403,7 +1403,8 @@ export default function Home() {
               {isMobile ? (
                 /* Mobile: Full-width bar at bottom of screen, extends to bottom edge with safe area */
                 <button
-                  onClick={() => {
+                  onClick={e => {
+                    (e.currentTarget as HTMLElement).blur();
                     if (!user) {
                       setLoginModalOpen(true);
                       return;
@@ -1421,7 +1422,7 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                  fixed inset-x-0 bottom-0 z-30 w-full pt-4 pb-[max(12px,env(safe-area-inset-bottom))] bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center touch-manipulation
+                  fixed inset-x-0 bottom-0 z-30 w-full pt-4 pb-[max(12px,env(safe-area-inset-bottom))] bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center touch-manipulation table-tab-button
                   ${!user ? "opacity-70" : ""}
                 `}
                 >
