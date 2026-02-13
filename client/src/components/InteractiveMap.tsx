@@ -41,12 +41,12 @@ const baseRegionPositions: Record<
     labelDirection: "above" | "below" | "left" | "right";
   }
 > = {
-  // TOP ROW - above map (y < 120); baseY 65 keeps metric block bottom above map top
-  Northwest: { baseX: 200, baseY: 58, labelDirection: "above" },
-  "Big Sky": { baseX: 380, baseY: 58, labelDirection: "above" },
-  "Great Plains North": { baseX: 540, baseY: 58, labelDirection: "above" },
-  "Great Plains South": { baseX: 680, baseY: 58, labelDirection: "above" },
-  "Great Lakes": { baseX: 780, baseY: 58, labelDirection: "above" },
+  // TOP ROW - above map (y < 120); baseY shifted down so labels aren't clipped by 0.88 scale
+  Northwest: { baseX: 200, baseY: 72, labelDirection: "above" },
+  "Big Sky": { baseX: 380, baseY: 72, labelDirection: "above" },
+  "Great Plains North": { baseX: 540, baseY: 72, labelDirection: "above" },
+  "Great Plains South": { baseX: 680, baseY: 72, labelDirection: "above" },
+  "Great Lakes": { baseX: 780, baseY: 72, labelDirection: "above" },
 
   // RIGHT SIDE - right of map (x > 880); baseX 920 keeps block in viewBox (960) and clear
   Northeast: { baseX: 930, baseY: 200, labelDirection: "right" },
