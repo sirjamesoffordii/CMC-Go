@@ -117,6 +117,92 @@ test.describe("Mobile UI", () => {
     }
   });
 
+  test("SMS Text share opens sms: URI on mobile", async ({ browser }) => {
+    // Use a mobile user agent so isMobileDevice() returns true
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      viewport: MOBILE_VIEWPORT,
+    });
+    const page = await context.newPage();
+
+    // Use CDP to intercept navigation requests (sms: URIs can't be caught any other way)
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Page.enable");
+    const navUrls: string[] = [];
+    cdp.on("Page.frameRequestedNavigation", (params: { url: string }) => {
+      navUrls.push(params.url);
+    });
+
+    await loginAsAdmin(page);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+    // Open hamburger → Share
+    await page.locator("header button").last().click();
+    await page.getByText("Share CMC Go").click();
+    await expect(page.getByText(/share via/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Clear any navigation events from page load
+    navUrls.length = 0;
+
+    // Click the Text button
+    await page.getByRole("button", { name: "Text", exact: true }).click();
+
+    // Give the browser a moment to process the navigation request
+    await page.waitForTimeout(500);
+
+    const smsNav = navUrls.find(u => u.startsWith("sms:"));
+    expect(smsNav).toBeDefined();
+    expect(smsNav).toMatch(/^sms:\?(&?)body=/);
+    expect(smsNav).toContain(encodeURIComponent("CMC Go"));
+
+    await cdp.detach();
+    await context.close();
+  });
+
+  test("Email share opens mailto: URI on mobile", async ({ browser }) => {
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      viewport: MOBILE_VIEWPORT,
+    });
+    const page = await context.newPage();
+
+    // Use CDP to intercept navigation requests
+    const cdp = await context.newCDPSession(page);
+    await cdp.send("Page.enable");
+    const navUrls: string[] = [];
+    cdp.on("Page.frameRequestedNavigation", (params: { url: string }) => {
+      navUrls.push(params.url);
+    });
+
+    await loginAsAdmin(page);
+    await page.goto("/");
+    await expect(page).not.toHaveURL(/\/login/, { timeout: 10_000 });
+
+    // Open hamburger → Share
+    await page.locator("header button").last().click();
+    await page.getByText("Share CMC Go").click();
+    await expect(page.getByText(/share via/i).first()).toBeVisible({ timeout: 5000 });
+
+    // Clear any navigation events from page load
+    navUrls.length = 0;
+
+    // Click the Email button
+    await page.getByRole("button", { name: "Email", exact: true }).click();
+
+    await page.waitForTimeout(500);
+
+    const mailtoNav = navUrls.find(u => u.startsWith("mailto:"));
+    expect(mailtoNav).toBeDefined();
+    expect(mailtoNav).toMatch(/^mailto:\?subject=/);
+    expect(mailtoNav).toContain(encodeURIComponent("CMC Go"));
+
+    await cdp.detach();
+    await context.close();
+  });
+
   test("metrics section aligns right on mobile (screenshot verification)", async ({
     page,
   }) => {
