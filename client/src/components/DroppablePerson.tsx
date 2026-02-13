@@ -38,6 +38,14 @@ interface DroppablePersonProps {
   index: number;
   onEdit: (campusId: string | number, person: Person) => void;
   onClick: (campusId: string | number, person: Person) => void;
+  /** When provided, name click shows centralized tooltip (allows quick nav between names) */
+  onShowPersonTooltip?: (
+    person: Person,
+    campusId: string | number,
+    position?: { x: number; y: number }
+  ) => void;
+  /** When true, parent is showing centralized tooltip - hide local tooltip */
+  centralizedTooltipOpen?: boolean;
   onMove: (
     draggedId: string,
     draggedCampusId: string | number,
@@ -73,6 +81,8 @@ export function DroppablePerson({
   index,
   onEdit,
   onClick: _onClick,
+  onShowPersonTooltip,
+  centralizedTooltipOpen = false,
   onMove,
   hasNeeds = false,
   onPersonStatusChange,
@@ -247,7 +257,9 @@ export function DroppablePerson({
 
     longPressTimerRef.current = window.setTimeout(() => {
       longPressTriggeredRef.current = true;
-      onEdit(campusId, person);
+      setIsHovered(true);
+      setTooltipPos({ x: 0, y: 0 });
+      setMobileTooltipOpen(true);
     }, 450);
   };
 
@@ -304,7 +316,7 @@ export function DroppablePerson({
         {/* First Name Label with Edit Button */}
         <div
           ref={nameRef}
-          className="relative flex items-center justify-center mb-1 group/name w-full min-w-0"
+          className="relative flex items-center justify-center mb-[3px] group/name w-full min-w-0"
           onClick={e => {
             if (!canInteract) return;
             if (isMobile && longPressTriggeredRef.current) {
@@ -312,7 +324,13 @@ export function DroppablePerson({
               e.stopPropagation();
               return;
             }
-            // Tap → tooltip; long-press (handled above) → edit panel
+            if (onShowPersonTooltip) {
+              const rect = nameRef.current?.getBoundingClientRect();
+              const pos =
+                rect != null ? { x: rect.right, y: rect.bottom } : undefined;
+              onShowPersonTooltip(person, campusId, pos);
+              return;
+            }
             setClickTooltipOpen(true);
             setTooltipPos({ x: 0, y: 0 });
             setIsHovered(true);
@@ -411,8 +429,8 @@ export function DroppablePerson({
           </div>
         )}
       </motion.div>
-      {/* Person Tooltip */}
-      {!hideDetails && isHovered && tooltipPos && (
+      {/* Person Tooltip - hide when parent is showing centralized tooltip */}
+      {!centralizedTooltipOpen && !hideDetails && isHovered && tooltipPos && (
         <>
           {((isMobile && mobileTooltipOpen) || clickTooltipOpen) && (
             <div
@@ -421,7 +439,9 @@ export function DroppablePerson({
               aria-label="Close tooltip"
               className="fixed inset-0 z-[99998] bg-black/20"
               onClick={() =>
-                clickTooltipOpen ? dismissClickTooltip() : dismissMobileTooltip()
+                clickTooltipOpen
+                  ? dismissClickTooltip()
+                  : dismissMobileTooltip()
               }
               onKeyDown={e => {
                 if (e.key === "Enter" || e.key === "Escape")

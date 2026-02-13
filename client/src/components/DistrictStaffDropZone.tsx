@@ -29,6 +29,12 @@ interface DistrictStaffDropZoneProps {
   onDrop: (personId: string, fromCampusId: string | number) => void;
   onEdit: (campusId: string | number, person: Person) => void;
   onClick: () => void;
+  onShowPersonTooltip?: (
+    person: Person,
+    campusId: string | number,
+    position?: { x: number; y: number }
+  ) => void;
+  centralizedTooltipOpen?: boolean;
   onAddClick?: () => void;
   quickAddMode?: boolean;
   quickAddName?: string;
@@ -57,6 +63,8 @@ export function DistrictStaffDropZone({
   onDrop,
   onEdit,
   onClick,
+  onShowPersonTooltip,
+  centralizedTooltipOpen = false,
   onAddClick,
   quickAddMode = false,
   quickAddName = "",
@@ -229,55 +237,59 @@ export function DistrictStaffDropZone({
               e.stopPropagation();
               onAddClick?.();
             }}
-            className="flex flex-col items-center w-[60px]"
+            className="flex flex-col items-center w-[60px] focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
           >
-            {/* Plus sign in name position - clickable for quick add */}
-            <div className="relative flex items-center justify-center mb-1 overflow-visible">
+            {/* Plus sign in name position - clickable for quick add; min-h matches name row for alignment */}
+            <div className="relative flex items-center justify-center mb-1 min-h-[1.25rem] overflow-visible">
               {quickAddMode ? (
-                <div className="relative">
+                <div className="relative -mt-[5px]">
                   <Input
                     ref={quickAddInputRef}
-                    list="quick-add-name-suggestions"
                     value={quickAddName}
                     onChange={e => onQuickAddNameChange?.(e.target.value)}
                     onKeyDown={e => {
+                      e.stopPropagation();
                       if (e.key === "Enter") {
                         onQuickAddSubmit?.();
                       } else if (e.key === "Escape") {
                         onQuickAddCancel?.();
                       }
                     }}
+                    onKeyUp={e => {
+                      e.stopPropagation();
+                    }}
                     onBlur={() => {
                       onQuickAddSubmit?.();
                     }}
-                    placeholder="Name"
-                    className="w-16 h-5 text-xs px-1.5 py-0.5 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                    placeholder="Full Name"
+                    className="w-[9.5ch] h-[16px] text-[6px] px-1 py-0 text-center rounded-[2px] border-slate-300 focus:border-slate-400 focus:!ring-0 focus:!ring-offset-0 focus:!outline-none focus:!shadow-none focus-visible:border-slate-400 focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!outline-none focus-visible:!shadow-none"
                     autoFocus
                     spellCheck={true}
                     autoComplete="off"
                   />
-                  <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-slate-500 whitespace-nowrap pointer-events-none">
-                    Quick Add
-                  </div>
                 </div>
               ) : (
-                <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110">
-                  <Plus
-                    className="w-3 h-3 text-black"
-                    strokeWidth={1.5}
-                    onClick={e => {
-                      e.stopPropagation();
-                      onQuickAddClick?.(e);
-                    }}
-                  />
-                  <span className="absolute left-full top-1/2 -translate-y-1/2 text-[8px] text-slate-400 whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity z-10">
-                    Quick Add
+                <span
+                  className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onQuickAddClick?.(e);
+                  }}
+                >
+                  <span className="hidden md:inline text-[9px] font-medium text-slate-500 whitespace-nowrap leading-none relative -top-[2px]">
+                    → Quick Add ←
                   </span>
+                  <Plus className="w-3 h-3 text-black md:hidden" strokeWidth={1.5} />
                 </span>
               )}
             </div>
             {/* Icon - outline User only; plus is above head in name position */}
             <div className="relative inline-block transition-transform hover:scale-105 active:scale-95">
+              {!quickAddMode && (
+                <span className="quick-add-hint-mobile absolute top-[-19.55px] left-1/2 -translate-x-1/2 text-[9px] text-slate-400 whitespace-nowrap pointer-events-none flex items-center">
+                  → Quick Add ←
+                </span>
+              )}
               <User
                 className="w-10 h-10 text-gray-300 transition-all"
                 strokeWidth={1}
@@ -330,10 +342,17 @@ export function DistrictStaffDropZone({
           ref={nameRef}
           className={`relative flex items-center justify-center mb-1 group/name w-full min-w-0 ${canInteract ? "cursor-pointer" : "cursor-not-allowed"}`}
           onClick={e => {
-            if (!canInteract) return;
+            if (!canInteract || !person) return;
             if (isMobile && longPressTriggeredRef.current) {
               e.preventDefault();
               e.stopPropagation();
+              return;
+            }
+            if (onShowPersonTooltip) {
+              const rect = nameRef.current?.getBoundingClientRect();
+              const pos =
+                rect != null ? { x: rect.right, y: rect.bottom } : undefined;
+              onShowPersonTooltip(person, "district-staff", pos);
               return;
             }
             setClickTooltipOpen(true);
@@ -417,8 +436,9 @@ export function DistrictStaffDropZone({
           )}
         </div>
       </div>
-      {/* Person Tooltip */}
-      {!hideDetails &&
+      {/* Person Tooltip - hide when parent is showing centralized tooltip */}
+      {!centralizedTooltipOpen &&
+        !hideDetails &&
         isHovered &&
         tooltipPos &&
         person &&

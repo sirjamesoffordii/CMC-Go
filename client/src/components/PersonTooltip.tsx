@@ -1,9 +1,10 @@
 import { Person } from "../../../drizzle/schema";
 import { Check, Edit2 } from "lucide-react";
+import { useContext } from "react";
 import { Checkbox } from "./ui/checkbox";
 import { trpc } from "../lib/trpc";
 import { createPortal } from "react-dom";
-import { useIsMobile } from "@/hooks/useIsMobile";
+import { DrawerSnapContext } from "./MobileDrawer";
 
 interface PersonTooltipProps {
   person: Person;
@@ -16,6 +17,8 @@ interface PersonTooltipProps {
   } | null;
   position: { x: number; y: number };
   centered?: boolean;
+  /** When not centered: 'top' = tooltip top at position.y; 'center' = tooltip vertically centered on position.y */
+  positionAnchor?: "top" | "center";
   /** When provided, shows an Edit button that calls this on click */
   onEdit?: () => void;
 }
@@ -25,9 +28,9 @@ export function PersonTooltip({
   need,
   position,
   centered = false,
+  positionAnchor = "center",
   onEdit,
 }: PersonTooltipProps) {
-  const isMobile = useIsMobile();
   // Fetch household if person has one
   const { data: household } = trpc.households.getById.useQuery(
     { id: person.householdId! },
@@ -46,22 +49,57 @@ export function PersonTooltip({
     (person.guests && parseInt(person.guests, 10) > 0);
 
   const hasNotes = !!(person.notes || (need && need.description));
+  const drawerSnap = useContext(DrawerSnapContext);
 
-  // When centered with edit (click from district view): position over map area.
-  // On mobile, map is top 45dvh when drawer is open — center tooltip at 22.5dvh.
-  // On desktop, use viewport center (map is typically in center).
-  const centeredTop =
-    centered && isMobile ? "22.5dvh" : centered ? "50%" : undefined;
+  // When centered with edit (click from district view): position based on drawer state.
+  // Drawer full up → bottom half (75dvh). Otherwise → top half (25dvh).
+  const isMapCentered = centered && onEdit;
+  const drawerFull = drawerSnap === "full";
+  const centeredTop = isMapCentered
+    ? drawerFull
+      ? "75dvh"
+      : "25dvh"
+    : "50%";
 
   const tooltipContent = (
     <div
-      className={`fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px] max-h-[calc(100dvh-32px)] overflow-y-auto ${onEdit ? "pointer-events-auto" : "pointer-events-none"}`}
+      className={`fixed z-[99999] ${onEdit ? "pointer-events-auto" : "pointer-events-none"}`}
       style={{
         left: centered ? "50%" : position.x + 15,
+        right: centered ? "auto" : undefined,
         top: centered ? centeredTop : position.y,
-        transform: centered ? "translate(-50%, -50%)" : "translateY(-50%)",
+        transform: centered
+          ? "translate(-50%, -50%)"
+          : positionAnchor === "top"
+            ? "none"
+            : "translateY(-50%)",
       }}
     >
+      <div
+        className={`bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 pt-3 tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px] overflow-y-auto`}
+        style={{
+          maxHeight: isMapCentered ? "45dvh" : "calc(100dvh - 32px)",
+        }}
+      >
+      {/* Header: person name top-left, Edit top-right (pen on right) — compact, in corners */}
+      {onEdit && (
+        <div className="flex items-center justify-between gap-2 pb-1.5 mb-2 border-b border-slate-200 -mx-4 -mt-4 px-3 pt-3">
+          <span className="text-xs font-semibold text-slate-900 truncate min-w-0">
+            {person.name || "Unknown"}
+          </span>
+          <button
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              onEdit();
+            }}
+            className="flex items-center gap-1 text-[10px] font-medium text-slate-600 hover:bg-slate-100 rounded px-1 py-0.5 transition-colors shrink-0"
+          >
+            Edit
+            <Edit2 className="w-2.5 h-2.5" />
+          </button>
+        </div>
+      )}
       <div className="space-y-4">
         {/* Family & Guests Section - only when there is actual attendance info */}
         {hasFamilyGuestInfo && (
@@ -212,25 +250,6 @@ export function PersonTooltip({
                   )}
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="text-slate-600 text-xs font-medium text-center">
-                  Needs Met
-                </div>
-                <div className="font-medium text-slate-900 flex justify-center">
-                  {!need.isActive ? (
-                    <Check
-                      className="w-3 h-3 text-emerald-600"
-                      strokeWidth={3}
-                    />
-                  ) : (
-                    <Checkbox
-                      checked={false}
-                      disabled
-                      className="h-3.5 w-3.5 border-slate-400"
-                    />
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         )}
@@ -253,17 +272,33 @@ export function PersonTooltip({
           </div>
         )}
 
-        {/* Deposit paid - only show when paid */}
-        {person.depositPaid && (
-          <div className="flex justify-end pt-2 border-t border-slate-100">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-slate-700">Deposit paid</span>
-              <Checkbox
-                checked
-                disabled
-                className="h-3.5 w-3.5 border-slate-400 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
-              />
-            </div>
+        {/* Footer: Need met (bottom-left) and Deposit paid (bottom-right) */}
+        {(need || person.depositPaid) && (
+          <div className="flex justify-between items-center pt-2 border-t border-slate-100 gap-4">
+            {need ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-700">Need met</span>
+                <Checkbox
+                  checked={!need.isActive}
+                  disabled
+                  className="h-3.5 w-3.5 border-slate-400 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 shrink-0"
+                />
+              </div>
+            ) : (
+              <div />
+            )}
+            {person.depositPaid ? (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-slate-700">Deposit paid</span>
+                <Checkbox
+                  checked
+                  disabled
+                  className="h-3.5 w-3.5 border-slate-400 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600 shrink-0"
+                />
+              </div>
+            ) : (
+              <div />
+            )}
           </div>
         )}
 
@@ -271,23 +306,7 @@ export function PersonTooltip({
         {!need && !hasFamilyGuestInfo && !hasNotes && !person.depositPaid && (
           <div className="text-xs text-slate-400 italic">nothing to show</div>
         )}
-
-        {/* Edit button - when onEdit is provided (e.g. name click in district view) */}
-        {onEdit && (
-          <div className="flex justify-end pt-2 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={e => {
-                e.stopPropagation();
-                onEdit();
-              }}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
-            >
-              <Edit2 className="w-4 h-4" />
-              Edit
-            </button>
-          </div>
-        )}
+      </div>
       </div>
     </div>
   );

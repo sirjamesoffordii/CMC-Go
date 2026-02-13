@@ -63,6 +63,7 @@ import { CustomDragLayer } from "./CustomDragLayer";
 import { DistrictDirectorDropZone } from "./DistrictDirectorDropZone";
 import { DistrictStaffDropZone } from "./DistrictStaffDropZone";
 import { PersonDropZone } from "./PersonDropZone";
+import { PersonTooltip } from "./PersonTooltip";
 import { DraggableCampusRow } from "./DraggableCampusRow";
 import { CampusOrderDropZone } from "./CampusOrderDropZone";
 import {
@@ -115,6 +116,69 @@ const reverseStatusMap = {
   No: "co-director" as const,
   "Not Invited": "not-invited" as const,
 };
+
+function DistrictPanelTooltipContent({
+  person,
+  campusId,
+  position,
+  onEdit,
+  onClose,
+}: {
+  person: Person;
+  campusId: string | number;
+  position: { x: number; y: number } | null;
+  onEdit: (campusId: string | number, person: Person) => void;
+  onClose: () => void;
+}) {
+  const { data: personNeeds = [] } = trpc.needs.byPerson.useQuery(
+    { personId: person.personId },
+    { enabled: !!person.personId }
+  );
+  const personNeed = personNeeds.length > 0 ? personNeeds[0] : null;
+  const isMobile = useIsMobile();
+  // Desktop: show near name (bottom-right of name). Mobile: centered.
+  const usePosition = !isMobile && position;
+  const effectivePosition = usePosition ? position! : { x: 0, y: 0 };
+
+  return (
+    <>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Close tooltip"
+        className="fixed inset-0 z-[216] bg-black/20"
+        onClick={onClose}
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === "Escape") onClose();
+        }}
+      />
+      {createPortal(
+        <PersonTooltip
+          person={person}
+          need={
+            personNeed
+              ? {
+                  type: personNeed.type,
+                  description: personNeed.description,
+                  amount: personNeed.amount,
+                  fundsReceived: personNeed.fundsReceived,
+                  isActive: personNeed.isActive,
+                }
+              : null
+          }
+          position={effectivePosition}
+          centered={!usePosition}
+          positionAnchor={usePosition ? "top" : "center"}
+          onEdit={() => {
+            onClose();
+            onEdit(campusId, person);
+          }}
+        />,
+        document.body
+      )}
+    </>
+  );
+}
 
 export function DistrictPanel({
   district,
@@ -315,6 +379,33 @@ export function DistrictPanel({
   const [_expandedCampuses, _setExpandedCampuses] = useState<Set<number>>(
     new Set()
   );
+
+  // Centralized person tooltip for quick navigation between names
+  const [tooltipPerson, setTooltipPerson] = useState<Person | null>(null);
+  const [tooltipCampusId, setTooltipCampusId] = useState<
+    string | number | null
+  >(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const handleShowPersonTooltip = useCallback(
+    (
+      person: Person,
+      campusId: string | number,
+      position?: { x: number; y: number }
+    ) => {
+      setTooltipPerson(person);
+      setTooltipCampusId(campusId);
+      setTooltipPosition(position ?? null);
+    },
+    []
+  );
+  const handleHidePersonTooltip = useCallback(() => {
+    setTooltipPerson(null);
+    setTooltipCampusId(null);
+    setTooltipPosition(null);
+  }, []);
 
   const updateDistrictName = trpc.districts.updateName.useMutation({
     onSuccess: () => onDistrictUpdate(),
@@ -2868,6 +2959,8 @@ export function DistrictPanel({
                     person={displayedDistrictDirector}
                     onDrop={handleDistrictDirectorDrop}
                     onEdit={handleEditPerson}
+                    onShowPersonTooltip={handleShowPersonTooltip}
+                    centralizedTooltipOpen={!!tooltipPerson}
                     onClick={() => {
                       if (!displayedDistrictDirector) return;
                       const statusCycle: Person["status"][] = [
@@ -2922,6 +3015,8 @@ export function DistrictPanel({
                     person={person}
                     onDrop={handleDistrictStaffDrop}
                     onEdit={handleEditPerson}
+                    onShowPersonTooltip={handleShowPersonTooltip}
+                    centralizedTooltipOpen={!!tooltipPerson}
                     onClick={() => {
                       if (!person) return;
                       const statusCycle: Person["status"][] = [
@@ -2967,6 +3062,7 @@ export function DistrictPanel({
                       person={null}
                       onDrop={handleDistrictStaffDrop}
                       onEdit={handleEditPerson}
+                      centralizedTooltipOpen={!!tooltipPerson}
                       onClick={() => {
                         return;
                       }}
@@ -3364,6 +3460,10 @@ export function DistrictPanel({
                                         index={index}
                                         onEdit={handleEditPerson}
                                         onClick={handlePersonClick}
+                                        onShowPersonTooltip={
+                                          handleShowPersonTooltip
+                                        }
+                                        centralizedTooltipOpen={!!tooltipPerson}
                                         onMove={handlePersonMove}
                                         hasNeeds={
                                           (
@@ -3409,13 +3509,13 @@ export function DistrictPanel({
                                           if (!canEditThisCampus) return;
                                           openAddPersonDialog(campus.id);
                                         }}
-                                        className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default"
+                                        className="flex flex-col items-center w-full disabled:opacity-60 disabled:cursor-default focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
                                       >
-                                        {/* Plus sign in name position - clickable for quick add */}
-                                        <div className="relative flex items-center justify-center mb-1 w-full min-w-0 overflow-visible">
+                                        {/* Plus sign in name position - clickable for quick add; min-h matches name row for alignment */}
+                                        <div className="relative flex items-center justify-center mb-1 w-full min-w-0 min-h-[1.25rem] overflow-visible">
                                           {quickAddMode ===
                                           `campus-${campus.id}` ? (
-                                            <div className="relative">
+                                            <div className="relative -mt-[5px]">
                                               <Input
                                                 ref={quickAddInputRef}
                                                 value={quickAddName}
@@ -3438,21 +3538,20 @@ export function DistrictPanel({
                                                     setQuickAddName("");
                                                   }
                                                 }}
+                                                onKeyUp={e => {
+                                                  e.stopPropagation();
+                                                }}
                                                 onBlur={() => {
                                                   handleQuickAddSubmit(
                                                     `campus-${campus.id}`
                                                   );
                                                 }}
-                                                placeholder="Name"
-                                                className="w-28 h-7 text-sm px-2 py-1 text-center border-slate-300 focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
+                                                placeholder="Full Name"
+                                                className="w-[9.5ch] sm:w-[9.5ch] h-[16px] sm:h-[18px] text-[6px] sm:text-[7px] px-1 py-0 text-center rounded-[2px] border-slate-300 focus:border-slate-400 focus:!ring-0 focus:!ring-offset-0 focus:!outline-none focus:!shadow-none focus-visible:border-slate-400 focus-visible:!ring-0 focus-visible:!ring-offset-0 focus-visible:!outline-none focus-visible:!shadow-none"
                                                 autoFocus
                                                 spellCheck={true}
                                                 autoComplete="name"
                                               />
-                                              {/* Quick Add label above */}
-                                              <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-sm text-slate-500 whitespace-nowrap pointer-events-none">
-                                                Quick Add
-                                              </div>
                                               {/* Name suggestions dropdown (same behavior as full Add Person) */}
                                               {quickAddFilteredNameSuggestions.length >
                                                 0 && (
@@ -3488,25 +3587,33 @@ export function DistrictPanel({
                                               )}
                                             </div>
                                           ) : (
-                                            <span className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110">
-                                              <Plus
-                                                className="w-4 h-4 text-black"
-                                                strokeWidth={1.5}
-                                                onClick={e =>
-                                                  handleQuickAddClick(
-                                                    e,
-                                                    campus.id
-                                                  )
-                                                }
-                                              />
-                                              <span className="absolute left-full top-1/2 -translate-y-1/2 text-[8px] text-slate-400 whitespace-nowrap pointer-events-none opacity-0 group-hover/add:opacity-100 transition-opacity z-10">
-                                                Quick Add
+                                            <span
+                                              className="relative inline-flex items-center justify-center p-0.5 rounded opacity-0 group-hover/add:opacity-100 transition-all cursor-pointer hover:bg-slate-100 hover:scale-110"
+                                              onClick={e =>
+                                                handleQuickAddClick(
+                                                  e,
+                                                  campus.id
+                                                )
+                                              }
+                                            >
+                                              <span className="hidden md:inline text-[9px] font-medium text-slate-500 whitespace-nowrap leading-none relative -top-[2px]">
+                                                → Quick Add ←
                                               </span>
+                                              <Plus
+                                                className="w-4 h-4 text-black md:hidden"
+                                                strokeWidth={1.5}
+                                              />
                                             </span>
                                           )}
                                         </div>
                                         {/* Icon - outline User only; plus is above head in name position */}
-                                        <div className="relative inline-block transition-transform hover:scale-105 active:scale-95 -mt-0.5">
+                                        <div className="relative inline-block transition-transform hover:scale-105 active:scale-95 -mt-[3px]">
+                                          {quickAddMode !==
+                                            `campus-${campus.id}` && (
+                                            <span className="quick-add-hint-mobile absolute top-[-19.55px] left-1/2 -translate-x-1/2 text-[9px] text-slate-400 whitespace-nowrap pointer-events-none flex items-center">
+                                              → Quick Add ←
+                                            </span>
+                                          )}
                                           <User
                                             className="w-10 h-10 text-gray-300 transition-all"
                                             strokeWidth={1}
@@ -5218,6 +5325,17 @@ export function DistrictPanel({
             </DialogFooter>
           </ResponsiveDialog>
         </>
+      )}
+
+      {/* Centralized person tooltip - allows quick navigation between names */}
+      {tooltipPerson && tooltipCampusId !== null && (
+        <DistrictPanelTooltipContent
+          person={tooltipPerson}
+          campusId={tooltipCampusId}
+          position={tooltipPosition}
+          onEdit={handleEditPerson}
+          onClose={handleHidePersonTooltip}
+        />
       )}
     </>
   );

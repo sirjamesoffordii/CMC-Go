@@ -76,6 +76,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
   const [depositPaidFilter, setDepositPaidFilter] = useState<boolean | null>(
     null
   ); // null = no filter, true = paid, false = not paid
+  const [needsMetOnly, setNeedsMetOnly] = useState(false);
+  const [fundsReceivedOnly, setFundsReceivedOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [myCampusOnly, setMyCampusOnly] = useState(false);
@@ -275,6 +277,20 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
       });
     }
 
+    if (needsMetOnly) {
+      filtered = filtered.filter((p: Person) =>
+        allNeeds.some(n => n.personId === p.personId && !n.isActive)
+      );
+    }
+
+    if (fundsReceivedOnly) {
+      filtered = filtered.filter((p: Person) =>
+        allNeeds.some(
+          n => n.personId === p.personId && (n.fundsReceived ?? 0) > 0
+        )
+      );
+    }
+
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -302,6 +318,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     roleFilter,
     familyGuestFilter,
     depositPaidFilter,
+    needsMetOnly,
+    fundsReceivedOnly,
     searchQuery,
     myCampusOnly,
     user?.campusId,
@@ -877,6 +895,64 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     return result;
   }, [peopleOnly, groupedData]);
 
+  // Extract actual displayed people from groupedData (excludes people without proper assignments)
+  const displayedPeople = useMemo(() => {
+    const people: Person[] = [];
+    if (groupedData.type === "campus") {
+      groupedData.campuses.forEach(({ people: p }) => people.push(...p));
+    } else if (groupedData.type === "district") {
+      groupedData.districts.forEach(({ campuses, unassigned }) => {
+        Array.from(campuses.values()).forEach(({ people: p }) =>
+          people.push(...p)
+        );
+        people.push(...unassigned);
+      });
+    } else {
+      // region
+      groupedData.regions.forEach(({ districts }) => {
+        districts.forEach(({ campuses, unassigned }) => {
+          Array.from(campuses.values()).forEach(({ people: p }) =>
+            people.push(...p)
+          );
+          people.push(...unassigned);
+        });
+      });
+    }
+    return people;
+  }, [groupedData]);
+
+  const peopleOnlySummary = useMemo(() => {
+    const personIds = new Set(displayedPeople.map(p => p.personId));
+    const relevantNeeds = allNeeds.filter(n => personIds.has(n.personId));
+
+    const totalNeeds = relevantNeeds.length;
+    const metNeeds = relevantNeeds.filter(n => !n.isActive).length;
+    const totalFinancial = relevantNeeds.reduce(
+      (sum, n) => sum + (n.amount ?? 0),
+      0
+    );
+    const metFinancial = relevantNeeds.reduce(
+      (sum, n) => sum + (n.fundsReceived ?? 0),
+      0
+    );
+
+    const statusCounts = {
+      Yes: displayedPeople.filter(p => p.status === "Yes").length,
+      No: displayedPeople.filter(p => p.status === "No").length,
+      Maybe: displayedPeople.filter(p => p.status === "Maybe").length,
+      "Not Invited": displayedPeople.filter(p => p.status === "Not Invited")
+        .length,
+    };
+
+    return {
+      metNeeds,
+      totalNeeds,
+      metFinancial,
+      totalFinancial,
+      statusCounts,
+    };
+  }, [allNeeds, displayedPeople]);
+
   const handlePersonClick = (person: Person) => {
     setSelectedPerson(person as Person);
     setDialogOpen(true);
@@ -1332,6 +1408,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     if (roleFilter.size > 0) count += 1;
     if (familyGuestFilter.size > 0) count += 1;
     if (depositPaidFilter !== null) count += 1;
+    if (needsMetOnly) count += 1;
+    if (fundsReceivedOnly) count += 1;
     return count;
   }, [
     statusFilter,
@@ -1339,6 +1417,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     roleFilter,
     familyGuestFilter,
     depositPaidFilter,
+    needsMetOnly,
+    fundsReceivedOnly,
   ]);
 
   const filterTrigger = (
@@ -1815,7 +1895,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
               <X className="h-5 w-5 text-gray-500" />
             </button>
           </div>
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-thin">
             {scopeMenuOpen ? scopeMenuBody : filterMenuBody}
           </div>
         </div>
@@ -1824,7 +1904,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
       {/* Content - Hierarchical List */}
       <div
         className={
-          "flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto w-full flex flex-col " +
+          "flex-1 min-h-0 min-w-0 overflow-y-auto overflow-x-auto w-full flex flex-col scrollbar-thin " +
           (!isDesktopViewport && (scopeMenuOpen || filterMenuOpen)
             ? "hidden"
             : "")
@@ -1965,19 +2045,171 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
             );
           };
 
-          // People Only mode: flat list with no hierarchy headers
-          if (peopleOnly) {
-            if (flatPeopleList.length === 0) {
-              return (
-                <div className="p-6 text-center text-gray-500">
-                  No people found
-                </div>
+          // Calculate actual displayed people count from groupedData
+          const summaryPeopleCount = useMemo(() => {
+            if (groupedData.type === "campus") {
+              return groupedData.campuses.reduce(
+                (sum, { people }) => sum + people.length,
+                0
               );
             }
+            if (groupedData.type === "district") {
+              return groupedData.districts.reduce((sum, { campuses, unassigned }) => {
+                const campusPeople = Array.from(campuses.values()).reduce(
+                  (s, { people }) => s + people.length,
+                  0
+                );
+                return sum + campusPeople + unassigned.length;
+              }, 0);
+            }
+            // region
+            return groupedData.regions.reduce((sum, { districts }) => {
+              const districtPeople = districts.reduce((s, { campuses, unassigned }) => {
+                const campusPeople = Array.from(campuses.values()).reduce(
+                  (cp, { people }) => cp + people.length,
+                  0
+                );
+                return s + campusPeople + unassigned.length;
+              }, 0);
+              return sum + districtPeople;
+            }, 0);
+          }, [groupedData]);
+
+          const peopleSummaryStrip = (
+            <div className="hidden sm:block px-3 sm:px-4 py-1.5">
+              <div className="flex items-start justify-between gap-2 text-[12px] sm:text-[12px] leading-tight">
+                <div className="flex items-center min-w-[90px]">
+                  <span className="text-slate-500 font-semibold whitespace-nowrap ml-[12px] sm:ml-[20px] text-[13px] sm:text-[14px] relative top-[1px]">
+                    {summaryPeopleCount} people
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-1 sm:gap-x-2 gap-y-0.5 min-w-[170px] sm:min-w-[200px]">
+                  {(
+                    [
+                      {
+                        status: "Yes" as const,
+                        dotClass: "bg-emerald-700",
+                      },
+                      {
+                        status: "Maybe" as const,
+                        dotClass: "bg-yellow-600",
+                      },
+                      {
+                        status: "No" as const,
+                        dotClass: "bg-red-700",
+                      },
+                      {
+                        status: "Not Invited" as const,
+                        dotClass: "bg-gray-500",
+                      },
+                    ] as const
+                  ).map(({ status, dotClass }) => {
+                    const isActive = statusFilter.has(status);
+                    const label =
+                      status === "Not Invited" ? "Not Invited Yet" : status;
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => {
+                          setStatusFilter(prev => {
+                            const next = new Set(prev);
+                            if (next.has(status)) {
+                              next.delete(status);
+                            } else {
+                              next.add(status);
+                            }
+                            return next;
+                          });
+                        }}
+                        className={`inline-flex items-center gap-1 transition-all duration-150 active:scale-95 ${
+                          isActive
+                            ? "text-blue-700"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        <span
+                          className={`w-2.5 h-2.5 rounded-full ${dotClass}`}
+                        />
+                        <span
+                          className={`leading-none whitespace-nowrap ${isActive ? "font-semibold" : "font-medium"}`}
+                        >
+                          {label}:
+                        </span>
+                        <span className="tabular-nums leading-none font-semibold">
+                          {peopleOnlySummary.statusCounts[status]}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
+                  className="h-5 w-px bg-gray-200 shrink-0 hidden sm:block"
+                  aria-hidden="true"
+                />
+
+                <div className="inline-flex flex-col items-start gap-y-0.5 shrink-0 min-w-[130px]">
+                  <button
+                    type="button"
+                    onClick={() => setNeedsMetOnly(prev => !prev)}
+                    className={`inline-flex items-center gap-1.5 transition-all duration-150 active:scale-95 ${
+                      needsMetOnly
+                        ? "text-blue-700"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span
+                      className={`leading-none whitespace-nowrap ${needsMetOnly ? "font-semibold" : "font-medium"}`}
+                    >
+                      Needs Met:
+                    </span>
+                    <span className="tabular-nums leading-none font-semibold text-[12px] sm:text-[13px]">
+                      {peopleOnlySummary.metNeeds}/{peopleOnlySummary.totalNeeds}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFundsReceivedOnly(prev => !prev)}
+                    className={`inline-flex items-center gap-1.5 transition-all duration-150 active:scale-95 ${
+                      fundsReceivedOnly
+                        ? "text-blue-700"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    <span
+                      className={`leading-none whitespace-nowrap ${fundsReceivedOnly ? "font-semibold" : "font-medium"}`}
+                    >
+                      Funds Received:
+                    </span>
+                    <span className="tabular-nums leading-none font-semibold text-[12px] sm:text-[13px]">
+                      ${Math.round(
+                        (peopleOnlySummary.metFinancial || 0) / 100
+                      ).toLocaleString("en-US")}
+                      /
+                      ${Math.round(
+                        (peopleOnlySummary.totalFinancial || 0) / 100
+                      ).toLocaleString("en-US")}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+
+          // People Only mode: flat list with no hierarchy headers
+          if (peopleOnly) {
             return (
               <div className="divide-y divide-gray-100">
-                {flatPeopleList.map((person: Person) =>
-                  renderPerson(person, "px-3 sm:px-4")
+                {peopleSummaryStrip}
+                {flatPeopleList.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    No people found
+                  </div>
+                ) : (
+                  flatPeopleList.map((person: Person) =>
+                    renderPerson(person, "px-3 sm:px-4")
+                  )
                 )}
               </div>
             );
@@ -1993,6 +2225,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
             }
             return (
               <div className="divide-y divide-gray-200">
+                {peopleSummaryStrip}
                 {groupedData.campuses.map(({ campus, people }) => {
                   const isCampusExpanded = expandedCampuses.has(campus.id);
                   const campusNeeds = allNeeds.filter(n =>
@@ -2047,6 +2280,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
             }
             return (
               <div className="divide-y divide-gray-200 w-full min-w-0">
+                {peopleSummaryStrip}
                 {groupedData.districts.map(
                   ({ district, campuses, unassigned }) => {
                     const isDistrictExpanded = expandedDistricts.has(
@@ -2174,6 +2408,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
           }
           return (
             <div className="divide-y divide-gray-200 w-full min-w-0">
+              {peopleSummaryStrip}
               {groupedData.regions.map(({ region, districts }) => {
                 const isRegionExpanded = expandedRegions.has(region);
                 const totalPeople = districts.reduce(

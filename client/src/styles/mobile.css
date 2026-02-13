@@ -2,6 +2,17 @@
    CMC Go — Mobile UI/UX (Premium & Professional)
    ============================================ */
 
+/* Quick Add hint: desktop already reveals via hover; show a persistent hint on non-hover devices */
+.quick-add-hint-mobile {
+  display: none;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .quick-add-hint-mobile {
+    display: block;
+  }
+}
+
 /* --- Breakpoint: Mobile (phones) --- */
 @media (max-width: 768px) {
   /* Prevent horizontal overflow on mobile */

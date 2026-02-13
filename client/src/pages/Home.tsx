@@ -1192,9 +1192,9 @@ export default function Home() {
             title={
               nationalPanelOpen
                 ? "National Team"
-                : (selectedDistrict?.name ?? "District")
+                : "District Overview"
             }
-            hideTitleCloseInCorner={!nationalPanelOpen}
+            hideTitleCloseInCorner={false}
             closeOnBackdropClick={true}
           >
             {selectedDistrictId && selectedDistrict && (
@@ -1259,7 +1259,7 @@ export default function Home() {
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              padding: isMobile ? 0 : "0.75rem 2.75rem",
+              padding: isMobile ? 0 : "0.25rem 1.75rem",
             }}
             onClick={e => {
               // Close panels if clicking on padding/empty space around map
@@ -1372,8 +1372,8 @@ export default function Home() {
             }}
             title={
               peoplePanelOpenFilter?.districtId
-                ? `Table — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
-                : "Table"
+                ? `People — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
+                : "People"
             }
             initialSnap="half"
             coverToolbar
@@ -1422,12 +1422,12 @@ export default function Home() {
                     setPeoplePanelOpen(true);
                   }}
                   className={`
-                  fixed inset-x-0 bottom-0 z-30 w-full pt-4 pb-[max(12px,env(safe-area-inset-bottom))] bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center touch-manipulation table-tab-button
+                  fixed inset-x-0 bottom-0 z-30 w-full pt-4 pb-[max(12px,env(safe-area-inset-bottom))] bg-black hover:bg-red-700 active:bg-red-800 text-white rounded-t-xl font-semibold text-lg backdrop-blur-sm transition-all duration-300 ease-out shadow-lg flex items-center justify-center touch-manipulation table-tab-button
                   ${!user ? "opacity-70" : ""}
                 `}
                 >
                   <span className="inline-block whitespace-nowrap select-none">
-                    Table
+                    People
                   </span>
                 </button>
               ) : (
@@ -1461,7 +1461,7 @@ export default function Home() {
                   `}
                   >
                     <span className="inline-block whitespace-nowrap select-none">
-                      Table
+                      People
                     </span>
                   </button>
                 </div>
@@ -1469,7 +1469,7 @@ export default function Home() {
             </TooltipTrigger>
             {!user && (
               <TooltipContent side="left">
-                <p>Please log in to view table</p>
+                <p>Please log in to view people</p>
               </TooltipContent>
             )}
           </Tooltip>

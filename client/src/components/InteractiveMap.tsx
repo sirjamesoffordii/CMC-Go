@@ -42,23 +42,23 @@ const baseRegionPositions: Record<
   }
 > = {
   // TOP ROW - above map (y < 120); baseY 65 keeps metric block bottom above map top
-  Northwest: { baseX: 200, baseY: 65, labelDirection: "above" },
-  "Big Sky": { baseX: 380, baseY: 65, labelDirection: "above" },
-  "Great Plains North": { baseX: 540, baseY: 65, labelDirection: "above" },
-  "Great Plains South": { baseX: 680, baseY: 65, labelDirection: "above" },
-  "Great Lakes": { baseX: 780, baseY: 65, labelDirection: "above" },
+  Northwest: { baseX: 200, baseY: 58, labelDirection: "above" },
+  "Big Sky": { baseX: 380, baseY: 58, labelDirection: "above" },
+  "Great Plains North": { baseX: 540, baseY: 58, labelDirection: "above" },
+  "Great Plains South": { baseX: 680, baseY: 58, labelDirection: "above" },
+  "Great Lakes": { baseX: 780, baseY: 58, labelDirection: "above" },
 
   // RIGHT SIDE - right of map (x > 880); baseX 920 keeps block in viewBox (960) and clear
-  Northeast: { baseX: 920, baseY: 200, labelDirection: "right" },
-  "Mid-Atlantic": { baseX: 920, baseY: 330, labelDirection: "right" },
-  Southeast: { baseX: 920, baseY: 470, labelDirection: "right" },
+  Northeast: { baseX: 930, baseY: 200, labelDirection: "right" },
+  "Mid-Atlantic": { baseX: 930, baseY: 330, labelDirection: "right" },
+  Southeast: { baseX: 930, baseY: 470, labelDirection: "right" },
 
   // LEFT SIDE - left of map (x < 140)
-  "West Coast": { baseX: 100, baseY: 300, labelDirection: "left" },
+  "West Coast": { baseX: 128, baseY: 260, labelDirection: "left" },
 
   // BOTTOM ROW - below map (y > 500); baseY 512 keeps block in viewBox (600) with ~12px buffer from map
-  Texico: { baseX: 420, baseY: 512, labelDirection: "below" },
-  "South Central": { baseX: 640, baseY: 512, labelDirection: "below" },
+  Texico: { baseX: 420, baseY: 524, labelDirection: "below" },
+  "South Central": { baseX: 640, baseY: 524, labelDirection: "below" },
 };
 
 // Map boundaries (from comment: x: 180-880, y: 120-500 in 960x600 viewBox)
@@ -101,8 +101,11 @@ interface MetricBounds {
 }
 
 // Check if two bounds overlap
-const boundsOverlap = (a: MetricBounds, b: MetricBounds): boolean => {
-  const padding = 0; // No extra spacing between labels
+const boundsOverlap = (
+  a: MetricBounds,
+  b: MetricBounds,
+  padding = 0
+): boolean => {
   return !(
     a.x + a.width + padding < b.x ||
     b.x + b.width + padding < a.x ||
@@ -117,10 +120,47 @@ const getMetricBounds = (
   labelX: number,
   labelY: number,
   totalHeight: number,
-  direction: "above" | "below" | "left" | "right"
+  direction: "above" | "below" | "left" | "right",
+  options?: {
+    metricWidth?: number;
+    extraTopHeight?: number;
+    baselineMode?: {
+      metricCount: number;
+      lineHeight: number;
+      topPad?: number;
+      bottomPad?: number;
+      constraints?: {
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+      };
+    };
+  }
 ): MetricBounds => {
-  const metricWidth = 80;
-  const metricHeight = totalHeight;
+  const metricWidth = options?.metricWidth ?? 80;
+  const extraTopHeight = options?.extraTopHeight ?? 0;
+  const metricHeight = totalHeight + extraTopHeight;
+
+  // Baseline mode: labelY is the baseline of the first metric line.
+  // This matches how district metric groups are rendered in region scope.
+  if (options?.baselineMode) {
+    const topPad = options.baselineMode.topPad ?? 6;
+    const bottomPad = options.baselineMode.bottomPad ?? 6;
+    const topToBaseline = options.baselineMode.lineHeight * 2 + topPad;
+    const height =
+      (options.baselineMode.metricCount + 1) * options.baselineMode.lineHeight +
+      topPad +
+      bottomPad;
+    return {
+      region,
+      x: labelX - metricWidth / 2,
+      y: labelY - topToBaseline,
+      width: metricWidth,
+      height,
+      direction,
+    };
+  }
 
   let x = labelX - metricWidth / 2;
   let y = labelY - metricHeight / 2;
@@ -155,22 +195,85 @@ const resolveCollisions = (
       baseY: number;
       labelDirection: "above" | "below" | "left" | "right";
     }
-  >
+  >,
+  boundsOptions?: {
+    metricWidth?: number;
+    extraTopHeight?: number;
+    baselineMode?: {
+      metricCount: number;
+      lineHeight: number;
+      topPad?: number;
+      bottomPad?: number;
+      constraints?: {
+        minX: number;
+        maxX: number;
+        minY: number;
+        maxY: number;
+      };
+    };
+  }
 ): MetricBounds[] => {
   const resolved = bounds.map(b => ({ ...b }));
-  const maxIterations = 30;
-  const shiftStep = 3;
-  const minSpacing = 0;
+  const isBaselineMode = !!boundsOptions?.baselineMode;
+  const maxIterations = isBaselineMode ? 200 : 30;
+  const shiftStep = isBaselineMode ? 10 : 3;
+  const minSpacing = isBaselineMode ? 14 : 0;
+  const overlapPad = isBaselineMode ? 4 : 0;
 
-  // Store center positions for easier manipulation
-  const centers: Array<{
+  const getOverlapX = (a: MetricBounds, b: MetricBounds): number => {
+    const left = Math.max(a.x - overlapPad, b.x - overlapPad);
+    const right = Math.min(
+      a.x + a.width + overlapPad,
+      b.x + b.width + overlapPad
+    );
+    return right - left;
+  };
+
+  const getOverlapY = (a: MetricBounds, b: MetricBounds): number => {
+    const top = Math.max(a.y - overlapPad, b.y - overlapPad);
+    const bottom = Math.min(
+      a.y + a.height + overlapPad,
+      b.y + b.height + overlapPad
+    );
+    return bottom - top;
+  };
+
+  const getPreferredAxis = (
+    direction: MetricBounds["direction"]
+  ): "x" | "y" => {
+    // If a label is placed left/right of its anchor, prefer shifting vertically
+    // to keep it near the anchor without drifting further sideways.
+    if (direction === "left" || direction === "right") return "y";
+    return "x";
+  };
+
+  const topPad = boundsOptions?.baselineMode?.topPad ?? 6;
+  const lineHeight = boundsOptions?.baselineMode?.lineHeight ?? 0;
+  const topToBaseline = boundsOptions?.baselineMode
+    ? lineHeight * 2 + topPad
+    : 0;
+
+  const constraints = boundsOptions?.baselineMode?.constraints;
+  const clampBaselineAnchor = (anchor: { x: number; y: number }) => {
+    if (!constraints) return anchor;
+    return {
+      x: Math.min(Math.max(anchor.x, constraints.minX), constraints.maxX),
+      y: Math.min(Math.max(anchor.y, constraints.minY), constraints.maxY),
+    };
+  };
+
+  // Store anchor positions for easier manipulation.
+  // - Normal mode: treat anchors as the visual center.
+  // - Baseline mode: treat anchors as (labelX, labelY) where labelY is the
+  //   baseline of the first metric line (matches rendering).
+  const anchors: Array<{
     x: number;
     y: number;
     region: string;
-    direction: string;
+    direction: MetricBounds["direction"];
   }> = resolved.map(b => ({
     x: b.x + b.width / 2,
-    y: b.y + b.height / 2,
+    y: isBaselineMode ? b.y + topToBaseline : b.y + b.height / 2,
     region: b.region,
     direction: b.direction,
   }));
@@ -180,21 +283,100 @@ const resolveCollisions = (
 
     for (let i = 0; i < resolved.length; i++) {
       for (let j = i + 1; j < resolved.length; j++) {
-        if (boundsOverlap(resolved[i], resolved[j])) {
+        if (boundsOverlap(resolved[i], resolved[j], overlapPad)) {
           hasCollision = true;
           const baseI = basePositions[resolved[i].region];
           const baseJ = basePositions[resolved[j].region];
           if (!baseI || !baseJ) continue;
 
-          // Calculate overlap amount
-          const overlapX = Math.min(
-            resolved[i].x + resolved[i].width - resolved[j].x,
-            resolved[j].x + resolved[j].width - resolved[i].x
-          );
-          const overlapY = Math.min(
-            resolved[i].y + resolved[i].height - resolved[j].y,
-            resolved[j].y + resolved[j].height - resolved[i].y
-          );
+          const overlapX = getOverlapX(resolved[i], resolved[j]);
+          const overlapY = getOverlapY(resolved[i], resolved[j]);
+
+          // Baseline mode (district metrics): aggressively separate blocks by pushing
+          // both items apart along the chosen axis.
+          if (isBaselineMode) {
+            const dx = anchors[j].x - anchors[i].x;
+            const dy = anchors[j].y - anchors[i].y;
+            const dirX = dx >= 0 ? 1 : -1;
+            const dirY = dy >= 0 ? 1 : -1;
+
+            const preferredI = getPreferredAxis(resolved[i].direction);
+            const preferredJ = getPreferredAxis(resolved[j].direction);
+
+            // Even if both items share the same "preferred" axis, choose the axis
+            // that resolves the collision with the smallest movement.
+            const useAxis: "x" | "y" = overlapX <= overlapY ? "x" : "y";
+
+            const moveApart = (axis: "x" | "y") => {
+              if (axis === "x") {
+                const needed = Math.max(0, overlapX) + minSpacing + 1;
+                const amt = Math.min(Math.max(needed / 2, shiftStep), 100);
+                anchors[i].x -= dirX * amt;
+                anchors[j].x += dirX * amt;
+              } else {
+                const needed = Math.max(0, overlapY) + minSpacing + 1;
+                const amt = Math.min(Math.max(needed / 2, shiftStep), 100);
+                anchors[i].y -= dirY * amt;
+                anchors[j].y += dirY * amt;
+              }
+
+              const clampedI = clampBaselineAnchor({
+                x: anchors[i].x,
+                y: anchors[i].y,
+              });
+              const clampedJ = clampBaselineAnchor({
+                x: anchors[j].x,
+                y: anchors[j].y,
+              });
+              anchors[i].x = clampedI.x;
+              anchors[i].y = clampedI.y;
+              anchors[j].x = clampedJ.x;
+              anchors[j].y = clampedJ.y;
+            };
+
+            moveApart(useAxis);
+
+            resolved[i] = getMetricBounds(
+              resolved[i].region,
+              anchors[i].x,
+              anchors[i].y,
+              resolved[i].height,
+              resolved[i].direction as "above" | "below" | "left" | "right",
+              boundsOptions
+            );
+            resolved[j] = getMetricBounds(
+              resolved[j].region,
+              anchors[j].x,
+              anchors[j].y,
+              resolved[j].height,
+              resolved[j].direction as "above" | "below" | "left" | "right",
+              boundsOptions
+            );
+
+            // If clamping prevented separation along the preferred axis,
+            // try the other axis as a fallback.
+            if (boundsOverlap(resolved[i], resolved[j], overlapPad)) {
+              moveApart(useAxis === "x" ? "y" : "x");
+              resolved[i] = getMetricBounds(
+                resolved[i].region,
+                anchors[i].x,
+                anchors[i].y,
+                resolved[i].height,
+                resolved[i].direction as "above" | "below" | "left" | "right",
+                boundsOptions
+              );
+              resolved[j] = getMetricBounds(
+                resolved[j].region,
+                anchors[j].x,
+                anchors[j].y,
+                resolved[j].height,
+                resolved[j].direction as "above" | "below" | "left" | "right",
+                boundsOptions
+              );
+            }
+
+            continue;
+          }
 
           // Determine shift direction based on label direction and overlap
           let shiftIX = 0,
@@ -263,25 +445,27 @@ const resolveCollisions = (
           }
 
           // Apply shifts
-          centers[i].x += shiftIX;
-          centers[i].y += shiftIY;
-          centers[j].x += shiftJX;
-          centers[j].y += shiftJY;
+          anchors[i].x += shiftIX;
+          anchors[i].y += shiftIY;
+          anchors[j].x += shiftJX;
+          anchors[j].y += shiftJY;
 
           // Recalculate bounds from centers
           resolved[i] = getMetricBounds(
             resolved[i].region,
-            centers[i].x,
-            centers[i].y,
+            anchors[i].x,
+            anchors[i].y,
             resolved[i].height,
-            resolved[i].direction as "above" | "below" | "left" | "right"
+            resolved[i].direction as "above" | "below" | "left" | "right",
+            boundsOptions
           );
           resolved[j] = getMetricBounds(
             resolved[j].region,
-            centers[j].x,
-            centers[j].y,
+            anchors[j].x,
+            anchors[j].y,
             resolved[j].height,
-            resolved[j].direction as "above" | "below" | "left" | "right"
+            resolved[j].direction as "above" | "below" | "left" | "right",
+            boundsOptions
           );
         }
       }
@@ -325,6 +509,13 @@ type BasePosition = {
   labelDirection: "above" | "below" | "left" | "right";
 };
 
+type ViewBoxBounds = {
+  minX: number;
+  minY: number;
+  width: number;
+  height: number;
+};
+
 // Dynamic positioning function with collision detection
 const getDynamicPosition = (
   region: string,
@@ -333,7 +524,8 @@ const getDynamicPosition = (
   allRegions: string[],
   allTotalHeights: Record<string, number>,
   isMobile?: boolean,
-  customPositions?: Record<string, BasePosition>
+  customPositions?: Record<string, BasePosition>,
+  viewBoxBounds?: ViewBoxBounds
 ): {
   labelX: number;
   labelY: number;
@@ -344,7 +536,41 @@ const getDynamicPosition = (
   if (!base) return { labelX: 0, labelY: 0, labelDirection: "above" };
 
   const bounds = isMobile ? MAP_BOUNDS_MOBILE : MAP_BOUNDS;
-  const metricWidth = 80;
+  // Collision bounds are intentionally conservative for district metrics because
+  // the visible text (district name) can be wider than the numeric stack.
+  const metricWidth = customPositions ? 110 : 80;
+  const derivedLineHeight =
+    activeMetricCount > 0 ? totalHeight / activeMetricCount : 0;
+
+  const baselineConstraints =
+    customPositions && viewBoxBounds && activeMetricCount > 0
+      ? (() => {
+          const edgePad = 2;
+          const halfW = metricWidth / 2;
+          const minX = viewBoxBounds.minX + halfW + edgePad;
+          const maxX =
+            viewBoxBounds.minX + viewBoxBounds.width - halfW - edgePad;
+          const minY = viewBoxBounds.minY + edgePad + derivedLineHeight;
+          const maxY =
+            viewBoxBounds.minY +
+            viewBoxBounds.height -
+            edgePad -
+            (activeMetricCount - 1) * derivedLineHeight;
+          return { minX, maxX, minY, maxY };
+        })()
+      : undefined;
+  const boundsOptions = customPositions
+    ? {
+        metricWidth,
+        baselineMode: {
+          metricCount: activeMetricCount,
+          lineHeight: derivedLineHeight,
+          topPad: 6,
+          bottomPad: 6,
+          constraints: baselineConstraints,
+        },
+      }
+    : { metricWidth };
   const mobileOverride =
     !customPositions && isMobile ? getMobileBaseOverride(region) : null;
   let labelX = mobileOverride?.baseX ?? base.baseX;
@@ -353,59 +579,91 @@ const getDynamicPosition = (
   const isBottomRegion =
     region === "Texico" ||
     region === "South Central" ||
-    (!!customPositions && base.labelDirection === "below");
+    (!customPositions && base.labelDirection === "below");
 
   // Calculate metric bounds
   const metricPadding = 15; // Buffer from map SVG to prevent overlap
   const textHeight = totalHeight;
 
   // Check if metrics would overlap with map and calculate required offset
+  // Skip for custom positions (per-district in region scope) — metrics sit on the map
   let requiredOffset = 0;
 
-  switch (base.labelDirection) {
-    case "above": {
-      const metricBottom = labelY + textHeight / 2;
-      if (metricBottom > bounds.top - metricPadding) {
-        requiredOffset = metricBottom - (bounds.top - metricPadding);
-      }
-      labelY -= requiredOffset;
-      break;
-    }
-    case "below": {
-      const metricTop = labelY - textHeight / 2;
-      const wouldTouchMap = metricTop < bounds.bottom + metricPadding;
-      const wouldGoOffScreen =
-        labelY + textHeight / 2 > bounds.viewBoxHeight - 15;
-
-      if (wouldGoOffScreen) {
-        requiredOffset = labelY + textHeight / 2 - (bounds.viewBoxHeight - 15);
+  if (!customPositions) {
+    switch (base.labelDirection) {
+      case "above": {
+        const metricBottom = labelY + textHeight / 2;
+        if (metricBottom > bounds.top - metricPadding) {
+          requiredOffset = metricBottom - (bounds.top - metricPadding);
+        }
         labelY -= requiredOffset;
-      } else if (wouldTouchMap) {
-        requiredOffset = bounds.bottom + metricPadding - metricTop;
-        labelY += requiredOffset;
+        break;
       }
-      break;
-    }
-    case "right": {
-      const metricLeft = labelX - metricWidth / 2;
-      if (metricLeft < bounds.right + metricPadding) {
-        requiredOffset = bounds.right + metricPadding - metricLeft;
+      case "below": {
+        const metricTop = labelY - textHeight / 2;
+        const wouldTouchMap = metricTop < bounds.bottom + metricPadding;
+        const wouldGoOffScreen =
+          labelY + textHeight / 2 > bounds.viewBoxHeight - 15;
+
+        if (wouldGoOffScreen) {
+          requiredOffset =
+            labelY + textHeight / 2 - (bounds.viewBoxHeight - 15);
+          labelY -= requiredOffset;
+        } else if (wouldTouchMap) {
+          requiredOffset = bounds.bottom + metricPadding - metricTop;
+          labelY += requiredOffset;
+        }
+        break;
       }
-      labelX += requiredOffset;
-      break;
-    }
-    case "left": {
-      const metricRight = labelX + metricWidth / 2;
-      if (metricRight > bounds.left - metricPadding) {
-        requiredOffset = metricRight - (bounds.left - metricPadding);
+      case "right": {
+        const metricLeft = labelX - metricWidth / 2;
+        if (metricLeft < bounds.right + metricPadding) {
+          requiredOffset = bounds.right + metricPadding - metricLeft;
+        }
+        labelX += requiredOffset;
+        break;
       }
-      labelX -= requiredOffset;
-      break;
+      case "left": {
+        const metricRight = labelX + metricWidth / 2;
+        if (metricRight > bounds.left - metricPadding) {
+          requiredOffset = metricRight - (bounds.left - metricPadding);
+        }
+        labelX -= requiredOffset;
+        break;
+      }
     }
   }
 
   // Now check for collisions with other regions
   const allBounds: MetricBounds[] = [];
+
+  const clampDistrictAnchorToViewBox = (
+    anchorX: number,
+    anchorY: number,
+    lineHeight: number
+  ): { x: number; y: number } => {
+    if (!customPositions || !viewBoxBounds || activeMetricCount <= 0) {
+      return { x: anchorX, y: anchorY };
+    }
+
+    const edgePad = 2;
+    const halfW = metricWidth / 2;
+    const minX = viewBoxBounds.minX + halfW + edgePad;
+    const maxX = viewBoxBounds.minX + viewBoxBounds.width - halfW - edgePad;
+
+    // District labels (region scope) are always above the metrics.
+    const minY = viewBoxBounds.minY + edgePad + lineHeight;
+    const maxY =
+      viewBoxBounds.minY +
+      viewBoxBounds.height -
+      edgePad -
+      (activeMetricCount - 1) * lineHeight;
+
+    return {
+      x: Math.min(Math.max(anchorX, minX), maxX),
+      y: Math.min(Math.max(anchorY, minY), maxY),
+    };
+  };
 
   // First, calculate all initial positions
   allRegions.forEach(r => {
@@ -418,69 +676,124 @@ const getDynamicPosition = (
     let rY = rMobileOverride?.baseY ?? rBase.baseY;
     const rHeight = allTotalHeights[r] || 0;
 
-    // Apply map boundary adjustments
-    let rOffset = 0;
-    switch (rBase.labelDirection) {
-      case "above": {
-        const rMetricBottom = rY + rHeight / 2;
-        if (rMetricBottom > bounds.top - metricPadding) {
-          rOffset = rMetricBottom - (bounds.top - metricPadding);
-        }
-        rY -= rOffset;
-        break;
-      }
-      case "below": {
-        const rMetricTop = rY - rHeight / 2;
-        const rWouldTouchMap = rMetricTop < bounds.bottom + metricPadding;
-        const rWouldGoOffScreen = rY + rHeight / 2 > bounds.viewBoxHeight - 15;
-        if (rWouldGoOffScreen) {
-          rOffset = rY + rHeight / 2 - (bounds.viewBoxHeight - 15);
-          rY -= rOffset;
-        } else if (rWouldTouchMap) {
-          rOffset = bounds.bottom + metricPadding - rMetricTop;
-          rY += rOffset;
-        }
-
-        // Extra clamp ONLY for bottom regions so their stacks don't go off-screen.
-        if (rBase.labelDirection === "below") {
-          const rLineHeight = activeMetricCount === 1 ? 26 : 22;
-          const rLastBaseline = rY + (activeMetricCount - 1) * rLineHeight;
-          const rMaxBaseline = bounds.viewBoxHeight - 18;
-          if (rLastBaseline > rMaxBaseline) {
-            rY -= rLastBaseline - rMaxBaseline;
+    // Apply map boundary adjustments (skip for custom/district positions)
+    if (!customPositions) {
+      let rOffset = 0;
+      switch (rBase.labelDirection) {
+        case "above": {
+          const rMetricBottom = rY + rHeight / 2;
+          if (rMetricBottom > bounds.top - metricPadding) {
+            rOffset = rMetricBottom - (bounds.top - metricPadding);
           }
+          rY -= rOffset;
+          break;
         }
-        break;
-      }
-      case "right": {
-        const rMetricLeft = rX - metricWidth / 2;
-        if (rMetricLeft < bounds.right + metricPadding) {
-          rOffset = bounds.right + metricPadding - rMetricLeft;
+        case "below": {
+          const rMetricTop = rY - rHeight / 2;
+          const rWouldTouchMap = rMetricTop < bounds.bottom + metricPadding;
+          const rWouldGoOffScreen =
+            rY + rHeight / 2 > bounds.viewBoxHeight - 15;
+          if (rWouldGoOffScreen) {
+            rOffset = rY + rHeight / 2 - (bounds.viewBoxHeight - 15);
+            rY -= rOffset;
+          } else if (rWouldTouchMap) {
+            rOffset = bounds.bottom + metricPadding - rMetricTop;
+            rY += rOffset;
+          }
+
+          // Extra clamp ONLY for bottom regions so their stacks don't go off-screen.
+          if (rBase.labelDirection === "below") {
+            const rLineHeight = activeMetricCount === 1 ? 26 : 22;
+            const rLastBaseline = rY + (activeMetricCount - 1) * rLineHeight;
+            const rMaxBaseline = bounds.viewBoxHeight - 18;
+            if (rLastBaseline > rMaxBaseline) {
+              rY -= rLastBaseline - rMaxBaseline;
+            }
+          }
+          break;
         }
-        rX += rOffset;
-        break;
-      }
-      case "left": {
-        const rMetricRight = rX + metricWidth / 2;
-        if (rMetricRight > bounds.left - metricPadding) {
-          rOffset = rMetricRight - (bounds.left - metricPadding);
+        case "right": {
+          const rMetricLeft = rX - metricWidth / 2;
+          if (rMetricLeft < bounds.right + metricPadding) {
+            rOffset = bounds.right + metricPadding - rMetricLeft;
+          }
+          rX += rOffset;
+          break;
         }
-        rX -= rOffset;
-        break;
+        case "left": {
+          const rMetricRight = rX + metricWidth / 2;
+          if (rMetricRight > bounds.left - metricPadding) {
+            rOffset = rMetricRight - (bounds.left - metricPadding);
+          }
+          rX -= rOffset;
+          break;
+        }
       }
     }
 
-    allBounds.push(getMetricBounds(r, rX, rY, rHeight, rBase.labelDirection));
+    // For custom/district positions under a zoomed viewBox, clamp the anchor
+    // for *all* bounds before collision resolution so we don't reintroduce
+    // overlaps via per-label clamping later.
+    if (customPositions && viewBoxBounds && activeMetricCount > 0) {
+      const rLineHeight = rHeight / activeMetricCount;
+      const clamped = clampDistrictAnchorToViewBox(rX, rY, rLineHeight);
+      rX = clamped.x;
+      rY = clamped.y;
+    }
+
+    allBounds.push(
+      getMetricBounds(r, rX, rY, rHeight, rBase.labelDirection, boundsOptions)
+    );
   });
 
   // Resolve collisions
-  const resolvedBounds = resolveCollisions(allBounds, positions);
+  let resolvedBounds = resolveCollisions(allBounds, positions, boundsOptions);
+
+  // In baseline mode, collision resolution can push bounds outside the viewBox;
+  // clamp them back and resolve again so final DOM positions stay collision-free.
+  if (customPositions && viewBoxBounds && activeMetricCount > 0) {
+    const baselineTopPad = boundsOptions?.baselineMode?.topPad ?? 6;
+    const baselineLineHeight = boundsOptions?.baselineMode?.lineHeight ?? 0;
+    const baselineTopToBaseline = baselineLineHeight * 2 + baselineTopPad;
+
+    for (let pass = 0; pass < 2; pass++) {
+      const clampedBounds = resolvedBounds.map(b => {
+        const anchorX = b.x + b.width / 2;
+        const anchorY = b.y + baselineTopToBaseline;
+        const clamped = clampDistrictAnchorToViewBox(
+          anchorX,
+          anchorY,
+          baselineLineHeight
+        );
+        const bBase = positions[b.region];
+        const bHeight = allTotalHeights[b.region] || 0;
+        return getMetricBounds(
+          b.region,
+          clamped.x,
+          clamped.y,
+          bHeight,
+          bBase?.labelDirection ?? b.direction,
+          boundsOptions
+        );
+      });
+
+      resolvedBounds = resolveCollisions(
+        clampedBounds,
+        positions,
+        boundsOptions
+      );
+    }
+  }
 
   // Find the resolved position for this region
   const resolved = resolvedBounds.find(b => b.region === region);
   if (resolved) {
     labelX = resolved.x + resolved.width / 2;
-    labelY = resolved.y + resolved.height / 2;
+    if (customPositions && derivedLineHeight > 0) {
+      labelY = resolved.y + derivedLineHeight * 2 + 6;
+    } else {
+      labelY = resolved.y + resolved.height / 2;
+    }
   }
 
   // Final clamp ONLY for bottom regions.
@@ -498,7 +811,8 @@ const getDynamicPosition = (
   }
 
   // Mobile: clamp to viewBox edges so metrics never go off-screen or overlap Chi Alpha toggle
-  if (isMobile) {
+  // Skip for custom positions (per-district in region scope) — zoomed viewBox differs
+  if (isMobile && !customPositions) {
     const halfW = metricWidth / 2;
     const vw = MAP_BOUNDS_MOBILE.viewBoxWidth;
     const vh = MAP_BOUNDS_MOBILE.viewBoxHeight;
@@ -510,7 +824,8 @@ const getDynamicPosition = (
       labelX = Math.max(labelX, halfW + edgePad);
     } else if (base.labelDirection === "above") {
       const lineH = activeMetricCount === 1 ? 28 : 22;
-      const minY = lineH + edgePad; // region name above needs this space
+      const blockHeight = activeMetricCount * lineH;
+      const minY = blockHeight + edgePad;
       labelY = Math.max(labelY, minY);
     } else if (base.labelDirection === "below") {
       const lineH = activeMetricCount === 1 ? 28 : 22;
@@ -519,37 +834,61 @@ const getDynamicPosition = (
     }
   }
 
+  // For custom/district positions under a zoomed viewBox, clamp within the current viewBox
+  if (customPositions && viewBoxBounds && activeMetricCount > 0) {
+    const edgePad = 8;
+    const halfW = metricWidth / 2;
+    const minX = viewBoxBounds.minX + halfW + edgePad;
+    const maxX = viewBoxBounds.minX + viewBoxBounds.width - halfW - edgePad;
+
+    const derivedLineHeight = totalHeight / activeMetricCount;
+    // District labels (region scope) are always above the metrics.
+    const minY = viewBoxBounds.minY + edgePad + derivedLineHeight;
+    const maxY =
+      viewBoxBounds.minY +
+      viewBoxBounds.height -
+      edgePad -
+      (activeMetricCount - 1) * derivedLineHeight;
+
+    labelX = Math.min(Math.max(labelX, minX), maxX);
+    labelY = Math.min(Math.max(labelY, minY), maxY);
+  }
+
   // Final clamp: prevent overlap with map SVG
-  const mapPad = 15;
-  const mapPadBelow = 5; // Tighter for below (limited space between map bottom and viewBox)
-  const mapLeft = bounds.left;
-  const mapRight = bounds.right;
-  const mapTop = bounds.top;
-  const mapBottom = bounds.bottom;
-  const vh = "viewBoxHeight" in bounds ? bounds.viewBoxHeight : 600;
-  switch (base.labelDirection) {
-    case "above":
-      if (labelY > mapTop - mapPad) labelY = mapTop - mapPad;
-      break;
-    case "below": {
-      const minY = mapBottom + mapPadBelow;
-      if (labelY < minY) {
-        // Only clamp if block would still fit in viewBox
-        const blockH = (activeMetricCount === 1 ? 26 : 22) * activeMetricCount;
-        if (minY + blockH <= vh - 18) labelY = minY;
+  // Skip map-boundary clamping when using custom positions (e.g. per-district
+  // bubbles in region scope) — those sit inside the map, not at its edges.
+  if (!customPositions) {
+    const mapPad = 15;
+    const mapPadBelow = 5; // Tighter for below (limited space between map bottom and viewBox)
+    const mapLeft = bounds.left;
+    const mapRight = bounds.right;
+    const mapTop = bounds.top;
+    const mapBottom = bounds.bottom;
+    switch (base.labelDirection) {
+      case "above":
+        if (labelY > mapTop - mapPad) labelY = mapTop - mapPad;
+        break;
+      case "below": {
+        const minY = mapBottom + mapPadBelow;
+        if (labelY < minY) {
+          // Only clamp if block would still fit in viewBox
+          const blockH =
+            (activeMetricCount === 1 ? 26 : 22) * activeMetricCount;
+          if (minY + blockH <= bounds.viewBoxHeight - 18) labelY = minY;
+        }
+        break;
       }
-      break;
+      case "right":
+        if (labelX - metricWidth / 2 < mapRight + mapPad) {
+          labelX = mapRight + mapPad + metricWidth / 2;
+        }
+        break;
+      case "left":
+        if (labelX + metricWidth / 2 > mapLeft - mapPad) {
+          labelX = mapLeft - mapPad - metricWidth / 2;
+        }
+        break;
     }
-    case "right":
-      if (labelX - metricWidth / 2 < mapRight + mapPad) {
-        labelX = mapRight + mapPad + metricWidth / 2;
-      }
-      break;
-    case "left":
-      if (labelX + metricWidth / 2 > mapLeft - mapPad) {
-        labelX = mapLeft - mapPad - metricWidth / 2;
-      }
-      break;
   }
 
   return { labelX, labelY, labelDirection: base.labelDirection };
@@ -607,6 +946,160 @@ const districtCentroids: Record<string, { x: number; y: number }> = {
   Wyoming: { x: 377, y: 195 },
 };
 
+const buildDistrictMetricPositions = (
+  districtIds: string[],
+  viewBoxBounds?: ViewBoxBounds
+): Record<string, BasePosition> => {
+  const idsWithCentroids = districtIds.filter(id => !!districtCentroids[id]);
+  if (idsWithCentroids.length === 0) return {};
+
+  // A couple dense clusters consistently end up with one persistent overlap
+  // even after collision resolution; add a tiny initial stagger so the solver
+  // has an easier time finding a non-overlapping layout.
+  const hasGreatPlainsSouthCluster =
+    idsWithCentroids.includes("Iowa") &&
+    idsWithCentroids.includes("Nebraska") &&
+    idsWithCentroids.includes("NorthernMissouri");
+  const hasAppalachianKentucky =
+    idsWithCentroids.includes("Appalachian") &&
+    idsWithCentroids.includes("Kentucky");
+  const isGreatPlainsSouth =
+    hasGreatPlainsSouthCluster &&
+    idsWithCentroids.includes("Kansas") &&
+    idsWithCentroids.includes("SouthernMissouri");
+  const isMidAtlantic =
+    idsWithCentroids.includes("Appalachian") &&
+    idsWithCentroids.includes("Kentucky") &&
+    idsWithCentroids.includes("Tennessee") &&
+    idsWithCentroids.includes("NorthCarolina") &&
+    idsWithCentroids.includes("Potomac");
+
+  const center = idsWithCentroids.reduce(
+    (acc, id) => {
+      const centroid = districtCentroids[id];
+      return {
+        x: acc.x + centroid.x,
+        y: acc.y + centroid.y,
+      };
+    },
+    { x: 0, y: 0 }
+  );
+
+  const regionCenterX = center.x / idsWithCentroids.length;
+  const regionCenterY = center.y / idsWithCentroids.length;
+  const horizontalOffset = hasGreatPlainsSouthCluster ? 64 : 48;
+  const verticalOffset = hasGreatPlainsSouthCluster ? 46 : 38;
+  const sideNudge = hasGreatPlainsSouthCluster ? 14 : 10;
+  const metricWidth = 80;
+  const edgePad = 8;
+  const isTexico =
+    idsWithCentroids.includes("WestTexas") &&
+    idsWithCentroids.includes("NorthTexas") &&
+    idsWithCentroids.includes("SouthTexas");
+
+  return idsWithCentroids.reduce<Record<string, BasePosition>>((acc, id) => {
+    const centroid = districtCentroids[id];
+    const dx = centroid.x - regionCenterX;
+    const dy = centroid.y - regionCenterY;
+
+    let labelDirection: BasePosition["labelDirection"] = "below";
+    let baseX = centroid.x;
+    let baseY = centroid.y;
+
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      if (dx >= 0) {
+        labelDirection = "right";
+        baseX += horizontalOffset;
+      } else {
+        labelDirection = "left";
+        baseX -= horizontalOffset;
+      }
+      if (dy > sideNudge) baseY += sideNudge;
+      if (dy < -sideNudge) baseY -= sideNudge;
+    } else {
+      if (dy >= 0) {
+        labelDirection = "below";
+        baseY += verticalOffset;
+      } else {
+        labelDirection = "above";
+        baseY -= verticalOffset;
+      }
+      if (dx > sideNudge) baseX += sideNudge;
+      if (dx < -sideNudge) baseX -= sideNudge;
+    }
+
+    // Texico specific adjustments (user-verified expectations)
+    if (isTexico) {
+      if (id === "WestTexas") {
+        // Bring West Texas below the district (not off to the left)
+        labelDirection = "below";
+        baseX = centroid.x;
+        baseY = centroid.y + verticalOffset + 22;
+      } else if (id === "SouthTexas") {
+        // Move South Texas to the right and down some more
+        labelDirection = "right";
+        baseX = centroid.x + horizontalOffset + 18;
+        baseY = centroid.y + verticalOffset + 18;
+      }
+      // NorthTexas should remain as computed (it's already good).
+    }
+
+    if (isMidAtlantic) {
+      // Potomac sits tight against North Carolina under the zoomed viewBox.
+      // A tiny right nudge breaks the last persistent overlap.
+      if (id === "Potomac") {
+        baseX += 18;
+      }
+    }
+
+    // Great Plains South is the densest 5-district cluster; use a stable,
+    // hand-tuned offset layout to avoid metric-vs-metric overlaps.
+    if (isGreatPlainsSouth) {
+      const layout: Record<
+        string,
+        { dx: number; dy: number; dir: BasePosition["labelDirection"] }
+      > = {
+        Iowa: { dx: 96, dy: -46, dir: "above" },
+        Nebraska: { dx: -64, dy: -46, dir: "above" },
+        Kansas: { dx: -96, dy: 46, dir: "below" },
+        NorthernMissouri: { dx: 20, dy: 46, dir: "below" },
+        SouthernMissouri: { dx: 64, dy: 92, dir: "below" },
+      };
+
+      const p = layout[id];
+      if (p) {
+        labelDirection = p.dir;
+        baseX = centroid.x + p.dx;
+        baseY = centroid.y + p.dy;
+      }
+    }
+
+    // If we're zoomed into a region, prefer flipping left/right placement for edge districts
+    // so metrics remain visible without requiring large clamping shifts.
+    if (viewBoxBounds && !isGreatPlainsSouth) {
+      const minVisibleX = viewBoxBounds.minX + metricWidth / 2 + edgePad;
+      const maxVisibleX =
+        viewBoxBounds.minX + viewBoxBounds.width - metricWidth / 2 - edgePad;
+
+      if (labelDirection === "left" && baseX < minVisibleX) {
+        labelDirection = "right";
+        baseX = centroid.x + horizontalOffset;
+      } else if (labelDirection === "right" && baseX > maxVisibleX) {
+        labelDirection = "left";
+        baseX = centroid.x - horizontalOffset;
+      }
+    }
+
+    if (hasAppalachianKentucky) {
+      if (id === "Appalachian") baseY -= 16;
+      if (id === "Kentucky") baseY += 16;
+    }
+
+    acc[id] = { baseX, baseY, labelDirection };
+    return acc;
+  }, {});
+};
+
 export const InteractiveMap = memo(function InteractiveMap({
   districts,
   selectedDistrictId,
@@ -621,6 +1114,12 @@ export const InteractiveMap = memo(function InteractiveMap({
 }: InteractiveMapProps) {
   const { isAuthenticated } = usePublicAuth();
   const isMobile = useIsMobile();
+  const canHover = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false
+    );
+  }, []);
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const visualContainerRef = useRef<HTMLDivElement>(null);
   const pieContainerRef = useRef<HTMLDivElement>(null);
@@ -634,6 +1133,15 @@ export const InteractiveMap = memo(function InteractiveMap({
   // Zoom viewBox for scope filtering - null means use default "0 0 960 600"
   const [zoomViewBox, setZoomViewBox] = useState<string | null>(null);
   const originalViewBox = useMemo(() => parseViewBox(svgContent), [svgContent]);
+
+  const zoomViewBoxBounds = useMemo<ViewBoxBounds | undefined>(() => {
+    if (!zoomViewBox) return undefined;
+    const parts = zoomViewBox.trim().split(/\s+/).map(Number);
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n)))
+      return undefined;
+    const [minX, minY, width, height] = parts;
+    return { minX, minY, width, height };
+  }, [zoomViewBox]);
 
   // Filter districts based on scope
   const filteredDistricts = useMemo(() => {
@@ -1546,17 +2054,21 @@ export const InteractiveMap = memo(function InteractiveMap({
         e.stopPropagation();
         onDistrictSelect(pathId);
 
-        // On touch devices, mouseenter fires before click but mouseleave never
-        // fires, leaving hover brightness stuck on the tapped district.
+        // On non-hover devices, mouseenter can fire but mouseleave often never
+        // does, leaving hover brightness stuck on a district even while idle.
         // Clear hover state immediately after tap to prevent sticky highlight.
-        if (isMobile) {
+        if (!canHover) {
           setHoveredDistrict(null);
           setHoveredRegion(null);
           setTooltipPos(null);
 
           // Restore the raised path to its original z-order
           if (movedPathRef.current) {
-            const { path: prevPath, parent, originalIndex } = movedPathRef.current;
+            const {
+              path: prevPath,
+              parent,
+              originalIndex,
+            } = movedPathRef.current;
             const sibling = parent.children[originalIndex] || null;
             parent.insertBefore(prevPath, sibling);
             movedPathRef.current = null;
@@ -1564,6 +2076,10 @@ export const InteractiveMap = memo(function InteractiveMap({
         }
       };
       path.addEventListener("click", clickHandler);
+
+      // Touch / coarse-pointer devices cannot reliably "leave" hover.
+      // Skip hover listeners entirely so districts never get stuck lit.
+      if (!canHover) return;
 
       // Hover behavior: region lighting + raise; move hovered path to top of stack
       const mouseEnterHandler = (e: MouseEvent) => {
@@ -1763,8 +2279,8 @@ export const InteractiveMap = memo(function InteractiveMap({
         const width = maxX - minX;
         const height = maxY - minY;
         const isDistrictScope = scopeFilter === "DISTRICT";
-        const paddingX = width * (isDistrictScope ? 0.8 : 0.2);
-        const paddingY = height * (isDistrictScope ? 0.8 : 0.2);
+        const paddingX = width * (isDistrictScope ? 0.8 : 0.4);
+        const paddingY = height * (isDistrictScope ? 0.8 : 0.4);
 
         const viewBoxX = Math.max(0, minX - paddingX);
         const viewBoxY = Math.max(0, minY - paddingY);
@@ -1816,6 +2332,7 @@ export const InteractiveMap = memo(function InteractiveMap({
     userDistrictId,
     originalViewBox,
     isMobile,
+    canHover,
   ]);
 
   // Generate pie chart SVG
@@ -2155,6 +2672,7 @@ export const InteractiveMap = memo(function InteractiveMap({
               >
                 {/* Yes - closest to line: slides out first, back in last */}
                 <button
+                  data-metric-toggle="yes"
                   onClick={() => toggleMetric("yes")}
                   className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
@@ -2221,6 +2739,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 </button>
                 {/* Maybe - slides out from line 2nd, back into line 3rd */}
                 <button
+                  data-metric-toggle="maybe"
                   onClick={() => toggleMetric("maybe")}
                   className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
@@ -2287,6 +2806,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 </button>
                 {/* No - slides out from line 3rd, back into line 2nd */}
                 <button
+                  data-metric-toggle="no"
                   onClick={() => toggleMetric("no")}
                   className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
@@ -2353,6 +2873,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                 </button>
                 {/* Not Invited Yet - farthest from line: slides out last, back in first */}
                 <button
+                  data-metric-toggle="notInvited"
                   onClick={() => toggleMetric("notInvited")}
                   className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
@@ -2547,7 +3068,7 @@ export const InteractiveMap = memo(function InteractiveMap({
         {/* XAN National Button - Positioned so it stays on screen; when panel open, nudge inward */}
         {scopeFilter === "NATIONAL" && (
           <div
-            className={`absolute inset-0 flex items-center justify-center ${isMobile ? "z-40" : "z-[5]"} pointer-events-none transition-transform duration-300 ease-out`}
+            className={`absolute inset-0 flex items-center justify-center z-40 pointer-events-none transition-transform duration-300 ease-out`}
             style={{
               transform: selectedDistrictId
                 ? isMobile
@@ -2734,19 +3255,13 @@ export const InteractiveMap = memo(function InteractiveMap({
 
                 // When scope is REGION, show per-district bubbles; otherwise per-region
                 const isRegionScope = scopeFilter === "REGION" && userRegionId;
-                const baseDistrictPositions: Record<string, BasePosition> = {};
-                if (isRegionScope && filteredDistricts.length > 0) {
-                  filteredDistricts.forEach(d => {
-                    const cen = districtCentroids[d.id];
-                    if (cen) {
-                      baseDistrictPositions[d.id] = {
-                        baseX: cen.x,
-                        baseY: cen.y + 55,
-                        labelDirection: "below",
-                      };
-                    }
-                  });
-                }
+                const baseDistrictPositions =
+                  isRegionScope && filteredDistricts.length > 0
+                    ? buildDistrictMetricPositions(
+                        filteredDistricts.map(d => d.id),
+                        zoomViewBoxBounds
+                      )
+                    : {};
                 const regionsToConsider = isRegionScope
                   ? Object.keys(baseDistrictPositions)
                   : scopeFilter === "REGION" && userRegionId
@@ -2801,13 +3316,21 @@ export const InteractiveMap = memo(function InteractiveMap({
                           ?.name ?? regionOrDistrictId)
                       : regionOrDistrictId;
                     const isSingleMetric = metricsToShow.length === 1;
-                    const lineHeight = isMobile
-                      ? isSingleMetric
-                        ? 28
-                        : 22
-                      : isSingleMetric
-                        ? 26
-                        : 22;
+                    const lineHeight = isRegionScope
+                      ? isMobile
+                        ? isSingleMetric
+                          ? 20
+                          : 16
+                        : isSingleMetric
+                          ? 18
+                          : 15
+                      : isMobile
+                        ? isSingleMetric
+                          ? 28
+                          : 22
+                        : isSingleMetric
+                          ? 26
+                          : 22;
                     allTotalHeights[regionOrDistrictId] =
                       metricsToShow.length * lineHeight;
                   }
@@ -2839,13 +3362,21 @@ export const InteractiveMap = memo(function InteractiveMap({
                   if (!metricsToShow || metricsToShow.length === 0) return null;
 
                   const isSingleMetric = metricsToShow.length === 1;
-                  const lineHeight = isMobile
-                    ? isSingleMetric
-                      ? 28
-                      : 22
-                    : isSingleMetric
-                      ? 26
-                      : 22;
+                  const lineHeight = isRegionScope
+                    ? isMobile
+                      ? isSingleMetric
+                        ? 20
+                        : 16
+                      : isSingleMetric
+                        ? 18
+                        : 15
+                    : isMobile
+                      ? isSingleMetric
+                        ? 28
+                        : 22
+                      : isSingleMetric
+                        ? 26
+                        : 22;
                   const isHovered = hoveredRegionLabel === region;
                   const totalHeight = allTotalHeights[region];
                   const labelText = displayLabels[region] ?? region;
@@ -2858,7 +3389,8 @@ export const InteractiveMap = memo(function InteractiveMap({
                     allRegions,
                     allTotalHeights,
                     isMobile,
-                    customPositionsForPositioning
+                    customPositionsForPositioning,
+                    zoomViewBoxBounds
                   );
                   const direction = pos.labelDirection;
 
@@ -2878,20 +3410,44 @@ export const InteractiveMap = memo(function InteractiveMap({
                     : pos.labelY - lineHeight;
                   const nameAnchor: "start" | "middle" | "end" = "middle";
 
+                  const districtCollisionRect = isRegionScope
+                    ? (() => {
+                        const width = 110;
+                        const topPad = 6;
+                        const bottomPad = 6;
+                        const topToBaseline = lineHeight * 2 + topPad;
+                        const height =
+                          (metricsToShow.length + 1) * lineHeight +
+                          topPad +
+                          bottomPad;
+                        return {
+                          x: pos.labelX - width / 2,
+                          y: pos.labelY - topToBaseline,
+                          width,
+                          height,
+                        };
+                      })()
+                    : null;
+
                   return (
                     <g
                       key={region}
-                      className="metric-label-group cursor-pointer"
-                      style={{ pointerEvents: "auto" }}
-                      onMouseEnter={() => setHoveredRegionLabel(region)}
-                      onMouseLeave={() => setHoveredRegionLabel(null)}
+                      data-metric-id={region}
+                      className="metric-label-group"
+                      style={{ pointerEvents: "none" }}
                     >
                       {/* Invisible hit area for hover detection */}
                       <rect
-                        x={pos.labelX - 40}
-                        y={nameBelow ? pos.labelY - 30 : pos.labelY - 55}
-                        width={80}
-                        height={nameBelow ? totalHeight + 70 : totalHeight + 70}
+                        x={districtCollisionRect?.x ?? pos.labelX - 40}
+                        y={
+                          districtCollisionRect?.y ??
+                          (nameBelow ? pos.labelY - 30 : pos.labelY - 55)
+                        }
+                        width={districtCollisionRect?.width ?? 80}
+                        height={
+                          districtCollisionRect?.height ??
+                          (nameBelow ? totalHeight + 70 : totalHeight + 70)
+                        }
                         fill="transparent"
                         rx="4"
                       />
@@ -2901,24 +3457,30 @@ export const InteractiveMap = memo(function InteractiveMap({
                         x={nameX}
                         y={nameY}
                         textAnchor={nameAnchor}
-                        fill={isHovered ? "#0f172a" : "#64748b"}
                         fontSize={
-                          isMobile
-                            ? isSingleMetric
-                              ? "11px"
-                              : "10px"
-                            : isSingleMetric
-                              ? "13px"
-                              : "12px"
+                          isRegionScope
+                            ? isMobile
+                              ? isSingleMetric
+                                ? "8px"
+                                : "7px"
+                              : isSingleMetric
+                                ? "9px"
+                                : "8px"
+                            : isMobile
+                              ? isSingleMetric
+                                ? "11px"
+                                : "10px"
+                              : isSingleMetric
+                                ? "13px"
+                                : "12px"
                         }
-                        fontWeight="600"
+                        fontWeight="700"
                         letterSpacing="0.5px"
-                        className="select-none"
+                        className="select-none fill-black"
                         style={{
                           textTransform: "uppercase",
                           fontFamily: "system-ui, -apple-system, sans-serif",
                           opacity: 1,
-                          transition: "fill 0.15s ease",
                         }}
                       >
                         {labelText}
@@ -2936,23 +3498,46 @@ export const InteractiveMap = memo(function InteractiveMap({
                                 ? "#b91c1c" // red-700
                                 : "#64748b"; // slate-500 for Not Invited
 
-                        const dotRadius = isMobile
-                          ? isSingleMetric
-                            ? 7
-                            : 5
-                          : isSingleMetric
-                            ? 6
-                            : 5;
+                        const dotRadius = isRegionScope
+                          ? isMobile
+                            ? isSingleMetric
+                              ? 4
+                              : 3
+                            : isSingleMetric
+                              ? 3.5
+                              : 3
+                          : isMobile
+                            ? isSingleMetric
+                              ? 7
+                              : 5
+                            : isSingleMetric
+                              ? 6
+                              : 5;
 
                         return (
                           <g key={metric.label}>
                             {/* Colored dot */}
                             <circle
-                              cx={pos.labelX - (isSingleMetric ? 26 : 18)}
+                              cx={
+                                pos.labelX -
+                                (isRegionScope
+                                  ? isSingleMetric
+                                    ? 16
+                                    : 12
+                                  : isSingleMetric
+                                    ? 26
+                                    : 18)
+                              }
                               cy={
                                 pos.labelY +
                                 index * lineHeight -
-                                (isSingleMetric ? 6 : 4)
+                                (isRegionScope
+                                  ? isSingleMetric
+                                    ? 4
+                                    : 3
+                                  : isSingleMetric
+                                    ? 6
+                                    : 4)
                               }
                               r={dotRadius}
                               fill={dotColor}
@@ -2963,21 +3548,28 @@ export const InteractiveMap = memo(function InteractiveMap({
                               x={pos.labelX}
                               y={pos.labelY + index * lineHeight}
                               textAnchor="middle"
-                              fill={isHovered ? "#0f172a" : "#334155"}
+                              fill="#000000"
                               fontSize={
-                                isMobile
-                                  ? isSingleMetric
-                                    ? "22px"
-                                    : "15px"
-                                  : isSingleMetric
-                                    ? "22px"
-                                    : "15px"
+                                isRegionScope
+                                  ? isMobile
+                                    ? isSingleMetric
+                                      ? "14px"
+                                      : "10px"
+                                    : isSingleMetric
+                                      ? "13px"
+                                      : "10px"
+                                  : isMobile
+                                    ? isSingleMetric
+                                      ? "22px"
+                                      : "15px"
+                                    : isSingleMetric
+                                      ? "22px"
+                                      : "15px"
                               }
                               fontWeight="700"
                               letterSpacing="-0.3px"
                               className="select-none"
                               style={{
-                                transition: "fill 0.15s ease",
                                 fontFamily:
                                   "system-ui, -apple-system, sans-serif",
                               }}

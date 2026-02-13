@@ -54,7 +54,7 @@ export function PersonDropZone({
   return (
     <div
       ref={setDropRef}
-      className={`px-4 py-2 -mx-4 -my-2 transition-colors ${isOver ? "bg-slate-50" : ""}`}
+      className={`flex items-center px-4 py-2 -mx-4 -my-2 transition-colors ${isOver ? "bg-slate-50" : ""}`}
       style={{ minHeight: "70px", minWidth: "40px" }}
     >
       {children}

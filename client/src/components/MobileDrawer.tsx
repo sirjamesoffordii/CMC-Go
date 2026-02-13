@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, createContext } from "react";
+
+export const DrawerSnapContext = createContext<"half" | "full" | null>(null);
 import {
   motion,
   AnimatePresence,
@@ -203,7 +205,9 @@ export function MobileDrawer({
             <div
               className={`flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-hide mobile-drawer-content ${fullContent ? "pb-4" : ""}`}
             >
-              {children}
+              <DrawerSnapContext.Provider value={snap}>
+                {children}
+              </DrawerSnapContext.Provider>
             </div>
           </motion.div>
         </>

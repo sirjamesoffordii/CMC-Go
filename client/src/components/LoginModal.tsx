@@ -325,6 +325,9 @@ export function LoginModal({
   // Mutations
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async data => {
+      if (data.user) {
+        utils.auth.me.setData(undefined, data.user);
+      }
       await utils.auth.me.invalidate();
       onOpenChange(false);
       const districtId = data.user?.districtId ?? null;
