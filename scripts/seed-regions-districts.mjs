@@ -66,11 +66,6 @@ const districtsData = [
   { name: "Maine", svgPathId: "Maine", regionName: "Northeast" },
   { name: "Vermont", svgPathId: "Vermont", regionName: "Northeast" },
   {
-    name: "New Hampshire",
-    svgPathId: "New Hampshire",
-    regionName: "Northeast",
-  },
-  {
     name: "Massachusetts",
     svgPathId: "Massachusetts",
     regionName: "Northeast",

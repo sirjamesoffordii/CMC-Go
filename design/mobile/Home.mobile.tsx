@@ -353,7 +353,6 @@ export default function Home() {
     Connecticut: "Northeast",
     Maine: "Northeast",
     Massachusetts: "Northeast",
-    NewHampshire: "Northeast",
     Pennsylvania: "Northeast",
     Vermont: "Northeast",
     Virginia: "Mid-Atlantic",

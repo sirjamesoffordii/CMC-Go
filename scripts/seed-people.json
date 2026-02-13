@@ -405,15 +405,6 @@
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
-    "id": 46,
-    "name": "Alex Garcia",
-    "campusId": 53,
-    "districtId": "NewHampshire",
-    "status": "Not Invited",
-    "role": "Campus Intern",
-    "lastUpdated": "2025-12-13 23:18:11"
-  },
-  {
     "id": 47,
     "name": "Casey Jones",
     "campusId": 70,
@@ -1746,15 +1737,6 @@
     "lastUpdated": "2025-12-13 23:18:11"
   },
   {
-    "id": 195,
-    "name": "Logan Miller",
-    "campusId": 54,
-    "districtId": "NewHampshire",
-    "status": "Not Invited",
-    "role": "Campus Intern",
-    "lastUpdated": "2025-12-13 23:18:11"
-  },
-  {
     "id": 196,
     "name": "Blake Hernandez",
     "campusId": 23,
@@ -1985,15 +1967,6 @@
     "campusId": 64,
     "districtId": "Alaska",
     "status": "Maybe",
-    "role": "Campus Intern",
-    "lastUpdated": "2025-12-13 23:18:11"
-  },
-  {
-    "id": 222,
-    "name": "Sam Gonzalez",
-    "campusId": 54,
-    "districtId": "NewHampshire",
-    "status": "Not Invited",
     "role": "Campus Intern",
     "lastUpdated": "2025-12-13 23:18:11"
   },

@@ -260,16 +260,6 @@
     "districtId": "Massachusetts"
   },
   {
-    "id": 53,
-    "name": "New Hampshire A",
-    "districtId": "NewHampshire"
-  },
-  {
-    "id": 54,
-    "name": "New Hampshire B",
-    "districtId": "NewHampshire"
-  },
-  {
     "id": 55,
     "name": "New Jersey A",
     "districtId": "NewJersey"
