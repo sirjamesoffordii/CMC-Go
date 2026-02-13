@@ -29,6 +29,7 @@ import {
   useRef,
   useLayoutEffect,
   useCallback,
+  memo,
 } from "react";
 import { toast } from "sonner";
 import { CHI_ALPHA_STAFF_NAMES } from "@/data/chiAlphaStaffNames";
@@ -180,7 +181,7 @@ function DistrictPanelTooltipContent({
   );
 }
 
-export function DistrictPanel({
+export const DistrictPanel = memo(function DistrictPanel({
   district,
   campuses,
   people,
@@ -5339,4 +5340,4 @@ export function DistrictPanel({
       )}
     </>
   );
-}
+});

@@ -1,6 +1,5 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
@@ -650,33 +649,39 @@ export default function Home() {
     }
   };
 
-  const handlePersonStatusChange = (
-    personId: string,
-    newStatus: "Yes" | "Maybe" | "No" | "Not Invited"
-  ) => {
-    updateStatus.mutate({ personId, status: newStatus });
-  };
+  const handlePersonStatusChange = useCallback(
+    (personId: string, newStatus: "Yes" | "Maybe" | "No" | "Not Invited") => {
+      updateStatus.mutate({ personId, status: newStatus });
+    },
+    [updateStatus]
+  );
 
-  const handlePersonAdd = (campusId: number, name: string) => {
-    const campus = allCampuses.find(c => c.id === campusId);
-    if (!campus) return;
+  const handlePersonAdd = useCallback(
+    (campusId: number, name: string) => {
+      const campus = allCampuses.find(c => c.id === campusId);
+      if (!campus) return;
 
-    // Generate a unique personId
-    const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Generate a unique personId
+      const personId = `new-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    createPerson.mutate({
-      personId,
-      name,
-      primaryCampusId: campusId,
-      primaryDistrictId: campus.districtId,
-      status: "Not Invited",
-    });
-  };
+      createPerson.mutate({
+        personId,
+        name,
+        primaryCampusId: campusId,
+        primaryDistrictId: campus.districtId,
+        status: "Not Invited",
+      });
+    },
+    [allCampuses, createPerson]
+  );
 
-  const handlePersonClick = (person: Person) => {
-    setSelectedPerson(person);
-    setPersonDialogOpen(true);
-  };
+  const handlePersonClick = useCallback(
+    (person: Person) => {
+      setSelectedPerson(person);
+      setPersonDialogOpen(true);
+    },
+    []
+  );
 
   // After login/register, auto-open the user's district panel
   const handleAuthSuccess = (districtId: string | null) => {
@@ -684,6 +689,55 @@ export default function Home() {
       handleDistrictSelect(districtId);
     }
   };
+
+  // Stable callbacks for DistrictPanel (prevents re-renders when wrapped in memo)
+  const handleDistrictPanelClose = useCallback(() => {
+    setSelectedDistrictId(null);
+    setViewState(prev => ({
+      ...prev,
+      districtId: null,
+      regionId: null,
+      campusId: null,
+      panelOpen: false,
+    }));
+  }, []);
+
+  const handleDistrictUpdate = useCallback(() => {
+    utils.districts.list.invalidate();
+    utils.people.list.invalidate();
+  }, [utils]);
+
+  const handleOpenTable = useCallback(
+    (
+      filter?: {
+        districtId?: string;
+        regionId?: string;
+        campusIds?: number[];
+        statusFilter?: Set<"Yes" | "Maybe" | "No" | "Not Invited">;
+        needsView?: boolean;
+      } | null
+    ) => {
+      setPeoplePanelOpenFilter(filter ?? null);
+      setPeoplePanelOpen(true);
+    },
+    []
+  );
+
+  const handleNationalPanelClose = useCallback(() => {
+    setNationalPanelOpen(false);
+  }, []);
+
+  const handleMobileDrawerClose = useCallback(() => {
+    setSelectedDistrictId(null);
+    setNationalPanelOpen(false);
+    setViewState(prev => ({
+      ...prev,
+      districtId: null,
+      regionId: null,
+      campusId: null,
+      panelOpen: false,
+    }));
+  }, []);
 
   // Keyboard shortcuts for district panel
   useEffect(() => {
@@ -1105,7 +1159,7 @@ export default function Home() {
             className={[
               "bg-white border-r border-gray-300 flex-shrink-0 relative",
               !isResizingDistrict
-                ? "transition-all duration-300 ease-in-out"
+                ? "transition-[width] duration-300 ease-in-out"
                 : "",
             ]
               .filter(Boolean)
@@ -1128,41 +1182,24 @@ export default function Home() {
                   onMouseDown={handleDistrictMouseDown}
                   aria-label="Resize panel"
                 />
-                <AnimatePresence mode="wait">
-                  {selectedDistrictId && selectedDistrict && (
+                {selectedDistrictId && selectedDistrict && (
                     <DistrictPanel
                       key={selectedDistrict.id}
                       district={selectedDistrict}
                       campuses={selectedDistrictCampuses}
                       people={selectedDistrictPeople}
                       isOutOfScope={!isSelectedDistrictInScope}
-                      onClose={() => {
-                        setSelectedDistrictId(null);
-                        setViewState({
-                          ...viewState,
-                          districtId: null,
-                          regionId: null,
-                          campusId: null,
-                          panelOpen: false,
-                        });
-                      }}
+                      onClose={handleDistrictPanelClose}
                       onPersonStatusChange={handlePersonStatusChange}
                       onPersonAdd={handlePersonAdd}
                       onPersonClick={handlePersonClick}
-                      onDistrictUpdate={() => {
-                        utils.districts.list.invalidate();
-                        utils.people.list.invalidate();
-                      }}
-                      onOpenTable={filter => {
-                        setPeoplePanelOpenFilter(filter ?? null);
-                        setPeoplePanelOpen(true);
-                      }}
+                      onDistrictUpdate={handleDistrictUpdate}
+                      onOpenTable={handleOpenTable}
                     />
                   )}
-                </AnimatePresence>
                 {nationalPanelOpen && (
                   <NationalPanel
-                    onClose={() => setNationalPanelOpen(false)}
+                    onClose={handleNationalPanelClose}
                     onPersonClick={handlePersonClick}
                     onPersonStatusChange={handlePersonStatusChange}
                   />
@@ -1178,17 +1215,7 @@ export default function Home() {
             isOpen={
               !!(selectedDistrictId || nationalPanelOpen) && !peoplePanelOpen
             }
-            onClose={() => {
-              setSelectedDistrictId(null);
-              setNationalPanelOpen(false);
-              setViewState({
-                ...viewState,
-                districtId: null,
-                regionId: null,
-                campusId: null,
-                panelOpen: false,
-              });
-            }}
+            onClose={handleMobileDrawerClose}
             title={
               nationalPanelOpen
                 ? "National Team"
@@ -1204,32 +1231,17 @@ export default function Home() {
                 campuses={selectedDistrictCampuses}
                 people={selectedDistrictPeople}
                 isOutOfScope={!isSelectedDistrictInScope}
-                onClose={() => {
-                  setSelectedDistrictId(null);
-                  setViewState({
-                    ...viewState,
-                    districtId: null,
-                    regionId: null,
-                    campusId: null,
-                    panelOpen: false,
-                  });
-                }}
+                onClose={handleDistrictPanelClose}
                 onPersonStatusChange={handlePersonStatusChange}
                 onPersonAdd={handlePersonAdd}
                 onPersonClick={handlePersonClick}
-                onDistrictUpdate={() => {
-                  utils.districts.list.invalidate();
-                  utils.people.list.invalidate();
-                }}
-                onOpenTable={filter => {
-                  setPeoplePanelOpenFilter(filter ?? null);
-                  setPeoplePanelOpen(true);
-                }}
+                onDistrictUpdate={handleDistrictUpdate}
+                onOpenTable={handleOpenTable}
               />
             )}
             {nationalPanelOpen && (
               <NationalPanel
-                onClose={() => setNationalPanelOpen(false)}
+                onClose={handleNationalPanelClose}
                 onPersonClick={handlePersonClick}
                 onPersonStatusChange={handlePersonStatusChange}
               />
@@ -1332,7 +1344,7 @@ export default function Home() {
             className={[
               "bg-white border-l border-gray-100 flex-shrink-0 relative flex flex-col",
               !isResizingPeople
-                ? "transition-all duration-300 ease-in-out"
+                ? "transition-[width] duration-300 ease-in-out"
                 : "",
             ]
               .filter(Boolean)
