@@ -67,6 +67,7 @@ export function DistrictDirectorDropZone({
     null
   );
   const [mobileTooltipOpen, setMobileTooltipOpen] = useState(false);
+  const [clickTooltipOpen, setClickTooltipOpen] = useState(false);
   const longPressTimerRef = useRef<number | null>(null);
   const longPressTriggeredRef = useRef(false);
   const iconRef = useRef<HTMLDivElement>(null);
@@ -134,6 +135,7 @@ export function DistrictDirectorDropZone({
 
   const handleNameMouseLeave = () => {
     if (isMobile) return;
+    if (clickTooltipOpen) return;
     if (canInteract) {
       setIsHovered(false);
       setTooltipPos(null);
@@ -179,6 +181,18 @@ export function DistrictDirectorDropZone({
     window.setTimeout(() => {
       longPressTriggeredRef.current = false;
     }, 0);
+  };
+
+  const dismissClickTooltip = () => {
+    setClickTooltipOpen(false);
+    setIsHovered(false);
+    setTooltipPos(null);
+  };
+
+  const handleEditFromTooltip = () => {
+    dismissClickTooltip();
+    dismissMobileTooltip();
+    onEdit("district", person!);
   };
 
   const dismissMobileTooltip = () => {
@@ -320,7 +334,9 @@ export function DistrictDirectorDropZone({
               e.stopPropagation();
               return;
             }
-            onEdit("district", person);
+            setClickTooltipOpen(true);
+            setTooltipPos({ x: 0, y: 0 });
+            setIsHovered(true);
           }}
           onMouseEnter={handleNameMouseEnter}
           onMouseLeave={handleNameMouseLeave}
@@ -410,21 +426,31 @@ export function DistrictDirectorDropZone({
         isHovered &&
         tooltipPos &&
         person &&
-        (personNeed || person.notes || person.depositPaid) && (
+        (clickTooltipOpen ||
+          mobileTooltipOpen ||
+          personNeed ||
+          person.notes ||
+          person.depositPaid) && (
           <>
-            {isMobile && mobileTooltipOpen && (
+            {(isMobile && mobileTooltipOpen) || clickTooltipOpen ? (
               <div
                 role="button"
                 tabIndex={0}
                 aria-label="Close tooltip"
                 className="fixed inset-0 z-[99998] bg-black/20"
-                onClick={dismissMobileTooltip}
+                onClick={() =>
+                  clickTooltipOpen
+                    ? dismissClickTooltip()
+                    : dismissMobileTooltip()
+                }
                 onKeyDown={e => {
                   if (e.key === "Enter" || e.key === "Escape")
-                    dismissMobileTooltip();
+                    clickTooltipOpen
+                      ? dismissClickTooltip()
+                      : dismissMobileTooltip();
                 }}
               />
-            )}
+            ) : null}
             <PersonTooltip
               person={person}
               need={
@@ -438,7 +464,12 @@ export function DistrictDirectorDropZone({
                   : null
               }
               position={tooltipPos}
-              centered={isMobile}
+              centered={isMobile || clickTooltipOpen}
+              onEdit={
+                clickTooltipOpen || mobileTooltipOpen
+                  ? handleEditFromTooltip
+                  : undefined
+              }
             />
           </>
         )}

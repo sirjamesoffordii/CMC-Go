@@ -1,8 +1,9 @@
 import { Person } from "../../../drizzle/schema";
-import { Check } from "lucide-react";
+import { Check, Edit2 } from "lucide-react";
 import { Checkbox } from "./ui/checkbox";
 import { trpc } from "../lib/trpc";
 import { createPortal } from "react-dom";
+import { useIsMobile } from "@/hooks/useIsMobile";
 
 interface PersonTooltipProps {
   person: Person;
@@ -15,6 +16,8 @@ interface PersonTooltipProps {
   } | null;
   position: { x: number; y: number };
   centered?: boolean;
+  /** When provided, shows an Edit button that calls this on click */
+  onEdit?: () => void;
 }
 
 export function PersonTooltip({
@@ -22,7 +25,9 @@ export function PersonTooltip({
   need,
   position,
   centered = false,
+  onEdit,
 }: PersonTooltipProps) {
+  const isMobile = useIsMobile();
   // Fetch household if person has one
   const { data: household } = trpc.households.getById.useQuery(
     { id: person.householdId! },
@@ -42,12 +47,18 @@ export function PersonTooltip({
 
   const hasNotes = !!(person.notes || (need && need.description));
 
+  // When centered with edit (click from district view): position over map area.
+  // On mobile, map is top 45dvh when drawer is open — center tooltip at 22.5dvh.
+  // On desktop, use viewport center (map is typically in center).
+  const centeredTop =
+    centered && isMobile ? "22.5dvh" : centered ? "50%" : undefined;
+
   const tooltipContent = (
     <div
-      className="fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 pointer-events-none tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px] max-h-[calc(100dvh-32px)] overflow-y-auto"
+      className={`fixed z-[99999] bg-white backdrop-blur-sm rounded-lg shadow-xl border border-gray-200/80 p-4 tooltip-animate min-w-[200px] sm:min-w-[280px] max-w-[calc(100vw-32px)] sm:max-w-[400px] max-h-[calc(100dvh-32px)] overflow-y-auto ${onEdit ? "pointer-events-auto" : "pointer-events-none"}`}
       style={{
         left: centered ? "50%" : position.x + 15,
-        top: centered ? "50%" : position.y,
+        top: centered ? centeredTop : position.y,
         transform: centered ? "translate(-50%, -50%)" : "translateY(-50%)",
       }}
     >
@@ -259,6 +270,23 @@ export function PersonTooltip({
         {/* Nothing to show - when no family/guest info, no need, no notes, and deposit not paid */}
         {!need && !hasFamilyGuestInfo && !hasNotes && !person.depositPaid && (
           <div className="text-xs text-slate-400 italic">nothing to show</div>
+        )}
+
+        {/* Edit button - when onEdit is provided (e.g. name click in district view) */}
+        {onEdit && (
+          <div className="flex justify-end pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-md transition-colors"
+            >
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </button>
+          </div>
         )}
       </div>
     </div>
