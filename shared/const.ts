@@ -65,7 +65,6 @@ export const DISTRICT_REGION_MAP: Record<string, string> = {
   Connecticut: "Northeast",
   Maine: "Northeast",
   Massachusetts: "Northeast",
-  NewHampshire: "Northeast",
   Pennsylvania: "Northeast",
   Vermont: "Northeast",
   Virginia: "Mid-Atlantic",
@@ -89,7 +88,6 @@ export const DISTRICT_TO_SVG_PATH: Record<string, string> = {
   // Typo variant → correct SVG label
   NorthernNewEnglend: "NorthernNewEngland",
   // Individual-state districts → composite SVG paths
-  NewHampshire: "NorthernNewEngland",
   Vermont: "NorthernNewEngland",
   Maine: "NorthernNewEngland",
   Connecticut: "SouthernNewEngland",

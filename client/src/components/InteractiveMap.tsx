@@ -1766,7 +1766,6 @@ export const InteractiveMap = memo(function InteractiveMap({
       Connecticut: "#5A7A7A", // harbor teal
       Maine: "#4A5A5A", // granite
       Massachusetts: "#8A4A5A", // cranberry
-      NewHampshire: "#6A7A5A", // maple
       Pennsylvania: "#7A5A4A", // keystone brown
       Vermont: "#5A8A6A", // green mountain
 

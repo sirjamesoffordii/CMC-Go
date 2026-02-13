@@ -39,7 +39,6 @@ INSERT INTO districts (id, name, region) VALUES
 ('Connecticut', 'Connecticut', 'Northeast'),
 ('Maine', 'Maine', 'Northeast'),
 ('Massachusetts', 'Massachusetts', 'Northeast'),
-('NewHampshire', 'New Hampshire', 'Northeast'),
 ('NewJersey', 'New Jersey', 'Northeast'),
 ('NewYork', 'New York', 'Northeast'),
 ('Pennsylvania', 'Pennsylvania', 'Northeast'),
