@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { EditableText } from "@/components/EditableText";
 import { formatStatusLabel } from "@/utils/statusLabel";
 import { exportToCsv, formatDateForFilename } from "@/utils/csvExport";
+import { canViewPersonDetails } from "@/lib/scopeCheck";
 
 // Status order for "Sort by status": Yes, Maybe, No, Not Invited (displayed as "Not Invited Yet" in UI when desired)
 const STATUS_SORT_ORDER: Record<
@@ -559,6 +560,7 @@ export default function People() {
   }, [regionsWithDistricts, orderBy, statusSignature]);
 
   const handlePersonClick = (person: Person) => {
+    if (!canViewPersonDetails(user, person)) return;
     setSelectedPerson(person);
     setDialogOpen(true);
   };
@@ -1214,6 +1216,11 @@ export default function People() {
                                                         person.personId &&
                                                       n.isActive
                                                   );
+                                                const detailAccess =
+                                                  canViewPersonDetails(
+                                                    user,
+                                                    person
+                                                  );
 
                                                 return (
                                                   <motion.div
@@ -1224,7 +1231,7 @@ export default function People() {
                                                       stiffness: 350,
                                                       damping: 30,
                                                     }}
-                                                    className="px-12 py-3.5 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                                                    className={`px-12 py-3.5 ${detailAccess ? "hover:bg-slate-50 cursor-pointer" : "cursor-default"} transition-colors border-b border-slate-100 last:border-b-0`}
                                                     onClick={() =>
                                                       handlePersonClick(person)
                                                     }
@@ -1235,43 +1242,50 @@ export default function People() {
                                                           {person.name ||
                                                             person.personId}
                                                         </div>
-                                                        {person.primaryRole && (
-                                                          <div className="text-xs text-slate-500 mt-0.5">
-                                                            {person.primaryRole}
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                      <div className="flex items-center gap-3 flex-shrink-0">
-                                                        <span
-                                                          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                                            person.status ===
-                                                            "Yes"
-                                                              ? "bg-emerald-100 text-emerald-800"
-                                                              : person.status ===
-                                                                  "Maybe"
-                                                                ? "bg-amber-100 text-amber-800"
-                                                                : person.status ===
-                                                                    "No"
-                                                                  ? "bg-red-100 text-red-800"
-                                                                  : "bg-slate-100 text-slate-700"
-                                                          }`}
-                                                        >
-                                                          {formatStatusLabel(
-                                                            person.status
+                                                        {detailAccess &&
+                                                          person.primaryRole && (
+                                                            <div className="text-xs text-slate-500 mt-0.5">
+                                                              {
+                                                                person.primaryRole
+                                                              }
+                                                            </div>
                                                           )}
-                                                        </span>
-                                                        {personNeeds.length >
-                                                          0 && (
-                                                          <span className="text-xs text-slate-600 font-medium">
-                                                            {personNeeds.length}{" "}
-                                                            request
-                                                            {personNeeds.length ===
-                                                            1
-                                                              ? ""
-                                                              : "s"}
-                                                          </span>
-                                                        )}
                                                       </div>
+                                                      {detailAccess && (
+                                                        <div className="flex items-center gap-3 flex-shrink-0">
+                                                          <span
+                                                            className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                              person.status ===
+                                                              "Yes"
+                                                                ? "bg-emerald-100 text-emerald-800"
+                                                                : person.status ===
+                                                                    "Maybe"
+                                                                  ? "bg-amber-100 text-amber-800"
+                                                                  : person.status ===
+                                                                      "No"
+                                                                    ? "bg-red-100 text-red-800"
+                                                                    : "bg-slate-100 text-slate-700"
+                                                            }`}
+                                                          >
+                                                            {formatStatusLabel(
+                                                              person.status
+                                                            )}
+                                                          </span>
+                                                          {personNeeds.length >
+                                                            0 && (
+                                                            <span className="text-xs text-slate-600 font-medium">
+                                                              {
+                                                                personNeeds.length
+                                                              }{" "}
+                                                              request
+                                                              {personNeeds.length ===
+                                                              1
+                                                                ? ""
+                                                                : "s"}
+                                                            </span>
+                                                          )}
+                                                        </div>
+                                                      )}
                                                     </div>
                                                   </motion.div>
                                                 );
@@ -1298,6 +1312,8 @@ export default function People() {
                                             n.personId === person.personId &&
                                             n.isActive
                                         );
+                                        const detailAccess =
+                                          canViewPersonDetails(user, person);
 
                                         return (
                                           <motion.div
@@ -1308,7 +1324,7 @@ export default function People() {
                                               stiffness: 350,
                                               damping: 30,
                                             }}
-                                            className="px-12 py-3.5 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100 last:border-b-0"
+                                            className={`px-12 py-3.5 ${detailAccess ? "hover:bg-slate-50 cursor-pointer" : "cursor-default"} transition-colors border-b border-slate-100 last:border-b-0`}
                                             onClick={() =>
                                               handlePersonClick(person)
                                             }
@@ -1319,38 +1335,43 @@ export default function People() {
                                                   {person.name ||
                                                     person.personId}
                                                 </div>
-                                                {person.primaryRole && (
-                                                  <div className="text-xs text-slate-500 mt-0.5">
-                                                    {person.primaryRole}
-                                                  </div>
-                                                )}
-                                              </div>
-                                              <div className="flex items-center gap-3 flex-shrink-0">
-                                                <span
-                                                  className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-                                                    person.status === "Yes"
-                                                      ? "bg-emerald-100 text-emerald-800"
-                                                      : person.status ===
-                                                          "Maybe"
-                                                        ? "bg-amber-100 text-amber-800"
-                                                        : person.status === "No"
-                                                          ? "bg-red-100 text-red-800"
-                                                          : "bg-slate-100 text-slate-700"
-                                                  }`}
-                                                >
-                                                  {formatStatusLabel(
-                                                    person.status
+                                                {detailAccess &&
+                                                  person.primaryRole && (
+                                                    <div className="text-xs text-slate-500 mt-0.5">
+                                                      {person.primaryRole}
+                                                    </div>
                                                   )}
-                                                </span>
-                                                {personNeeds.length > 0 && (
-                                                  <span className="text-xs text-slate-600 font-medium">
-                                                    {personNeeds.length} request
-                                                    {personNeeds.length === 1
-                                                      ? ""
-                                                      : "s"}
-                                                  </span>
-                                                )}
                                               </div>
+                                              {detailAccess && (
+                                                <div className="flex items-center gap-3 flex-shrink-0">
+                                                  <span
+                                                    className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+                                                      person.status === "Yes"
+                                                        ? "bg-emerald-100 text-emerald-800"
+                                                        : person.status ===
+                                                            "Maybe"
+                                                          ? "bg-amber-100 text-amber-800"
+                                                          : person.status ===
+                                                              "No"
+                                                            ? "bg-red-100 text-red-800"
+                                                            : "bg-slate-100 text-slate-700"
+                                                    }`}
+                                                  >
+                                                    {formatStatusLabel(
+                                                      person.status
+                                                    )}
+                                                  </span>
+                                                  {personNeeds.length > 0 && (
+                                                    <span className="text-xs text-slate-600 font-medium">
+                                                      {personNeeds.length}{" "}
+                                                      request
+                                                      {personNeeds.length === 1
+                                                        ? ""
+                                                        : "s"}
+                                                    </span>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           </motion.div>
                                         );

@@ -40,6 +40,7 @@ import { ALL_REGIONS, DISTRICT_REGION_MAP } from "@/lib/regions";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { formatStatusLabel } from "@/utils/statusLabel";
+import { canViewPersonDetails } from "@/lib/scopeCheck";
 
 export type PeoplePanelInitialFilter = {
   districtId?: string;
@@ -1919,30 +1920,33 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
             const personNeeds = allNeeds.filter(
               n => n.personId === person.personId
             );
+            const hasDetailAccess = canViewPersonDetails(user, person);
             return (
               <div
                 key={person.personId}
-                className={`w-full min-w-0 ${indentClass} py-2 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0`}
-                onClick={() => handlePersonClick(person)}
+                className={`w-full min-w-0 ${indentClass} py-2 ${hasDetailAccess ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"} transition-colors border-b border-gray-100 last:border-b-0`}
+                onClick={() => hasDetailAccess && handlePersonClick(person)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div
-                      className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                        person.status === "Yes"
-                          ? "bg-emerald-700"
-                          : person.status === "Maybe"
-                            ? "bg-yellow-600"
-                            : person.status === "No"
-                              ? "bg-red-700"
-                              : "bg-gray-500"
-                      }`}
-                    />
+                    {hasDetailAccess && (
+                      <div
+                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          person.status === "Yes"
+                            ? "bg-emerald-700"
+                            : person.status === "Maybe"
+                              ? "bg-yellow-600"
+                              : person.status === "No"
+                                ? "bg-red-700"
+                                : "bg-gray-500"
+                        }`}
+                      />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-900 text-sm truncate">
                         {person.name || person.personId || "Person"}
                       </div>
-                      {person.primaryRole && (
+                      {hasDetailAccess && person.primaryRole && (
                         <div className="text-xs text-gray-500 truncate">
                           {person.primaryRole}
                         </div>
@@ -1951,7 +1955,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                     {/* Need badges - show when need filter is active */}
-                    {needFilter.size > 0 &&
+                    {hasDetailAccess &&
+                      needFilter.size > 0 &&
                       personNeeds.length > 0 &&
                       personNeeds.map(need => (
                         <span
@@ -1997,7 +2002,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                         </span>
                       ))}
                     {/* Show last updated when "Last Updated" sort is active */}
-                    {order === "Last Updated" &&
+                    {hasDetailAccess &&
+                      order === "Last Updated" &&
                       (person.lastEdited || person.statusLastUpdated) && (
                         <span className="text-xs text-gray-500">
                           {person.lastEdited
@@ -2010,16 +2016,18 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                         </span>
                       )}
                     {/* Show deposit paid badge when deposit filter is active */}
-                    {depositPaidFilter !== null && person.depositPaid && (
-                      <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        <span className="font-medium">Deposit</span>
-                        <span className="text-blue-600 font-semibold">✓</span>
-                      </span>
-                    )}
+                    {hasDetailAccess &&
+                      depositPaidFilter !== null &&
+                      person.depositPaid && (
+                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="font-medium">Deposit</span>
+                          <span className="text-blue-600 font-semibold">✓</span>
+                        </span>
+                      )}
                   </div>
                 </div>
                 {/* Family & Guest info - show when family/guest filter is active */}
-                {familyGuestFilter.size > 0 && (
+                {hasDetailAccess && familyGuestFilter.size > 0 && (
                   <div className="mt-1 ml-4 flex flex-wrap gap-2">
                     {person.spouseAttending && (
                       <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
@@ -2054,23 +2062,29 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
               );
             }
             if (groupedData.type === "district") {
-              return groupedData.districts.reduce((sum, { campuses, unassigned }) => {
-                const campusPeople = Array.from(campuses.values()).reduce(
-                  (s, { people }) => s + people.length,
-                  0
-                );
-                return sum + campusPeople + unassigned.length;
-              }, 0);
+              return groupedData.districts.reduce(
+                (sum, { campuses, unassigned }) => {
+                  const campusPeople = Array.from(campuses.values()).reduce(
+                    (s, { people }) => s + people.length,
+                    0
+                  );
+                  return sum + campusPeople + unassigned.length;
+                },
+                0
+              );
             }
             // region
             return groupedData.regions.reduce((sum, { districts }) => {
-              const districtPeople = districts.reduce((s, { campuses, unassigned }) => {
-                const campusPeople = Array.from(campuses.values()).reduce(
-                  (cp, { people }) => cp + people.length,
-                  0
-                );
-                return s + campusPeople + unassigned.length;
-              }, 0);
+              const districtPeople = districts.reduce(
+                (s, { campuses, unassigned }) => {
+                  const campusPeople = Array.from(campuses.values()).reduce(
+                    (cp, { people }) => cp + people.length,
+                    0
+                  );
+                  return s + campusPeople + unassigned.length;
+                },
+                0
+              );
               return sum + districtPeople;
             }, 0);
           }, [groupedData]);
@@ -2165,7 +2179,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                       Needs Met:
                     </span>
                     <span className="tabular-nums leading-none font-semibold text-[12px] sm:text-[13px]">
-                      {peopleOnlySummary.metNeeds}/{peopleOnlySummary.totalNeeds}
+                      {peopleOnlySummary.metNeeds}/
+                      {peopleOnlySummary.totalNeeds}
                     </span>
                   </button>
                   <button
@@ -2183,11 +2198,12 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                       Funds Received:
                     </span>
                     <span className="tabular-nums leading-none font-semibold text-[12px] sm:text-[13px]">
-                      ${Math.round(
+                      $
+                      {Math.round(
                         (peopleOnlySummary.metFinancial || 0) / 100
                       ).toLocaleString("en-US")}
-                      /
-                      ${Math.round(
+                      / $
+                      {Math.round(
                         (peopleOnlySummary.totalFinancial || 0) / 100
                       ).toLocaleString("en-US")}
                     </span>
