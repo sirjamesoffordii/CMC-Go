@@ -391,7 +391,7 @@ const resolveCollisions = (
               baseI.labelDirection === "below"
             ) {
               // Shift horizontally
-              const dx = centers[j].x - centers[i].x;
+              const dx = anchors[j].x - anchors[i].x;
               if (Math.abs(dx) < minSpacing) {
                 shiftIX = -shiftStep;
                 shiftJX = shiftStep;
@@ -401,7 +401,7 @@ const resolveCollisions = (
               }
             } else {
               // Shift vertically
-              const dy = centers[j].y - centers[i].y;
+              const dy = anchors[j].y - anchors[i].y;
               if (Math.abs(dy) < minSpacing) {
                 shiftIY = -shiftStep;
                 shiftJY = shiftStep;
@@ -418,26 +418,26 @@ const resolveCollisions = (
             ) {
               shiftIX =
                 overlapX > overlapY
-                  ? centers[j].x > centers[i].x
+                  ? anchors[j].x > anchors[i].x
                     ? -shiftStep
                     : shiftStep
                   : 0;
               shiftIY =
                 overlapX <= overlapY
-                  ? centers[j].y > centers[i].y
+                  ? anchors[j].y > anchors[i].y
                     ? -shiftStep
                     : shiftStep
                   : 0;
             } else {
               shiftIX =
                 overlapX <= overlapY
-                  ? centers[j].x > centers[i].x
+                  ? anchors[j].x > anchors[i].x
                     ? -shiftStep
                     : shiftStep
                   : 0;
               shiftIY =
                 overlapX > overlapY
-                  ? centers[j].y > centers[i].y
+                  ? anchors[j].y > anchors[i].y
                     ? -shiftStep
                     : shiftStep
                   : 0;

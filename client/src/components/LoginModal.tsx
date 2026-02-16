@@ -331,7 +331,7 @@ export function LoginModal({
       localStorage.removeItem("cmc-scope-district");
 
       if (data.user) {
-        utils.auth.me.setData(undefined, data.user);
+        utils.auth.me.setData(undefined, { ...data.user, personName: null });
       }
       await utils.auth.me.invalidate();
       onOpenChange(false);
@@ -350,7 +350,7 @@ export function LoginModal({
       localStorage.removeItem("cmc-scope-district");
 
       if (data.user) {
-        utils.auth.me.setData(undefined, data.user);
+        utils.auth.me.setData(undefined, { ...data.user, personName: null });
       }
       await utils.auth.me.invalidate();
       onOpenChange(false);
@@ -523,18 +523,16 @@ export function LoginModal({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       role: selectedRole as any,
       campusId: isOther ? undefined : (selectedCampusId ?? undefined),
-      districtId:
-        isOther
-          ? undefined
-          : scopeLevel === "district"
-            ? (selectedDistrictId ?? undefined)
-            : undefined,
-      overseeRegionId:
-        isOther
-          ? undefined
-          : scopeLevel === "regional"
-            ? (selectedRegion ?? undefined)
-            : undefined,
+      districtId: isOther
+        ? undefined
+        : scopeLevel === "district"
+          ? (selectedDistrictId ?? undefined)
+          : undefined,
+      overseeRegionId: isOther
+        ? undefined
+        : scopeLevel === "regional"
+          ? (selectedRegion ?? undefined)
+          : undefined,
       customRoleTitle: isOther
         ? customRoleTitle.trim() || undefined
         : undefined,
@@ -770,7 +768,8 @@ export function LoginModal({
           </h1>
           <p className="mt-2 text-sm text-slate-600">
             {mode === "login" && "Sign in to continue"}
-            {mode === "forgotPassword" && "Enter your email to reset your password"}
+            {mode === "forgotPassword" &&
+              "Enter your email to reset your password"}
             {mode === "register" &&
               (step === "credentials"
                 ? "Let's start with your credentials"
@@ -942,67 +941,69 @@ export function LoginModal({
                 </div>
               ) : (
                 <>
-              <div className="text-center mb-4">
-                <p className="text-sm text-slate-600">
-                  Enter your email address and we'll send you a reset link.
-                </p>
-              </div>
+                  <div className="text-center mb-4">
+                    <p className="text-sm text-slate-600">
+                      Enter your email address and we'll send you a reset link.
+                    </p>
+                  </div>
 
-              <div>
-                <Label
-                  htmlFor="forgot-email"
-                  className="text-sm font-medium text-slate-700"
-                >
-                  Email
-                </Label>
-                <Input
-                  id="forgot-email"
-                  type="email"
-                  autoComplete="off"
-                  value={email}
-                  onChange={e => handleEmailChange(e.target.value)}
-                  placeholder="you@example.com"
-                  className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && email.trim()) {
-                      forgotPasswordMutation.mutate({ email: email.trim() });
-                    }
-                  }}
-                />
-              </div>
+                  <div>
+                    <Label
+                      htmlFor="forgot-email"
+                      className="text-sm font-medium text-slate-700"
+                    >
+                      Email
+                    </Label>
+                    <Input
+                      id="forgot-email"
+                      type="email"
+                      autoComplete="off"
+                      value={email}
+                      onChange={e => handleEmailChange(e.target.value)}
+                      placeholder="you@example.com"
+                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
+                      onKeyDown={e => {
+                        if (e.key === "Enter" && email.trim()) {
+                          forgotPasswordMutation.mutate({
+                            email: email.trim(),
+                          });
+                        }
+                      }}
+                    />
+                  </div>
 
-              {renderError()}
+                  {renderError()}
 
-              <Button
-                onClick={() => {
-                  if (email.trim()) {
-                    forgotPasswordMutation.mutate({ email: email.trim() });
-                  }
-                }}
-                disabled={forgotPasswordMutation.isPending || !email.trim()}
-                className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
-              >
-                {forgotPasswordMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Resetting...
-                  </>
-                ) : (
-                  "Reset Password"
-                )}
-              </Button>
+                  <Button
+                    onClick={() => {
+                      if (email.trim()) {
+                        forgotPasswordMutation.mutate({ email: email.trim() });
+                      }
+                    }}
+                    disabled={forgotPasswordMutation.isPending || !email.trim()}
+                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-5 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                  >
+                    {forgotPasswordMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resetting...
+                      </>
+                    ) : (
+                      "Reset Password"
+                    )}
+                  </Button>
 
-              <p className="text-center text-sm text-slate-600">
-                <button
-                  onClick={() => {
-                    clearError();
-                    setMode("login");
-                  }}
-                  className="font-medium text-red-700 hover:text-red-600"
-                >
-                  ← Back to login
-                </button>
-              </p>
+                  <p className="text-center text-sm text-slate-600">
+                    <button
+                      onClick={() => {
+                        clearError();
+                        setMode("login");
+                      }}
+                      className="font-medium text-red-700 hover:text-red-600"
+                    >
+                      ← Back to login
+                    </button>
+                  </p>
                 </>
               )}
             </div>

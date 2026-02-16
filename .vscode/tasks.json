@@ -109,7 +109,7 @@
     {
       "label": "Railway: View deployments",
       "type": "shell",
-      "command": "railway deployments",
+      "command": "railway deployment list",
       "problemMatcher": []
     },
     {
