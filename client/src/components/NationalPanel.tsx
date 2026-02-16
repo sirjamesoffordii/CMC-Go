@@ -41,6 +41,10 @@ export function NationalPanel({
   const { data: allPeople = [] } = trpc.people.list.useQuery();
   const utils = trpc.useUtils();
   const [isAddPersonDialogOpen, setIsAddPersonDialogOpen] = useState(false);
+  const [addCategoryMode, setAddCategoryMode] = useState(false);
+  const [addCategoryName, setAddCategoryName] = useState("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const addCategoryInputRef = useRef<HTMLInputElement>(null);
   const [personForm, setPersonForm] = useState({
     name: "",
     role: "",
@@ -179,28 +183,36 @@ export function NationalPanel({
     return a.name.localeCompare(b.name);
   });
 
+  const getRoleCategory = (person: Person) => {
+    const role = person.primaryRole || "No Role Assigned";
+    const roleLower = role.toLowerCase();
+
+    // National Office category for National Director, Co-Director, and other office staff
+    if (
+      roleLower.includes("national director") ||
+      roleLower.includes("co-director") ||
+      roleLower.includes("co director")
+    ) {
+      return "National Office";
+    }
+
+    // Regional Directors category
+    if (roleLower.includes("regional director")) {
+      return "Regional Directors";
+    }
+
+    return role;
+  };
+
+  const getPersonCategory = (person: Person) => {
+    const customCategory = person.nationalCategory?.trim();
+    return customCategory || getRoleCategory(person);
+  };
+
   // Group all people into categories
   const groupedStaff = sortedStaff.reduce(
     (acc, person) => {
-      const role = person.primaryRole || "No Role Assigned";
-      const roleLower = role.toLowerCase();
-
-      let category = role;
-
-      // National Office category for National Director, Co-Director, and other office staff
-      if (
-        roleLower.includes("national director") ||
-        roleLower.includes("co-director") ||
-        roleLower.includes("co director")
-      ) {
-        category = "National Office";
-      }
-      // Regional Directors category
-      else if (roleLower.includes("regional director")) {
-        category = "Regional Directors";
-      }
-      // Keep other roles as-is (e.g., CMC Go Coordinator)
-
+      const category = getPersonCategory(person);
       if (!acc[category]) {
         acc[category] = [];
       }
@@ -222,6 +234,24 @@ export function NationalPanel({
       return getCategoryPriority(catA) - getCategoryPriority(catB);
     }
   );
+
+  // Merge in custom (empty) categories that don't already have people
+  const allCategoryGroups = useMemo(() => {
+    const existing = sortedRoleGroups.map(([cat]) => cat);
+    const emptyCustom = customCategories
+      .filter(c => !existing.includes(c))
+      .map(c => [c, []] as [string, typeof nationalStaff]);
+    return [...sortedRoleGroups, ...emptyCustom];
+  }, [sortedRoleGroups, customCategories, nationalStaff]);
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Set<string>();
+    nationalStaff.forEach(person => {
+      const category = person.nationalCategory?.trim();
+      if (category) categories.add(category);
+    });
+    return Array.from(categories).sort((a, b) => a.localeCompare(b));
+  }, [nationalStaff]);
 
   // Calculate stats
   const stats = {
@@ -302,32 +332,101 @@ export function NationalPanel({
           </div>
         ) : (
           <div className="space-y-4">
-            {sortedRoleGroups.map(([category, people]) => (
+            {allCategoryGroups.map(([category, people]) => (
               <div key={category} className="space-y-2">
                 <h3 className="text-sm font-semibold text-slate-700 px-2 py-1 bg-slate-50 rounded">
                   {category} ({people.length})
                 </h3>
                 <div className="space-y-1.5">
-                  {people.map(person => (
-                    <PersonRow
-                      key={person.personId}
-                      person={person}
-                      onStatusChange={status =>
-                        onPersonStatusChange(
-                          person.personId,
-                          status as "Yes" | "Maybe" | "No" | "Not Invited"
-                        )
-                      }
-                      onClick={() => onPersonClick(person)}
-                      onPersonUpdate={() => {
-                        utils.people.getNational.invalidate();
-                        utils.people.list.invalidate();
-                      }}
-                    />
-                  ))}
+                  {people.length === 0 ? (
+                    <p className="text-xs text-slate-400 px-2 italic">
+                      No members yet — add people to this category via Add
+                      Person or edit an existing person.
+                    </p>
+                  ) : (
+                    people.map(person => (
+                      <PersonRow
+                        key={person.personId}
+                        person={person}
+                        onStatusChange={status =>
+                          onPersonStatusChange(
+                            person.personId,
+                            status as "Yes" | "Maybe" | "No" | "Not Invited"
+                          )
+                        }
+                        onClick={() => onPersonClick(person)}
+                        onPersonUpdate={() => {
+                          utils.people.getNational.invalidate();
+                          utils.people.list.invalidate();
+                        }}
+                      />
+                    ))
+                  )}
                 </div>
               </div>
             ))}
+
+            {/* Add Category (Inline) */}
+            <div className="pt-2">
+              {addCategoryMode ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    ref={addCategoryInputRef}
+                    value={addCategoryName}
+                    onChange={e => setAddCategoryName(e.target.value)}
+                    placeholder="New category name…"
+                    className="max-w-xs text-sm"
+                    autoFocus
+                    onKeyDown={e => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const name = addCategoryName.trim();
+                        if (!name) return;
+                        // Check for duplicate
+                        const existingNames = allCategoryGroups.map(
+                          ([cat]) => cat
+                        );
+                        if (
+                          existingNames.some(
+                            n => n.toLowerCase() === name.toLowerCase()
+                          )
+                        ) {
+                          alert("A category with that name already exists.");
+                          return;
+                        }
+                        setCustomCategories(prev => [...prev, name]);
+                        setAddCategoryName("");
+                        setAddCategoryMode(false);
+                      } else if (e.key === "Escape") {
+                        setAddCategoryName("");
+                        setAddCategoryMode(false);
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!addCategoryName.trim()) {
+                        setAddCategoryMode(false);
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddCategoryMode(true);
+                    setAddCategoryName("");
+                    setTimeout(
+                      () => addCategoryInputRef.current?.focus(),
+                      0
+                    );
+                  }}
+                  className="py-2.5 px-3 border-2 border-dashed border-slate-300 flex items-center justify-start gap-2 text-slate-400 hover:border-slate-900 hover:text-slate-900 hover:shadow-md transition-all cursor-pointer rounded"
+                >
+                  <Plus className="w-4 h-4 flex-shrink-0" strokeWidth={2} />
+                  <span className="text-sm">Add Category</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -444,6 +543,7 @@ export function NationalPanel({
               <Input
                 id="add-person-category"
                 value={personForm.nationalCategory}
+                list="national-category-options"
                 onChange={e =>
                   setPersonForm({
                     ...personForm,
@@ -452,6 +552,13 @@ export function NationalPanel({
                 }
                 placeholder="e.g., National Office, Regional Directors"
               />
+              {categoryOptions.length > 0 && (
+                <datalist id="national-category-options">
+                  {categoryOptions.map(option => (
+                    <option key={option} value={option} />
+                  ))}
+                </datalist>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-person-status">Status</Label>

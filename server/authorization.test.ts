@@ -356,6 +356,11 @@ describe("canEditNational", () => {
     expect(canEditNational(user)).toBe(false);
   });
 
+  it("should allow NATIONAL_STAFF", () => {
+    const user = createTestUser({ role: "NATIONAL_STAFF" });
+    expect(canEditNational(user)).toBe(true);
+  });
+
   it("should allow REGION_DIRECTOR", () => {
     const user = createTestUser({ role: "REGION_DIRECTOR" });
     expect(canEditNational(user)).toBe(true);

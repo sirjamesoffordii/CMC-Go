@@ -108,7 +108,7 @@ function getDefaultEditLevel(role: string): string {
     case "ADMIN":
       return "NATIONAL";
     case "NATIONAL_STAFF":
-      return "XAN";
+      return "NATIONAL";
     case "REGION_DIRECTOR":
     case "REGIONAL_STAFF":
       return "REGION";
@@ -211,6 +211,7 @@ export function getViewScope(
  */
 export function getEditScope(user: User | null | undefined): EditScope | null {
   if (!user) return null;
+  if (user.role === "NATIONAL_STAFF") return { level: "ALL" };
   const level = user.editLevel || getDefaultEditLevel(user.role);
   return resolveEditScope(level, user);
 }

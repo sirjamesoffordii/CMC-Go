@@ -60,7 +60,7 @@ function getDefaultEditLevel(role: string): EditLevel {
     case "ADMIN":
       return "NATIONAL";
     case "NATIONAL_STAFF":
-      return "XAN";
+      return "NATIONAL";
     case "REGION_DIRECTOR":
     case "REGIONAL_STAFF":
       return "REGION";
@@ -229,7 +229,9 @@ export function canEditPerson(
   }
 
   const userEditLevel: EditLevel =
-    (user as any).editLevel || getDefaultEditLevel(String(user.role));
+    user.role === "NATIONAL_STAFF"
+      ? "NATIONAL"
+      : (user as any).editLevel || getDefaultEditLevel(String(user.role));
 
   // NATIONAL edit level can edit everyone
   if (userEditLevel === "NATIONAL") return true;
@@ -376,8 +378,15 @@ export function canEditNational(user: User): boolean {
     return false;
   }
 
-  // Only REGION_DIRECTOR (ACTIVE) and ADMIN can edit nationally
-  return user.role === "REGION_DIRECTOR" || user.role === "ADMIN";
+  // National-level access for national roles and admins
+  return (
+    user.role === "NATIONAL_STAFF" ||
+    user.role === "NATIONAL_DIRECTOR" ||
+    user.role === "FIELD_DIRECTOR" ||
+    user.role === "CMC_GO_ADMIN" ||
+    user.role === "REGION_DIRECTOR" ||
+    user.role === "ADMIN"
+  );
 }
 
 /**
