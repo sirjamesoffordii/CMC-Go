@@ -11,4 +11,5 @@ cmds = ["corepack enable", "pnpm install --frozen-lockfile"]
 cmds = ["if [ -f dist/index.js ]; then echo 'Using pre-built dist/'; else pnpm build; fi"]
 
 [start]
-cmd = "pnpm start"
+# Run migrations before start so production DB stays in sync (idempotent - skips already applied)
+cmd = "pnpm db:migrate && pnpm start"

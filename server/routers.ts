@@ -348,26 +348,47 @@ export const appRouter = router({
         // Get default authorization levels
         const authLevels = getDefaultAuthorization(input.role);
 
-        // Create user
-        const userId = await db.createUser({
-          fullName: input.fullName,
-          email: input.email,
-          passwordHash,
-          role: input.role,
-          campusId,
-          districtId,
-          regionId,
-          overseeRegionId,
-          ...(input.role === "OTHER" && input.customRoleTitle
-            ? { roleTitle: input.customRoleTitle }
-            : {}),
-          ...authLevels,
-          approvalStatus: (
-            ROLES_REQUIRING_APPROVAL as readonly string[]
-          ).includes(input.role)
-            ? "PENDING_APPROVAL"
-            : "ACTIVE",
-        });
+        // Create user (wrap in try-catch for clearer errors when DB rejects e.g. invalid enum)
+        let userId: number;
+        try {
+          userId = await db.createUser({
+            fullName: input.fullName,
+            email: input.email,
+            passwordHash,
+            role: input.role,
+            campusId,
+            districtId,
+            regionId,
+            overseeRegionId,
+            ...(input.role === "OTHER" && input.customRoleTitle
+              ? { roleTitle: input.customRoleTitle }
+              : {}),
+            ...authLevels,
+            approvalStatus: (
+              ROLES_REQUIRING_APPROVAL as readonly string[]
+            ).includes(input.role)
+              ? "PENDING_APPROVAL"
+              : "ACTIVE",
+          });
+        } catch (createError) {
+          const err = createError as Error;
+          console.error("[register] createUser failed:", err.message);
+          if (
+            err.message?.includes("OTHER") ||
+            err.message?.includes("enum") ||
+            err.message?.includes("invalid")
+          ) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message:
+                "Database does not support this role yet. Run 'pnpm db:migrate' to apply migrations.",
+            });
+          }
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create account. Please try again.",
+          });
+        }
 
         const user = await db.getUserById(userId);
         if (!user) {
