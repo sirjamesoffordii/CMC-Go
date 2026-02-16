@@ -368,6 +368,32 @@ export function useScopeFilter() {
     }
   }, [userScopeLevel, currentScope]);
 
+  // National-level roles: default to NATIONAL scope on login
+  // LoginModal clears localStorage on login/register, so this detects fresh logins
+  // Applies to: NATIONAL_STAFF, NATIONAL_DIRECTOR, FIELD_DIRECTOR, CMC_GO_ADMIN
+  useEffect(() => {
+    if (!user?.role) return;
+    const NATIONAL_ROLES = [
+      "NATIONAL_STAFF",
+      "NATIONAL_DIRECTOR",
+      "FIELD_DIRECTOR",
+      "CMC_GO_ADMIN",
+      "ADMIN",
+    ];
+    const isNationalRole = NATIONAL_ROLES.includes(user.role);
+    if (!isNationalRole) return;
+    // Only reset when localStorage was cleared (fresh login) and state is stale
+    const hasStoredPreference = !!localStorage.getItem("cmc-scope-filter");
+    if (!hasStoredPreference) {
+      setCurrentScope("NATIONAL");
+      setSelectedRegion(null);
+      setSelectedDistrict(null);
+      localStorage.setItem("cmc-scope-filter", "NATIONAL");
+      localStorage.removeItem("cmc-scope-region");
+      localStorage.removeItem("cmc-scope-district");
+    }
+  }, [user?.id, user?.role]);
+
   // Region-scoped users and Regional Directors: default to their region on first load
   // Only applies when there is no saved scope preference (first visit)
   useEffect(() => {
