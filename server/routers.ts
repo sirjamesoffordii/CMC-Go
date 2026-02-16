@@ -349,25 +349,48 @@ export const appRouter = router({
         const authLevels = getDefaultAuthorization(input.role);
 
         // Create user
-        const userId = await db.createUser({
-          fullName: input.fullName,
-          email: input.email,
-          passwordHash,
-          role: input.role,
-          campusId,
-          districtId,
-          regionId,
-          overseeRegionId,
-          ...(input.role === "OTHER" && input.customRoleTitle
-            ? { roleTitle: input.customRoleTitle }
-            : {}),
-          ...authLevels,
-          approvalStatus: (
-            ROLES_REQUIRING_APPROVAL as readonly string[]
-          ).includes(input.role)
-            ? "PENDING_APPROVAL"
-            : "ACTIVE",
-        });
+        let userId: number;
+        try {
+          userId = await db.createUser({
+            fullName: input.fullName,
+            email: input.email,
+            passwordHash,
+            role: input.role,
+            campusId,
+            districtId,
+            regionId,
+            overseeRegionId,
+            ...(input.role === "OTHER" && input.customRoleTitle
+              ? { roleTitle: input.customRoleTitle }
+              : {}),
+            ...authLevels,
+            approvalStatus: (
+              ROLES_REQUIRING_APPROVAL as readonly string[]
+            ).includes(input.role)
+              ? "PENDING_APPROVAL"
+              : "ACTIVE",
+          });
+        } catch (dbError) {
+          console.error("[register] Failed to create user:", dbError);
+          // MySQL enum value rejection (e.g., role not in DB enum)
+          const msg =
+            dbError instanceof Error ? dbError.message : String(dbError);
+          if (
+            msg.includes("Data truncated") ||
+            msg.includes("Incorrect") ||
+            msg.includes("doesn't have a default value")
+          ) {
+            throw new TRPCError({
+              code: "INTERNAL_SERVER_ERROR",
+              message:
+                "Database schema is out of date. Please run migrations (pnpm db:migrate).",
+            });
+          }
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create account. Please try again.",
+          });
+        }
 
         const user = await db.getUserById(userId);
         if (!user) {
