@@ -325,6 +325,11 @@ export function LoginModal({
   // Mutations
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async data => {
+      // Clear scope preferences so user starts with role-appropriate defaults
+      localStorage.removeItem("cmc-scope-filter");
+      localStorage.removeItem("cmc-scope-region");
+      localStorage.removeItem("cmc-scope-district");
+
       if (data.user) {
         utils.auth.me.setData(undefined, data.user);
       }
@@ -339,6 +344,11 @@ export function LoginModal({
 
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: async data => {
+      // Clear scope preferences so user starts with role-appropriate defaults
+      localStorage.removeItem("cmc-scope-filter");
+      localStorage.removeItem("cmc-scope-region");
+      localStorage.removeItem("cmc-scope-district");
+
       if (data.user) {
         utils.auth.me.setData(undefined, data.user);
       }
@@ -503,23 +513,31 @@ export function LoginModal({
 
     clearError();
 
+    // OTHER role is view-only: never send campus/district/region
+    const isOther = selectedRole === "OTHER";
+
     registerMutation.mutate({
       email: email.trim(),
       password,
       fullName: fullName.trim(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       role: selectedRole as any,
-      campusId: selectedCampusId ?? undefined,
+      campusId: isOther ? undefined : (selectedCampusId ?? undefined),
       districtId:
-        scopeLevel === "district"
-          ? (selectedDistrictId ?? undefined)
-          : undefined,
+        isOther
+          ? undefined
+          : scopeLevel === "district"
+            ? (selectedDistrictId ?? undefined)
+            : undefined,
       overseeRegionId:
-        scopeLevel === "regional" ? (selectedRegion ?? undefined) : undefined,
-      customRoleTitle:
-        selectedRole === "OTHER"
-          ? customRoleTitle.trim() || undefined
-          : undefined,
+        isOther
+          ? undefined
+          : scopeLevel === "regional"
+            ? (selectedRegion ?? undefined)
+            : undefined,
+      customRoleTitle: isOther
+        ? customRoleTitle.trim() || undefined
+        : undefined,
     });
   };
 
@@ -1161,7 +1179,7 @@ export function LoginModal({
                 >
                   <Globe className="h-4 w-4 text-slate-400" />
                   <span className="text-sm text-slate-600">
-                    National Team (no specific region)
+                    No specific region
                   </span>
                 </button>
               </div>
