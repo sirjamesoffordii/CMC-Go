@@ -214,7 +214,8 @@ async function runMigrations() {
 
     console.log("\n✅ All migrations completed successfully!");
   } catch (error) {
-    console.error("\n❌ Migration failed:", error.message);
+    console.error("\n❌ Migration failed:", error?.message ?? String(error));
+    if (error?.stack) console.error(error.stack);
     process.exit(1);
   } finally {
     if (connection) {

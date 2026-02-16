@@ -30,6 +30,7 @@
     "db:check": "node scripts/check-schema.mjs",
     "db:audit": "node scripts/audit-migrations.mjs",
     "db:verify": "node scripts/verify-write.mjs",
+    "db:verify-other-role": "node scripts/verify-other-role-migration.mjs",
     "db:reset": "node scripts/reset-db.mjs",
     "db:reset:drop": "node scripts/reset-db.mjs --drop-db",
     "db:reset:local": "node scripts/reset-local-db.mjs",
