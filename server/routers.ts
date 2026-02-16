@@ -47,7 +47,7 @@ function getDefaultAuthorization(role: string) {
       return {
         scopeLevel: "NATIONAL" as const,
         viewLevel: "NATIONAL" as const,
-        editLevel: "XAN" as const, // Can only edit XAN panel members
+        editLevel: "NATIONAL" as const,
       };
 
     case "REGION_DIRECTOR":
@@ -1882,6 +1882,7 @@ export const appRouter = router({
           personId: z.string(),
           name: z.string().optional(),
           primaryRole: z.string().optional(),
+          nationalCategory: z.string().nullable().optional(),
           primaryCampusId: z.number().nullable().optional(),
           status: z.enum(["Yes", "Maybe", "No", "Not Invited"]).optional(),
           depositPaid: z.boolean().optional(),

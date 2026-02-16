@@ -809,6 +809,10 @@ describe("canEditNational", () => {
   });
 
   describe("REGION_DIRECTOR and ADMIN can edit nationally", () => {
+    it("NATIONAL_STAFF can edit nationally", () => {
+      expect(canEditNational(createFullUser("NATIONAL_STAFF"))).toBe(true);
+    });
+
     it("REGION_DIRECTOR can edit nationally", () => {
       expect(canEditNational(createFullUser("REGION_DIRECTOR"))).toBe(true);
     });

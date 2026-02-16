@@ -53,6 +53,7 @@ export function PersonDetailsDialog({
   // Form state matching DistrictPanel's Edit Person dialog
   const [formName, setFormName] = useState("");
   const [formRole, setFormRole] = useState("");
+  const [formNationalCategory, setFormNationalCategory] = useState("");
   const [formStatus, setFormStatus] = useState<
     "Yes" | "Maybe" | "No" | "Not Invited"
   >("Not Invited");
@@ -82,6 +83,7 @@ export function PersonDetailsDialog({
     if (person && open) {
       setFormName(person.name || "");
       setFormRole(person.primaryRole || "");
+      setFormNationalCategory(person.nationalCategory || "");
       setFormStatus(person.status || "Not Invited");
       setFormSpouseAttending(person.spouseAttending || false);
       setFormChildrenCount(person.childrenCount || 0);
@@ -178,24 +180,36 @@ export function PersonDetailsDialog({
   // Early return guard - AFTER all hooks
   if (!person) return null;
 
+  const showNationalCategory =
+    person.primaryDistrictId == null && person.primaryRegion == null;
+
   const handleUpdate = () => {
     if (!formName.trim() || !formRole.trim()) {
       toast.error("Name and role are required");
       return;
     }
 
+    const updatePayload = {
+      personId: person.personId,
+      name: formName.trim(),
+      primaryRole: formRole.trim(),
+      status: formStatus,
+      depositPaid: formDepositPaid,
+      notes: formNotes || undefined,
+      spouseAttending: formSpouseAttending,
+      childrenCount: formChildrenCount,
+      guestsCount: formGuestsCount,
+      ...(showNationalCategory
+        ? {
+            nationalCategory: formNationalCategory.trim()
+              ? formNationalCategory.trim()
+              : null,
+          }
+        : {}),
+    };
+
     updatePerson.mutate(
-      {
-        personId: person.personId,
-        name: formName.trim(),
-        primaryRole: formRole.trim(),
-        status: formStatus,
-        depositPaid: formDepositPaid,
-        notes: formNotes || undefined,
-        spouseAttending: formSpouseAttending,
-        childrenCount: formChildrenCount,
-        guestsCount: formGuestsCount,
-      },
+      updatePayload,
       {
         onSuccess: () => {
           // Handle need update
@@ -269,7 +283,11 @@ export function PersonDetailsDialog({
             Basic Information
           </h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div
+          className={`grid grid-cols-1 ${
+            showNationalCategory ? "sm:grid-cols-4" : "sm:grid-cols-3"
+          } gap-4`}
+        >
           <div className="space-y-2">
             <Label htmlFor="pd-name">Full Name *</Label>
             <Input
@@ -288,6 +306,17 @@ export function PersonDetailsDialog({
               placeholder="Enter role"
             />
           </div>
+          {showNationalCategory && (
+            <div className="space-y-2">
+              <Label htmlFor="pd-national-category">Category</Label>
+              <Input
+                id="pd-national-category"
+                value={formNationalCategory}
+                onChange={e => setFormNationalCategory(e.target.value)}
+                placeholder="e.g., National Office"
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="pd-status">Status</Label>
             <Select
