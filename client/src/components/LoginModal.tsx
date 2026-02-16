@@ -118,6 +118,7 @@ type RegistrationStep =
   | "district" // Select district or "Regional level"
   | "campus" // Select campus or "District level"
   | "role" // Select role based on scope
+  | "category" // Select XAN category (National Staff only)
   | "confirm"; // Final confirmation
 
 type ScopeLevel = "national" | "regional" | "district" | "campus";
@@ -157,6 +158,11 @@ export function LoginModal({
   >(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [customRoleTitle, setCustomRoleTitle] = useState("");
+  const [selectedNationalCategory, setSelectedNationalCategory] = useState<
+    string | null
+  >(null);
+  const [isNewNationalCategory, setIsNewNationalCategory] = useState(false);
+  const [newNationalCategoryName, setNewNationalCategoryName] = useState("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   // UI state
@@ -253,6 +259,10 @@ export function LoginModal({
     { districtId: selectedDistrictId ?? "" },
     { enabled: !!selectedDistrictId }
   );
+  const { data: nationalCategories = [] } =
+    trpc.people.getNationalCategories.useQuery(undefined, {
+      enabled: mode === "register" && selectedRole === "NATIONAL_STAFF",
+    });
 
   // Compute unique regions (exclude National Team — handled by "No region" option)
   const regions = useMemo(() => {
@@ -384,6 +394,9 @@ export function LoginModal({
     setNewlyCreatedCampusName(null);
     setSelectedRole(null);
     setCustomRoleTitle("");
+    setSelectedNationalCategory(null);
+    setIsNewNationalCategory(false);
+    setNewNationalCategoryName("");
     setIsCheckingEmail(false);
     clearError();
     setRegionQuery("");
@@ -497,7 +510,11 @@ export function LoginModal({
 
   const handleRoleSelect = (role: string) => {
     setSelectedRole(role);
-    goToStep("confirm");
+    if (role === "NATIONAL_STAFF") {
+      goToStep("category");
+    } else {
+      goToStep("confirm");
+    }
   };
 
   const handleRegister = () => {
@@ -538,6 +555,10 @@ export function LoginModal({
       customRoleTitle: isOther
         ? customRoleTitle.trim() || undefined
         : undefined,
+      nationalCategory:
+        selectedRole === "NATIONAL_STAFF" && selectedNationalCategory
+          ? selectedNationalCategory
+          : undefined,
     });
   };
 
@@ -583,8 +604,11 @@ export function LoginModal({
   // Progress calculation
   const getProgress = () => {
     const steps = ["credentials", "region"];
-    if (scopeLevel === "national") steps.push("role", "confirm");
-    else if (scopeLevel === "regional")
+    if (scopeLevel === "national") {
+      steps.push("role");
+      if (selectedRole === "NATIONAL_STAFF") steps.push("category");
+      steps.push("confirm");
+    } else if (scopeLevel === "regional")
       steps.push("district", "role", "confirm");
     else if (scopeLevel === "district")
       steps.push("district", "campus", "role", "confirm");
@@ -1477,6 +1501,126 @@ export function LoginModal({
             </div>
           )}
 
+          {/* REGISTER: CATEGORY SELECTION (National Staff only) */}
+          {mode === "register" && step === "category" && (
+            <div className="space-y-4">
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Select your category
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Choose which group you belong to on the National Team.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                {nationalCategories.length > 0 ? (
+                  <>
+                    {nationalCategories.map(cat => (
+                      <button
+                        key={cat}
+                        onClick={() => {
+                          setSelectedNationalCategory(cat);
+                          setIsNewNationalCategory(false);
+                          setNewNationalCategoryName("");
+                          goToStep("confirm");
+                        }}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-xl border p-4 text-left shadow-sm transition-all hover:border-red-200 hover:bg-red-50/30",
+                          selectedNationalCategory === cat &&
+                            !isNewNationalCategory
+                            ? "border-red-300 bg-red-50/50 ring-1 ring-red-200"
+                            : "border-slate-200 bg-white"
+                        )}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-xs font-semibold shrink-0">
+                          {cat.charAt(0)}
+                        </div>
+                        <span className="text-sm font-medium text-slate-800">
+                          {cat}
+                        </span>
+                      </button>
+                    ))}
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-500 py-2">
+                    No categories exist yet. Create a new one below.
+                  </p>
+                )}
+
+                {/* Create new category */}
+                {!isNewNationalCategory ? (
+                  <button
+                    onClick={() => setIsNewNationalCategory(true)}
+                    className="flex w-full items-center gap-3 rounded-xl border border-dashed border-slate-300 p-4 text-left transition-all hover:border-red-300 hover:bg-red-50/30"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <span className="text-sm font-medium text-slate-600">
+                      Create new category
+                    </span>
+                  </button>
+                ) : (
+                  <div className="rounded-xl border border-red-200 bg-red-50/30 p-4 space-y-3">
+                    <Input
+                      value={newNationalCategoryName}
+                      onChange={e => setNewNationalCategoryName(e.target.value)}
+                      placeholder="Enter category name"
+                      autoFocus
+                      onKeyDown={e => {
+                        if (
+                          e.key === "Enter" &&
+                          newNationalCategoryName.trim()
+                        ) {
+                          setSelectedNationalCategory(
+                            newNationalCategoryName.trim()
+                          );
+                          goToStep("confirm");
+                        }
+                      }}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => {
+                          if (newNationalCategoryName.trim()) {
+                            setSelectedNationalCategory(
+                              newNationalCategoryName.trim()
+                            );
+                            goToStep("confirm");
+                          }
+                        }}
+                        disabled={!newNationalCategoryName.trim()}
+                        className="flex-1 bg-gradient-to-r from-red-600 to-rose-600 text-white"
+                        size="sm"
+                      >
+                        Continue
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setIsNewNationalCategory(false);
+                          setNewNationalCategoryName("");
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Back button */}
+              <button
+                onClick={() => goToStep("role")}
+                className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
+              >
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+            </div>
+          )}
+
           {/* REGISTER: CONFIRMATION */}
           {mode === "register" && step === "confirm" && (
             <div className="space-y-5">
@@ -1538,6 +1682,14 @@ export function LoginModal({
                           ?.label}
                   </span>
                 </div>
+                {selectedNationalCategory && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Category</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {selectedNationalCategory}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-600">Access</span>
                   <span className="text-sm font-medium text-slate-900 text-right">
@@ -1570,7 +1722,11 @@ export function LoginModal({
               </Button>
 
               <button
-                onClick={() => goToStep("role")}
+                onClick={() =>
+                  goToStep(
+                    selectedRole === "NATIONAL_STAFF" ? "category" : "role"
+                  )
+                }
                 className="flex w-full items-center justify-center gap-2 py-2 text-sm text-slate-600 hover:text-slate-800"
               >
                 <ArrowLeft className="h-4 w-4" /> Back

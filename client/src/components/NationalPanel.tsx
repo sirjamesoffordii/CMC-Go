@@ -39,8 +39,11 @@ export function NationalPanel({
   const { data: nationalStaffRaw = [], isLoading } =
     trpc.people.getNational.useQuery();
   const { data: allPeople = [] } = trpc.people.list.useQuery();
+  const { data: existingCategories = [] } =
+    trpc.people.getNationalCategories.useQuery();
   const utils = trpc.useUtils();
   const [isAddPersonDialogOpen, setIsAddPersonDialogOpen] = useState(false);
+  const [isNewCategory, setIsNewCategory] = useState(false);
   const [personForm, setPersonForm] = useState({
     name: "",
     role: "",
@@ -92,10 +95,12 @@ export function NationalPanel({
   const createPerson = trpc.people.create.useMutation({
     onSuccess: () => {
       utils.people.getNational.invalidate();
+      utils.people.getNationalCategories.invalidate();
       utils.people.list.invalidate();
       utils.metrics.get.invalidate();
       utils.followUp.list.invalidate();
       setIsAddPersonDialogOpen(false);
+      setIsNewCategory(false);
       setPersonForm({
         name: "",
         role: "",
@@ -179,27 +184,31 @@ export function NationalPanel({
     return a.name.localeCompare(b.name);
   });
 
-  // Group all people into categories
+  // Group all people into categories (prefer nationalCategory, fall back to role parsing)
   const groupedStaff = sortedStaff.reduce(
     (acc, person) => {
-      const role = person.primaryRole || "No Role Assigned";
-      const roleLower = role.toLowerCase();
+      let category: string;
 
-      let category = role;
+      if (person.nationalCategory) {
+        // Use explicit nationalCategory when set
+        category = person.nationalCategory;
+      } else {
+        // Fall back to deriving category from primaryRole
+        const role = person.primaryRole || "No Role Assigned";
+        const roleLower = role.toLowerCase();
 
-      // National Office category for National Director, Co-Director, and other office staff
-      if (
-        roleLower.includes("national director") ||
-        roleLower.includes("co-director") ||
-        roleLower.includes("co director")
-      ) {
-        category = "National Office";
+        if (
+          roleLower.includes("national director") ||
+          roleLower.includes("co-director") ||
+          roleLower.includes("co director")
+        ) {
+          category = "National Office";
+        } else if (roleLower.includes("regional director")) {
+          category = "Regional Directors";
+        } else {
+          category = role;
+        }
       }
-      // Regional Directors category
-      else if (roleLower.includes("regional director")) {
-        category = "Regional Directors";
-      }
-      // Keep other roles as-is (e.g., CMC Go Coordinator)
 
       if (!acc[category]) {
         acc[category] = [];
@@ -441,17 +450,65 @@ export function NationalPanel({
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-person-category">Category</Label>
-              <Input
-                id="add-person-category"
-                value={personForm.nationalCategory}
-                onChange={e =>
-                  setPersonForm({
-                    ...personForm,
-                    nationalCategory: e.target.value,
-                  })
-                }
-                placeholder="e.g., National Office, Regional Directors"
-              />
+              {!isNewCategory ? (
+                <Select
+                  value={personForm.nationalCategory || "__select__"}
+                  onValueChange={value => {
+                    if (value === "__new__") {
+                      setIsNewCategory(true);
+                      setPersonForm({ ...personForm, nationalCategory: "" });
+                    } else if (value === "__select__") {
+                      setPersonForm({ ...personForm, nationalCategory: "" });
+                    } else {
+                      setPersonForm({
+                        ...personForm,
+                        nationalCategory: value,
+                      });
+                    }
+                  }}
+                >
+                  <SelectTrigger id="add-person-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__select__" disabled>
+                      Select category
+                    </SelectItem>
+                    {existingCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="__new__">+ Create new category</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    id="add-person-category"
+                    value={personForm.nationalCategory}
+                    onChange={e =>
+                      setPersonForm({
+                        ...personForm,
+                        nationalCategory: e.target.value,
+                      })
+                    }
+                    placeholder="Enter new category name"
+                    autoFocus
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => {
+                      setIsNewCategory(false);
+                      setPersonForm({ ...personForm, nationalCategory: "" });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="add-person-status">Status</Label>

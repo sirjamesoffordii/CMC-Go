@@ -1788,6 +1788,27 @@ export async function getNationalStaff() {
     );
 }
 
+// Distinct national categories from national staff
+export async function getNationalCategories(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .selectDistinct({ category: people.nationalCategory })
+    .from(people)
+    .where(
+      and(
+        sql`${people.primaryDistrictId} IS NULL`,
+        sql`${people.primaryRegion} IS NULL`,
+        sql`${people.nationalCategory} IS NOT NULL`,
+        sql`${people.nationalCategory} != ''`
+      )
+    );
+  return rows
+    .map(r => r.category)
+    .filter((c): c is string => !!c)
+    .sort();
+}
+
 // ============================================================================
 // HOUSEHOLDS
 // ============================================================================

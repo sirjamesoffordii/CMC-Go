@@ -240,6 +240,8 @@ export const appRouter = router({
           overseeRegionId: z.string().optional(),
           // For OTHER role - custom role title entered by user
           customRoleTitle: z.string().max(255).optional(),
+          // For NATIONAL_STAFF - which XAN category they belong to
+          nationalCategory: z.string().max(255).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -410,6 +412,9 @@ export const appRouter = router({
             primaryCampusId: campusId,
             primaryDistrictId: districtId,
             primaryRegion: regionId,
+            ...(input.nationalCategory
+              ? { nationalCategory: input.nationalCategory }
+              : {}),
             status: "Not Invited",
           });
           // Link user to person record
@@ -1595,6 +1600,10 @@ export const appRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
       }
       return await db.getNationalStaff();
+    }),
+    // Distinct nationalCategory values from the XAN panel (public for registration)
+    getNationalCategories: publicProcedure.query(async () => {
+      return await db.getNationalCategories();
     }),
     byDistrict: protectedProcedure
       .input(z.object({ districtId: z.string() }))
