@@ -18,6 +18,7 @@ This directory contains scripts for database management, agent automation, data 
 | `seed-chi-alpha.mjs`         | Database   | Seed Chi Alpha regions and districts                              |
 | `seed-regions-districts.mjs` | Database   | Seed regions and districts with colors                            |
 | `seed-mysql-dev.mjs`         | Database   | Seed MySQL dev environment                                        |
+| `populate-contacts.mjs`      | Database   | Sync verified emails into people (no fabrication)                 |
 | `reseed-districts.mjs`       | Database   | Re-seed districts matching SVG map IDs                            |
 | `verify-database.mjs`        | Validation | Verify database schema matches expected structure                 |
 | `verify-write.mjs`           | Validation | Test create/update operations persist correctly                   |
@@ -140,6 +141,18 @@ Seeds MySQL development environment with full sample data.
 
 ```bash
 node scripts/seed-mysql-dev.mjs
+```
+
+#### `populate-contacts.mjs`
+
+Sync verified contact data into `people` without guessing.
+
+- Does **not** generate/guess emails or phone numbers.
+- Only backfills `people.email` from `users.email` when linked by `users.personId` -> `people.personId`.
+
+```bash
+node scripts/populate-contacts.mjs
+node scripts/populate-contacts.mjs --dry-run
 ```
 
 #### `reseed-districts.mjs`
