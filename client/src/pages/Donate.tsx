@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Heart, Share2, Check, X } from "lucide-react";
+import { ArrowLeft, Heart, Share2, Check, X, Mail, MessageCircle, Facebook } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ function formatDollars(cents: number): string {
 
 export default function Donate() {
   const [, setLocation] = useLocation();
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(1000);
   const [customAmount, setCustomAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorEmail, setDonorEmail] = useState("");
@@ -235,69 +235,8 @@ export default function Donate() {
             </div>
           </div>
 
-          {/* What is CMC */}
-          <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
-              What is CMC?
-            </h2>
-            <p className="text-lg text-slate-700 leading-relaxed mb-4">
-              Campus Missions Conference is National Chi Alpha's largest
-              gathering! Every four years, Chi Alpha Missionaries get to gather
-              together for fellowship and training. It's a transformative
-              experience that renews vision, deepens community, and equips
-              missionaries for the work God has called them to.
-            </p>
-            <p className="text-lg text-slate-700 leading-relaxed mb-4">
-              CMC Go is a way to coordinate toward CMC. It's a map-first web app
-              that replaces spreadsheets with a shared visual, helping leaders at
-              every level see who's been personally invited, surfacing who needs
-              support, and bringing clarity to each person's decision journey.
-            </p>
-            <p className="text-lg text-slate-700 leading-relaxed">
-              Inviting people personally ensures that people not only know about
-              an opportunity, but understand why it matters. It brings clarity
-              around where they are in the decision process and what support or
-              steps they need to move forward, and most of all, it communicates
-              to them that they matter.
-            </p>
-          </div>
-
-          {/* Why This Matters */}
-          <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
-              Why Your Gift Matters
-            </h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
-                <p className="text-lg text-slate-700 leading-relaxed">
-                  Many Chi Alpha missionaries serve sacrificially on college campuses,
-                  often on tight budgets. The cost of travel, registration, and
-                  lodging can prevent them from attending this once-every-four-years
-                  gathering.
-                </p>
-              </div>
-              <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
-                <p className="text-lg text-slate-700 leading-relaxed">
-                  <strong>Your donation goes directly</strong> to helping
-                  missionaries who can't afford to attend CMC 2026. Whether it's
-                  covering a registration fee, helping with travel costs, or
-                  providing full sponsorship — every dollar makes it possible for
-                  another missionary to be there.
-                </p>
-              </div>
-              <div className="mt-4">
-                <button
-                  onClick={() => setIsDocModalOpen(true)}
-                  className="text-red-600 hover:text-red-700 underline font-medium text-lg cursor-pointer"
-                >
-                  The Word God Gave Sir James for CMC
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Donation Form */}
-          <div className="px-6 sm:px-10 py-8 sm:py-10">
+          {/* Donation Form — directly under progress bar */}
+          <div className="px-6 sm:px-10 py-8 sm:py-10 border-b border-slate-100">
             <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-6">
               Make a Donation
             </h2>
@@ -404,6 +343,54 @@ export default function Donate() {
               Secure payment processed by Stripe
             </p>
           </div>
+
+          {/* What is CMC */}
+          <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
+              What is CMC?
+            </h2>
+            <p className="text-lg text-slate-700 leading-relaxed">
+              Campus Missions Conference is National Chi Alpha's largest
+              gathering! Every four years, Chi Alpha Missionaries get to gather
+              together for fellowship and training. It's a transformative
+              experience that renews vision, deepens community, and equips
+              missionaries for the work God has called them to.
+            </p>
+          </div>
+
+          {/* Why This Matters */}
+          <div className="px-6 sm:px-10 py-6 sm:py-8">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
+              Why Your Gift Matters
+            </h2>
+            <div className="space-y-4">
+              <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
+                <p className="text-lg text-slate-700 leading-relaxed">
+                  Many Chi Alpha missionaries serve sacrificially on college campuses,
+                  often on tight budgets. The cost of travel, registration, and
+                  lodging can prevent them from attending this once-every-four-years
+                  gathering.
+                </p>
+              </div>
+              <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
+                <p className="text-lg text-slate-700 leading-relaxed">
+                  <strong>Your donation goes directly</strong> to helping
+                  missionaries who can't afford to attend CMC 2026. Whether it's
+                  covering a registration fee, helping with travel costs, or
+                  providing full sponsorship — every dollar makes it possible for
+                  another missionary to be there.
+                </p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => setIsDocModalOpen(true)}
+                  className="text-red-600 hover:text-red-700 underline font-medium text-lg cursor-pointer"
+                >
+                  The Word God Gave Sir James for CMC
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Share Section */}
@@ -414,30 +401,99 @@ export default function Donate() {
           <p className="text-slate-600 text-center mb-6">
             Share this page so others can support missionaries too!
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+
+          {/* Share Buttons Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {/* Native Share (mobile) / Copy Link (desktop) */}
             <Button
               onClick={handleShare}
               variant="outline"
-              className="h-12 px-8 text-base border-slate-200 hover:bg-slate-50 gap-2"
+              className="h-12 text-base border-slate-200 hover:bg-slate-50 gap-2"
             >
               {showShareSuccess ? (
                 <>
                   <Check className="w-5 h-5 text-emerald-600" />
-                  Link Copied!
+                  Copied!
                 </>
               ) : (
                 <>
                   <Share2 className="w-5 h-5" />
-                  Share This Page
+                  Share
                 </>
+              )}
+            </Button>
+
+            {/* Facebook */}
+            <Button
+              asChild
+              variant="outline"
+              className="h-12 text-base border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 gap-2"
+            >
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(donateUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Facebook className="w-5 h-5" />
+                Facebook
+              </a>
+            </Button>
+
+            {/* Email */}
+            <Button
+              asChild
+              variant="outline"
+              className="h-12 text-base border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 gap-2"
+            >
+              <a
+                href={`mailto:?subject=${encodeURIComponent("Help Send a Missionary to CMC 2026")}&body=${encodeURIComponent(`Support missionaries who can't afford to attend Campus Missions Conference. Every dollar counts!\n\n${donateUrl}`)}`}
+              >
+                <Mail className="w-5 h-5" />
+                Email
+              </a>
+            </Button>
+
+            {/* SMS / Text Message */}
+            <Button
+              asChild
+              variant="outline"
+              className="h-12 text-base border-slate-200 hover:bg-green-50 hover:border-green-300 hover:text-green-700 gap-2"
+            >
+              <a
+                href={`sms:${/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "&" : "?"}body=${encodeURIComponent(`Help send a missionary to CMC 2026! Every dollar counts. ${donateUrl}`)}`}
+              >
+                <MessageCircle className="w-5 h-5" />
+                Text
+              </a>
+            </Button>
+          </div>
+
+          {/* Copy Link + QR Code row */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button
+              onClick={async () => {
+                await navigator.clipboard.writeText(donateUrl);
+                setShowShareSuccess(true);
+                setTimeout(() => setShowShareSuccess(false), 2000);
+              }}
+              variant="outline"
+              className="h-11 px-6 text-sm border-slate-200 hover:bg-slate-50 gap-2 w-full sm:w-auto"
+            >
+              {showShareSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" />
+                  Link Copied!
+                </>
+              ) : (
+                "Copy Link"
               )}
             </Button>
             <Button
               onClick={() => setShowQR(!showQR)}
               variant="outline"
-              className="h-12 px-8 text-base border-slate-200 hover:bg-slate-50 gap-2"
+              className="h-11 px-6 text-sm border-slate-200 hover:bg-slate-50 gap-2 w-full sm:w-auto"
             >
-              QR Code
+              {showQR ? "Hide QR Code" : "Show QR Code"}
             </Button>
           </div>
 
