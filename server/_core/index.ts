@@ -105,24 +105,33 @@ async function startServer() {
 
   // Trust proxy for Railway deployment (required for rate limiter to work correctly)
   if (!isDevelopment) {
-    app.set("trust proxy", 1);
+    // Railway sits behind one or more proxies. Trusting the proxy chain ensures
+    // req.ip is derived from X-Forwarded-For instead of collapsing to a single
+    // shared proxy IP (which would effectively rate-limit all users together).
+    app.set("trust proxy", true);
   }
 
   // -------------------------------------------------------------------------
   // Security & middleware configuration
   //
-  // Use a reasonable rate limiter to mitigate brute‑force attacks and limit
-  // accidental abuse. This limiter restricts each IP to 100 requests per 15
-  // minute window. Adjust these numbers based on expected traffic patterns.
+  // Rate limit API routes to mitigate brute‑force attacks and limit accidental
+  // abuse. IMPORTANT: do not apply this globally to '/' and static assets,
+  // otherwise the entire SPA can be served as a 429 "Too many requests" page.
+  //
   // In development, use a much higher limit to avoid blocking Vite HMR and
   // asset requests.
-  const limiter = rateLimit({
+  const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: isDevelopment ? 10000 : 100, // Much higher limit in dev for Vite HMR
+    max: isDevelopment ? 10000 : 2000,
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip rate limiting for Vite dev server routes in development
     skip: req => {
+      // Never rate limit Stripe webhooks. Stripe may retry bursts and these
+      // requests must reach the handler to keep donation status accurate.
+      if (req.originalUrl?.startsWith("/api/stripe/webhook")) {
+        return true;
+      }
+
       if (isDevelopment) {
         // Skip rate limiting for Vite middleware routes (HMR, assets, etc.)
         const viteRoutes = [
@@ -134,10 +143,10 @@ async function startServer() {
         ];
         return viteRoutes.some(route => req.path?.startsWith(route));
       }
+
       return false;
     },
   });
-  app.use(limiter);
 
   // Add Helmet to set a collection of sensible HTTP headers that improve
   // security such as Content‑Security‑Policy, X‑Frame‑Options and others.
@@ -167,7 +176,11 @@ async function startServer() {
               fontSrc: ["'self'", "https://fonts.gstatic.com", "https:"],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
-              frameSrc: ["'self'", "https://checkout.stripe.com", "https://docs.google.com"],
+              frameSrc: [
+                "'self'",
+                "https://checkout.stripe.com",
+                "https://docs.google.com",
+              ],
             },
           },
     })
@@ -210,7 +223,17 @@ async function startServer() {
         res.status(400).send("Webhook signature verification failed");
         return;
       }
-      const evt = event as { type: string; data: { object: { id: string; payment_intent?: string | { id: string } | null; metadata?: Record<string, string>; customer_email?: string | null } } };
+      const evt = event as {
+        type: string;
+        data: {
+          object: {
+            id: string;
+            payment_intent?: string | { id: string } | null;
+            metadata?: Record<string, string>;
+            customer_email?: string | null;
+          };
+        };
+      };
       if (evt.type === "checkout.session.completed") {
         const session = evt.data.object;
         const { updateDonationBySessionId } = await import("../db");
@@ -229,6 +252,10 @@ async function startServer() {
       res.json({ received: true });
     }
   );
+
+  // Apply API rate limiting after webhook registration so it never blocks
+  // Stripe callbacks.
+  app.use("/api", apiLimiter);
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
