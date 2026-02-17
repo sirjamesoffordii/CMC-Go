@@ -11,6 +11,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -18,7 +31,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CheckCircle2, Send, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  CheckCircle2,
+  Send,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
+  Check,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const ROLES = [
   "Campus Director",
@@ -45,6 +66,7 @@ export default function Invite() {
   const [submitted, setSubmitted] = useState(false);
   const [name, setName] = useState("");
   const [campusId, setCampusId] = useState<string>("");
+  const [campusOpen, setCampusOpen] = useState(false);
   const [role, setRole] = useState<string>("");
   const [response, setResponse] = useState<string>("");
   const [email, setEmail] = useState("");
@@ -56,6 +78,13 @@ export default function Invite() {
 
   // Fetch campuses (public endpoint)
   const campusesQuery = trpc.invite.campuses.useQuery();
+
+  // Find selected campus name for combobox display
+  const selectedCampusName = useMemo(() => {
+    if (!campusId || !campusesQuery.data) return "";
+    const found = campusesQuery.data.find(c => c.id === parseInt(campusId, 10));
+    return found?.name ?? "";
+  }, [campusId, campusesQuery.data]);
 
   // Group campuses by district
   const groupedCampuses = useMemo(() => {
@@ -170,35 +199,62 @@ export default function Invite() {
               />
             </div>
 
-            {/* Campus */}
+            {/* Campus (Autocomplete) */}
             <div className="space-y-1.5">
               <Label htmlFor="campus">
                 Campus <span className="text-red-500">*</span>
               </Label>
-              <Select value={campusId} onValueChange={setCampusId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your campus" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {campusesQuery.isLoading && (
-                    <SelectItem value="_loading" disabled>
-                      Loading campuses...
-                    </SelectItem>
-                  )}
-                  {groupedCampuses.map(group => (
-                    <div key={group.district}>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">
-                        {group.district}
-                      </div>
-                      {group.campuses.map(c => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
+              <Popover open={campusOpen} onOpenChange={setCampusOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={campusOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {selectedCampusName || "Search for your campus..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
+                  <Command>
+                    <CommandInput placeholder="Type to search campuses..." />
+                    <CommandList className="max-h-60">
+                      <CommandEmpty>No campus found.</CommandEmpty>
+                      {groupedCampuses.map(group => (
+                        <CommandGroup
+                          key={group.district}
+                          heading={group.district}
+                        >
+                          {group.campuses.map(c => (
+                            <CommandItem
+                              key={c.id}
+                              value={c.name}
+                              onSelect={() => {
+                                setCampusId(String(c.id));
+                                setCampusOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  campusId === String(c.id)
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {c.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
                       ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* Role */}
