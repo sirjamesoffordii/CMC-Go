@@ -818,6 +818,12 @@ export async function createPerson(person: InsertPerson) {
     if (person.guestsCount !== undefined) {
       values.guestsCount = person.guestsCount;
     }
+    if (person.phone !== undefined) {
+      values.phone = person.phone;
+    }
+    if (person.email !== undefined) {
+      values.email = person.email;
+    }
     if (person.lastEdited !== undefined) {
       values.lastEdited = person.lastEdited;
     }

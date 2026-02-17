@@ -29,6 +29,7 @@ import {
   Bug,
   Settings,
   BookUser,
+  Send,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -36,6 +37,7 @@ import { getApiBaseUrl } from "@/lib/apiConfig";
 import { ImportModal } from "@/components/ImportModal";
 import { UserManagement } from "@/components/UserManagement";
 import { ContactsSheet } from "@/components/ContactsSheet";
+import { InviteDialog } from "@/components/InviteDialog";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 // Get version from package.json (will be injected at build time or read from env)
@@ -205,6 +207,7 @@ export default function AdminConsole() {
   }, [NODE_ENV, peopleLoading, allPeople.length]);
 
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
   const handleImportContacts = () => {
     setImportModalOpen(true);
@@ -753,7 +756,20 @@ export default function AdminConsole() {
         </TabsContent>
 
         <TabsContent value="contacts">
+          <div className="flex justify-end mb-4">
+            <Button
+              onClick={() => setInviteDialogOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              <Send className="w-4 h-4 mr-2" />
+              Invite
+            </Button>
+          </div>
           <ContactsSheet />
+          <InviteDialog
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
+          />
         </TabsContent>
       </Tabs>
 
