@@ -161,11 +161,13 @@ async function startServer() {
                 "'self'",
                 "https://fonts.googleapis.com",
                 "https://fonts.gstatic.com",
+                "https://checkout.stripe.com",
+                "https://api.stripe.com",
               ],
               fontSrc: ["'self'", "https://fonts.gstatic.com", "https:"],
               objectSrc: ["'none'"],
               mediaSrc: ["'self'"],
-              frameSrc: ["'none'"],
+              frameSrc: ["'self'", "https://checkout.stripe.com", "https://docs.google.com"],
             },
           },
     })
@@ -185,6 +187,49 @@ async function startServer() {
       credentials: true,
     })
   );
+  // Stripe webhook needs raw body BEFORE json parser, so register first
+  app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    async (req, res) => {
+      const { ENV: envVars } = await import("./env");
+      const stripeKey = envVars.STRIPE_SECRET_KEY;
+      const webhookSecret = envVars.STRIPE_WEBHOOK_SECRET;
+      if (!stripeKey || !webhookSecret) {
+        res.status(500).send("Stripe not configured");
+        return;
+      }
+      const StripeModule = await import("stripe");
+      const stripe = new StripeModule.default(stripeKey);
+      const sig = req.headers["stripe-signature"] as string;
+      let event: unknown;
+      try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } catch (err) {
+        console.error("[Stripe] Webhook signature verification failed:", err);
+        res.status(400).send("Webhook signature verification failed");
+        return;
+      }
+      const evt = event as { type: string; data: { object: { id: string; payment_intent?: string | { id: string } | null; metadata?: Record<string, string>; customer_email?: string | null } } };
+      if (evt.type === "checkout.session.completed") {
+        const session = evt.data.object;
+        const { updateDonationBySessionId } = await import("../db");
+        await updateDonationBySessionId(session.id, {
+          status: "completed",
+          stripePaymentIntentId:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : undefined,
+          donorName: session.metadata?.donorName || undefined,
+          donorEmail: session.customer_email || undefined,
+          completedAt: new Date(),
+        });
+        console.log(`[Stripe] Donation completed: ${session.id}`);
+      }
+      res.json({ received: true });
+    }
+  );
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

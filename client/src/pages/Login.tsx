@@ -18,7 +18,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-black">
+    <div className="min-h-screen bg-black relative">
       <LoginModal
         open={open}
         onOpenChange={handleOpenChange}

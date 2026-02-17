@@ -11,6 +11,7 @@ import People from "./pages/People";
 import { Login } from "./pages/Login";
 import EventInfo from "./pages/EventInfo";
 import WhyInvitationsMatter from "./pages/WhyInvitationsMatter";
+import Donate from "./pages/Donate";
 import { lazy, Suspense, useEffect } from "react";
 
 // Lazy-load less-used routes for smaller initial bundle
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/follow-up" component={FollowUpView} />
       <Route path="/event-info" component={EventInfo} />
       <Route path="/what-is-cmc-go" component={WhyInvitationsMatter} />
+      <Route path="/donate" component={Donate} />
       <Route path="/admin" component={AdminConsole} />
       <Route path="/approvals" component={Approvals} />
       <Route path="/import" component={Import} />
@@ -82,6 +84,7 @@ const PUBLIC_ROUTES = new Set([
   "/app-auth",
   "/what-is-cmc-go",
   "/event-info",
+  "/donate",
   "/404",
 ]);
 
