@@ -28,12 +28,14 @@ import {
   Clock,
   Bug,
   Settings,
+  BookUser,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { getApiBaseUrl } from "@/lib/apiConfig";
 import { ImportModal } from "@/components/ImportModal";
 import { UserManagement } from "@/components/UserManagement";
+import { ContactsSheet } from "@/components/ContactsSheet";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 
 // Get version from package.json (will be injected at build time or read from env)
@@ -432,6 +434,10 @@ export default function AdminConsole() {
             <Users className="w-4 h-4" />
             User Management
           </TabsTrigger>
+          <TabsTrigger value="contacts" className="flex items-center gap-2">
+            <BookUser className="w-4 h-4" />
+            Contacts
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
@@ -744,6 +750,10 @@ export default function AdminConsole() {
 
         <TabsContent value="users">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="contacts">
+          <ContactsSheet />
         </TabsContent>
       </Tabs>
 

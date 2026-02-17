@@ -181,6 +181,9 @@ export const people = mysqlTable(
     childrenCount: int("childrenCount").default(0).notNull(), // 0-10, requires householdId if > 0
     guestsCount: int("guestsCount").default(0).notNull(), // 0-10, stored on person always
     childrenAges: text("childrenAges"), // JSON array stored as text
+    // Contact info
+    phone: varchar("phone", { length: 32 }),
+    email: varchar("email", { length: 320 }),
     // Last edited tracking
     lastEdited: timestamp("lastEdited"),
     lastEditedBy: varchar("lastEditedBy", { length: 255 }),
@@ -411,12 +414,19 @@ export type InsertImportRun = typeof importRuns.$inferInsert;
  */
 export const donations = mysqlTable("donations", {
   id: int("id").primaryKey().autoincrement(),
-  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 })
+    .notNull()
+    .unique(),
   stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
   amountCents: int("amountCents").notNull(),
   donorName: varchar("donorName", { length: 255 }),
   donorEmail: varchar("donorEmail", { length: 320 }),
-  status: mysqlEnum("donationStatus", ["pending", "completed", "failed", "refunded"])
+  status: mysqlEnum("donationStatus", [
+    "pending",
+    "completed",
+    "failed",
+    "refunded",
+  ])
     .default("pending")
     .notNull(),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
