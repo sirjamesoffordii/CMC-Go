@@ -3,7 +3,7 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 
-const MIGHTY_APP_EVENT_URL = "https://chialpha.mn.co/events/cmc-2026";
+const CMC_REGISTER_URL = "https://brushfire.com/agusa/xa/615201/register";
 
 interface EventInfoContentProps {
   onClose?: () => void;
@@ -66,13 +66,13 @@ export function EventInfoContent({
             out for more details!
           </p>
           <a
-            href={MIGHTY_APP_EVENT_URL}
+            href={CMC_REGISTER_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-2 text-emerald-500 hover:text-emerald-400 font-medium transition-colors"
           >
             <ExternalLink className="h-4 w-4" />
-            More info on Chi Alpha Mighty App
+            Register for CMC
           </a>
         </div>
       </div>
