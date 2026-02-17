@@ -1897,6 +1897,8 @@ export const appRouter = router({
           spouseAttending: z.boolean().optional(),
           childrenCount: z.number().min(0).max(10).optional(),
           guestsCount: z.number().min(0).max(10).optional(),
+          phone: z.string().nullable().optional(),
+          email: z.string().email().nullable().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -3214,6 +3216,96 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.deleteHousehold(input.id);
         return { success: true };
+      }),
+  }),
+
+  // ========================================================================
+  // CONTACTS (Admin — phone & email directory)
+  // ========================================================================
+  contacts: router({
+    /** List all people with contact info, organized by region/district/campus */
+    list: adminProcedure.query(async () => {
+      const allPeople = await db.getAllPeople();
+      const allCampuses = await db.getAllCampuses();
+      const allDistricts = await db.getAllDistricts();
+
+      // Build lookup maps
+      const campusMap = new Map(allCampuses.map(c => [c.id, c]));
+      const districtMap = new Map(allDistricts.map(d => [d.id, d]));
+
+      return allPeople.map(p => {
+        const campus = p.primaryCampusId
+          ? campusMap.get(p.primaryCampusId)
+          : undefined;
+        const district = p.primaryDistrictId
+          ? districtMap.get(p.primaryDistrictId)
+          : undefined;
+        return {
+          personId: p.personId,
+          name: p.name,
+          phone: p.phone ?? null,
+          email: p.email ?? null,
+          primaryRole: p.primaryRole ?? null,
+          status: p.status,
+          campusName: campus?.name ?? null,
+          districtId: p.primaryDistrictId ?? null,
+          districtName: district?.name ?? null,
+          region: district?.region ?? p.primaryRegion ?? null,
+        };
+      });
+    }),
+
+    /** Bulk-update phone and/or email for a single person */
+    updateContact: adminProcedure
+      .input(
+        z.object({
+          personId: z.string(),
+          phone: z.string().nullable().optional(),
+          email: z.string().email().nullable().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const person = await db.getPersonByPersonId(input.personId);
+        if (!person) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
+        }
+        const data: Record<string, unknown> = {};
+        if (input.phone !== undefined) data.phone = input.phone;
+        if (input.email !== undefined) data.email = input.email;
+        if (Object.keys(data).length > 0) {
+          await db.updatePerson(input.personId, data as any);
+        }
+        return { success: true };
+      }),
+
+    /** Bulk-update contacts for multiple people at once */
+    bulkUpdateContacts: adminProcedure
+      .input(
+        z.object({
+          updates: z.array(
+            z.object({
+              personId: z.string(),
+              phone: z.string().nullable().optional(),
+              email: z.string().email().nullable().optional(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        let updated = 0;
+        for (const entry of input.updates) {
+          const data: Record<string, unknown> = {};
+          if (entry.phone !== undefined) data.phone = entry.phone;
+          if (entry.email !== undefined) data.email = entry.email;
+          if (Object.keys(data).length > 0) {
+            await db.updatePerson(entry.personId, data as any);
+            updated++;
+          }
+        }
+        return { success: true, updated };
       }),
   }),
 
