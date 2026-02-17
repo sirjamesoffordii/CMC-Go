@@ -1,11 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <rect width="1200" height="630" fill="#1a1a1a"/>
-  <!-- Circle logo: black fill, white stroke -->
-  <g transform="translate(280, 315) rotate(30)">
-    <circle r="120" cx="0" cy="0" fill="#000" stroke="#fff" stroke-width="4"/>
-    <text text-anchor="middle" x="0" y="-18" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" font-size="72" fill="#fff">CMC</text>
-    <text text-anchor="middle" x="0" y="32" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" font-size="42" fill="#fff">Go</text>
+  <rect width="1200" height="630" fill="#ffffff" />
+  <!-- CMC GO circle logo only (no tagline) -->
+  <g transform="translate(600, 315) rotate(15)">
+    <circle r="210" cx="0" cy="0" fill="#000" />
+    <text
+      x="0"
+      y="-25"
+      text-anchor="middle"
+      font-family="system-ui, -apple-system, sans-serif"
+      font-weight="800"
+      font-size="120"
+      fill="#fff"
+    >
+      CMC
+    </text>
+    <text
+      x="0"
+      y="125"
+      text-anchor="middle"
+      font-family="system-ui, -apple-system, sans-serif"
+      font-weight="800"
+      font-size="120"
+      fill="#fff"
+    >
+      GO
+    </text>
   </g>
-  <!-- Go Together -->
-  <text x="480" y="330" font-family="system-ui, -apple-system, sans-serif" font-weight="bold" font-size="46" fill="#fff">Go Together</text>
 </svg>
