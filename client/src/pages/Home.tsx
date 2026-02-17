@@ -28,6 +28,7 @@ import {
   LogIn,
   UserRound,
   Shield,
+  Send,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
@@ -38,6 +39,7 @@ import { AccountPanel } from "@/components/AccountPanel";
 import { EventInfoPanel } from "@/components/EventInfoPanel";
 import { WhatIsCmcGoPanel } from "@/components/WhatIsCmcGoPanel";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
+import { InviteDialog } from "@/components/InviteDialog";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -197,6 +199,7 @@ export default function Home() {
   const [accountPanelOpen, setAccountPanelOpen] = useState(false);
   const [eventInfoPanelOpen, setEventInfoPanelOpen] = useState(false);
   const [whatIsCmcGoPanelOpen, setWhatIsCmcGoPanelOpen] = useState(false);
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -675,13 +678,10 @@ export default function Home() {
     [allCampuses, createPerson]
   );
 
-  const handlePersonClick = useCallback(
-    (person: Person) => {
-      setSelectedPerson(person);
-      setPersonDialogOpen(true);
-    },
-    []
-  );
+  const handlePersonClick = useCallback((person: Person) => {
+    setSelectedPerson(person);
+    setPersonDialogOpen(true);
+  }, []);
 
   // After login/register, auto-open the user's district panel
   const handleAuthSuccess = (districtId: string | null) => {
@@ -1104,6 +1104,20 @@ export default function Home() {
                     )}
 
                     {isAuthenticated && (
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          setInviteDialogOpen(true);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                      >
+                        <Send className="w-5 h-5 sm:w-4 sm:h-4" />
+                        Invite
+                      </button>
+                    )}
+
+                    {isAuthenticated && (
                       <>
                         <div className="border-t border-gray-200 my-1"></div>
                         <button
@@ -1183,20 +1197,20 @@ export default function Home() {
                   aria-label="Resize panel"
                 />
                 {selectedDistrictId && selectedDistrict && (
-                    <DistrictPanel
-                      key={selectedDistrict.id}
-                      district={selectedDistrict}
-                      campuses={selectedDistrictCampuses}
-                      people={selectedDistrictPeople}
-                      isOutOfScope={!isSelectedDistrictInScope}
-                      onClose={handleDistrictPanelClose}
-                      onPersonStatusChange={handlePersonStatusChange}
-                      onPersonAdd={handlePersonAdd}
-                      onPersonClick={handlePersonClick}
-                      onDistrictUpdate={handleDistrictUpdate}
-                      onOpenTable={handleOpenTable}
-                    />
-                  )}
+                  <DistrictPanel
+                    key={selectedDistrict.id}
+                    district={selectedDistrict}
+                    campuses={selectedDistrictCampuses}
+                    people={selectedDistrictPeople}
+                    isOutOfScope={!isSelectedDistrictInScope}
+                    onClose={handleDistrictPanelClose}
+                    onPersonStatusChange={handlePersonStatusChange}
+                    onPersonAdd={handlePersonAdd}
+                    onPersonClick={handlePersonClick}
+                    onDistrictUpdate={handleDistrictUpdate}
+                    onOpenTable={handleOpenTable}
+                  />
+                )}
                 {nationalPanelOpen && (
                   <NationalPanel
                     onClose={handleNationalPanelClose}
@@ -1216,11 +1230,7 @@ export default function Home() {
               !!(selectedDistrictId || nationalPanelOpen) && !peoplePanelOpen
             }
             onClose={handleMobileDrawerClose}
-            title={
-              nationalPanelOpen
-                ? "National Team"
-                : "District Overview"
-            }
+            title={nationalPanelOpen ? "National Team" : "District Overview"}
             hideTitleCloseInCorner={false}
             closeOnBackdropClick={true}
           >
@@ -1576,6 +1586,10 @@ export default function Home() {
       <WhatIsCmcGoPanel
         open={whatIsCmcGoPanelOpen}
         onOpenChange={setWhatIsCmcGoPanelOpen}
+      />
+      <InviteDialog
+        open={inviteDialogOpen}
+        onOpenChange={setInviteDialogOpen}
       />
     </div>
   );
