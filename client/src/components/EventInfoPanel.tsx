@@ -47,6 +47,14 @@ export function EventInfoPanel({ open, onOpenChange }: EventInfoPanelProps) {
             <ExternalLink className="h-4 w-4" />
             Register for CMC
           </a>
+          <a
+            href={CMC_REGISTER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-xs text-gray-500 hover:text-gray-700 break-all"
+          >
+            {CMC_REGISTER_URL}
+          </a>
         </div>
       </div>
     </MenuPanel>
