@@ -203,7 +203,7 @@ export default function Donate() {
           <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
             <div className="flex items-baseline justify-between mb-2">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                100 × 1,000 Goal
+                $1,000 Goal
               </h2>
               <span className="text-sm text-slate-500 font-medium">
                 100 people at $1,000 each
@@ -319,7 +319,7 @@ export default function Donate() {
             <Button
               onClick={handleDonate}
               disabled={amountCents < 100 || isProcessing}
-              className="w-full h-14 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 text-lg font-bold bg-black hover:bg-red-600 text-white rounded-xl shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <span className="flex items-center gap-2">
@@ -350,7 +350,7 @@ export default function Donate() {
               What is CMC?
             </h2>
             <p className="text-lg text-slate-700 leading-relaxed">
-              Campus Missions Conference is National Chi Alpha's largest
+              Campus Missions Conference is Chi Alpha's largest
               gathering! Every four years, Chi Alpha Missionaries get to gather
               together for fellowship and training. It's a transformative
               experience that renews vision, deepens community, and equips
