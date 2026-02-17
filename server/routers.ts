@@ -3310,6 +3310,134 @@ export const appRouter = router({
   }),
 
   // ========================================================================
+  // INVITE (Public — collect RSVPs via shareable link)
+  // ========================================================================
+  invite: router({
+    /** Public list of campuses with district/region info for the invite form */
+    campuses: publicProcedure.query(async () => {
+      const allCampuses = await db.getAllCampuses();
+      const allDistricts = await db.getAllDistricts();
+
+      const districtMap = new Map(allDistricts.map(d => [d.id, d]));
+
+      return allCampuses
+        .map(c => {
+          const district = districtMap.get(c.districtId);
+          return {
+            id: c.id,
+            name: c.name,
+            districtId: c.districtId,
+            districtName: district?.name ?? c.districtId,
+            region: district?.region ?? "",
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }),
+
+    /** Public endpoint — submit an invite response */
+    respond: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1).max(255),
+          campusId: z.number(),
+          role: z.string().min(1).max(255),
+          response: z.enum(["Yes", "Maybe", "No"]),
+          email: z.string().email().max(320).optional(),
+          phone: z.string().max(32).optional(),
+          needType: z
+            .enum(["Registration", "Transportation", "Housing", "Other"])
+            .optional(),
+          needAmount: z.number().min(0).optional(), // in cents
+          needDescription: z.string().max(500).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // 1. Resolve campus → district → region
+        const campus = await db.getCampusById(input.campusId);
+        if (!campus) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Invalid campus selected",
+          });
+        }
+
+        const district = await db.getDistrictById(campus.districtId);
+        const region =
+          district?.region ?? DISTRICT_REGION_MAP[campus.districtId] ?? null;
+
+        // 2. Check if person already exists (match by name + campus)
+        const allPeople = await db.getAllPeople();
+        const nameLower = input.name.trim().toLowerCase();
+        const existing = allPeople.find(
+          p =>
+            p.name.toLowerCase() === nameLower &&
+            p.primaryCampusId === input.campusId
+        );
+
+        if (existing) {
+          // Update existing person
+          const updateData: Record<string, unknown> = {
+            status: input.response,
+            primaryRole: input.role,
+            lastEdited: new Date(),
+            lastEditedBy: "Invite Form",
+          };
+
+          if (input.email) updateData.email = input.email;
+          if (input.phone) updateData.phone = input.phone;
+
+          // Update district/region if changed
+          updateData.primaryDistrictId = campus.districtId;
+          updateData.primaryRegion = region;
+
+          await db.updatePerson(existing.personId, updateData as any);
+
+          // Add need if specified
+          if (input.needType) {
+            await db.createNeed({
+              personId: existing.personId,
+              type: input.needType,
+              description: input.needDescription || input.needType,
+              amount: input.needAmount ?? null,
+              visibility: "LEADERSHIP_ONLY",
+            });
+          }
+
+          return { success: true, isNew: false, personId: existing.personId };
+        }
+
+        // 3. Create new person
+        const personId = `invite-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const insertId = await db.createPerson({
+          personId,
+          name: input.name.trim(),
+          primaryCampusId: input.campusId,
+          primaryDistrictId: campus.districtId,
+          primaryRegion: region,
+          primaryRole: input.role,
+          status: input.response,
+          email: input.email ?? null,
+          phone: input.phone ?? null,
+          lastEdited: new Date(),
+          lastEditedBy: "Invite Form",
+        });
+
+        // Add need if specified
+        if (input.needType) {
+          await db.createNeed({
+            personId,
+            type: input.needType,
+            description: input.needDescription || input.needType,
+            amount: input.needAmount ?? null,
+            visibility: "LEADERSHIP_ONLY",
+          });
+        }
+
+        return { success: true, isNew: true, personId };
+      }),
+  }),
+
+  // ========================================================================
   // DONATIONS (Stripe)
   // ========================================================================
   donations: router({
