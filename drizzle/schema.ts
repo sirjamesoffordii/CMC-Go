@@ -404,3 +404,24 @@ export const importRuns = mysqlTable("import_runs", {
 
 export type ImportRun = typeof importRuns.$inferSelect;
 export type InsertImportRun = typeof importRuns.$inferInsert;
+
+/**
+ * Donations table - Tracks Stripe donations toward CMC missionary fund
+ * Goal: 100 people × $1,000 = $100,000
+ */
+export const donations = mysqlTable("donations", {
+  id: int("id").primaryKey().autoincrement(),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  amountCents: int("amountCents").notNull(),
+  donorName: varchar("donorName", { length: 255 }),
+  donorEmail: varchar("donorEmail", { length: 320 }),
+  status: mysqlEnum("donationStatus", ["pending", "completed", "failed", "refunded"])
+    .default("pending")
+    .notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type Donation = typeof donations.$inferSelect;
+export type InsertDonation = typeof donations.$inferInsert;

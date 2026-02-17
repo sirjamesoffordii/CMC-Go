@@ -19,6 +19,7 @@ import {
 } from "./_core/authorization";
 import { hashPassword, verifyPassword } from "./_core/password";
 import { resolvePersonRegion, DISTRICT_REGION_MAP } from "../shared/const";
+import { ENV } from "./_core/env";
 
 /** Strip sensitive fields before sending user data to clients */
 function sanitizeUser<T extends Record<string, unknown>>(
@@ -3213,6 +3214,85 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await db.deleteHousehold(input.id);
         return { success: true };
+      }),
+  }),
+
+  // ========================================================================
+  // DONATIONS (Stripe)
+  // ========================================================================
+  donations: router({
+    /** Get campaign progress (public) */
+    progress: publicProcedure.query(async () => {
+      const progress = await db.getDonationProgress();
+      return {
+        totalRaisedCents: progress.totalRaisedCents,
+        donorCount: progress.donorCount,
+        goalCents: 100_000_00, // $100,000 = 100 × $1,000
+      };
+    }),
+
+    /** Create a Stripe Checkout Session for a donation */
+    createCheckoutSession: publicProcedure
+      .input(
+        z.object({
+          amountCents: z.number().min(100).max(1_000_000_00), // $1 – $1,000,000
+          donorName: z.string().optional(),
+          donorEmail: z.string().email().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const stripeKey = ENV.STRIPE_SECRET_KEY;
+        if (!stripeKey) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Stripe is not configured. Please set STRIPE_SECRET_KEY.",
+          });
+        }
+
+        const { default: Stripe } = await import("stripe");
+        const stripe = new Stripe(stripeKey);
+
+        const origin =
+          process.env.VITE_APP_URL ||
+          (process.env.NODE_ENV === "development"
+            ? "http://localhost:3000"
+            : "https://cmcgo.app");
+
+        const session = await stripe.checkout.sessions.create({
+          payment_method_types: ["card"],
+          line_items: [
+            {
+              price_data: {
+                currency: "usd",
+                product_data: {
+                  name: "CMC Missionary Fund Donation",
+                  description:
+                    "Helping missionaries who can't afford to attend CMC 2026",
+                },
+                unit_amount: input.amountCents,
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `${origin}/donate?success=true`,
+          cancel_url: `${origin}/donate?canceled=true`,
+          customer_email: input.donorEmail || undefined,
+          metadata: {
+            donorName: input.donorName || "",
+          },
+        });
+
+        // Record pending donation
+        await db.createDonation({
+          stripeSessionId: session.id,
+          amountCents: input.amountCents,
+          donorName: input.donorName,
+          donorEmail: input.donorEmail,
+          status: "pending",
+        });
+
+        return { sessionUrl: session.url };
       }),
   }),
 });

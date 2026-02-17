@@ -269,6 +269,11 @@ export const ENV = {
   // Email configuration (Resend API)
   RESEND_API_KEY: process.env.RESEND_API_KEY ?? "",
   FROM_EMAIL: process.env.FROM_EMAIL ?? "CMC Go <noreply@cmcgo.app>",
+  // Stripe configuration for donations
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY ?? "",
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  VITE_STRIPE_PUBLISHABLE_KEY:
+    process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
   // Dev-only: bypass auth requirements in local development when set
   devBypassAuth:
     (

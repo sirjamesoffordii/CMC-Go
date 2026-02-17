@@ -15,6 +15,7 @@ import {
   authTokens,
   inviteNotes,
   statusChanges,
+  donations,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
@@ -2256,4 +2257,64 @@ export async function updateNeedVisibility(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(needs).set({ visibility }).where(eq(needs.id, needId));
+}
+
+// ============================================================================
+// DONATIONS
+// ============================================================================
+
+export async function createDonation(data: {
+  stripeSessionId: string;
+  amountCents: number;
+  donorName?: string;
+  donorEmail?: string;
+  status?: "pending" | "completed" | "failed" | "refunded";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(donations).values({
+    stripeSessionId: data.stripeSessionId,
+    amountCents: data.amountCents,
+    donorName: data.donorName ?? null,
+    donorEmail: data.donorEmail ?? null,
+    status: data.status ?? "pending",
+  });
+  return result[0].insertId;
+}
+
+export async function updateDonationBySessionId(
+  sessionId: string,
+  data: {
+    status?: "pending" | "completed" | "failed" | "refunded";
+    stripePaymentIntentId?: string;
+    donorName?: string;
+    donorEmail?: string;
+    completedAt?: Date;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(donations)
+    .set(data)
+    .where(eq(donations.stripeSessionId, sessionId));
+}
+
+export async function getDonationProgress(): Promise<{
+  totalRaisedCents: number;
+  donorCount: number;
+}> {
+  const db = await getDb();
+  if (!db) return { totalRaisedCents: 0, donorCount: 0 };
+  const result = await db
+    .select({
+      totalRaisedCents: sql<number>`COALESCE(SUM(${donations.amountCents}), 0)`,
+      donorCount: sql<number>`COUNT(*)`,
+    })
+    .from(donations)
+    .where(eq(donations.status, "completed"));
+  return {
+    totalRaisedCents: Number(result[0]?.totalRaisedCents ?? 0),
+    donorCount: Number(result[0]?.donorCount ?? 0),
+  };
 }

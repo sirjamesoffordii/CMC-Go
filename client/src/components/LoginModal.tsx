@@ -30,7 +30,9 @@ import {
   Check,
   X,
   Plus,
+  Heart,
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 interface LoginModalProps {
   open: boolean;
@@ -131,6 +133,7 @@ export function LoginModal({
   showClose = false,
 }: LoginModalProps) {
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
 
   // Mode
   const [mode, setMode] = useState<AuthMode>("login");
@@ -721,29 +724,41 @@ export function LoginModal({
         </div>
       </div>
 
-      {/* Close */}
-      {showClose && (
+      {/* Top-right buttons */}
+      <div className="absolute right-4 top-4 sm:right-6 sm:top-6 z-10 flex items-center gap-2">
+        {/* Donate button */}
         <button
           type="button"
-          aria-label="Close"
-          onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 sm:right-6 sm:top-6 z-10 flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
+          onClick={() => setLocation("/donate")}
+          className="flex items-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white px-4 py-2.5 rounded-full font-semibold text-sm shadow-lg transition-all hover:shadow-xl"
         >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          <Heart className="w-4 h-4 fill-white" />
+          Donate
         </button>
-      )}
+        {/* Close */}
+        {showClose && (
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={() => onOpenChange(false)}
+            className="flex h-11 w-11 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/80 text-slate-500 shadow-lg backdrop-blur transition-all hover:bg-red-50 hover:text-red-600"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
 
       {/* CSS Animations */}
       <style>{`
