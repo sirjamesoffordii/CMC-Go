@@ -254,8 +254,8 @@ export default function Donate() {
                     py-3 px-2 rounded-xl font-semibold text-base transition-all border-2
                     ${
                       selectedAmount === amount
-                        ? "bg-red-600 text-white border-red-600 shadow-md scale-105"
-                        : "bg-white text-slate-700 border-slate-200 hover:border-red-300 hover:bg-red-50"
+                        ? "bg-black text-white border-black shadow-md scale-105"
+                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                     }
                   `}
                 >
@@ -319,7 +319,7 @@ export default function Donate() {
             <Button
               onClick={handleDonate}
               disabled={amountCents < 100 || isProcessing}
-              className="w-full h-14 text-lg font-bold bg-black hover:bg-red-600 text-white rounded-xl shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-14 text-lg font-bold bg-red-600 hover:bg-red-700 text-white rounded-xl shadow-lg transition-all hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
                 <span className="flex items-center gap-2">
