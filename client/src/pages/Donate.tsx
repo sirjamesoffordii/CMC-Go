@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Heart, Share2, Check, X, Mail, MessageCircle, Facebook } from "lucide-react";
+import { ArrowLeft, Heart, Share2, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,6 +94,31 @@ export default function Donate() {
       setShowShareSuccess(true);
       setTimeout(() => setShowShareSuccess(false), 2000);
     }
+  }
+
+  async function handleShareQRCode() {
+    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(donateUrl)}`;
+
+    if (navigator.share && navigator.canShare) {
+      try {
+        const response = await fetch(qrImageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], "cmc-donate-qr.png", { type: "image/png" });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "CMC Donation QR Code",
+            text: "Scan this QR code to donate:",
+            files: [file],
+          });
+          return;
+        }
+      } catch {
+        // Fall back to opening QR image
+      }
+    }
+
+    window.open(qrImageUrl, "_blank", "noopener,noreferrer");
   }
 
   // Handle ESC key
@@ -203,7 +228,7 @@ export default function Donate() {
           <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
             <div className="flex items-baseline justify-between mb-2">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                $1,000 Goal
+                100 X $1,000 Goal
               </h2>
               <span className="text-sm text-slate-500 font-medium">
                 100 people at $1,000 each
@@ -217,7 +242,7 @@ export default function Donate() {
             </div>
             <div className="flex items-baseline justify-between">
               <div>
-                <span className="text-2xl sm:text-3xl font-bold text-red-600">
+                <span className="text-2xl sm:text-3xl font-bold text-slate-900">
                   {formatDollars(totalRaised)}
                 </span>
                 <span className="text-slate-500 text-base ml-2">
@@ -402,9 +427,8 @@ export default function Donate() {
             Share this page so others can support missionaries too!
           </p>
 
-          {/* Share Buttons Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-            {/* Native Share (mobile) / Copy Link (desktop) */}
+          {/* Share Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 max-w-xl mx-auto">
             <Button
               onClick={handleShare}
               variant="outline"
@@ -412,8 +436,8 @@ export default function Donate() {
             >
               {showShareSuccess ? (
                 <>
-                  <Check className="w-5 h-5 text-emerald-600" />
-                  Copied!
+                  <Share2 className="w-5 h-5" />
+                  Shared!
                 </>
               ) : (
                 <>
@@ -422,76 +446,23 @@ export default function Donate() {
                 </>
               )}
             </Button>
-
-            {/* Facebook */}
             <Button
-              asChild
+              onClick={handleShareQRCode}
               variant="outline"
-              className="h-12 text-base border-slate-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 gap-2"
+              className="h-12 text-base border-slate-200 hover:bg-slate-50 gap-2"
             >
-              <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(donateUrl)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Facebook className="w-5 h-5" />
-                Facebook
-              </a>
-            </Button>
-
-            {/* Email */}
-            <Button
-              asChild
-              variant="outline"
-              className="h-12 text-base border-slate-200 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 gap-2"
-            >
-              <a
-                href={`mailto:?subject=${encodeURIComponent("Help Send a Missionary to CMC 2026")}&body=${encodeURIComponent(`Support missionaries who can't afford to attend Campus Missions Conference. Every dollar counts!\n\n${donateUrl}`)}`}
-              >
-                <Mail className="w-5 h-5" />
-                Email
-              </a>
-            </Button>
-
-            {/* SMS / Text Message */}
-            <Button
-              asChild
-              variant="outline"
-              className="h-12 text-base border-slate-200 hover:bg-green-50 hover:border-green-300 hover:text-green-700 gap-2"
-            >
-              <a
-                href={`sms:${/iPhone|iPad|iPod/i.test(navigator.userAgent) ? "&" : "?"}body=${encodeURIComponent(`Help send a missionary to CMC 2026! Every dollar counts. ${donateUrl}`)}`}
-              >
-                <MessageCircle className="w-5 h-5" />
-                Text
-              </a>
+              <>
+                <Share2 className="w-5 h-5" />
+                Share QR Code
+              </>
             </Button>
           </div>
 
-          {/* Copy Link + QR Code row */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button
-              onClick={async () => {
-                await navigator.clipboard.writeText(donateUrl);
-                setShowShareSuccess(true);
-                setTimeout(() => setShowShareSuccess(false), 2000);
-              }}
-              variant="outline"
-              className="h-11 px-6 text-sm border-slate-200 hover:bg-slate-50 gap-2 w-full sm:w-auto"
-            >
-              {showShareSuccess ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-600" />
-                  Link Copied!
-                </>
-              ) : (
-                "Copy Link"
-              )}
-            </Button>
+          <div className="flex justify-center">
             <Button
               onClick={() => setShowQR(!showQR)}
               variant="outline"
-              className="h-11 px-6 text-sm border-slate-200 hover:bg-slate-50 gap-2 w-full sm:w-auto"
+              className="h-11 px-6 text-sm border-slate-200 hover:bg-slate-50 gap-2"
             >
               {showQR ? "Hide QR Code" : "Show QR Code"}
             </Button>

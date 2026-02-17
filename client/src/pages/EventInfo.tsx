@@ -74,6 +74,14 @@ export function EventInfoContent({
             <ExternalLink className="h-4 w-4" />
             Register for CMC
           </a>
+          <a
+            href={CMC_REGISTER_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block text-xs sm:text-sm text-slate-500 hover:text-slate-300 break-all"
+          >
+            {CMC_REGISTER_URL}
+          </a>
         </div>
       </div>
     </div>
