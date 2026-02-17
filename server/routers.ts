@@ -3258,39 +3258,55 @@ export const appRouter = router({
             ? "http://localhost:3000"
             : "https://cmcgo.app");
 
-        const session = await stripe.checkout.sessions.create({
-          payment_method_types: ["card"],
-          line_items: [
-            {
-              price_data: {
-                currency: "usd",
-                product_data: {
-                  name: "CMC Missionary Fund Donation",
-                  description:
-                    "Helping missionaries who can't afford to attend CMC 2026",
+        let session;
+        try {
+          session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: [
+              {
+                price_data: {
+                  currency: "usd",
+                  product_data: {
+                    name: "CMC Missionary Fund Donation",
+                    description:
+                      "Helping missionaries who can't afford to attend CMC 2026",
+                  },
+                  unit_amount: input.amountCents,
                 },
-                unit_amount: input.amountCents,
+                quantity: 1,
               },
-              quantity: 1,
+            ],
+            mode: "payment",
+            success_url: `${origin}/donate?success=true`,
+            cancel_url: `${origin}/donate?canceled=true`,
+            customer_email: input.donorEmail || undefined,
+            metadata: {
+              donorName: input.donorName || "",
             },
-          ],
-          mode: "payment",
-          success_url: `${origin}/donate?success=true`,
-          cancel_url: `${origin}/donate?canceled=true`,
-          customer_email: input.donorEmail || undefined,
-          metadata: {
-            donorName: input.donorName || "",
-          },
-        });
+          });
+        } catch (err: unknown) {
+          const msg =
+            err instanceof Error ? err.message : "Unknown Stripe error";
+          console.error("[Stripe] Checkout session creation failed:", msg);
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: `Stripe error: ${msg}`,
+          });
+        }
 
         // Record pending donation
-        await db.createDonation({
-          stripeSessionId: session.id,
-          amountCents: input.amountCents,
-          donorName: input.donorName,
-          donorEmail: input.donorEmail,
-          status: "pending",
-        });
+        try {
+          await db.createDonation({
+            stripeSessionId: session.id,
+            amountCents: input.amountCents,
+            donorName: input.donorName,
+            donorEmail: input.donorEmail,
+            status: "pending",
+          });
+        } catch (dbErr) {
+          console.error("[Stripe] Failed to record donation:", dbErr);
+          // Still return the session URL — payment can proceed
+        }
 
         return { sessionUrl: session.url };
       }),
