@@ -3289,8 +3289,8 @@ export const appRouter = router({
             err instanceof Error ? err.message : "Unknown Stripe error";
           console.error("[Stripe] Checkout session creation failed:", msg);
           throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: `Stripe error: ${msg}`,
+            code: "BAD_REQUEST",
+            message: `Donation failed: ${msg}`,
           });
         }
 
