@@ -6,47 +6,49 @@ This directory contains scripts for database management, agent automation, data 
 
 ## Quick Reference
 
-| Script                       | Category   | Purpose                                                           |
-| ---------------------------- | ---------- | ----------------------------------------------------------------- |
-| `seed-database.mjs`          | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
-| `reset-db.mjs`               | Database   | Drop all tables and reseed (with production safeguards)           |
-| `reset-local-db.mjs`         | Database   | Safe local-only database reset with multiple safety checks        |
-| `db-push-yes.mjs`            | Database   | Non-interactive drizzle-kit push wrapper                          |
-| `run-migrations.mjs`         | Database   | Execute SQL migration files in order                              |
-| `init-mysql-db.mjs`          | Database   | Initialize MySQL database connection                              |
-| `seed-baseline.mjs`          | Database   | Seed only required baseline data (idempotent)                     |
-| `seed-chi-alpha.mjs`         | Database   | Seed Chi Alpha regions and districts                              |
-| `seed-regions-districts.mjs` | Database   | Seed regions and districts with colors                            |
-| `seed-mysql-dev.mjs`         | Database   | Seed MySQL dev environment                                        |
-| `reseed-districts.mjs`       | Database   | Re-seed districts matching SVG map IDs                            |
-| `verify-database.mjs`        | Validation | Verify database schema matches expected structure                 |
-| `verify-write.mjs`           | Validation | Test create/update operations persist correctly                   |
-| `audit-migrations.mjs`       | Validation | Audit migration files against current schema                      |
-| `check-schema.mjs`           | Validation | Check critical tables and columns exist                           |
-| `check-map-data.mjs`         | Validation | Verify map data (districts, people, campuses)                     |
-| `validate-agents.mjs`        | Validation | Validate agent and prompt YAML frontmatter                        |
-| `import-from-export.mjs`     | Import     | Import data from exported JSON files                              |
-| `ingest-excel.mjs`           | Import     | Ingest Excel seed data with sanitization                          |
-| `agent-login-gh.ps1`         | Agent      | Interactive GitHub login for agent accounts                       |
-| `agent-quick.ps1`            | Agent      | Quick agent operations (worktree, PR, issue comment)              |
-| `create-agent-issues.ps1`    | Agent      | Create GitHub issues (URL, CLI, or REST API)                      |
-| `clear-github-token.ps1`     | Agent      | Remove stored GitHub token                                        |
-| `gh-as.ps1`                  | Agent      | Run `gh` commands as a specific agent account                     |
-| `git-grep.ps1`               | Agent      | Fast search over git-tracked files (avoids recursion hangs)       |
-| `git-credential-gh.ps1`      | Agent      | Git credential helper for multi-identity                          |
-| `set-gh-secret.ps1`          | Agent      | Set GitHub repository secrets                                     |
-| `setup-agent-identities.ps1` | Agent      | Configure git identities for agent worktrees                      |
-| `spawn-parallel-agents.ps1`  | Agent      | Spawn multiple VS Code agent sessions                             |
-| `spawn-worktree-agent.ps1`   | Agent      | Spawn Copilot agent in a new worktree                             |
-| `post-merge-evidence.ps1`    | Agent      | Post merge evidence to GitHub issues                              |
-| `populate-db.sql`            | Data       | SQL script to populate database (legacy)                          |
-| `seed-data.sql`              | Data       | Simple SQL seed script (legacy)                                   |
-| `temp-seed.sql`              | Data       | Temporary seed data SQL                                           |
-| `seed-campuses.json`         | Data       | Campus seed data                                                  |
-| `seed-districts.json`        | Data       | District seed data                                                |
-| `seed-needs.json`            | Data       | Needs seed data                                                   |
-| `seed-notes.json`            | Data       | Notes seed data                                                   |
-| `seed-people.json`           | Data       | People seed data                                                  |
+| Script                            | Category   | Purpose                                                           |
+| --------------------------------- | ---------- | ----------------------------------------------------------------- |
+| `seed-database.mjs`               | Database   | Comprehensive seeding (districts, campuses, people, needs, notes) |
+| `reset-db.mjs`                    | Database   | Drop all tables and reseed (with production safeguards)           |
+| `reset-local-db.mjs`              | Database   | Safe local-only database reset with multiple safety checks        |
+| `db-push-yes.mjs`                 | Database   | Non-interactive drizzle-kit push wrapper                          |
+| `run-migrations.mjs`              | Database   | Execute SQL migration files in order                              |
+| `init-mysql-db.mjs`               | Database   | Initialize MySQL database connection                              |
+| `seed-baseline.mjs`               | Database   | Seed only required baseline data (idempotent)                     |
+| `seed-chi-alpha.mjs`              | Database   | Seed Chi Alpha regions and districts                              |
+| `seed-regions-districts.mjs`      | Database   | Seed regions and districts with colors                            |
+| `seed-mysql-dev.mjs`              | Database   | Seed MySQL dev environment                                        |
+| `populate-contacts.mjs`           | Database   | Sync verified emails into people (no fabrication)                 |
+| `cleanup-fabricated-contacts.mjs` | Database   | Clear non-verified emails/phones (no guessing)                    |
+| `reseed-districts.mjs`            | Database   | Re-seed districts matching SVG map IDs                            |
+| `verify-database.mjs`             | Validation | Verify database schema matches expected structure                 |
+| `verify-write.mjs`                | Validation | Test create/update operations persist correctly                   |
+| `audit-migrations.mjs`            | Validation | Audit migration files against current schema                      |
+| `check-schema.mjs`                | Validation | Check critical tables and columns exist                           |
+| `check-map-data.mjs`              | Validation | Verify map data (districts, people, campuses)                     |
+| `validate-agents.mjs`             | Validation | Validate agent and prompt YAML frontmatter                        |
+| `import-from-export.mjs`          | Import     | Import data from exported JSON files                              |
+| `ingest-excel.mjs`                | Import     | Ingest Excel seed data with sanitization                          |
+| `agent-login-gh.ps1`              | Agent      | Interactive GitHub login for agent accounts                       |
+| `agent-quick.ps1`                 | Agent      | Quick agent operations (worktree, PR, issue comment)              |
+| `create-agent-issues.ps1`         | Agent      | Create GitHub issues (URL, CLI, or REST API)                      |
+| `clear-github-token.ps1`          | Agent      | Remove stored GitHub token                                        |
+| `gh-as.ps1`                       | Agent      | Run `gh` commands as a specific agent account                     |
+| `git-grep.ps1`                    | Agent      | Fast search over git-tracked files (avoids recursion hangs)       |
+| `git-credential-gh.ps1`           | Agent      | Git credential helper for multi-identity                          |
+| `set-gh-secret.ps1`               | Agent      | Set GitHub repository secrets                                     |
+| `setup-agent-identities.ps1`      | Agent      | Configure git identities for agent worktrees                      |
+| `spawn-parallel-agents.ps1`       | Agent      | Spawn multiple VS Code agent sessions                             |
+| `spawn-worktree-agent.ps1`        | Agent      | Spawn Copilot agent in a new worktree                             |
+| `post-merge-evidence.ps1`         | Agent      | Post merge evidence to GitHub issues                              |
+| `populate-db.sql`                 | Data       | SQL script to populate database (legacy)                          |
+| `seed-data.sql`                   | Data       | Simple SQL seed script (legacy)                                   |
+| `temp-seed.sql`                   | Data       | Temporary seed data SQL                                           |
+| `seed-campuses.json`              | Data       | Campus seed data                                                  |
+| `seed-districts.json`             | Data       | District seed data                                                |
+| `seed-needs.json`                 | Data       | Needs seed data                                                   |
+| `seed-notes.json`                 | Data       | Notes seed data                                                   |
+| `seed-people.json`                | Data       | People seed data                                                  |
 
 ---
 
@@ -140,6 +142,33 @@ Seeds MySQL development environment with full sample data.
 
 ```bash
 node scripts/seed-mysql-dev.mjs
+```
+
+#### `populate-contacts.mjs`
+
+Sync verified contact data into `people` without guessing.
+
+- Does **not** generate/guess emails or phone numbers.
+- Only backfills `people.email` from `users.email` when linked by `users.personId` -> `people.personId`.
+
+```bash
+node scripts/populate-contacts.mjs
+node scripts/populate-contacts.mjs --dry-run
+```
+
+#### `cleanup-fabricated-contacts.mjs`
+
+Clears email/phone for people who are not verified/registered.
+
+Keeps contact info for people who are:
+
+- linked to a user account (`users.personId` -> `people.personId`), OR
+- have `depositPaid = true`, OR
+- have `deposit_paid_at` set.
+
+```bash
+node scripts/cleanup-fabricated-contacts.mjs --dry-run
+node scripts/cleanup-fabricated-contacts.mjs --apply
 ```
 
 #### `reseed-districts.mjs`
