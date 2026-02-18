@@ -35,7 +35,9 @@ test.describe("regional district metric placement", () => {
   });
 
   for (const region of REGIONS) {
-    test(`${region}: metrics render outside district shapes`, async ({ page }) => {
+    test(`${region}: metrics render outside district shapes`, async ({
+      page,
+    }) => {
       await page.evaluate(regionId => {
         localStorage.setItem("cmc-scope-filter", "REGION");
         localStorage.setItem("cmc-scope-region", regionId);
@@ -49,9 +51,6 @@ test.describe("regional district metric placement", () => {
       }
 
       await page.locator('[data-metric-toggle="yes"]').first().click();
-      await page.locator('[data-metric-toggle="maybe"]').first().click();
-      await page.locator('[data-metric-toggle="no"]').first().click();
-      await page.locator('[data-metric-toggle="notInvited"]').first().click();
 
       await page.waitForTimeout(1500);
 

@@ -2669,7 +2669,7 @@ export const InteractiveMap = memo(function InteractiveMap({
               <div
                 className={`flex flex-col items-end pt-0 pr-1 mt-1.5 overflow-hidden transition-all duration-300 ${isMobile ? "gap-1" : selectedDistrictId ? "gap-2" : "gap-3"}`}
               >
-                {/* Yes - closest to line: slides out first, back in last */}
+                {/* Going - closest to line: slides out first, back in last */}
                 <button
                   data-metric-toggle="yes"
                   onClick={() => toggleMetric("yes")}
@@ -2695,7 +2695,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                       textAlign: "right",
                     }}
                   >
-                    Yes
+                    Going
                   </span>
                   <span
                     className={`font-semibold text-slate-900 tabular-nums ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
@@ -2736,11 +2736,9 @@ export const InteractiveMap = memo(function InteractiveMap({
                     )}
                   </div>
                 </button>
-                {/* Maybe - slides out from line 2nd, back into line 3rd */}
-                <button
-                  data-metric-toggle="maybe"
-                  onClick={() => toggleMetric("maybe")}
-                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
+                {/* Invited count - underneath Going */}
+                <div
+                  className={`flex items-center w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
                   style={{
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
                     transform: metricsExpanded
@@ -2762,7 +2760,7 @@ export const InteractiveMap = memo(function InteractiveMap({
                       textAlign: "right",
                     }}
                   >
-                    Maybe
+                    Invited
                   </span>
                   <span
                     className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
@@ -2772,225 +2770,25 @@ export const InteractiveMap = memo(function InteractiveMap({
                       textAlign: "center",
                     }}
                   >
-                    {showPublicPlaceholder ? "—" : displayedTotals.maybe}
-                  </span>
-                  <div
-                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3.5 h-3.5" : "w-5 h-5"} ${
-                      activeMetrics.has("maybe")
-                        ? "bg-yellow-600 border-yellow-600"
-                        : "border-slate-300 hover:border-yellow-600 bg-white"
-                    }`}
-                    style={{
-                      boxShadow: activeMetrics.has("maybe")
-                        ? "0 4px 12px rgba(180, 83, 9, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                    }}
-                  >
-                    {activeMetrics.has("maybe") && (
-                      <svg
-                        className="w-full h-full text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-                {/* No - slides out from line 3rd, back into line 2nd */}
-                <button
-                  data-metric-toggle="no"
-                  onClick={() => toggleMetric("no")}
-                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
-                  style={{
-                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded
-                      ? "translateX(0)"
-                      : "translateX(100%)",
-                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
-                    transitionDelay: metricsExpanded ? "0.75s" : "0.3s",
-                  }}
-                >
-                  <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-sm" : selectedDistrictId ? "text-base md:text-lg" : "text-base md:text-2xl"}`}
-                    style={{
-                      lineHeight: "1",
-                      minWidth: isMobile
-                        ? "4rem"
-                        : selectedDistrictId
-                          ? "6rem"
-                          : "8.5rem",
-                      textAlign: "right",
-                    }}
-                  >
-                    No
+                    {showPublicPlaceholder ? "—" : displayedTotals.invited}
                   </span>
                   <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-base md:text-lg" : "text-base md:text-2xl"}`}
-                    style={{
-                      lineHeight: "1",
-                      width: isMobile ? "2.5rem" : "4rem",
-                      textAlign: "center",
-                    }}
+                    className={`font-normal text-slate-400 tracking-tight tabular-nums ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-lg"}`}
+                    style={{ lineHeight: "1" }}
                   >
-                    {showPublicPlaceholder ? "—" : displayedTotals.no}
+                    / {showPublicPlaceholder ? "—" : displayedTotals.total}
                   </span>
-                  <div
-                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3 h-3" : "w-4 h-4"} ${
-                      activeMetrics.has("no")
-                        ? "bg-red-700 border-red-700"
-                        : "border-slate-300 hover:border-red-700 bg-white"
-                    }`}
-                    style={{
-                      boxShadow: activeMetrics.has("no")
-                        ? "0 4px 12px rgba(185, 28, 28, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                    }}
-                  >
-                    {activeMetrics.has("no") && (
-                      <svg
-                        className="w-full h-full text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-                {/* Not Invited Yet - farthest from line: slides out last, back in first */}
-                <button
-                  data-metric-toggle="notInvited"
-                  onClick={() => toggleMetric("notInvited")}
-                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
-                  style={{
-                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded
-                      ? "translateX(0)"
-                      : "translateX(100%)",
-                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
-                    transitionDelay: metricsExpanded ? "1.05s" : "0ms",
-                  }}
-                >
-                  <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-[1.2rem]"}`}
-                    style={{
-                      lineHeight: "1",
-                      minWidth: isMobile
-                        ? "4rem"
-                        : selectedDistrictId
-                          ? "6rem"
-                          : "8.5rem",
-                      textAlign: "right",
-                    }}
-                  >
-                    Not Invited Yet
-                  </span>
-                  <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-[1.2rem]"}`}
-                    style={{
-                      lineHeight: "1",
-                      width: isMobile ? "2.5rem" : "4rem",
-                      textAlign: "center",
-                    }}
-                  >
-                    {showPublicPlaceholder ? "—" : displayedTotals.notInvited}
-                  </span>
-                  <div
-                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3 h-3" : "w-4 h-4"} ${
-                      activeMetrics.has("notInvited")
-                        ? "bg-slate-500 border-slate-500"
-                        : "border-slate-300 hover:border-slate-400 bg-white"
-                    }`}
-                    style={{
-                      boxShadow: activeMetrics.has("notInvited")
-                        ? "0 4px 12px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15)"
-                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                    }}
-                  >
-                    {activeMetrics.has("notInvited") && (
-                      <svg
-                        className="w-full h-full text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Top Left Invited / Total + Needs (shrink when district panel open) */}
+        {/* Top Left Needs (shrink when district panel open) */}
         <div
           className={`absolute left-0 z-40 flex flex-col items-start transition-all duration-300 ${selectedDistrictId ? "top-5 sm:top-5 gap-1" : "top-5 sm:top-6 gap-1 sm:gap-2"} ${isMobile ? "pl-4" : "pl-1 sm:pl-2"}`}
         >
-          <div
-            className="flex items-center gap-3"
-            style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
-          >
-            <span
-              className={`font-semibold text-slate-900 whitespace-nowrap tracking-tight ${selectedDistrictId ? "text-xl sm:text-2xl" : "text-2xl sm:text-4xl"}`}
-              style={{
-                lineHeight: "1",
-                textAlign: "left",
-              }}
-            >
-              Invited
-            </span>
-
-            <div
-              className="flex items-baseline gap-2 tabular-nums"
-              style={{ lineHeight: "1" }}
-            >
-              <span
-                className={`font-bold text-slate-900 tracking-tight ${selectedDistrictId ? "text-xl sm:text-2xl" : "text-2xl sm:text-4xl"}`}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.invited}
-              </span>
-              <span
-                className={`font-normal text-slate-400 ${selectedDistrictId ? "text-base sm:text-lg" : "text-lg sm:text-xl"}`}
-              >
-                /
-              </span>
-              <span
-                className={`font-normal text-slate-400 tracking-tight ${selectedDistrictId ? "text-sm sm:text-base" : "text-base sm:text-lg"}`}
-              >
-                {showPublicPlaceholder ? "—" : displayedTotals.total}
-              </span>
-            </div>
-
-            <div
-              className={
-                selectedDistrictId
-                  ? "w-4 h-4 flex-shrink-0"
-                  : "w-6 h-6 flex-shrink-0"
-              }
-            />
-          </div>
-
-          {/* Needs summary - left-aligned with Invited */}
+          {/* Needs summary */}
           {!shouldCollapseForNationalMobile && (
             <div className="flex-shrink-0">
               <div className="inline-flex flex-col gap-y-0.5">
