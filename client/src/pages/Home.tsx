@@ -22,6 +22,8 @@ import {
   Copy,
   Mail,
   MessageCircle,
+  MessageSquare,
+  Bell,
   Check,
   Info,
   Menu,
@@ -1082,6 +1084,37 @@ export default function Home() {
                       <Info className="w-5 h-5 sm:w-4 sm:h-4" />
                       <span className="text-sm">Event Info</span>
                     </button>
+
+                    {isAuthenticated && (
+                      <>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                        >
+                          <MessageSquare className="w-5 h-5 sm:w-4 sm:h-4" />
+                          Messages
+                          <span className="ml-auto text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                            Soon
+                          </span>
+                        </button>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
+                        >
+                          <Bell className="w-5 h-5 sm:w-4 sm:h-4" />
+                          Notifications
+                          <span className="ml-auto text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                            Soon
+                          </span>
+                        </button>
+                      </>
+                    )}
 
                     {(user?.role === "CMC_GO_ADMIN" ||
                       user?.role === "NATIONAL_DIRECTOR" ||
