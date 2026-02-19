@@ -14,17 +14,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "./ui/dialog";
 import { BottomSheet } from "./ui/bottom-sheet";
 import { GiveDialog } from "./GiveDialog";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   ExternalLink,
   Phone,
   Mail,
-  MessageCircle,
   Heart,
   Send,
   DollarSign,
@@ -32,6 +29,9 @@ import {
   MapPin,
   Copy,
   Clock,
+  MessageSquare,
+  Smartphone,
+  Globe,
 } from "lucide-react";
 
 interface PersonInfoPanelProps {
@@ -222,17 +222,78 @@ export function PersonInfoPanel({
           </div>
         </div>
 
-        {/* Mighty Profile link */}
-        {person.mightyProfileUrl && (
-          <a
-            href={person.mightyProfileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+        {/* ═══ QUICK ACTION BUTTONS ═══ */}
+        <div className="flex items-center gap-2 mt-3">
+          {/* Call */}
+          {person.phone ? (
+            <a
+              href={`tel:${person.phone}`}
+              className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-green-50 hover:bg-green-100 transition-colors text-green-700"
+            >
+              <Phone className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Call</span>
+            </a>
+          ) : (
+            <div className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-gray-50 text-gray-300 cursor-not-allowed">
+              <Phone className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Call</span>
+            </div>
+          )}
+
+          {/* Text */}
+          {person.phone ? (
+            <a
+              href={`sms:${person.phone}`}
+              className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors text-blue-700"
+            >
+              <Smartphone className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Text</span>
+            </a>
+          ) : (
+            <div className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-gray-50 text-gray-300 cursor-not-allowed">
+              <Smartphone className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Text</span>
+            </div>
+          )}
+
+          {/* Email */}
+          {person.email ? (
+            <a
+              href={`mailto:${person.email}`}
+              className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors text-purple-700"
+            >
+              <Mail className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Email</span>
+            </a>
+          ) : (
+            <div className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-gray-50 text-gray-300 cursor-not-allowed">
+              <Mail className="h-5 w-5" />
+              <span className="text-[11px] font-medium">Email</span>
+            </div>
+          )}
+
+          {/* In-App Message (scroll to thread) */}
+          <button
+            type="button"
+            onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors text-orange-700 relative"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
-            View Mighty Profile
-          </a>
+            <MessageSquare className="h-5 w-5" />
+            <span className="text-[11px] font-medium">Message</span>
+            {messages.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                {messages.length > 9 ? "9+" : messages.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Contact details (subtle text below buttons) */}
+        {(person.phone || person.email) && (
+          <div className="mt-2 text-[11px] text-gray-400 space-y-0.5">
+            {person.phone && <p>📱 {person.phone}</p>}
+            {person.email && <p>✉️ {person.email}</p>}
+          </div>
         )}
       </div>
 
@@ -257,10 +318,7 @@ export function PersonInfoPanel({
                       {fundingTotals.pct}%
                     </span>
                   </div>
-                  <Progress
-                    value={fundingTotals.pct}
-                    className="h-2.5"
-                  />
+                  <Progress value={fundingTotals.pct} className="h-2.5" />
                   <p className="text-xs text-gray-500 mt-1.5">
                     ${(fundingTotals.totalReceived / 100).toFixed(2)} of $
                     {(fundingTotals.totalAmount / 100).toFixed(2)} received
@@ -296,11 +354,7 @@ export function PersonInfoPanel({
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-2">
                           <Badge
-                            variant={
-                              isFunded
-                                ? "default"
-                                : "outline"
-                            }
+                            variant={isFunded ? "default" : "outline"}
                             className={
                               isFunded
                                 ? "bg-green-600"
@@ -372,11 +426,11 @@ export function PersonInfoPanel({
 
           <Separator />
 
-          {/* ═══ CONTACT & PAYMENT LINKS ═══ */}
+          {/* ═══ WAYS TO GIVE ═══ */}
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
               <DollarSign className="h-4 w-4 text-green-600" />
-              Payment & Contact
+              Ways to Give
             </h3>
 
             <div className="space-y-2">
@@ -444,7 +498,47 @@ export function PersonInfoPanel({
                 </button>
               )}
 
-              {/* US Missions (from Mighty Profile) */}
+              {/* US Missions / AG Giving */}
+              <a
+                href="https://giving.ag.org/donate"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+              >
+                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                  <Globe className="h-4 w-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    US Missions Giving
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    giving.ag.org/donate
+                  </p>
+                </div>
+                <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-red-600" />
+              </a>
+
+              {/* No payment methods fallback */}
+              {!person.cashapp && !person.venmo && !person.zelle && (
+                <p className="text-xs text-gray-400 text-center py-1">
+                  No CashApp, Venmo, or Zelle on file — use US Missions Giving above or contact directly.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <Separator />
+
+          {/* ═══ PROFILE LINKS ═══ */}
+          <section>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
+              <User className="h-4 w-4 text-orange-500" />
+              Profile Links
+            </h3>
+
+            <div className="space-y-2">
+              {/* Mighty Networks Profile */}
               {person.mightyProfileUrl && (
                 <a
                   href={person.mightyProfileUrl}
@@ -467,74 +561,43 @@ export function PersonInfoPanel({
                 </a>
               )}
 
-              {/* Phone */}
-              {person.phone && (
-                <a
-                  href={`tel:${person.phone}`}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <Phone className="h-4 w-4 text-gray-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Phone</p>
-                    <p className="text-xs text-gray-500">{person.phone}</p>
-                  </div>
-                </a>
+              {!person.mightyProfileUrl && (
+                <p className="text-xs text-gray-400 text-center py-1">
+                  No Mighty Profile connected
+                </p>
               )}
-
-              {/* Email */}
-              {person.email && (
-                <a
-                  href={`mailto:${person.email}`}
-                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <Mail className="h-4 w-4 text-gray-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">Email</p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {person.email}
-                    </p>
-                  </div>
-                </a>
-              )}
-
-              {/* No contact fallback */}
-              {!person.cashapp &&
-                !person.venmo &&
-                !person.zelle &&
-                !person.phone &&
-                !person.email &&
-                !person.mightyProfileUrl && (
-                  <p className="text-sm text-gray-400 text-center py-2">
-                    No contact info on file
-                  </p>
-                )}
             </div>
           </section>
 
           <Separator />
 
-          {/* ═══ MESSAGE THREAD ═══ */}
+          {/* ═══ MESSAGE THREAD (IN-APP) ═══ */}
           <section>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-1.5">
-              <MessageCircle className="h-4 w-4 text-blue-500" />
-              Messages
-              {messages.length > 0 && (
-                <span className="text-xs font-normal text-gray-400">
-                  ({messages.length})
-                </span>
-              )}
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                <MessageSquare className="h-4 w-4 text-blue-500" />
+                In-App Messages
+                {messages.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                    {messages.length}
+                  </Badge>
+                )}
+              </h3>
+              <p className="text-[10px] text-gray-400">
+                Notifies {person.name?.split(" ")[0] || "them"} in the app
+              </p>
+            </div>
 
             {/* Message list */}
-            <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-72 overflow-y-auto pr-1 scroll-smooth">
               {messages.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-4">
-                  No messages yet. Start the conversation!
-                </p>
+                <div className="text-center py-6">
+                  <MessageSquare className="h-8 w-8 text-gray-200 mx-auto mb-2" />
+                  <p className="text-sm text-gray-400">No messages yet</p>
+                  <p className="text-xs text-gray-300 mt-0.5">
+                    Send a message — they'll be notified in the app
+                  </p>
+                </div>
               )}
               {messages.map(note => {
                 const isMe = note.createdBy === user?.email;
@@ -544,18 +607,18 @@ export function PersonInfoPanel({
                     className={`flex ${isMe ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-xl px-3 py-2 ${
+                      className={`max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm ${
                         isMe
-                          ? "bg-blue-600 text-white"
-                          : "bg-gray-100 text-gray-900"
+                          ? "bg-blue-600 text-white rounded-br-sm"
+                          : "bg-gray-100 text-gray-900 rounded-bl-sm"
                       }`}
                     >
                       {!isMe && note.createdBy && (
-                        <p className="text-[10px] font-medium text-gray-500 mb-0.5">
+                        <p className="text-[10px] font-semibold text-gray-500 mb-0.5">
                           {note.createdBy}
                         </p>
                       )}
-                      <p className="text-sm whitespace-pre-wrap break-words">
+                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                         {note.content}
                       </p>
                       <p
@@ -575,22 +638,20 @@ export function PersonInfoPanel({
 
             {/* Compose */}
             {user && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex gap-2 items-end">
                 <Textarea
-                  placeholder="Type a message..."
+                  placeholder={`Message ${person.name?.split(" ")[0] || "them"}...`}
                   value={newMessage}
                   onChange={e => setNewMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   rows={1}
-                  className="resize-none flex-1 min-h-[36px] text-sm"
+                  className="resize-none flex-1 min-h-[40px] text-sm rounded-xl"
                 />
                 <Button
                   size="icon"
-                  className="h-9 w-9 shrink-0"
+                  className="h-10 w-10 shrink-0 rounded-full"
                   onClick={handleSendMessage}
-                  disabled={
-                    createNote.isPending || !newMessage.trim()
-                  }
+                  disabled={createNote.isPending || !newMessage.trim()}
                 >
                   <Send className="h-4 w-4" />
                 </Button>
