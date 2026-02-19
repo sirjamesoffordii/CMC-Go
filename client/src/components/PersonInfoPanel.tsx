@@ -5,6 +5,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
+import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
@@ -27,6 +28,9 @@ import {
   MessageSquare,
   Smartphone,
   Globe,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 
 interface PersonInfoPanelProps {
@@ -53,6 +57,17 @@ export function PersonInfoPanel({
     amount: number | null;
     fundsReceived: number | null;
   } | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    primaryRole: "",
+    phone: "",
+    email: "",
+    cashapp: "",
+    venmo: "",
+    zelle: "",
+    mightyProfileUrl: "",
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
 
@@ -126,6 +141,18 @@ export function PersonInfoPanel({
     },
   });
 
+  const updatePerson = trpc.people.update.useMutation({
+    onSuccess: () => {
+      toast.success("Saved");
+      setEditing(false);
+      utils.people.list.invalidate();
+      utils.people.byDistrict.invalidate();
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to save");
+    },
+  });
+
   // ── Effects ──
   useEffect(() => {
     if (open && messagesEndRef.current) {
@@ -153,6 +180,38 @@ export function PersonInfoPanel({
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const startEditing = () => {
+    setEditForm({
+      name: person.name || "",
+      primaryRole: person.primaryRole || "",
+      phone: person.phone || "",
+      email: person.email || "",
+      cashapp: person.cashapp || "",
+      venmo: person.venmo || "",
+      zelle: person.zelle || "",
+      mightyProfileUrl: person.mightyProfileUrl || "",
+    });
+    setEditing(true);
+  };
+
+  const handleSave = () => {
+    updatePerson.mutate({
+      personId: person.personId,
+      name: editForm.name || undefined,
+      primaryRole: editForm.primaryRole || undefined,
+      phone: editForm.phone || null,
+      email: editForm.email || null,
+      cashapp: editForm.cashapp || null,
+      venmo: editForm.venmo || null,
+      zelle: editForm.zelle || null,
+      mightyProfileUrl: editForm.mightyProfileUrl || null,
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
   };
 
   const openGiveDialog = (need: (typeof activeNeeds)[0]) => {
@@ -198,11 +257,34 @@ export function PersonInfoPanel({
             {(person.name || "?").charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900 truncate">
-              {person.name || "Unknown"}
-            </h2>
-            {person.primaryRole && (
-              <p className="text-sm text-gray-500">{person.primaryRole}</p>
+            {editing ? (
+              <>
+                <Input
+                  value={editForm.name}
+                  onChange={e =>
+                    setEditForm(f => ({ ...f, name: e.target.value }))
+                  }
+                  placeholder="Name"
+                  className="h-8 text-lg font-bold mb-1"
+                />
+                <Input
+                  value={editForm.primaryRole}
+                  onChange={e =>
+                    setEditForm(f => ({ ...f, primaryRole: e.target.value }))
+                  }
+                  placeholder="Role (e.g. Campus Staff)"
+                  className="h-7 text-sm text-gray-500"
+                />
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg font-bold text-gray-900 truncate">
+                  {person.name || "Unknown"}
+                </h2>
+                {person.primaryRole && (
+                  <p className="text-sm text-gray-500">{person.primaryRole}</p>
+                )}
+              </>
             )}
             <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
               {campus && (
@@ -215,6 +297,38 @@ export function PersonInfoPanel({
               {person.primaryRegion && <span>· {person.primaryRegion}</span>}
             </div>
           </div>
+          {/* Edit / Save / Cancel buttons */}
+          {user && !editing && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={startEditing}
+            >
+              <Pencil className="h-4 w-4 text-gray-400" />
+            </Button>
+          )}
+          {editing && (
+            <div className="flex gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-red-500"
+                onClick={cancelEditing}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-green-600"
+                onClick={handleSave}
+                disabled={updatePerson.isPending}
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* ═══ QUICK ACTION BUTTONS ═══ */}
@@ -268,12 +382,98 @@ export function PersonInfoPanel({
           )}
         </div>
 
-        {/* Contact details (subtle text below buttons) */}
-        {(person.phone || person.email) && (
-          <div className="mt-2 text-[11px] text-gray-400 space-y-0.5">
-            {person.phone && <p>📱 {person.phone}</p>}
-            {person.email && <p>✉️ {person.email}</p>}
+        {/* Contact details (subtle text below buttons, or editable inputs) */}
+        {editing ? (
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Phone className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              <Input
+                value={editForm.phone}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, phone: e.target.value }))
+                }
+                placeholder="Phone number"
+                className="h-7 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+              <Input
+                value={editForm.email}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, email: e.target.value }))
+                }
+                placeholder="Email address"
+                type="email"
+                className="h-7 text-sm"
+              />
+            </div>
+            <Separator className="my-2" />
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+              Payment Handles
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[#00D632] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                $
+              </div>
+              <Input
+                value={editForm.cashapp}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, cashapp: e.target.value }))
+                }
+                placeholder="$cashapptag"
+                className="h-7 text-sm font-mono"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[#008CFF] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                V
+              </div>
+              <Input
+                value={editForm.venmo}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, venmo: e.target.value }))
+                }
+                placeholder="@venmohandle"
+                className="h-7 text-sm font-mono"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[#6D1ED4] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                Z
+              </div>
+              <Input
+                value={editForm.zelle}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, zelle: e.target.value }))
+                }
+                placeholder="Zelle phone or email"
+                className="h-7 text-sm font-mono"
+              />
+            </div>
+            <Separator className="my-2" />
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+              Profile Links
+            </p>
+            <div className="flex items-center gap-2">
+              <User className="h-3.5 w-3.5 text-orange-400 shrink-0" />
+              <Input
+                value={editForm.mightyProfileUrl}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, mightyProfileUrl: e.target.value }))
+                }
+                placeholder="https://chialpha.mn.co/members/..."
+                className="h-7 text-sm"
+              />
+            </div>
           </div>
+        ) : (
+          (person.phone || person.email) && (
+            <div className="mt-2 text-[11px] text-gray-400 space-y-0.5">
+              {person.phone && <p>📱 {person.phone}</p>}
+              {person.email && <p>✉️ {person.email}</p>}
+            </div>
+          )
         )}
       </div>
 
@@ -611,31 +811,33 @@ export function PersonInfoPanel({
               })}
               <div ref={messagesEndRef} />
             </div>
-
-            {/* Compose */}
-            {user && (
-              <div className="mt-3 flex gap-2 items-end">
-                <Textarea
-                  placeholder={`Message ${person.name?.split(" ")[0] || "them"}...`}
-                  value={newMessage}
-                  onChange={e => setNewMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                  className="resize-none flex-1 min-h-[40px] text-sm rounded-xl"
-                />
-                <Button
-                  size="icon"
-                  className="h-10 w-10 shrink-0 rounded-full"
-                  onClick={handleSendMessage}
-                  disabled={createNote.isPending || !newMessage.trim()}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
           </section>
         </div>
       </ScrollArea>
+
+      {/* ═══ MESSAGE COMPOSE (pinned to bottom) ═══ */}
+      {user && (
+        <div className="px-4 py-3 border-t border-gray-200 bg-white shrink-0">
+          <div className="flex gap-2 items-end">
+            <Textarea
+              placeholder={`Message ${person.name?.split(" ")[0] || "them"}...`}
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              className="resize-none flex-1 min-h-[40px] text-sm rounded-xl"
+            />
+            <Button
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full"
+              onClick={handleSendMessage}
+              disabled={createNote.isPending || !newMessage.trim()}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* ═══ GIVE DIALOG ═══ */}
       {giveNeed && (
