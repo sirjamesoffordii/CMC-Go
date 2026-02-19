@@ -7,9 +7,6 @@ import { defineConfig } from "vite";
 // This helps with CSP nonce compatibility
 const plugins = [
   react({
-    // Disable fast refresh if CSP nonce issues occur
-    // fastRefresh: false, // Uncomment if CSP still causes preamble detection issues
-    // Use esbuild instead of Babel for better performance and TypeScript support
     babel: {
       parserOpts: {
         plugins: ["typescript", "jsx"],
@@ -41,7 +38,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
-          "vendor-ui": ["@radix-ui/react-dialog", "@radix-ui/react-tooltip", "@radix-ui/react-select", "@radix-ui/react-popover", "@radix-ui/react-scroll-area"],
+          "vendor-ui": [
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-select",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-scroll-area",
+          ],
           "vendor-motion": ["framer-motion"],
         },
       },

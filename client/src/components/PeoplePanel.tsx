@@ -9,6 +9,8 @@ import {
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "./PersonDetailsDialog";
 import { ImportModal } from "./ImportModal";
+import { MessageDialog } from "./MessageDialog";
+import { GiveDialog } from "./GiveDialog";
 import {
   X,
   Download,
@@ -18,6 +20,8 @@ import {
   ChevronDown,
   ChevronRight,
   MoreVertical,
+  MessageCircle,
+  Heart,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -59,6 +63,20 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [messageDialogPerson, setMessageDialogPerson] = useState<{
+    personId: string;
+    personName: string;
+  } | null>(null);
+  const [giveDialogItem, setGiveDialogItem] = useState<{
+    needId: number;
+    personId: string;
+    personName: string;
+    amount?: number | null;
+    fundsReceived?: number | null;
+    cashapp?: string | null;
+    zelle?: string | null;
+    venmo?: string | null;
+  } | null>(null);
   const { isAuthenticated: _isAuthenticated } = usePublicAuth();
   const { user } = useAuth();
   const _utils = trpc.useUtils();
@@ -1954,6 +1972,51 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+                    {/* Message button - always show for authenticated users */}
+                    {user && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setMessageDialogPerson({
+                            personId: person.personId,
+                            personName: person.name ?? "Unknown",
+                          });
+                        }}
+                        title="Send message"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {/* Give button - show when person has an active need */}
+                    {user && personNeeds.some(n => n.isActive) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        onClick={e => {
+                          e.stopPropagation();
+                          const activeNeed = personNeeds.find(n => n.isActive);
+                          if (activeNeed) {
+                            setGiveDialogItem({
+                              needId: activeNeed.id,
+                              personId: person.personId,
+                              personName: person.name ?? "Unknown",
+                              amount: activeNeed.amount,
+                              fundsReceived: activeNeed.fundsReceived,
+                              cashapp: person.cashapp,
+                              zelle: person.zelle,
+                              venmo: person.venmo,
+                            });
+                          }
+                        }}
+                        title="Give"
+                      >
+                        <Heart className="h-4 w-4" />
+                      </Button>
+                    )}
                     {/* Need badges - show when need filter is active */}
                     {hasDetailAccess &&
                       needFilter.size > 0 &&
@@ -2596,6 +2659,30 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
         onOpenChange={setDialogOpen}
       />
       <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
+
+      {messageDialogPerson && (
+        <MessageDialog
+          open={!!messageDialogPerson}
+          onOpenChange={open => !open && setMessageDialogPerson(null)}
+          personId={messageDialogPerson.personId}
+          personName={messageDialogPerson.personName}
+        />
+      )}
+
+      {giveDialogItem && (
+        <GiveDialog
+          open={!!giveDialogItem}
+          onOpenChange={open => !open && setGiveDialogItem(null)}
+          personId={giveDialogItem.personId}
+          personName={giveDialogItem.personName}
+          needId={giveDialogItem.needId}
+          needAmount={giveDialogItem.amount}
+          fundsReceived={giveDialogItem.fundsReceived}
+          cashapp={giveDialogItem.cashapp}
+          zelle={giveDialogItem.zelle}
+          venmo={giveDialogItem.venmo}
+        />
+      )}
     </div>
   );
 }

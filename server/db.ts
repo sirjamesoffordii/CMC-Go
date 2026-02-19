@@ -16,6 +16,9 @@ import {
   inviteNotes,
   statusChanges,
   donations,
+  messages,
+  notifications,
+  notificationSettings,
   InsertDistrict,
   InsertCampus,
   InsertPerson,
@@ -25,6 +28,8 @@ import {
   InsertHousehold,
   InsertAuthToken,
   InsertInviteNote,
+  InsertMessage,
+  InsertNotification,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import {
@@ -217,6 +222,17 @@ export async function getUserByEmail(email: string) {
     .select(userColumns)
     .from(users)
     .where(eq(users.email, email))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getUserByPersonId(personId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select(userColumns)
+    .from(users)
+    .where(eq(users.personId, personId))
     .limit(1);
   return result[0] || null;
 }
@@ -1032,6 +1048,22 @@ export async function getNeedById(needId: number) {
     .where(eq(needs.id, needId))
     .limit(1);
   return result[0] || null;
+}
+
+/**
+ * Add funds to a need's fundsReceived. Used when someone gives via CashApp/Venmo/Zelle.
+ */
+export async function addFundsToNeed(needId: number, amountToAdd: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const need = await getNeedById(needId);
+  if (!need) throw new Error("Need not found");
+  const current = need.fundsReceived ?? 0;
+  const updated = current + amountToAdd;
+  await db
+    .update(needs)
+    .set({ fundsReceived: updated })
+    .where(eq(needs.id, needId));
 }
 
 /**
@@ -2323,4 +2355,238 @@ export async function getDonationProgress(): Promise<{
     totalRaisedCents: Number(result[0]?.totalRaisedCents ?? 0),
     donorCount: Number(result[0]?.donorCount ?? 0),
   };
+}
+
+// ============================================================================
+// MESSAGES
+// ============================================================================
+
+export async function createMessage(data: InsertMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(messages).values(data);
+  return result[0].insertId;
+}
+
+export async function getMessagesForUser(userId: number, personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get messages where user is sender OR where personId is recipient
+  const sent = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.senderUserId, userId))
+    .orderBy(sql`${messages.createdAt} DESC`);
+  const received = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.recipientPersonId, personId))
+    .orderBy(sql`${messages.createdAt} DESC`);
+  return { sent, received };
+}
+
+export async function getConversation(
+  userId: number,
+  userPersonId: string,
+  otherPersonId: string
+) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get user associated with otherPersonId
+  const otherUser = await db
+    .select()
+    .from(users)
+    .where(eq(users.personId, otherPersonId))
+    .limit(1);
+  const otherUserId = otherUser[0]?.id;
+
+  // Get messages between these two users in both directions
+  const results = await db
+    .select()
+    .from(messages)
+    .where(
+      or(
+        and(
+          eq(messages.senderUserId, userId),
+          eq(messages.recipientPersonId, otherPersonId)
+        ),
+        ...(otherUserId
+          ? [
+              and(
+                eq(messages.senderUserId, otherUserId),
+                eq(messages.recipientPersonId, userPersonId)
+              ),
+            ]
+          : [])
+      )
+    )
+    .orderBy(sql`${messages.createdAt} ASC`);
+  return results;
+}
+
+export async function getInboxForPerson(personId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(messages)
+    .where(eq(messages.recipientPersonId, personId))
+    .orderBy(sql`${messages.createdAt} DESC`);
+}
+
+export async function getUnreadMessageCount(personId: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(messages)
+    .where(
+      and(eq(messages.recipientPersonId, personId), eq(messages.isRead, false))
+    );
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function markMessagesRead(personId: string, senderUserId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(messages)
+    .set({ isRead: true, readAt: new Date() })
+    .where(
+      and(
+        eq(messages.recipientPersonId, personId),
+        eq(messages.senderUserId, senderUserId),
+        eq(messages.isRead, false)
+      )
+    );
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+export async function createNotification(data: InsertNotification) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(notifications).values(data);
+  return result[0].insertId;
+}
+
+export async function getNotificationsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(sql`${notifications.createdAt} DESC`)
+    .limit(50);
+}
+
+export async function getUnreadNotificationCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(notifications)
+    .where(
+      and(eq(notifications.userId, userId), eq(notifications.isRead, false))
+    );
+  return Number(result[0]?.count ?? 0);
+}
+
+export async function markNotificationRead(
+  notificationId: number,
+  userId: number
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ isRead: true, readAt: new Date() })
+    .where(
+      and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, userId)
+      )
+    );
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(notifications)
+    .set({ isRead: true, readAt: new Date() })
+    .where(
+      and(eq(notifications.userId, userId), eq(notifications.isRead, false))
+    );
+}
+
+// ============================================================================
+// NOTIFICATION SETTINGS
+// ============================================================================
+
+export async function getNotificationSettings(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(notificationSettings)
+    .where(eq(notificationSettings.userId, userId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function upsertNotificationSettings(
+  userId: number,
+  settings_data: {
+    needFunded?: boolean;
+    needCreated?: boolean;
+    messageReceived?: boolean;
+    statusChanged?: boolean;
+    systemNotifications?: boolean;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await getNotificationSettings(userId);
+  if (existing) {
+    await db
+      .update(notificationSettings)
+      .set(settings_data)
+      .where(eq(notificationSettings.userId, userId));
+  } else {
+    await db.insert(notificationSettings).values({
+      userId,
+      ...settings_data,
+    });
+  }
+  return { success: true };
+}
+
+// ============================================================================
+// REGION FUNDS
+// ============================================================================
+
+export async function getFundsRaisedByRegion() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db
+    .select({
+      region: people.primaryRegion,
+      totalNeeded: sql<number>`COALESCE(SUM(${needs.amount}), 0)`,
+      totalFunded: sql<number>`COALESCE(SUM(${needs.fundsReceived}), 0)`,
+      activeNeedCount: sql<number>`COUNT(*)`,
+    })
+    .from(needs)
+    .innerJoin(people, eq(needs.personId, people.personId))
+    .where(eq(needs.isActive, true))
+    .groupBy(people.primaryRegion);
+  return result.map(r => ({
+    region: r.region ?? "Unknown",
+    totalNeededCents: Number(r.totalNeeded),
+    totalFundedCents: Number(r.totalFunded),
+    activeNeedCount: Number(r.activeNeedCount),
+  }));
 }

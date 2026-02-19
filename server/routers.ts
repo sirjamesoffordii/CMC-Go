@@ -1899,6 +1899,10 @@ export const appRouter = router({
           guestsCount: z.number().min(0).max(10).optional(),
           phone: z.string().nullable().optional(),
           email: z.string().email().nullable().optional(),
+          cashapp: z.string().nullable().optional(),
+          zelle: z.string().nullable().optional(),
+          venmo: z.string().nullable().optional(),
+          mightyProfileUrl: z.string().max(512).nullable().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -2394,6 +2398,9 @@ export const appRouter = router({
           amount: z.number().optional(),
           fundsReceived: z.number().optional(),
           isActive: z.boolean().optional(),
+          visibility: z
+            .enum(["LEADERSHIP_ONLY", "DISTRICT_VISIBLE"])
+            .optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -2442,6 +2449,7 @@ export const appRouter = router({
             fundsReceived: input.fundsReceived,
             isActive: input.isActive ?? true,
             createdById: ctx.user.id,
+            visibility: input.visibility,
           });
         } else if (input.isActive !== undefined) {
           // Just update isActive
@@ -2600,6 +2608,52 @@ export const appRouter = router({
         await db.updateNeedVisibility(input.needId, input.visibility);
         return { success: true };
       }),
+    addFundsReceived: protectedProcedure
+      .input(
+        z.object({
+          needId: z.number(),
+          amountCents: z.number().min(1),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const need = await db.getNeedById(input.needId);
+        if (!need) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Need not found" });
+        }
+
+        const person = await db.getPersonByPersonId(need.personId);
+        if (!person) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Person not found",
+          });
+        }
+
+        const scope = getPeopleScope(ctx.user);
+
+        // Person must be in scope (donor can see the need)
+        if (
+          scope.level === "CAMPUS" &&
+          person.primaryCampusId !== scope.campusId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (
+          scope.level === "DISTRICT" &&
+          person.primaryDistrictId !== scope.districtId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+        if (
+          scope.level === "REGION" &&
+          resolvePersonRegion(person) !== scope.regionId
+        ) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
+
+        await db.addFundsToNeed(input.needId, input.amountCents);
+        return { success: true };
+      }),
     listActive: protectedProcedure.query(async ({ ctx }) => {
       try {
         const scope = getPeopleScope(ctx.user);
@@ -2697,6 +2751,7 @@ export const appRouter = router({
         z.object({
           personId: z.string(),
           category: z.enum(["INVITE", "INTERNAL"]).optional(),
+          noteType: z.enum(["GENERAL", "REQUEST", "MESSAGE"]).optional(),
         })
       )
       .query(async ({ input, ctx }) => {
@@ -2709,8 +2764,15 @@ export const appRouter = router({
         }
 
         const scope = getPeopleScope(ctx.user);
+        const isViewingOwnMessages = ctx.user.personId === input.personId;
 
-        // Check if person is in scope
+        // If viewing own messages, return only MESSAGE-type notes
+        if (isViewingOwnMessages) {
+          const allNotes = await db.getNotesByPersonId(input.personId);
+          return allNotes.filter(n => n.noteType === "MESSAGE");
+        }
+
+        // Otherwise require scope
         if (
           scope.level === "CAMPUS" &&
           person.primaryCampusId !== scope.campusId
@@ -2738,7 +2800,7 @@ export const appRouter = router({
           personId: z.string(),
           category: z.enum(["INVITE", "INTERNAL"]).default("INTERNAL"),
           content: z.string(),
-          noteType: z.enum(["GENERAL", "REQUEST"]).optional(),
+          noteType: z.enum(["GENERAL", "REQUEST", "MESSAGE"]).optional(),
           createdBy: z.string().optional(),
         })
       )
@@ -2753,7 +2815,7 @@ export const appRouter = router({
 
         const scope = getPeopleScope(ctx.user);
 
-        // Check if person is in scope
+        // Person must be in scope to send them a message/note
         if (
           scope.level === "CAMPUS" &&
           person.primaryCampusId !== scope.campusId
@@ -2776,6 +2838,11 @@ export const appRouter = router({
         await db.createNote({
           ...input,
           noteType: input.noteType ?? "GENERAL",
+          createdBy:
+            input.createdBy ??
+            ctx.user?.fullName ??
+            ctx.user?.email ??
+            "Unknown",
         });
         // Update person's lastUpdated
         await db.updatePersonStatus(input.personId, person.status);
@@ -3530,6 +3597,176 @@ export const appRouter = router({
 
         return { sessionUrl: session.url };
       }),
+  }),
+
+  // ============================================================================
+  // MESSAGING
+  // ============================================================================
+  messaging: router({
+    /** Send a message to a person */
+    send: protectedProcedure
+      .input(
+        z.object({
+          recipientPersonId: z.string(),
+          content: z.string().min(1).max(2000),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const person = await db.getPersonByPersonId(input.recipientPersonId);
+        if (!person) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Recipient not found",
+          });
+        }
+
+        const messageId = await db.createMessage({
+          senderUserId: ctx.user.id,
+          recipientPersonId: input.recipientPersonId,
+          content: input.content,
+        });
+
+        // Create notification for recipient if they have a user account
+        const recipientUsers = await db.getUserByPersonId(
+          input.recipientPersonId
+        );
+        if (recipientUsers) {
+          await db.createNotification({
+            userId: recipientUsers.id,
+            type: "message_received",
+            title: "New message",
+            body: `${ctx.user.fullName} sent you a message`,
+            linkUrl: "/messages",
+          });
+        }
+
+        return { messageId };
+      }),
+
+    /** Get inbox messages (received) */
+    inbox: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user.personId) return [];
+      const messages = await db.getInboxForPerson(ctx.user.personId);
+      // Enrich with sender info
+      const enriched = await Promise.all(
+        messages.map(async msg => {
+          const senderUser = await db.getUserById(msg.senderUserId);
+          return {
+            ...msg,
+            senderName: senderUser?.fullName ?? "Unknown",
+          };
+        })
+      );
+      return enriched;
+    }),
+
+    /** Get conversation with a specific person */
+    conversation: protectedProcedure
+      .input(z.object({ otherPersonId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user.personId) return [];
+        const messages = await db.getConversation(
+          ctx.user.id,
+          ctx.user.personId,
+          input.otherPersonId
+        );
+        // Enrich with sender info
+        const enriched = await Promise.all(
+          messages.map(async msg => {
+            const senderUser = await db.getUserById(msg.senderUserId);
+            return {
+              ...msg,
+              senderName: senderUser?.fullName ?? "Unknown",
+              isMine: msg.senderUserId === ctx.user.id,
+            };
+          })
+        );
+        return enriched;
+      }),
+
+    /** Get count of unread messages */
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user.personId) return 0;
+      return await db.getUnreadMessageCount(ctx.user.personId);
+    }),
+
+    /** Mark messages from a sender as read */
+    markRead: protectedProcedure
+      .input(z.object({ senderUserId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user.personId) return { success: false };
+        await db.markMessagesRead(ctx.user.personId, input.senderUserId);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // NOTIFICATIONS
+  // ============================================================================
+  notifs: router({
+    /** Get notifications for current user */
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getNotificationsForUser(ctx.user.id);
+    }),
+
+    /** Get unread notification count */
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getUnreadNotificationCount(ctx.user.id);
+    }),
+
+    /** Mark a single notification as read */
+    markRead: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await db.markNotificationRead(input.notificationId, ctx.user.id);
+        return { success: true };
+      }),
+
+    /** Mark all notifications as read */
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await db.markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
+
+    /** Get notification settings */
+    getSettings: protectedProcedure.query(async ({ ctx }) => {
+      const settings = await db.getNotificationSettings(ctx.user.id);
+      return (
+        settings ?? {
+          needFunded: true,
+          needCreated: true,
+          messageReceived: true,
+          statusChanged: true,
+          systemNotifications: true,
+        }
+      );
+    }),
+
+    /** Update notification settings */
+    updateSettings: protectedProcedure
+      .input(
+        z.object({
+          needFunded: z.boolean().optional(),
+          needCreated: z.boolean().optional(),
+          messageReceived: z.boolean().optional(),
+          statusChanged: z.boolean().optional(),
+          systemNotifications: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        await db.upsertNotificationSettings(ctx.user.id, input);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // REGION FUNDS
+  // ============================================================================
+  regionFunds: router({
+    /** Get funds raised / needed per region */
+    summary: protectedProcedure.query(async () => {
+      return await db.getFundsRaisedByRegion();
+    }),
   }),
 });
 

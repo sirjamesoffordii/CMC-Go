@@ -3,6 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Person, District, Campus } from "../../../drizzle/schema";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
+import { MessageDialog } from "@/components/MessageDialog";
+import { GiveDialog } from "@/components/GiveDialog";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,8 @@ import {
   Check,
   X,
   Download,
+  MessageCircle,
+  Heart,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useLocation } from "wouter";
@@ -64,6 +68,20 @@ export default function People() {
 
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [messageDialogPerson, setMessageDialogPerson] = useState<{
+    personId: string;
+    personName: string;
+  } | null>(null);
+  const [giveDialogItem, setGiveDialogItem] = useState<{
+    needId: number;
+    personId: string;
+    personName: string;
+    amount?: number | null;
+    fundsReceived?: number | null;
+    cashapp?: string | null;
+    zelle?: string | null;
+    venmo?: string | null;
+  } | null>(null);
 
   // Filter state - initialize from URL query parameters
   const getStatusFilterInitial = (): Set<
@@ -1252,7 +1270,68 @@ export default function People() {
                                                           )}
                                                       </div>
                                                       {detailAccess && (
-                                                        <div className="flex items-center gap-3 flex-shrink-0">
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                                          <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 shrink-0"
+                                                            onClick={e => {
+                                                              e.stopPropagation();
+                                                              setMessageDialogPerson(
+                                                                {
+                                                                  personId:
+                                                                    person.personId,
+                                                                  personName:
+                                                                    person.name ??
+                                                                    "Unknown",
+                                                                }
+                                                              );
+                                                            }}
+                                                            title="Send message"
+                                                          >
+                                                            <MessageCircle className="h-4 w-4" />
+                                                          </Button>
+                                                          {personNeeds.length >
+                                                            0 && (
+                                                            <Button
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              className="h-8 w-8 shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                              onClick={e => {
+                                                                e.stopPropagation();
+                                                                const activeNeed =
+                                                                  personNeeds[0];
+                                                                if (
+                                                                  activeNeed
+                                                                ) {
+                                                                  setGiveDialogItem(
+                                                                    {
+                                                                      needId:
+                                                                        activeNeed.id,
+                                                                      personId:
+                                                                        person.personId,
+                                                                      personName:
+                                                                        person.name ??
+                                                                        "Unknown",
+                                                                      amount:
+                                                                        activeNeed.amount,
+                                                                      fundsReceived:
+                                                                        activeNeed.fundsReceived,
+                                                                      cashapp:
+                                                                        person.cashapp,
+                                                                      zelle:
+                                                                        person.zelle,
+                                                                      venmo:
+                                                                        person.venmo,
+                                                                    }
+                                                                  );
+                                                                }
+                                                              }}
+                                                              title="Give"
+                                                            >
+                                                              <Heart className="h-4 w-4" />
+                                                            </Button>
+                                                          )}
                                                           <span
                                                             className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
                                                               person.status ===
@@ -1343,7 +1422,59 @@ export default function People() {
                                                   )}
                                               </div>
                                               {detailAccess && (
-                                                <div className="flex items-center gap-3 flex-shrink-0">
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 shrink-0"
+                                                    onClick={e => {
+                                                      e.stopPropagation();
+                                                      setMessageDialogPerson({
+                                                        personId:
+                                                          person.personId,
+                                                        personName:
+                                                          person.name ??
+                                                          "Unknown",
+                                                      });
+                                                    }}
+                                                    title="Send message"
+                                                  >
+                                                    <MessageCircle className="h-4 w-4" />
+                                                  </Button>
+                                                  {personNeeds.length > 0 && (
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      className="h-8 w-8 shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                                      onClick={e => {
+                                                        e.stopPropagation();
+                                                        const activeNeed =
+                                                          personNeeds[0];
+                                                        if (activeNeed) {
+                                                          setGiveDialogItem({
+                                                            needId:
+                                                              activeNeed.id,
+                                                            personId:
+                                                              person.personId,
+                                                            personName:
+                                                              person.name ??
+                                                              "Unknown",
+                                                            amount:
+                                                              activeNeed.amount,
+                                                            fundsReceived:
+                                                              activeNeed.fundsReceived,
+                                                            cashapp:
+                                                              person.cashapp,
+                                                            zelle: person.zelle,
+                                                            venmo: person.venmo,
+                                                          });
+                                                        }
+                                                      }}
+                                                      title="Give"
+                                                    >
+                                                      <Heart className="h-4 w-4" />
+                                                    </Button>
+                                                  )}
                                                   <span
                                                     className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
                                                       person.status === "Yes"
@@ -1439,6 +1570,30 @@ export default function People() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
+
+      {messageDialogPerson && (
+        <MessageDialog
+          open={!!messageDialogPerson}
+          onOpenChange={open => !open && setMessageDialogPerson(null)}
+          personId={messageDialogPerson.personId}
+          personName={messageDialogPerson.personName}
+        />
+      )}
+
+      {giveDialogItem && (
+        <GiveDialog
+          open={!!giveDialogItem}
+          onOpenChange={open => !open && setGiveDialogItem(null)}
+          personId={giveDialogItem.personId}
+          personName={giveDialogItem.personName}
+          needId={giveDialogItem.needId}
+          needAmount={giveDialogItem.amount}
+          fundsReceived={giveDialogItem.fundsReceived}
+          cashapp={giveDialogItem.cashapp}
+          zelle={giveDialogItem.zelle}
+          venmo={giveDialogItem.venmo}
+        />
+      )}
     </div>
   );
 }
