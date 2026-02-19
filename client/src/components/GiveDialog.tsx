@@ -11,7 +11,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Copy, DollarSign, Wallet, MessageCircle } from "lucide-react";
+import { Copy, DollarSign, Wallet, MessageCircle, ExternalLink } from "lucide-react";
 import { MessageDialog } from "./MessageDialog";
 
 interface GiveDialogProps {
@@ -86,46 +86,51 @@ export function GiveDialog({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm font-medium">
                 <Wallet className="h-4 w-4" />
-                Ways to give
+                Send directly
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2">
                 {cashapp && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard("CashApp", cashapp)}
-                    className="font-mono"
+                  <a
+                    href={`https://cash.app/${cashapp.startsWith("$") ? cashapp : "$" + cashapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border px-4 py-2.5 bg-[#00D632] text-white hover:bg-[#00C02E] transition-colors"
+                    onClick={e => e.stopPropagation()}
                   >
-                    CashApp {cashapp}
-                    <Copy className="ml-2 h-3 w-3" />
-                  </Button>
+                    <span className="font-bold">Cash App</span>
+                    <span className="font-mono">{cashapp}</span>
+                    <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
+                )}
+                {venmo && (
+                  <a
+                    href={`https://venmo.com/${venmo.startsWith("@") ? venmo.slice(1) : venmo}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border px-4 py-2.5 bg-[#008CFF] text-white hover:bg-[#007AE0] transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <span className="font-bold">Venmo</span>
+                    <span className="font-mono">{venmo}</span>
+                    <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
                 )}
                 {zelle && (
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
+                    className="w-full justify-center gap-2 py-2.5 bg-[#6D1ED4] text-white hover:bg-[#5A18B0] border-[#6D1ED4] hover:border-[#5A18B0]"
                     onClick={() => copyToClipboard("Zelle", zelle)}
-                    className="font-mono"
                   >
-                    Zelle {zelle}
-                    <Copy className="ml-2 h-3 w-3" />
-                  </Button>
-                )}
-                {venmo && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard("Venmo", venmo)}
-                    className="font-mono"
-                  >
-                    Venmo {venmo}
-                    <Copy className="ml-2 h-3 w-3" />
+                    <span className="font-bold">Zelle</span>
+                    <span className="font-mono">{zelle}</span>
+                    <Copy className="h-3.5 w-3.5 ml-1" />
                   </Button>
                 )}
               </div>
+              <p className="text-xs text-muted-foreground">
+                Send your gift through any method above, then record the amount below.
+              </p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">

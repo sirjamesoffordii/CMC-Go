@@ -46,7 +46,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { formatStatusLabel } from "@/utils/statusLabel";
 import { canViewPersonDetails } from "@/lib/scopeCheck";
 
-export type PeoplePanelInitialFilter = {
+export type NeedPanelInitialFilter = {
   districtId?: string;
   regionId?: string;
   campusIds?: number[];
@@ -54,12 +54,15 @@ export type PeoplePanelInitialFilter = {
   needsView?: boolean;
 } | null;
 
-interface PeoplePanelProps {
+/** @deprecated Use NeedPanelInitialFilter instead */
+export type PeoplePanelInitialFilter = NeedPanelInitialFilter;
+
+interface NeedPanelProps {
   onClose: () => void;
-  initialFilter?: PeoplePanelInitialFilter;
+  initialFilter?: NeedPanelInitialFilter;
 }
 
-export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
+export function NeedPanel({ onClose, initialFilter }: NeedPanelProps) {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -1083,7 +1086,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
     return (
       <div className="h-full w-full min-w-0 bg-white border-l border-gray-300 flex flex-col">
         <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900">People</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Need Panel</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors hidden sm:block"
@@ -1489,38 +1492,7 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
 
   const filterMenuBody = (
     <>
-      <FilterCategory title="Status" defaultOpen>
-        <div className="space-y-0.5">
-          {(["Yes", "Maybe", "No", "Not Invited"] as const).map(status => {
-            const count = allPeople.filter(
-              (p: Person) => p.status === status
-            ).length;
-            const isChecked = statusFilter.has(status);
-            return (
-              <label
-                key={status}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={checked => {
-                    const newFilter = new Set(statusFilter);
-                    if (checked) newFilter.add(status);
-                    else newFilter.delete(status);
-                    setStatusFilter(newFilter);
-                  }}
-                />
-                <span className="text-sm flex-1">
-                  {formatStatusLabel(status)}
-                </span>
-                <span className="text-xs text-gray-500">({count})</span>
-              </label>
-            );
-          })}
-        </div>
-      </FilterCategory>
-
-      <FilterCategory title="Need">
+      <FilterCategory title="Need Type" defaultOpen>
         <div className="space-y-0.5">
           {(
             [
@@ -1528,25 +1500,14 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
               "Transportation",
               "Housing",
               "Other",
-              "Needs Met",
             ] as const
           ).map(need => {
-            let count = 0;
-            if (need === "Needs Met") {
-              count = allPeople.filter((p: Person) => {
-                const personMetNeeds = allNeeds.filter(
-                  n => n.personId === p.personId && !n.isActive
-                );
-                return personMetNeeds.length > 0;
-              }).length;
-            } else {
-              count = allPeople.filter((p: Person) => {
-                const personActiveNeeds = allNeeds.filter(
-                  n => n.personId === p.personId && n.isActive
-                );
-                return personActiveNeeds.some(n => n.type === need);
-              }).length;
-            }
+            const count = allPeople.filter((p: Person) => {
+              const personActiveNeeds = allNeeds.filter(
+                n => n.personId === p.personId && n.isActive
+              );
+              return personActiveNeeds.some(n => n.type === need);
+            }).length;
             const isChecked = needFilter.has(need);
             return (
               <label
@@ -1570,92 +1531,39 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
         </div>
       </FilterCategory>
 
-      <FilterCategory title="Role">
-        <div className="space-y-0.5 sm:max-h-40 sm:overflow-y-auto">
-          {uniqueRoles.map(role => {
-            const count = allPeople.filter(
-              (p: Person) => p.primaryRole === role
-            ).length;
-            const isChecked = roleFilter.has(role);
-            return (
-              <label
-                key={role}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={checked => {
-                    const newFilter = new Set(roleFilter);
-                    if (checked) newFilter.add(role);
-                    else newFilter.delete(role);
-                    setRoleFilter(newFilter);
-                  }}
-                />
-                <span className="text-sm flex-1">{role}</span>
-                <span className="text-xs text-gray-500">({count})</span>
-              </label>
-            );
-          })}
-        </div>
-      </FilterCategory>
-
-      <FilterCategory title="Family & Guest">
+      <FilterCategory title="Funding Status">
         <div className="space-y-0.5">
           {[
-            { key: "spouse" as const, label: "Spouse" },
-            { key: "children" as const, label: "Children" },
-            { key: "guest" as const, label: "Guest" },
-          ].map(({ key, label }) => {
-            const count = allPeople.filter((p: Person) => {
-              if (key === "spouse") return p.spouseAttending;
-              if (key === "children")
-                return p.childrenCount && p.childrenCount > 0;
-              if (key === "guest") return p.guestsCount && p.guestsCount > 0;
-              return false;
-            }).length;
-            const isChecked = familyGuestFilter.has(key);
-            return (
-              <label
-                key={key}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
-              >
-                <Checkbox
-                  checked={isChecked}
-                  onCheckedChange={checked => {
-                    const newFilter = new Set(familyGuestFilter);
-                    if (checked) newFilter.add(key);
-                    else newFilter.delete(key);
-                    setFamilyGuestFilter(newFilter);
-                  }}
-                />
-                <span className="text-sm flex-1">{label}</span>
-                <span className="text-xs text-gray-500">({count})</span>
-              </label>
-            );
-          })}
-        </div>
-      </FilterCategory>
-
-      <FilterCategory title="Deposit paid">
-        <div className="space-y-0.5">
-          {[
-            { value: true, label: "Paid" },
-            { value: false, label: "Not Paid" },
+            { value: "unfunded" as const, label: "Needs Funding" },
+            { value: "partial" as const, label: "Partially Funded" },
+            { value: "funded" as const, label: "Fully Funded" },
           ].map(({ value, label }) => {
             const count = allPeople.filter((p: Person) => {
-              const hasDepositPaid = p.depositPaid === true;
-              return hasDepositPaid === value;
+              const personActiveNeeds = allNeeds.filter(
+                n => n.personId === p.personId && n.isActive
+              );
+              return personActiveNeeds.some(n => {
+                const received = n.fundsReceived ?? 0;
+                const amount = n.amount ?? 0;
+                if (value === "unfunded") return received === 0;
+                if (value === "partial") return received > 0 && amount > 0 && received < amount;
+                if (value === "funded") return amount > 0 && received >= amount;
+                return false;
+              });
             }).length;
-            const isChecked = depositPaidFilter === value;
+            const isChecked = statusFilter.has(value as never);
             return (
               <label
-                key={value.toString()}
+                key={value}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer"
               >
                 <Checkbox
                   checked={isChecked}
                   onCheckedChange={checked => {
-                    setDepositPaidFilter(checked ? value : null);
+                    const newFilter = new Set(statusFilter);
+                    if (checked) newFilter.add(value as never);
+                    else newFilter.delete(value as never);
+                    setStatusFilter(newFilter);
                   }}
                 />
                 <span className="text-sm flex-1">{label}</span>
@@ -1663,6 +1571,35 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
               </label>
             );
           })}
+        </div>
+      </FilterCategory>
+
+      <FilterCategory title="Resolved Needs">
+        <div className="space-y-0.5">
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer">
+            <Checkbox
+              checked={needsMetOnly}
+              onCheckedChange={checked => setNeedsMetOnly(!!checked)}
+            />
+            <span className="text-sm flex-1">Needs Met</span>
+            <span className="text-xs text-gray-500">
+              ({allPeople.filter((p: Person) =>
+                allNeeds.some(n => n.personId === p.personId && !n.isActive)
+              ).length})
+            </span>
+          </label>
+          <label className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-gray-100 cursor-pointer">
+            <Checkbox
+              checked={fundsReceivedOnly}
+              onCheckedChange={checked => setFundsReceivedOnly(!!checked)}
+            />
+            <span className="text-sm flex-1">Has Funds Received</span>
+            <span className="text-xs text-gray-500">
+              ({allPeople.filter((p: Person) =>
+                allNeeds.some(n => n.personId === p.personId && (n.fundsReceived ?? 0) > 0)
+              ).length})
+            </span>
+          </label>
         </div>
       </FilterCategory>
     </>
@@ -1938,28 +1875,17 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
             const personNeeds = allNeeds.filter(
               n => n.personId === person.personId
             );
+            const activeNeeds = personNeeds.filter(n => n.isActive);
             const hasDetailAccess = canViewPersonDetails(user, person);
             return (
               <div
                 key={person.personId}
-                className={`w-full min-w-0 ${indentClass} py-2 ${hasDetailAccess ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"} transition-colors border-b border-gray-100 last:border-b-0`}
+                className={`w-full min-w-0 ${indentClass} py-3 ${hasDetailAccess ? "hover:bg-gray-50 cursor-pointer" : "cursor-default"} transition-colors border-b border-gray-100 last:border-b-0`}
                 onClick={() => hasDetailAccess && handlePersonClick(person)}
               >
-                <div className="flex items-center justify-between">
+                {/* Person name + action buttons row */}
+                <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    {hasDetailAccess && (
-                      <div
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                          person.status === "Yes"
-                            ? "bg-emerald-700"
-                            : person.status === "Maybe"
-                              ? "bg-yellow-600"
-                              : person.status === "No"
-                                ? "bg-red-700"
-                                : "bg-gray-500"
-                        }`}
-                      />
-                    )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-gray-900 text-sm truncate">
                         {person.name || person.personId || "Person"}
@@ -1971,8 +1897,8 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
-                    {/* Message button - always show for authenticated users */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Message button */}
                     {user && (
                       <Button
                         variant="ghost"
@@ -1990,15 +1916,15 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                         <MessageCircle className="h-4 w-4" />
                       </Button>
                     )}
-                    {/* Give button - show when person has an active need */}
-                    {user && personNeeds.some(n => n.isActive) && (
+                    {/* Give button */}
+                    {user && activeNeeds.length > 0 && (
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0 text-green-600 hover:text-green-700 hover:bg-green-50"
                         onClick={e => {
                           e.stopPropagation();
-                          const activeNeed = personNeeds.find(n => n.isActive);
+                          const activeNeed = activeNeeds[0];
                           if (activeNeed) {
                             setGiveDialogItem({
                               needId: activeNeed.id,
@@ -2017,99 +1943,73 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                         <Heart className="h-4 w-4" />
                       </Button>
                     )}
-                    {/* Need badges - show when need filter is active */}
-                    {hasDetailAccess &&
-                      needFilter.size > 0 &&
-                      personNeeds.length > 0 &&
-                      personNeeds.map(need => (
+                  </div>
+                </div>
+
+                {/* Need badges — always visible */}
+                {activeNeeds.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-1.5">
+                    {activeNeeds.map(need => {
+                      const received = need.fundsReceived ?? 0;
+                      const amount = need.amount ?? 0;
+                      const pct = amount > 0 ? Math.min((received / amount) * 100, 100) : 0;
+                      const isFunded = amount > 0 && received >= amount;
+                      return (
                         <span
                           key={need.id}
                           className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${
-                            need.isActive
-                              ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                              : "bg-green-50 text-green-700 border border-green-200 line-through"
+                            isFunded
+                              ? "bg-green-50 text-green-700 border border-green-200"
+                              : pct > 0
+                                ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                                : "bg-red-50 text-red-700 border border-red-200"
                           }`}
                         >
                           <span className="font-medium">{need.type}</span>
-                          {need.amount != null && need.amount > 0 && (
+                          {amount > 0 && (
                             <span>
-                              $
-                              {(need.amount / 100).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
+                              ${(received / 100).toFixed(0)}/${(amount / 100).toFixed(0)}
                             </span>
                           )}
-                          {need.fundsReceived != null &&
-                            need.fundsReceived > 0 && (
-                              <span className="text-green-600">
-                                (rcvd $
-                                {(need.fundsReceived / 100).toLocaleString(
-                                  "en-US",
-                                  {
-                                    minimumFractionDigits: 2,
-                                    maximumFractionDigits: 2,
-                                  }
-                                )}
-                                )
-                              </span>
-                            )}
-                          {!need.isActive && (
-                            <span
-                              className="text-green-600 font-semibold no-underline"
-                              style={{ textDecoration: "none" }}
-                            >
-                              ✓
-                            </span>
-                          )}
+                          {isFunded && <span className="font-semibold">✓</span>}
                         </span>
-                      ))}
-                    {/* Show last updated when "Last Updated" sort is active */}
-                    {hasDetailAccess &&
-                      order === "Last Updated" &&
-                      (person.lastEdited || person.statusLastUpdated) && (
-                        <span className="text-xs text-gray-500">
-                          {person.lastEdited
-                            ? new Date(person.lastEdited).toLocaleDateString()
-                            : person.statusLastUpdated
-                              ? new Date(
-                                  person.statusLastUpdated
-                                ).toLocaleDateString()
-                              : ""}
-                        </span>
-                      )}
-                    {/* Show deposit paid badge when deposit filter is active */}
-                    {hasDetailAccess &&
-                      depositPaidFilter !== null &&
-                      person.depositPaid && (
-                        <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                          <span className="font-medium">Deposit</span>
-                          <span className="text-blue-600 font-semibold">✓</span>
-                        </span>
-                      )}
+                      );
+                    })}
                   </div>
-                </div>
-                {/* Family & Guest info - show when family/guest filter is active */}
-                {hasDetailAccess && familyGuestFilter.size > 0 && (
-                  <div className="mt-1 ml-4 flex flex-wrap gap-2">
-                    {person.spouseAttending && (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                        Spouse
-                      </span>
-                    )}
-                    {person.childrenCount != null &&
-                      person.childrenCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                          {person.childrenCount}{" "}
-                          {person.childrenCount === 1 ? "Child" : "Children"}
+                )}
+
+                {/* Funding progress bar */}
+                {activeNeeds.length > 0 && (() => {
+                  const totalAmount = activeNeeds.reduce((s, n) => s + (n.amount ?? 0), 0);
+                  const totalReceived = activeNeeds.reduce((s, n) => s + (n.fundsReceived ?? 0), 0);
+                  if (totalAmount <= 0) return null;
+                  const progressPct = Math.min((totalReceived / totalAmount) * 100, 100);
+                  return (
+                    <div className="mb-1.5">
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="text-gray-500">
+                          ${(totalReceived / 100).toFixed(0)} of ${(totalAmount / 100).toFixed(0)}
                         </span>
-                      )}
-                    {person.guestsCount != null && person.guestsCount > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
-                        {person.guestsCount}{" "}
-                        {person.guestsCount === 1 ? "Guest" : "Guests"}
-                      </span>
-                    )}
+                        <span className="font-medium text-gray-700">{Math.round(progressPct)}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${progressPct >= 100 ? "bg-green-500" : progressPct > 0 ? "bg-yellow-500" : "bg-gray-300"}`}
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Contact info — show payment methods */}
+                {hasDetailAccess && (person.cashapp || person.zelle || person.venmo || person.phone || person.email) && (
+                  <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-500">
+                    {person.phone && <span>📱 {person.phone}</span>}
+                    {person.email && <span>✉️ {person.email}</span>}
+                    {person.cashapp && <span className="text-green-600 font-medium">CashApp {person.cashapp}</span>}
+                    {person.venmo && <span className="text-blue-600 font-medium">Venmo {person.venmo}</span>}
+                    {person.zelle && <span className="text-purple-600 font-medium">Zelle {person.zelle}</span>}
                   </div>
                 )}
               </div>
@@ -2160,71 +2060,6 @@ export function PeoplePanel({ onClose, initialFilter }: PeoplePanelProps) {
                     {summaryPeopleCount} people
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-1 sm:gap-x-2 gap-y-0.5 min-w-[170px] sm:min-w-[200px]">
-                  {(
-                    [
-                      {
-                        status: "Yes" as const,
-                        dotClass: "bg-emerald-700",
-                      },
-                      {
-                        status: "Maybe" as const,
-                        dotClass: "bg-yellow-600",
-                      },
-                      {
-                        status: "No" as const,
-                        dotClass: "bg-red-700",
-                      },
-                      {
-                        status: "Not Invited" as const,
-                        dotClass: "bg-gray-500",
-                      },
-                    ] as const
-                  ).map(({ status, dotClass }) => {
-                    const isActive = statusFilter.has(status);
-                    const label =
-                      status === "Not Invited" ? "Not Invited Yet" : status;
-                    return (
-                      <button
-                        key={status}
-                        type="button"
-                        onClick={() => {
-                          setStatusFilter(prev => {
-                            const next = new Set(prev);
-                            if (next.has(status)) {
-                              next.delete(status);
-                            } else {
-                              next.add(status);
-                            }
-                            return next;
-                          });
-                        }}
-                        className={`inline-flex items-center gap-1 transition-all duration-150 active:scale-95 ${
-                          isActive
-                            ? "text-blue-700"
-                            : "text-slate-500 hover:text-slate-800"
-                        }`}
-                      >
-                        <span
-                          className={`w-2.5 h-2.5 rounded-full ${dotClass}`}
-                        />
-                        <span
-                          className={`leading-none whitespace-nowrap ${isActive ? "font-semibold" : "font-medium"}`}
-                        >
-                          {label}:
-                        </span>
-                        <span className="tabular-nums leading-none font-semibold">
-                          {peopleOnlySummary.statusCounts[status]}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div
-                  className="h-5 w-px bg-gray-200 shrink-0 hidden sm:block"
-                  aria-hidden="true"
-                />
 
                 <div className="inline-flex flex-col items-start gap-y-0.5 shrink-0 min-w-[130px]">
                   <button

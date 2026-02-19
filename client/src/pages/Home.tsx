@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
-import { PeoplePanel } from "@/components/PeoplePanel";
+import { NeedPanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { MobileDrawer } from "@/components/MobileDrawer";
@@ -1412,7 +1412,7 @@ export default function Home() {
                   className="absolute top-0 left-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
                   onMouseDown={handlePeopleMouseDown}
                 />
-                <PeoplePanel
+                <NeedPanel
                   onClose={() => {
                     setPeoplePanelOpen(false);
                     setPeoplePanelOpenFilter(null);
@@ -1434,8 +1434,8 @@ export default function Home() {
             }}
             title={
               peoplePanelOpenFilter?.districtId
-                ? `People — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
-                : "People"
+                ? `Need Panel — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
+                : "Need Panel"
             }
             initialSnap="half"
             coverToolbar
@@ -1446,7 +1446,7 @@ export default function Home() {
                 : undefined
             }
           >
-            <PeoplePanel
+            <NeedPanel
               onClose={() => {
                 setPeoplePanelOpen(false);
                 setPeoplePanelOpenFilter(null);
@@ -1457,7 +1457,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
+      {/* Need Panel Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
       {!peoplePanelOpen &&
         (!isMobile || !(selectedDistrictId || nationalPanelOpen)) && (
           <Tooltip>
@@ -1489,7 +1489,7 @@ export default function Home() {
                 `}
                 >
                   <span className="inline-block whitespace-nowrap select-none">
-                    People
+                    Need Panel
                   </span>
                 </button>
               ) : (
@@ -1523,7 +1523,7 @@ export default function Home() {
                   `}
                   >
                     <span className="inline-block whitespace-nowrap select-none">
-                      People
+                      Need Panel
                     </span>
                   </button>
                 </div>
@@ -1531,7 +1531,7 @@ export default function Home() {
             </TooltipTrigger>
             {!user && (
               <TooltipContent side="left">
-                <p>Please log in to view people</p>
+                <p>Please log in to view needs</p>
               </TooltipContent>
             )}
           </Tooltip>
