@@ -436,47 +436,97 @@ async function seed() {
               )
             : null;
 
-        // ── Contact / payment / profile data (~60% of people get some) ──
-        const hasCashapp = Math.random() > 0.45; // ~55%
-        const hasVenmo = Math.random() > 0.4; // ~60%
-        const hasZelle = Math.random() > 0.55; // ~45%
-        const hasPhone = Math.random() > 0.25; // ~75%
-        const hasEmail = Math.random() > 0.2; // ~80%
-        const hasMighty = Math.random() > 0.5; // ~50%
+        // ── Contact / payment / profile data (most people have these) ──
+        const hasCashapp = Math.random() > 0.08; // ~92%
+        const hasVenmo = Math.random() > 0.1; // ~90%
+        const hasZelle = Math.random() > 0.12; // ~88%
+        const hasPhone = Math.random() > 0.05; // ~95%
+        const hasEmail = Math.random() > 0.05; // ~95%
+        const hasMighty = Math.random() > 0.15; // ~85%
 
         const cashappHandles = [
-          "$sirjamesgofford", "$missionaryjoe", "$campuschialpha",
-          "$givehope2026", "$cmcgiver", "$faithfirst", "$sendlight",
-          "$missionfield", "$goandgive", "$reachcampus",
-          "$lightbearer", "$servefirst", "$campusfaith",
+          "$sirjamesgofford",
+          "$missionaryjoe",
+          "$campuschialpha",
+          "$givehope2026",
+          "$cmcgiver",
+          "$faithfirst",
+          "$sendlight",
+          "$missionfield",
+          "$goandgive",
+          "$reachcampus",
+          "$lightbearer",
+          "$servefirst",
+          "$campusfaith",
         ];
         const venmoHandles = [
-          "@james-gofford", "@missionary-joe", "@chi-alpha-campus",
-          "@hope-missions", "@cmc-giving", "@faith-forward", "@send-light",
-          "@mission-field", "@go-give", "@reach-campus",
-          "@light-bearer", "@serve-first", "@campus-faith",
+          "@james-gofford",
+          "@missionary-joe",
+          "@chi-alpha-campus",
+          "@hope-missions",
+          "@cmc-giving",
+          "@faith-forward",
+          "@send-light",
+          "@mission-field",
+          "@go-give",
+          "@reach-campus",
+          "@light-bearer",
+          "@serve-first",
+          "@campus-faith",
         ];
         const zelleNumbers = [
-          "346-303-0884", "832-555-1234", "713-555-4567",
-          "281-555-7890", "936-555-2345", "409-555-6789",
-          "979-555-3456", "254-555-8901", "512-555-1357",
-          "210-555-2468", "903-555-3579", "817-555-4680",
+          "346-303-0884",
+          "832-555-1234",
+          "713-555-4567",
+          "281-555-7890",
+          "936-555-2345",
+          "409-555-6789",
+          "979-555-3456",
+          "254-555-8901",
+          "512-555-1357",
+          "210-555-2468",
+          "903-555-3579",
+          "817-555-4680",
         ];
         const phoneNumbers = [
-          "(346) 303-0884", "(832) 555-1234", "(713) 555-4567",
-          "(281) 555-7890", "(936) 555-2345", "(409) 555-6789",
-          "(979) 555-3456", "(254) 555-8901", "(512) 555-1357",
-          "(210) 555-2468", "(903) 555-3579", "(817) 555-4680",
-          "(214) 555-1111", "(469) 555-2222", "(972) 555-3333",
+          "(346) 303-0884",
+          "(832) 555-1234",
+          "(713) 555-4567",
+          "(281) 555-7890",
+          "(936) 555-2345",
+          "(409) 555-6789",
+          "(979) 555-3456",
+          "(254) 555-8901",
+          "(512) 555-1357",
+          "(210) 555-2468",
+          "(903) 555-3579",
+          "(817) 555-4680",
+          "(214) 555-1111",
+          "(469) 555-2222",
+          "(972) 555-3333",
         ];
         const emailDomains = [
-          "gmail.com", "outlook.com", "yahoo.com", "chialpha.com",
-          "university.edu", "campus.org", "missions.org",
+          "gmail.com",
+          "outlook.com",
+          "yahoo.com",
+          "chialpha.com",
+          "university.edu",
+          "campus.org",
+          "missions.org",
         ];
         const mightyIds = [
-          "34562010", "27068840", "31452789", "28901345",
-          "35678901", "29012345", "32345678", "26789012",
-          "33456789", "30123456", "34890123", "27567890",
+          "34562010",
+          "27068840",
+          "31452789",
+          "28901345",
+          "35678901",
+          "29012345",
+          "32345678",
+          "26789012",
+          "33456789",
+          "30123456",
+          "34890123",
+          "27567890",
         ];
 
         const personCashapp = hasCashapp
@@ -709,7 +759,9 @@ async function seed() {
           personId: person.personId,
           category: "INTERNAL",
           content:
-            messageTemplates[Math.floor(Math.random() * messageTemplates.length)],
+            messageTemplates[
+              Math.floor(Math.random() * messageTemplates.length)
+            ],
           createdAt: messageDate,
           createdBy: m % 2 === 0 ? "leader@chialpha.com" : person.name,
           noteType: "MESSAGE",

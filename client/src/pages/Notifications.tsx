@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -24,9 +22,8 @@ import {
 import { useLocation } from "wouter";
 
 export default function Notifications() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   const [, setLocation] = useLocation();
-  const [showSettings, setShowSettings] = useState(false);
   const utils = trpc.useUtils();
 
   const { data: notifications = [], isLoading: notifsLoading } =
@@ -128,18 +125,83 @@ export default function Notifications() {
               <span className="hidden sm:inline">Mark all read</span>
             </Button>
           )}
-          <Button
-            variant={showSettings ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-            className="min-h-[44px]"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
         </div>
       </div>
 
-      {showSettings && settings && (
+      {/* ── Notifications ── */}
+      {notifications.length === 0 ? (
+        <Card className="mb-6">
+          <CardContent className="py-12 text-center">
+            <BellOff className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">
+              No notifications
+            </p>
+            <p className="text-sm text-gray-500">
+              You're all caught up! Notifications will appear here when there's
+              activity.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-2 mb-6">
+          {notifications.map(notif => (
+            <Card
+              key={notif.id}
+              className={`transition-all ${
+                !notif.isRead
+                  ? "border-l-4 border-l-red-500 bg-red-50/30"
+                  : "opacity-75"
+              }`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5">{getNotifIcon(notif.type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`font-medium text-sm ${!notif.isRead ? "text-gray-900" : "text-gray-600"}`}
+                      >
+                        {notif.title}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {new Date(notif.createdAt).toLocaleDateString(
+                          undefined,
+                          {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          }
+                        )}
+                      </span>
+                    </div>
+                    {notif.body && (
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        {notif.body}
+                      </p>
+                    )}
+                  </div>
+                  {!notif.isRead && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        markRead.mutate({ notificationId: notif.id })
+                      }
+                      className="shrink-0 min-h-[44px]"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* ── Settings ── */}
+      {settings && (
         <Card className="mb-6">
           <CardContent className="p-4 sm:p-6">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -224,77 +286,6 @@ export default function Notifications() {
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {notifications.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BellOff className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-lg font-medium text-gray-900 mb-2">
-              No notifications
-            </p>
-            <p className="text-sm text-gray-500">
-              You're all caught up! Notifications will appear here when there's
-              activity.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {notifications.map(notif => (
-            <Card
-              key={notif.id}
-              className={`transition-all ${
-                !notif.isRead
-                  ? "border-l-4 border-l-red-500 bg-red-50/30"
-                  : "opacity-75"
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5">{getNotifIcon(notif.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`font-medium text-sm ${!notif.isRead ? "text-gray-900" : "text-gray-600"}`}
-                      >
-                        {notif.title}
-                      </span>
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {new Date(notif.createdAt).toLocaleDateString(
-                          undefined,
-                          {
-                            month: "short",
-                            day: "numeric",
-                            hour: "numeric",
-                            minute: "2-digit",
-                          }
-                        )}
-                      </span>
-                    </div>
-                    {notif.body && (
-                      <p className="text-sm text-gray-500 mt-0.5">
-                        {notif.body}
-                      </p>
-                    )}
-                  </div>
-                  {!notif.isRead && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        markRead.mutate({ notificationId: notif.id })
-                      }
-                      className="shrink-0 min-h-[44px]"
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   );

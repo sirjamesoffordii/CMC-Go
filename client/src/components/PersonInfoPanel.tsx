@@ -9,12 +9,7 @@ import { Textarea } from "./ui/textarea";
 import { Progress } from "./ui/progress";
 import { Separator } from "./ui/separator";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { BottomSheet } from "./ui/bottom-sheet";
 import { GiveDialog } from "./GiveDialog";
 import { toast } from "sonner";
@@ -271,21 +266,6 @@ export function PersonInfoPanel({
               <span className="text-[11px] font-medium">Email</span>
             </div>
           )}
-
-          {/* In-App Message (scroll to thread) */}
-          <button
-            type="button"
-            onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="flex-1 flex flex-col items-center gap-1 py-2 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors text-orange-700 relative"
-          >
-            <MessageSquare className="h-5 w-5" />
-            <span className="text-[11px] font-medium">Message</span>
-            {messages.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                {messages.length > 9 ? "9+" : messages.length}
-              </span>
-            )}
-          </button>
         </div>
 
         {/* Contact details (subtle text below buttons) */}
@@ -333,10 +313,7 @@ export function PersonInfoPanel({
                   const amount = need.amount ?? 0;
                   const pct =
                     amount > 0
-                      ? Math.min(
-                          Math.round((received / amount) * 100),
-                          100
-                        )
+                      ? Math.min(Math.round((received / amount) * 100), 100)
                       : 0;
                   const isFunded = amount > 0 && received >= amount;
 
@@ -512,9 +489,7 @@ export function PersonInfoPanel({
                   <p className="text-sm font-medium text-gray-900">
                     US Missions Giving
                   </p>
-                  <p className="text-xs text-gray-500">
-                    giving.ag.org/donate
-                  </p>
+                  <p className="text-xs text-gray-500">giving.ag.org/donate</p>
                 </div>
                 <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-red-600" />
               </a>
@@ -522,7 +497,8 @@ export function PersonInfoPanel({
               {/* No payment methods fallback */}
               {!person.cashapp && !person.venmo && !person.zelle && (
                 <p className="text-xs text-gray-400 text-center py-1">
-                  No CashApp, Venmo, or Zelle on file — use US Missions Giving above or contact directly.
+                  No CashApp, Venmo, or Zelle on file — use US Missions Giving
+                  above or contact directly.
                 </p>
               )}
             </div>
