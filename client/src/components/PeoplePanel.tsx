@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Person, District, Campus } from "../../../drizzle/schema";
-import { PersonDetailsDialog } from "./PersonDetailsDialog";
+import { PersonInfoPanel } from "./PersonInfoPanel";
 import { ImportModal } from "./ImportModal";
 import { MessageDialog } from "./MessageDialog";
 import { GiveDialog } from "./GiveDialog";
@@ -2488,10 +2488,12 @@ export function NeedPanel({ onClose, initialFilter }: NeedPanelProps) {
         })()}
       </div>
 
-      <PersonDetailsDialog
+      <PersonInfoPanel
         person={selectedPerson}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        allCampuses={allCampuses}
+        allDistricts={allDistricts}
       />
       <ImportModal open={importModalOpen} onOpenChange={setImportModalOpen} />
 
