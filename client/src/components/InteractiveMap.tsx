@@ -1,12 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  useMemo,
-  memo,
-  useCallback,
-} from "react";
+import { useEffect, useRef, useState, useMemo, memo, useCallback } from "react";
 import { District } from "../../../drizzle/schema";
 import { trpc } from "@/lib/trpc";
 import { calculateDistrictStats, DistrictStats } from "@/utils/districtStats";
@@ -1166,47 +1158,14 @@ export const InteractiveMap = memo(function InteractiveMap({
 
   // Metric toggles state
   const [activeMetrics, setActiveMetrics] = useState<Set<string>>(new Set());
-  const [metricsExpanded, setMetricsExpanded] = useState(true);
   const shouldCollapseForNationalMobile =
     isMobile &&
     scopeFilter === "NATIONAL" &&
     (!!selectedDistrictId || isTableOpen);
 
-  useEffect(() => {
-    if (shouldCollapseForNationalMobile) {
-      setMetricsExpanded(false);
-    } else {
-      setMetricsExpanded(true);
-    }
-  }, [shouldCollapseForNationalMobile]);
-
-  // Line width matches the label above (Chi Alpha / region name)
+  // Chi Alpha label refs (for measuring / accessibility)
   const labelRef = useRef<HTMLSpanElement>(null);
   const labelCRef = useRef<HTMLSpanElement>(null);
-  const [labelWidthPx, setLabelWidthPx] = useState(0);
-  const [labelCWidthPx, setLabelCWidthPx] = useState(0);
-  useLayoutEffect(() => {
-    const labelEl = labelRef.current;
-    const labelCEl = labelCRef.current;
-    if (!labelEl && !labelCEl) return;
-    const ro = new ResizeObserver(() => {
-      if (labelEl) {
-        setLabelWidthPx(labelEl.offsetWidth);
-      }
-      if (labelCEl) {
-        setLabelCWidthPx(labelCEl.offsetWidth);
-      }
-    });
-    if (labelEl) {
-      ro.observe(labelEl);
-      setLabelWidthPx(labelEl.offsetWidth);
-    }
-    if (labelCEl) {
-      ro.observe(labelCEl);
-      setLabelCWidthPx(labelCEl.offsetWidth);
-    }
-    return () => ro.disconnect();
-  }, []);
 
   // Hovered region for metric labels (shows region name on hover)
   const [hoveredRegionLabel, setHoveredRegionLabel] = useState<string | null>(
@@ -2574,7 +2533,7 @@ export const InteractiveMap = memo(function InteractiveMap({
       }}
     >
       <div className="relative w-full h-full">
-        {/* Top Right - Chi Alpha label + metrics (shrink when district panel open) */}
+        {/* Top Right - Chi Alpha label */}
         <div
           className={`absolute right-0 z-50 flex flex-col items-end gap-0.5 bg-transparent transition-all duration-300 ${
             isMobile ? "top-6" : "top-5 sm:top-6"
@@ -2605,189 +2564,95 @@ export const InteractiveMap = memo(function InteractiveMap({
               C
             </span>
           </div>
-
-          {/* "metrics" label + horizontal line (on hover) + collapsible metrics */}
-          <div
-            className={`flex flex-col items-end w-full bg-transparent transition-all duration-300 ${selectedDistrictId ? "mt-2" : "mt-3"} ${selectedDistrictId ? "max-w-none sm:max-w-[12rem]" : "max-w-none sm:max-w-[16rem]"}`}
-          >
-            <button
-              onClick={() => setMetricsExpanded(!metricsExpanded)}
-              className="group flex flex-row items-center justify-end w-full gap-1 py-0 px-0.5 -my-1 -mx-0.5"
-              aria-label={
-                metricsExpanded ? "Collapse metrics" : "Expand metrics"
-              }
-            >
-              <div
-                className={`h-px bg-slate-400 relative z-10 origin-right ${
-                  metricsExpanded
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                } ml-4`}
-                style={{
-                  width: labelWidthPx
-                    ? `${isMobile ? Math.round(labelWidthPx * 0.92) : labelWidthPx}px`
-                    : undefined,
-                  transform: metricsExpanded ? "scaleX(1)" : "scaleX(0)",
-                  transition:
-                    "opacity 0.25s ease-out, transform 1s cubic-bezier(0.22, 1, 0.36, 1)",
-                  transitionDelay: metricsExpanded ? "0ms" : "1s, 0ms", // fade after line recedes
-                }}
-              />
-              <span
-                className={`font-medium text-slate-500 uppercase tracking-wider leading-none shrink-0 ${isMobile ? "text-[9px]" : "text-[10px]"}`}
-              >
-                Metrics
-              </span>
-              <svg
-                className={`text-slate-400 group-hover:text-slate-600 transition-all duration-300 ease-out flex-shrink-0 w-3.5 h-3.5 ${
-                  metricsExpanded ? "rotate-180" : ""
-                }`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-
-            {/* Metrics panel: line expands first; metrics slide out from the line one by one */}
-            <div
-              className="relative overflow-hidden w-full bg-transparent"
-              style={{
-                transition:
-                  "max-height 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease-out",
-                transitionDelay: metricsExpanded ? "0.4s" : "0ms",
-                maxHeight: metricsExpanded ? "500px" : "0px",
-                opacity: metricsExpanded ? 1 : 0,
-              }}
-            >
-              <div
-                className={`flex flex-col items-end pt-0 pr-1 mt-1.5 overflow-hidden transition-all duration-300 ${isMobile ? "gap-1" : selectedDistrictId ? "gap-2" : "gap-3"}`}
-              >
-                {/* Going - closest to line: slides out first, back in last */}
-                <button
-                  data-metric-toggle="yes"
-                  onClick={() => toggleMetric("yes")}
-                  className={`flex items-center transition-all hover:scale-105 w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
-                  style={{
-                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded
-                      ? "translateX(0)"
-                      : "translateX(100%)",
-                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
-                    transitionDelay: metricsExpanded ? "0.15s" : "0.9s",
-                  }}
-                >
-                  <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
-                    style={{
-                      lineHeight: "1",
-                      minWidth: isMobile
-                        ? "4rem"
-                        : selectedDistrictId
-                          ? "6rem"
-                          : "8.5rem",
-                      textAlign: "right",
-                    }}
-                  >
-                    Going
-                  </span>
-                  <span
-                    className={`font-semibold text-slate-900 tabular-nums ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
-                    style={{
-                      lineHeight: "1",
-                      width: isMobile ? "2.5rem" : "4rem",
-                      textAlign: "center",
-                    }}
-                  >
-                    {showPublicPlaceholder ? "—" : displayedTotals.yes}
-                  </span>
-                  <div
-                    className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3.5 h-3.5" : "w-6 h-6"} ${
-                      activeMetrics.has("yes")
-                        ? "bg-emerald-700 border-emerald-700"
-                        : "border-slate-300 hover:border-emerald-600 bg-white"
-                    }`}
-                    style={{
-                      boxShadow: activeMetrics.has("yes")
-                        ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
-                        : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
-                    }}
-                  >
-                    {activeMetrics.has("yes") && (
-                      <svg
-                        className="w-full h-full text-white"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={3}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                </button>
-                {/* Invited count - underneath Going */}
-                <div
-                  className={`flex items-center w-full justify-end min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
-                  style={{
-                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))",
-                    transform: metricsExpanded
-                      ? "translateX(0)"
-                      : "translateX(100%)",
-                    transition: "transform 1.1s cubic-bezier(0.22, 1, 0.36, 1)",
-                    transitionDelay: metricsExpanded ? "0.45s" : "0.6s",
-                  }}
-                >
-                  <span
-                    className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
-                    style={{
-                      lineHeight: "1",
-                      minWidth: isMobile
-                        ? "4rem"
-                        : selectedDistrictId
-                          ? "6rem"
-                          : "8.5rem",
-                      textAlign: "right",
-                    }}
-                  >
-                    Invited
-                  </span>
-                  <span
-                    className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
-                    style={{
-                      lineHeight: "1",
-                      width: isMobile ? "2.5rem" : "4rem",
-                      textAlign: "center",
-                    }}
-                  >
-                    {showPublicPlaceholder ? "—" : displayedTotals.invited}
-                  </span>
-                  <span
-                    className={`font-normal text-slate-400 tracking-tight tabular-nums ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-lg"}`}
-                    style={{ lineHeight: "1" }}
-                  >
-                    / {showPublicPlaceholder ? "—" : displayedTotals.total}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* Top Left Needs (shrink when district panel open) */}
+        {/* Top Left - Invited, Going (across from Chi Alpha) + Needs */}
         <div
           className={`absolute left-0 z-40 flex flex-col items-start transition-all duration-300 ${selectedDistrictId ? "top-5 sm:top-5 gap-1" : "top-5 sm:top-6 gap-1 sm:gap-2"} ${isMobile ? "pl-4" : "pl-1 sm:pl-2"}`}
         >
+          {/* Invited + Going - top left, across from Chi Alpha */}
+          <div
+            className="flex flex-col items-start gap-y-0.5"
+            style={{ filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1))" }}
+          >
+            <div
+              className={`flex items-center min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
+            >
+              <span
+                className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
+                style={{ lineHeight: "1" }}
+              >
+                Invited
+              </span>
+              <span
+                className={`font-semibold text-slate-900 tracking-tight tabular-nums ${isMobile ? "text-base" : selectedDistrictId ? "text-xl md:text-2xl" : "text-xl md:text-4xl"}`}
+                style={{
+                  lineHeight: "1",
+                  width: isMobile ? "2.5rem" : "4rem",
+                  textAlign: "left",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.invited}
+              </span>
+              <span
+                className={`font-normal text-slate-400 tracking-tight tabular-nums ${isMobile ? "text-xs" : selectedDistrictId ? "text-sm md:text-base" : "text-sm md:text-lg"}`}
+                style={{ lineHeight: "1" }}
+              >
+                / {showPublicPlaceholder ? "—" : displayedTotals.total}
+              </span>
+            </div>
+            <button
+              data-metric-toggle="yes"
+              onClick={() => toggleMetric("yes")}
+              className={`flex items-center transition-all hover:scale-105 min-w-0 ${isMobile ? "gap-1.5" : "gap-2"}`}
+            >
+              <span
+                className={`font-medium text-slate-700 whitespace-nowrap tracking-tight ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
+                style={{ lineHeight: "1" }}
+              >
+                Going
+              </span>
+              <span
+                className={`font-semibold text-slate-900 tabular-nums ${isMobile ? "text-sm" : selectedDistrictId ? "text-lg md:text-xl" : "text-lg md:text-[1.65rem]"}`}
+                style={{
+                  lineHeight: "1",
+                  width: isMobile ? "2.5rem" : "4rem",
+                  textAlign: "left",
+                }}
+              >
+                {showPublicPlaceholder ? "—" : displayedTotals.yes}
+              </span>
+              <div
+                className={`rounded-full border-2 transition-all duration-200 flex-shrink-0 flex items-center justify-center ${isMobile ? "w-3.5 h-3.5" : "w-6 h-6"} ${
+                  activeMetrics.has("yes")
+                    ? "bg-emerald-700 border-emerald-700"
+                    : "border-slate-300 hover:border-emerald-600 bg-white"
+                }`}
+                style={{
+                  boxShadow: activeMetrics.has("yes")
+                    ? "0 4px 12px rgba(4, 120, 87, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12)"
+                    : "0 2px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                {activeMetrics.has("yes") && (
+                  <svg
+                    className="w-full h-full text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={3}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </div>
+            </button>
+          </div>
+
           {/* Needs summary */}
           {!shouldCollapseForNationalMobile && (
             <div className="flex-shrink-0">

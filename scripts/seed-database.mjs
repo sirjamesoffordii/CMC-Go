@@ -436,6 +436,68 @@ async function seed() {
               )
             : null;
 
+        // ── Contact / payment / profile data (~60% of people get some) ──
+        const hasCashapp = Math.random() > 0.45; // ~55%
+        const hasVenmo = Math.random() > 0.4; // ~60%
+        const hasZelle = Math.random() > 0.55; // ~45%
+        const hasPhone = Math.random() > 0.25; // ~75%
+        const hasEmail = Math.random() > 0.2; // ~80%
+        const hasMighty = Math.random() > 0.5; // ~50%
+
+        const cashappHandles = [
+          "$sirjamesgofford", "$missionaryjoe", "$campuschialpha",
+          "$givehope2026", "$cmcgiver", "$faithfirst", "$sendlight",
+          "$missionfield", "$goandgive", "$reachcampus",
+          "$lightbearer", "$servefirst", "$campusfaith",
+        ];
+        const venmoHandles = [
+          "@james-gofford", "@missionary-joe", "@chi-alpha-campus",
+          "@hope-missions", "@cmc-giving", "@faith-forward", "@send-light",
+          "@mission-field", "@go-give", "@reach-campus",
+          "@light-bearer", "@serve-first", "@campus-faith",
+        ];
+        const zelleNumbers = [
+          "346-303-0884", "832-555-1234", "713-555-4567",
+          "281-555-7890", "936-555-2345", "409-555-6789",
+          "979-555-3456", "254-555-8901", "512-555-1357",
+          "210-555-2468", "903-555-3579", "817-555-4680",
+        ];
+        const phoneNumbers = [
+          "(346) 303-0884", "(832) 555-1234", "(713) 555-4567",
+          "(281) 555-7890", "(936) 555-2345", "(409) 555-6789",
+          "(979) 555-3456", "(254) 555-8901", "(512) 555-1357",
+          "(210) 555-2468", "(903) 555-3579", "(817) 555-4680",
+          "(214) 555-1111", "(469) 555-2222", "(972) 555-3333",
+        ];
+        const emailDomains = [
+          "gmail.com", "outlook.com", "yahoo.com", "chialpha.com",
+          "university.edu", "campus.org", "missions.org",
+        ];
+        const mightyIds = [
+          "34562010", "27068840", "31452789", "28901345",
+          "35678901", "29012345", "32345678", "26789012",
+          "33456789", "30123456", "34890123", "27567890",
+        ];
+
+        const personCashapp = hasCashapp
+          ? cashappHandles[personCounter % cashappHandles.length]
+          : null;
+        const personVenmo = hasVenmo
+          ? venmoHandles[personCounter % venmoHandles.length]
+          : null;
+        const personZelle = hasZelle
+          ? zelleNumbers[personCounter % zelleNumbers.length]
+          : null;
+        const personPhone = hasPhone
+          ? phoneNumbers[personCounter % phoneNumbers.length]
+          : null;
+        const personEmail = hasEmail
+          ? `${firstName.toLowerCase()}.${lastName.toLowerCase()}@${emailDomains[personCounter % emailDomains.length]}`
+          : null;
+        const personMighty = hasMighty
+          ? `https://chialpha.mn.co/members/${mightyIds[personCounter % mightyIds.length]}`
+          : null;
+
         allPeople.push({
           personId: `dev_person_${personCounter}`,
           name: `${firstName} ${lastName}`,
@@ -456,6 +518,13 @@ async function seed() {
           spouse: null,
           kids: null,
           guests: null,
+          // Contact & payment info
+          phone: personPhone,
+          email: personEmail,
+          cashapp: personCashapp,
+          venmo: personVenmo,
+          zelle: personZelle,
+          mightyProfileUrl: personMighty,
         });
 
         personCounter++;
@@ -488,6 +557,12 @@ async function seed() {
               spouse: person.spouse,
               kids: person.kids,
               guests: person.guests,
+              phone: person.phone ?? undefined,
+              email: person.email ?? undefined,
+              cashapp: person.cashapp ?? undefined,
+              venmo: person.venmo ?? undefined,
+              zelle: person.zelle ?? undefined,
+              mightyProfileUrl: person.mightyProfileUrl ?? undefined,
             },
           });
         peopleSuccessCount++;
@@ -603,7 +678,43 @@ async function seed() {
           noteTemplates[Math.floor(Math.random() * noteTemplates.length)],
         createdAt: new Date(),
         createdBy: "system",
+        noteType: "GENERAL",
       });
+    }
+
+    // Add MESSAGE-type notes for ~25% of people (in-app message threads)
+    const messageTemplates = [
+      "Hey! Are you coming to CMC this year? Would love to see you there!",
+      "Just wanted to check in — do you need any help with registration?",
+      "Thank you so much for the donation! It really helps.",
+      "Can you send me the details for the travel arrangements?",
+      "I'm so excited about CMC 2026! Let's coordinate rides.",
+      "Got your message — I'll follow up with the team about housing.",
+      "Is there anything specific you need for the conference?",
+      "Welcome to the team! Reach out if you have any questions.",
+      "Just confirmed my attendance. See you there!",
+      "Thanks for reaching out! I'd love to help with fundraising.",
+      "Can we meet before the conference to plan our campus session?",
+      "Praying for your fundraising goal — you're almost there!",
+    ];
+
+    for (let i = 0; i < Math.floor(allPeople.length * 0.25); i++) {
+      const person = allPeople[Math.floor(Math.random() * allPeople.length)];
+      // Create a mini thread: 1-3 messages per person
+      const threadLength = Math.floor(Math.random() * 3) + 1;
+      for (let m = 0; m < threadLength; m++) {
+        const minutesAgo = Math.floor(Math.random() * 10000) + 5;
+        const messageDate = new Date(Date.now() - minutesAgo * 60000);
+        allNotes.push({
+          personId: person.personId,
+          category: "INTERNAL",
+          content:
+            messageTemplates[Math.floor(Math.random() * messageTemplates.length)],
+          createdAt: messageDate,
+          createdBy: m % 2 === 0 ? "leader@chialpha.com" : person.name,
+          noteType: "MESSAGE",
+        });
+      }
     }
 
     console.log(`📋 Inserting ${allNotes.length} notes...`);

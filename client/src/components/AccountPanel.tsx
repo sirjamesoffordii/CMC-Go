@@ -14,6 +14,7 @@ import {
   KeyRound,
   LogOut,
   UserRound,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -26,10 +27,11 @@ interface AccountPanelProps {
     fullName?: string | null;
     name?: string | null;
     email?: string | null;
+    personId?: string | null;
   } | null;
 }
 
-type View = "main" | "username" | "password" | "email";
+type View = "main" | "username" | "password" | "email" | "messages";
 
 export function AccountPanel({
   open,
@@ -64,6 +66,7 @@ export function AccountPanel({
         <MainView
           displayName={displayName}
           email={email}
+          personId={user?.personId}
           onNavigate={setView}
           onLogout={handleLogout}
         />
@@ -74,6 +77,8 @@ export function AccountPanel({
         />
       ) : view === "password" ? (
         <ChangePasswordView onBack={() => setView("main")} />
+      ) : view === "messages" && user?.personId ? (
+        <MessagesView personId={user.personId} onBack={() => setView("main")} />
       ) : (
         <ChangeEmailView
           currentEmail={user?.email ?? ""}
@@ -92,6 +97,8 @@ function viewTitle(view: View): string {
       return "Change Password";
     case "email":
       return "Change Email";
+    case "messages":
+      return "Messages";
     default:
       return "Account";
   }
@@ -102,11 +109,13 @@ function viewTitle(view: View): string {
 function MainView({
   displayName,
   email,
+  personId,
   onNavigate,
   onLogout,
 }: {
   displayName: string;
   email: string;
+  personId?: string | null;
   onNavigate: (view: View) => void;
   onLogout: () => void;
 }) {
@@ -124,6 +133,17 @@ function MainView({
       </div>
 
       <Separator />
+
+      {personId && (
+        <Button
+          variant="outline"
+          className="w-full justify-start min-h-[44px]"
+          onClick={() => onNavigate("messages")}
+        >
+          <MessageCircle className="mr-2 h-4 w-4" />
+          Messages
+        </Button>
+      )}
 
       <div className="grid gap-2">
         <Button
@@ -166,6 +186,75 @@ function MainView({
   );
 }
 
+/* ─── Messages View ──────────────────────────────────── */
+
+function MessagesView({
+  personId,
+  onBack,
+}: {
+  personId: string;
+  onBack: () => void;
+}) {
+  const { data: messages = [], isLoading } = trpc.notes.byPerson.useQuery({
+    personId,
+  });
+
+  return (
+    <div className="space-y-4 -mx-4 -mt-2 px-4 pt-2">
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center text-sm text-slate-500 hover:text-slate-800"
+      >
+        <ArrowLeft className="mr-1 h-4 w-4" />
+        Back
+      </button>
+
+      <p className="text-sm text-slate-600">
+        Messages from the community about your needs.
+      </p>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="rounded-xl bg-slate-100 border border-slate-200 p-6 text-center">
+          <MessageCircle className="h-10 w-10 text-slate-400 mx-auto mb-2" />
+          <p className="text-sm font-medium text-slate-700">No messages yet</p>
+          <p className="text-xs text-slate-500 mt-1">
+            When someone sends you a message from the Needs page, it will appear
+            here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {messages.map(msg => (
+            <div
+              key={msg.id}
+              className="rounded-xl bg-slate-100 border border-slate-200 p-4"
+            >
+              <p className="text-sm text-slate-800 whitespace-pre-wrap">
+                {msg.content}
+              </p>
+              <p className="text-xs text-slate-500 mt-2">
+                {msg.createdBy || "Someone"} ·{" "}
+                {msg.createdAt
+                  ? new Date(msg.createdAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : ""}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Change Username View ───────────────────────────── */
 
 function ChangeUsernameView({
@@ -184,7 +273,7 @@ function ChangeUsernameView({
       utils.auth.me.invalidate();
       onBack();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message);
     },
   });
@@ -215,7 +304,7 @@ function ChangeUsernameView({
         <Input
           id="fullName"
           value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          onChange={e => setFullName(e.target.value)}
           placeholder="Your name"
           autoFocus
           maxLength={100}
@@ -253,7 +342,7 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
       toast.success("Password changed successfully");
       onBack();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message);
     },
   });
@@ -289,13 +378,13 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
             id="currentPassword"
             type={showCurrentPassword ? "text" : "password"}
             value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            onChange={e => setCurrentPassword(e.target.value)}
             autoFocus
             className="pr-10"
           />
           <button
             type="button"
-            onClick={() => setShowCurrentPassword((v) => !v)}
+            onClick={() => setShowCurrentPassword(v => !v)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600/60 rounded"
             aria-label={showCurrentPassword ? "Hide password" : "Show password"}
             tabIndex={-1}
@@ -316,13 +405,13 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
             id="newPassword"
             type={showNewPassword ? "text" : "password"}
             value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            onChange={e => setNewPassword(e.target.value)}
             placeholder="Enter new password"
             className="pr-10"
           />
           <button
             type="button"
-            onClick={() => setShowNewPassword((v) => !v)}
+            onClick={() => setShowNewPassword(v => !v)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600/60 rounded"
             aria-label={showNewPassword ? "Hide password" : "Show password"}
             tabIndex={-1}
@@ -343,12 +432,12 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
             id="confirmPassword"
             type={showConfirmPassword ? "text" : "password"}
             value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            onChange={e => setConfirmPassword(e.target.value)}
             className="pr-10"
           />
           <button
             type="button"
-            onClick={() => setShowConfirmPassword((v) => !v)}
+            onClick={() => setShowConfirmPassword(v => !v)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600/60 rounded"
             aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             tabIndex={-1}
@@ -366,7 +455,10 @@ function ChangePasswordView({ onBack }: { onBack: () => void }) {
         type="submit"
         className="w-full min-h-[44px]"
         disabled={
-          mutation.isPending || !currentPassword || !newPassword || !confirmPassword
+          mutation.isPending ||
+          !currentPassword ||
+          !newPassword ||
+          !confirmPassword
         }
       >
         {mutation.isPending ? (
@@ -398,7 +490,7 @@ function ChangeEmailView({
       utils.auth.me.invalidate();
       onBack();
     },
-    onError: (err) => {
+    onError: err => {
       toast.error(err.message);
     },
   });
@@ -430,7 +522,7 @@ function ChangeEmailView({
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
           placeholder="your@email.com"
           autoFocus
         />

@@ -22,6 +22,8 @@ const Needs = lazy(() => import("./pages/Needs"));
 const FollowUpView = lazy(() => import("./pages/FollowUpView"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Invite = lazy(() => import("./pages/Invite"));
+const Messages = lazy(() => import("./pages/Messages"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 function AppAuthRedirect() {
   const [, setLocation] = useLocation();
@@ -76,6 +78,8 @@ function Router() {
         <Route path="/approvals" component={Approvals} />
         <Route path="/import" component={Import} />
         <Route path="/needs" component={Needs} />
+        <Route path="/messages" component={Messages} />
+        <Route path="/notifications" component={Notifications} />
         <Route path="/reset-password" component={ResetPassword} />
         <Route path="/invite" component={Invite} />
         <Route path="/404" component={NotFound} />

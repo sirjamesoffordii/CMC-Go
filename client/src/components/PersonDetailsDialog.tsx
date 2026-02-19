@@ -23,7 +23,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { BottomSheet } from "./ui/bottom-sheet";
-import { Trash2, ChevronDown } from "lucide-react";
+import { Trash2, ChevronDown, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -69,6 +69,12 @@ export function PersonDetailsDialog({
   const [formNeedsMet, setFormNeedsMet] = useState(false);
   const [formNotes, setFormNotes] = useState("");
   const [formDepositPaid, setFormDepositPaid] = useState(false);
+  const [formPhone, setFormPhone] = useState("");
+  const [formEmail, setFormEmail] = useState("");
+  const [formCashapp, setFormCashapp] = useState("");
+  const [formZelle, setFormZelle] = useState("");
+  const [formVenmo, setFormVenmo] = useState("");
+  const [formMightyProfileUrl, setFormMightyProfileUrl] = useState("");
   const [familyGuestsExpanded, setFamilyGuestsExpanded] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -90,6 +96,11 @@ export function PersonDetailsDialog({
       setFormGuestsCount(person.guestsCount || 0);
       setFormDepositPaid(person.depositPaid || false);
       setFormNotes((person as Person & { notes?: string }).notes || "");
+      setFormPhone(person.phone || "");
+      setFormEmail(person.email || "");
+      setFormCashapp(person.cashapp || "");
+      setFormZelle(person.zelle || "");
+      setFormVenmo(person.venmo || "");
 
       // Pre-fill need from existing active need
       const activeNeed = personNeeds.find(n => n.isActive);
@@ -199,6 +210,12 @@ export function PersonDetailsDialog({
       spouseAttending: formSpouseAttending,
       childrenCount: formChildrenCount,
       guestsCount: formGuestsCount,
+      phone: formPhone.trim() || null,
+      email: formEmail.trim() || null,
+      cashapp: formCashapp.trim() || null,
+      zelle: formZelle.trim() || null,
+      venmo: formVenmo.trim() || null,
+      mightyProfileUrl: formMightyProfileUrl.trim() || null,
       ...(showNationalCategory
         ? {
             nationalCategory: formNationalCategory.trim()
@@ -208,55 +225,52 @@ export function PersonDetailsDialog({
         : {}),
     };
 
-    updatePerson.mutate(
-      updatePayload,
-      {
-        onSuccess: () => {
-          // Handle need update
-          if (formNeedType !== "None") {
-            const amount = formNeedAmount
-              ? Math.round(parseFloat(formNeedAmount) * 100)
-              : undefined;
-            const fundsReceived = formFundsReceived
-              ? Math.round(parseFloat(formFundsReceived) * 100)
-              : undefined;
-            updateOrCreateNeed.mutate(
-              {
-                personId: person.personId,
-                type: formNeedType,
-                description: formNeedDetails || formNeedType,
-                amount,
-                fundsReceived,
-                isActive: !formNeedsMet,
+    updatePerson.mutate(updatePayload, {
+      onSuccess: () => {
+        // Handle need update
+        if (formNeedType !== "None") {
+          const amount = formNeedAmount
+            ? Math.round(parseFloat(formNeedAmount) * 100)
+            : undefined;
+          const fundsReceived = formFundsReceived
+            ? Math.round(parseFloat(formFundsReceived) * 100)
+            : undefined;
+          updateOrCreateNeed.mutate(
+            {
+              personId: person.personId,
+              type: formNeedType,
+              description: formNeedDetails || formNeedType,
+              amount,
+              fundsReceived,
+              isActive: !formNeedsMet,
+            },
+            {
+              onSuccess: () => {
+                if (formNeedDetails.trim()) {
+                  createNote.mutate({
+                    personId: person.personId,
+                    category: "INTERNAL",
+                    content: `[${formNeedType}] ${formNeedDetails}`,
+                    noteType: "REQUEST",
+                  });
+                }
               },
-              {
-                onSuccess: () => {
-                  if (formNeedDetails.trim()) {
-                    createNote.mutate({
-                      personId: person.personId,
-                      category: "INTERNAL",
-                      content: `[${formNeedType}] ${formNeedDetails}`,
-                      noteType: "REQUEST",
-                    });
-                  }
-                },
-              }
-            );
-          } else {
-            // Deactivate any active need if need type set to None
-            const activeNeed = personNeeds.find(n => n.isActive);
-            if (activeNeed) {
-              updateOrCreateNeed.mutate({
-                personId: person.personId,
-                type: activeNeed.type,
-                description: activeNeed.description || "",
-                isActive: false,
-              });
             }
+          );
+        } else {
+          // Deactivate any active need if need type set to None
+          const activeNeed = personNeeds.find(n => n.isActive);
+          if (activeNeed) {
+            updateOrCreateNeed.mutate({
+              personId: person.personId,
+              type: activeNeed.type,
+              description: activeNeed.description || "",
+              isActive: false,
+            });
           }
-        },
-      }
-    );
+        }
+      },
+    });
   };
 
   const handleDelete = () => {
@@ -276,6 +290,19 @@ export function PersonDetailsDialog({
 
   const formContent = (
     <div className="space-y-6 py-4 overflow-x-hidden">
+      {/* Mighty Profile link - when set */}
+      {(formMightyProfileUrl || person.mightyProfileUrl) && (
+        <a
+          href={formMightyProfileUrl || person.mightyProfileUrl || "#"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+        >
+          <ExternalLink className="h-4 w-4" />
+          View Mighty Profile
+        </a>
+      )}
+
       {/* Basic Information */}
       <div className="space-y-4">
         <div className="border-b border-slate-200 pb-2">
@@ -333,6 +360,77 @@ export function PersonDetailsDialog({
                 <SelectItem value="Not Invited">Not Invited Yet</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* Contact & Ways to Give */}
+      <div className="space-y-4">
+        <div className="border-b border-slate-200 pb-2">
+          <h3 className="text-sm font-semibold text-slate-700">
+            Contact & Ways to Give
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="pd-phone">Phone</Label>
+            <Input
+              id="pd-phone"
+              type="tel"
+              value={formPhone}
+              onChange={e => setFormPhone(e.target.value)}
+              placeholder="(555) 123-4567"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pd-email">Email</Label>
+            <Input
+              id="pd-email"
+              type="email"
+              value={formEmail}
+              onChange={e => setFormEmail(e.target.value)}
+              placeholder="email@example.com"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pd-cashapp">CashApp</Label>
+            <Input
+              id="pd-cashapp"
+              value={formCashapp}
+              onChange={e => setFormCashapp(e.target.value)}
+              placeholder="$handle"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pd-zelle">Zelle</Label>
+            <Input
+              id="pd-zelle"
+              value={formZelle}
+              onChange={e => setFormZelle(e.target.value)}
+              placeholder="Email or phone"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="pd-venmo">Venmo</Label>
+            <Input
+              id="pd-venmo"
+              value={formVenmo}
+              onChange={e => setFormVenmo(e.target.value)}
+              placeholder="@handle"
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+            <Label htmlFor="pd-mighty">Mighty Profile URL</Label>
+            <Input
+              id="pd-mighty"
+              type="url"
+              value={formMightyProfileUrl}
+              onChange={e => setFormMightyProfileUrl(e.target.value)}
+              placeholder="https://...mightynetworks.com/member/..."
+            />
+            <p className="text-xs text-slate-500">
+              Link to this person&apos;s Chi Alpha Mighty app profile
+            </p>
           </div>
         </div>
       </div>

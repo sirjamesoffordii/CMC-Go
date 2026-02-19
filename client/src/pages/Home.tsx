@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import "@/styles/mobile.css";
 import { InteractiveMap } from "@/components/InteractiveMap";
 import { DistrictPanel } from "@/components/DistrictPanel";
-import { PeoplePanel } from "@/components/PeoplePanel";
+import { NeedPanel } from "@/components/PeoplePanel";
 import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { ViewModeSelector } from "@/components/ViewModeSelector";
 import { MobileDrawer } from "@/components/MobileDrawer";
@@ -30,6 +30,7 @@ import {
   LogIn,
   UserRound,
   Shield,
+  ChevronDown,
 } from "lucide-react";
 import { ImageCropModal } from "@/components/ImageCropModal";
 import { HeaderEditorModal } from "@/components/HeaderEditorModal";
@@ -40,6 +41,12 @@ import { AccountPanel } from "@/components/AccountPanel";
 import { EventInfoPanel } from "@/components/EventInfoPanel";
 import { WhatIsCmcGoPanel } from "@/components/WhatIsCmcGoPanel";
 import { ScopeSelector, useScopeFilter } from "@/components/ScopeSelector";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
 import { usePublicAuth } from "@/_core/hooks/usePublicAuth";
 import { useIsMobile } from "@/hooks/useIsMobile";
@@ -914,7 +921,7 @@ export default function Home() {
         onMouseEnter={() => setIsHeaderHovered(true)}
         onMouseLeave={() => setIsHeaderHovered(false)}
       >
-        {/* Logo + Banner - Left Side: Go Together first, then CMC GO (chase + bounce) */}
+        {/* Logo + Banner - Left Side: CMC GO logo, then Go Together */}
         <div
           className="flex-shrink-0 h-8 sm:h-12 w-auto mr-2 sm:mr-4 relative z-10 flex items-center gap-2"
           style={{ marginLeft: isMobile ? "8px" : "12px" }}
@@ -984,8 +991,29 @@ export default function Home() {
           </div>
         )}
 
-        {/* Right Side: Scope Selector, Why button, Hamburger Menu, CMC Go logo */}
+        {/* Right Side: Needs (with Make Donation inside), Scope Selector, Why button, Hamburger Menu */}
         <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 z-10 ml-auto min-w-0 max-w-[70%] sm:max-w-none">
+          {/* Needs dropdown - contains View Needs + Make Donation */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-white/90 hover:text-white hover:bg-white/10 text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-1 h-7 sm:h-8 min-w-0"
+              >
+                Needs
+                <ChevronDown className="ml-1 h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[160px]">
+              <DropdownMenuItem onClick={() => setLocation("/needs")}>
+                View Needs
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/donate")}>
+                Make Donation
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {/* Scope selector - visible when authenticated, compact on mobile */}
           {isAuthenticated && (
             <ScopeSelector
@@ -1090,28 +1118,24 @@ export default function Home() {
                         <button
                           onClick={e => {
                             e.stopPropagation();
+                            setLocation("/messages");
                             setMenuOpen(false);
                           }}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                         >
                           <MessageSquare className="w-5 h-5 sm:w-4 sm:h-4" />
                           Messages
-                          <span className="ml-auto text-[10px] text-gray-400 font-medium uppercase tracking-wider">
-                            Soon
-                          </span>
                         </button>
                         <button
                           onClick={e => {
                             e.stopPropagation();
+                            setLocation("/notifications");
                             setMenuOpen(false);
                           }}
                           className="w-full px-4 py-3 sm:py-2 text-left text-sm text-black hover:bg-red-600 hover:text-white active:bg-red-700 flex items-center gap-3 transition-colors"
                         >
                           <Bell className="w-5 h-5 sm:w-4 sm:h-4" />
                           Notifications
-                          <span className="ml-auto text-[10px] text-gray-400 font-medium uppercase tracking-wider">
-                            Soon
-                          </span>
                         </button>
                       </>
                     )}
@@ -1388,7 +1412,7 @@ export default function Home() {
                   className="absolute top-0 left-0 w-2 h-full cursor-col-resize bg-gray-200 hover:bg-gray-400 active:bg-gray-500 transition-colors z-10"
                   onMouseDown={handlePeopleMouseDown}
                 />
-                <PeoplePanel
+                <NeedPanel
                   onClose={() => {
                     setPeoplePanelOpen(false);
                     setPeoplePanelOpenFilter(null);
@@ -1410,8 +1434,8 @@ export default function Home() {
             }}
             title={
               peoplePanelOpenFilter?.districtId
-                ? `People — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
-                : "People"
+                ? `Need Panel — ${districts.find(d => d.id === peoplePanelOpenFilter.districtId)?.name ?? peoplePanelOpenFilter.districtId}`
+                : "Need Panel"
             }
             initialSnap="half"
             coverToolbar
@@ -1422,7 +1446,7 @@ export default function Home() {
                 : undefined
             }
           >
-            <PeoplePanel
+            <NeedPanel
               onClose={() => {
                 setPeoplePanelOpen(false);
                 setPeoplePanelOpenFilter(null);
@@ -1433,7 +1457,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* People Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
+      {/* Need Panel Tab Button - Fixed to right side on desktop, bottom right on mobile; hidden when district drawer open on mobile */}
       {!peoplePanelOpen &&
         (!isMobile || !(selectedDistrictId || nationalPanelOpen)) && (
           <Tooltip>
@@ -1465,7 +1489,7 @@ export default function Home() {
                 `}
                 >
                   <span className="inline-block whitespace-nowrap select-none">
-                    People
+                    Need Panel
                   </span>
                 </button>
               ) : (
@@ -1499,7 +1523,7 @@ export default function Home() {
                   `}
                   >
                     <span className="inline-block whitespace-nowrap select-none">
-                      People
+                      Need Panel
                     </span>
                   </button>
                 </div>
@@ -1507,7 +1531,7 @@ export default function Home() {
             </TooltipTrigger>
             {!user && (
               <TooltipContent side="left">
-                <p>Please log in to view people</p>
+                <p>Please log in to view needs</p>
               </TooltipContent>
             )}
           </Tooltip>

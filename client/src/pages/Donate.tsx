@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Heart, Share2, X } from "lucide-react";
+import { ArrowLeft, Heart, Share2, X, MapPin } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const GOAL_CENTS = 100_000_00; // $100,000
 const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
@@ -17,6 +18,63 @@ function formatDollars(cents: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+function RegionFundsSection() {
+  const { user } = useAuth();
+  const { data: regionFunds } = trpc.regionFunds.summary.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  if (!user || !regionFunds || regionFunds.length === 0) return null;
+
+  return (
+    <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
+      <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
+        <MapPin className="w-6 h-6 text-red-600" />
+        Funds Raised by Region
+      </h2>
+      <p className="text-slate-600 mb-4">
+        See how each region is doing in raising funds for missionary needs.
+      </p>
+      <div className="space-y-4">
+        {regionFunds
+          .sort((a, b) => b.totalFundedCents - a.totalFundedCents)
+          .map(region => {
+            const pct =
+              region.totalNeededCents > 0
+                ? Math.min(
+                    (region.totalFundedCents / region.totalNeededCents) * 100,
+                    100
+                  )
+                : 0;
+            return (
+              <div key={region.region}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-slate-800">
+                    {region.region}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    {formatDollars(region.totalFundedCents)} /{" "}
+                    {formatDollars(region.totalNeededCents)}
+                  </span>
+                </div>
+                <Progress value={pct} className="h-2.5" />
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-xs text-slate-400">
+                    {region.activeNeedCount} active need
+                    {region.activeNeedCount !== 1 ? "s" : ""}
+                  </span>
+                  <span className="text-xs font-medium text-slate-500">
+                    {Math.round(pct)}%
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
 }
 
 export default function Donate() {
@@ -51,12 +109,10 @@ export default function Donate() {
 
   const totalRaised = progress?.totalRaisedCents ?? 0;
   const donorCount = progress?.donorCount ?? 0;
-  const progressPercent = Math.min(
-    (totalRaised / GOAL_CENTS) * 100,
-    100
-  );
+  const progressPercent = Math.min((totalRaised / GOAL_CENTS) * 100, 100);
 
-  const donateUrl = typeof window !== "undefined" ? window.location.origin + "/donate" : "";
+  const donateUrl =
+    typeof window !== "undefined" ? window.location.origin + "/donate" : "";
 
   async function handleDonate() {
     if (amountCents < 100) return;
@@ -103,7 +159,9 @@ export default function Donate() {
       try {
         const response = await fetch(qrImageUrl);
         const blob = await response.blob();
-        const file = new File([blob], "cmc-donate-qr.png", { type: "image/png" });
+        const file = new File([blob], "cmc-donate-qr.png", {
+          type: "image/png",
+        });
 
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
@@ -235,10 +293,7 @@ export default function Donate() {
               </span>
             </div>
             <div className="mb-3">
-              <Progress
-                value={progressPercent}
-                className="h-4 bg-slate-100"
-              />
+              <Progress value={progressPercent} className="h-4 bg-slate-100" />
             </div>
             <div className="flex items-baseline justify-between">
               <div>
@@ -268,7 +323,7 @@ export default function Donate() {
 
             {/* Preset Amounts */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
-              {PRESET_AMOUNTS.map((amount) => (
+              {PRESET_AMOUNTS.map(amount => (
                 <button
                   key={amount}
                   onClick={() => {
@@ -303,7 +358,7 @@ export default function Donate() {
                   min="1"
                   step="any"
                   value={customAmount}
-                  onChange={(e) => {
+                  onChange={e => {
                     setCustomAmount(e.target.value);
                     setSelectedAmount(null);
                   }}
@@ -321,7 +376,7 @@ export default function Donate() {
                 </label>
                 <Input
                   value={donorName}
-                  onChange={(e) => setDonorName(e.target.value)}
+                  onChange={e => setDonorName(e.target.value)}
                   placeholder="Your name"
                   className="h-11 border-slate-200"
                 />
@@ -333,7 +388,7 @@ export default function Donate() {
                 <Input
                   type="email"
                   value={donorEmail}
-                  onChange={(e) => setDonorEmail(e.target.value)}
+                  onChange={e => setDonorEmail(e.target.value)}
                   placeholder="your@email.com"
                   className="h-11 border-slate-200"
                 />
@@ -349,8 +404,20 @@ export default function Donate() {
               {isProcessing ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
                   </svg>
                   Processing...
                 </span>
@@ -375,13 +442,16 @@ export default function Donate() {
               What is CMC?
             </h2>
             <p className="text-lg text-slate-700 leading-relaxed">
-              Campus Missions Conference is Chi Alpha's largest
-              gathering! Every four years, Chi Alpha Missionaries get to gather
-              together for fellowship and training. It's a transformative
-              experience that renews vision, deepens community, and equips
-              missionaries for the work God has called them to.
+              Campus Missions Conference is Chi Alpha's largest gathering! Every
+              four years, Chi Alpha Missionaries get to gather together for
+              fellowship and training. It's a transformative experience that
+              renews vision, deepens community, and equips missionaries for the
+              work God has called them to.
             </p>
           </div>
+
+          {/* Region Funds Section */}
+          <RegionFundsSection />
 
           {/* Why This Matters */}
           <div className="px-6 sm:px-10 py-6 sm:py-8">
@@ -391,10 +461,10 @@ export default function Donate() {
             <div className="space-y-4">
               <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
                 <p className="text-lg text-slate-700 leading-relaxed">
-                  Many Chi Alpha missionaries serve sacrificially on college campuses,
-                  often on tight budgets. The cost of travel, registration, and
-                  lodging can prevent them from attending this once-every-four-years
-                  gathering.
+                  Many Chi Alpha missionaries serve sacrificially on college
+                  campuses, often on tight budgets. The cost of travel,
+                  registration, and lodging can prevent them from attending this
+                  once-every-four-years gathering.
                 </p>
               </div>
               <div className="border-l-4 border-red-600 pl-4 sm:pl-6">
@@ -402,8 +472,8 @@ export default function Donate() {
                   <strong>Your donation goes directly</strong> to helping
                   missionaries who can't afford to attend CMC 2026. Whether it's
                   covering a registration fee, helping with travel costs, or
-                  providing full sponsorship — every dollar makes it possible for
-                  another missionary to be there.
+                  providing full sponsorship — every dollar makes it possible
+                  for another missionary to be there.
                 </p>
               </div>
               <div className="mt-4">

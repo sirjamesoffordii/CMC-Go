@@ -184,6 +184,12 @@ export const people = mysqlTable(
     // Contact info
     phone: varchar("phone", { length: 32 }),
     email: varchar("email", { length: 320 }),
+    // Ways to give (payment handles)
+    cashapp: varchar("cashapp", { length: 64 }),
+    zelle: varchar("zelle", { length: 128 }),
+    venmo: varchar("venmo", { length: 64 }),
+    // Mighty Networks profile link (Chi Alpha Mighty app)
+    mightyProfileUrl: varchar("mightyProfileUrl", { length: 512 }),
     // Last edited tracking
     lastEdited: timestamp("lastEdited"),
     lastEditedBy: varchar("lastEditedBy", { length: 255 }),
@@ -286,7 +292,7 @@ export const notes = mysqlTable(
     content: text("content").notNull(),
     createdAt: timestamp("createdAt").notNull().defaultNow(),
     createdBy: varchar("createdBy", { length: 255 }),
-    noteType: mysqlEnum("note_type", ["GENERAL", "REQUEST"])
+    noteType: mysqlEnum("note_type", ["GENERAL", "REQUEST", "MESSAGE"])
       .notNull()
       .default("GENERAL"),
   },
@@ -435,3 +441,81 @@ export const donations = mysqlTable("donations", {
 
 export type Donation = typeof donations.$inferSelect;
 export type InsertDonation = typeof donations.$inferInsert;
+
+/**
+ * Messages table - person-to-person messaging within the app
+ * Uses senderUserId (users.id) and recipientPersonId (people.personId)
+ */
+export const messages = mysqlTable(
+  "messages",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    senderUserId: int("senderUserId").notNull(), // References users.id
+    recipientPersonId: varchar("recipientPersonId", { length: 64 }).notNull(), // References people.personId
+    content: text("content").notNull(),
+    isRead: boolean("isRead").default(false).notNull(),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    senderUserIdIdx: index("messages_senderUserId_idx").on(table.senderUserId),
+    recipientPersonIdIdx: index("messages_recipientPersonId_idx").on(
+      table.recipientPersonId
+    ),
+    isReadIdx: index("messages_isRead_idx").on(table.isRead),
+  })
+);
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+/**
+ * Notifications table - in-app notifications for users
+ * Types: need_funded, need_created, message_received, status_changed, system
+ */
+export const notifications = mysqlTable(
+  "notifications",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    userId: int("userId").notNull(), // References users.id
+    type: mysqlEnum("notificationType", [
+      "need_funded",
+      "need_created",
+      "message_received",
+      "status_changed",
+      "system",
+    ]).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    body: text("body"),
+    linkUrl: varchar("linkUrl", { length: 512 }), // Optional deep link within app
+    isRead: boolean("isRead").default(false).notNull(),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    userIdIdx: index("notifications_userId_idx").on(table.userId),
+    isReadIdx: index("notifications_isRead_idx").on(table.isRead),
+    typeIdx: index("notifications_type_idx").on(table.type),
+  })
+);
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Notification settings table - per-user notification preferences
+ */
+export const notificationSettings = mysqlTable("notification_settings", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().unique(), // References users.id (one row per user)
+  needFunded: boolean("needFunded").default(true).notNull(),
+  needCreated: boolean("needCreated").default(true).notNull(),
+  messageReceived: boolean("messageReceived").default(true).notNull(),
+  statusChanged: boolean("statusChanged").default(true).notNull(),
+  systemNotifications: boolean("systemNotifications").default(true).notNull(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow().onUpdateNow(),
+});
+
+export type NotificationSetting = typeof notificationSettings.$inferSelect;
+export type InsertNotificationSetting =
+  typeof notificationSettings.$inferInsert;
