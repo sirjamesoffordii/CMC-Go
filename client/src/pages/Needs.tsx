@@ -10,7 +10,6 @@ import {
   Hand,
   DollarSign,
   MapPin,
-  User,
   CheckCircle,
   Car,
   Home,
@@ -20,10 +19,8 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { useLocation } from "wouter";
-import { PersonDetailsDialog } from "@/components/PersonDetailsDialog";
 import { MakeRequestDialog } from "@/components/MakeRequestDialog";
 import { GiveDialog } from "@/components/GiveDialog";
-import { Person } from "../../../drizzle/schema";
 
 type NeedType = "Registration" | "Transportation" | "Housing" | "Other";
 
@@ -54,8 +51,6 @@ export default function Needs() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [resolvingNeedId, setResolvingNeedId] = useState<number | null>(null);
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
   const [giveDialogOpen, setGiveDialogOpen] = useState(false);
   const [giveTarget, setGiveTarget] = useState<{
@@ -84,37 +79,28 @@ export default function Needs() {
       "ADMIN",
     ].includes(user.role);
 
-  const { data: allNeeds = [], isLoading: needsLoading } =
-    trpc.needs.listActive.useQuery();
-  const { data: allPeople = [] } = trpc.people.list.useQuery();
-  const { data: allCampuses = [] } = trpc.campuses.list.useQuery();
-
-  // Enrich and filter
-  const enrichedNeeds = allNeeds
-    .filter(need => need.visibility === "DISTRICT_VISIBLE")
-    .map(need => {
-      const person = allPeople.find(p => p.personId === need.personId);
-      const campus = person?.primaryCampusId
-        ? allCampuses.find(c => c.id === person.primaryCampusId)
-        : null;
-      return { ...need, person, campus };
-    })
-    .filter(item => item.person);
+  // Single enriched query — no separate people/campuses fetch needed
+  const { data: enrichedNeeds = [], isLoading: needsLoading } =
+    trpc.needs.listActiveEnriched.useQuery();
 
   // Group by type for board view
-  const needsByType: Record<NeedType, typeof enrichedNeeds> = {
-    Registration: enrichedNeeds.filter(n => n.type === "Registration"),
-    Transportation: enrichedNeeds.filter(n => n.type === "Transportation"),
-    Housing: enrichedNeeds.filter(n => n.type === "Housing"),
-    Other: enrichedNeeds.filter(n => n.type === "Other"),
+  const visibleNeeds = enrichedNeeds.filter(
+    n => n.visibility === "DISTRICT_VISIBLE"
+  );
+
+  const needsByType: Record<NeedType, typeof visibleNeeds> = {
+    Registration: visibleNeeds.filter(n => n.type === "Registration"),
+    Transportation: visibleNeeds.filter(n => n.type === "Transportation"),
+    Housing: visibleNeeds.filter(n => n.type === "Housing"),
+    Other: visibleNeeds.filter(n => n.type === "Other"),
   };
 
   // Summary stats
-  const totalNeeded = enrichedNeeds.reduce(
+  const totalNeeded = visibleNeeds.reduce(
     (sum, n) => sum + (n.amount ?? 0),
     0
   );
-  const totalFunded = enrichedNeeds.reduce(
+  const totalFunded = visibleNeeds.reduce(
     (sum, n) => sum + (n.fundsReceived ?? 0),
     0
   );
@@ -124,9 +110,9 @@ export default function Needs() {
   const toggleNeedActive = trpc.needs.toggleActive.useMutation({
     onSuccess: () => {
       setResolvingNeedId(null);
+      utils.needs.listActiveEnriched.invalidate();
       utils.needs.listActive.invalidate();
       utils.followUp.list.invalidate();
-      utils.people.list.invalidate();
     },
     onError: error => {
       setResolvingNeedId(null);
@@ -139,27 +125,26 @@ export default function Needs() {
     toggleNeedActive.mutate({ needId, isActive: false });
   };
 
-  const handleGive = (item: (typeof enrichedNeeds)[number]) => {
-    if (!item.person) return;
+  const handleGive = (item: (typeof visibleNeeds)[number]) => {
     setGiveTarget({
-      personId: item.person.personId,
-      personName: item.person.name,
+      personId: item.personId,
+      personName: item.personName,
       needId: item.id,
       needAmount: item.amount,
       fundsReceived: item.fundsReceived,
-      cashapp: item.person.cashapp,
-      zelle: item.person.zelle,
-      venmo: item.person.venmo,
+      cashapp: item.cashapp,
+      zelle: item.zelle,
+      venmo: item.venmo,
     });
     setGiveDialogOpen(true);
   };
 
   if (loading || needsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center py-16">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading needs...</p>
         </div>
       </div>
     );
@@ -167,12 +152,12 @@ export default function Needs() {
 
   const filteredNeeds =
     activeTab === "all"
-      ? enrichedNeeds
-      : enrichedNeeds.filter(
+      ? visibleNeeds
+      : visibleNeeds.filter(
           n => n.type.toLowerCase() === activeTab.toLowerCase()
         );
 
-  const renderNeedCard = (item: (typeof enrichedNeeds)[number]) => {
+  const renderNeedCard = (item: (typeof visibleNeeds)[number]) => {
     const config =
       NEED_TYPE_CONFIG[item.type as NeedType] ?? NEED_TYPE_CONFIG.Other;
     const Icon = config.icon;
@@ -198,17 +183,9 @@ export default function Needs() {
               {/* Header */}
               <div className="flex items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2 min-w-0">
-                  <button
-                    className="font-semibold text-sm hover:underline truncate"
-                    onClick={() => {
-                      if (item.person) {
-                        setSelectedPerson(item.person);
-                        setDialogOpen(true);
-                      }
-                    }}
-                  >
-                    {item.person?.name}
-                  </button>
+                  <span className="font-semibold text-sm truncate">
+                    {item.personName}
+                  </span>
                   <Badge
                     variant="outline"
                     className="text-xs capitalize shrink-0"
@@ -224,10 +201,10 @@ export default function Needs() {
               </div>
 
               {/* Campus */}
-              {item.campus && (
+              {item.campusName && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <MapPin className="h-3 w-3" />
-                  {item.campus.name}
+                  {item.campusName}
                 </div>
               )}
 
@@ -290,33 +267,37 @@ export default function Needs() {
   };
 
   return (
-    <div className="container max-w-6xl py-4 sm:py-8 px-4 sm:px-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => setLocation("/")}
-            variant="ghost"
-            size="sm"
-            className="min-h-[44px]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Needs Board</h1>
-            <p className="text-muted-foreground text-sm">
-              Coordinate registration, transportation, housing & more
-            </p>
+    <div className="min-h-[100dvh] bg-gray-50">
+      {/* Sticky top bar matching Home toolbar style */}
+      <header className="sticky top-0 z-40 bg-white border-b shadow-sm">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setLocation("/")}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Needs Board</h1>
+              <p className="text-xs text-muted-foreground leading-tight hidden sm:block">
+                Coordinate registration, transportation, housing & more
+              </p>
+            </div>
           </div>
+          <Button
+            onClick={() => setRequestDialogOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white h-9 text-sm"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Make Request
+          </Button>
         </div>
-        <Button
-          onClick={() => setRequestDialogOpen(true)}
-          className="bg-red-600 hover:bg-red-700 text-white min-h-[44px] self-start sm:self-auto"
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Make Request
-        </Button>
-      </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto py-4 px-4 sm:px-6">
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -405,11 +386,6 @@ export default function Needs() {
       )}
 
       {/* Dialogs */}
-      <PersonDetailsDialog
-        person={selectedPerson}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
       <MakeRequestDialog
         open={requestDialogOpen}
         onOpenChange={setRequestDialogOpen}
@@ -428,6 +404,7 @@ export default function Needs() {
           venmo={giveTarget.venmo}
         />
       )}
+      </main>
     </div>
   );
 }

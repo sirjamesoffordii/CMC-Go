@@ -2702,6 +2702,46 @@ export const appRouter = router({
         throw error;
       }
     }),
+
+    // Enriched active needs — returns needs with person + campus info in one call
+    listActiveEnriched: protectedProcedure.query(async ({ ctx }) => {
+      try {
+        const scope = getPeopleScope(ctx.user);
+        const allNeeds = await db.getAllActiveNeeds();
+
+        const enriched = [];
+        for (const need of allNeeds) {
+          const person = await db.getPersonByPersonId(need.personId);
+          if (!person) continue;
+
+          // Scope filter
+          if (scope.level === "REGION" && resolvePersonRegion(person) !== scope.regionId) continue;
+          if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) continue;
+          if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) continue;
+
+          // Get campus name
+          let campusName: string | null = null;
+          if (person.primaryCampusId) {
+            const campus = await db.getCampusById(person.primaryCampusId);
+            campusName = campus?.name ?? null;
+          }
+
+          enriched.push({
+            ...need,
+            personName: person.name,
+            campusName,
+            cashapp: person.cashapp ?? null,
+            zelle: person.zelle ?? null,
+            venmo: person.venmo ?? null,
+          });
+        }
+
+        return enriched;
+      } catch (error) {
+        console.error("[needs.listActiveEnriched] Error:", error instanceof Error ? error.message : String(error));
+        throw error;
+      }
+    }),
     listAll: protectedProcedure.query(async ({ ctx }) => {
       try {
         const scope = getPeopleScope(ctx.user);
