@@ -192,6 +192,8 @@ export const people = mysqlTable(
     agGivingUrl: varchar("agGivingUrl", { length: 512 }), // giving.ag.org personal page
     // Mighty Networks profile link (Chi Alpha Mighty app)
     mightyProfileUrl: varchar("mightyProfileUrl", { length: 512 }),
+    // Profile picture
+    profilePictureUrl: varchar("profilePictureUrl", { length: 1024 }),
     // Last edited tracking
     lastEdited: timestamp("lastEdited"),
     lastEditedBy: varchar("lastEditedBy", { length: 255 }),

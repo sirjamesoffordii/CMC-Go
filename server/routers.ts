@@ -2732,9 +2732,15 @@ export const appRouter = router({
         const scope = getPeopleScope(ctx.user);
         const allNeeds = await db.getAllActiveNeeds();
 
+        // Batch-fetch all people and campuses to avoid N+1 queries
+        const allPeople = await db.getAllPeople();
+        const peopleMap = new Map(allPeople.map(p => [p.personId, p]));
+        const allCampuses = await db.getAllCampuses();
+        const campusMap = new Map(allCampuses.map(c => [c.id, c]));
+
         const enriched = [];
         for (const need of allNeeds) {
-          const person = await db.getPersonByPersonId(need.personId);
+          const person = peopleMap.get(need.personId);
           if (!person) continue;
 
           // Scope filter
@@ -2754,12 +2760,10 @@ export const appRouter = router({
           )
             continue;
 
-          // Get campus name
-          let campusName: string | null = null;
-          if (person.primaryCampusId) {
-            const campus = await db.getCampusById(person.primaryCampusId);
-            campusName = campus?.name ?? null;
-          }
+          // Get campus name from map
+          const campusName = person.primaryCampusId
+            ? (campusMap.get(person.primaryCampusId)?.name ?? null)
+            : null;
 
           enriched.push({
             ...need,

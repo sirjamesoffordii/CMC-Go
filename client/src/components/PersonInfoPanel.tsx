@@ -259,7 +259,21 @@ export function PersonInfoPanel({
       <div className="px-4 pt-4 pb-3 border-b border-gray-200 bg-white">
         <div className="flex items-start gap-3">
           {/* Avatar circle */}
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white text-lg font-bold shrink-0">
+          {person.profilePictureUrl ? (
+            <img
+              src={person.profilePictureUrl}
+              alt={person.name || "Profile"}
+              className="w-12 h-12 rounded-full object-cover shrink-0"
+              onError={e => {
+                // Fallback to initials on image load error
+                e.currentTarget.style.display = "none";
+                e.currentTarget.nextElementSibling?.classList.remove("hidden");
+              }}
+            />
+          ) : null}
+          <div
+            className={`w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white text-lg font-bold shrink-0 ${person.profilePictureUrl ? "hidden" : ""}`}
+          >
             {(person.name || "?").charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">

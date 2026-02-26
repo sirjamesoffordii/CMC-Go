@@ -440,6 +440,8 @@ async function seed() {
         const hasCashapp = Math.random() > 0.08; // ~92%
         const hasVenmo = Math.random() > 0.1; // ~90%
         const hasZelle = Math.random() > 0.12; // ~88%
+        const hasPaypal = Math.random() > 0.25; // ~75%
+        const hasAgGiving = Math.random() > 0.4; // ~60%
         const hasPhone = Math.random() > 0.05; // ~95%
         const hasEmail = Math.random() > 0.05; // ~95%
         const hasMighty = Math.random() > 0.15; // ~85%
@@ -548,6 +550,35 @@ async function seed() {
           ? `https://chialpha.mn.co/members/${mightyIds[personCounter % mightyIds.length]}`
           : null;
 
+        const paypalHandles = [
+          "james.gofford",
+          "missionaryjoe",
+          "campuschialpha",
+          "givehope2026",
+          "cmcgiving",
+          "faithforward",
+          "sendlight",
+          "missionfield",
+          "goandgive",
+          "reachcampus",
+        ];
+        const agGivingUrls = [
+          "https://giving.ag.org/missionary/james-gofford",
+          "https://giving.ag.org/missionary/joe-smith",
+          "https://giving.ag.org/missionary/campus-chi-alpha",
+          "https://giving.ag.org/missionary/hope-missions",
+          "https://giving.ag.org/missionary/faith-forward",
+          "https://giving.ag.org/missionary/send-light",
+          "https://giving.ag.org/missionary/reach-campus",
+          "https://giving.ag.org/missionary/go-give",
+        ];
+        const personPaypal = hasPaypal
+          ? paypalHandles[personCounter % paypalHandles.length]
+          : null;
+        const personAgGiving = hasAgGiving
+          ? agGivingUrls[personCounter % agGivingUrls.length]
+          : null;
+
         allPeople.push({
           personId: `dev_person_${personCounter}`,
           name: `${firstName} ${lastName}`,
@@ -574,6 +605,8 @@ async function seed() {
           cashapp: personCashapp,
           venmo: personVenmo,
           zelle: personZelle,
+          paypal: personPaypal,
+          agGivingUrl: personAgGiving,
           mightyProfileUrl: personMighty,
         });
 
@@ -612,6 +645,8 @@ async function seed() {
               cashapp: person.cashapp ?? undefined,
               venmo: person.venmo ?? undefined,
               zelle: person.zelle ?? undefined,
+              paypal: person.paypal ?? undefined,
+              agGivingUrl: person.agGivingUrl ?? undefined,
               mightyProfileUrl: person.mightyProfileUrl ?? undefined,
             },
           });
@@ -674,7 +709,8 @@ async function seed() {
           needType === "Registration"
             ? Math.floor(Math.random() * 50000) + 1000
             : null, // $10-$500 in cents
-        visibility: "LEADERSHIP_ONLY",
+        visibility:
+          Math.random() > 0.3 ? "DISTRICT_VISIBLE" : "LEADERSHIP_ONLY",
         isActive: true,
         createdAt: new Date(),
       });
