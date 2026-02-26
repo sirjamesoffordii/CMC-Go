@@ -81,6 +81,8 @@ export default function People() {
     cashapp?: string | null;
     zelle?: string | null;
     venmo?: string | null;
+    paypal?: string | null;
+    agGivingUrl?: string | null;
   } | null>(null);
 
   // Filter state - initialize from URL query parameters
@@ -1323,6 +1325,10 @@ export default function People() {
                                                                         person.zelle,
                                                                       venmo:
                                                                         person.venmo,
+                                                                      paypal:
+                                                                        person.paypal,
+                                                                      agGivingUrl:
+                                                                        person.agGivingUrl,
                                                                     }
                                                                   );
                                                                 }
@@ -1467,6 +1473,10 @@ export default function People() {
                                                               person.cashapp,
                                                             zelle: person.zelle,
                                                             venmo: person.venmo,
+                                                            paypal:
+                                                              person.paypal,
+                                                            agGivingUrl:
+                                                              person.agGivingUrl,
                                                           });
                                                         }
                                                       }}
@@ -1592,6 +1602,8 @@ export default function People() {
           cashapp={giveDialogItem.cashapp}
           zelle={giveDialogItem.zelle}
           venmo={giveDialogItem.venmo}
+          paypal={giveDialogItem.paypal}
+          agGivingUrl={giveDialogItem.agGivingUrl}
         />
       )}
     </div>

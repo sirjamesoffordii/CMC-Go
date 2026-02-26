@@ -1923,6 +1923,8 @@ export const appRouter = router({
           cashapp: z.string().nullable().optional(),
           zelle: z.string().nullable().optional(),
           venmo: z.string().nullable().optional(),
+          paypal: z.string().nullable().optional(),
+          agGivingUrl: z.string().max(512).nullable().optional(),
           mightyProfileUrl: z.string().max(512).nullable().optional(),
         })
       )
@@ -2766,6 +2768,8 @@ export const appRouter = router({
             cashapp: person.cashapp ?? null,
             zelle: person.zelle ?? null,
             venmo: person.venmo ?? null,
+            paypal: person.paypal ?? null,
+            agGivingUrl: person.agGivingUrl ?? null,
           });
         }
 

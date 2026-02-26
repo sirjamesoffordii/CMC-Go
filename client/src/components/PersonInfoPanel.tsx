@@ -66,6 +66,8 @@ export function PersonInfoPanel({
     cashapp: "",
     venmo: "",
     zelle: "",
+    paypal: "",
+    agGivingUrl: "",
     mightyProfileUrl: "",
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -191,6 +193,8 @@ export function PersonInfoPanel({
       cashapp: person.cashapp || "",
       venmo: person.venmo || "",
       zelle: person.zelle || "",
+      paypal: person.paypal || "",
+      agGivingUrl: person.agGivingUrl || "",
       mightyProfileUrl: person.mightyProfileUrl || "",
     });
     setEditing(true);
@@ -206,6 +210,8 @@ export function PersonInfoPanel({
       cashapp: editForm.cashapp || null,
       venmo: editForm.venmo || null,
       zelle: editForm.zelle || null,
+      paypal: editForm.paypal || null,
+      agGivingUrl: editForm.agGivingUrl || null,
       mightyProfileUrl: editForm.mightyProfileUrl || null,
     });
   };
@@ -451,6 +457,32 @@ export function PersonInfoPanel({
                 className="h-7 text-sm font-mono"
               />
             </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-[#003087] flex items-center justify-center text-white text-[8px] font-bold shrink-0">
+                P
+              </div>
+              <Input
+                value={editForm.paypal}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, paypal: e.target.value }))
+                }
+                placeholder="PayPal.me username"
+                className="h-7 text-sm font-mono"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0">
+                <Globe className="h-2.5 w-2.5" />
+              </div>
+              <Input
+                value={editForm.agGivingUrl}
+                onChange={e =>
+                  setEditForm(f => ({ ...f, agGivingUrl: e.target.value }))
+                }
+                placeholder="https://giving.ag.org/missionary/..."
+                className="h-7 text-sm"
+              />
+            </div>
             <Separator className="my-2" />
             <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
               Profile Links
@@ -675,32 +707,81 @@ export function PersonInfoPanel({
                 </button>
               )}
 
-              {/* US Missions / AG Giving */}
-              <a
-                href="https://giving.ag.org/donate"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
-                <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                  <Globe className="h-4 w-4" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    US Missions Giving
-                  </p>
-                  <p className="text-xs text-gray-500">giving.ag.org/donate</p>
-                </div>
-                <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-red-600" />
-              </a>
+              {/* PayPal */}
+              {person.paypal && (
+                <a
+                  href={`https://paypal.me/${person.paypal}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#003087] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    P
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">PayPal</p>
+                    <p className="text-xs text-gray-500 font-mono truncate">
+                      {person.paypal}
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-blue-800" />
+                </a>
+              )}
+
+              {/* AG Giving (personal link or generic) */}
+              {person.agGivingUrl ? (
+                <a
+                  href={person.agGivingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      AG Giving
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {person.name}'s giving page
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-red-600" />
+                </a>
+              ) : (
+                <a
+                  href="https://giving.ag.org/donate"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">
+                      US Missions Giving
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      giving.ag.org/donate
+                    </p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-red-600" />
+                </a>
+              )}
 
               {/* No payment methods fallback */}
-              {!person.cashapp && !person.venmo && !person.zelle && (
-                <p className="text-xs text-gray-400 text-center py-1">
-                  No CashApp, Venmo, or Zelle on file — use US Missions Giving
-                  above or contact directly.
-                </p>
-              )}
+              {!person.cashapp &&
+                !person.venmo &&
+                !person.zelle &&
+                !person.paypal &&
+                !person.agGivingUrl && (
+                  <p className="text-xs text-gray-400 text-center py-1">
+                    No payment methods on file — use US Missions Giving above or
+                    contact directly.
+                  </p>
+                )}
             </div>
           </section>
 
@@ -855,6 +936,8 @@ export function PersonInfoPanel({
           cashapp={person.cashapp}
           zelle={person.zelle}
           venmo={person.venmo}
+          paypal={person.paypal}
+          agGivingUrl={person.agGivingUrl}
         />
       )}
     </div>

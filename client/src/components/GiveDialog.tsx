@@ -11,7 +11,14 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Copy, DollarSign, Wallet, MessageCircle, ExternalLink } from "lucide-react";
+import {
+  Copy,
+  DollarSign,
+  Wallet,
+  MessageCircle,
+  ExternalLink,
+  Globe,
+} from "lucide-react";
 import { MessageDialog } from "./MessageDialog";
 
 interface GiveDialogProps {
@@ -25,6 +32,8 @@ interface GiveDialogProps {
   cashapp?: string | null;
   zelle?: string | null;
   venmo?: string | null;
+  paypal?: string | null;
+  agGivingUrl?: string | null;
 }
 
 export function GiveDialog({
@@ -38,6 +47,8 @@ export function GiveDialog({
   cashapp,
   zelle,
   venmo,
+  paypal,
+  agGivingUrl,
 }: GiveDialogProps) {
   const [amountGiven, setAmountGiven] = useState("");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
@@ -56,7 +67,13 @@ export function GiveDialog({
     },
   });
 
-  const hasPaymentMethods = !!(cashapp || zelle || venmo);
+  const hasPaymentMethods = !!(
+    cashapp ||
+    zelle ||
+    venmo ||
+    paypal ||
+    agGivingUrl
+  );
 
   const copyToClipboard = (label: string, value: string) => {
     navigator.clipboard.writeText(value);
@@ -127,16 +144,43 @@ export function GiveDialog({
                     <Copy className="h-3.5 w-3.5 ml-1" />
                   </Button>
                 )}
+                {paypal && (
+                  <a
+                    href={`https://paypal.me/${paypal}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border px-4 py-2.5 bg-[#003087] text-white hover:bg-[#002670] transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <span className="font-bold">PayPal</span>
+                    <span className="font-mono">{paypal}</span>
+                    <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
+                )}
+                {agGivingUrl && (
+                  <a
+                    href={agGivingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium border px-4 py-2.5 bg-red-600 text-white hover:bg-red-700 transition-colors"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Globe className="h-3.5 w-3.5" />
+                    <span className="font-bold">AG Giving</span>
+                    <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                  </a>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Send your gift through any method above, then record the amount below.
+                Send your gift through any method above, then record the amount
+                below.
               </p>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No CashApp, Zelle, or Venmo on file. You can still give via cash,
-              check, or other methods—contact {personName} directly. Record your
-              gift below to update their need.
+              No payment methods on file. You can still give via cash, check, or
+              other methods—contact {personName} directly. Record your gift
+              below to update their need.
             </p>
           )}
 
