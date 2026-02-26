@@ -15,6 +15,7 @@ import { TRPCClientError } from "@trpc/client";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,10 @@ import {
   X,
   Plus,
   Heart,
+  Phone,
+  DollarSign,
+  User,
+  ExternalLink,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -161,6 +166,18 @@ export function LoginModal({
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [customRoleTitle, setCustomRoleTitle] = useState("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
+  // Contact & profile info
+  const [phone, setPhone] = useState("");
+  const [mightyProfileUrl, setMightyProfileUrl] = useState("");
+
+  // Giving handles (for receiving donations)
+  const [hasNeed, setHasNeed] = useState(false);
+  const [cashapp, setCashapp] = useState("");
+  const [venmo, setVenmo] = useState("");
+  const [zelle, setZelle] = useState("");
+  const [paypal, setPaypal] = useState("");
+  const [agGivingUrl, setAgGivingUrl] = useState("");
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -392,6 +409,15 @@ export function LoginModal({
     setRegionQuery("");
     setDistrictQuery("");
     setCampusQuery("");
+    // Reset contact & giving fields
+    setPhone("");
+    setMightyProfileUrl("");
+    setHasNeed(false);
+    setCashapp("");
+    setVenmo("");
+    setZelle("");
+    setPaypal("");
+    setAgGivingUrl("");
   };
 
   useEffect(() => {
@@ -539,6 +565,15 @@ export function LoginModal({
       customRoleTitle: isOther
         ? customRoleTitle.trim() || undefined
         : undefined,
+      // Contact info
+      phone: phone.trim() || undefined,
+      mightyProfileUrl: mightyProfileUrl.trim() || undefined,
+      // Giving handles (only if they have a need)
+      cashapp: hasNeed ? cashapp.trim() || undefined : undefined,
+      venmo: hasNeed ? venmo.trim() || undefined : undefined,
+      zelle: hasNeed ? zelle.trim() || undefined : undefined,
+      paypal: hasNeed ? paypal.trim() || undefined : undefined,
+      agGivingUrl: hasNeed ? agGivingUrl.trim() || undefined : undefined,
     });
   };
 
@@ -1401,80 +1436,229 @@ export function LoginModal({
             </div>
           )}
 
-          {/* REGISTER: ROLE SELECTION */}
+          {/* REGISTER: ROLE SELECTION & PROFILE SETUP */}
           {mode === "register" && step === "role" && (
-            <div className="space-y-4">
-              <div className="mb-6">
+            <div className="space-y-5">
+              <div className="mb-4">
                 <h2 className="text-lg font-semibold text-slate-900">
-                  What's your role?
+                  Set up your profile
                 </h2>
                 <p className="text-sm text-slate-600">
                   {getScopeDescription()}
                 </p>
               </div>
 
+              {/* ══ ROLE SELECTION ══ */}
               <div className="space-y-2">
-                {getAvailableRoles().map(role => (
-                  <button
-                    key={role.value}
-                    onClick={() => {
-                      if (role.value === "OTHER") {
-                        setSelectedRole("OTHER");
-                      } else {
-                        handleRoleSelect(role.value);
-                      }
-                    }}
-                    className={cn(
-                      "group flex w-full items-center gap-4 rounded-xl border p-4 text-left shadow-sm shadow-slate-900/5 transition-all",
-                      selectedRole === role.value && role.value === "OTHER"
-                        ? "border-red-300 bg-white"
-                        : "border-slate-200/70 bg-white/70 hover:border-red-300 hover:bg-white"
-                    )}
-                  >
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-900">{role.label}</p>
-                      <p className="mt-0.5 text-xs text-slate-500">
-                        {role.description}
-                      </p>
-                    </div>
-                    {role.value !== "OTHER" && (
-                      <ChevronRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1 group-hover:text-red-600" />
-                    )}
-                  </button>
-                ))}
+                <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-slate-500" />
+                  What's your role?
+                </Label>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                  {getAvailableRoles().map(role => (
+                    <button
+                      key={role.value}
+                      onClick={() => {
+                        if (role.value === "OTHER") {
+                          setSelectedRole("OTHER");
+                        } else {
+                          setSelectedRole(role.value);
+                        }
+                      }}
+                      className={cn(
+                        "group flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition-all",
+                        selectedRole === role.value
+                          ? "border-red-400 bg-red-50"
+                          : "border-slate-200/70 bg-white/70 hover:border-red-300 hover:bg-white"
+                      )}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate">
+                          {role.label}
+                        </p>
+                        <p className="text-[11px] text-slate-500 truncate">
+                          {role.description}
+                        </p>
+                      </div>
+                      {selectedRole === role.value && (
+                        <Check className="h-4 w-4 text-red-600 shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Custom role input for "Other" */}
               {selectedRole === "OTHER" && (
-                <div className="space-y-3 rounded-lg border border-slate-200/70 bg-white/70 p-4">
+                <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                  <Label
+                    htmlFor="custom-role"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Describe your role
+                  </Label>
+                  <Input
+                    id="custom-role"
+                    type="text"
+                    value={customRoleTitle}
+                    onChange={e => setCustomRoleTitle(e.target.value)}
+                    placeholder="e.g., Pastor, Supporter, Parent..."
+                    className="border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+                  />
+                  <p className="text-xs text-amber-700">
+                    You'll be able to view the map, but won't see personal
+                    details or have edit access.
+                  </p>
+                </div>
+              )}
+
+              {/* ══ CONTACT INFO ══ */}
+              <div className="space-y-3 rounded-lg border border-slate-200/70 bg-white/70 p-3">
+                <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Phone className="h-4 w-4 text-green-600" />
+                  Contact Information
+                </Label>
+                <div className="space-y-2">
                   <div>
-                    <Label
-                      htmlFor="custom-role"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      What is your role?
+                    <Label htmlFor="phone" className="text-xs text-slate-500">
+                      Phone Number
                     </Label>
                     <Input
-                      id="custom-role"
-                      type="text"
-                      value={customRoleTitle}
-                      onChange={e => setCustomRoleTitle(e.target.value)}
-                      placeholder="e.g., Pastor, Supporter, Parent..."
-                      className="mt-1.5 border-slate-200 bg-white/80 text-slate-900 placeholder:text-slate-400 focus-visible:border-red-500/60 focus-visible:ring-red-500/20"
-                      autoFocus
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={e => setPhone(e.target.value)}
+                      placeholder="(555) 123-4567"
+                      className="mt-1 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
                     />
                   </div>
-                  <p className="text-xs text-amber-700 bg-amber-50 rounded px-2.5 py-1.5 border border-amber-200">
-                    You'll be able to view the full map, but you won't be able
-                    to see any personal details or edit anything.
-                  </p>
-                  <Button
-                    onClick={() => goToStep("confirm")}
-                    className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-4 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
-                  >
-                    Continue <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
+                  <div>
+                    <Label
+                      htmlFor="mighty-url"
+                      className="text-xs text-slate-500 flex items-center gap-1"
+                    >
+                      <span>Mighty Networks Profile</span>
+                      <a
+                        href="https://chialpha.mn.co"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-orange-500 hover:text-orange-600"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </Label>
+                    <Input
+                      id="mighty-url"
+                      type="url"
+                      value={mightyProfileUrl}
+                      onChange={e => setMightyProfileUrl(e.target.value)}
+                      placeholder="https://chialpha.mn.co/members/..."
+                      className="mt-1 border-slate-200 bg-white text-slate-900 placeholder:text-slate-400"
+                    />
+                  </div>
                 </div>
+              </div>
+
+              {/* ══ FUNDRAISING NEED TOGGLE ══ */}
+              <div className="flex items-center justify-between rounded-lg border border-slate-200/70 bg-white/70 p-3">
+                <div className="flex items-center gap-2">
+                  <Heart className="h-4 w-4 text-red-500" />
+                  <div>
+                    <Label className="text-sm font-medium text-slate-900">
+                      I have a fundraising need
+                    </Label>
+                    <p className="text-xs text-slate-500">
+                      Add ways for others to give to you
+                    </p>
+                  </div>
+                </div>
+                <Switch checked={hasNeed} onCheckedChange={setHasNeed} />
+              </div>
+
+              {/* ══ WAYS TO GIVE (shown when hasNeed) ══ */}
+              {hasNeed && (
+                <div className="space-y-3 rounded-lg border border-green-200 bg-green-50/50 p-3">
+                  <Label className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    Ways to Give
+                  </Label>
+                  <p className="text-xs text-slate-500 -mt-1">
+                    Add your payment handles so supporters can give directly to
+                    you
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {/* CashApp */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#00D632] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        $
+                      </div>
+                      <Input
+                        value={cashapp}
+                        onChange={e => setCashapp(e.target.value)}
+                        placeholder="$cashapptag"
+                        className="flex-1 h-8 text-sm border-slate-200 bg-white font-mono"
+                      />
+                    </div>
+                    {/* Venmo */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#008CFF] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        V
+                      </div>
+                      <Input
+                        value={venmo}
+                        onChange={e => setVenmo(e.target.value)}
+                        placeholder="@venmohandle"
+                        className="flex-1 h-8 text-sm border-slate-200 bg-white font-mono"
+                      />
+                    </div>
+                    {/* PayPal */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#003087] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        P
+                      </div>
+                      <Input
+                        value={paypal}
+                        onChange={e => setPaypal(e.target.value)}
+                        placeholder="paypal.me/yourhandle or email"
+                        className="flex-1 h-8 text-sm border-slate-200 bg-white font-mono"
+                      />
+                    </div>
+                    {/* Zelle */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-[#6D1ED4] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                        Z
+                      </div>
+                      <Input
+                        value={zelle}
+                        onChange={e => setZelle(e.target.value)}
+                        placeholder="Zelle phone or email"
+                        className="flex-1 h-8 text-sm border-slate-200 bg-white font-mono"
+                      />
+                    </div>
+                    {/* AG Giving */}
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-white shrink-0">
+                        <Globe className="h-3 w-3" />
+                      </div>
+                      <Input
+                        value={agGivingUrl}
+                        onChange={e => setAgGivingUrl(e.target.value)}
+                        placeholder="https://giving.ag.org/missionary/..."
+                        className="flex-1 h-8 text-sm border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ══ CONTINUE BUTTON ══ */}
+              {selectedRole && (
+                <Button
+                  onClick={() => goToStep("confirm")}
+                  className="w-full bg-gradient-to-r from-red-600 to-rose-600 py-4 font-semibold uppercase tracking-wide text-white shadow-lg shadow-red-500/20 transition-all hover:from-red-500 hover:to-rose-500 hover:shadow-red-500/30"
+                >
+                  Continue <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
               )}
 
               <button
@@ -1563,7 +1747,87 @@ export function LoginModal({
                           ?.description}
                   </span>
                 </div>
+                {phone && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">Phone</span>
+                    <span className="text-sm font-medium text-slate-900">
+                      {phone}
+                    </span>
+                  </div>
+                )}
+                {mightyProfileUrl && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">
+                      Mighty Profile
+                    </span>
+                    <span className="text-sm font-medium text-slate-900 truncate max-w-[180px]">
+                      {mightyProfileUrl}
+                    </span>
+                  </div>
+                )}
+                {hasNeed && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-600">
+                      Fundraising Need
+                    </span>
+                    <span className="text-sm font-medium text-emerald-600">
+                      Yes
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* Ways to Give Summary */}
+              {hasNeed &&
+                (cashapp || venmo || paypal || zelle || agGivingUrl) && (
+                  <div className="rounded-lg border border-emerald-200/70 bg-emerald-50/50 p-4">
+                    <p className="text-xs font-medium text-emerald-700 mb-2">
+                      Ways to Give
+                    </p>
+                    <div className="space-y-1.5 text-sm">
+                      {cashapp && (
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600">CashApp</span>
+                          <span className="font-medium text-slate-900">
+                            {cashapp}
+                          </span>
+                        </div>
+                      )}
+                      {venmo && (
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600">Venmo</span>
+                          <span className="font-medium text-slate-900">
+                            {venmo}
+                          </span>
+                        </div>
+                      )}
+                      {paypal && (
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600">PayPal</span>
+                          <span className="font-medium text-slate-900">
+                            {paypal}
+                          </span>
+                        </div>
+                      )}
+                      {zelle && (
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600">Zelle</span>
+                          <span className="font-medium text-slate-900">
+                            {zelle}
+                          </span>
+                        </div>
+                      )}
+                      {agGivingUrl && (
+                        <div className="flex justify-between">
+                          <span className="text-emerald-600">AG Giving</span>
+                          <span className="font-medium text-slate-900 truncate max-w-[180px]">
+                            {agGivingUrl}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
               {renderError()}
 

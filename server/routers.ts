@@ -241,6 +241,16 @@ export const appRouter = router({
           overseeRegionId: z.string().optional(),
           // For OTHER role - custom role title entered by user
           customRoleTitle: z.string().max(255).optional(),
+          // Contact information
+          phone: z.string().max(32).optional(),
+          // Social media / Mighty profile
+          mightyProfileUrl: z.string().max(512).optional(),
+          // Giving handles (for receiving donations)
+          cashapp: z.string().max(64).optional(),
+          venmo: z.string().max(64).optional(),
+          zelle: z.string().max(128).optional(),
+          paypal: z.string().max(128).optional(),
+          agGivingUrl: z.string().max(512).optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -410,6 +420,17 @@ export const appRouter = router({
             primaryDistrictId: districtId,
             primaryRegion: regionId,
             status: "Not Invited",
+            // Contact info
+            phone: input.phone || null,
+            email: input.email,
+            // Social / Profile links
+            mightyProfileUrl: input.mightyProfileUrl || null,
+            // Giving handles
+            cashapp: input.cashapp || null,
+            venmo: input.venmo || null,
+            zelle: input.zelle || null,
+            paypal: input.paypal || null,
+            agGivingUrl: input.agGivingUrl || null,
           });
           // Link user to person record
           await db.updateUserPersonId(userId, personId);
@@ -2715,9 +2736,21 @@ export const appRouter = router({
           if (!person) continue;
 
           // Scope filter
-          if (scope.level === "REGION" && resolvePersonRegion(person) !== scope.regionId) continue;
-          if (scope.level === "DISTRICT" && person.primaryDistrictId !== scope.districtId) continue;
-          if (scope.level === "CAMPUS" && person.primaryCampusId !== scope.campusId) continue;
+          if (
+            scope.level === "REGION" &&
+            resolvePersonRegion(person) !== scope.regionId
+          )
+            continue;
+          if (
+            scope.level === "DISTRICT" &&
+            person.primaryDistrictId !== scope.districtId
+          )
+            continue;
+          if (
+            scope.level === "CAMPUS" &&
+            person.primaryCampusId !== scope.campusId
+          )
+            continue;
 
           // Get campus name
           let campusName: string | null = null;
@@ -2738,7 +2771,10 @@ export const appRouter = router({
 
         return enriched;
       } catch (error) {
-        console.error("[needs.listActiveEnriched] Error:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[needs.listActiveEnriched] Error:",
+          error instanceof Error ? error.message : String(error)
+        );
         throw error;
       }
     }),

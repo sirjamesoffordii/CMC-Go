@@ -188,6 +188,8 @@ export const people = mysqlTable(
     cashapp: varchar("cashapp", { length: 64 }),
     zelle: varchar("zelle", { length: 128 }),
     venmo: varchar("venmo", { length: 64 }),
+    paypal: varchar("paypal", { length: 128 }),
+    agGivingUrl: varchar("agGivingUrl", { length: 512 }), // giving.ag.org personal page
     // Mighty Networks profile link (Chi Alpha Mighty app)
     mightyProfileUrl: varchar("mightyProfileUrl", { length: 512 }),
     // Last edited tracking
