@@ -24,6 +24,7 @@ import {
   notes,
   assignments,
   settings,
+  needGifts,
 } from "../drizzle/schema.ts";
 
 config();
@@ -708,7 +709,9 @@ async function seed() {
         amount:
           needType === "Registration"
             ? Math.floor(Math.random() * 50000) + 1000
-            : null, // $10-$500 in cents
+            : Math.floor(Math.random() * 30000) + 500, // all types get an amount $5-$300
+        fundsReceived:
+          Math.random() > 0.5 ? Math.floor(Math.random() * 15000) : 0, // ~50% partially funded
         visibility:
           Math.random() > 0.3 ? "DISTRICT_VISIBLE" : "LEADERSHIP_ONLY",
         isActive: true,
@@ -741,6 +744,79 @@ async function seed() {
       }
     }
     console.log(`✅ Inserted/updated ${needsSuccessCount} needs\n`);
+
+    // 4b. Seed need gifts (giving history)
+    console.log("🎁 Generating gift records...");
+    // First, fetch inserted needs to get their IDs
+    const insertedNeeds = await db.select().from(needs);
+    const giverNames = [
+      "Sarah Johnson",
+      "Mike Thompson",
+      "Lisa Chen",
+      "David Martinez",
+      "Rachel Adams",
+      "Chris Wilson",
+      "Amanda Brooks",
+      "Tom Garcia",
+    ];
+    const giftMethods = [
+      "cashapp",
+      "venmo",
+      "zelle",
+      "paypal",
+      "ag_giving",
+      "other",
+    ];
+    const giftNotes = [
+      "Happy to help!",
+      "Praying for your trip!",
+      "God bless you!",
+      "Hope this helps with your expenses",
+      null,
+      null,
+      null,
+    ];
+
+    // Delete existing gifts before seeding
+    await db.delete(needGifts);
+
+    let giftCount = 0;
+    for (const need of insertedNeeds) {
+      // ~60% of needs get 1-4 gifts
+      if (Math.random() > 0.4) {
+        const numGifts = Math.floor(Math.random() * 4) + 1;
+        for (let g = 0; g < numGifts; g++) {
+          // Use a random userId between 1-10 (seed users)
+          const giverUserId = Math.floor(Math.random() * 10) + 1;
+          const method =
+            giftMethods[Math.floor(Math.random() * giftMethods.length)];
+          const note = giftNotes[Math.floor(Math.random() * giftNotes.length)];
+          const amountCents =
+            Math.random() > 0.2
+              ? Math.floor(Math.random() * 10000) + 500
+              : null;
+          const daysAgo = Math.floor(Math.random() * 30);
+          const createdAt = new Date(
+            Date.now() - daysAgo * 24 * 60 * 60 * 1000
+          );
+
+          try {
+            await db.insert(needGifts).values({
+              needId: need.id,
+              giverUserId,
+              amountCents,
+              method,
+              note,
+              createdAt,
+            });
+            giftCount++;
+          } catch (error) {
+            // Skip if FK constraint fails (user doesn't exist)
+          }
+        }
+      }
+    }
+    console.log(`✅ Inserted ${giftCount} gift records\n`);
 
     // 5. Insert notes (for some people)
     console.log("📝 Generating notes...");

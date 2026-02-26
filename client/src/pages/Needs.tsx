@@ -22,6 +22,8 @@ import {
   Check,
   X,
   SlidersHorizontal,
+  MessageCircle,
+  Users,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { MakeRequestDialog } from "@/components/MakeRequestDialog";
@@ -248,6 +250,15 @@ export default function Needs() {
         : 0;
     const isFunded = item.amount && (item.fundsReceived ?? 0) >= item.amount;
 
+    // Gift summary
+    const gifts = item.gifts ?? [];
+    const initials = item.personName
+      .split(" ")
+      .map(w => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+
     return (
       <Card
         key={item.id}
@@ -255,10 +266,25 @@ export default function Needs() {
       >
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
+            {/* Profile picture or type icon */}
+            {item.profilePictureUrl ? (
+              <img
+                src={item.profilePictureUrl}
+                alt={item.personName}
+                className="w-10 h-10 rounded-full object-cover shrink-0"
+                onError={e => {
+                  // Fallback to type icon
+                  (e.target as HTMLImageElement).style.display = "none";
+                  (
+                    e.target as HTMLImageElement
+                  ).nextElementSibling?.classList.remove("hidden");
+                }}
+              />
+            ) : null}
             <div
-              className={`w-10 h-10 rounded-lg ${config.bgColor} flex items-center justify-center shrink-0`}
+              className={`w-10 h-10 rounded-full ${config.bgColor} flex items-center justify-center shrink-0 text-xs font-bold ${config.color} ${item.profilePictureUrl ? "hidden" : ""}`}
             >
-              <Icon className={`h-5 w-5 ${config.color}`} />
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
               {/* Header */}
@@ -310,6 +336,43 @@ export default function Needs() {
                 </div>
               )}
 
+              {/* Giving history summary */}
+              {gifts.length > 0 && (
+                <div className="mb-2 bg-green-50 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-green-800 mb-1">
+                    <Users className="h-3 w-3" />
+                    {gifts.length} gift{gifts.length !== 1 ? "s" : ""} received
+                  </div>
+                  <div className="space-y-0.5">
+                    {gifts.slice(0, 3).map(g => (
+                      <div
+                        key={g.id}
+                        className="text-xs text-green-700 flex items-center justify-between"
+                      >
+                        <span className="truncate">
+                          {g.giverName}
+                          {g.amountCents
+                            ? ` — $${(g.amountCents / 100).toFixed(0)}`
+                            : ""}
+                          {g.method ? ` via ${g.method.replace("_", " ")}` : ""}
+                        </span>
+                        <span className="text-green-600 shrink-0 ml-2">
+                          {new Date(g.createdAt).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                    {gifts.length > 3 && (
+                      <div className="text-xs text-green-600 italic">
+                        +{gifts.length - 3} more
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex flex-wrap gap-2">
                 {!isFunded && (
@@ -323,6 +386,15 @@ export default function Needs() {
                     Give
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  onClick={() => setLocation(`/messages?to=${item.personId}`)}
+                >
+                  <MessageCircle className="h-3 w-3 mr-1" />
+                  Message
+                </Button>
                 {isLeader && (
                   <Button
                     size="sm"

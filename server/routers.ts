@@ -2677,6 +2677,41 @@ export const appRouter = router({
         await db.addFundsToNeed(input.needId, input.amountCents);
         return { success: true };
       }),
+
+    /** Record a gift to a need (who gave, optional amount/method) */
+    recordGift: protectedProcedure
+      .input(
+        z.object({
+          needId: z.number(),
+          amountCents: z.number().min(0).optional(),
+          method: z
+            .enum(["cashapp", "venmo", "zelle", "paypal", "ag_giving", "other"])
+            .optional(),
+          note: z.string().max(512).optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const need = await db.getNeedById(input.needId);
+        if (!need) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Need not found" });
+        }
+
+        const giftId = await db.createNeedGift({
+          needId: input.needId,
+          giverUserId: ctx.user.id,
+          amountCents: input.amountCents ?? null,
+          method: input.method ?? null,
+          note: input.note ?? null,
+        });
+
+        // If amount provided, also add to funds received on the need
+        if (input.amountCents && input.amountCents > 0) {
+          await db.addFundsToNeed(input.needId, input.amountCents);
+        }
+
+        return { giftId };
+      }),
+
     listActive: protectedProcedure.query(async ({ ctx }) => {
       try {
         const scope = getPeopleScope(ctx.user);
@@ -2738,6 +2773,20 @@ export const appRouter = router({
         const allCampuses = await db.getAllCampuses();
         const campusMap = new Map(allCampuses.map(c => [c.id, c]));
 
+        // Batch-fetch all users (for gift giver names)
+        const allUsers = await db.getAllUsers();
+        const userMap = new Map(allUsers.map(u => [u.id, u]));
+
+        // Batch-fetch all gifts for active needs
+        const needIds = allNeeds.map(n => n.id);
+        const allGifts = await db.getGiftsForNeeds(needIds);
+        const giftsByNeed = new Map<number, typeof allGifts>();
+        for (const gift of allGifts) {
+          const list = giftsByNeed.get(gift.needId) ?? [];
+          list.push(gift);
+          giftsByNeed.set(gift.needId, list);
+        }
+
         const enriched = [];
         for (const need of allNeeds) {
           const person = peopleMap.get(need.personId);
@@ -2765,15 +2814,28 @@ export const appRouter = router({
             ? (campusMap.get(person.primaryCampusId)?.name ?? null)
             : null;
 
+          // Build gift summaries
+          const needGifts = giftsByNeed.get(need.id) ?? [];
+          const gifts = needGifts.map(g => ({
+            id: g.id,
+            giverName: userMap.get(g.giverUserId)?.fullName ?? "Anonymous",
+            amountCents: g.amountCents,
+            method: g.method,
+            note: g.note,
+            createdAt: g.createdAt,
+          }));
+
           enriched.push({
             ...need,
             personName: person.name,
             campusName,
+            profilePictureUrl: person.profilePictureUrl ?? null,
             cashapp: person.cashapp ?? null,
             zelle: person.zelle ?? null,
             venmo: person.venmo ?? null,
             paypal: person.paypal ?? null,
             agGivingUrl: person.agGivingUrl ?? null,
+            gifts,
           });
         }
 

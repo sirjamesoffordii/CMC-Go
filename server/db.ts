@@ -30,6 +30,8 @@ import {
   InsertInviteNote,
   InsertMessage,
   InsertNotification,
+  needGifts,
+  InsertNeedGift,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import {
@@ -2589,4 +2591,41 @@ export async function getFundsRaisedByRegion() {
     totalFundedCents: Number(r.totalFunded),
     activeNeedCount: Number(r.activeNeedCount),
   }));
+}
+
+// ============================================================================
+// NEED GIFTS (Giving History)
+// ============================================================================
+
+export async function createNeedGift(data: InsertNeedGift) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(needGifts).values(data);
+  return result[0].insertId;
+}
+
+export async function getGiftsForNeed(needId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(needGifts)
+    .where(eq(needGifts.needId, needId))
+    .orderBy(sql`${needGifts.createdAt} DESC`);
+}
+
+export async function getGiftsForNeeds(needIds: number[]) {
+  const db = await getDb();
+  if (!db) return [];
+  if (needIds.length === 0) return [];
+  return await db
+    .select()
+    .from(needGifts)
+    .where(
+      sql`${needGifts.needId} IN (${sql.join(
+        needIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    )
+    .orderBy(sql`${needGifts.createdAt} DESC`);
 }

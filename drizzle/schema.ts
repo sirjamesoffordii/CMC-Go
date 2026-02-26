@@ -523,3 +523,34 @@ export const notificationSettings = mysqlTable("notification_settings", {
 export type NotificationSetting = typeof notificationSettings.$inferSelect;
 export type InsertNotificationSetting =
   typeof notificationSettings.$inferInsert;
+
+/**
+ * Need gifts table - tracks who gave to a need and when
+ * Links a donor (user) to a need with optional amount and method
+ */
+export const needGifts = mysqlTable(
+  "need_gifts",
+  {
+    id: int("id").primaryKey().autoincrement(),
+    needId: int("needId").notNull(), // References needs.id
+    giverUserId: int("giverUserId").notNull(), // References users.id (who gave)
+    amountCents: int("amountCents"), // optional — may not know exact amount
+    method: mysqlEnum("method", [
+      "cashapp",
+      "venmo",
+      "zelle",
+      "paypal",
+      "ag_giving",
+      "other",
+    ]),
+    note: varchar("note", { length: 512 }), // optional note from donor
+    createdAt: timestamp("createdAt").notNull().defaultNow(),
+  },
+  table => ({
+    needIdIdx: index("need_gifts_needId_idx").on(table.needId),
+    giverUserIdIdx: index("need_gifts_giverUserId_idx").on(table.giverUserId),
+  })
+);
+
+export type NeedGift = typeof needGifts.$inferSelect;
+export type InsertNeedGift = typeof needGifts.$inferInsert;
