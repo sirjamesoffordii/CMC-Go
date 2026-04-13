@@ -20,7 +20,7 @@ jobs:
           grep -c "showClose" client/src/components/LoginModal.tsx && echo "showClose FOUND" || echo "showClose NOT found"
           grep -c "ACTION NEEDED" client/src/components/LoginModal.tsx && echo "ACTION NEEDED still present!" || echo "ACTION NEEDED removed (good)"
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
