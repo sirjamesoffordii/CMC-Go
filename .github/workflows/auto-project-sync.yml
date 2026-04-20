@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add Issue to Project 4
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PROJECT_AUTOMATION_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -78,7 +78,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add PR to Project 4
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PROJECT_AUTOMATION_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
@@ -168,7 +168,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Find and update linked Issues
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.PROJECT_AUTOMATION_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
