@@ -1,6 +1,14 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Heart, Share2, X, MapPin } from "lucide-react";
+import {
+  ArrowLeft,
+  DollarSign,
+  Heart,
+  Landmark,
+  MapPin,
+  Share2,
+  X,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +30,8 @@ import {
 } from "@shared/const";
 
 const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
+const ZELLE_EMAIL = "donate@pvchialpha.com";
+const CASHAPP_HANDLE = "$pvchialpha";
 
 function formatDollars(cents: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -30,6 +40,65 @@ function formatDollars(cents: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+function OtherGivingMethods() {
+  return (
+    <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">
+            Other ways to give
+          </p>
+          <p className="text-xs text-slate-500">
+            PV Chi Alpha is only hosting the fund; all gifts will be sent out to
+            cover CMC needs.
+          </p>
+        </div>
+        <TooltipProvider delayDuration={100}>
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={`Zelle: ${ZELLE_EMAIL}`}
+                  onClick={() => void navigator.clipboard?.writeText(ZELLE_EMAIL)}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  <Landmark className="h-5 w-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div className="font-semibold">Zelle</div>
+                  <div className="opacity-80">{ZELLE_EMAIL}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a
+                  href="https://cash.app/$pvchialpha"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Cash App: ${CASHAPP_HANDLE}`}
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+                >
+                  <DollarSign className="h-5 w-5" />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="text-xs">
+                  <div className="font-semibold">Cash App</div>
+                  <div className="opacity-80">{CASHAPP_HANDLE}</div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
 }
 
 interface FundingSummaryCardProps {
@@ -631,6 +700,8 @@ export default function Donate() {
             <p className="text-center text-sm text-slate-400 mt-3">
               Secure payment processed by Stripe
             </p>
+
+            <OtherGivingMethods />
           </div>
 
           {/* What is CMC */}
