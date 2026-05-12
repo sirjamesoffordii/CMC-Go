@@ -36,7 +36,6 @@ interface FundingSummaryCardProps {
   fundsGivenCents: number;
   fundedPersonCount: number;
   totalRaisedCents: number;
-  fundsAvailableCents: number;
   peopleStillNeedFunding: number;
   totalNeedCents: number;
 }
@@ -45,7 +44,6 @@ function FundingSummaryCard({
   fundsGivenCents,
   fundedPersonCount,
   totalRaisedCents,
-  fundsAvailableCents,
   peopleStillNeedFunding,
   totalNeedCents,
 }: FundingSummaryCardProps) {
@@ -98,18 +96,13 @@ function FundingSummaryCard({
             {fundedPersonCount} {fundedPersonCount === 1 ? "person" : "people"}
             {" funded"}
           </p>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 lg:grid-cols-1">
-            <div>
-              <span className="block font-semibold text-slate-900">
-                {formatDollars(fundsAvailableCents)}
-              </span>
-              still in fund
-            </div>
+          <div className="mt-3 text-xs text-slate-600">
             <div>
               <span className="block font-semibold text-slate-900">
                 {formatDollars(totalNeedCents)}
               </span>
-              needed for {peopleStillNeedFunding} people
+              still in request by {peopleStillNeedFunding}{" "}
+              {peopleStillNeedFunding === 1 ? "person" : "people"}
             </div>
           </div>
         </div>
@@ -224,10 +217,6 @@ export default function Donate() {
   const fundingSummary = progress?.fundingSummary ?? {
     fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
     fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
-    fundsAvailableCents: Math.max(
-      totalRaised - DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
-      0
-    ),
     peopleStillNeedFunding: 0,
     totalNeedCents: 0,
   };
@@ -511,7 +500,6 @@ export default function Donate() {
                 fundsGivenCents={fundingSummary.fundsGivenCents}
                 fundedPersonCount={fundingSummary.fundedPersonCount}
                 totalRaisedCents={totalRaised}
-                fundsAvailableCents={fundingSummary.fundsAvailableCents}
                 peopleStillNeedFunding={fundingSummary.peopleStillNeedFunding}
                 totalNeedCents={fundingSummary.totalNeedCents}
               />

@@ -35,6 +35,14 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import {
+  DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+  DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+  DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
+  DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
+  DONATION_REQUEST_SHEET_GID,
+  DONATION_REQUEST_SHEET_ID,
+} from "../shared/const";
+import {
   peopleScopeWhereClause,
   type PeopleScope,
   type UserScopeAnchors,
@@ -2392,39 +2400,110 @@ export async function getCompletedDonors(): Promise<
   }
 }
 
+interface GoogleVisualizationCell {
+  v?: unknown;
+  f?: string;
+}
+
+interface GoogleVisualizationRow {
+  c?: Array<GoogleVisualizationCell | null>;
+}
+
+interface GoogleVisualizationResponse {
+  table?: {
+    rows?: GoogleVisualizationRow[];
+  };
+}
+
+function parseMoneyToCents(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.round(value * 100);
+  }
+  if (typeof value !== "string") return 0;
+  const normalized = value.replace(/[$,]/g, "").trim();
+  if (!normalized) return 0;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+}
+
+function getSheetCell(row: GoogleVisualizationRow, index: number): unknown {
+  const cell = row.c?.[index];
+  return cell?.v ?? cell?.f ?? "";
+}
+
+function parseGoogleVisualizationPayload(
+  text: string
+): GoogleVisualizationResponse {
+  const payload = text
+    .replace(/^\/\*O_o\*\/\s*google\.visualization\.Query\.setResponse\(/, "")
+    .replace(/\);\s*$/, "");
+  return JSON.parse(payload) as GoogleVisualizationResponse;
+}
+
 /**
- * Anonymous aggregate of active funding demand for the public donation page.
+ * Anonymous aggregate from the public CMC fund request Google Sheet.
+ * Columns used: C = person, H = requested, L = received, M = still in request.
  */
 export async function getDonationFundingDemand(): Promise<{
+  fundsGivenCents: number;
+  fundedPersonCount: number;
   peopleStillNeedFunding: number;
   totalNeedCents: number;
 }> {
+  const fallback = {
+    fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+    fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+    peopleStillNeedFunding: DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
+    totalNeedCents: DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
+  };
+
   try {
-    const db = await getDb();
-    if (!db) return { peopleStillNeedFunding: 0, totalNeedCents: 0 };
+    const url = new URL(
+      `https://docs.google.com/spreadsheets/d/${DONATION_REQUEST_SHEET_ID}/gviz/tq`
+    );
+    url.searchParams.set("tqx", "out:json");
+    url.searchParams.set("gid", DONATION_REQUEST_SHEET_GID);
 
-    const remainingNeed = sql<number>`CASE
-      WHEN ${needs.isActive} = true
-        AND ${needs.amount} IS NOT NULL
-        AND ${needs.amount} > COALESCE(${needs.fundsReceived}, 0)
-      THEN ${needs.amount} - COALESCE(${needs.fundsReceived}, 0)
-      ELSE 0
-    END`;
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return fallback;
 
-    const result = await db
-      .select({
-        peopleStillNeedFunding: sql<number>`COUNT(DISTINCT CASE WHEN ${remainingNeed} > 0 THEN ${needs.personId} END)`,
-        totalNeedCents: sql<number>`COALESCE(SUM(${remainingNeed}), 0)`,
-      })
-      .from(needs);
+    const parsed = parseGoogleVisualizationPayload(await response.text());
+    const rows = parsed.table?.rows ?? [];
+
+    let fundsGivenCents = 0;
+    let fundedPersonCount = 0;
+    let peopleStillNeedFunding = 0;
+    let totalNeedCents = 0;
+
+    for (const row of rows) {
+      const fullName = String(getSheetCell(row, 2) ?? "").trim();
+      if (!fullName) continue;
+
+      const requestedCents = parseMoneyToCents(getSheetCell(row, 7));
+      const receivedCents = parseMoneyToCents(getSheetCell(row, 11));
+      const sheetLeftCents = parseMoneyToCents(getSheetCell(row, 12));
+      const leftCents =
+        sheetLeftCents > 0
+          ? sheetLeftCents
+          : Math.max(requestedCents - receivedCents, 0);
+
+      fundsGivenCents += receivedCents;
+      if (receivedCents > 0) fundedPersonCount += 1;
+      if (leftCents > 0) {
+        peopleStillNeedFunding += 1;
+        totalNeedCents += leftCents;
+      }
+    }
 
     return {
-      peopleStillNeedFunding: Number(result[0]?.peopleStillNeedFunding ?? 0),
-      totalNeedCents: Number(result[0]?.totalNeedCents ?? 0),
+      fundsGivenCents,
+      fundedPersonCount,
+      peopleStillNeedFunding,
+      totalNeedCents,
     };
   } catch (error) {
-    console.error("[Donations] Failed to fetch funding demand:", error);
-    return { peopleStillNeedFunding: 0, totalNeedCents: 0 };
+    console.error("[Donations] Failed to fetch funding demand sheet:", error);
+    return fallback;
   }
 }
 

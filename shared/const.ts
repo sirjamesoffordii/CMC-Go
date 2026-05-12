@@ -29,6 +29,11 @@ export const DONATION_CAMPAIGN_STARTING_RAISED_CENTS =
 
 export const DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS = 1_000_00;
 export const DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT = 1;
+export const DONATION_REQUEST_SHEET_ID =
+  "1xDGFzsohPoapkFC17IjpuM0vtVxbj-u61uKEh_L5ub0";
+export const DONATION_REQUEST_SHEET_GID = "364163300";
+export const DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS = 3_450_00;
+export const DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST = 7;
 
 /** Get a two-letter uppercase initials string from a donor's name. */
 export function getDonorInitials(name: string): string {

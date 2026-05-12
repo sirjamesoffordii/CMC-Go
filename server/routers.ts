@@ -22,8 +22,6 @@ import {
   DONATION_CAMPAIGN_DEADLINE_ISO,
   DONATION_CAMPAIGN_DEADLINE_LABEL,
   DONATION_CAMPAIGN_GOAL_CENTS,
-  DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
-  DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_CAMPAIGN_STARTING_DONORS,
   DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
   getDonorInitials,
@@ -3692,7 +3690,7 @@ export const appRouter = router({
       ]);
       const totalRaisedCents =
         DONATION_CAMPAIGN_STARTING_RAISED_CENTS + progress.totalRaisedCents;
-      const fundsGivenCents = DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS;
+      const fundsGivenCents = fundingDemand.fundsGivenCents;
       const donors = [
         ...DONATION_CAMPAIGN_STARTING_DONORS.map(d => ({
           name: d.name,
@@ -3714,7 +3712,7 @@ export const appRouter = router({
         donors,
         fundingSummary: {
           fundsGivenCents,
-          fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+          fundedPersonCount: fundingDemand.fundedPersonCount,
           fundsAvailableCents: Math.max(totalRaisedCents - fundsGivenCents, 0),
           peopleStillNeedFunding: fundingDemand.peopleStillNeedFunding,
           totalNeedCents: fundingDemand.totalNeedCents,

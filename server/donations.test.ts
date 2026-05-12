@@ -76,6 +76,8 @@ describe("donations router", () => {
       { name: "Anonymous donor", amountCents: 25_00 },
     ]);
     (getDonationFundingDemand as Mock).mockResolvedValue({
+      fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+      fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
       peopleStillNeedFunding: 4,
       totalNeedCents: 3_500_00,
     });
