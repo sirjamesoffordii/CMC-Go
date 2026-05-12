@@ -22,6 +22,8 @@ import {
   DONATION_CAMPAIGN_DEADLINE_ISO,
   DONATION_CAMPAIGN_DEADLINE_LABEL,
   DONATION_CAMPAIGN_GOAL_CENTS,
+  DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+  DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_CAMPAIGN_STARTING_DONORS,
   DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
   getDonorInitials,
@@ -3683,12 +3685,14 @@ export const appRouter = router({
   donations: router({
     /** Get campaign progress (public) */
     progress: publicProcedure.query(async () => {
-      const [progress, dbDonors] = await Promise.all([
+      const [progress, dbDonors, fundingDemand] = await Promise.all([
         db.getDonationProgress(),
         db.getCompletedDonors(),
+        db.getDonationFundingDemand(),
       ]);
       const totalRaisedCents =
         DONATION_CAMPAIGN_STARTING_RAISED_CENTS + progress.totalRaisedCents;
+      const fundsGivenCents = DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS;
       const donors = [
         ...DONATION_CAMPAIGN_STARTING_DONORS.map(d => ({
           name: d.name,
@@ -3708,6 +3712,13 @@ export const appRouter = router({
         donorCount:
           DONATION_CAMPAIGN_STARTING_DONORS.length + progress.donorCount,
         donors,
+        fundingSummary: {
+          fundsGivenCents,
+          fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+          fundsAvailableCents: Math.max(totalRaisedCents - fundsGivenCents, 0),
+          peopleStillNeedFunding: fundingDemand.peopleStillNeedFunding,
+          totalNeedCents: fundingDemand.totalNeedCents,
+        },
         goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
         deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
         deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,

@@ -27,6 +27,9 @@ export const DONATION_CAMPAIGN_STARTING_DONORS: ReadonlyArray<{
 export const DONATION_CAMPAIGN_STARTING_RAISED_CENTS =
   DONATION_CAMPAIGN_STARTING_DONORS.reduce((sum, d) => sum + d.amountCents, 0);
 
+export const DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS = 1_000_00;
+export const DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT = 1;
+
 /** Get a two-letter uppercase initials string from a donor's name. */
 export function getDonorInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);

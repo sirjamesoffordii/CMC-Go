@@ -2392,6 +2392,42 @@ export async function getCompletedDonors(): Promise<
   }
 }
 
+/**
+ * Anonymous aggregate of active funding demand for the public donation page.
+ */
+export async function getDonationFundingDemand(): Promise<{
+  peopleStillNeedFunding: number;
+  totalNeedCents: number;
+}> {
+  try {
+    const db = await getDb();
+    if (!db) return { peopleStillNeedFunding: 0, totalNeedCents: 0 };
+
+    const remainingNeed = sql<number>`CASE
+      WHEN ${needs.isActive} = true
+        AND ${needs.amount} IS NOT NULL
+        AND ${needs.amount} > COALESCE(${needs.fundsReceived}, 0)
+      THEN ${needs.amount} - COALESCE(${needs.fundsReceived}, 0)
+      ELSE 0
+    END`;
+
+    const result = await db
+      .select({
+        peopleStillNeedFunding: sql<number>`COUNT(DISTINCT CASE WHEN ${remainingNeed} > 0 THEN ${needs.personId} END)`,
+        totalNeedCents: sql<number>`COALESCE(SUM(${remainingNeed}), 0)`,
+      })
+      .from(needs);
+
+    return {
+      peopleStillNeedFunding: Number(result[0]?.peopleStillNeedFunding ?? 0),
+      totalNeedCents: Number(result[0]?.totalNeedCents ?? 0),
+    };
+  } catch (error) {
+    console.error("[Donations] Failed to fetch funding demand:", error);
+    return { peopleStillNeedFunding: 0, totalNeedCents: 0 };
+  }
+}
+
 // ============================================================================
 // MESSAGES
 // ============================================================================

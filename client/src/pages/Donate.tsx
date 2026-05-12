@@ -16,6 +16,8 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import {
   DONATION_CAMPAIGN_DEADLINE_LABEL,
   DONATION_CAMPAIGN_GOAL_CENTS,
+  DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+  DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_CAMPAIGN_STARTING_DONORS,
 } from "@shared/const";
 
@@ -28,6 +30,92 @@ function formatDollars(cents: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(cents / 100);
+}
+
+interface FundingSummaryCardProps {
+  fundsGivenCents: number;
+  fundedPersonCount: number;
+  totalRaisedCents: number;
+  fundsAvailableCents: number;
+  peopleStillNeedFunding: number;
+  totalNeedCents: number;
+}
+
+function FundingSummaryCard({
+  fundsGivenCents,
+  fundedPersonCount,
+  totalRaisedCents,
+  fundsAvailableCents,
+  peopleStillNeedFunding,
+  totalNeedCents,
+}: FundingSummaryCardProps) {
+  const percentOfRaised =
+    totalRaisedCents > 0
+      ? Math.min((fundsGivenCents / totalRaisedCents) * 100, 100)
+      : 0;
+  const remainingPercent = Math.max(100 - percentOfRaised, 0);
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="flex items-center gap-4 lg:flex-col lg:gap-3">
+        <div className="relative size-24 shrink-0" aria-hidden="true">
+          <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              stroke="rgb(226 232 240)"
+              strokeWidth="10"
+            />
+            <circle
+              cx="50"
+              cy="50"
+              r="42"
+              fill="none"
+              pathLength="100"
+              stroke="rgb(220 38 38)"
+              strokeLinecap="round"
+              strokeWidth="10"
+              strokeDasharray={`${percentOfRaised} ${remainingPercent}`}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span className="text-lg font-bold text-slate-900">
+              {Math.round(percentOfRaised)}%
+            </span>
+            <span className="text-[10px] font-medium text-slate-500 uppercase tracking-normal">
+              given
+            </span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1 lg:text-center">
+          <p className="text-sm font-semibold text-slate-900">Funds given</p>
+          <p className="mt-1 text-2xl font-bold text-red-600">
+            {formatDollars(fundsGivenCents)}
+          </p>
+          <p className="text-sm text-slate-500">
+            {fundedPersonCount} {fundedPersonCount === 1 ? "person" : "people"}
+            {" funded"}
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 lg:grid-cols-1">
+            <div>
+              <span className="block font-semibold text-slate-900">
+                {formatDollars(fundsAvailableCents)}
+              </span>
+              still in fund
+            </div>
+            <div>
+              <span className="block font-semibold text-slate-900">
+                {formatDollars(totalNeedCents)}
+              </span>
+              needed for {peopleStillNeedFunding} people
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function RegionFundsSection() {
@@ -133,6 +221,16 @@ export default function Donate() {
     }));
   const donorCount = progress?.donorCount ?? donors.length;
   const progressPercent = Math.min((totalRaised / goalCents) * 100, 100);
+  const fundingSummary = progress?.fundingSummary ?? {
+    fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+    fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+    fundsAvailableCents: Math.max(
+      totalRaised - DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+      0
+    ),
+    peopleStillNeedFunding: 0,
+    totalNeedCents: 0,
+  };
 
   const donateUrl =
     typeof window !== "undefined" ? window.location.origin + "/donate" : "";
@@ -343,66 +441,80 @@ export default function Donate() {
                 Deadline: {deadlineLabel}
               </span>
             </div>
-            <div className="mb-3">
-              <Progress
-                value={progressPercent}
-                className="h-4 bg-slate-100 [&>div]:bg-red-600"
-              />
-            </div>
-            <div className="flex items-baseline justify-between">
-              <div>
-                <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-                  {formatDollars(totalRaised)}
-                </span>
-                <span className="text-slate-500 text-base ml-2">
-                  of {formatDollars(goalCents)} goal
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                {donors.length > 0 && (
-                  <TooltipProvider delayDuration={100}>
-                    <div className="flex -space-x-2">
-                      {donors.slice(0, 5).map((donor, idx) => (
-                        <Tooltip key={`${donor.name}-${idx}`}>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              aria-label={`${donor.name} donated ${formatDollars(donor.amountCents)}`}
-                              className="w-8 h-8 rounded-full bg-red-100 text-red-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm hover:z-10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400"
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
+              <div className="min-w-0">
+                <div className="mb-3">
+                  <Progress
+                    value={progressPercent}
+                    className="h-4 bg-slate-100 [&>div]:bg-red-600"
+                  />
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
+                  <div>
+                    <span className="text-2xl sm:text-3xl font-bold text-slate-900">
+                      {formatDollars(totalRaised)}
+                    </span>
+                    <span className="text-slate-500 text-base ml-2">
+                      of {formatDollars(goalCents)} goal
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 sm:justify-end">
+                    {donors.length > 0 && (
+                      <TooltipProvider delayDuration={100}>
+                        <div className="flex -space-x-2">
+                          {donors.slice(0, 5).map((donor, idx) => (
+                            <Tooltip key={`${donor.name}-${idx}`}>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  aria-label={`${donor.name} donated ${formatDollars(donor.amountCents)}`}
+                                  className="w-8 h-8 rounded-full bg-red-100 text-red-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm hover:z-10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400"
+                                >
+                                  {donor.initials}
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-xs">
+                                  <div className="font-semibold">
+                                    {donor.name}
+                                  </div>
+                                  <div className="opacity-80">
+                                    {formatDollars(donor.amountCents)}
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                          {donors.length > 5 && (
+                            <div
+                              aria-label={`${donors.length - 5} more donors`}
+                              className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm"
                             >
-                              {donor.initials}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <div className="text-xs">
-                              <div className="font-semibold">{donor.name}</div>
-                              <div className="opacity-80">
-                                {formatDollars(donor.amountCents)}
-                              </div>
+                              +{donors.length - 5}
                             </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                      {donors.length > 5 && (
-                        <div
-                          aria-label={`${donors.length - 5} more donors`}
-                          className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm"
-                        >
-                          +{donors.length - 5}
+                          )}
                         </div>
-                      )}
+                      </TooltipProvider>
+                    )}
+                    <div className="text-right">
+                      <span className="text-lg font-semibold text-slate-700">
+                        {donorCount}
+                      </span>
+                      <span className="text-slate-500 text-sm ml-1">
+                        {donorCount === 1 ? "donor" : "donors"}
+                      </span>
                     </div>
-                  </TooltipProvider>
-                )}
-                <div className="text-right">
-                  <span className="text-lg font-semibold text-slate-700">
-                    {donorCount}
-                  </span>
-                  <span className="text-slate-500 text-sm ml-1">
-                    {donorCount === 1 ? "donor" : "donors"}
-                  </span>
+                  </div>
                 </div>
               </div>
+              <FundingSummaryCard
+                fundsGivenCents={fundingSummary.fundsGivenCents}
+                fundedPersonCount={fundingSummary.fundedPersonCount}
+                totalRaisedCents={totalRaised}
+                fundsAvailableCents={fundingSummary.fundsAvailableCents}
+                peopleStillNeedFunding={fundingSummary.peopleStillNeedFunding}
+                totalNeedCents={fundingSummary.totalNeedCents}
+              />
             </div>
           </div>
 

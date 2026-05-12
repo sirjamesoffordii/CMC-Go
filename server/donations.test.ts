@@ -2,11 +2,18 @@ import { afterEach, describe, expect, it, vi, type Mock } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { ENV } from "./_core/env";
-import { createDonation, getCompletedDonors, getDonationProgress } from "./db";
+import {
+  createDonation,
+  getCompletedDonors,
+  getDonationFundingDemand,
+  getDonationProgress,
+} from "./db";
 import {
   DONATION_CAMPAIGN_DEADLINE_ISO,
   DONATION_CAMPAIGN_DEADLINE_LABEL,
   DONATION_CAMPAIGN_GOAL_CENTS,
+  DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+  DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_CAMPAIGN_STARTING_DONORS,
   DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
   getDonorInitials,
@@ -33,6 +40,7 @@ vi.mock("./db", async importOriginal => {
     createDonation: vi.fn(),
     getDonationProgress: vi.fn(),
     getCompletedDonors: vi.fn(),
+    getDonationFundingDemand: vi.fn(),
   };
 });
 
@@ -67,6 +75,10 @@ describe("donations router", () => {
       { name: "Stripe Donor", amountCents: 50_00 },
       { name: "Anonymous donor", amountCents: 25_00 },
     ]);
+    (getDonationFundingDemand as Mock).mockResolvedValue({
+      peopleStillNeedFunding: 4,
+      totalNeedCents: 3_500_00,
+    });
 
     const caller = appRouter.createCaller(createPublicContext());
     const progress = await caller.donations.progress();
@@ -95,6 +107,16 @@ describe("donations router", () => {
       startingRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
       donorCount: expectedDonors.length,
       donors: expectedDonors,
+      fundingSummary: {
+        fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+        fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
+        fundsAvailableCents:
+          DONATION_CAMPAIGN_STARTING_RAISED_CENTS +
+          75_00 -
+          DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
+        peopleStillNeedFunding: 4,
+        totalNeedCents: 3_500_00,
+      },
       goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
       deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
       deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,
