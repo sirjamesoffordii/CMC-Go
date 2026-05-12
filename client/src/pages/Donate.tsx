@@ -5,10 +5,20 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  DONATION_CAMPAIGN_DEADLINE_LABEL,
+  DONATION_CAMPAIGN_GOAL_CENTS,
+  DONATION_CAMPAIGN_STARTING_DONORS,
+} from "@shared/const";
 
-const GOAL_CENTS = 100_000_00; // $100,000
 const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
 
 function formatDollars(cents: number): string {
@@ -87,6 +97,8 @@ export default function Donate() {
   const [showQR, setShowQR] = useState(false);
   const [showShareSuccess, setShowShareSuccess] = useState(false);
   const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const utils = trpc.useUtils();
 
   // Check URL params for success/cancel
   const urlParams = new URLSearchParams(window.location.search);
@@ -94,9 +106,11 @@ export default function Donate() {
   const isCanceled = urlParams.get("canceled") === "true";
 
   // Fetch campaign progress
-  const { data: progress } = trpc.donations.progress.useQuery(undefined, {
-    refetchInterval: 30_000, // refresh every 30s
-  });
+  const { data: progress, refetch: refetchProgress } =
+    trpc.donations.progress.useQuery(undefined, {
+      refetchInterval: isSuccess ? 5_000 : 30_000,
+      refetchOnWindowFocus: true,
+    });
 
   const createCheckout = trpc.donations.createCheckoutSession.useMutation();
 
@@ -107,9 +121,18 @@ export default function Donate() {
         ? Math.round(parseFloat(customAmount) * 100)
         : 0;
 
+  const goalCents = progress?.goalCents ?? DONATION_CAMPAIGN_GOAL_CENTS;
+  const deadlineLabel =
+    progress?.deadlineLabel ?? DONATION_CAMPAIGN_DEADLINE_LABEL;
   const totalRaised = progress?.totalRaisedCents ?? 0;
-  const donorCount = progress?.donorCount ?? 0;
-  const progressPercent = Math.min((totalRaised / GOAL_CENTS) * 100, 100);
+  const donors = progress?.donors ??
+    DONATION_CAMPAIGN_STARTING_DONORS.map(d => ({
+      name: d.name,
+      amountCents: d.amountCents,
+      initials: d.initials,
+    }));
+  const donorCount = progress?.donorCount ?? donors.length;
+  const progressPercent = Math.min((totalRaised / goalCents) * 100, 100);
 
   const donateUrl =
     typeof window !== "undefined" ? window.location.origin + "/donate" : "";
@@ -117,6 +140,7 @@ export default function Donate() {
   async function handleDonate() {
     if (amountCents < 100) return;
     setIsProcessing(true);
+    setCheckoutError(null);
     try {
       const result = await createCheckout.mutateAsync({
         amountCents,
@@ -128,6 +152,9 @@ export default function Donate() {
       }
     } catch (err) {
       console.error("Checkout error:", err);
+      setCheckoutError(
+        "We couldn't start checkout. Please try again in a moment."
+      );
       setIsProcessing(false);
     }
   }
@@ -201,6 +228,12 @@ export default function Donate() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isDocModalOpen, showQR, setLocation]);
 
+  useEffect(() => {
+    if (!isSuccess) return;
+    void utils.donations.progress.invalidate();
+    void refetchProgress();
+  }, [isSuccess, refetchProgress, utils]);
+
   // Success/Cancel overlay
   if (isSuccess || isCanceled) {
     return (
@@ -218,6 +251,24 @@ export default function Donate() {
                 Your generous donation will help missionaries attend CMC 2026.
                 God bless you!
               </p>
+              <div className="text-left mb-8 p-4 rounded-xl border border-slate-200 bg-slate-50">
+                <div className="flex items-baseline justify-between mb-2">
+                  <span className="font-semibold text-slate-900">
+                    Campaign Progress
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    Deadline: {deadlineLabel}
+                  </span>
+                </div>
+                <Progress
+                  value={progressPercent}
+                  className="h-3 mb-2 bg-slate-200 [&>div]:bg-red-600"
+                />
+                <p className="text-sm text-slate-600">
+                  {formatDollars(totalRaised)} raised toward{" "}
+                  {formatDollars(goalCents)}
+                </p>
+              </div>
             </>
           ) : (
             <>
@@ -286,14 +337,17 @@ export default function Donate() {
           <div className="px-6 sm:px-10 py-6 sm:py-8 border-b border-slate-100">
             <div className="flex items-baseline justify-between mb-2">
               <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                100 X $1,000 Goal
+                {formatDollars(goalCents)} Goal
               </h2>
               <span className="text-sm text-slate-500 font-medium">
-                100 people at $1,000 each
+                Deadline: {deadlineLabel}
               </span>
             </div>
             <div className="mb-3">
-              <Progress value={progressPercent} className="h-4 bg-slate-100" />
+              <Progress
+                value={progressPercent}
+                className="h-4 bg-slate-100 [&>div]:bg-red-600"
+              />
             </div>
             <div className="flex items-baseline justify-between">
               <div>
@@ -301,16 +355,53 @@ export default function Donate() {
                   {formatDollars(totalRaised)}
                 </span>
                 <span className="text-slate-500 text-base ml-2">
-                  of {formatDollars(GOAL_CENTS)} goal
+                  of {formatDollars(goalCents)} goal
                 </span>
               </div>
-              <div className="text-right">
-                <span className="text-lg font-semibold text-slate-700">
-                  {donorCount}
-                </span>
-                <span className="text-slate-500 text-sm ml-1">
-                  {donorCount === 1 ? "donor" : "donors"}
-                </span>
+              <div className="flex items-center gap-3">
+                {donors.length > 0 && (
+                  <TooltipProvider delayDuration={100}>
+                    <div className="flex -space-x-2">
+                      {donors.slice(0, 5).map((donor, idx) => (
+                        <Tooltip key={`${donor.name}-${idx}`}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={`${donor.name} donated ${formatDollars(donor.amountCents)}`}
+                              className="w-8 h-8 rounded-full bg-red-100 text-red-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm hover:z-10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400"
+                            >
+                              {donor.initials}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-xs">
+                              <div className="font-semibold">{donor.name}</div>
+                              <div className="opacity-80">
+                                {formatDollars(donor.amountCents)}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                      {donors.length > 5 && (
+                        <div
+                          aria-label={`${donors.length - 5} more donors`}
+                          className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm"
+                        >
+                          +{donors.length - 5}
+                        </div>
+                      )}
+                    </div>
+                  </TooltipProvider>
+                )}
+                <div className="text-right">
+                  <span className="text-lg font-semibold text-slate-700">
+                    {donorCount}
+                  </span>
+                  <span className="text-slate-500 text-sm ml-1">
+                    {donorCount === 1 ? "donor" : "donors"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -430,6 +521,12 @@ export default function Donate() {
                 "Select an Amount"
               )}
             </Button>
+
+            {checkoutError && (
+              <p className="text-center text-sm text-red-600 mt-3">
+                {checkoutError}
+              </p>
+            )}
 
             <p className="text-center text-sm text-slate-400 mt-3">
               Secure payment processed by Stripe

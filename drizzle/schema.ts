@@ -420,7 +420,7 @@ export type InsertImportRun = typeof importRuns.$inferInsert;
 
 /**
  * Donations table - Tracks Stripe donations toward CMC missionary fund
- * Goal: 100 people × $1,000 = $100,000
+ * Goal: $10,000 by June 6, 2026
  */
 export const donations = mysqlTable("donations", {
   id: int("id").primaryKey().autoincrement(),

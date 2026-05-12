@@ -18,8 +18,35 @@ import {
   canEditPerson,
 } from "./_core/authorization";
 import { hashPassword, verifyPassword } from "./_core/password";
-import { resolvePersonRegion, DISTRICT_REGION_MAP } from "../shared/const";
+import {
+  DONATION_CAMPAIGN_DEADLINE_ISO,
+  DONATION_CAMPAIGN_DEADLINE_LABEL,
+  DONATION_CAMPAIGN_GOAL_CENTS,
+  DONATION_CAMPAIGN_STARTING_DONORS,
+  DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
+  getDonorInitials,
+  resolvePersonRegion,
+  DISTRICT_REGION_MAP,
+} from "../shared/const";
 import { ENV } from "./_core/env";
+
+function trimTrailingSlash(value: string): string {
+  return value.replace(/\/$/, "");
+}
+
+function getDonationReturnOrigin(ctx: {
+  req: { get(name: string): string | undefined; protocol: string };
+}): string {
+  const configuredOrigin = process.env.VITE_APP_URL?.trim();
+  if (configuredOrigin) return trimTrailingSlash(configuredOrigin);
+  if (ENV.isProduction) return "https://cmcgo.app";
+
+  const requestOrigin = ctx.req.get("origin");
+  if (requestOrigin) return trimTrailingSlash(requestOrigin);
+
+  const host = ctx.req.get("host") ?? "localhost:3000";
+  return `${ctx.req.protocol}://${host}`;
+}
 
 /** Strip sensitive fields before sending user data to clients */
 function sanitizeUser<T extends Record<string, unknown>>(
@@ -3656,11 +3683,33 @@ export const appRouter = router({
   donations: router({
     /** Get campaign progress (public) */
     progress: publicProcedure.query(async () => {
-      const progress = await db.getDonationProgress();
+      const [progress, dbDonors] = await Promise.all([
+        db.getDonationProgress(),
+        db.getCompletedDonors(),
+      ]);
+      const totalRaisedCents =
+        DONATION_CAMPAIGN_STARTING_RAISED_CENTS + progress.totalRaisedCents;
+      const donors = [
+        ...DONATION_CAMPAIGN_STARTING_DONORS.map(d => ({
+          name: d.name,
+          amountCents: d.amountCents,
+          initials: d.initials,
+        })),
+        ...dbDonors.map(d => ({
+          name: d.name,
+          amountCents: d.amountCents,
+          initials: getDonorInitials(d.name),
+        })),
+      ];
       return {
-        totalRaisedCents: progress.totalRaisedCents,
-        donorCount: progress.donorCount,
-        goalCents: 100_000_00, // $100,000 = 100 × $1,000
+        totalRaisedCents,
+        onlineRaisedCents: progress.totalRaisedCents,
+        startingRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
+        donorCount: donors.length,
+        donors,
+        goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
+        deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
+        deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,
       };
     }),
 
@@ -3673,7 +3722,7 @@ export const appRouter = router({
           donorEmail: z.string().email().optional(),
         })
       )
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const stripeKey = ENV.STRIPE_SECRET_KEY;
         if (!stripeKey) {
           throw new TRPCError({
@@ -3685,11 +3734,7 @@ export const appRouter = router({
         const { default: Stripe } = await import("stripe");
         const stripe = new Stripe(stripeKey);
 
-        const origin =
-          process.env.VITE_APP_URL ||
-          (process.env.NODE_ENV === "development"
-            ? "http://localhost:3000"
-            : "https://cmcgo.app");
+        const origin = getDonationReturnOrigin(ctx);
 
         let session;
         try {
@@ -3713,8 +3758,17 @@ export const appRouter = router({
             success_url: `${origin}/donate?success=true`,
             cancel_url: `${origin}/donate?canceled=true`,
             customer_email: input.donorEmail || undefined,
+            payment_intent_data: {
+              metadata: {
+                donorName: input.donorName || "",
+                donorEmail: input.donorEmail || "",
+                campaign: "cmc-2026-missionary-fund",
+              },
+            },
             metadata: {
               donorName: input.donorName || "",
+              donorEmail: input.donorEmail || "",
+              campaign: "cmc-2026-missionary-fund",
             },
           });
         } catch (err: unknown) {
@@ -3724,6 +3778,13 @@ export const appRouter = router({
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: `Donation failed: ${msg}`,
+          });
+        }
+
+        if (!session.url) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Stripe did not return a checkout URL.",
           });
         }
 

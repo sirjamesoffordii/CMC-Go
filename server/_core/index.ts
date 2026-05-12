@@ -231,6 +231,7 @@ async function startServer() {
             payment_intent?: string | { id: string } | null;
             metadata?: Record<string, string>;
             customer_email?: string | null;
+            customer_details?: { email?: string | null } | null;
           };
         };
       };
@@ -244,7 +245,11 @@ async function startServer() {
               ? session.payment_intent
               : undefined,
           donorName: session.metadata?.donorName || undefined,
-          donorEmail: session.customer_email || undefined,
+          donorEmail:
+            session.customer_email ||
+            session.customer_details?.email ||
+            session.metadata?.donorEmail ||
+            undefined,
           completedAt: new Date(),
         });
         console.log(`[Stripe] Donation completed: ${session.id}`);

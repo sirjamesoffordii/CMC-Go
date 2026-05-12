@@ -4,6 +4,37 @@ export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = "Please login (10001)";
 export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
+export const DONATION_CAMPAIGN_GOAL_CENTS = 10_000_00;
+export const DONATION_CAMPAIGN_DEADLINE_ISO = "2026-06-06";
+export const DONATION_CAMPAIGN_DEADLINE_LABEL = "June 6, 2026";
+
+/**
+ * Donors who contributed before the live Stripe campaign opened.
+ *
+ * These are merged with completed Stripe donations from the database to power
+ * the public progress widget (total raised, donor count, avatar tooltips).
+ * When new Stripe donations come in, they are appended automatically.
+ */
+export const DONATION_CAMPAIGN_STARTING_DONORS: ReadonlyArray<{
+  name: string;
+  amountCents: number;
+  initials: string;
+}> = [
+  { name: "Sir James Offord", amountCents: 1_025_00, initials: "SJ" },
+  { name: "Crossroads Fellowship", amountCents: 1_000_00, initials: "CF" },
+];
+
+export const DONATION_CAMPAIGN_STARTING_RAISED_CENTS =
+  DONATION_CAMPAIGN_STARTING_DONORS.reduce((sum, d) => sum + d.amountCents, 0);
+
+/** Get a two-letter uppercase initials string from a donor's name. */
+export function getDonorInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 /**
  * District → Region mapping (fallback for districts not yet seeded in the database).
  *

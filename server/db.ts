@@ -1,4 +1,4 @@
-import { eq, and, or, sql, isNull } from "drizzle-orm";
+import { eq, and, or, sql, isNull, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import {
@@ -2344,19 +2344,54 @@ export async function getDonationProgress(): Promise<{
   totalRaisedCents: number;
   donorCount: number;
 }> {
-  const db = await getDb();
-  if (!db) return { totalRaisedCents: 0, donorCount: 0 };
-  const result = await db
-    .select({
-      totalRaisedCents: sql<number>`COALESCE(SUM(${donations.amountCents}), 0)`,
-      donorCount: sql<number>`COUNT(*)`,
-    })
-    .from(donations)
-    .where(eq(donations.status, "completed"));
-  return {
-    totalRaisedCents: Number(result[0]?.totalRaisedCents ?? 0),
-    donorCount: Number(result[0]?.donorCount ?? 0),
-  };
+  try {
+    const db = await getDb();
+    if (!db) return { totalRaisedCents: 0, donorCount: 0 };
+    const result = await db
+      .select({
+        totalRaisedCents: sql<number>`COALESCE(SUM(${donations.amountCents}), 0)`,
+        donorCount: sql<number>`COUNT(*)`,
+      })
+      .from(donations)
+      .where(eq(donations.status, "completed"));
+    return {
+      totalRaisedCents: Number(result[0]?.totalRaisedCents ?? 0),
+      donorCount: Number(result[0]?.donorCount ?? 0),
+    };
+  } catch (error) {
+    console.error("[Donations] Failed to fetch donation progress:", error);
+    return { totalRaisedCents: 0, donorCount: 0 };
+  }
+}
+
+/**
+ * List completed donations that have a donor name attached, newest first.
+ * Used to render donor avatars on the public campaign page.
+ */
+export async function getCompletedDonors(): Promise<
+  Array<{ name: string; amountCents: number }>
+> {
+  try {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db
+      .select({
+        donorName: donations.donorName,
+        amountCents: donations.amountCents,
+      })
+      .from(donations)
+      .where(eq(donations.status, "completed"))
+      .orderBy(desc(donations.completedAt));
+    return rows
+      .filter(r => r.donorName && r.donorName.trim().length > 0)
+      .map(r => ({
+        name: r.donorName as string,
+        amountCents: Number(r.amountCents),
+      }));
+  } catch (error) {
+    console.error("[Donations] Failed to fetch completed donors:", error);
+    return [];
+  }
 }
 
 // ============================================================================
