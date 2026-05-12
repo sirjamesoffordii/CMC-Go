@@ -2365,7 +2365,7 @@ export async function getDonationProgress(): Promise<{
 }
 
 /**
- * List completed donations that have a donor name attached, newest first.
+ * List completed donations, newest first.
  * Used to render donor avatars on the public campaign page.
  */
 export async function getCompletedDonors(): Promise<
@@ -2382,12 +2382,10 @@ export async function getCompletedDonors(): Promise<
       .from(donations)
       .where(eq(donations.status, "completed"))
       .orderBy(desc(donations.completedAt));
-    return rows
-      .filter(r => r.donorName && r.donorName.trim().length > 0)
-      .map(r => ({
-        name: r.donorName as string,
-        amountCents: Number(r.amountCents),
-      }));
+    return rows.map(r => ({
+      name: r.donorName?.trim() || "Anonymous donor",
+      amountCents: Number(r.amountCents),
+    }));
   } catch (error) {
     console.error("[Donations] Failed to fetch completed donors:", error);
     return [];

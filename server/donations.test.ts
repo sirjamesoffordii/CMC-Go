@@ -60,11 +60,12 @@ afterEach(() => {
 describe("donations router", () => {
   it("includes the starting raised amount in public campaign progress", async () => {
     (getDonationProgress as Mock).mockResolvedValue({
-      totalRaisedCents: 50_00,
-      donorCount: 1,
+      totalRaisedCents: 75_00,
+      donorCount: 2,
     });
     (getCompletedDonors as Mock).mockResolvedValue([
       { name: "Stripe Donor", amountCents: 50_00 },
+      { name: "Anonymous donor", amountCents: 25_00 },
     ]);
 
     const caller = appRouter.createCaller(createPublicContext());
@@ -81,11 +82,16 @@ describe("donations router", () => {
         amountCents: 50_00,
         initials: getDonorInitials("Stripe Donor"),
       },
+      {
+        name: "Anonymous donor",
+        amountCents: 25_00,
+        initials: getDonorInitials("Anonymous donor"),
+      },
     ];
 
     expect(progress).toEqual({
-      totalRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS + 50_00,
-      onlineRaisedCents: 50_00,
+      totalRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS + 75_00,
+      onlineRaisedCents: 75_00,
       startingRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
       donorCount: expectedDonors.length,
       donors: expectedDonors,
@@ -127,6 +133,7 @@ describe("donations router", () => {
           donorName: "Test Donor",
         }),
         payment_intent_data: {
+          receipt_email: "donor@example.com",
           metadata: expect.objectContaining({
             campaign: "cmc-2026-missionary-fund",
             donorEmail: "donor@example.com",

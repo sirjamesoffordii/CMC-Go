@@ -3705,7 +3705,8 @@ export const appRouter = router({
         totalRaisedCents,
         onlineRaisedCents: progress.totalRaisedCents,
         startingRaisedCents: DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
-        donorCount: donors.length,
+        donorCount:
+          DONATION_CAMPAIGN_STARTING_DONORS.length + progress.donorCount,
         donors,
         goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
         deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
@@ -3759,6 +3760,7 @@ export const appRouter = router({
             cancel_url: `${origin}/donate?canceled=true`,
             customer_email: input.donorEmail || undefined,
             payment_intent_data: {
+              receipt_email: input.donorEmail || undefined,
               metadata: {
                 donorName: input.donorName || "",
                 donorEmail: input.donorEmail || "",
