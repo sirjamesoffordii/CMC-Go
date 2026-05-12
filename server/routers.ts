@@ -3717,7 +3717,10 @@ export const appRouter = router({
           peopleStillNeedFunding: fundingDemand.peopleStillNeedFunding,
           totalNeedCents: fundingDemand.totalNeedCents,
         },
-        goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
+        goalCents:
+          fundingDemand.totalNeedCents > 0
+            ? fundingDemand.totalNeedCents
+            : DONATION_CAMPAIGN_GOAL_CENTS,
         deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
         deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,
       };

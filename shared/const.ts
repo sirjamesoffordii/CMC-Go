@@ -4,7 +4,7 @@ export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = "Please login (10001)";
 export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
-export const DONATION_CAMPAIGN_GOAL_CENTS = 10_000_00;
+export const DONATION_CAMPAIGN_GOAL_CENTS = 3_950_00;
 export const DONATION_CAMPAIGN_DEADLINE_ISO = "2026-06-06";
 export const DONATION_CAMPAIGN_DEADLINE_LABEL = "June 6, 2026";
 
@@ -32,7 +32,7 @@ export const DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT = 1;
 export const DONATION_REQUEST_SHEET_ID =
   "1xDGFzsohPoapkFC17IjpuM0vtVxbj-u61uKEh_L5ub0";
 export const DONATION_REQUEST_SHEET_GID = "364163300";
-export const DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS = 3_450_00;
+export const DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS = 3_950_00;
 export const DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST = 7;
 
 /** Get a two-letter uppercase initials string from a donor's name. */

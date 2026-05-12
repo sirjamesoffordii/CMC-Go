@@ -239,7 +239,7 @@ function RegionFundsSection() {
 
 export default function Donate() {
   const [, setLocation] = useLocation();
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(1000);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(250);
   const [customAmount, setCustomAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorEmail, setDonorEmail] = useState("");
@@ -499,69 +499,148 @@ export default function Donate() {
                 Deadline: {deadlineLabel}
               </span>
             </div>
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-center">
-              <div className="min-w-0">
-                <div className="mb-3">
-                  <Progress
-                    value={progressPercent}
-                    className="h-4 bg-slate-100 [&>div]:bg-red-600"
-                  />
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
-                  <div>
-                    <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-                      {formatDollars(totalRaised)}
-                    </span>
-                    <span className="text-slate-500 text-base ml-2">
-                      of {formatDollars(goalCents)} goal
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 sm:justify-end">
-                    {donors.length > 0 && (
-                      <TooltipProvider delayDuration={100}>
-                        <div className="flex -space-x-2">
-                          {donors.slice(0, 5).map((donor, idx) => (
-                            <Tooltip key={`${donor.name}-${idx}`}>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  aria-label={`${donor.name} donated ${formatDollars(donor.amountCents)}`}
-                                  className="w-8 h-8 rounded-full bg-red-100 text-red-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm hover:z-10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400"
-                                >
-                                  {donor.initials}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="text-xs">
-                                  <div className="font-semibold">
-                                    {donor.name}
-                                  </div>
-                                  <div className="opacity-80">
-                                    {formatDollars(donor.amountCents)}
-                                  </div>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          ))}
-                          {donors.length > 5 && (
-                            <div
-                              aria-label={`${donors.length - 5} more donors`}
-                              className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm"
+            <div className="mb-3">
+              <Progress
+                value={progressPercent}
+                className="h-4 bg-slate-100 [&>div]:bg-red-600"
+              />
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between">
+              <div>
+                <span className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  {formatDollars(totalRaised)}
+                </span>
+                <span className="text-slate-500 text-base ml-2">
+                  of {formatDollars(goalCents)} goal
+                </span>
+              </div>
+              <div className="flex items-center gap-3 sm:justify-end">
+                {donors.length > 0 && (
+                  <TooltipProvider delayDuration={100}>
+                    <div className="flex -space-x-2">
+                      {donors.slice(0, 5).map((donor, idx) => (
+                        <Tooltip key={`${donor.name}-${idx}`}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label={`${donor.name} donated ${formatDollars(donor.amountCents)}`}
+                              className="w-8 h-8 rounded-full bg-red-100 text-red-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm hover:z-10 hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-red-400"
                             >
-                              +{donors.length - 5}
+                              {donor.initials}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-xs">
+                              <div className="font-semibold">{donor.name}</div>
+                              <div className="opacity-80">
+                                {formatDollars(donor.amountCents)}
+                              </div>
                             </div>
-                          )}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                      {donors.length > 5 && (
+                        <div
+                          aria-label={`${donors.length - 5} more donors`}
+                          className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 border-2 border-white text-xs font-semibold flex items-center justify-center shadow-sm"
+                        >
+                          +{donors.length - 5}
                         </div>
-                      </TooltipProvider>
-                    )}
-                    <div className="text-right">
-                      <span className="text-lg font-semibold text-slate-700">
-                        {donorCount}
-                      </span>
-                      <span className="text-slate-500 text-sm ml-1">
-                        {donorCount === 1 ? "donor" : "donors"}
-                      </span>
+                      )}
                     </div>
+                  </TooltipProvider>
+                )}
+                <div className="text-right">
+                  <span className="text-lg font-semibold text-slate-700">
+                    {donorCount}
+                  </span>
+                  <span className="text-slate-500 text-sm ml-1">
+                    {donorCount === 1 ? "donor" : "donors"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Donation Form — directly under progress bar */}
+          <div className="px-6 sm:px-10 py-8 sm:py-10 border-b border-slate-100">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-6">
+              Make a Donation
+            </h2>
+
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start mb-6">
+              <div>
+                {/* Preset Amounts */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
+                  {PRESET_AMOUNTS.map(amount => (
+                    <button
+                      key={amount}
+                      onClick={() => {
+                        setSelectedAmount(amount);
+                        setCustomAmount("");
+                      }}
+                      className={`
+                        py-3 px-2 rounded-xl font-semibold text-base transition-all border-2
+                        ${
+                          selectedAmount === amount
+                            ? "bg-black text-white border-black shadow-md scale-105"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                        }
+                      `}
+                    >
+                      ${amount.toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Amount */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                    Or enter a custom amount
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-medium">
+                      $
+                    </span>
+                    <Input
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={customAmount}
+                      onChange={e => {
+                        setCustomAmount(e.target.value);
+                        setSelectedAmount(null);
+                      }}
+                      placeholder="Enter amount"
+                      className="pl-8 h-12 text-lg border-slate-200 focus:border-red-400 focus:ring-red-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Donor Info */}
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                      Name (optional)
+                    </label>
+                    <Input
+                      value={donorName}
+                      onChange={e => setDonorName(e.target.value)}
+                      placeholder="Your name"
+                      className="h-11 border-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1.5">
+                      Email (optional)
+                    </label>
+                    <Input
+                      type="email"
+                      value={donorEmail}
+                      onChange={e => setDonorEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="h-11 border-slate-200"
+                    />
                   </div>
                 </div>
               </div>
@@ -572,87 +651,6 @@ export default function Donate() {
                 peopleStillNeedFunding={fundingSummary.peopleStillNeedFunding}
                 totalNeedCents={fundingSummary.totalNeedCents}
               />
-            </div>
-          </div>
-
-          {/* Donation Form — directly under progress bar */}
-          <div className="px-6 sm:px-10 py-8 sm:py-10 border-b border-slate-100">
-            <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-6">
-              Make a Donation
-            </h2>
-
-            {/* Preset Amounts */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
-              {PRESET_AMOUNTS.map(amount => (
-                <button
-                  key={amount}
-                  onClick={() => {
-                    setSelectedAmount(amount);
-                    setCustomAmount("");
-                  }}
-                  className={`
-                    py-3 px-2 rounded-xl font-semibold text-base transition-all border-2
-                    ${
-                      selectedAmount === amount
-                        ? "bg-black text-white border-black shadow-md scale-105"
-                        : "bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                    }
-                  `}
-                >
-                  ${amount.toLocaleString()}
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Amount */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                Or enter a custom amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg font-medium">
-                  $
-                </span>
-                <Input
-                  type="number"
-                  min="1"
-                  step="any"
-                  value={customAmount}
-                  onChange={e => {
-                    setCustomAmount(e.target.value);
-                    setSelectedAmount(null);
-                  }}
-                  placeholder="Enter amount"
-                  className="pl-8 h-12 text-lg border-slate-200 focus:border-red-400 focus:ring-red-400"
-                />
-              </div>
-            </div>
-
-            {/* Donor Info */}
-            <div className="grid sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                  Name (optional)
-                </label>
-                <Input
-                  value={donorName}
-                  onChange={e => setDonorName(e.target.value)}
-                  placeholder="Your name"
-                  className="h-11 border-slate-200"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1.5">
-                  Email (optional)
-                </label>
-                <Input
-                  type="email"
-                  value={donorEmail}
-                  onChange={e => setDonorEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="h-11 border-slate-200"
-                />
-              </div>
             </div>
 
             {/* Donate Button */}

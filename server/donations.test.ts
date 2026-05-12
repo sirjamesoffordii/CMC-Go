@@ -119,7 +119,7 @@ describe("donations router", () => {
         peopleStillNeedFunding: 4,
         totalNeedCents: 3_500_00,
       },
-      goalCents: DONATION_CAMPAIGN_GOAL_CENTS,
+      goalCents: 3_500_00,
       deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
       deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,
     });
