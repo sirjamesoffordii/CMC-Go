@@ -27,6 +27,10 @@ import {
   DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
   DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_CAMPAIGN_STARTING_DONORS,
+  DONATION_CAMPAIGN_STARTING_RAISED_CENTS,
+  DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
+  DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
+  DONATION_REQUEST_FALLBACK_TOTAL_REQUESTED_CENTS,
 } from "@shared/const";
 
 const PRESET_AMOUNTS = [25, 50, 100, 250, 500, 1000];
@@ -62,7 +66,9 @@ function OtherGivingMethods() {
                 <button
                   type="button"
                   aria-label={`Zelle: ${ZELLE_EMAIL}`}
-                  onClick={() => void navigator.clipboard?.writeText(ZELLE_EMAIL)}
+                  onClick={() =>
+                    void navigator.clipboard?.writeText(ZELLE_EMAIL)
+                  }
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
                 >
                   <Landmark className="h-5 w-5" />
@@ -106,6 +112,7 @@ interface FundingSummaryCardProps {
   fundedPersonCount: number;
   totalRaisedCents: number;
   peopleStillNeedFunding: number;
+  totalRequestedCents: number;
   totalNeedCents: number;
 }
 
@@ -114,6 +121,7 @@ function FundingSummaryCard({
   fundedPersonCount,
   totalRaisedCents,
   peopleStillNeedFunding,
+  totalRequestedCents,
   totalNeedCents,
 }: FundingSummaryCardProps) {
   const percentOfRaised =
@@ -165,7 +173,13 @@ function FundingSummaryCard({
             {fundedPersonCount} {fundedPersonCount === 1 ? "person" : "people"}
             {" funded"}
           </p>
-          <div className="mt-3 text-xs text-slate-600">
+          <div className="mt-3 space-y-2 text-xs text-slate-600">
+            <div>
+              <span className="block font-semibold text-slate-900">
+                {formatDollars(totalRequestedCents)}
+              </span>
+              help requested
+            </div>
             <div>
               <span className="block font-semibold text-slate-900">
                 {formatDollars(totalNeedCents)}
@@ -239,7 +253,7 @@ function RegionFundsSection() {
 
 export default function Donate() {
   const [, setLocation] = useLocation();
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(250);
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(100);
   const [customAmount, setCustomAmount] = useState("");
   const [donorName, setDonorName] = useState("");
   const [donorEmail, setDonorEmail] = useState("");
@@ -274,8 +288,10 @@ export default function Donate() {
   const goalCents = progress?.goalCents ?? DONATION_CAMPAIGN_GOAL_CENTS;
   const deadlineLabel =
     progress?.deadlineLabel ?? DONATION_CAMPAIGN_DEADLINE_LABEL;
-  const totalRaised = progress?.totalRaisedCents ?? 0;
-  const donors = progress?.donors ??
+  const totalRaised =
+    progress?.totalRaisedCents ?? DONATION_CAMPAIGN_STARTING_RAISED_CENTS;
+  const donors =
+    progress?.donors ??
     DONATION_CAMPAIGN_STARTING_DONORS.map(d => ({
       name: d.name,
       amountCents: d.amountCents,
@@ -286,8 +302,9 @@ export default function Donate() {
   const fundingSummary = progress?.fundingSummary ?? {
     fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
     fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
-    peopleStillNeedFunding: 0,
-    totalNeedCents: 0,
+    peopleStillNeedFunding: DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
+    totalRequestedCents: DONATION_REQUEST_FALLBACK_TOTAL_REQUESTED_CENTS,
+    totalNeedCents: DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
   };
 
   const donateUrl =
@@ -649,6 +666,7 @@ export default function Donate() {
                 fundedPersonCount={fundingSummary.fundedPersonCount}
                 totalRaisedCents={totalRaised}
                 peopleStillNeedFunding={fundingSummary.peopleStillNeedFunding}
+                totalRequestedCents={fundingSummary.totalRequestedCents}
                 totalNeedCents={fundingSummary.totalNeedCents}
               />
             </div>

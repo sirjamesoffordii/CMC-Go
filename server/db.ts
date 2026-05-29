@@ -39,6 +39,7 @@ import {
   DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
   DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
   DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
+  DONATION_REQUEST_FALLBACK_TOTAL_REQUESTED_CENTS,
   DONATION_REQUEST_SHEET_GID,
   DONATION_REQUEST_SHEET_ID,
 } from "../shared/const";
@@ -2448,12 +2449,14 @@ export async function getDonationFundingDemand(): Promise<{
   fundsGivenCents: number;
   fundedPersonCount: number;
   peopleStillNeedFunding: number;
+  totalRequestedCents: number;
   totalNeedCents: number;
 }> {
   const fallback = {
     fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
     fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
     peopleStillNeedFunding: DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST,
+    totalRequestedCents: DONATION_REQUEST_FALLBACK_TOTAL_REQUESTED_CENTS,
     totalNeedCents: DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS,
   };
 
@@ -2473,6 +2476,7 @@ export async function getDonationFundingDemand(): Promise<{
     let fundsGivenCents = 0;
     let fundedPersonCount = 0;
     let peopleStillNeedFunding = 0;
+    let totalRequestedCents = 0;
     let totalNeedCents = 0;
 
     for (const row of rows) {
@@ -2487,6 +2491,7 @@ export async function getDonationFundingDemand(): Promise<{
           ? sheetLeftCents
           : Math.max(requestedCents - receivedCents, 0);
 
+      totalRequestedCents += requestedCents;
       fundsGivenCents += receivedCents;
       if (receivedCents > 0) fundedPersonCount += 1;
       if (leftCents > 0) {
@@ -2499,6 +2504,7 @@ export async function getDonationFundingDemand(): Promise<{
       fundsGivenCents,
       fundedPersonCount,
       peopleStillNeedFunding,
+      totalRequestedCents,
       totalNeedCents,
     };
   } catch (error) {

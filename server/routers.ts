@@ -3715,11 +3715,12 @@ export const appRouter = router({
           fundedPersonCount: fundingDemand.fundedPersonCount,
           fundsAvailableCents: Math.max(totalRaisedCents - fundsGivenCents, 0),
           peopleStillNeedFunding: fundingDemand.peopleStillNeedFunding,
+          totalRequestedCents: fundingDemand.totalRequestedCents,
           totalNeedCents: fundingDemand.totalNeedCents,
         },
         goalCents:
-          fundingDemand.totalNeedCents > 0
-            ? fundingDemand.totalNeedCents
+          fundingDemand.totalRequestedCents > 0
+            ? fundingDemand.totalRequestedCents
             : DONATION_CAMPAIGN_GOAL_CENTS,
         deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
         deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,

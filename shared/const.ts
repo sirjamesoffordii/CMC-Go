@@ -4,7 +4,7 @@ export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = "Please login (10001)";
 export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
-export const DONATION_CAMPAIGN_GOAL_CENTS = 3_950_00;
+export const DONATION_CAMPAIGN_GOAL_CENTS = 8_200_00;
 export const DONATION_CAMPAIGN_DEADLINE_ISO = "2026-06-06";
 export const DONATION_CAMPAIGN_DEADLINE_LABEL = "June 6, 2026";
 
@@ -20,20 +20,24 @@ export const DONATION_CAMPAIGN_STARTING_DONORS: ReadonlyArray<{
   amountCents: number;
   initials: string;
 }> = [
-  { name: "Sir James Offord", amountCents: 1_025_00, initials: "SJ" },
-  { name: "Crossroads Fellowship", amountCents: 1_000_00, initials: "CF" },
+  { name: "Matthew Cooley", amountCents: 25_00, initials: "MC" },
+  { name: "Gary Pascal", amountCents: 50_00, initials: "GP" },
+  { name: "Joofl", amountCents: 250_00, initials: "JO" },
+  { name: "Crossroads", amountCents: 1_000_00, initials: "CR" },
+  { name: "Sir James", amountCents: 3_250_00, initials: "SJ" },
 ];
 
 export const DONATION_CAMPAIGN_STARTING_RAISED_CENTS =
   DONATION_CAMPAIGN_STARTING_DONORS.reduce((sum, d) => sum + d.amountCents, 0);
 
-export const DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS = 1_000_00;
-export const DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT = 1;
+export const DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS = 4_550_00;
+export const DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT = 10;
 export const DONATION_REQUEST_SHEET_ID =
   "1xDGFzsohPoapkFC17IjpuM0vtVxbj-u61uKEh_L5ub0";
 export const DONATION_REQUEST_SHEET_GID = "364163300";
-export const DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS = 3_950_00;
-export const DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST = 7;
+export const DONATION_REQUEST_FALLBACK_TOTAL_REQUESTED_CENTS = 8_200_00;
+export const DONATION_REQUEST_FALLBACK_STILL_IN_REQUEST_CENTS = 3_650_00;
+export const DONATION_REQUEST_FALLBACK_PEOPLE_STILL_IN_REQUEST = 8;
 
 /** Get a two-letter uppercase initials string from a donor's name. */
 export function getDonorInitials(name: string): string {

@@ -79,6 +79,7 @@ describe("donations router", () => {
       fundsGivenCents: DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
       fundedPersonCount: DONATION_CAMPAIGN_STARTING_FUNDED_PERSON_COUNT,
       peopleStillNeedFunding: 4,
+      totalRequestedCents: 8_000_00,
       totalNeedCents: 3_500_00,
     });
 
@@ -117,9 +118,10 @@ describe("donations router", () => {
           75_00 -
           DONATION_CAMPAIGN_STARTING_FUNDS_GIVEN_CENTS,
         peopleStillNeedFunding: 4,
+        totalRequestedCents: 8_000_00,
         totalNeedCents: 3_500_00,
       },
-      goalCents: 3_500_00,
+      goalCents: 8_000_00,
       deadlineIso: DONATION_CAMPAIGN_DEADLINE_ISO,
       deadlineLabel: DONATION_CAMPAIGN_DEADLINE_LABEL,
     });
