@@ -22,7 +22,7 @@ export const DONATION_CAMPAIGN_STARTING_DONORS: ReadonlyArray<{
 }> = [
   { name: "Matthew Cooley", amountCents: 25_00, initials: "MC" },
   { name: "Gary Pascal", amountCents: 50_00, initials: "GP" },
-  { name: "Joofl", amountCents: 250_00, initials: "JO" },
+  { name: "University of Houston", amountCents: 250_00, initials: "UH" },
   { name: "Crossroads", amountCents: 1_000_00, initials: "CR" },
   { name: "Sir James", amountCents: 3_250_00, initials: "SJ" },
 ];
