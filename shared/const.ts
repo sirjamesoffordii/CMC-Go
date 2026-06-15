@@ -5,8 +5,8 @@ export const UNAUTHED_ERR_MSG = "Please login (10001)";
 export const NOT_ADMIN_ERR_MSG = "You do not have required permission (10002)";
 
 export const DONATION_CAMPAIGN_GOAL_CENTS = 8_200_00;
-export const DONATION_CAMPAIGN_DEADLINE_ISO = "2026-06-06";
-export const DONATION_CAMPAIGN_DEADLINE_LABEL = "June 6, 2026";
+export const DONATION_CAMPAIGN_DEADLINE_ISO = "2026-07-01";
+export const DONATION_CAMPAIGN_DEADLINE_LABEL = "July 1, 2026";
 
 /**
  * Donors who contributed before the live Stripe campaign opened.
